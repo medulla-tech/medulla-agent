@@ -210,7 +210,7 @@ class Machines(Base, XmppMasterDBObj):
     # id = Column(Integer, primary_key=True)
     jid = Column(String(255), nullable=False)
     uuid_serial_machine = Column(String(45))
-    need_reconf = Column(Boolean, nullable=False, default="0")
+    need_reconf = Column(Boolean, nullable=False, default=0)
     enabled = Column(Boolean, unique=False)
     platform = Column(String(60))
     hostname = Column(String(45), nullable=False)
@@ -309,8 +309,8 @@ class RelayServer(Base, XmppMasterDBObj):
     longitude = Column(String(45))
     latitude = Column(String(45))
     enabled=  Column(Boolean, unique=False)
-    mandatory =  Column(Boolean, nullable=False, default="1")
-    switchonoff =  Column(Boolean, nullable=False, default="1")
+    mandatory =  Column(Boolean, nullable=False, default=1)
+    switchonoff =  Column(Boolean, nullable=False, default=1)
     classutil = Column(String(10))
     moderelayserver = Column(String(7))
     keysyncthing = Column(String(70), default="")
@@ -424,6 +424,7 @@ class Deploy(Base, XmppMasterDBObj):
     command = Column(Integer)
     macadress=Column(String(255))
     syncthing = Column(Integer)
+    subdep = Column(String(45))
 
 class Cluster_resources(Base, XmppMasterDBObj):
     # ====== Table name =========================
@@ -576,7 +577,7 @@ class Def_remote_deploy_status(Base, XmppMasterDBObj):
     # id = Column(Integer, primary_key=True)
     regex_logmessage = Column(String(80), nullable=False)
     status = Column(String(80), nullable=False)
-
+    label = Column(String, nullable=False)
 
 class Uptime_machine(Base, XmppMasterDBObj):
     # ====== Table name =========================
@@ -590,8 +591,9 @@ class Uptime_machine(Base, XmppMasterDBObj):
     status = Column(Boolean, unique=False)
     updowntime = Column(Integer, nullable=False, default=0)
     date = Column(DateTime, default=datetime.datetime.now)
-
-
+    timetempunix = Column(Integer, default=None)
+    md5agentversion = Column(String(32), default=None)
+    version = Column(String(10), default=None)
 
 
 class MyTypeenum(enum.Enum):
@@ -668,6 +670,7 @@ class Mon_rules(Base, XmppMasterDBObj):
     # Here we define columns for the table mon_device_service.
     # Notice that each column is also a normal Python instance attribute.
     # id = Column(Integer, primary_key=True)
+    enable = Column(Integer,nullable=False, default=1)
     hostname = Column(String(255), default=None)
     device_type = Column(String(255), nullable=False,
                                   default="opticalReader")
@@ -678,6 +681,8 @@ class Mon_rules(Base, XmppMasterDBObj):
     type_event = Column(String(255), default=None)
     user = Column(String(255), default=None)
     comment = Column(String(1024))
+    os = Column(String(45),  default=None)
+    type_machine= Column(String(45),  default=None)
 
 
 class Mon_event(Base, XmppMasterDBObj):
@@ -709,6 +714,81 @@ class Mon_panels_template(Base, XmppMasterDBObj):
     parameters = Column(String(1024), default="{}")
     status = Column(Boolean, default=True)
     comment = Column(String(1024), default="")
+
+
+class Update_data(Base):
+    # ====== Table name =========================
+    __tablename__ = "update_data"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    revisionid =  Column(String(16), nullable=False, default="")
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    company =  Column(String(36), default="")
+    product =  Column(String(512), default="")
+    productfamily =  Column(String(100), default="")
+    updateclassification =  Column(String(36), default="")
+    prerequisite =  Column(String(2048), default="")
+    title =  Column(String(500), default="")
+    description =  Column(String(2048), default="")
+    msrcseverity =  Column(String(16), default="")
+    msrcnumber =  Column(String(16), default="")
+    kb =  Column(String(16), default="")
+    languages =  Column(String(16), default="")
+    category =  Column(String(80), default="")
+    supersededby =  Column(String(2048), default="")
+    supersedes = Column(Text, default=None)
+    payloadfiles =  Column(String(1024), default="")
+    revisionnumber =  Column(String(30), default="")
+    bundledby_revision =  Column(String(30), default="")
+    isleaf =  Column(String(6), default="")
+    issoftware =  Column(String(30), default="")
+    deploymentaction =  Column(String(30), default="")
+    title_short =  Column(String(500), default="")
+
+class Up_black_list(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = "up_black_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), nullable=False)
+    userjid_regexp = Column(String(180), nullable=False)
+    enable_rule = Column(Boolean, unique=True)
+    type_rule =  Column(String(2), nullable=False, default="id")
+
+class Up_machine_windows(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_machine_windows"
+    # ====== Fields =============================
+    id_machine = Column(Integer, primary_key=True)
+    update_id = Column(String(38), primary_key=True)
+    kb = Column(String(45),  default="")
+
+class Up_white_list(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_white_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    title =  Column(String(1024), default="")
+    description =  Column(String(3096), default="")
+    kb =  Column(String(16), default="")
+    title_short =  Column(String(1024), default="")
+    valided = Column(Boolean, unique=False)
+
+class Up_gray_list(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_gray_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    revisionid =  Column(String(16), nullable=False, default="")
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    title =  Column(String(1024), default="")
+    description =  Column(String(3096), default="")
+    kb =  Column(String(16), default="")
+    supersededby =  Column(String(3072), default="")
+    payloadfiles =  Column(String(2048), default="")
+    title_short =  Column(String(1024), default="")
+    valided = Column(Boolean, unique=False)
+    validity_date = Column(DateTime, default=datetime.datetime.now)
 
 """
 This code is kept here as a comment, "if" we need to use it

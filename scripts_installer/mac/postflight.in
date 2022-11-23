@@ -16,7 +16,6 @@ VNC_SERVER_APP="@@VNC_SERVER_APP@@"
 SYNCTHING_FILENAME="@@SYNCTHING_FILENAME@@"
 MODULES_LIST_FILENAMES="@@PY_NETIFACES_FILENAME@@
                         @@PY_CONFIGPARSER_FILENAME@@
-                        @@PY_UTILS_FILENAME@@
                         @@PY_SLEEKXMPP_FILENAME@@
                         @@PY_ZIPFILE_FILENAME@@
                         @@PY_CURL_FILENAME@@

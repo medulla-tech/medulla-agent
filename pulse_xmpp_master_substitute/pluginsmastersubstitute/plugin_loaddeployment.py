@@ -32,6 +32,7 @@ import os
 import sys
 import json
 import logging
+import hashlib
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
 from lib.managepackage import managepackage
@@ -44,10 +45,11 @@ import random
 import re
 from sleekxmpp import jid
 import time
+import threading
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "loaddeployment", "TYPE": "substitute"}
+plugin = {"VERSION": "1.4", "NAME": "loaddeployment", "TYPE": "substitute"}
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
     try:
@@ -80,7 +82,7 @@ def scheduledeploy(self):
     # TODO
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
-    
+
     nb_machine_select_for_deploy_cycle = 0
     datetimenow = datetime.datetime.now()
     startfunc = time.time()
@@ -130,7 +132,7 @@ def scheduledeploy(self):
         listobjsupp = []
         try:
             # Searching for deployements to start
-            nb_machine_select_for_deploy_cycle, resultdeploymachine = MscDatabase().deployxmpp(limitnbr=self.deployment_nbr_mach_cycle)
+            nb_machine_select_for_deploy_cycle, resultdeploymachine = MscDatabase().deployxmpp(limitnbr=self.deployment_nbr_mach_cycle,textindicator=self.boundjid.bare)
         except Exception as error_while_deploy:
             logger.error("We encountered the following error while trying to deploy: \n %s" % error_while_deploy)
             logger.error("We hit the backtrace: \n %s" % (traceback.format_exc()))
@@ -200,8 +202,8 @@ def scheduledeploy(self):
                                                                     deployobject['UUID']))
                     logging.warning("INFO\nXMPP : No machine found for %s" % (deployobject['name']))
 
-                #listobjnoexist.append(deployobject)
-                # incription dans deploiement cette machine sans agent
+                # We add a fake entry in the database for the machine w/o agent
+                deployobject['name'] = deployobject['name'].split('.')[0]
                 XmppMasterDatabase().adddeploy(deployobject['commandid'],
                                             deployobject['name'],
                                             deployobject['name'],
@@ -218,7 +220,8 @@ def scheduledeploy(self):
                                             endcmd=deployobject['end_date'],
                                             macadress=deployobject['mac'],
                                             result="",
-                                            syncthing=0)
+                                            syncthing=0,
+                                            subdep=self.boundjid.user)
 
 
                 for logmsg in msg:
@@ -303,12 +306,12 @@ def scheduledeployrecoveryjob(self):
     msglog = []
     wol_set = set()
     try:
-        # machine ecart temps de deploiement terminer met status a ABORT ON TIMEOUT
+        # We set the deploiement as ABORT ON TIMEOUT as the deploy launch window is over.
         result = XmppMasterDatabase().Timeouterrordeploy()
         for machine in result:
             msglog = []
-            hostnamemachine = machine['jidmachine'].split('@')[0][:-4]
-            msglog.append("<span class='log_err'>Deployment timed out on machine %s</span>" % hostnamemachine)
+            machine_hostname = machine['jidmachine'].split('@')[0][:-4]
+            msglog.append("<span class='log_err'>Deployment timed out on machine %s</span>" % machine_hostname)
             msglog.append("<span class='log_err'>Machine is no longer available</span>")
             for logmsg in msglog:
                 self.xmpplog(logmsg,
@@ -322,7 +325,8 @@ def scheduledeployrecoveryjob(self):
                              fromuser=machine['login'])
         msglog=[]
 
-        machines_scheduled_deploy = XmppMasterDatabase().search_machines_from_state("DEPLOY TASK SCHEDULED")
+        machines_scheduled_deploy = XmppMasterDatabase().search_machines_from_state("DEPLOY TASK SCHEDULED",
+                                                                                    subdep_user=self.boundjid.user)
         for machine in machines_scheduled_deploy:
             msglog = []
             # datetime_startcmd = datetime.strptime(machine['startcmd'], '%Y-%m-%d %H:%M:%S')
@@ -337,11 +341,14 @@ def scheduledeployrecoveryjob(self):
                 # et la machine n'existe plus. soit son uuid GLPI a changer, ou elle a ete suprimer. la machine n'existe plus.
                 msglog.append("<span class='log_err'>Machine %s disappeared "\
                               "during deployment. GLPI ID: %s</span>" % (machine['jidmachine'], UUID))
-                XmppMasterDatabase().update_state_deploy(machine['id'], "ABORT MACHINE DISAPPEARED")
+                XmppMasterDatabase().update_state_deploy(machine['id'], "ABORT MACHINE DISAPPEARED",
+                                                                                    subdep_user=self.boundjid.user)
             elif resultpresence[UUID][0] == 1:
-                XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE")
+                XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE",
+                                                                                    subdep_user=self.boundjid.user)
             else:
-                XmppMasterDatabase().update_state_deploy(machine['id'], "WOL 3")
+                XmppMasterDatabase().update_state_deploy(machine['id'], "WOL 3",
+                                                                                    subdep_user=self.boundjid.user)
             for logmsg in msglog:
                 self.xmpplog(logmsg,
                              type='deploy',
@@ -352,14 +359,110 @@ def scheduledeployrecoveryjob(self):
                              module="Deployment | Start | Creation",
                              date=None,
                              fromuser=machine['login'])
+
+        ############ Plan with blocked deployments again ############
+        #############################################################
+        XmppMasterDatabase().restart_blocked_deployments()
+        #############################################################
+        #######  ICI NEW GESTION DES ONLINE #######
+        msglog=[]
+        # relance machine off_line to on_line
+        machines_waitting_online = XmppMasterDatabase().search_machines_from_state("WAITING MACHINE ONLINE",
+                                                                                    subdep_user=self.boundjid.user)
+        # on verify si il y a des machines online dans cet ensemble
+        for machine in machines_waitting_online:
+            logger.error("RELANCE machines_waitting_online %s" %  machine['sessionid'])
+            #time.sleep(5)
+            # machine WAITING MACHINE ONLINE presente ?
+            try:
+                data = json.loads(machine['result'])
+                if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
+                    hostnamemachine=machine['jidmachine'].split('@')[0][:-4]
+                    msg="Machine %s online. Starting deployment"%hostnamemachine
+                    self.xmpplog(msg,
+                                type='deploy',
+                                sessionname=machine['sessionid'],
+                                priority=-1,
+                                action="xmpplog",
+                                why=self.boundjid.bare,
+                                module="Deployment | Start | Creation",
+                                date=None,
+                                fromuser=machine['login'])
+                    XmppMasterDatabase().update_state_deploy(int(machine['id']), "DEPLOYMENT START",
+                                                                                    subdep_user=self.boundjid.user)
+                    # relance deployement on machine online"
+                    # il faut verifier qu'il y ai 1 groupe deja en syncthing.alors seulement on peut decoder de l'incorporer
+                    if 'grp' in data['advanced'] and data['advanced']['grp'] is not None and \
+                        'syncthing' in data['advanced'] and \
+                            data['advanced']['syncthing'] == 1 and \
+                                XmppMasterDatabase().nbsyncthingdeploy(machine['group_uuid'],
+                                                                    machine['command']) > 2:
+                        msg = "Starting peer deployment on machine %s" % machine['jidmachine']
+                        self.xmpplog(msg,
+                                    type='deploy',
+                                    sessionname=machine['sessionid'],
+                                    priority=-1,
+                                    action="xmpplog",
+                                    why=self.boundjid.bare,
+                                    module="Deployment | Start | Creation",
+                                    date=None,
+                                    fromuser=data['login'])
+                        XmppMasterDatabase().updatedeploytosyncthing(machine['sessionid'])
+                        # call plugin master syncthing
+                        # initialisation deployement syncthing
+                        self.callpluginsubstitute("deploysyncthing",
+                                                data,
+                                                sessionid=machine['sessionid'])
+                    else:
+                        datasession = self.sessiondeploysubstitute.sessiongetdata(machine['sessionid'])
+                        msglog.append("Starting deployment on machine %s from ARS %s" % (machine['jidmachine'],
+                                                                                        machine['jid_relay']))
+
+                        command = {'action': "applicationdeploymentjson",
+                                'base64': False,
+                                'sessionid': machine['sessionid'],
+                                'data': data}
+                        self.send_message(mto=machine['jid_relay'],
+                                        mbody=json.dumps(command),
+                                        mtype='chat')
+                        for logmsg in msglog:
+                            self.xmpplog(logmsg,
+                                        type='deploy',
+                                        sessionname=machine['sessionid'],
+                                        priority=-1,                                     action="xmpplog",
+                                        why=self.boundjid.bare,
+                                        module="Deployment | Start | Creation",
+                                        date=None,
+                                        fromuser=machine['login'])
+                        msglog=[]
+                        if 'syncthing' in data['advanced'] and \
+                            data['advanced']['syncthing'] == 1:
+                            self.xmpplog("<span class='log_warn'>There are not enough " \
+                                        "machines to deploy in peer mode</span>",
+                                        type='deploy',
+                                        sessionname=machine['sessionid'],
+                                        priority=-1,
+                                        action="xmpplog",
+                                        why=self.boundjid.bare,
+                                        module="Deployment | Start | Creation",
+                                        date=None,
+                                        fromuser=data['login'])
+            except:
+                # relance deploy  machine['sessionid']
+                if 'sessionid' in machine:
+                    XmppMasterDatabase().replaydeploysessionid( machine['sessionid'], force_redeploy=self.force_redeploy,rechedule=self.rechedule)
+        ##################### END NEW GESTION ##################
+
         msglog=[]
 
-        machines_wol3 = XmppMasterDatabase().search_machines_from_state("WOL 3")
+        machines_wol3 = XmppMasterDatabase().search_machines_from_state("WOL 3",
+                                                                         subdep_user=self.boundjid.user)
         for machine in machines_wol3:
             msglog = []
-            XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE")
-            hostnamemachine = machine['jidmachine'].split('@')[0][:-4]
-            msglog.append("Waiting for machine %s to be online" % hostnamemachine)
+            XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE",
+                                                                                    subdep_user=self.boundjid.user)
+            machine_hostname = machine['jidmachine'].split('@')[0][:-4]
+            msglog.append("Waiting for machine %s to be online" % machine_hostname)
             for logmsg in msglog:
                 self.xmpplog(logmsg,
                              type='deploy',
@@ -372,17 +475,20 @@ def scheduledeployrecoveryjob(self):
                              fromuser=machine['login'])
 
         msglog = []
-        machines_wol2 = XmppMasterDatabase().search_machines_from_state("WOL 2")
+        machines_wol2 = XmppMasterDatabase().search_machines_from_state("WOL 2",
+                                                                         subdep_user=self.boundjid.user)
         for machine in machines_wol2:
             msglog = []
             if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
                 # recu presence machine.
-                XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE")
+                XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE",
+                                                                                    subdep_user=self.boundjid.user)
                 continue
-            XmppMasterDatabase().update_state_deploy(machine['id'], "WOL 3")
-            hostnamemachine = machine['jidmachine'].split('@')[0][:-4]
+            XmppMasterDatabase().update_state_deploy(machine['id'], "WOL 3",
+                                                                                    subdep_user=self.boundjid.user)
+            machine_hostname = machine['jidmachine'].split('@')[0][:-4]
             self._addsetwol(wol_set, machine['macadress'])
-            msglog.append("Third WOL sent to machine %s" % hostnamemachine)
+            msglog.append("Third WOL sent to machine %s" % machine_hostname)
             for logmsg in msglog:
                 self.xmpplog(logmsg,
                              type='deploy',
@@ -395,19 +501,21 @@ def scheduledeployrecoveryjob(self):
                              fromuser=machine['login'])
         msglog = []
 
-        machines_wol1 = XmppMasterDatabase().search_machines_from_state("WOL 1")
+        machines_wol1 = XmppMasterDatabase().search_machines_from_state("WOL 1",
+                                                                         subdep_user=self.boundjid.user)
         for machine in machines_wol1:
             msglog = []
             if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
                 # recu presence machine.
-                XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE")
+                XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE",
+                                                                                    subdep_user=self.boundjid.user)
                 continue
-            XmppMasterDatabase().update_state_deploy(machine['id'], "WOL 2")
-            hostnamemachine=machine['jidmachine'].split('@')[0][:-4]
+            XmppMasterDatabase().update_state_deploy(machine['id'], "WOL 2",
+                                                                                    subdep_user=self.boundjid.user)
+            machine_hostname=machine['jidmachine'].split('@')[0][:-4]
             self._addsetwol(wol_set, machine['macadress'])
-            # self.sendwol(machine['macadress'], hostnamemachine)
 
-            msglog.append("Second WOL sent to machine %s" % hostnamemachine)
+            msglog.append("Second WOL sent to machine %s" % machine_hostname)
             for logmsg in msglog:
                 self.xmpplog(logmsg,
                             type='deploy',
@@ -418,90 +526,9 @@ def scheduledeployrecoveryjob(self):
                             module="Deployment | Start | Creation",
                             date=None,
                             fromuser=machine['login'])
-        msglog=[]
-
-        # relance machine off_line to on_line
-        machines_waitting_online = XmppMasterDatabase().search_machines_from_state("WAITING MACHINE ONLINE")
-        # on verify si il y a des machines online dans cet ensemble
-        for machine in machines_waitting_online:
-            # machine WAITING MACHINE ONLINE presente ?
-            data = json.loads(machine['result'])
-            if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
-                hostnamemachine=machine['jidmachine'].split('@')[0][:-4]
-                msg="Machine %s online. Starting deployment"%hostnamemachine
-                self.xmpplog(msg,
-                             type='deploy',
-                             sessionname=machine['sessionid'],
-                             priority=-1,
-                             action="xmpplog",
-                             why=self.boundjid.bare,
-                             module="Deployment | Start | Creation",
-                             date=None,
-                             fromuser=machine['login'])
-                XmppMasterDatabase().update_state_deploy(int(machine['id']), "DEPLOYMENT START")
-                # relance deployement on machine online"
-                # il faut verifier qu'il y ai 1 groupe deja en syncthing.alors seulement on peut decoder de l'incorporer
-                if 'grp' in data['advanced'] and data['advanced']['grp'] is not None and \
-                    'syncthing' in data['advanced'] and \
-                        data['advanced']['syncthing'] == 1 and \
-                            XmppMasterDatabase().nbsyncthingdeploy(machine['group_uuid'],
-                                                                   machine['command']) > 2:
-                    msg = "Starting peer deployment on machine %s" % machine['jidmachine']
-                    self.xmpplog(msg,
-                                 type='deploy',
-                                 sessionname=machine['sessionid'],
-                                 priority=-1,
-                                 action="xmpplog",
-                                 why=self.boundjid.bare,
-                                 module="Deployment | Start | Creation",
-                                 date=None,
-                                 fromuser=data['login'])
-                    XmppMasterDatabase().updatedeploytosyncthing(machine['sessionid'])
-                    # call plugin master syncthing
-                    # initialisation deployement syncthing
-                    self.callpluginsubstitute("deploysyncthing",
-                                              data,
-                                              sessionid=machine['sessionid'])
-                else:
-                    datasession = self.sessiondeploysubstitute.sessiongetdata(machine['sessionid'])
-                    msglog.append("Starting deployment on machine %s from ARS %s" % (machine['jidmachine'],
-                                                                                     machine['jid_relay']))
-
-                    command = {'action': "applicationdeploymentjson",
-                               'base64': False,
-                               'sessionid': machine['sessionid'],
-                               'data': data}
-
-                    self.send_message(mto=machine['jid_relay'],
-                                      mbody=json.dumps(command),
-                                      mtype='chat')
-                    for logmsg in msglog:
-                        self.xmpplog(logmsg,
-                                     type='deploy',
-                                     sessionname=machine['sessionid'],
-                                     priority=-1,
-                                     action="xmpplog",
-                                     why=self.boundjid.bare,
-                                     module="Deployment | Start | Creation",
-                                     date=None,
-                                     fromuser=machine['login'])
-                    msglog=[]
-                    if 'syncthing' in data['advanced'] and \
-                        data['advanced']['syncthing'] == 1:
-                        self.xmpplog("<span class='log_warn'>There are not enough " \
-                                     "machines to deploy in peer mode</span>",
-                                     type='deploy',
-                                     sessionname=machine['sessionid'],
-                                     priority=-1,
-                                     action="xmpplog",
-                                     why=self.boundjid.bare,
-                                     module="Deployment | Start | Creation",
-                                     date=None,
-                                     fromuser=data['login'])
     except Exception:
         logger.error("%s" % (traceback.format_exc()))
     finally:
-        # send wols
         wol_set.discard("")
         if len(wol_set):
             self._sendwolgroup(wol_set)
@@ -521,7 +548,7 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                                    nbdeploy=-1,
                                                    wol=0):
     sessiondeployementless = name_random(5, "arsdeploy")
-    msg=[]
+    msg = []
     name = uuidpackage
     if name is not None:
         return self.applicationdeployjsonuuid(str(uuidmachine),
@@ -553,9 +580,10 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         msg.append("<span class='log_err'>Package identifier misssing for %s</span>" % uuidpackage)
-        msg.append("Action : Check the package %s" % (uuidpackage))
+        msg.append("Action: Check the package %s" % (uuidpackage))
         for logmsg in msg:
             self.xmpplog(logmsg,
                          type='deploy',
@@ -586,44 +614,47 @@ def applicationdeployjsonuuid(self,
                               wol=0):
     try:
         sessiondeployementless = name_random(5, "arsdeploy")
-        msg=[]
+        msg = []
         # search group deploy and jid machine
         objmachine = XmppMasterDatabase().getGuacamoleRelayServerMachineUuid(uuidmachine, None)
         if 'error' in objmachine and objmachine['error'] == "MultipleResultsFound" :
             logger.warn('getGuacamoleRelayServerMachineUuid %s' % objmachine['error'])
-            objmachine1 = XmppMasterDatabase().get_machine_with_dupplicate_uuidinventory(uuidmachine, None)
-            logger.warn('get_machine_with_dupplicate_uuidinventory %s' % objmachine1)
-            grparray=[]
-            jidarray=[]
-            keysyncthingarray=[]
-            for z in objmachine1:
-                grparray.append( z['groupdeploy'])
-                jidarray.append( z['jid'])
-                keysyncthingarray.append( z['keysyncthing'])
-            grparray=list(set(grparray))
-            jidarray=list(set(jidarray))
-            keysyncthingarray=list(set(keysyncthingarray))
-            jidrelay=",".join(grparray)
-            jidmachine=",".join(jidarray)
-            keysyncthing=",".join(keysyncthingarray)
+            dupplicate_machines = XmppMasterDatabase().get_machine_with_dupplicate_uuidinventory(uuidmachine, None)
+            logger.warn('get_machine_with_dupplicate_uuidinventory %s' % dupplicate_machines)
+            grparray = []
+            jidarray = []
+            keysyncthingarray = []
+
+            for machine in dupplicate_machines:
+                grparray.append(machine['groupdeploy'])
+                jidarray.append(machine['jid'])
+                keysyncthingarray.append(machine['keysyncthing'])
+
+            grparray = list(set(grparray))
+            jidarray = list(set(jidarray))
+            keysyncthingarray = list(set(keysyncthingarray))
+            jidrelay = ",".join(grparray)
+            jidmachine = ",".join(jidarray)
+            keysyncthing = ",".join(keysyncthingarray)
             raise Exception("MultipleResultsFound")
+
         jidrelay = objmachine['groupdeploy']
         jidmachine = objmachine['jid']
         keysyncthing = objmachine['keysyncthing']
         if jidmachine is not None and jidmachine != "" and jidrelay is not None and jidrelay != "":
-            # il y a 1 ARS pour le deploiement
-            # on regarde si celui-ci est up dans la table machine
+            # There is an ARS for the deploiement.
+            # We check if this ARS is online in the machine table.
             ARSsearch = XmppMasterDatabase().getMachinefromjid(jidrelay)
             if ARSsearch['enabled'] == 0:
                 msg.append("<span class='log_err'>ARS %s for deployment is down.</span>" % jidrelay)
                 msg.append("Action : Either restart it or rerun the configurator "\
                             "on the machine %s to use another ARS" % (name))
                 msg.append("Searching alternative ARS for deployment")
-                # il faut recherche si on trouve 1 alternative. dans le cluster
-                # on cherche 1 ars disponible et up dans son cluster.
+                # We need to check if there is an alternative in the cluster.
+                # We check 1 available and online ARS in its cluster
                 cluster = XmppMasterDatabase().clusterlistars(enabled=None)
-                trouver = False
-                for  i in range(1, len(cluster)+1):
+                Found = False
+                for i in range(1, len(cluster) + 1):
                     nbars = len(cluster[i]['listarscluster'])
                     if jidrelay in cluster[i]['listarscluster']:
                         if nbars < 2:
@@ -646,7 +677,8 @@ def applicationdeployjsonuuid(self,
                                                            endcmd=end_date,
                                                            macadress=macadress,
                                                            result="",
-                                                           syncthing=0)
+                                                           syncthing=0,
+                                                           subdep=self.boundjid.user)
                             for logmsg in msg:
                                 self.xmpplog(logmsg,
                                              type='deploy',
@@ -670,10 +702,10 @@ def applicationdeployjsonuuid(self,
                             jidrelay = arsalternative
                             ARSsearch = XmppMasterDatabase().getMachinefromjid(jidrelay)
                             if ARSsearch['enabled'] == 1:
-                                trouver = True
+                                Found = True
                                 break
 
-                if not trouver:
+                if not Found:
                     sessiondeployementless = name_random(5, "missinggroupdeploy")
                     XmppMasterDatabase().adddeploy(idcommand,
                                                    jidmachine,
@@ -691,7 +723,8 @@ def applicationdeployjsonuuid(self,
                                                    endcmd=end_date,
                                                    macadress=macadress,
                                                    result="",
-                                                   syncthing=0)
+                                                   syncthing=0,
+                                                   subdep=self.boundjid.user)
                     msg.append("<span class='log_err'>Alternative ARS Down</span>")
                     msg.append("Action : check ARS cluster.")
                     for logmsg in msg:
@@ -706,8 +739,8 @@ def applicationdeployjsonuuid(self,
                     logger.error("deploy error cluster ARS")
                     return False
             else:
-                trouver = True
-            #run deploiement
+                Found = True
+            # Run deploiement
             return self.applicationdeploymentjson(jidrelay,
                                                   jidmachine,
                                                   idcommand,
@@ -743,7 +776,8 @@ def applicationdeployjsonuuid(self,
                                            endcmd=end_date,
                                            macadress=macadress,
                                            result="",
-                                           syncthing=0)
+                                           syncthing=0,
+                                           subdep=self.boundjid.user)
             msg.append("<span class='log_err'>ARS for deployment is missing for machine %s </span>" % uuidmachine)
             msg.append("Action : The configurator must be restarted on the machine.")
             for logmsg in msg:
@@ -755,12 +789,12 @@ def applicationdeployjsonuuid(self,
                              why=self.boundjid.bare,
                              module="Deployment | Start | Creation",
                              fromuser=login)
-            logger.error("deploy %s error on machine %s" % (name, uuidmachine))
+            logger.error("The deploiement %s failed on %s" % (name, uuidmachine))
             return False
     except Exception as e:
-        logger.error("%s" % (str(e)))
-        logger.error("%s" % (traceback.format_exc()))
-        logger.error("deploy %s error on machine %s" % (name, uuidmachine))
+        logger.error("We encountered the error: %s" % (str(e)))
+        logger.error("We hit the backtrace: \n %s" % (traceback.format_exc()))
+        logger.error("The deploiement %s failed on %s" % (name, uuidmachine))
 
         if str(e) == "MultipleResultsFound":
             statusmsg = "ABORT DUPLICATE MACHINES"
@@ -784,7 +818,8 @@ def applicationdeployjsonuuid(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         msg.append("<span class='log_err'>Error creating deployment on machine[ %s ] "\
                    "[%s] package[%s]</span>" % (jidmachine, uuidmachine,name))
         if str(e) == "MultipleResultsFound":
@@ -801,6 +836,58 @@ def applicationdeployjsonuuid(self,
                          module="Deployment | Start | Creation",
                          fromuser=login)
         return False
+
+def generate_hash(path, package_id, hash_type, packages, keyAES32):
+    source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
+    dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
+    BLOCK_SIZE = 65535
+
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logging.error("Wrong hash type")
+
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+
+    source_file = os.listdir(source)
+
+    for file_package in sorted(source_file):
+        with open(os.path.join(source, file_package), "rb") as _file:
+            try:
+                file_hash = hashlib.new(hash_type)
+            except:
+                logging.error("Wrong hash type")
+            file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
+            while len(file_block) > 0: # While there is still data being read from the file
+                file_hash.update(file_block) # Update the hash
+                file_block = _file.read(BLOCK_SIZE) # Read the next block from the file
+
+        try:
+            with open("%s.hash" % (os.path.join(dest, file_package)) + ".hash", 'wb') as _file:
+                _file.write(file_hash.hexdigest())
+        except:
+            logging.error("Error writing the hash for %s" % file_package)
+
+    #FOREACH FILES IN DEST IN ALPHA ORDER AND ADD KEY AES32, CONCAT AND HASH
+    content = ""
+
+    salt = keyAES32
+    filelist = os.listdir(dest)
+    for file_package in sorted(filelist):
+        with open(os.path.join(dest, file_package), "rb") as infile:
+            content += infile.read()
+
+    content += salt
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logging.error("Wrong hash type")
+    file_hash.update(content)
+    content = file_hash.hexdigest()
+
+    with open("%s.hash" % dest, 'wb') as outfile:
+        outfile.write(content)
 
 def applicationdeploymentjson(self,
                               jidrelay,
@@ -845,7 +932,8 @@ def applicationdeploymentjson(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         for logmsg in msg:
             self.xmpplog(logmsg,
                          type='deploy',
@@ -877,7 +965,8 @@ def applicationdeploymentjson(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         for logmsg in msg:
             self.xmpplog(logmsg,
                          type='deploy',
@@ -908,7 +997,8 @@ def applicationdeploymentjson(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         msg.append("<span class='log_err'>Descriptor xmppdeploy.json " \
                     "missing for %s [%s]</span>" % (name, uuidmachine))
         msg.append("Action : Find out why xmppdeploy.json file is missing.")
@@ -1032,16 +1122,72 @@ def applicationdeploymentjson(self,
 
             data['advanced']['syncthing'] = 0
             result = None
+
             sessionid = self.send_session_command(jidrelay,
-                                                  "applicationdeploymentjson",
-                                                  data,
-                                                  datasession=None,
-                                                  encodebase64=False,
-                                                  prefix="command")
+                                                    "applicationdeploymentjson",
+                                                    data,
+                                                    datasession=None,
+                                                    encodebase64=False,
+                                                    prefix="command")
+
+            if self.send_hash is True:
+                try:
+                    self.mutexdeploy.acquire()
+                    if data['name'] in self.hastable:
+                        if (self.hastable[data['name']] + 10) > time:
+                            del self.hastable[data['name']]
+                    if not data['name'] in self.hastable:
+                        dest_not_hash = "/var/lib/pulse2/packages/sharing/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
+                        dest = "/var/lib/pulse2/packages/hash/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
+
+                        need_hash = False
+                        counter_no_hash = 0
+                        counter_hash = 0
+
+                        for file_not_hashed in dest_not_hash:
+                            counter_no_hash += 1
+
+                        if not os.path.exists(dest):
+                            need_hash = True
+                        else:
+                            if len(os.listdir(dest)) == 0:
+                                need_hash = True
+                            else:
+                                filelist = os.listdir(dest)
+                                for file_package in filelist:
+                                    file_package_no_hash = file_package.replace('.hash','')
+                                    counter_hash += 1
+                                    if os.path.getmtime(dest + "/" + file_package) < os.path.getmtime(dest_not_hash + "/" + file_package_no_hash):
+                                        need_hash = True
+                            if counter_hash != counter_no_hash:
+                                need_hash = True
+
+                        if need_hash == True:
+                            generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'], self.keyAES32)
+                        self.hastable[data['name']]= time
+                except Exception:
+                    logger.error("%s" % (traceback.format_exc()))
+                finally:
+                    self.mutexdeploy.release()
+                content = ""
+                try:
+                    with open(dest + ".hash", "rb") as infile:
+                        content += infile.read()
+                        data['hash'] = {}
+                        data['hash']['global'] = content
+                        data['hash']['type'] = self.hashing_algo
+
+                except IOError:
+                    logger.error("Pulse is configured to check integrity of packages but the hashes have not been generated")
+                    msg.append("<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>")
+                    sessiondeployementless = name_random(5, "hashmissing")
+                    sessionid = sessiondeployementless
+                    state = 'ERROR HASH MISSING'
+
     if wol >= 1:
-        avacedpara = 0
+        advancedparameter_syncthing = 0
     else:
-        avacedpara = data['advanced']['syncthing']
+        advancedparameter_syncthing = data['advanced']['syncthing']
     for msglog in msg:
         self.xmpplog(msglog,
                      type='deploy',
@@ -1068,7 +1214,8 @@ def applicationdeploymentjson(self,
                                    endcmd=end_date,
                                    macadress=macadress,
                                    result=result,
-                                   syncthing=avacedpara)
+                                   syncthing=advancedparameter_syncthing,
+                                   subdep=self.boundjid.user)
     if 'syncthing' not in  data['advanced'] or data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
@@ -1236,6 +1383,9 @@ def createsessionfordeploydiffered(self, data):
 def read_conf_loaddeployment(objectxmpp):
     # dictionary used for deploy
 
+    objectxmpp.mutexdeploy = threading.Lock()
+    objectxmpp.hastable = {}
+
     objectxmpp.wolglobal_set = set()  # use group wol
     #clean old folder session
     foldersession = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "sessiondeploysubstitute"))
@@ -1255,6 +1405,11 @@ def read_conf_loaddeployment(objectxmpp):
         objectxmpp.wol_interval = 60
         objectxmpp.session_check_interval = 15
         objectxmpp.recover_glpi_identifier_from_name = False
+        objectxmpp.force_redeploy = 1
+        objectxmpp.reschedule = 0
+        objectxmpp.send_hash = False
+        objectxmpp.hashing_algo = "sha256"
+        objectxmpp.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -1291,6 +1446,31 @@ def read_conf_loaddeployment(objectxmpp):
             objectxmpp.recover_glpi_identifier_from_name =  Config.getboolean('parameters', 'recover_glpi_identifier_from_name')
         else:
             objectxmpp.recover_glpi_identifier_from_name = False
+
+        if Config.has_option("parameters", "force_redeploy"):
+            objectxmpp.force_redeploy =  Config.getboolean('parameters', 'force_redeploy')
+        else:
+            objectxmpp.force_redeploy = 1
+
+        if Config.has_option("parameters", "reschedule"):
+            objectxmpp.reschedule =  Config.getboolean('parameters', 'reschedule')
+        else:
+            objectxmpp.reschedule = 0
+
+        if Config.has_option("parameters", "send_hash"):
+            objectxmpp.send_hash =  Config.getboolean('parameters', 'send_hash')
+        else:
+            objectxmpp.send_hash = False
+
+        if Config.has_option("parameters", "hashing_algo"):
+            objectxmpp.hashing_algo =  Config.get('parameters', 'hashing_algo')
+        else:
+            objectxmpp.hashing_algo = "sha256"
+
+        if Config.has_option("parameters", "keyAES32"):
+            objectxmpp.keyAES32 =  Config.get('parameters', 'keyAES32')
+        else:
+            objectxmpp.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
 
     # initialisation des object for deployement
 

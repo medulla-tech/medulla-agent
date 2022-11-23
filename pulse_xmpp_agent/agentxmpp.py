@@ -54,18 +54,20 @@ from lib.configuration import confParameter,\
 from lib.managesession import session
 from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
+from lib.managedbkiosk import manageskioskdb
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
                         call_plugin, subnetnetwork,\
                         createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
-                        save_count_start, test_kiosk_presence, file_get_contents,\
+                        save_count_start,unregister_agent, unregister_subscribe, test_kiosk_presence, file_get_contents,\
                         isBase64, connection_established, file_put_contents, \
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine, file_put_contents_w_a, os_version
+                        serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent, \
+                        offline_search_kb
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -75,12 +77,14 @@ from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_window
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
 from lib.httpserver import Controller
+from lib.grafcetdeploy import grafcet
 from zipfile import *
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
 from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
+from datetime import datetime
 
 from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
@@ -195,6 +199,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
+        laps_time_send_ping_to_kiosk = 350
         self.back_to_deploy = {}
         self.config = conf
 
@@ -255,7 +260,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except Exception as e:
                 logging.error('Cannot delete the directory %s : %s' % (self.img_agent, str(e)))
 
-        self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
+        self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True)
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
         self.descriptor_master = None
         if len(self.descriptorimage.get_md5_descriptor_agent()['program_agent']) == 0:
@@ -286,6 +291,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.agentupdating = True
             logging.warning("Agent installed is different from agent on master.")
         # END Update agent from Master#############################
+
+        if self.config.agenttype in ['machine']:
+            self.schedule('reinjection_deplot_message_box',
+                          30,
+                          self.reinjection_deplot_message_box,
+                          repeat=True)
+
+
+        # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
             self.levelcharge = {}
@@ -312,7 +326,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentmaster = jid.JID("master@pulse")
         self.sub_subscribe_all = []
         if not hasattr(self.config, 'sub_subscribe'):
-            self.sub_subscribe = self.agentmaster
+            self.sub_subscribe = jid.JID("master_subs@pulse")
         else:
             if isinstance(self.config.sub_subscribe, list):
                 self.sub_subscribe_all = [jid.JID(x) for x in self.config.sub_subscribe]
@@ -324,7 +338,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
         if not hasattr(self.config, 'sub_logger'):
-            self.sub_logger = self.agentmaster
+            self.sub_logger = jid.JID("master_log@pulse")
         else:
             if isinstance(self.config.sub_logger, list) and\
                 len(self.config.sub_logger) > 0:
@@ -333,10 +347,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_logger = jid.JID(self.config.sub_logger)
 
         if self.sub_subscribe.bare == "":
-            self.sub_subscribe = self.agentmaster
+            self.sub_subscribe = jid.JID("master_subs@pulse")
 
         if not hasattr(self.config, 'sub_inventory'):
-            self.sub_inventory = self.agentmaster
+            self.sub_inventory = jid.JID("master_inv@pulse")
         else:
             if isinstance(self.config.sub_inventory, list) and\
                 len(self.config.sub_inventory) > 0:
@@ -344,10 +358,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_inventory = jid.JID(self.config.sub_inventory)
         if self.sub_inventory.bare == "":
-            self.sub_inventory = self.agentmaster
+            self.sub_inventory = jid.JID("master_inv@pulse")
 
         if not hasattr(self.config, 'sub_registration'):
-            self.sub_registration = self.agentmaster
+            self.sub_registration = jid.JID("master_reg@pulse")
         else:
             if isinstance(self.config.sub_registration, list) and\
                 len(self.config.sub_registration) > 0:
@@ -355,10 +369,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_registration = jid.JID(self.config.sub_registration)
         if self.sub_registration.bare == "":
-            self.sub_registration = self.agentmaster
+            self.sub_registration = jid.JID("master_reg@pulse")
 
         if not hasattr(self.config, 'sub_monitoring'):
-            self.sub_monitoring = self.agentmaster
+            self.sub_monitoring = jid.JID("master_mon@pulse")
         else:
             if isinstance(self.config.sub_monitoring, list) and\
                 len(self.config.sub_monitoring) > 0:
@@ -366,7 +380,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_monitoring = jid.JID(self.config.sub_monitoring)
         if self.sub_monitoring.bare == "":
-            self.sub_monitoring = self.agentmaster
+            self.sub_monitoring = jid.JID("master_mon@pulse")
+
+        if not hasattr(self.config, 'sub_updates'):
+            self.sub_updates = jid.JID("master_upd@pulse")
+        else:
+            if isinstance(self.config.sub_updates, list) and\
+                len(self.config.sub_updates) > 0:
+                self.sub_updates = jid.JID(self.config.sub_updates[0])
+            else:
+                self.sub_updates = jid.JID(self.config.sub_updates)
+        if self.sub_updates.bare == "":
+            self.sub_updates = jid.JID("master_upd@pulse")
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:
@@ -404,6 +429,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # As long as the Relayserver Agent isn't started, the sesion queues
             # where the deploy has failed are not useful
             self.session.clearallfilesession()
+
+        if self.config.agenttype in ['machine']:
+            self.schedule('stabilized_start',
+                          120,
+                          self.stabilized_start,
+                          repeat=True)
+
+        self.schedule('subscription',
+                      120,
+                      self.subscribe_initialisation,
+                      repeat=False)
         self.reversessh = None
         self.reversesshmanage = {}
         self.signalinfo = {}
@@ -421,6 +457,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                           repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.eventkiosk = manage_kiosk_message(self.queue_recv_tcp_to_xmpp, self)
+        self.infolauncherkiook =  manageskioskdb()
+        self.kiosk_presence = "False"
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
@@ -479,6 +517,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 repeat=True)
         else:
             logging.warning("Network Changing disable")
+        if self.config.agenttype not in ['relayserver']:
+            if self.config.sched_send_ping_kiosk:
+                self.schedule('send_ping', laps_time_send_ping_to_kiosk,
+                            self.send_ping_to_kiosk,
+                            repeat=True)
         if self.config.sched_update_agent:
             self.schedule('check AGENT INSTALL', 350,
                         self.checkinstallagent,
@@ -601,6 +644,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         self.initialise_syncthing,
                         repeat=False)
 
+    def stabilized_start(self):
+        """
+            It creates a file called BOOL_FILE_CONTROL_WATCH_DOG with
+            inside the pid and a date when it has been created.
+            It is used to see if the program runs correctly.
+        """
+        directory_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                  "INFOSTMP")
+        BOOL_FILE_CONTROL_WATCH_DOG = os.path.join(directory_file,
+                                                   "BOOL_FILE_CONTROL_WATCH_DOG")
+        pidprocess="process %s :(%s)" % (os.getpid(), str(datetime.now()))
+        logger.debug("creation %s [pid %s]" % (BOOL_FILE_CONTROL_WATCH_DOG,pidprocess ))
+        file_put_contents(BOOL_FILE_CONTROL_WATCH_DOG,pidprocess)
+
+        logger.debug("creation BOOL_FILE_CONTROL_WATCH_DOG in %s" % BOOL_FILE_CONTROL_WATCH_DOG)
+
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
         dataerreur={"action": "resultqdeploy",
@@ -626,6 +685,38 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     transfertdeploy['data'],
                     msg,
                     dataerreur)
+
+    def reinjection_deplot_message_box(self):
+        # creation repertoire si probleme
+        dir_reprise_session = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+                "lib",
+                "INFOSTMP",
+                "REPRISE")
+        if not os.path.exists(dir_reprise_session):
+            os.makedirs(dir_reprise_session, mode=0o007)
+
+        # lit repertoire de fichier
+        filelist = [ x for x in os.listdir(dir_reprise_session) \
+                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_messagebox')]
+
+        for t in filelist:
+            logger.debug("t %s" % filelist)
+            detection=t.split('@_@')
+            if len(detection) == 5 and time.time() > float(detection[1]):
+                # on relance le deployement et on quitte
+                # on recharche le json
+                with open(os.path.join(dir_reprise_session, t), 'r') as f:
+                    data = json.load(f)
+                os.remove(os.path.join(dir_reprise_session, t))
+
+                try:
+                    grafcet(self, data)
+                except:
+                    logger.error("\n%s"%(traceback.format_exc()))
+
+                return
 
     ###############################################################
     # syncthing function
@@ -1055,7 +1146,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except IqError as e:
                 err_resp = e.iq
                 logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
-                logger.debug("\n%s" % (traceback.format_exc()))
+                #logger.warning("traceback info\n%s" % (traceback.format_exc()))
                 return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
             except IqTimeout:
@@ -1066,6 +1157,58 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("\n%s" % (traceback.format_exc()))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
+
+    def send_ping_to_kiosk(self):
+        """Send a ping to the kiosk  to ask it's presence"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', 8766)
+        try:
+            sock.connect(server_address)
+            try:
+                msg = '{"action":"presence","type":"ping"}'
+                sock.sendall(msg.encode('ascii'))
+                self.kiosk_presence = "True"
+            except:
+                self.kiosk_presence = "False"
+        except:
+            self.kiosk_presence = "False"
+        finally:
+            sock.close()
+        datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+
+        datasend['data']['subaction'] = "presence"
+        datasend['data']['value'] = self.kiosk_presence
+        self.send_message_to_master(datasend)
+
+    def send_pong_to_kiosk(self):
+        """Send a pong to the kiosk  to answer to ping presence"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', 8766)
+        try:
+            sock.connect(server_address)
+            try:
+                msg = '{"action":"presence","type":"pong"}'
+                sock.sendall(msg.encode('ascii'))
+                self.kiosk_presence = "True"
+            except:
+                self.kiosk_presence = "False"
+        except:
+            self.kiosk_presence = "False"
+        finally:
+            sock.close()
+
+        datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+        datasend['data']['subaction'] = "presence"
+        datasend['data']['value'] = self.kiosk_presence
+        self.send_message_to_master(datasend)
 
     def handle_client_connection(self, client_socket):
         """
@@ -1105,7 +1248,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         #start kiosk ask initialization
                         datasend['data']['subaction'] =  result['subaction']
                         datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
-                        datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'])
+                        datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'][0])
                         datasend['data']['oumachine'] = organizationbymachine()
                     elif result['action'] == 'kioskinterfaceInstall':
                         datasend['data']['subaction'] =  'install'
@@ -1115,6 +1258,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         datasend['data']['subaction'] =  'delete'
                     elif result['action'] == 'kioskinterfaceUpdate':
                         datasend['data']['subaction'] =  'update'
+                    elif result['action'] == 'presence':
+                        if result['type'] == "ping":
+                            # Send pong message
+                            self.kiosk_presence = "True"
+                            self.send_pong_to_kiosk()
+                            logging.getLogger().info("Sendback pong message to kiosk")
+                        elif result['type'] == 'pong':
+                            # Set the kiosk_presence variable to True
+                            logging.getLogger().info("Receive pong message from kiosk")
+                            self.kiosk_presence = "True"
+
+                        else:
+                            # Ignore the others messages
+                            pass
+                        datasend['data']['subaction'] = "presence"
+                        datasend['data']['value'] = self.kiosk_presence
+
                     elif result['action'] == 'kioskLog':
                         if 'message' in result and result['message'] != "":
                             self.xmpplog(
@@ -1458,20 +1618,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.manage_scheduler.process_on_event()
 
     def presence_subscribe(self, presence):
-        logger.info("**********   presence_subscribe %s %s"%(presence['from'],presence['type'] ))
+        if presence['from'].bare != self.boundjid.bare:
+            logger.info("********** presence_subscribe %s %s"%(presence['from'],presence['type'] ))
 
     def presence_subscribed(self, presence):
-        logger.info("**********   presence_subscribed %s %s"%(presence['from'],presence['type'] ))
+        if presence['from'].bare != self.boundjid.bare:
+            logger.info("********** presence_subscribed %s %s"%(presence['from'],presence['type'] ))
 
     def changed_subscription(self, presence):
-        logger.info("**********   changed_subscription %s %s"%(presence['from'],presence['type'] ))
+        if presence['from'].bare != self.boundjid.bare:
+            logger.info("********** changed_subscription %s %s"%(presence['from'],presence['type'] ))
 
     def presence_unavailable(self, presence):
-        logger.info("**********   presence_unavailable %s %s"%(presence['from'],presence['type'] ))
+        if presence['from'].bare != self.boundjid.bare:
+            logger.info("********** presence_unavailable %s %s"%(presence['from'],presence['type'] ))
 
     def presence_available(self, presence):
-        logger.info("**********   presence_available %s %s"%(presence['from'],presence['type'] ))
-        self.unsubscribe_agent()
+        if presence['from'].bare != self.boundjid.bare:
+            logger.info("********** presence_available %s %s"%(presence['from'],presence['type'] ))
+            self.unsubscribe_agent()
 
     def presence_unsubscribe(self, presence):
         logger.info("**********   presence_unsubscribe %s %s"%(presence['from'],presence['type'] ))
@@ -1494,104 +1659,125 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def unsubscribe_agent(self):
         try:
-            keyroster = str(self.boundjid.bare)
-            if keyroster in self.roster:
-                for t in self.roster[keyroster]:
-                    if t == self.boundjid.bare or t in [self.sub_subscribe]:
-                        continue
-                    self.limit_message_presence_clean_substitute.append(t)
-                    self.send_presence ( pto = t, ptype = 'unsubscribe' )
-                    self.update_roster(t, subscription='remove')
+            for t in self.client_roster:
+                if t == self.boundjid.bare or t in [self.sub_subscribe]:
+                    continue
+                logger.info("Unsubscribe agent %s" % t)
+                self.send_presence ( pto = t, ptype = 'unsubscribe' )
+                self.update_roster(t, subscription='remove')
         except Exception:
             logger.error("\n%s"%(traceback.format_exc()))
 
-    def unsubscribe_substitute_subscribe(self):
-        """
-        This function is used to unsubscribe the substitute subscribe
-        It sends a presence message with type "unsubscribe"
-        """
-        try:
-            keyroster = str(self.boundjid.bare)
-            for sub_subscribed in self.sub_subscribe_all:
-                if sub_subscribed == self.boundjid.bare or sub_subscribed == self.sub_subscribe:
-                    continue
-                if sub_subscribed not in  self.limit_message_presence_clean_substitute:
-                    self.send_presence (pto=sub_subscribed, ptype='unsubscribe')
-                    self.update_roster(sub_subscribed, subscription='remove')
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
+
+    def subscribe_initialisation(self):
+        self.unsubscribe_agent()
+        logger.info("The client roster is %s " % self.client_roster.keys())
+        logger.info("The roster is %s " % self.roster)
+        self.xmpplog("%s roster is  %s" % (self.config.agenttype, self.sub_subscribe),
+                    type='info',
+                    sessionname="",
+                    priority=-1,
+                    action="xmpplog",
+                    who=self.boundjid.bare,
+                    how="",
+                    why="",
+                    date=None ,
+                    fromuser=self.boundjid.bare,
+                    touser="")
 
     def start(self, event):
-        self.get_roster()
+        new_list = self.sub_subscribe_all[:]
+        new_list.pop(0)
+        for t in new_list:
+            logger.info("unsubscribe  %s agent" % t)
+            self.send_presence ( pto = t, ptype = 'unsubscribe' )
+
         self.send_presence()
-        logger.info("subscribe to %s agent" % self.sub_subscribe.user)
-        self.limit_message_presence_clean_substitute = []
+        logger.info("Subscribe %s" % self.sub_subscribe)
+        self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
+        logger.info("get_roster")
+        self.get_roster()
+
         self.ipconnection = self.config.Server
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        self.unsubscribe_agent()
-        self.unsubscribe_substitute_subscribe()
 
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
-        if  self.config.agenttype in ['relayserver']:
+        if self.config.agenttype in ['relayserver']:
             try:
                 if self.config.public_ip_relayserver != "":
-                    logging.log(DEBUGPULSE,"Attribution ip public by configuration for ipconnexion: [%s]"%self.config.public_ip_relayserver)
+                    logging.log(DEBUGPULSE,"Attribution ip public by configuration for ipconnexion: [%s]" % self.config.public_ip_relayserver)
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
-
-        self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
-        logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
-
-        self.xmpplog("Starting %s agent" % self.config.agenttype,
-                    type = 'info',
-                    sessionname = "",
-                    priority = -1,
-                    action = "xmpplog",
-                    who = self.boundjid.bare,
-                    how = "",
-                    why = "",
-                    date = None ,
-                    fromuser = self.boundjid.bare,
-                    touser = "")
-        #notify master conf error in AM
-        dataerrornotify = {
-                            'to': self.boundjid.bare,
-                            'action': "notify",
-                            "sessionid" : getRandomName(6, "notify"),
-                            'data': { 'msg': "",
-                                       'type': 'error'
-                                      },
+        else:
+            result, jid_struct = unregister_agent(self.boundjid.user,
+                                                  self.boundjid.domain,
+                                                  self.boundjid.resource)
+            if result:
+                # We need to unregistrer jid_struct
+                # send unregistered user to ars old domain
+                ars = "rs%s@%s"%(jid_struct['domain'].strip(), jid_struct['domain'].strip())
+                datasend = {'action': 'unregister_agent',
+                            'sessionid': getRandomName(6, "unregister_agent"),
+                            'data': jid_struct,
                             'ret': 0,
-                            'base64': False
-                    }
+                            'base64': False }
+                self.send_message(mbody=json.dumps(datasend),
+                                  mto=ars,
+                                  mtype='chat')
+        self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0]
+
+        self.xmpplog("Starting %s agent -> subscription agent is %s" % (self.config.agenttype, self.sub_subscribe),
+                     type='info',
+                     sessionname="",
+                     priority=-1,
+                     action="xmpplog",
+                     who=self.boundjid.bare,
+                     how="",
+                     why="",
+                     date=None ,
+                     fromuser=self.boundjid.bare,
+                     touser="")
+        #notify master conf error in AM
+        dataerrornotify = {'to': self.boundjid.bare,
+                           'action': "notify",
+                           "sessionid": getRandomName(6, "notify"),
+                           'data': {'msg': "",
+                                    'type': 'error'
+                                   },
+                           'ret': 0,
+                           'base64': False
+                          }
+        try:
+            self.send_ping_to_kiosk()
+        except Exception:
+            pass
 
         if not os.path.isdir(self.config.defaultdir):
-            dataerrornotify['data']['msg'] =  "Configurateur error browserfile on machine %s: defaultdir %s does not exit\n"%(self.boundjid.bare, self.config.defaultdir)
+            dataerrornotify['data']['msg'] = "An error occured while configuring the browserfile. The default dir %s does not exist on %s." % (self.boundjid.bare, self.config.defaultdir)
             self.send_message(  mto = self.agentmaster,
                                 mbody = json.dumps(dataerrornotify),
                                 mtype = 'chat')
 
         if not os.path.isdir(self.config.rootfilesystem):
-            dataerrornotify['data']['msg'] += "Configurateur error browserfile on machine %s: rootfilesystem %s does not exit"%(self.boundjid.bare, self.config.rootfilesystem)
-        #send notify
-        if dataerrornotify['data']['msg'] !="":
-            self.send_message(  mto = self.agentmaster,
-                                    mbody = json.dumps(dataerrornotify),
-                                    mtype = 'chat')
+            dataerrornotify['data']['msg'] = "An error occured while configuring the browserfile. The rootfilesystem dir %s does not exist on %s." % (self.boundjid.bare, self.config.rootfilesystem)
+        if dataerrornotify['data']['msg'] != "":
+            self.send_message(mto=self.agentmaster,
+                              mbody=json.dumps(dataerrornotify),
+                              mtype='chat')
         #call plugin start
         startparameter={
             "action": "start",
-            "sessionid" : getRandomName(6, "start"),
-            "ret" : 0,
-            "base64" : False,
-            "data" : {}}
-        dataerreur={ "action" : "result" + startparameter["action"],
-                     "data" : { "msg" : "error plugin : "+ startparameter["action"]},
-                     'sessionid': startparameter['sessionid'],
-                     'ret': 255,
-                     'base64': False}
-        msg = {'from': self.boundjid.bare, "to" : self.boundjid.bare, 'type': 'chat' }
+            "sessionid": getRandomName(6, "start"),
+            "ret": 0,
+            "base64": False,
+            "data": {}}
+        dataerreur={"action": "result" + startparameter["action"],
+                    "data": { "msg" : "error plugin : " + startparameter["action"]},
+                    'sessionid': startparameter['sessionid'],
+                    'ret': 255,
+                    'base64': False}
+        msg = {'from': self.boundjid.bare, "to": self.boundjid.bare, 'type': 'chat'}
         if 'data' not in startparameter:
             startparameter['data'] = {}
         call_plugin(startparameter["action"],
@@ -1605,14 +1791,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def call_plugin_differed(self, time_differed = 5):
         try:
             for pluginname in self.paramsdict:
-                self.schedule(  pluginname["descriptor"]["action"],
-                                time_differed ,
-                                self.call_plugin_deffered_mode,
-                                repeat=False,
-                                kwargs = {},
-                                args=())
+                self.schedule(pluginname["descriptor"]["action"],
+                              time_differed,
+                              self.call_plugin_deffered_mode,
+                              repeat=False,
+                              kwargs={},
+                              args=())
         except Exception:
-            logger.error("\n%s"%(traceback.format_exc()))
+            logger.error("An error occured whild calling the function call_plugin_differed.")
+            logger.error("We encountered the backtrace: \n%s" % (traceback.format_exc()))
 
     def call_plugin_deffered_mode(self, *args, **kwargs):
         try:
@@ -1625,7 +1812,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         newparams["msg"],
                         newparams["errordescriptor"])
         except Exception:
-            logger.error("\n%s"%(traceback.format_exc()))
+            logger.error("An error occured whild calling the function call_plugin_deffered_mode.")
+            logger.error("We encountered the backtrace: \n%s" % (traceback.format_exc()))
 
 
     def initialise_syncthing(self):
@@ -1637,7 +1825,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except NameError:
             self.config.syncthing_on = False
 
-        ################################### initialise syncthing ###################################
+        # Syncthing initialisation
         if self.config.syncthing_on:
             if self.config.agenttype not in ['relayserver']:
                 if self.config.sched_check_syncthing_deployment:
@@ -1663,29 +1851,27 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         pass
             except Exception as e:
                 logging.error("syncthing initialisation : %s" % str(e))
-                logger.error("\n%s"% traceback.format_exc())
+                logger.error("\n%s" % traceback.format_exc())
                 logger.error("Syncthing is not functionnal. Using the degraded mode")
-            #self.syncthing = syncthing(configfile = fichierconfsyncthing)
-        ################################### syncthing ###################################
 
-    def send_message_agent( self,
-                            mto,
-                            mbody,
-                            msubject=None,
-                            mtype=None,
-                            mhtml=None,
-                            mfrom=None,
-                            mnick=None):
+    def send_message_agent(self,
+                           mto,
+                           mbody,
+                           msubject=None,
+                           mtype=None,
+                           mhtml=None,
+                           mfrom=None,
+                           mnick=None):
         if mto != "console":
-            print "send command %s"%json.dumps(mbody)
-            self.send_message(  mto,
-                                json.dumps(mbody),
-                                msubject,
-                                mtype,
-                                mhtml,
-                                mfrom,
-                                mnick)
-        else :
+            print "send command %s" % json.dumps(mbody)
+            self.send_message(mto,
+                              json.dumps(mbody),
+                              msubject,
+                              mtype,
+                              mhtml,
+                              mfrom,
+                              mnick)
+        else:
             if self.config.agenttype in ['relayserver']:
                 q = self.qoutARS
             else:
@@ -1695,7 +1881,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 while not q.empty():
                     q.get()
             else:
-                try :
+                try:
                     q.put(json.dumps(mbody), True, 10)
                 except Exception:
                     print "put in queue impossible"
@@ -2349,7 +2535,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'kiosk_presence': test_kiosk_presence(),
             'countstart': save_count_start(),
             'keysyncthing': self.deviceid,
-            'uuid_serial_machine' : serialnumbermachine()
+            'uuid_serial_machine' : serialnumbermachine(),
+            "system_info" : offline_search_kb().get(),
         }
         try:
             dataobj['md5_conf_monitoring'] = ""
@@ -2380,9 +2567,12 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     dataobj['packageserver']['public_ip'] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
+
+        md5agentversion = Update_Remote_Agent(self.pathagent, True ).get_fingerprint_agent_base()
+        dataobj['md5agentversion'] = md5agentversion
         ###################Update agent from MAster#############################
         if self.config.updating == 1:
-            dataobj['md5agent'] = Update_Remote_Agent(self.pathagent, True ).get_fingerprint_agent_base()
+            dataobj['md5agent'] = md5agentversion
         ###################End Update agent from MAster#############################
         #todo determination lastusersession to review
         lastusersession = ""

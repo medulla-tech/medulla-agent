@@ -148,6 +148,7 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler_relay.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/start_relay.ini
 %_var/log/pulse
 %dir %{python2_sitelib}/pulse_xmpp_agent/
 %{python2_sitelib}/pulse_xmpp_agent/lib/
@@ -185,6 +186,8 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
+%_var/lib/pulse2/script_monitoring/
 
 
 #--------------------------------------------------------------------
@@ -234,6 +237,7 @@ if [ $1 == 2 ]; then
         %_var/lib/pulse2/clients/generate-pulse-agent.sh
         %_var/lib/pulse2/clients/generate-pulse-agent.sh --minimal
         %_var/lib/pulse2/clients/generate-agent-package
+        %_var/lib/pulse2/clients/generate-kiosk-package
     fi
 fi
 
@@ -242,10 +246,11 @@ fi
 %config(noreplace) %_var/lib/pulse2/clients/config/agentconf.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler_machine.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
-%config(noreplace) %_var/lib/pulse2/clients/config/start.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/start_machine.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/startupdate.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/updateopenssh.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/updatetightvnc.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/updatebackupclient.ini
 %attr(0755,syncthing,syncthing)  %_var/lib/pulse2/xmpp_baseremoteagent/
 
 #--------------------------------------------------------------------
@@ -331,6 +336,7 @@ cp pulse_xmpp_agent/config/wakeonlan.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/relayconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/manage_scheduler_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
+cp pulse_xmpp_agent/config/start_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
@@ -390,12 +396,14 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/manage_scheduler_machine.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/inventory.ini %buildroot%_var/lib/pulse2/clients/config/
-cp pulse_xmpp_agent/config/start.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/start_machine.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/startupdate.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/updatebackupclient.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
+cp scripts_installer/generate-kiosk-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/HEADER.html %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/style.css %buildroot%_var/lib/pulse2/clients
 mkdir -p %buildroot%_var/lib/pulse2/clients/win
@@ -424,9 +432,15 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork
 cp -fr scripts_installer/win/artwork/* %buildroot%_var/lib/pulse2/clients/win/artwork
 chmod +x %buildroot%_var/lib/pulse2/clients/*.sh
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-package
+chmod +x %buildroot%_var/lib/pulse2/clients/generate-kiosk-package
 cp pulse_xmpp_agent/script/create-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/script/remove-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/powershell-policy-remotesigned.pol %buildroot%_var/lib/pulse2/clients/win/
+mkdir -p %buildroot%_var/lib/pulse2/script_monitoring
+cp -fv contrib/monitoring/* %buildroot%_var/lib/pulse2/script_monitoring/
+cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
+cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
+cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
