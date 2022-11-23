@@ -1935,13 +1935,13 @@ class grafcet:
                 # command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
 
                 command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
-                """pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py"""\
+                """C:\Python27\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py"""\
                 """ -M "%s"  -B"%s" -t %s -Y "%s" -S%s -s%s -c""" % (message,
                 titlemessage,
                 self.workingstep['timeout'],
+                self.workingstep['textbuttonyes'],
                 int(self.workingstep['sizeheader']),
-                int(self.workingstep['sizemessage']),
-                self.workingstep['textbuttonyes'])
+                int(self.workingstep['sizemessage']))
                 logging.debug("command on windows %s" % command)
             elif sys.platform.startswith('darwin'):
                 logging.debug("command on darwin")
@@ -2017,7 +2017,7 @@ class grafcet:
             elif sys.platform.startswith('win'):
 
                 command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
-                """pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c""" % (message,
+                """"C:\Python27\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c""" % (message,
                 titlemessage,
                 self.workingstep['timeout'],
                 self.workingstep['textbuttonyes'],
@@ -2181,7 +2181,7 @@ class grafcet:
             elif sys.platform.startswith('win'):
 
                 command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
-                """pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c""" % (message,
+                """C:\Python27\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c""" % (message,
                 titlemessage,
                 self.workingstep['timeout'],
                 self.workingstep['textbuttonyes'],
