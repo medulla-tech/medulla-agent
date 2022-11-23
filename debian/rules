@@ -180,6 +180,6 @@ override_dh_auto_install:
 	cp scripts_installer/win/powershell-policy-remotesigned.pol $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/script_monitoring
 	cp -fv contrib/monitoring/* $(CURDIR)/debian/tmp/var/lib/pulse2/script_monitoring/
-	cp bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
-	cp bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/
-	cp bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/
+	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
+	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/
+	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/
