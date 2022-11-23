@@ -51,7 +51,6 @@ def check_if_binary_ok():
     if sys.platform.startswith('win'):
         regedit = False
         binary = False
-        is_service_installed = False
         reinstall = False
 
         # We check if we have the Regedit entry
