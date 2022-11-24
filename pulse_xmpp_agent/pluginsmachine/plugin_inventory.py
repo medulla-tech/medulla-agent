@@ -51,7 +51,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
     try:
-        send_pluging_update_window(xmppobject)
+        send_plugin_update_window(xmppobject)
     except Exception as e:
         logger.error("\n%s" % (traceback.format_exc()))
 
@@ -704,7 +704,7 @@ def printer_string(terminal,
     return "%s\n</PRINTERS>" % (xmlprinter)
 
 
-def send_pluging_update_window(xmppobject):
+def send_plugin_update_window(xmppobject):
 
         sessioniddata = utils.getRandomName(6, "update_window")
         try:
