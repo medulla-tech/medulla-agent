@@ -733,10 +733,10 @@ if __name__ == '__main__':
         print "Agent must be running as root"
         sys.exit(0)
     elif sys.platform.startswith('win') and isWinUserAdmin() == 0 :
-        print "Pulse agent must be running as Administrator"
+        print "Medulla agent must be running as Administrator"
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        print "Pulse agent must be running as root"
+        print "Medulla agent must be running as root"
         sys.exit(0)
 
     optp = OptionParser()

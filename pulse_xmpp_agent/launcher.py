@@ -73,7 +73,7 @@ class global_data_process:
 
     def load_child_process(self):
         """
-            This function checks the pid of the pulse agent
+            This function checks the pid of the medulla agent
             children processes
 
             This is a Linux and Darwin only function.
@@ -467,7 +467,7 @@ class install_rescue_image:
 
     def reinstall_agent_rescue(self):
         """
-            It reinstalls a working Pulse Agent based on the rescue copy.
+            It reinstalls a working Medulla Agent based on the rescue copy.
         """
         self.info.clean_agent_src()
         logger.debug('We are reinstalling the file agentversion')

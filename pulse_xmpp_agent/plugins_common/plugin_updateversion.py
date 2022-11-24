@@ -50,7 +50,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     logger.debug("Version AGENT is " + version)
                     import _winreg
                     key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
+                                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Medulla Agent\\",
                                         0 ,
                                         _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
                     _winreg.SetValueEx ( key,
