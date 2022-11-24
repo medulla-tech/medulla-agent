@@ -89,16 +89,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_inventory
     except :
         xmppobject.sub_inventory = jid.JID("master_inv@pulse")
-    #try:
-        #xmppobject.sub_updates
-    #except :
-        #xmppobject.sub_updates = jid.JID("master_upd@pulse")
-    xmppobject.sub_updates=xmppobject.sub_inventory
     try:
-        send_pluging_update_window(xmppobject)
-    except Exception as e:
-        logger.error("\n%s" % (traceback.format_exc()))
-
+        xmppobject.sub_updates
+    except :
+        xmppobject.sub_updates = jid.JID("master_upd@pulse")
     resultaction = "result%s" % action
     result = {}
     result['action'] = resultaction
