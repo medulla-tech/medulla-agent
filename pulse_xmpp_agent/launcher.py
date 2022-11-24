@@ -996,7 +996,7 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
     modeagent = " -c " if console else ""
     logger.debug('AGENT %s'%agent)
     if agent == "connection" :
-        logger.debug("start agent connection")
+        logger.debug("Starting configuration agent")
 
         if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
             logger.debug('launcher for os system  %s %s%s -t %s' % (pythonexec,
@@ -1014,6 +1014,8 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
             os.system('python %s%s -t %s' % (agentfunction,
                                              modeagent,
                                              typeagent))
+        logger.debug("Refreshing fingerprint of configuration agent after its reconfiguration")
+        refreshfingerprintconf("machine")
     else:
         logger.debug("start agent machine ")
         ProcessData = global_data_process()
@@ -1129,14 +1131,16 @@ if __name__ == '__main__':
     namefileconfig = conffilename(opts.typemachine)
     if not os.path.isfile(namefileconfig):
         # The pulseagent config file is missing. We need to reinstall the rescue.
+        logger.debug("The configuration file %s is missing. Trying to reinstall the rescue agent." % namefileconfig)
         ret = install_rescue_image().reinstall_agent_rescue()
 
-    if not testagentconf(opts.typemachine):
+    # first start network changed
+    networkchanged = networkchanged()
+    if not networkchanged and not testagentconf(opts.typemachine):
         logger.debug("Some configuration options are missing. You may need to add guacamole_baseurl connection/port/server' or global/relayserver_agent")
         logger.debug("We need to reconfigure")
         ret = install_rescue_image().reinstall_agent_rescue()
 
-    networkchanged = networkchanged()
     if networkchanged:
         logger.debug("The network changed. We need to reconfigure")
         refreshfingerprint()
