@@ -253,11 +253,11 @@ for MODULE_FILENAME in ${MODULES_LIST_FILENAMES}; do
 done
 
 
-### Pulse agent and plugins
+### Medulla agent and plugins
 
 echo
 echo "#########################"
-echo "6. INSTALLING PULSE AGENT"
+echo "6. INSTALLING MEDULLA AGENT"
 echo "#########################"
 echo
 
@@ -339,7 +339,7 @@ chown root:wheel /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
 chmod 644 /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
 
 # Load the service
-echo 'Loading Pulse Agent Service'
+echo 'Loading Medulla Agent Service'
 launchctl unload /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
 launchctl load /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
 

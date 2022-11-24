@@ -2694,7 +2694,7 @@ def create_idrsa_on_client(username='pulseuser', key=''):
 def apply_perms_sshkey(path, private=True):
     """
     Apply permissions on ssh key.
-    If private = True, the permissions are based on the user that is executing Pulse Agent
+    If private = True, the permissions are based on the user that is executing Medulla Agent
     If private = False, the permissions are based on pulseuser
     """
     if not os.path.isfile(path):
