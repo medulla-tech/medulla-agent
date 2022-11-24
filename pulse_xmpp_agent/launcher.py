@@ -996,7 +996,7 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
     modeagent = " -c " if console else ""
     logger.debug('AGENT %s'%agent)
     if agent == "connection" :
-        logger.debug("start agent connection")
+        logger.debug("Starting configuration agent")
 
         if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
             logger.debug('launcher for os system  %s %s%s -t %s' % (pythonexec,
@@ -1014,7 +1014,7 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
             os.system('python %s%s -t %s' % (agentfunction,
                                              modeagent,
                                              typeagent))
-        logger.debug("after reconf creation refresh finger print conf agent machine")
+        logger.debug("Refreshing fingerprint of configuration agent after its reconfiguration")
         refreshfingerprintconf("machine")
     else:
         logger.debug("start agent machine ")
@@ -1131,7 +1131,7 @@ if __name__ == '__main__':
     namefileconfig = conffilename(opts.typemachine)
     if not os.path.isfile(namefileconfig):
         # The pulseagent config file is missing. We need to reinstall the rescue.
-        logger.debug("file configuration missing %s try reinstall agent rescue" % namefileconfig)
+        logger.debug("The configuration file %s is missing. Trying to reinstall the rescue agent." % namefileconfig)
         ret = install_rescue_image().reinstall_agent_rescue()
 
     # first start network changed
