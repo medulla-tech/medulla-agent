@@ -143,9 +143,9 @@ sed_escape() {
 update_installer_scripts() {
 	colored_echo blue "### INFO Updating installer scripts..."
     if [[ ${MINIMAL} -eq 1 ]]; then
-        GENERATED_FILE="Pulse-Agent-linux-MINIMAL-${AGENT_VERSION}"
+        GENERATED_FILE="Medulla-Agent-linux-MINIMAL-${AGENT_VERSION}"
 	else
-        GENERATED_FILE="Pulse-Agent-linux-FULL-${AGENT_VERSION}"
+        GENERATED_FILE="Medulla-Agent-linux-FULL-${AGENT_VERSION}"
 	fi
     if [[ "${INVENTORY_TAG}" == "" ]]; then
         GENERATED_FILE="${GENERATED_FILE}.sh"
@@ -173,9 +173,9 @@ update_installer_scripts() {
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then
         if [[ ${MINIMAL} -eq 1 ]]; then
-            ln -s -f Pulse-Agent-linux-MINIMAL-${AGENT_VERSION}.sh Pulse-Agent-linux-MINIMAL-latest.sh
+            ln -s -f Medulla-Agent-linux-MINIMAL-${AGENT_VERSION}.sh Medulla-Agent-linux-MINIMAL-latest.sh
         else
-            ln -s -f Pulse-Agent-linux-FULL-${AGENT_VERSION}.sh Pulse-Agent-linux-FULL-latest.sh
+            ln -s -f Medulla-Agent-linux-FULL-${AGENT_VERSION}.sh Medulla-Agent-linux-FULL-latest.sh
         fi
     fi
 	colored_echo green "### INFO Updating installer scripts... Done"

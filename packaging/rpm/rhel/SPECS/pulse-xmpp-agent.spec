@@ -215,7 +215,7 @@ Requires(pre): pulse-filetree-generator
 Files to create pulse windows installer
 
 %pre -n pulse-agent-installers
-rm -fv /var/lib/pulse2/imaging/postinst/winutils/Pulse-Agent*latest*
+rm -fv /var/lib/pulse2/imaging/postinst/winutils/Medulla-Agent*latest*
 
 if [ ! -d "/var/lib/pulse2/clients/win" ]; then
     mkdir /var/lib/pulse2/clients/win

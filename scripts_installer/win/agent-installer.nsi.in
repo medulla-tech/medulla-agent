@@ -114,9 +114,9 @@ Var FIREWALL
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
-  OutFile "Pulse-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}.exe"
+  OutFile "Medulla-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}.exe"
 !Else
-  OutFile "Pulse-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}-${INVENTORY_TAG}.exe"
+  OutFile "Medulla-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}-${INVENTORY_TAG}.exe"
 !EndIf
 !If "$PROGRAMFILES64" != ""
   InstallDir "$PROGRAMFILES64\Pulse"

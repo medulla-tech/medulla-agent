@@ -389,13 +389,13 @@ generate_agent_installer() {
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then
         if [[ ${MINIMAL} -eq 1 ]]; then
-	    ln -s -f Pulse-Agent-windows-MINIMAL-${AGENT_VERSION}.exe Pulse-Agent-windows-MINIMAL-latest.exe
+	    ln -s -f Medulla-Agent-windows-MINIMAL-${AGENT_VERSION}.exe Medulla-Agent-windows-MINIMAL-latest.exe
         else
-	    ln -s -f Pulse-Agent-windows-FULL-${AGENT_VERSION}.exe Pulse-Agent-windows-FULL-latest.exe
+	    ln -s -f Medulla-Agent-windows-FULL-${AGENT_VERSION}.exe Medulla-Agent-windows-FULL-latest.exe
         fi
     fi
 
-    for package in Pulse-Agent-windows-MINIMAL-latest Pulse-Agent-windows-FULL-latest;
+    for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
     do
         cp -fv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
     done
