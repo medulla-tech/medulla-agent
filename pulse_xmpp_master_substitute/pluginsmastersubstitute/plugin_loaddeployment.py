@@ -1093,13 +1093,6 @@ def applicationdeploymentjson(self,
             data['advanced']['syncthing'] = 0
             result = None
 
-            sessionid = self.send_session_command(jidrelay,
-                                                    "applicationdeploymentjson",
-                                                    data,
-                                                    datasession=None,
-                                                    encodebase64=False,
-                                                    prefix="command")
-
             if self.send_hash is True:
                 try:
                     self.mutexdeploy.acquire()
@@ -1153,6 +1146,14 @@ def applicationdeploymentjson(self,
                     sessiondeployementless = name_random(5, "hashmissing")
                     sessionid = sessiondeployementless
                     state = 'ERROR HASH MISSING'
+                    
+            if state != 'ERROR HASH MISSING':
+                sessionid = self.send_session_command(jidrelay,
+                                                        "applicationdeploymentjson",
+                                                        data,
+                                                        datasession=None,
+                                                        encodebase64=False,
+                                                        prefix="command")
 
     if wol >= 1:
         advancedparameter_syncthing = 0
