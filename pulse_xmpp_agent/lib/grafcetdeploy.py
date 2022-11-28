@@ -588,24 +588,15 @@ class grafcet:
 
             #print "signal grafcet terminate%s" % datapackage
 
-            self.objectxmpp.send_message(mto=mach,
+            if shutdownmachine:
+                self.__affiche_message('DEPLOYMENT TERMINATE and shutdown machine',
+                                        module="Deployment | Terminate | Notify")
+            else:
+                self.objectxmpp.send_message(mto=mach,
                                         mbody=json.dumps(datapackage,
                                                         encoding="utf-8"),
                                         mtype='chat')
 
-            if shutdownmachine or restarmachine:
-                self.objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
-                                        type='deploy',
-                                        sessionname=self.sessionid,
-                                        priority=-2,
-                                        action="xmpplog",
-                                        who=self.objectxmpp.boundjid.bare,
-                                        how="",
-                                        why="",
-                                        module="Deployment | Error | Terminate | Notify",
-                                        date=None,
-                                        fromuser=login,
-                                        touser="")
         except Exception:
             logging.getLogger().error(str(e))
             err = str( traceback.format_exc())
