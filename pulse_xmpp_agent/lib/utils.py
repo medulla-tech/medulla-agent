@@ -1547,8 +1547,8 @@ def shutdown_command(time=0, msg=''):
 
     """
     if msg != "":
-        msg=msg.strip("\" ")
-        msg ='"%s"'%msg
+        msg = msg.strip("\" ")
+        msg = '"%s"' % msg
     if sys.platform.startswith('linux'):
         if int(time) == 0 or msg == '':
             cmd = "shutdown now"
