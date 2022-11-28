@@ -1546,27 +1546,30 @@ def shutdown_command(time=0, msg=''):
             msg:  the message that will be displayed
 
     """
+    if msg != "":
+        msg=msg.strip("\" ")
+        msg ='"%s"'%msg
     if sys.platform.startswith('linux'):
         if int(time) == 0 or msg == '':
             cmd = "shutdown now"
         else:
             cmd = "shutdown -P -f -t %s %s" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     elif sys.platform.startswith('win'):
         if int(time) == 0 or msg == '':
             cmd = "shutdown /p"
         else:
             cmd = "shutdown /s /t %s /c %s" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     elif sys.platform.startswith('darwin'):
         if int(time) == 0 or msg == '':
             cmd = "shutdown -h now"
         else:
             cmd = "shutdown -h +%s \"%s\"" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     return
 
 
