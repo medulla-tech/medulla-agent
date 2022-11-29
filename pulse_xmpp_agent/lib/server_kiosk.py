@@ -471,6 +471,10 @@ class manage_kiosk_message:
                     datasend['data']['subaction'] =  'delete'
                 elif result['action'] == 'kioskinterfaceUpdate':
                     datasend['data']['subaction'] =  'update'
+                elif result['action'] == 'kioskinterfaceAsk':
+                    datasend['data']['subaction'] = 'ask'
+                    datasend['data']['askuser'] = result['askuser']
+                    datasend['data']['askdate'] = result['askdate']
                 elif result['action'] == 'kioskLog':
                     if 'message' in result and result['message'] != "":
                         self.objectxmpp.xmpplog(result['message'],
@@ -506,11 +510,11 @@ class manage_kiosk_message:
                         result['data']['serial'] = result['serial']
                 else:
                     #bad action
-                    self.logger.getLogger().warning("this action is not taken "\
+                    logging.getLogger().warning("this action is not taken "\
                                                     "into account : %s" % result['action'])
                     return
                 if substitute_recv:
-                    self.logger.warning("send to %s " % substitute_recv)
+                    logging.getLogger().warning("send to %s " % substitute_recv)
                     self.objectxmpp.send_message(mbody=json.dumps(datasend),
                                                  mto=substitute_recv,
                                                  mtype='chat')
@@ -518,5 +522,5 @@ class manage_kiosk_message:
                     # Call plugin on master
                     self.objectxmpp.send_message_to_master(datasend)
         except Exception as e:
-            self.logger.error("message to kiosk server : %s" % str(e))
-            self.logger.error("\n%s" % (traceback.format_exc()))
+            logging.getLogger().error("message to kiosk server : %s" % str(e))
+            logging.getLogger().error("\n%s" % (traceback.format_exc()))
