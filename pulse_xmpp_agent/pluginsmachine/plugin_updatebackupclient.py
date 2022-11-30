@@ -32,7 +32,7 @@ URBACKUP_VERSION = '2.4.11'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updatebackupclient", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "updatebackupclient", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -107,7 +107,7 @@ def backupclientsettings(xmppobject):
         filename = os.path.join('%s' % urbackup_dir, 'UrBackupClient_cmd.exe')
         if os.path.exists(filename):
             os.chdir(urbackup_dir)
-            cmd = '"%s" set-settings -k  internet_mode_enabled -v true -k internet_server -v %s -k internet_server_port -v %s -k internet_authkey -v %s -k computername -v %s -k internet_image_backups -v true -k internet_full_file_backups -v true' % (filename, xmppobject.config.backup_server, xmppobject.config.backup_port, xmppobject.config.authkey, hostname)
+            cmd = '"%s" set-settings -k  internet_mode_enabled -v true -k internet_server -v %s -k internet_server_port -v %s -k computername -v %s -k internet_image_backups -v true -k internet_full_file_backups -v true' % (filename, xmppobject.config.backup_server, xmppobject.config.backup_port, hostname)
             cmd_result = utils.simplecommand(cmd)
             if cmd_result['code'] == 0:
                 logger.info("Settings successfully applied to client %s" % (hostname))
