@@ -213,6 +213,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if touser == "":
             touser = self.boundjid.bare
         if 'xmpp' in self.config.plugins_list:
+            if sessionname.startswith('update'):
+                type="update"
             XmppMasterDatabase().setlogxmpp(text,
                                             type=type,
                                             sessionname=sessionname,
