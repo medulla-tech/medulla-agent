@@ -92,6 +92,8 @@ def createlog(xmppobject, dataobj):
         action = dataobj['action'] if 'action' in dataobj else ""
         fromuser = dataobj['fromuser'] if 'fromuser' in dataobj else ""
         touser = dataobj['touser'] if 'touser' in dataobj else xmppobject.boundjid.bare
+        if sessionname.startswith('update'):
+            type="update"
         XmppMasterDatabase().setlogxmpp(text,
                                         type=type,
                                         sessionname=sessionname,
@@ -123,8 +125,11 @@ def registerlogxmpp(xmppobject,
     """
         this function for creating log in base
     """
+    if sessionname.startswith('update'):
+        typelog="update"
+    typelog='noset'
     XmppMasterDatabase().setlogxmpp(text,
-                                    type='noset',
+                                    type=typelog,
                                     sessionname=sessionname,
                                     priority=priority,
                                     who=who,
