@@ -258,7 +258,7 @@ def scheduledeploy(self):
             try:
                 deployobject = self.machineDeploy[deployuuid].pop(0)
                 listobjsupp.append(deployuuid)
-                logging.debug("send deploy on machine %s package %s" % (deployuuid,
+                logging.debug("Sending deployment on machine %s package %s" % (deployuuid,
                                                                         deployobject['pakkageid']))
 
                 self.applicationdeployjsonUuidMachineAndUuidPackage(deployuuid,
@@ -547,7 +547,14 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                                    title=None,
                                                    nbdeploy=-1,
                                                    wol=0):
-    sessiondeployementless = name_random(5, "arsdeploy")
+    deploymenttype="deploy"
+    if "-@upd@-" in title:
+        sessiondeployementless = name_random(5, "arsdeployupdate")
+        deploymenttype="update"
+        prefixcommanddeploy="update"
+    else:
+        sessiondeployementless = name_random(5, "arsdeploy")
+        prefixcommanddeploy="command"
     msg = []
     name = uuidpackage
     if name is not None:
@@ -613,7 +620,14 @@ def applicationdeployjsonuuid(self,
                               nbdeploy=-1,
                               wol=0):
     try:
-        sessiondeployementless = name_random(5, "arsdeploy")
+        deploymenttype="deploy"
+        if "-@upd@-" in title:
+            sessiondeployementless = name_random(5, "arsdeployupdate")
+            deploymenttype="update"
+            prefixcommanddeploy="update"
+        else:
+            sessiondeployementless = name_random(5, "arsdeploy")
+            prefixcommanddeploy="command"
         msg = []
         # search group deploy and jid machine
         objmachine = XmppMasterDatabase().getGuacamoleRelayServerMachineUuid(uuidmachine, None)
@@ -688,7 +702,7 @@ def applicationdeployjsonuuid(self,
                                              why=self.boundjid.bare,
                                              module="Deployment | Start | Creation",
                                              fromuser=login)
-                            logger.error("deploy %s error on machine %s ARS down" % (name, uuidmachine))
+                            logger.error("Deployment %s encountered an error on machine %s: ARS down" % (name, uuidmachine))
                             return False
                         else:
                             cluster[i]['listarscluster'].remove(jidrelay)
@@ -736,7 +750,7 @@ def applicationdeployjsonuuid(self,
                                      why=self.boundjid.bare,
                                      module="Deployment | Start | Creation",
                                      fromuser=login)
-                    logger.error("deploy error cluster ARS")
+                    logger.error("Deployment error: ARS cluster unavailable")
                     return False
             else:
                 Found = True
@@ -911,9 +925,35 @@ def applicationdeploymentjson(self,
     1st action: synchronizes the previous package name
     The package is already on the machine and also in relay server.
     """
-    sessiondeployementless = name_random(5, "arsdeploy")
+    logger.debug("PARAMETER jidrelay (%s)" % (jidrelay))
+    logger.debug("PARAMETER jidmachine (%s)" % (jidmachine))
+    logger.debug("PARAMETER idcommand (%s)" % (idcommand))
+    logger.debug("PARAMETER login (%s)" % (login))
+    logger.debug("PARAMETER name (%s)" % (name))
+    logger.debug("PARAMETER time (%s)" % (time))
+    logger.debug("PARAMETER encodebase64 (%s)" % (encodebase64))
+    logger.debug("PARAMETER uuidmachine (%s)" % (uuidmachine))
+    logger.debug("PARAMETER start_date (%s)" % (start_date))
+    logger.debug("PARAMETER end_date (%s)" % (end_date))
+    logger.debug("PARAMETER title (%s)" % (title))
+    logger.debug("PARAMETER macadress (%s)" % (macadress))
+    logger.debug("PARAMETER GUID (%s)" % (GUID))
+    logger.debug("PARAMETER keysyncthing (%s)" % (keysyncthing))
+    logger.debug("PARAMETER nbdeploy (%s)" % (nbdeploy))
+    logger.debug("PARAMETER wol (%s)" % (wol))
+    logger.debug("PARAMETER msg (%s)" % (msg))
+
+    deploymenttype="deploy"
+    if "-@upd@-" in title:
+        sessiondeployementless = name_random(5, "arsdeployupdate")
+        deploymenttype="update"
+        prefixcommanddeploy="update"
+    else:
+        sessiondeployementless = name_random(5, "arsdeploy")
+        prefixcommanddeploy="command"
+
     if managepackage.getversionpackageuuid(name) is None:
-        logger.error("deploy %s error package name version missing" % (name))
+        logger.error("Deployment error package name or version missing for %s" % (name))
         msg.append("<span class='log_err'>Package name or version missing for %s</span>"%(name))
         msg.append("Action : check the package %s"%name)
         XmppMasterDatabase().adddeploy(idcommand,
@@ -936,7 +976,7 @@ def applicationdeploymentjson(self,
                                        subdep=self.boundjid.user)
         for logmsg in msg:
             self.xmpplog(logmsg,
-                         type='deploy',
+                         type=deploymenttype,
                          sessionname=sessiondeployementless,
                          priority=-1,
                          action="xmpplog",
@@ -969,7 +1009,7 @@ def applicationdeploymentjson(self,
                                        subdep=self.boundjid.user)
         for logmsg in msg:
             self.xmpplog(logmsg,
-                         type='deploy',
+                         type=deploymenttype,
                          sessionname=sessiondeployementless,
                          priority=-1,
                          action="xmpplog",
@@ -1004,14 +1044,14 @@ def applicationdeploymentjson(self,
         msg.append("Action : Find out why xmppdeploy.json file is missing.")
         for logmsg in msg:
             self.xmpplog(logmsg,
-                         type='deploy',
+                         type=deploymenttype,
                          sessionname=sessiondeployementless,
                          priority=-1,
                          action="xmpplog",
                          why=self.boundjid.bare,
                          module="Deployment | Start | Creation",
                          fromuser=login)
-        logger.error("deploy %s on %s  error : xmppdeploy.json missing" % (name, uuidmachine))
+        logger.error("Deployment %s on %s  error : xmppdeploy.json missing" % (name, uuidmachine))
         return False
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
 
@@ -1075,21 +1115,21 @@ def applicationdeploymentjson(self,
         state="GROUP DEPLOY MISSING"
         data['wol'] = 2
         data['mac'] = macadress  # use macadress for WOL
-        sessionid = self.createsessionfordeploydiffered(data)
+        sessionid = self.createsessionfordeploydiffered(data, prefixcommanddeploy)
         result = json.dumps(data, indent=4)
         msg.append("Machine %s is ready for deployment" % jidmachine)
     if wol == 2:
         state="DEPLOY TASK SCHEDULED"
         data['wol'] = 2
         data['mac'] = macadress  # use macadress for WOL
-        sessionid = self.createsessionfordeploydiffered(data)
+        sessionid = self.createsessionfordeploydiffered(data, prefixcommanddeploy)
         result = json.dumps(data, indent=4)
         msg.append("Machine %s is ready for deployment" % jidmachine)
     elif wol == 1:
         state = "WOL 1"
         data['wol'] = 1
         data['mac'] = macadress  # use macadress for WOL
-        sessionid = self.createsessionfordeploydiffered(data)
+        sessionid = self.createsessionfordeploydiffered(data, prefixcommanddeploy)
         result = json.dumps(data, indent=4)
         msg.append("First WOL sent to machine %s" % uuidmachine)
     else:
@@ -1110,7 +1150,7 @@ def applicationdeploymentjson(self,
                                                   data,
                                                   datasession=None,
                                                   encodebase64=False,
-                                                  prefix="command")
+                                                  prefix=prefixcommanddeploy)
             # state = "DEPLOYMENT SYNCTHING"
             result = json.dumps(data, indent=4)
             msg.append("Starting peer deployment on machine %s" % jidmachine)
@@ -1183,7 +1223,7 @@ def applicationdeploymentjson(self,
                                                         data,
                                                         datasession=None,
                                                         encodebase64=False,
-                                                        prefix="command")
+                                                        prefix=prefixcommanddeploy)
 
     if wol >= 1:
         advancedparameter_syncthing = 0
@@ -1236,7 +1276,7 @@ def syncthingdeploy(self):
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
     if len(iddeploylist) != 0:
         for iddeploy in iddeploylist:
-            logging.debug("We correctly initialized the synching deploy for the group: %s" % iddeploy)
+            logging.debug("We correctly initialized the synching deployment for the group: %s" % iddeploy)
             # The tables are created.
             # We now call the syncthing master plugin
             data = {"subaction": "initialisation",
@@ -1246,7 +1286,7 @@ def syncthingdeploy(self):
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
     else:
-        logging.debug("This is not a syncthing deploy, so we did not initialize it.")
+        logging.debug("This is not a syncthing deployment, so we did not initialize it.")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:
@@ -1371,8 +1411,8 @@ def garbagedeploy(self):
     MscDatabase().xmppstage_statecurrent_xmpp()
     XmppMasterDatabase().update_status_deploy_end()
 
-def createsessionfordeploydiffered(self, data):
-    sessionid = name_randomplus(25, "command")
+def createsessionfordeploydiffered(self, data, prefix="command"):
+    sessionid = name_randomplus(25, prefix)
     # Calculate maximum duration of a session
     timeseconde = data['enddate'] - data['stardate']
     self.sessiondeploysubstitute.createsessiondatainfo(sessionid,
