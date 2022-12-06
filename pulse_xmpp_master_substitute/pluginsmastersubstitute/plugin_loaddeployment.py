@@ -258,7 +258,7 @@ def scheduledeploy(self):
             try:
                 deployobject = self.machineDeploy[deployuuid].pop(0)
                 listobjsupp.append(deployuuid)
-                logging.debug("send deploy on machine %s package %s" % (deployuuid,
+                logging.debug("Sending deployment on machine %s package %s" % (deployuuid,
                                                                         deployobject['pakkageid']))
 
                 self.applicationdeployjsonUuidMachineAndUuidPackage(deployuuid,
@@ -702,7 +702,7 @@ def applicationdeployjsonuuid(self,
                                              why=self.boundjid.bare,
                                              module="Deployment | Start | Creation",
                                              fromuser=login)
-                            logger.error("deploy %s error on machine %s ARS down" % (name, uuidmachine))
+                            logger.error("Deployment %s encountered an error on machine %s: ARS down" % (name, uuidmachine))
                             return False
                         else:
                             cluster[i]['listarscluster'].remove(jidrelay)
@@ -750,7 +750,7 @@ def applicationdeployjsonuuid(self,
                                      why=self.boundjid.bare,
                                      module="Deployment | Start | Creation",
                                      fromuser=login)
-                    logger.error("deploy error cluster ARS")
+                    logger.error("Deployment error: ARS cluster unavailable")
                     return False
             else:
                 Found = True
@@ -925,24 +925,23 @@ def applicationdeploymentjson(self,
     1st action: synchronizes the previous package name
     The package is already on the machine and also in relay server.
     """
-    #JFKJFK
-    logger.error("PARAMETREE jidrelay (%s)" % (jidrelay))
-    logger.error("PARAMETREE jidmachine (%s)" % (jidmachine))
-    logger.error("PARAMETREE idcommand (%s)" % (idcommand))
-    logger.error("PARAMETREE login (%s)" % (login))
-    logger.error("PARAMETREE name (%s)" % (name))
-    logger.error("PARAMETREE time (%s)" % (time))
-    logger.error("PARAMETREE encodebase64 (%s)" % (encodebase64))
-    logger.error("PARAMETREE uuidmachine (%s)" % (uuidmachine))
-    logger.error("PARAMETREE start_date (%s)" % (start_date))
-    logger.error("PARAMETREE end_date (%s)" % (end_date))
-    logger.error("PARAMETREE title (%s)" % (title))
-    logger.error("PARAMETREE macadress (%s)" % (macadress))
-    logger.error("PARAMETREE GUID (%s)" % (GUID))
-    logger.error("PARAMETREE keysyncthing (%s)" % (keysyncthing))
-    logger.error("PARAMETREE nbdeploy (%s)" % (nbdeploy))
-    logger.error("PARAMETREE wol (%s)" % (wol))
-    logger.error("PARAMETREE msg (%s)" % (msg))
+    logger.debug("PARAMETER jidrelay (%s)" % (jidrelay))
+    logger.debug("PARAMETER jidmachine (%s)" % (jidmachine))
+    logger.debug("PARAMETER idcommand (%s)" % (idcommand))
+    logger.debug("PARAMETER login (%s)" % (login))
+    logger.debug("PARAMETER name (%s)" % (name))
+    logger.debug("PARAMETER time (%s)" % (time))
+    logger.debug("PARAMETER encodebase64 (%s)" % (encodebase64))
+    logger.debug("PARAMETER uuidmachine (%s)" % (uuidmachine))
+    logger.debug("PARAMETER start_date (%s)" % (start_date))
+    logger.debug("PARAMETER end_date (%s)" % (end_date))
+    logger.debug("PARAMETER title (%s)" % (title))
+    logger.debug("PARAMETER macadress (%s)" % (macadress))
+    logger.debug("PARAMETER GUID (%s)" % (GUID))
+    logger.debug("PARAMETER keysyncthing (%s)" % (keysyncthing))
+    logger.debug("PARAMETER nbdeploy (%s)" % (nbdeploy))
+    logger.debug("PARAMETER wol (%s)" % (wol))
+    logger.debug("PARAMETER msg (%s)" % (msg))
 
     typedeployement="deploy"
     if "-@upd@-" in title:
@@ -954,7 +953,7 @@ def applicationdeploymentjson(self,
         prefixcommanddeploy="command"
 
     if managepackage.getversionpackageuuid(name) is None:
-        logger.error("deploy %s error package name version missing" % (name))
+        logger.error("Deployment error package name or version missing for %s" % (name))
         msg.append("<span class='log_err'>Package name or version missing for %s</span>"%(name))
         msg.append("Action : check the package %s"%name)
         XmppMasterDatabase().adddeploy(idcommand,
@@ -1052,7 +1051,7 @@ def applicationdeploymentjson(self,
                          why=self.boundjid.bare,
                          module="Deployment | Start | Creation",
                          fromuser=login)
-        logger.error("deploy %s on %s  error : xmppdeploy.json missing" % (name, uuidmachine))
+        logger.error("Deployment %s on %s  error : xmppdeploy.json missing" % (name, uuidmachine))
         return False
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
 
@@ -1277,7 +1276,7 @@ def syncthingdeploy(self):
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
     if len(iddeploylist) != 0:
         for iddeploy in iddeploylist:
-            logging.debug("We correctly initialized the synching deploy for the group: %s" % iddeploy)
+            logging.debug("We correctly initialized the synching deployment for the group: %s" % iddeploy)
             # The tables are created.
             # We now call the syncthing master plugin
             data = {"subaction": "initialisation",
@@ -1287,7 +1286,7 @@ def syncthingdeploy(self):
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
     else:
-        logging.debug("This is not a syncthing deploy, so we did not initialize it.")
+        logging.debug("This is not a syncthing deployment, so we did not initialize it.")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:
