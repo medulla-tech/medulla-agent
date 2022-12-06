@@ -26,7 +26,7 @@ import os
 import platform
 import os.path
 import json
-from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile, simplecommand
+from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile, simplecommand, send_data_tcp
 from configuration import setconfigfile
 import traceback
 import logging
@@ -1891,6 +1891,69 @@ class grafcet:
                                     module="Deployment | Error | Execution",
                                     date=None,
                                     fromuser=self.data['login'])
+
+    def action_kiosknotification(self):
+        """
+        Step notification msg for kiosk
+
+        nota notif for  kiosk
+        {
+            "status": "Install",
+            "stat": 20,
+            "actionlabel": "d72f10ae",
+            "step": 0,
+            "action": "action_kiosknotification",
+            "message": "totoot"
+        }
+        or
+        {
+            "status": "Install",
+            "stat": 20,
+            "actionlabel": "bd6720ca",
+            "step": 0,
+            "action": "action_kiosknotification",
+            "message": ""
+        }
+        or
+        {
+            "action": "action_kiosknotification",
+            "step": 0,
+            "actionlabel": "bd6720ca",
+            "message": ""
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+            self.workingstep["pathpackageonmachine"] = self.datasend['data']['pathpackageonmachine']
+            self.workingstep["name"] = self.datasend['data']['name']
+            self.workingstep["path"] = self.datasend['data']['path']
+            msgxmpp = {
+                'action': "action_kiosknotification",
+                'sessionid': self.sessionid,
+                'data':  self.workingstep,
+                'ret': 0,
+                'base64': False}
+            send_data_tcp(json.dumps(msgxmpp))
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_kiosknotification step %s" %
+                        self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_kiosknotification : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.workingstep['step'],
+                                    action="",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    how="",
+                                    why=self.data['name'],
+                                    module="Deployment | Execution | Error",
+                                    date=None,
+                                    fromuser=self.data['login'],
+                                    touser="")
 
     def action_notification(self):
         """
