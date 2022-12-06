@@ -547,10 +547,10 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                                    title=None,
                                                    nbdeploy=-1,
                                                    wol=0):
-    typedeployement="deploy"
+    deploymenttype="deploy"
     if "-@upd@-" in title:
         sessiondeployementless = name_random(5, "arsdeployupdate")
-        typedeployement="update"
+        deploymenttype="update"
         prefixcommanddeploy="update"
     else:
         sessiondeployementless = name_random(5, "arsdeploy")
@@ -620,10 +620,10 @@ def applicationdeployjsonuuid(self,
                               nbdeploy=-1,
                               wol=0):
     try:
-        typedeployement="deploy"
+        deploymenttype="deploy"
         if "-@upd@-" in title:
             sessiondeployementless = name_random(5, "arsdeployupdate")
-            typedeployement="update"
+            deploymenttype="update"
             prefixcommanddeploy="update"
         else:
             sessiondeployementless = name_random(5, "arsdeploy")
@@ -943,10 +943,10 @@ def applicationdeploymentjson(self,
     logger.debug("PARAMETER wol (%s)" % (wol))
     logger.debug("PARAMETER msg (%s)" % (msg))
 
-    typedeployement="deploy"
+    deploymenttype="deploy"
     if "-@upd@-" in title:
         sessiondeployementless = name_random(5, "arsdeployupdate")
-        typedeployement="update"
+        deploymenttype="update"
         prefixcommanddeploy="update"
     else:
         sessiondeployementless = name_random(5, "arsdeploy")
@@ -976,7 +976,7 @@ def applicationdeploymentjson(self,
                                        subdep=self.boundjid.user)
         for logmsg in msg:
             self.xmpplog(logmsg,
-                         type=typedeployement,
+                         type=deploymenttype,
                          sessionname=sessiondeployementless,
                          priority=-1,
                          action="xmpplog",
@@ -1009,7 +1009,7 @@ def applicationdeploymentjson(self,
                                        subdep=self.boundjid.user)
         for logmsg in msg:
             self.xmpplog(logmsg,
-                         type=typedeployement,
+                         type=deploymenttype,
                          sessionname=sessiondeployementless,
                          priority=-1,
                          action="xmpplog",
@@ -1044,7 +1044,7 @@ def applicationdeploymentjson(self,
         msg.append("Action : Find out why xmppdeploy.json file is missing.")
         for logmsg in msg:
             self.xmpplog(logmsg,
-                         type=typedeployement,
+                         type=deploymenttype,
                          sessionname=sessiondeployementless,
                          priority=-1,
                          action="xmpplog",
