@@ -3740,11 +3740,12 @@ class XmppMasterDatabase(DatabaseHelper):
         return q.with_entities(func.count()).scalar()
 
     @DatabaseHelper._sessionm
-    def getdeploybyuserlen(self, session, login=None):
+    def getdeploybyuserlen(self, session, login=None, typedeploy="command"):
+        deploybyuserlen = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login is not None:
-            return self.get_count(session.query(Deploy).filter(Deploy.login == login))
+            return self.get_count(deploybyuserlen.filter(Deploy.login == login))
         else:
-            return self.get_count(session.query(Deploy))
+            return self.get_count(deploybyuserlen)
 
     @DatabaseHelper._sessionm
     def getLogxmpp( self,
@@ -3988,9 +3989,10 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
 
+
     @DatabaseHelper._sessionm
-    def getdeploybyuserrecent(self, session, login , state, duree, min=None, max=None, filt=None):
-        deploylog = session.query(Deploy)
+    def getdeploybyuserrecent(self, session, login , state, duree, min=None, max=None, filt=None, typedeploy="command"):
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login:
             deploylog = deploylog.filter( Deploy.login == login)
         if state:
@@ -4002,9 +4004,11 @@ class XmppMasterDatabase(DatabaseHelper):
         count = """select count(*) as nb from (
         select count(id) as nb
         from deploy
-        where start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
+        where
+            sessionid like "%s%%" AND
+            start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
         group by title
-        ) as x;"""
+        ) as x;"""%(typedeploy)
 
         if filt is not None:
             deploylog = deploylog.filter( or_(  Deploy.state.like('%%%s%%'%(filt)),
@@ -4015,7 +4019,9 @@ class XmppMasterDatabase(DatabaseHelper):
             count = """select count(*) as nb from (
               select count(id) as nb
               from deploy
-              where start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
+              where
+                    sessionid like "%s%%" AND
+                    start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
               AND (state LIKE "%%%s%%"
               or pathpackage LIKE "%%%s%%"
               or start LIKE "%%%s%%"
@@ -4023,7 +4029,7 @@ class XmppMasterDatabase(DatabaseHelper):
               or host LIKE "%%%s%%"
               )
               group by title
-              ) as x;""" % (filt, filt, filt, filt, filt)
+              ) as x;""" % (typedeploy, filt, filt, filt, filt, filt)
 
 
         lentaillerequette = self.get_count(deploylog)
@@ -4119,9 +4125,9 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None):
+    def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None, typedeploy="command"):
 
-        deploylog = session.query(Deploy)
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login:
             deploylog = deploylog.filter( Deploy.login == login)
 
@@ -4193,11 +4199,12 @@ class XmppMasterDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
-    def getdeploybyuser(self, session, login=None, numrow=None, offset=None):
+    def getdeploybyuser(self, session, login=None, numrow=None, offset=None, typedeploy="command"):
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login is not None:
-            deploylog = session.query(Deploy).filter(Deploy.login == login).order_by(desc(Deploy.id))
+            deploylog = deploylog.filter(Deploy.login == login).order_by(desc(Deploy.id))
         else:
-            deploylog = session.query(Deploy).order_by(desc(Deploy.id))
+            deploylog = deploylog.order_by(desc(Deploy.id))
         if numrow is not None:
             deploylog = deploylog.limit(numrow)
             if offset is not None:
