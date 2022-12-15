@@ -61,14 +61,42 @@ class grafcet:
         self.userstatus=None
         self.userconectdate=None
         self.data = self.datasend['data']
-        logging.getLogger().error(json.dumps(self.data, indent=4))
         self.sessionid = self.datasend['sessionid']
+        self.__clean_protected()
         self.sequence = self.data['descriptor']['sequence']
         self.__initialise_user_connected__()
         if 'advanced' in self.data and "paramdeploy" in self.data['advanced'] and isinstance(self.data['advanced']['paramdeploy'], dict):
             # there are  dynamic parameters.
             for k, v in self.data['advanced']['paramdeploy'].items():
                 self.parameterdynamic[k] = v
+        if 'repriseok'  in self.data and self.data['repriseok']!="" :
+            self.objectxmpp.xmpplog(self.data['repriseok'],
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.data['stepcurrent'],
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    how="",
+                                    why="",
+                                    module="Deployment | Error | Terminate | Notify",
+                                    date=None,
+                                    fromuser= self.userconecter,
+                                    touser="")
+        if 'repriseerror' in self.data :
+            self.objectxmpp.xmpplog(self.data['repriseerror'],
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.data['stepcurrent'],
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    how="",
+                                    why="",
+                                    module="Deployment | Error | Terminate | Notify",
+                                    date=None,
+                                    fromuser= self.userconecter,
+                                    touser="")
+            self.__terminate_remote_deploy()
+            return
         if 'stepcurrent' not in self.data:
             return
         try:
@@ -121,6 +149,16 @@ class grafcet:
                                         module="Deployment | Error | Execution")
             self.terminate(-1, True, "end error initialisation deploy")
 
+    def __terminate_remote_deploy(self):
+        self.sequence = self.data['descriptor']['sequence']
+        self.workingstep = self.sequence[self.data['stepcurrent']]
+        self.terminate(-1, False, "end error re %s" %
+                           self.workingstep['step'])
+        self.__affiche_message('[%s] - [%s]: Error relaunch'\
+                                ' of deployment after shutdown ' % (self.data['name'],
+                                self.workingstep['step']),
+                                module="Deployment | Execution | Error")
+
     def __affiche_message(self, msg, module="Deployment | Execution | Notification"):
         if type(msg) != list:
             msg=[msg]
@@ -158,7 +196,6 @@ class grafcet:
                 self.userconectdate=None
                 re = simplecommand("query user")
                 if len(re['result']) >= 2:
-
                     userdata=[ x.strip("> ")  for x in re['result'][1].split(" ") if x != ""]
                     self.userconecter=userdata[0]
                     self.userstatus=userdata[3]
@@ -169,18 +206,14 @@ class grafcet:
                                                   self.userconecter,
                                                   self.userstatus,
                                                   self.userconectdate)
-                    logging.getLogger().debug(msg_user)
                     self.__affiche_message(msg_user,
                                         module="Deployment | Execution")
                 else:
                     msg_user = "[%s]-[%s]: No user connected" % (self.data['name'],
                                                                   self.data['stepcurrent'])
-                    logging.getLogger().debug(msg_user)
                     self.__affiche_message(msg_user,
                                         module="Deployment | Execution")
             except:
-                for _ in range(20):
-                    logging.getLogger().error("DEDE")
                 logger.error("\n%s" % (traceback.format_exc()))
                 self.userconecter=None
                 self.userstatus=None
@@ -437,6 +470,7 @@ class grafcet:
             Clean client disk packages (ie clear)
         """
         login = self.data['login']
+        self.__clean_protected()
         restarmachine = False
         shutdownmachine = False
         #print "TERMINATE %s"%json.dumps(self.datasend, indent = 4)
@@ -816,6 +850,7 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
+            self.__protected()
             self.__action_completed__(self.workingstep)
             self.__alternatefolder()
             self.steplog()
@@ -937,6 +972,7 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
+            self.__protected()
             self.__action_completed__(self.workingstep)
             print (self.workingstep)
             if 'comment' in self.workingstep :
@@ -1076,6 +1112,7 @@ class grafcet:
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
+            self.__protected()
             self.__alternatefolder()
             zip_ref = zipfile.ZipFile(self.workingstep['filename'], 'r')
             if 'pathdirectorytounzip' not in self.workingstep:
@@ -1157,7 +1194,7 @@ class grafcet:
                     self.workingstep['timeout'] = 800
                     logging.getLogger().warn("timeout integer error : default value %ss" % self.workingstep['timeout'])
             # working Step recup from process et session
-
+            self.__protected(self.workingstep['timeout'])
             self.workingstep['pwd'] = ""
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
@@ -1208,6 +1245,7 @@ class grafcet:
             if "timeout" not in self.workingstep:
                 self.workingstep['timeout'] = 15
                 logging.getLogger().warn("timeout missing : default value 15s")
+            self.__protected(self.workingstep['timeout'])
             re = shellcommandtimeout(
                 self.workingstep['command'],
                 self.workingstep['timeout']).run()
@@ -1247,6 +1285,31 @@ class grafcet:
                                     date=None,
                                     fromuser=self.data['login'],
                                     touser="")
+
+    def __clean_protected(self):
+        dir_reprise_session = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+                "INFOSTMP",
+                "REPRISE")
+        filelistprotected = [ os.path.join(dir_reprise_session, x) for x in os.listdir(dir_reprise_session) \
+                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.endswith(self.sessionid)]
+        for t in filelistprotected:
+            if os.path.isfile(t):
+                os.remove(t)
+
+    def __protected(self,timeout=3600):
+        self.__clean_protected()
+        if int(timeout) < 3600:
+            timeout=3600
+        if "reprise" not in self.workingstep:
+            self.workingstep['reprise'] = 0
+            self.workingstep['protected'] = int(time.time()) + int(timeout)
+            namefile="medulla_protected@_@%s@_@%s@_@%s@_@%s"%( self.workingstep['protected'] ,
+                                                                timeout,
+                                                                self.workingstep['step'],
+                                                                self.sessionid)
+            self.__sauvedatasessionrepriseinterface( namefile, self.datasend)
 
     def actionprocessscriptfile(self):
         """
@@ -1403,7 +1466,7 @@ class grafcet:
             # Create command
             if commandtype is not None:
                 command = commandtype + temp_path
-
+            self.__protected(self.workingstep['timeout'])
             # working Step recup from process et session
             if command != "":
                 self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(command,
@@ -1436,6 +1499,7 @@ class grafcet:
         if inventory is not defini then inventory = True
         """
         inventory = True
+        self.__protected()
         if 'inventory' in self.workingstep:
             boolstr = str(self.workingstep['inventory'])
             # status inventory "No inventory / Inventory on change / Forced inventory"
@@ -2323,7 +2387,9 @@ class grafcet:
                         self.__affiche_message(msg)
                         msg=[]
                         if float(self.workingstep['timeloop']) >= 10.:
-                            namefile="medulla_messagebox@_@%s@_@%s@_@%s@_@%s"%( int(time.time()),self.workingstep['timeloop'],self.workingstep['actionlabel'],self.sessionid)
+                            namefile="medulla_messagebox@_@%s@_@%s@_@%s@_@%s"%(int(time.time())+int(self.workingstep['timeloop']),
+                                                                               int(self.workingstep['timeloop']),
+                                                                               self.workingstep['actionlabel'],self.sessionid)
                             self.__sauvedatasessionrepriseinterface( namefile, self.datasend)
                         else:
                             time.sleep(float(self.workingstep['timeloop']))

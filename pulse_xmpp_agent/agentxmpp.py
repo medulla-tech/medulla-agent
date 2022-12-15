@@ -293,11 +293,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # END Update agent from Master#############################
 
         if self.config.agenttype in ['machine']:
+            # on appelle cette fonction toutes les 30 seconde
             self.schedule('reinjection_deplot_message_box',
                           30,
                           self.reinjection_deplot_message_box,
                           repeat=True)
-
+            # on appelle cette fonction a 200 seconde apres 1 restart.
+            self.schedule('reinjection_deploy_protected',
+                          60,
+                          self.reinjection_deploy_protected,
+                          repeat=False)
 
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
@@ -686,8 +691,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
 
-    def reinjection_deplot_message_box(self):
-        # creation repertoire si probleme
+    def __dirsessionreprise(self):
         dir_reprise_session = os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
@@ -696,28 +700,102 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 "REPRISE")
         if not os.path.exists(dir_reprise_session):
             os.makedirs(dir_reprise_session, mode=0o007)
+        return dir_reprise_session
 
+    def __clean_message_box(self):
+        # creation repertoire si probleme
+        dir_reprise_session=self.__dirsessionreprise()
         # lit repertoire de fichier
         filelist = [ x for x in os.listdir(dir_reprise_session) \
                      if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_messagebox')]
-
         for t in filelist:
-            logger.debug("t %s" % filelist)
+            filenamejson = os.path.join(dir_reprise_session, t)
             detection=t.split('@_@')
-            if len(detection) == 5 and time.time() > float(detection[1]):
-                # on relance le deployement et on quitte
-                # on recharche le json
-                with open(os.path.join(dir_reprise_session, t), 'r') as f:
+            try:
+                with open(filenamejson, 'r') as f:
                     data = json.load(f)
-                os.remove(os.path.join(dir_reprise_session, t))
-
-                try:
+                    # signal error timeout reluanch
+                    data['data']['repriseerror']="ABORT DEPLOYMENT SHUTDOWND [USER NO CHOISE]"
                     grafcet(self, data)
-                except:
-                    logger.error("\n%s"%(traceback.format_exc()))
+            except:
+                logger.error("\n%s"%(traceback.format_exc()))
+            finally:
+                os.remove(filenamejson)
+        return
 
-                return
+    def reinjection_deploy_protected(self):
+        # creation repertoire si probleme
+        dir_reprise_session = self.__dirsessionreprise()
+        timecurrent=int(time.time())
+        timecurentdatetime= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(timecurrent)))
+        # lit repertoire de fichier
+        filelist = [ x for x in os.listdir(dir_reprise_session) \
+                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_protected')]
+        for t in filelist:
+            try:
+                filenamejson = os.path.join(dir_reprise_session, t)
+                detection=t.split('@_@')
+                if len(detection) == 5 and detection[0] == "medulla_protected":
+                    with open(filenamejson, 'r') as f:
+                        data = json.load(f)
+                    datainfo=data['data']
+                    slotdep= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(datainfo['stardate'])))
+                    slotend= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(datainfo['enddate'])))
+                    if timecurrent >= int(datainfo['stardate']) and timecurrent <= int(datainfo['enddate']):
+                        # on est toujours dans le temps de deployements on relance la tache protegee apres 1 shutdown
+                        try:
+                            data['data']['repriseok']="<span class='log_warn'>Resumption deploy session id %s on"\
+                                            " step %s restart machine (timeloacal %s)in slot deploy from server[ %s -> %s ]</span>"%(detection[4] ,
+                                                                                                        detection[3],
+                                                                                                        timecurentdatetime,
+                                                                                                        slotdep,
+                                                                                                        slotend)
+                            grafcet(self, data)
+                        except:
+                            logger.error("\nResumption deploy %s"%(traceback.format_exc()))
+                    else:
+                        try:
+                            data['data']['repriseerror']="<span class='log_err'>ABORT DEPLOYMENT SHUTDOWND session id %s"\
+                                                            " step %s out slot deploy [ %s -> %s ]  (timeloacal machine %s)</span>"%(detection[4],
+                                                            detection[3],
+                                                                                                    slotdep,
+                                                                                                    slotend,
+                                                                                                    timecurentdatetime)
+                            # reinjection for terminate deploy error correctement
+                            grafcet(self, data)
+                        except:
+                            logger.error("\nABORT DEPLOYMENT SHUTDOWND %s"%(traceback.format_exc()))
+            except:
+                logger.error("reinjection deploy protected\n%s"%(traceback.format_exc()))
+            finally:
+                os.remove(filenamejson)
+        return
 
+    def reinjection_deplot_message_box(self):
+        # creation repertoire si probleme
+        dir_reprise_session = self.__dirsessionreprise()
+        timecurrent=int(time.time())
+        # lit repertoire de fichier
+        filelist = [ x for x in os.listdir(dir_reprise_session) \
+                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_messagebox')]
+        for t in filelist:
+            try:
+                filenamejson = os.path.join(dir_reprise_session, t)
+                detection=t.split('@_@')
+                if len(detection) == 5 and detection[0]=="medulla_messagebox":
+                    with open(filenamejson, 'r') as f:
+                        data = json.load(f)
+                    datainfo=data['data']
+                    slotdep= time.strftime("%D %H:%M", time.localtime(int(datainfo['stardate'])))
+                    slotend= time.strftime("%D %H:%M", time.localtime(int(datainfo['enddate'])))
+                    if timecurrent > datainfo['stardate'] and timecurrent < datainfo['enddate']:
+                        # on relance le deployement et on quitte
+                        grafcet(self, data)
+            except:
+                logger.error("reinjection deploy message box\n%s"%(traceback.format_exc()))
+            finally:
+                os.remove(filenamejson)
+        return
     ###############################################################
     # syncthing function
     ###############################################################
@@ -1700,7 +1778,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.ipconnection = self.config.Server
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-
+        self.__clean_message_box()
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         if self.config.agenttype in ['relayserver']:
             try:
