@@ -1132,6 +1132,12 @@ def applicationdeploymentjson(self,
         sessionid = self.createsessionfordeploydiffered(data, prefixcommanddeploy)
         result = json.dumps(data, indent=4)
         msg.append("First WOL sent to machine %s" % uuidmachine)
+        msg.append("Ping machine %s" % jidmachine)
+        pingdata=json.dumps({'action': "ping",
+                                'ret': 0,
+                                'sessionid': name_random(5, "ping"),
+                                'data': {"ping" : True}})
+        self.send_message(mto=jidmachine, mbody=pingdata, mtype='chat')
     else:
         state = "DEPLOYMENT START"
         data['wol'] = 0
