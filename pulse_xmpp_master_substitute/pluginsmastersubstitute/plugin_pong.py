@@ -31,7 +31,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "resultping", "TYPE": "substitute"}
+plugin = {"VERSION": "1.0", "NAME": "pong", "TYPE": "substitute"}
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     """
         Used to verify machine on
