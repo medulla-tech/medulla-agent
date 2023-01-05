@@ -761,6 +761,10 @@ class Up_machine_windows(Base):
     id_machine = Column(Integer, primary_key=True)
     update_id = Column(String(38), primary_key=True)
     kb = Column(String(45),  default="")
+    curent_deploy = Column(Boolean, unique=False)
+    required_deploy = Column(Boolean, unique=False)
+    start_date = Column(DateTime, default=None)
+    end_date = Column(DateTime, default=None)
 
 class Up_white_list(Base):
     # ====== Table name =========================
