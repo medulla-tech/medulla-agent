@@ -28,6 +28,7 @@ Provides access to MSC database
 
 # standard modules
 import time
+import re
 
 # SqlAlchemy
 from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
@@ -214,6 +215,7 @@ class MscDatabase(DatabaseHelper):
         if self.is_activated:
             return None
         self.logger.info("Msc database is connecting")
+        self.pattern = re.compile("^([0-9]{1,2})[-;'.|@#\"]{1}[0-9]{1,2}$")
         self.config = confParameter()
 
         self.session = None
@@ -893,12 +895,14 @@ class MscDatabase(DatabaseHelper):
             try:
                 datenow = datetime.datetime.now()
                 datestr = datenow.strftime('%Y-%m-%d %H:%M:%S')
+                hactuel = int(datenow.strftime('%H'))
                 sqlselect="""
                 SELECT
                         `commands`.`id` AS commands_id,
                         `commands`.`title` AS commands_title,
                         `commands`.`creator` AS commands_creator,
                         `commands`.`package_id` AS commands_package_id,
+                        `commands`.`deployment_intervals` AS deployment_intervals,
                         `commands`.`start_date` AS commands_start_date,
                         `commands`.`end_date` AS commands_end_date,
                         `commands_on_host`.`id` AS commands_on_host_id,
@@ -932,16 +936,24 @@ class MscDatabase(DatabaseHelper):
                     #start = datetime.datetime.now()
                     #self.logger.debug("deployxmpp out %s" % start)
                     return nb_machine_select_for_deploy_cycle, []
-                elif nb_machine_select_for_deploy_cycle == 1:
-                    self.logger.debug("We will start a deployment on 1 computer")
-                else:
-                    self.logger.debug("We will start a deployment on %s computers " % nb_machine_select_for_deploy_cycle)
 
                 machine_status_update = []
                 unique_deploy_on_machine = []
                 updatemachine = []
 
                 for msc_machine_to_deploy in selectedMachines:
+                    if msc_machine_to_deploy.deployment_intervals:
+                        # self.pattern is reg exp compile "^([0-9]{1,2})[-;'.|@#\"]{1}[0-9]{1,2}$"
+                        tb=[re.sub("[-'*;|@#\"]{1}", "-", x) for x in msc_machine_to_deploy.deployment_intervals.split(',') if self.pattern.match(x.strip())]
+                        for c in tb:
+                            start, end = c.split('-')
+                            if hactuel >= int(start) and hactuel <= int(end):
+                                # on a trouver 1 cas on deploy
+                                break
+                        else: # end control slot
+                            # on a trouver aucun cas on ne deploy pas
+                            nb_machine_select_for_deploy_cycle=nb_machine_select_for_deploy_cycle-1
+                            continue
                     machine_status_update.append(str(msc_machine_to_deploy.commands_on_host_id))
                     self.logger.debug("The computer %s (id: %s) is available to deployment the package %s" % (msc_machine_to_deploy.target_target_name,
                                                                                                             msc_machine_to_deploy.target_target_uuid,
@@ -974,6 +986,16 @@ class MscDatabase(DatabaseHelper):
                                                                             msc_machine_to_deploy.target_target_uuid,
                                                                             msc_machine_to_deploy.commands_package_id))
 
+                if nb_machine_select_for_deploy_cycle == 0:
+                    self.logger.debug("There is no deployment to process.")
+                    #start = datetime.datetime.now()
+                    #self.logger.debug("deployxmpp out %s" % start)
+                    return nb_machine_select_for_deploy_cycle, []
+                elif nb_machine_select_for_deploy_cycle == 1:
+                    self.logger.debug("We will start a deployment on 1 computer")
+                else:
+                    self.logger.debug("We will start a deployment on %s computers " % nb_machine_select_for_deploy_cycle)
+
                 # We immediatly update the status of the deployment in the msc table.
                 # It has for action to remove the lock on the table.
                 if machine_status_update:
@@ -999,7 +1021,7 @@ class MscDatabase(DatabaseHelper):
         #self.logger.debug("deployxmpp out %s" % start)
         return nb_machine_select_for_deploy_cycle, updatemachine
 
-
+###jfkjfk
     @DatabaseHelper._sessionm
     def get_deploy_inprogress_by_team_member(self, session, login, intervalsearch, min, max, filt):
         """
@@ -1032,7 +1054,8 @@ class MscDatabase(DatabaseHelper):
                               Target.target_name,
                               Target.target_uuid,
                               Target.id_group,
-                              Target.target_macaddr)\
+                              Target.target_macaddr,
+                              Commands.deployment_intervals)\
         .join(CommandsOnHost, Commands.id == CommandsOnHost.fk_commands)\
         .join(Target, Target.id == CommandsOnHost.fk_target)\
         .join(CommandsOnHostPhase, CommandsOnHostPhase.fk_commands_on_host == CommandsOnHost.id)\
@@ -1059,7 +1082,6 @@ class MscDatabase(DatabaseHelper):
 
         result = {'total': nb, 'elements':[]}
         for element in res:
-
             result['elements'].append({'cmd_id': element[0],
                                        'nb_machines': element[1],
                                        'package_name': element[2],
@@ -1070,7 +1092,8 @@ class MscDatabase(DatabaseHelper):
                                        'machine_name': element[8],
                                        'uuid_inventory': element[9],
                                        'gid': element[10],
-                                       'mac_address': element[11]})
+                                       'mac_address': element[11],
+                                       'deployment_intervals' : element[12]})
         return result
 
     def deleteCommand(self, cmd_id):

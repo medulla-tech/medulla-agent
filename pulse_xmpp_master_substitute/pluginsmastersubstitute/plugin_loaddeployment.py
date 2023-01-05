@@ -553,7 +553,7 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
         deploymenttype="update"
         prefixcommanddeploy="update"
     else:
-        sessiondeployementless = name_random(5, "arsdeploy")
+        sessiondeployementless = name_random(5, "command")
         prefixcommanddeploy="command"
     msg = []
     name = uuidpackage
@@ -626,7 +626,7 @@ def applicationdeployjsonuuid(self,
             deploymenttype="update"
             prefixcommanddeploy="update"
         else:
-            sessiondeployementless = name_random(5, "arsdeploy")
+            sessiondeployementless = name_random(5, "command")
             prefixcommanddeploy="command"
         msg = []
         # search group deploy and jid machine
@@ -720,7 +720,7 @@ def applicationdeployjsonuuid(self,
                                 break
 
                 if not Found:
-                    sessiondeployementless = name_random(5, "missinggroupdeploy")
+                    sessiondeployementless = name_random(5, "command")
                     XmppMasterDatabase().adddeploy(idcommand,
                                                    jidmachine,
                                                    jidrelay,
@@ -773,7 +773,7 @@ def applicationdeployjsonuuid(self,
                                                   wol=wol,
                                                   msg=msg)
         else:
-            sessiondeployementless = name_random(5, "missinggroupdeploy")
+            sessiondeployementless = name_random(5, "command")
             XmppMasterDatabase().adddeploy(idcommand,
                                            jidmachine,
                                            jidrelay,
@@ -949,7 +949,7 @@ def applicationdeploymentjson(self,
         deploymenttype="update"
         prefixcommanddeploy="update"
     else:
-        sessiondeployementless = name_random(5, "arsdeploy")
+        sessiondeployementless = name_random(5, "command")
         prefixcommanddeploy="command"
 
     if managepackage.getversionpackageuuid(name) is None:
