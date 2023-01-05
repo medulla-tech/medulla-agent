@@ -70,6 +70,7 @@ from lib.plugins.glpi.Glpi84 import Glpi84
 from lib.plugins.glpi.Glpi92 import Glpi92
 from lib.plugins.glpi.Glpi94 import Glpi94
 from lib.plugins.glpi.Glpi95 import Glpi95
+from lib.plugins.glpi.Glpi100 import Glpi100
 
 glpi = None
 
@@ -133,6 +134,8 @@ class Glpi(object):
             if self._glpi_version.startswith("9.5"):
                 glpi = Glpi95()
 
+            if self._glpi_version.startswith("10.0"):
+                glpi = Glpi100()
 
             ret = glpi.activate()
             self.is_activated = glpi.is_activated
