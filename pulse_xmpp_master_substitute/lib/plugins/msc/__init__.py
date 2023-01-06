@@ -1021,7 +1021,36 @@ class MscDatabase(DatabaseHelper):
         #self.logger.debug("deployxmpp out %s" % start)
         return nb_machine_select_for_deploy_cycle, updatemachine
 
-###jfkjfk
+    @DatabaseHelper._sessionm
+    def test_deploy_in_partiel_slot(self, session, title):
+        """
+        This function is used to check if 1 partial slot constraint does not prohibit deploying on 1 machine
+        Args:
+            session: The SQL Alchemy session
+            title: le nom du deployement.
+            Returns:
+                True la machine peut etre deploye
+                False la machine ne peut pas etre deploye.
+        """
+        datenow = datetime.datetime.now()
+        hactuel = int(datenow.strftime('%H'))
+        query = session.query(Commands.deployment_intervals).filter(Commands.title.like(title))
+        nb = query.count()
+        if nb == 0 :
+            return False
+        res = query.first()
+        if not res:
+            return False
+        # analyse si deploy true or false
+        tb=[re.sub("[-'*;|@#\"]{1}", "-", x) for x in res.deployment_intervals.split(',') if self.pattern.match(x.strip())]
+        for c in tb:
+            start, end = c.split('-')
+            if hactuel >= int(start) and hactuel <= int(end):
+                # on a trouver 1 cas on deploy
+                return True
+        return False
+
+
     @DatabaseHelper._sessionm
     def get_deploy_inprogress_by_team_member(self, session, login, intervalsearch, min, max, filt):
         """

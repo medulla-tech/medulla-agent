@@ -374,6 +374,12 @@ def scheduledeployrecoveryjob(self):
             logger.error("RELANCE machines_waitting_online %s" %  machine['sessionid'])
             #time.sleep(5)
             # machine WAITING MACHINE ONLINE presente ?
+            # ----------------- contrainte slopt partiel-----------------------
+            res = MscDatabase().test_deploy_in_partiel_slot( machine['title'])
+            if not res:
+                # machine avec contrainte slot partiel on est pas dans le slot
+                continue
+            # -----------------------------------------------------------------
             try:
                 data = json.loads(machine['result'])
                 if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
