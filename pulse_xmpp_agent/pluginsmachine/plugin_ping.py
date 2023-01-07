@@ -21,8 +21,9 @@
 # file : pulse_xmpp_agent/pluginsmachine/plugin_pong.py
 
 import logging
+import json
 
-plugin = {"VERSION": "1.0", "NAME": "ping",  "TYPE": "all"}
+plugin = {"VERSION": "1.1", "NAME": "ping",  "TYPE": "all"}
 
 logger = logging.getLogger()
 
