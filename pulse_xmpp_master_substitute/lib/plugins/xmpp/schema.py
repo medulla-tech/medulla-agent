@@ -794,6 +794,20 @@ class Up_gray_list(Base):
     valided = Column(Boolean, unique=False)
     validity_date = Column(DateTime, default=datetime.datetime.now)
 
+class Up_action_update_packages(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'up_action_update_packages'
+    # ====== Fields =============================
+    # Here we define columns for the table organization.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    action = Column(String(1024), nullable=False, unique=True)
+    date = Column(DateTime, nullable=False, default=datetime.datetime.now)
+    in_process = Column(Boolean, unique=False, nullable=False)
+    packages = Column(String(38), nullable=False)
+    option  = Column(String(10), nullable=False)
+    pid_run = Column(Integer)
+
 """
 This code is kept here as a comment, "if" we need to use it
 and not use the automatic table anymore.
