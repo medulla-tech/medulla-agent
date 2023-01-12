@@ -8657,8 +8657,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 ,"title_short"
                ]
 
-
-
     @DatabaseHelper._sessionm
     def setUp_action_update_packages(self,
                             session,
@@ -8723,18 +8721,17 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             et positionne in_process a 1 pour les commande a executer.
         """
         result=[]
-        self.logger.info("get_all_Up_action_update_packages ")
         res = session.query(Up_action_update_packages).filter(Up_action_update_packages.in_process == False ).all()
         if res is not None:
             for update_package in res:
                 update_package.in_process=True
-                self.logger.info("get_all_Up_action_update_packages : %s %s %s %s %s %s" % (update_package.id,
-                                                                                            update_package.action,
-                                                                                            update_package.date.isoformat(),
-                                                                                            update_package.in_process,
-                                                                                            update_package.packages,
-                                                                                            update_package.option,
-                                                                                            ))
+                #self.logger.debug("get_all_Up_action_update_packages : %s %s %s %s %s %s" % (update_package.id,
+                                                                                            #update_package.action,
+                                                                                            #update_package.date.isoformat(),
+                                                                                            #update_package.in_process,
+                                                                                            #update_package.packages,
+                                                                                            #update_package.option,
+                                                                                            #))
                 result.append({ "id" : update_package.id,
                                 "action" : update_package.action,
                                 "date" : update_package.date.isoformat(),
@@ -8752,7 +8749,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             get list de tout les pid des process de package en cour sur le serveur
         """
         result=[]
-        self.logger.info("get_all_Up_action_update_packages ")
+        #self.logger.debug("get_all_Up_action_update_packages ")
         res = session.query(Up_action_update_packages.id,
                             Up_action_update_packages.pid_run).filter(and_( Up_action_update_packages.in_process == True,
                                                                             Up_action_update_packages.pid_run is not None)).all()
@@ -8784,8 +8781,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         session.commit()
         session.flush()
         return
-
-
 
     # appel procedure stocke
     @DatabaseHelper._sessionm
