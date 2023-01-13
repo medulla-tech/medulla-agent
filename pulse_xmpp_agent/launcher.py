@@ -1210,7 +1210,6 @@ if __name__ == '__main__':
         ProcessData.load_child_process()
 
         try:
-            logger.debug('### LOOP LAUNCHER CYCLE %s###' % countcycle)
             if (countcycle % 6) == 0: # Every 60 secondes.
                 if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                     # Actions to proceed on the Linux server
