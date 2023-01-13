@@ -374,6 +374,12 @@ def scheduledeployrecoveryjob(self):
             logger.error("RELANCE machines_waitting_online %s" %  machine['sessionid'])
             #time.sleep(5)
             # machine WAITING MACHINE ONLINE presente ?
+            # ----------------- contrainte slopt partiel-----------------------
+            res = MscDatabase().test_deploy_in_partiel_slot( machine['title'])
+            if not res:
+                # machine avec contrainte slot partiel on est pas dans le slot
+                continue
+            # -----------------------------------------------------------------
             try:
                 data = json.loads(machine['result'])
                 if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
@@ -553,7 +559,7 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
         deploymenttype="update"
         prefixcommanddeploy="update"
     else:
-        sessiondeployementless = name_random(5, "arsdeploy")
+        sessiondeployementless = name_random(5, "command")
         prefixcommanddeploy="command"
     msg = []
     name = uuidpackage
@@ -626,7 +632,7 @@ def applicationdeployjsonuuid(self,
             deploymenttype="update"
             prefixcommanddeploy="update"
         else:
-            sessiondeployementless = name_random(5, "arsdeploy")
+            sessiondeployementless = name_random(5, "command")
             prefixcommanddeploy="command"
         msg = []
         # search group deploy and jid machine
@@ -720,7 +726,7 @@ def applicationdeployjsonuuid(self,
                                 break
 
                 if not Found:
-                    sessiondeployementless = name_random(5, "missinggroupdeploy")
+                    sessiondeployementless = name_random(5, "command")
                     XmppMasterDatabase().adddeploy(idcommand,
                                                    jidmachine,
                                                    jidrelay,
@@ -773,7 +779,7 @@ def applicationdeployjsonuuid(self,
                                                   wol=wol,
                                                   msg=msg)
         else:
-            sessiondeployementless = name_random(5, "missinggroupdeploy")
+            sessiondeployementless = name_random(5, "command")
             XmppMasterDatabase().adddeploy(idcommand,
                                            jidmachine,
                                            jidrelay,
@@ -949,7 +955,7 @@ def applicationdeploymentjson(self,
         deploymenttype="update"
         prefixcommanddeploy="update"
     else:
-        sessiondeployementless = name_random(5, "arsdeploy")
+        sessiondeployementless = name_random(5, "command")
         prefixcommanddeploy="command"
 
     if managepackage.getversionpackageuuid(name) is None:
