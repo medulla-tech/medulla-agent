@@ -483,7 +483,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             logger.error("configuration connection %s" % traceback.format_exc())
                             logger.error("configuration no changing")
             else:
-                logging.error("configuration dynamic error")
+                logging.error("The configuration failed.")
+                logging.error("The AES key may be invalid. On this machine, this is configured to use the key %s" % self.config.keyAES32)
+                logging.error("Please check on the server on the /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local")
             self.disconnect(wait=5)
 
     def terminate(self):
