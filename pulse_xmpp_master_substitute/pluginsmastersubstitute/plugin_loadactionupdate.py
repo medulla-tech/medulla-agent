@@ -70,7 +70,7 @@ def read_conf_loadactionupdate(objectxmpp):
     objectxmpp.debuglocal = GLOBALPARAM["debuglocal"]
     if not os.path.isfile(pathconffile):
         logger.error("plugin %s\nConfiguration file missing\n  %s" \
-            "\neg conf:\n[global]\ntime_scrutation = %s\n" \
+            "\neg conf:\n[parameters]\ntime_scrutation = %s\n" \
                 "\ndebuglocal=%s" %(plugin['NAME'], pathconffile, GLOBALPARAM["duration"], GLOBALPARAM["debuglocal"]))
         create_default_config(objectxmpp)
         logger.warning("default value for time_scrutation is %s secondes" % objectxmpp.time_scrutation)
@@ -79,16 +79,22 @@ def read_conf_loadactionupdate(objectxmpp):
         Config.read(pathconffile)
         if os.path.exists(pathconffile + ".local"):
             Config.read(pathconffile + ".local")
-        if Config.has_option("global", "time_scrutation"):
-            objectxmpp.time_scrutation = Config.getint('global', 'time_scrutation')
-        if Config.has_option("global", "debuglocal"):
-            objectxmpp.debuglocal = Config.getboolean('global', 'debuglocal')
+        if Config.has_option("parameters", "time_scrutation"):
+            objectxmpp.time_scrutation = Config.getint('parameters', 'time_scrutation')
+        else:
+            # default values parameters
+            objectxmpp.time_scrutation = GLOBALPARAM["duration"]
+        if Config.has_option("parameters", "debuglocal"):
+            objectxmpp.debuglocal = Config.getboolean('parameters', 'debuglocal')
+        else:
+            # default values parameters
+            objectxmpp.debuglocal = GLOBALPARAM["debuglocal"]
         logger.info("%s"%vars(Config)['_sections'])
         # file_get_contents
         logger.info("debuglocal  %s   " % objectxmpp.debuglocal )
         logger.info("time_scrutation  %s   " % objectxmpp.time_scrutation )
 
-def read_debub_conf(objectxmpp):
+def read_debug_conf(objectxmpp):
     """
         Read plugin configuration
         et interprete informatin de debug local
@@ -101,8 +107,8 @@ def read_debub_conf(objectxmpp):
         Config.read(pathconffile)
         if os.path.exists(pathconffile + ".local"):
             Config.read(pathconffile + ".local")
-        if Config.has_option("global", "debuglocal"):
-            objectxmpp.debuglocal = Config.getboolean('global', 'debuglocal')
+        if Config.has_option("parameters", "debuglocal"):
+            objectxmpp.debuglocal = Config.getboolean('parameters', 'debuglocal')
 
 
 # creation fichier de configuration par default
@@ -112,9 +118,9 @@ def create_default_config(objectxmpp):
     if not os.path.isfile(pathconffile):
         logger.warning("Creation default config file %s" % pathconffile)
         Config = ConfigParser.ConfigParser()
-        Config.add_section('global')
-        Config.set('global', 'time_scrutation', GLOBALPARAM["duration"])
-        Config.set('global', 'debuglocal',  GLOBALPARAM["debuglocal"])
+        Config.add_section('parameters')
+        Config.set('parameters', 'time_scrutation', GLOBALPARAM["duration"])
+        Config.set('parameters', 'debuglocal',  GLOBALPARAM["debuglocal"])
         with open(pathconffile, 'w') as configfile:
             Config.write(configfile)
 
@@ -130,7 +136,7 @@ def Action_update(self):
         Runs the log rotation
     """
     try:
-        read_debub_conf(self)
+        read_debug_conf(self)
         self.msg_debug_local("===================Action_update=====================")
         pidlist = XmppMasterDatabase().get_pid_list_all_Up_action_update_packages()
         if pidlist:
