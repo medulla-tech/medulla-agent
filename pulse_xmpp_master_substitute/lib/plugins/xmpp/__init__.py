@@ -26,7 +26,7 @@ xmppmaster database handler
 """
 
 # SqlAlchemy
-from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_
+from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_, delete
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
@@ -63,7 +63,8 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Update_data, \
     Up_black_list, \
     Up_white_list, \
-    Up_gray_list
+    Up_gray_list, \
+    Up_action_update_packages
 # Imported last
 import logging
 import json
@@ -3740,11 +3741,12 @@ class XmppMasterDatabase(DatabaseHelper):
         return q.with_entities(func.count()).scalar()
 
     @DatabaseHelper._sessionm
-    def getdeploybyuserlen(self, session, login=None):
+    def getdeploybyuserlen(self, session, login=None, typedeploy="command"):
+        deploybyuserlen = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login is not None:
-            return self.get_count(session.query(Deploy).filter(Deploy.login == login))
+            return self.get_count(deploybyuserlen.filter(Deploy.login == login))
         else:
-            return self.get_count(session.query(Deploy))
+            return self.get_count(deploybyuserlen)
 
     @DatabaseHelper._sessionm
     def getLogxmpp( self,
@@ -3988,9 +3990,10 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
 
+
     @DatabaseHelper._sessionm
-    def getdeploybyuserrecent(self, session, login , state, duree, min=None, max=None, filt=None):
-        deploylog = session.query(Deploy)
+    def getdeploybyuserrecent(self, session, login , state, duree, min=None, max=None, filt=None, typedeploy="command"):
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login:
             deploylog = deploylog.filter( Deploy.login == login)
         if state:
@@ -4002,9 +4005,11 @@ class XmppMasterDatabase(DatabaseHelper):
         count = """select count(*) as nb from (
         select count(id) as nb
         from deploy
-        where start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
+        where
+            sessionid like "%s%%" AND
+            start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
         group by title
-        ) as x;"""
+        ) as x;"""%(typedeploy)
 
         if filt is not None:
             deploylog = deploylog.filter( or_(  Deploy.state.like('%%%s%%'%(filt)),
@@ -4015,7 +4020,9 @@ class XmppMasterDatabase(DatabaseHelper):
             count = """select count(*) as nb from (
               select count(id) as nb
               from deploy
-              where start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
+              where
+                    sessionid like "%s%%" AND
+                    start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
               AND (state LIKE "%%%s%%"
               or pathpackage LIKE "%%%s%%"
               or start LIKE "%%%s%%"
@@ -4023,7 +4030,7 @@ class XmppMasterDatabase(DatabaseHelper):
               or host LIKE "%%%s%%"
               )
               group by title
-              ) as x;""" % (filt, filt, filt, filt, filt)
+              ) as x;""" % (typedeploy, filt, filt, filt, filt, filt)
 
 
         lentaillerequette = self.get_count(deploylog)
@@ -4119,9 +4126,9 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None):
+    def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None, typedeploy="command"):
 
-        deploylog = session.query(Deploy)
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login:
             deploylog = deploylog.filter( Deploy.login == login)
 
@@ -4193,11 +4200,12 @@ class XmppMasterDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
-    def getdeploybyuser(self, session, login=None, numrow=None, offset=None):
+    def getdeploybyuser(self, session, login=None, numrow=None, offset=None, typedeploy="command"):
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login is not None:
-            deploylog = session.query(Deploy).filter(Deploy.login == login).order_by(desc(Deploy.id))
+            deploylog = deploylog.filter(Deploy.login == login).order_by(desc(Deploy.id))
         else:
-            deploylog = session.query(Deploy).order_by(desc(Deploy.id))
+            deploylog = deploylog.order_by(desc(Deploy.id))
         if numrow is not None:
             deploylog = deploylog.limit(numrow)
             if offset is not None:
@@ -8648,6 +8656,131 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 ,"creationdate"
                 ,"title_short"
                ]
+
+    @DatabaseHelper._sessionm
+    def setUp_action_update_packages(self,
+                            session,
+                            action,
+                            packages,
+                            option):
+        """
+            creation 1 update pour 1 machine
+        """
+        try:
+            new_Up_action_update_packages = Up_action_update_packages()
+            new_Up_action_update_packages.action = action
+            new_Up_action_update_packages.packages = packages
+            new_Up_action_update_packages.option = option
+            session.add(new_Up_action_update_packages)
+            session.commit()
+            session.flush()
+            return { "id" : new_Up_action_update_packages.id,
+                     "action" : new_Up_action_update_packages.action,
+                     "date" : new_Up_action_update_packages.date.isoformat(),
+                     "in_process" : new_Up_action_update_packages.in_process,
+                     "packages" : new_Up_action_update_packages.packages,
+                     "option" :  new_Up_action_update_packages.option }
+        except IntegrityError as e:
+            self.logger.info("IntegrityError setUp_action_update_packages : %s" % str(e))
+        except Exception as e:
+            self.logger.info("Except setUp_action_update_packages : %s" % str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+        return {}
+
+    @DatabaseHelper._sessionm
+    def del_Up_action_update_packages(self,
+                            session,
+                            packages):
+        """
+            del tout les updates de la machines
+        """
+        session.query(Up_action_update_packages).filter(Up_action_update_packages.packages == packages).delete()
+        session.commit()
+        session.flush()
+
+    @DatabaseHelper._sessionm
+    def del_Up_action_update_packages_id(self,
+                            session,
+                            idlist=[]):
+        """
+            del tout les updates de la machines array id
+        """
+        if isinstance(idlist, (basestring, str, unicode, int)):
+            idlist=[int(idlist)]
+        if idlist:
+            sql = delete(Up_action_update_packages).where(Up_action_update_packages.id.in_(idlist))
+            resultquery = session.execute(sql)
+            session.commit()
+            session.flush()
+
+    @DatabaseHelper._sessionm
+    def get_all_Up_action_update_packages(self,
+                            session):
+        """
+            return tout les updates de la machines
+            et positionne in_process a 1 pour les commande a executer.
+        """
+        result=[]
+        res = session.query(Up_action_update_packages).filter(Up_action_update_packages.in_process == False ).all()
+        if res is not None:
+            for update_package in res:
+                update_package.in_process=True
+                #self.logger.debug("get_all_Up_action_update_packages : %s %s %s %s %s %s" % (update_package.id,
+                                                                                            #update_package.action,
+                                                                                            #update_package.date.isoformat(),
+                                                                                            #update_package.in_process,
+                                                                                            #update_package.packages,
+                                                                                            #update_package.option,
+                                                                                            #))
+                result.append({ "id" : update_package.id,
+                                "action" : update_package.action,
+                                "date" : update_package.date.isoformat(),
+                                "in_process" : update_package.in_process,
+                                "packages" : update_package.packages,
+                                "option" :  update_package.option } )
+
+        session.commit()
+        session.flush()
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_pid_list_all_Up_action_update_packages(self, session):
+        """
+            get list de tout les pid des process de package en cour sur le serveur
+        """
+        result=[]
+        #self.logger.debug("get_all_Up_action_update_packages ")
+        res = session.query(Up_action_update_packages.id,
+                            Up_action_update_packages.pid_run).filter(and_( Up_action_update_packages.in_process == True,
+                                                                            Up_action_update_packages.pid_run is not None)).all()
+        if res is not None:
+            for t in res:
+                result.append({'id': t.id, 'pid_run' : t.pid_run })
+        return result
+
+    @DatabaseHelper._sessionm
+    def update_pid_all_Up_action_update_packages(self, session, id, pid_run):
+        """
+            update pid_run du process lancer
+            les process sont supprimés
+        """
+        res = session.query(Up_action_update_packages).filter(Up_action_update_packages.id == id ).\
+                    update({Up_action_update_packages.pid_run: pid_run})
+        session.commit()
+        session.flush()
+        return
+
+    @DatabaseHelper._sessionm
+    def delete_pid_all_Up_action_update_packages(self, session, id, pid_run):
+        """
+            update pid_run du process lancer
+            les process sont supprimés
+        """
+        res = session.query(Up_action_update_packages).filter(Up_action_update_packages.id == id ).\
+                    update({Up_action_update_packages.pid_run: pid_run})
+        session.commit()
+        session.flush()
+        return
 
     # appel procedure stocke
     @DatabaseHelper._sessionm

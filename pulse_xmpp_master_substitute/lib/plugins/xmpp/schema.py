@@ -761,6 +761,10 @@ class Up_machine_windows(Base):
     id_machine = Column(Integer, primary_key=True)
     update_id = Column(String(38), primary_key=True)
     kb = Column(String(45),  default="")
+    curent_deploy = Column(Boolean, unique=False)
+    required_deploy = Column(Boolean, unique=False)
+    start_date = Column(DateTime, default=None)
+    end_date = Column(DateTime, default=None)
 
 class Up_white_list(Base):
     # ====== Table name =========================
@@ -789,6 +793,20 @@ class Up_gray_list(Base):
     title_short =  Column(String(1024), default="")
     valided = Column(Boolean, unique=False)
     validity_date = Column(DateTime, default=datetime.datetime.now)
+
+class Up_action_update_packages(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'up_action_update_packages'
+    # ====== Fields =============================
+    # Here we define columns for the table organization.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    action = Column(String(1024), nullable=False, unique=True)
+    date = Column(DateTime, nullable=False, default=datetime.datetime.now)
+    in_process = Column(Boolean, unique=False, nullable=False)
+    packages = Column(String(38), nullable=False)
+    option  = Column(String(10), nullable=False)
+    pid_run = Column(Integer)
 
 """
 This code is kept here as a comment, "if" we need to use it
