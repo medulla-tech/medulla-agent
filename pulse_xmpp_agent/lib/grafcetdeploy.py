@@ -591,21 +591,21 @@ class grafcet:
                                                         encoding="utf-8"),
                                         mtype='chat')
 
-        except Exception:
+        except Exception as e:
             logging.getLogger().error(str(e))
             err = str( traceback.format_exc())
             logger.error("\n%s" % (err))
         try:
             if shutdownmachine:
                 shutdown_command()
-        except Exception:
+        except Exception as e:
             logging.getLogger().error(str(e))
             err = str( traceback.format_exc())
             logger.error("\n%s" % (err))
         try:
             if restarmachine :
                 reboot_command()
-        except Exception:
+        except Exception as e:
             logging.getLogger().error(str(e))
             err = str( traceback.format_exc())
             logger.error("\n%s" % (err))
