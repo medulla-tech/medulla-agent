@@ -566,7 +566,7 @@ class confParameter:
         if os.path.exists(jidsufixetempinfo):
             jidsufixe = utils.file_get_contents(jidsufixetempinfo)[:3]
 
-        if not jidsufixe.alnum():
+        if not jidsufixe.isalnum():
             jidsufixe = utils.getRandomName(3)
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
         # if aucune interface. il n'y a pas de macs adress. ressource missing
