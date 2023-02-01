@@ -457,7 +457,11 @@ class manage_kiosk_message:
             if 'utcdatetime' in result:
                 datasend['data']['utcdatetime'] = result['utcdatetime']
             if 'action' in result:
-                if result['action'] == "kioskinterface":
+                if result['action'] == "transfertjson":
+                    self.objectxmpp.send_message(mbody=recv_msg_from_kiosk,
+                                                 mto=self.objectxmpp.sub_monitoring,
+                                                 mtype='chat')
+                elif result['action'] == "kioskinterface":
                     #start kiosk ask initialization
                     datasend['data']['subaction'] =  result['subaction']
                     datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
