@@ -360,19 +360,19 @@ generate_agent_pkg() {
 	colored_echo blue "### INFO Generating installer..."
 	# generate package
 	if [[ ${MINIMAL} -eq 1 ]]; then
-		if [ -f Pulse-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg ]; then
-			rm -rf Pulse-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
+		if [ -f Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg ]; then
+			rm -rf Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
 		fi
-		mv ${PKG_FOLDER_TMP} Pulse-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
-		tar -cf Pulse-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg.tar.gz Pulse-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
-		rm -rf Pulse-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
+		mv ${PKG_FOLDER_TMP} Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
+		tar -cf Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg.tar.gz Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
+		rm -rf Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
 	else
-		if [ -f Pulse-Agent-mac-FULL-${AGENT_VERSION}.pkg ]; then
-			rm -rf Pulse-Agent-mac-FULL-${AGENT_VERSION}.pkg
+		if [ -f Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg ]; then
+			rm -rf Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg
 		fi
-		mv ${PKG_FOLDER_TMP} Pulse-Agent-mac-FULL-${AGENT_VERSION}.pkg
-		tar -cf Pulse-Agent-mac-FULL-${AGENT_VERSION}.pkg.tar.gz Pulse-Agent-mac-FULL-${AGENT_VERSION}.pkg
-		rm -rf Pulse-Agent-mac-FULL-${AGENT_VERSION}.pkg
+		mv ${PKG_FOLDER_TMP} Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg
+		tar -cf Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg.tar.gz Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg
+		rm -rf Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg
 	fi
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... Generation of agent failed. Please restart"
@@ -382,9 +382,9 @@ generate_agent_pkg() {
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then
         if [[ ${MINIMAL} -eq 1 ]]; then
-            ln -s -f Pulse-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg.tar.gz Pulse-Agent-mac-MINIMAL-latest.pkg.tar.gz
+            ln -s -f Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg.tar.gz Medulla-Agent-mac-MINIMAL-latest.pkg.tar.gz
         else
-            ln -s -f Pulse-Agent-mac-FULL-${AGENT_VERSION}.pkg.tar.gz Pulse-Agent-mac-FULL-latest.pkg.tar.gz
+            ln -s -f Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg.tar.gz Medulla-Agent-mac-FULL-latest.pkg.tar.gz
         fi
     fi
 

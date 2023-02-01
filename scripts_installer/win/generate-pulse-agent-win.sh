@@ -96,16 +96,18 @@ PULSE_START_CONFFILE_FILENAME="start_machine.ini"
 PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
 PULSE_AGENTUPDATEOPENSSH_CONFFILE="updateopenssh.ini"
 PULSE_AGENTUPDATETIGHTVNC_CONFFILE="updatetightvnc.ini"
+PULSE_AGENTUPDATEBACKUPCLIENT_CONFFILE="updatebackupclient.ini"
 PULSE_AGENT_TASK_XML_FILENAME="pulse-agent-task.xml"
 DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
 CHERRYPY_NAME="Pulse CherryPy"
 CHERRYPY_VERSION="8.9.1"
-NETWORK_NAME="Pulse network notify"
+NETWORK_NAME="Medulla network notify"
 RDP_NAME="Pulse RDP"
 SYNCTHING_NAME="Pulse Syncthing"
 FILETREE_NAME="Pulse Filetree Generator"
+PAEXEC_NAME="PAExec"
 
 # Display usage
 display_usage() {
@@ -347,13 +349,14 @@ update_nsi_script() {
         -e "s/@@PULSE_STARTUPDATE_CONFFILE@@/${PULSE_STARTUPDATE_CONFFILE_FILENAME}/" \
         -e "s/@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@/${PULSE_AGENTUPDATEOPENSSH_CONFFILE}/" \
         -e "s/@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE}/" \
-		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
-		-e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
-		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
-		-e "s/@@OPENSSH_VERSION@@/${OPENSSH_VERSION}/" \
-		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
-		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
-		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
+        -e "s/@@PULSE_UPDATEBACKUPCLIENT_CONFFILE@@/${PULSE_AGENTUPDATEBACKUPCLIENT_CONFFILE}/" \
+        -e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
+        -e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
+        -e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
+        -e "s/@@OPENSSH_VERSION@@/${OPENSSH_VERSION}/" \
+        -e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
+        -e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
+        -e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
         -e "s/@@CREATE_PROFILE_FILENAME@@/${CREATE_PROFILE_FILENAME}/" \
         -e "s/@@REMOVE_PROFILE_FILENAME@@/${REMOVE_PROFILE_FILENAME}/" \
         -e "s/@@PULSE_SERVICE_FILENAME@@/${PULSE_SERVICE_FILENAME}/" \
@@ -364,6 +367,7 @@ update_nsi_script() {
         -e "s/@@RDP_NAME@@/${RDP_NAME}/" \
         -e "s/@@SYNCTHING_NAME@@/${SYNCTHING_NAME}/" \
         -e "s/@@FILETREE_NAME@@/${FILETREE_NAME}/" \
+        -e "s/@@PAEXEC_NAME@@/${PAEXEC_NAME}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
@@ -385,13 +389,13 @@ generate_agent_installer() {
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then
         if [[ ${MINIMAL} -eq 1 ]]; then
-	    ln -s -f Pulse-Agent-windows-MINIMAL-${AGENT_VERSION}.exe Pulse-Agent-windows-MINIMAL-latest.exe
+	    ln -s -f Medulla-Agent-windows-MINIMAL-${AGENT_VERSION}.exe Medulla-Agent-windows-MINIMAL-latest.exe
         else
-	    ln -s -f Pulse-Agent-windows-FULL-${AGENT_VERSION}.exe Pulse-Agent-windows-FULL-latest.exe
+	    ln -s -f Medulla-Agent-windows-FULL-${AGENT_VERSION}.exe Medulla-Agent-windows-FULL-latest.exe
         fi
     fi
 
-    for package in Pulse-Agent-windows-MINIMAL-latest Pulse-Agent-windows-FULL-latest;
+    for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
     do
         cp -fv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
     done

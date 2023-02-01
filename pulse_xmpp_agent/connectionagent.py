@@ -47,7 +47,7 @@ from lib.utils import DEBUGPULSE, getIpXmppInterface,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
                       getRandomName, AESCipher, refreshfingerprintconf, \
                         geolocalisation_agent, \
-                        serialnumbermachine
+                        serialnumbermachine, offline_search_kb
 
 from optparse import OptionParser
 
@@ -483,7 +483,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             logger.error("configuration connection %s" % traceback.format_exc())
                             logger.error("configuration no changing")
             else:
-                logging.error("configuration dynamic error")
+                logging.error("The configuration failed.")
+                logging.error("The AES key may be invalid. On this machine, this is configured to use the key %s" % self.config.keyAES32)
+                logging.error("Please check on the server on the /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local")
             self.disconnect(wait=5)
 
     def terminate(self):
@@ -578,7 +580,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'adorgbyuser': '',
             'agent_machine_name':self.agent_machine_name,
             'uuid_serial_machine' : serialnumbermachine(),
-            'regcomplet': self.FullRegistration
+            'regcomplet': self.FullRegistration,
+            'system_info' :  offline_search_kb().search_system_info_reg()
         }
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
@@ -732,10 +735,10 @@ if __name__ == '__main__':
         print "Agent must be running as root"
         sys.exit(0)
     elif sys.platform.startswith('win') and isWinUserAdmin() == 0 :
-        print "Pulse agent must be running as Administrator"
+        print "Medulla agent must be running as Administrator"
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        print "Pulse agent must be running as root"
+        print "Medulla agent must be running as root"
         sys.exit(0)
 
     optp = OptionParser()

@@ -30,22 +30,39 @@ import logging
 import subprocess
 import lxml.etree as ET
 import hashlib
+
+from lib import utils
 logger = logging.getLogger()
 if sys.platform.startswith('win'):
     from lib import registerwindows
     import _winreg
 from xml.etree import ElementTree
+from sleekxmpp import jid
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.6", "NAME": "inventory", "TYPE": "machine"}
+plugin = {"VERSION": "3.61", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
+    try:
+        xmppobject.sub_inventory
+    except :
+        xmppobject.sub_inventory = jid.JID("master_inv@pulse")
+    try:
+        xmppobject.sub_updates
+    except :
+        xmppobject.sub_updates = jid.JID("master_upd@pulse")
+    try:
+        send_plugin_update_window(xmppobject)
+    except Exception as e:
+        logger.error("\n%s" % (traceback.format_exc()))
+
     boolchange = True
     namefilexml = ""
     if hasattr(xmppobject.config, 'via_xmpp'):
@@ -76,10 +93,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             logger.debug("configure plugin %s" % action)
     except:
         pass
-    try:
-        xmppobject.sub_inventory
-    except :
-        xmppobject.sub_inventory = xmppobject.agentmaster
+
     resultaction = "result%s" % action
     result = {}
     result['action'] = resultaction
@@ -689,3 +703,22 @@ def printer_string(terminal,
     if status is not None:
         xmlprinter = "%s\n<STATUS>%s</STATUS>" % (xmlprinter, status)
     return "%s\n</PRINTERS>" % (xmlprinter)
+
+
+def send_plugin_update_window(xmppobject):
+
+        sessioniddata = utils.getRandomName(6, "update_window")
+        try:
+            update_information = {
+                "action": "update_window",
+                "sessionid": sessioniddata,
+                "data": { "system_info" : utils.offline_search_kb().get()},
+                "ret": 0,
+                "base64": False,
+            }
+
+            xmppobject.send_message( mto=xmppobject.sub_updates,
+                               mbody=json.dumps(update_information),
+                               mtype="chat")
+        except Exception as e:
+            logger.error("\n%s" % (traceback.format_exc()))

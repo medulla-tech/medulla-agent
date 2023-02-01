@@ -5,11 +5,11 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleGetInfoString</key>
-	<string>Pulse Agent @@AGENT_VERSION@@</string>
+	<string>Medulla Agent @@AGENT_VERSION@@</string>
 	<key>CFBundleIdentifier</key>
 	<string>net.siveo.pkg.Pulse_Agent_Installer</string>
 	<key>CFBundleName</key>
-	<string>Pulse Agent Installer</string>
+	<string>Medulla Agent Installer</string>
 	<key>IFMajorVersion</key>
 	<integer>@@V_MAJOR@@</integer>
 	<key>IFMinorVersion</key>

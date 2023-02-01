@@ -5,3 +5,4 @@
 /var/lib/pulse2/clients/config/startupdate.ini
 /var/lib/pulse2/clients/config/updateopenssh.ini
 /var/lib/pulse2/clients/config/updatetightvnc.ini
+/var/lib/pulse2/clients/config/updatebackupclient.ini

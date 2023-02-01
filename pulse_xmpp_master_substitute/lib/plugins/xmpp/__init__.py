@@ -26,11 +26,12 @@ xmppmaster database handler
 """
 
 # SqlAlchemy
-from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_
+from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_, delete
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.sql.expression import literal
 from datetime import date, datetime, timedelta
 import pprint
 # PULSE2 modules
@@ -57,7 +58,13 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Mon_panels_template, \
     Glpi_entity, \
     Glpi_location, \
-    Glpi_Register_Keys
+    Glpi_Register_Keys, \
+    Up_machine_windows, \
+    Update_data, \
+    Up_black_list, \
+    Up_white_list, \
+    Up_gray_list, \
+    Up_action_update_packages
 # Imported last
 import logging
 import json
@@ -429,43 +436,60 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def search_machines_from_state(self, session, state):
+    def search_machines_from_state(self, session, state,subdep_user=None):
+
         dateend = datetime.now()
-        sql = """SELECT
-                    *
-                 FROM
-                    xmppmaster.deploy
-                 WHERE
-                    state LIKE '%s%%' AND
-                    '%s' BETWEEN startcmd AND
-                    endcmd;""" % (state, dateend)
-        machines = session.execute(sql)
-        session.commit()
-        session.flush()
-        result = [x for x in machines]
         resultlist = []
-        for t in result:
-            listresult = {"id": t[0],
-                          "title": t[1],
-                          "jidmachine": t[2],
-                          "jid_relay": t[3],
-                          "pathpackage": t[4],
-                          "state": t[5],
-                          "sessionid": t[6],
-                          "start": str(t[7]),
-                          "startcmd": str(t[8]),
-                          "endcmd": str(t[9]),
-                          "inventoryuuid": t[10],
-                          "host": t[11],
-                          "user": t[12],
-                          "command": t[13],
-                          "group_uuid": t[14],
-                          "login": t[15],
-                          "macadress": t[16],
-                          "syncthing": t[17],
-                          "result": t[18]}
-            resultlist.append(listresult)
+        try:
+            if subdep_user:
+                sql = """SELECT
+                            *
+                        FROM
+                            xmppmaster.deploy
+                        WHERE
+                            state LIKE '%s%%' AND subdep = '%s' AND
+                            '%s' BETWEEN startcmd AND
+                            endcmd;""" % (state, subdep_user,dateend)
+            else:
+                sql = """SELECT
+                            *
+                        FROM
+                            xmppmaster.deploy
+                        WHERE
+                            state LIKE '%s%%' AND
+                            '%s' BETWEEN startcmd AND
+                            endcmd;""" % (state, dateend)
+            machines = session.execute(sql)
+            session.commit()
+            session.flush()
+            result = [x for x in machines]
+            resultlist = []
+            for t in result:
+                listresult = {"id": t[0],
+                            "title": t[1],
+                            "jidmachine": t[2],
+                            "jid_relay": t[3],
+                            "pathpackage": t[4],
+                            "state": t[5],
+                            "sessionid": t[6],
+                            "start": str(t[7]),
+                            "startcmd": str(t[8]),
+                            "endcmd": str(t[9]),
+                            "inventoryuuid": t[10],
+                            "host": t[11],
+                            "user": t[12],
+                            "command": t[13],
+                            "group_uuid": t[14],
+                            "login": t[15],
+                            "macadress": t[16],
+                            "syncthing": t[17],
+                            "result": t[18]}
+                resultlist.append(listresult)
+        except Exception:
+            logging.getLogger().error("%s" % (traceback.format_exc()))
         return resultlist
+        
+
     @DatabaseHelper._sessionm
     def Timeouterrordeploy(self, session):
         # test les evenements states qui ne sont plus valides sur intervalle de deployement.
@@ -524,19 +548,16 @@ class XmppMasterDatabase(DatabaseHelper):
             return resultlist
 
     @DatabaseHelper._sessionm
-    def update_state_deploy(self, session, sql_id, state):
-        """
-            Reset the state of the deploiement to `state` for the
-            `sql_id` deploiements
-            Args:
-                session: The SQL Alchemy session
-                sql_id: The id of the deploiement that need to be reset
-                state: The new state of the deploiement
-        """
+    def update_state_deploy(self, session, id, state, subdep_user=None):
         try:
-            sql = """UPDATE `xmppmaster`.`deploy`
-                     SET `state`='%s'
-                     WHERE `id`='%s';""" % (state, sql_id)
+            if subdep_user:
+                sql = """UPDATE `xmppmaster`.`deploy`
+                        SET `state`='%s'
+                        WHERE `id`='%s' and `subdep` = '%s' ;""" % (state, id, subdep_user)
+            else:
+                sql = """UPDATE `xmppmaster`.`deploy`
+                        SET `state`='%s'
+                        WHERE `id`='%s';""" % (state, id)
             session.execute(sql)
             session.commit()
             session.flush()
@@ -614,6 +635,48 @@ class XmppMasterDatabase(DatabaseHelper):
             self.logger.info("Restarting %s deployements" % results)
         return results
 
+
+    @DatabaseHelper._sessionm
+    def replaydeploysessionid(self, session, sessionid, force_redeploy=0,rechedule=0):
+        """ call procedure stockee remise deploy pour"""
+
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+                self.logger.info("call procedure stockee mmc_restart_deploy_sessionid( %s,%s,%s) "%(sessionid,
+                                                                                                force_redeploy,
+                                                                                                rechedule))
+                cursor = connection.cursor()
+                cursor.callproc("mmc_restart_deploy_sessionid", [sessionid,
+                                                                force_redeploy,
+                                                                rechedule])
+                results = list(cursor.fetchall())
+                cursor.close()
+                connection.commit()
+        finally:
+            connection.close()
+        return
+
+
+    def restart_blocked_deployments(self, nb_reload=50):
+        """
+        Plan with blocked deployments again
+        call procedure mmc_restart_blocked_deployments
+        """
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+                cursor = connection.cursor()
+                cursor.callproc("mmc_restart_blocked_deployments", [nb_reload])
+                results = list(cursor.fetchall())
+                cursor.close()
+                connection.commit()
+        finally:
+            connection.close()
+        results = "%s"%results[0]
+        if int(results) != 0:
+            self.logger.info("call procedure stockee mmc_restart_blocked_deployments(%s)" % nb_reload)
+            self.logger.info("restart %s deployements" % results)
+        return results
 
     @DatabaseHelper._sessionm
     def updatedeploytosessionid(self, session, status, sessionid):
@@ -980,7 +1043,6 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
             logging.getLogger().debug("qa_custom_command error")
-            return -1
             return -1
 
     @DatabaseHelper._sessionm
@@ -1708,6 +1770,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 uuidnew = "None"
             else:
                 uuidnew = str(uuid_inventorymachine)
+            if lastuser is None or lastuser == "":
+                lastuser = str(machineforupdate['lastuser'])
             maxuuid=max([len(uuidold), len(uuidnew)])
             msg ="Update Machine %8s (%s)\n" \
                 "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|\n" \
@@ -2285,7 +2349,9 @@ class XmppMasterDatabase(DatabaseHelper):
                   endcmd=None,
                   macadress=None,
                   result=None,
-                  syncthing=None):
+                  syncthing=None,
+                  subdep = None
+                  ):
         """
         parameters
         startcmd and endcmd  int(timestamp) either str(datetime)
@@ -2331,6 +2397,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_deploy.result = result
             if syncthing is not None:
                 new_deploy.syncthing = syncthing
+            if subdep is not None:
+                new_deploy.subdep = subdep
             session.add(new_deploy)
             session.commit()
             session.flush()
@@ -3673,11 +3741,12 @@ class XmppMasterDatabase(DatabaseHelper):
         return q.with_entities(func.count()).scalar()
 
     @DatabaseHelper._sessionm
-    def getdeploybyuserlen(self, session, login=None):
+    def getdeploybyuserlen(self, session, login=None, typedeploy="command"):
+        deploybyuserlen = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login is not None:
-            return self.get_count(session.query(Deploy).filter(Deploy.login == login))
+            return self.get_count(deploybyuserlen.filter(Deploy.login == login))
         else:
-            return self.get_count(session.query(Deploy))
+            return self.get_count(deploybyuserlen)
 
     @DatabaseHelper._sessionm
     def getLogxmpp( self,
@@ -3921,9 +3990,10 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
 
+
     @DatabaseHelper._sessionm
-    def getdeploybyuserrecent(self, session, login , state, duree, min=None, max=None, filt=None):
-        deploylog = session.query(Deploy)
+    def getdeploybyuserrecent(self, session, login , state, duree, min=None, max=None, filt=None, typedeploy="command"):
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login:
             deploylog = deploylog.filter( Deploy.login == login)
         if state:
@@ -3935,9 +4005,11 @@ class XmppMasterDatabase(DatabaseHelper):
         count = """select count(*) as nb from (
         select count(id) as nb
         from deploy
-        where start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
+        where
+            sessionid like "%s%%" AND
+            start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
         group by title
-        ) as x;"""
+        ) as x;"""%(typedeploy)
 
         if filt is not None:
             deploylog = deploylog.filter( or_(  Deploy.state.like('%%%s%%'%(filt)),
@@ -3948,7 +4020,9 @@ class XmppMasterDatabase(DatabaseHelper):
             count = """select count(*) as nb from (
               select count(id) as nb
               from deploy
-              where start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
+              where
+                    sessionid like "%s%%" AND
+                    start >= DATE_SUB(NOW(),INTERVAL 24 HOUR)
               AND (state LIKE "%%%s%%"
               or pathpackage LIKE "%%%s%%"
               or start LIKE "%%%s%%"
@@ -3956,7 +4030,7 @@ class XmppMasterDatabase(DatabaseHelper):
               or host LIKE "%%%s%%"
               )
               group by title
-              ) as x;""" % (filt, filt, filt, filt, filt)
+              ) as x;""" % (typedeploy, filt, filt, filt, filt, filt)
 
 
         lentaillerequette = self.get_count(deploylog)
@@ -4052,9 +4126,9 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None):
+    def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None, typedeploy="command"):
 
-        deploylog = session.query(Deploy)
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login:
             deploylog = deploylog.filter( Deploy.login == login)
 
@@ -4126,11 +4200,12 @@ class XmppMasterDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
-    def getdeploybyuser(self, session, login=None, numrow=None, offset=None):
+    def getdeploybyuser(self, session, login=None, numrow=None, offset=None, typedeploy="command"):
+        deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
         if login is not None:
-            deploylog = session.query(Deploy).filter(Deploy.login == login).order_by(desc(Deploy.id))
+            deploylog = deploylog.filter(Deploy.login == login).order_by(desc(Deploy.id))
         else:
-            deploylog = session.query(Deploy).order_by(desc(Deploy.id))
+            deploylog = deploylog.order_by(desc(Deploy.id))
         if numrow is not None:
             deploylog = deploylog.limit(numrow)
             if offset is not None:
@@ -4377,30 +4452,32 @@ class XmppMasterDatabase(DatabaseHelper):
         """
 
         if classutilMachine == "private":
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND `relayserver`.`classutil` = '%s'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, userou, enabled, classutilMachine)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(userou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.classutil == classutilMachine,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         else:
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, userou, enabled)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(userou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -4418,31 +4495,33 @@ class XmppMasterDatabase(DatabaseHelper):
                to a use of the private machine.
         """
         if classutilMachine == "private":
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND `relayserver`.`classutil` = '%s'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, machineou, enabled, classutilMachine)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(machineou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            RelayServer.classutil == classutilMachine,
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         else:
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, machineou, enabled)
-        result = session.execute(sql)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(machineou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
+        result = sql.all()
         session.commit()
         session.flush()
         return [x for x in result]
@@ -4471,7 +4550,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, username, enabled, classutilMachine)
+            limit 1;""" % (rule, re.escape(username), enabled, classutilMachine)
         else:
             sql = """select `relayserver`.`id`
             from `relayserver`
@@ -4483,7 +4562,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, username, enabled)
+            limit 1;""" % (rule, re.escape(username), enabled)
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -5341,28 +5420,28 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         try:
             user = str(jid).split("@")[0]
-
             sql = """UPDATE
                         `xmppmaster`.`machines`
                     SET
                         `enabled` = '%s'
                     WHERE
-                        `xmppmaster`.`machines`.`jid` like('%s@%%');""" % (presence,
-                                                                           user)
+                        `xmppmaster`.`machines`.`jid` like('%s@%%') limit 1;""" % ( presence,
+                                                                                    user)
             session.execute(sql)
             sql = """UPDATE
                         `xmppmaster`.`relayserver`
                     SET
                         `enabled` = '%s'
                     WHERE
-                        `xmppmaster`.`relayserver`.`jid` like('%s@%%');""" % (presence,
-                                                                              user)
+                        `xmppmaster`.`relayserver`.`jid` like('%s@%%') limit 1;""" % (presence,
+                                                                                      user)
             session.execute(sql)
             session.commit()
             session.flush()
         except Exception as e:
             logging.getLogger().error("Function : update_Presence_Relay, we got the error: " % str(e))
             logging.getLogger().error("We encountered the backtrace: \n%s" % traceback.format_exc())
+
 
     @DatabaseHelper._sessionm
     def is_machine_reconf_needed(self, session, jid, reconf=1):
@@ -6112,6 +6191,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 arsname: The ars where the machine is connected to.
             Returns:
         """
+        excluded_account = 'master@pulse'
+        incrementeiscount = []
         try:
             excluded_account = 'master@pulse'
 
@@ -6196,7 +6277,9 @@ class XmppMasterDatabase(DatabaseHelper):
             result = session.execute(sql)
             session.commit()
             session.flush()
-            return [x for x in result][0]
+            re=[x for x in result]
+            if re:
+                return re[0]
         except IndexError as index_error:
             logging.getLogger().error("An index error occured while trying to set up online/offline machine: %s" % str(index_error))
             return None
@@ -6209,13 +6292,16 @@ class XmppMasterDatabase(DatabaseHelper):
         """
             update boolean need_reconf in table machines
         """
-        user = str(jid).split("@")[0]
+        user = self.jid_to_hostname(jid)
+        if not user:
+            logging.getLogger().error("SetPresenceMachine jid error : %s" % jid)
+            return False
         try:
             sql = """UPDATE `xmppmaster`.`machines`
                          SET `need_reconf` = '%s'
                      WHERE
-                         `xmppmaster`.`machines`.jid like('%s@%%')""" % (status,
-                                                                         user)
+                         `xmppmaster`.`machines`.hostname like '%s' limit 1;""" % (status,
+                                                                                   user)
             result = session.execute(sql)
             session.commit()
             session.flush()
@@ -6250,36 +6336,53 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 return { "type": "machine", "reconf": mach[3]}
         else:
+            self.logger.warning("absent %s Mach table" % ( jid))
             return {}
 
+
+    def jid_to_hostname(self, jid):
+        try:
+            user = jid.split('@')[0].split('.')
+            if len(user) > 1:
+                user = user[:-1]
+        except Exception :
+            return None
+        user=".".join(user)
+        if not user:
+            return None
+        return user
 
     @DatabaseHelper._sessionm
     def SetPresenceMachine(self, session, jid, presence=0):
         """
-            This function is used update the availability of a machine.
+            Change the presence in the machine table.
             Args:
-                session: The SQLAlchemy session
-                jid: the jid of the machine
-                presence: The availability of the machine
-            Returns:
-                It returns True if the SQL request ended correctly. False otherwise
+                session: The SQL Alchemy session
+                jid: The jid of the machine where we want to change the presence
+                presence: The new presence state/
+                          0: The machine is offline
+                          1: The machine is online
         """
-        user = str(jid).split("@")[0]
+        user = self.jid_to_hostname(jid)
+        if not user:
+            logging.getLogger().error("SetPresenceMachine jid error : %s" % jid)
+            return False
         try:
             sql = """UPDATE
                         `xmppmaster`.`machines`
                     SET
                         `xmppmaster`.`machines`.`enabled` = '%s'
                     WHERE
-                        `xmppmaster`.`machines`.jid like('%s@%%');""" % (presence,
-                                                                         user)
+                        `xmppmaster`.`machines`.hostname like '%s' limit 1;""" % (presence, user)
             session.execute(sql)
             session.commit()
             session.flush()
             return True
-        except Exception as e:
-            logging.getLogger().error("The SetPresenceMachine function ended with the error: %s" % str(e))
+        except Exception as error_presence:
+            logging.getLogger().error("An error occured while setting the new presence.")
+            logging.getLogger().error("We got the error:\n %s" % str(error_presence))
             return False
+
 
     @DatabaseHelper._sessionm
     def updatedeployresultandstate(self, session, sessionid, state, result):
@@ -6607,6 +6710,49 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
             return -1
+
+    @DatabaseHelper._sessionm
+    def Update_version_agent_machine_md5(self,
+                                         session,
+                                         hostname,
+                                         md5,
+                                         version):
+        """
+        This function updates the md5 and the version of the agent in the uptime_machine
+        table.
+        Args:
+            session: The sqlalchemy session
+            hostname: The hostname of the machine
+            md5: The md5 fingerprint of the agent.
+            version: The version of the agent
+        """
+
+        try:
+            sql="""
+                UPDATE
+                    `xmppmaster`.`uptime_machine`
+                SET
+                    `md5agentversion` = '%s',
+                    `version` = '%s'
+                WHERE
+                    (id = (SELECT
+                            id
+                        FROM
+                            xmppmaster.uptime_machine
+                        WHERE
+                            hostname LIKE '%s' AND status = 1
+                        ORDER BY id DESC
+                        LIMIT 1));"""%(md5,
+                                    version,
+                                    hostname)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception, e:
+            logging.getLogger().error("We failed to update the md5 and the version of the running agent for %s" % hostname)
+            logging.getLogger().error("we encounterd the error: %s" % str(e))
+            return False
 
     @DatabaseHelper._sessionm
     def last_event_presence_xmpp(self,
@@ -8463,3 +8609,793 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.commit()
             session.flush()
         return machines_jid_for_updating
+
+# ----------------------------- Update windows ---------------------------------
+
+    def _colonne_name_update(self):
+        """
+            return colonne fo result
+        """
+        return ["updateid"
+                ,"revisionid"
+                ,"creationdate"
+                ,"company"
+                ,"product"
+                ,"productfamily"
+                ,"updateclassification"
+                ,"prerequisite"
+                ,"title"
+                ,"description"
+                ,"msrcseverity"
+                ,"msrcnumber"
+                ,"kb"
+                ,"languages"
+                ,"category"
+                ,"supersededby"
+                ,"supersedes"
+                ,"payloadfiles"
+                ,"revisionnumber"
+                ,"bundledby_revision"
+                ,"isleaf"
+                ,"issoftware"
+                ,"deploymentaction"
+                ,"title_short"]
+
+    def _colonne_name_update_product(self):
+        """
+            return colonne fo result
+        """
+        return ["updateid"
+                ,"kb"
+                ,"revisionid"
+                ,"title"
+                ,"description"
+                ,"updateid_package"
+                ,"payloadfiles"
+                ,"supersededby"
+                ,"creationdate"
+                ,"title_short"
+               ]
+
+    @DatabaseHelper._sessionm
+    def setUp_action_update_packages(self,
+                            session,
+                            action,
+                            packages,
+                            option):
+        """
+            creation 1 update pour 1 machine
+        """
+        try:
+            new_Up_action_update_packages = Up_action_update_packages()
+            new_Up_action_update_packages.action = action
+            new_Up_action_update_packages.packages = packages
+            new_Up_action_update_packages.option = option
+            session.add(new_Up_action_update_packages)
+            session.commit()
+            session.flush()
+            return { "id" : new_Up_action_update_packages.id,
+                     "action" : new_Up_action_update_packages.action,
+                     "date" : new_Up_action_update_packages.date.isoformat(),
+                     "in_process" : new_Up_action_update_packages.in_process,
+                     "packages" : new_Up_action_update_packages.packages,
+                     "option" :  new_Up_action_update_packages.option }
+        except IntegrityError as e:
+            self.logger.info("IntegrityError setUp_action_update_packages : %s" % str(e))
+        except Exception as e:
+            self.logger.info("Except setUp_action_update_packages : %s" % str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+        return {}
+
+    @DatabaseHelper._sessionm
+    def del_Up_action_update_packages(self,
+                            session,
+                            packages):
+        """
+            del tout les updates de la machines
+        """
+        session.query(Up_action_update_packages).filter(Up_action_update_packages.packages == packages).delete()
+        session.commit()
+        session.flush()
+
+    @DatabaseHelper._sessionm
+    def del_Up_action_update_packages_id(self,
+                            session,
+                            idlist=[]):
+        """
+            del tout les updates de la machines array id
+        """
+        if isinstance(idlist, (basestring, str, unicode, int)):
+            idlist=[int(idlist)]
+        if idlist:
+            sql = delete(Up_action_update_packages).where(Up_action_update_packages.id.in_(idlist))
+            resultquery = session.execute(sql)
+            session.commit()
+            session.flush()
+
+    @DatabaseHelper._sessionm
+    def get_all_Up_action_update_packages(self,
+                            session):
+        """
+            return tout les updates de la machines
+            et positionne in_process a 1 pour les commande a executer.
+        """
+        result=[]
+        res = session.query(Up_action_update_packages).filter(Up_action_update_packages.in_process == False ).all()
+        if res is not None:
+            for update_package in res:
+                update_package.in_process=True
+                #self.logger.debug("get_all_Up_action_update_packages : %s %s %s %s %s %s" % (update_package.id,
+                                                                                            #update_package.action,
+                                                                                            #update_package.date.isoformat(),
+                                                                                            #update_package.in_process,
+                                                                                            #update_package.packages,
+                                                                                            #update_package.option,
+                                                                                            #))
+                result.append({ "id" : update_package.id,
+                                "action" : update_package.action,
+                                "date" : update_package.date.isoformat(),
+                                "in_process" : update_package.in_process,
+                                "packages" : update_package.packages,
+                                "option" :  update_package.option } )
+
+        session.commit()
+        session.flush()
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_pid_list_all_Up_action_update_packages(self, session):
+        """
+            get list de tout les pid des process de package en cour sur le serveur
+        """
+        result=[]
+        #self.logger.debug("get_all_Up_action_update_packages ")
+        res = session.query(Up_action_update_packages.id,
+                            Up_action_update_packages.pid_run).filter(and_( Up_action_update_packages.in_process == True,
+                                                                            Up_action_update_packages.pid_run is not None)).all()
+        if res is not None:
+            for t in res:
+                result.append({'id': t.id, 'pid_run' : t.pid_run })
+        return result
+
+    @DatabaseHelper._sessionm
+    def update_pid_all_Up_action_update_packages(self, session, id, pid_run):
+        """
+            update pid_run du process lancer
+            les process sont supprimés
+        """
+        res = session.query(Up_action_update_packages).filter(Up_action_update_packages.id == id ).\
+                    update({Up_action_update_packages.pid_run: pid_run})
+        session.commit()
+        session.flush()
+        return
+
+    @DatabaseHelper._sessionm
+    def delete_pid_all_Up_action_update_packages(self, session, id, pid_run):
+        """
+            update pid_run du process lancer
+            les process sont supprimés
+        """
+        res = session.query(Up_action_update_packages).filter(Up_action_update_packages.id == id ).\
+                    update({Up_action_update_packages.pid_run: pid_run})
+        session.commit()
+        session.flush()
+        return
+
+    # appel procedure stocke
+    @DatabaseHelper._sessionm
+    def search_kb_windows(self, session, filter, kb_list):
+        """
+        Cette fonction renvoi les updates pour 1 machine en fonctions des kb installer et de os present sur la machine
+        sous forme d'un list de dict
+         Parameters :
+            filter filter on title field obligatoire value
+                rq: la value % doit commencer et terminer le filtre
+            kblist "string list separator ," de tous les kb remontés depuis la machine
+
+        eg : search_kb_windows("%Windows 10 Version 21H2 for x64-based%",
+                                "5007289,5003791" );
+        """
+        result=[]
+        colonnename=self._colonne_name_update()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_search_kb_windows",[filter, kb_list])
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+    @DatabaseHelper._sessionm
+    def search_kb_windows1(self, session,
+                           filter="",
+                           product="Windows 10",
+                           version="21H2",
+                           sevrity="Critical",
+                           archi="x64",
+                           kb_list=""):
+        """
+        Cette fonction renvoi les updates pour 1 machine en fonctions des kb installer et de os present sur la machine
+        sous forme d'un list de dict
+        Parameters :
+            filter filter on title field "" par default
+            product windows default "Windows 10"
+            version produit default "21H2"
+            severity de update default "Critical"
+            architecture de la machine default x64
+            kblist "string list separator ," de tous les kb remontés depuis la machine
+
+        eg : search_kb_windows1("", "Windows 10", "21H2", "Critical", "x64", "5007289, 5003791");
+        """
+
+        result=[]
+
+        colonnename=self._colonne_name_update()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_search_kb_windows1",[filter, product,
+                           version,
+                           sevrity,
+                           archi,
+                           kb_list])
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+
+    @DatabaseHelper._sessionm
+    def search_update_windows_malicious_software_tool(self, session,
+                           product="Windows 10",
+                           archi="x64",
+                           major= 5,
+                           minor=104):
+        """
+        cette fonction renvoi update for windows malicious software tool
+        sous forme d'un list de dict
+        Parameters :
+            product windows default "Windows 10"
+            architecture de la machine default "x64"
+            major la valeur major de la version installer
+            minor la valeur mineur de la version installer
+        eg : search_update_windows_malicious_software_tool(product="Windows 10",
+                                                            archi="x64",
+                                                            major= 5,
+                                                            minor=105);
+        """
+        result=[]
+        colonnename=self._colonne_name_update()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_windows_malicious_software_tool",[ product,
+                                                                    archi,
+                                                                    major,
+                                                                    minor])
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                    dictline['tableproduct'] ="up_packages_Win_Malicious_X64"
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+    @DatabaseHelper._sessionm
+    def history_list_kb(self, session, list_updateid):
+        """
+            Cette onction renvoi les numero de kb en fonction d'une list python des updateid des update
+            Parameters:
+                list updateid ["00009be5-c940-498d-b04d-620a572436df","00009be5-c940-498d-b04d-620a572436df"]
+            return
+                listt kb
+        """
+        ret=[]
+        try:
+            if list_updateid:
+                indata=[ '"%s"'%x for x in  list_updateid ]
+                sql="""SELECT
+                            kb
+                        FROM
+                            xmppmaster.update_data
+                        WHERE
+                            updateid IN (%s); """ % ",".join(indata)
+                #logging.getLogger().error("sql history_list_kb : %s" %sql)
+                req = session.execute(sql)
+                session.commit()
+                session.flush()
+                ret=[elt[0] for elt in req]
+        except Exception:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def history_list_base(self, session, list_updateid):
+        """
+            Cette fonction renvoi update en fonction d'une list python des updateid
+            return 1 tableau de dict
+            Parameters:
+                list updateid ["00009be5-c940-498d-b04d-620a572436df","00009be5-c940-498d-b04d-620a572436df"]
+            return
+                listt kb
+        """
+        ret=[]
+        try:
+            if list_updateid:
+                indata=[ '"%s"'%x for x in  list_updateid ]
+                sql="""SELECT
+                            *
+                        FROM
+                            xmppmaster.update_data
+                        WHERE
+                            updateid IN (%s); """ % ",".join(indata)
+                req = session.execute(sql)
+                session.commit()
+                session.flush()
+                ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def getId_UuidFromJid(self, session, jid):
+        """ return machine uuid and id for machines """
+        user = str(jid).split("@")[0]
+        uuid_inventorymachine = session.query(Machines.id,
+                                              Machines.uuid_inventorymachine).\
+                                                  filter(Machines.jid.like(user + '%')).first()
+        session.commit()
+        session.flush()
+        result = {}
+        if uuid_inventorymachine:
+            result = {"id": uuid_inventorymachine.id,
+                      "uuid_inv" : uuid_inventorymachine.uuid_inventorymachine}
+        return result
+
+    def __Up_machine_windows(self, object_Up_machine_windows):
+        """
+            This function create a dictionnary with  update kb
+            Args:
+                object_Up_machine_windows: dataset line Up_machine_windows
+            Returns:
+                A dicth with the informations of the update.
+        """
+        try:
+            ret = {'id_machine': object_Up_machine_windows.id_machine,
+                   'update_id': object_Up_machine_windows.update_id,
+                   'kb': object_Up_machine_windows.kb}
+            return ret
+        except Exception as error_creating:
+            logging.getLogger().error("We failed to retrieve the informations of the Up_machine_windows")
+            logging.getLogger().error("We got the error \n : %s" % str(error_creating))
+            return None
+
+    @DatabaseHelper._sessionm
+    def test_black_list(self, session, jid):
+        """
+            This function renvoi la liste des tables produits a prendre en compte pour les updates.
+        """
+        ret={}
+        up=[]
+        kb=[]
+        try:
+            user = "".join(str(jid).split("@")[0].split('.')[:-1])
+            sql="""SELECT DISTINCT
+                    updateid_or_kb, type_rule
+                FROM
+                    xmppmaster.up_black_list
+                WHERE
+                    enable_rule = 1
+                        AND "%s" REGEXP userjid_regexp;"""%user
+            #self.logger.info("sql : %s" % sql)
+            req = session.execute(sql)
+            session.commit()
+            session.flush()
+            if req:
+                for x in req:
+                    if x[1].lower() == 'kb':
+                        kb.append(x[0])
+                    elif x[1].lower() == 'id':
+                        up.append(x[0])
+            ret={"update_id":up, "kb" : kb}
+            #ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql test_black_list : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows(self,
+                            session,
+                            id_machine,
+                            update_id,
+                            kb=""):
+        """
+            creation 1 update pour 1 machine
+        """
+
+        try:
+            new_Up_machine_windows = Up_machine_windows()
+            new_Up_machine_windows.id_machine = id_machine
+            new_Up_machine_windows.update_id = update_id
+            new_Up_machine_windows.kb = kb
+            session.add(new_Up_machine_windows)
+            session.commit()
+            session.flush()
+            return self.__Up_machine_windows(new_Up_machine_windows)
+        except IntegrityError as e:
+            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
+        except Exception as e:
+            self.logger.info("Except setUp_machine_windows : %s" % str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+        return None
+
+    @DatabaseHelper._sessionm
+    def del_all_Up_machine_windows(self,
+                            session,
+                            id_machine):
+        """
+            del tout les updates de la machines
+        """
+        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        session.commit()
+        session.flush()
+
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows(self,
+                            session,
+                            id_machine,
+                            update_id,
+                            kb=""):
+        """
+            creation 1 update pour 1 machine
+        """
+        try:
+            new_Up_machine_windows = Up_machine_windows()
+            new_Up_machine_windows.id_machine = id_machine
+            new_Up_machine_windows.update_id = update_id
+            new_Up_machine_windows.kb = kb
+            session.add(new_Up_machine_windows)
+            session.commit()
+            session.flush()
+            return self.__Up_machine_windows(new_Up_machine_windows)
+        except IntegrityError as e:
+            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
+        except Exception as e:
+            self.logger.info("Except setUp_machine_windows : %s" % str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+        return None
+
+    @DatabaseHelper._sessionm
+    def del_all_Up_machine_windows(self,
+                            session,
+                            id_machine):
+        """
+            del tout les updates de la machines
+        """
+        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        session.commit()
+        session.flush()
+
+    @DatabaseHelper._sessionm
+    def list_produits(self,session):
+        """
+            This function renvoi la liste des table produitss a prendre en compte pour les updates.
+        """
+        ret ={}
+        try:
+            sql="""SELECT
+                    name_procedure
+                FROM
+                    xmppmaster.up_list_produit
+                WHERE
+                    enable = 1; """
+            req = session.execute(sql)
+            session.commit()
+            session.flush()
+            ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def search_update_by_products(self, session,
+                           tableproduct="",
+                           str_kb_list=""):
+        """
+        cette fonction renvoi update en fonction des produits
+        Parameters :
+            tableproduct voir table produits dans la table list_produits
+            str_kb_list list des kb installer sur la machine
+        """
+        result=[]
+        colonnename=self._colonne_name_update_product()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_search_kb_update",
+                            [str(tableproduct), str(str_kb_list).strip('"() ')] )
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lr, datetime):
+                        lr=lr.isoformat()
+                    dictline[value] = lr
+                    dictline['tableproduct'] = tableproduct
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+
+    @DatabaseHelper._sessionm
+    def is_exist_value_in_table(self, session,
+                                valchamp,
+                                namefield="updateid",
+                                tablename="up_gray_list"):
+        """
+            test si il existe dans 1 table 1 enregistrement avec la valeur pour le nom du champ passe
+        """
+        try:
+            sql="""SELECT
+                    COUNT(%s)
+                FROM
+                    %s
+                WHERE
+                    updateid LIKE '%s'
+                LIMIT 1;"""% (namefield, tablename, valchamp)
+            #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
+            rest= session.execute(sql)
+            session.commit()
+            session.flush()
+            if rest:
+                ret=[elt for elt in rest][0]
+                #self.logger.info("is_exist_value_in_table ret: %s" % ret)
+                return True if ret[0]==1 else False
+        except Exception:
+            logging.getLogger().error("sql is_exist_value_in_table: %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows_gray_list(self, session, updateid, tableproduct="", validity_day=10):
+        """
+        cette fonction insert dans la table gray list 1 update
+        Si l update existe. Il update seulement la date de validity
+        Parameters :
+            tableproduct voir table produits dans la table list_produits
+            str_kb_list list des kb installer sur la machine
+        """
+        # if le update existe dans la table up_gray_list_flop
+        # on supprime dans la stock_table up_gray_list_flop
+        # ce qui fera que l'update sera reinitialiser
+        # auterment on insert ou update
+
+        try:
+            if self.is_exist_value_in_table(updateid,
+                                            namefield="updateid",
+                                            tablename="up_gray_list_flop"):
+                sql="""DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');"""%(updateid)
+                session.execute(sql)
+                session.commit()
+                session.flush()
+            else:
+                sql="""INSERT INTO `xmppmaster`.`up_gray_list` (updateid,
+                                                                kb,
+                                                                revisionid,
+                                                                title,
+                                                                description,
+                                                                updateid_package,
+                                                                payloadfiles,supersededby,
+                                                                title_short,
+                                                                validity_date)
+                            ( SELECT updateid,
+                                    kb,
+                                    revisionid,
+                                    title,
+                                    description,
+                                    updateid_package,
+                                    payloadfiles,
+                                    supersededby,
+                                    title_short,
+                                    now() + INTERVAL %s day
+                            FROM
+                                xmppmaster.%s
+                            WHERE
+                                updateid LIKE '%s')
+                            ON DUPLICATE KEY UPDATE validity_date = now() + INTERVAL %s day;"""%(validity_day,tableproduct,updateid,validity_day)
+                #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
+                session.execute(sql)
+                session.commit()
+                session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def delete_in_gray_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            updateidreduit=updateid[-12:]
+            sql=""" UPDATE `up_gray_list_flop` SET `updateid` = '%s' WHERE (`updateid` = '%s');
+                    UPDATE `up_gray_list` SET `updateid` = '%s' WHERE (`updateid` = '%s');
+                    DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');
+                    DELETE FROM `up_gray_list` WHERE (`updateid` = '%s');
+            """%(updateidreduit, updateid, updateidreduit, updateid,updateidreduit, updateidreduit)
+            #self.logger.info("delete_in_gray_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_gray_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def delete_in_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            sql=""" DELETE FROM `up_white_list` WHERE (`updateid` = '%s');"""%(updateid)
+            self.logger.info("delete_in_white_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_white_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def get_all_update_in_gray_list(self, session, updateid=None):
+        """ cette function renvoi tout les update de la list gray"""
+        try:
+            sql="""
+                select * from
+                    (SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list
+                    UNION
+                    SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list_flop) as e"""
+            if updateid:
+                filter = """ WHERE
+                            updateid = '%s'"""%(updateid)
+                sql=sql+filter
+            sql+=";"
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            return [{column: value for column,
+                    value in rowproxy.items()}
+                            for rowproxy in resultproxy]
+        except Exception:
+            logging.getLogger().error("sql get_all_update_in_gray_list : %s" % traceback.format_exc())
+        return []
+
+    @DatabaseHelper._sessionm
+    def delete_in_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            sql=""" DELETE FROM `up_white_list` WHERE (`updateid` = '%s');"""%(updateid)
+            self.logger.info("delete_in_white_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_white_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def get_all_update_in_gray_list(self, session, updateid=None):
+        """
+            cettte fonction display tout les update dans gray list. du flip flop complet
+        """
+        try:
+            sql="""
+                select * from
+                    (SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list
+                    UNION
+                    SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list_flop) as e"""
+            if updateid:
+                filter = """ WHERE
+                            updateid = '%s'"""%(updateid)
+                sql=sql+filter
+            sql+=";"
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            return [{column: value for column,
+                    value in rowproxy.items()}
+                            for rowproxy in resultproxy]
+        except Exception:
+            logging.getLogger().error("sql delete_in_gray_list : %s" % traceback.format_exc())
+        return []
+
+    @DatabaseHelper._sessionm
+    def delete_in_gray_and_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            et white list
+        """
+        try:
+            self.delete_in_gray_list(updateid)
+            self.delete_in_white_list(updateid)
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_gray_and_white_list : %s" % traceback.format_exc())
+        return False
+
+# -------------------------------------------------------------------------------
+    def _return_dict_from_dataset_mysql(self, resultproxy):
+        return [{column: value for column, value in rowproxy.items()}
+                for rowproxy in resultproxy]
