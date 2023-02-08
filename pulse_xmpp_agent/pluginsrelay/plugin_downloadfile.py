@@ -110,49 +110,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")
     # print json.dumps(data,indent=4)
     profiluserpulse = "pulseuser"
-    # pour windows on determine si c est "pulse" ou "pulseuser" le compte pulse sur le windows distant.
-    # on utilise iq
-    if str(data['osmachine']).lower().startswith('win'):
-        try:
-            result = objectxmpp.iqsendpulse(data['jidmachine'],
-                                            {"action": "information",
-                                            "data": {"listinformation" : ["profiluserpulse"],
-                                                        "param" : {"profiluserpulse" : []}
-                                                        }},
-                                            20)
-            result = json.loads(result)
-        except Exception:
-            down_erro = str(traceback.format_exc())
-            logger.error("%s"%(down_erro))
-            objectxmpp.xmpplog( 'Transfer error : %s'%down_erro,
-                                type = 'noset',
-                                sessionname = sessionid,
-                                priority = -1,
-                                action = "xmpplog",
-                                who = objectxmpp.boundjid.bare,
-                                how = "",
-                                why = "",
-                                module = "Notify | Download | Transferfile",
-                                date = None ,
-                                fromuser = "",
-                                touser = "")
-            return
-        if "err" in result:
-            objectxmpp.xmpplog( 'Transfer error : %s'% result['err'],
-                                type = 'noset',
-                                sessionname = sessionid,
-                                priority = -1,
-                                action = "xmpplog",
-                                who = objectxmpp.boundjid.bare,
-                                how = "",
-                                why = "",
-                                module = "Notify | Download | Transferfile",
-                                date = None ,
-                                fromuser = "",
-                                touser = "")
-            return
-
-        profiluserpulse = result["result"]["informationresult"]["profiluserpulse"]
 
     if hasattr(objectxmpp.config, 'clients_ssh_port'):
         paramglobal['remoteport'] = int(objectxmpp.config.clients_ssh_port)

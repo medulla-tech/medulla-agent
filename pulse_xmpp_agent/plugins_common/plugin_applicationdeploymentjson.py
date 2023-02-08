@@ -45,7 +45,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.26", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.27", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -1665,34 +1665,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                                fromuser=data_in_session['login'],
                                                touser="")
                             obcmd = utils.simplecommandstr(cmdexec)
-                            if obcmd['code'] != 0:
-                                objectxmpp.xmpplog('<span class="log_err">%s transfer error : %s </span>' % (objectxmpp.config.pushmethod,
-                                                                                                             utils.decode_strconsole(obcmd['result'])),
-                                                   type='deploy',
-                                                   sessionname=sessionid,
-                                                   priority=-1,
-                                                   action="xmpplog",
-                                                   who=strjidagent,
-                                                   how="",
-                                                   why="",
-                                                   module="Deployment | Error | Download | Transfer",
-                                                   date=None,
-                                                   fromuser=data_in_session['login'],
-                                                   touser="")
-                                cmdexec = cmdexec.replace("pulseuser","pulse")
-                                objectxmpp.xmpplog("Command : " + cmdexec,
-                                                   type='deploy',
-                                                   sessionname=sessionid,
-                                                   priority=-1,
-                                                   action="xmpplog",
-                                                   who=strjidagent,
-                                                   how="",
-                                                   why="",
-                                                   module="Deployment | Error | Download | Transfer",
-                                                   date=None,
-                                                   fromuser=data_in_session['login'],
-                                                   touser="")
-                                obcmd = utils.simplecommandstr(cmdexec)
                         finally:
                             time.sleep(2)
                             removeresource(data_in_session, objectxmpp, sessionid)
@@ -2394,7 +2366,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
                 curlgetdownloadfile(dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko)
-                changown_dir_of_file(dest)  # owner pulse or pulseuser.
+                changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
                 logger.debug(str(e))
@@ -2515,7 +2487,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    fromuser=datasend['data']['advanced']['login'])
                 
                 curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
-                changown_dir_of_file(dest)  # owner pulse or pulseuser.
+                changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
                 logger.error('Traceback from downloading package via libcurl: %s' % str(e))
