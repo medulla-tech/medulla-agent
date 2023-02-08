@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.72", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.73", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -220,6 +220,11 @@ def updateopenssh(xmppobject, installed_version):
             if daemon_uninstall['code'] == 0:
                 utils.simplecommand("sc.exe stop sshdaemon")
                 utils.simplecommand("sc.exe delete sshdaemon")
+
+            nativessh_uninstall = utils.simplecommand("sc.exe query sshd")
+            if nativessh_uninstall['code'] == 0:
+                utils.simplecommand("sc.exe stop sshd")
+                utils.simplecommand("sc.exe delete sshd")
 
             if os.path.isdir(mandriva_sshdir_path):
                 current_dir = os.getcwd()
