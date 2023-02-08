@@ -26,7 +26,7 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-NOTIFICATIONVERSION = '2.1.7'
+NOTIFICATIONVERSION = '2.1.9'
 
 logger = logging.getLogger()
 
