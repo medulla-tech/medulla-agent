@@ -411,13 +411,6 @@ class functionsynchroxmpp:
                     result['result']['informationresult'][info_ask] = decode_strconsole(netstat())
                 if info_ask == "profiluserpulse":
                     profilname = 'pulseuser'
-                    if sys.platform.startswith('win'):
-                        # check if pulse account exists
-                        try:
-                            win32net.NetUserGetInfo('', 'pulseuser', 0)
-                            profilname = 'pulseuser'
-                        except Exception:
-                            profilname = 'pulse'
                     result['result']['informationresult'][info_ask] = profilname
             except Exception:
                 result['result']['informationresult'][info_ask] = ""
