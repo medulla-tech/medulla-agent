@@ -49,7 +49,6 @@ from ConfigParser import ConfigParser
 
 logger = logging.getLogger()
 
-DEBUGPULSE = 25
 filePath = os.path.dirname(os.path.realpath(__file__))
 
 def singletonclass(class_):
