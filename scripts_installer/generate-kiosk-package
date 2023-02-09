@@ -211,7 +211,7 @@ else
     "info": {
         "localisation_server": "global",
         "previous_localisation_server": "global",
-        "description": "Python modules package for Pulse Kiosk",
+        "description": "Python modules package for Medulla Kiosk",
         "name": "Python modules v${PYTHON_MODULES_PACKAGE_VERSION}",
         "software": "Python modules",
         "transferfile": true,
@@ -298,7 +298,7 @@ EOF
 
     # Generate conf.json
     cat <<EOF > conf.json
-{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "Python modules package for Pulse Kiosk","targetos": "win", "entity_id": "0", "sub_packages": [], "localisation_server": "global", "previous_localisation_server": "global", "reboot": 0, "version": "${PYTHON_MODULES_PACKAGE_VERSION}",
+{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "Python modules package for Medulla Kiosk","targetos": "win", "entity_id": "0", "sub_packages": [], "localisation_server": "global", "previous_localisation_server": "global", "reboot": 0, "version": "${PYTHON_MODULES_PACKAGE_VERSION}",
 "inventory": {"associateinventory": "0", "licenses": "", "queries": {"Qversion": "", "Qvendor": "", "boolcnd": "", "Qsoftware": ""}}, "id": "${PYTHON_MODULES_PACKAGE_UUID}", "name": "Python modules v${PYTHON_MODULES_PACKAGE_VERSION}", "metagenerator": "manual"}
 EOF
 
