@@ -50,8 +50,8 @@ else
 fi
 
 # A few settings
-PACKAGE_NAME="Pulse Kiosk"
-PACKAGE_DESC="Kiosk module for machines managed by Pulse"
+PACKAGE_NAME="Medulla Kiosk"
+PACKAGE_DESC="Kiosk module for machines managed by Medulla"
 
 KIOSK_VERSION="0.3"
 PYTHON_VERSION="3.6.5"
