@@ -120,10 +120,8 @@ class global_data_process:
         if self.ProcessObj is not None:
             if self.ProcessObj.poll() is None:
                 # The process is still running.
-                logger.debug("The child process %s is still alive." % self.PIDagent)
                 return True
             else:
-                logger.debug("There is no child process %s ." % self.PIDagent)
                 self.stop_process_agent()
                 self.ProcessObj.wait()
                 self.PIDagent = 0
