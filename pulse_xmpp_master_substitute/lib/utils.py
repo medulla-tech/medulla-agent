@@ -587,6 +587,7 @@ def loadModule(filename):
             fp.close()
     return module
 
+
 def call_plugin(name, *args, **kwargs):
     # add compteur appel plugins
     count = 0
@@ -595,9 +596,14 @@ def call_plugin(name, *args, **kwargs):
     except AttributeError:
         count = 0
         setattr(args[0], "num_call%s" % args[1], count)
-    pluginaction = loadModule(name)
-    pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s" % args[1], count +1)
+    try:
+        pluginaction = loadModule(name)
+        pluginaction.action(*args, **kwargs)
+    except:
+        logging.getLogger().error("ERROR PLUGIN [%s]\n%s" % (args[1], traceback.format_exc()))
+    finally:
+        setattr(args[0], "num_call%s" % args[1], count +1)
+
 
 def getshortenedmacaddress():
     listmacadress = {}
