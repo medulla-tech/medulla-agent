@@ -72,7 +72,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
                                                    objectxmpp)
 
         objectxmpp.schedule('clean_roster',
-                            60,
+                            900,
                             objectxmpp.clean_roster,
                             repeat=True)
 
