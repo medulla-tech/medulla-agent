@@ -593,6 +593,7 @@ def call_plugin(name, *args, **kwargs):
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
+        setattr(args[0], "num_call%s" % args[1], count+1)
     except AttributeError:
         count = 0
         setattr(args[0], "num_call%s" % args[1], count)
@@ -601,9 +602,6 @@ def call_plugin(name, *args, **kwargs):
         pluginaction.action(*args, **kwargs)
     except:
         logging.getLogger().error("ERROR PLUGIN [%s]\n%s" % (args[1], traceback.format_exc()))
-    finally:
-        setattr(args[0], "num_call%s" % args[1], count +1)
-
 
 def getshortenedmacaddress():
     listmacadress = {}
