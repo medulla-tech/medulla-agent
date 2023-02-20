@@ -58,6 +58,7 @@ from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
 import string
+from netaddr import *
 
 if sys.platform.startswith('win'):
     import wmi
@@ -211,6 +212,24 @@ def dump_parameter(para=True, out=True, timeprocess=True):
             return outfunction
         return wrapper
     return decorated
+
+def CIDR_ip(ipaddress, mask):
+    mask = mask.strip()
+    ipaddress = ipaddress.strip()
+    broadcast=''
+    if mask and ipaddress :
+        netmask_bits = IPAddress(mask).netmask_bits()
+        CIDR = IPNetwork("%s/%s"%(ipaddress, netmask_bits))
+        broadcast = str(CIDR.broadcast)
+    print (broadcast)
+    print (type(broadcast))
+    if broadcast is None or broadcast == "None":
+        broadcast = ""
+    return { "ipaddress" : ipaddress,
+                "mask" : mask,
+                "CIDR" : str(CIDR),
+                "broadcast" : broadcast }
+
 
 def Setdirectorytempinfo():
     """
