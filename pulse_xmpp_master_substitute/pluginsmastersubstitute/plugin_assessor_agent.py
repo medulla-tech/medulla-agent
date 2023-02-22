@@ -84,7 +84,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             return
 
         if objectxmpp.compteur_de_traitement >= objectxmpp.simultaneous_processing:
-            objectxmpp.listconfiguration.append({"action" : action,
+            objectxmpp.listconfiguration.append([int(time.time()), {"action" : action,
                                                  "sessionid" : sessionid,
                                                  "data" : data,
                                                  "msg" : msg })
@@ -101,27 +101,30 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         objectxmpp.compteur_de_traitement=objectxmpp.compteur_de_traitement-1
         if objectxmpp.compteur_de_traitement<0:
             objectxmpp.compteur_de_traitement=0
-
+        timeact=int(time.time())
         while objectxmpp.compteur_de_traitement > 0 and \
             objectxmpp.compteur_de_traitement < objectxmpp.simultaneous_processing and \
                 len(objectxmpp.listconfiguration):
             ## call plugin
             report=objectxmpp.listconfiguration.pop(0)
-            dataerreur={ "action" : "result" + plugin['NAME'],
-                    "data" : { "msg" : "error plugin : " + plugin['NAME']},
-                    'sessionid': report['sessionid'],
-                    'ret': 255,
-                    'base64': False}
-            if bool(objectxmpp.show_queue_status):
-                logger.info("Re-call plugin %s" % (plugin['NAME']))
-            call_plugin( __file__,
-                                objectxmpp,
-                                action,
-                                report['sessionid'],
-                                report['data'],
-                                report['msg'],
-                                0,
-                                dataerreur)
+            if len(report) == 2 and (timeact - report[0]) < 300:
+                dataerreur={ "action" : "result" + plugin['NAME'],
+                        "data" : { "msg" : "error plugin : " + plugin['NAME']},
+                        'sessionid': report[1]['sessionid'],
+                        'ret': 255,
+                        'base64': False}
+                if bool(objectxmpp.show_queue_status):
+                    logger.info("Re-call plugin %s" % (plugin['NAME']))
+                call_plugin( __file__,
+                                    objectxmpp,
+                                    action,
+                                    report[1]['sessionid'],
+                                    report[1]['data'],
+                                    report[1]['msg'],
+                                    0,
+                                    dataerreur)
+            else:
+                logger.debug("Timeout re-calling plugin %s" % (plugin['NAME']))
     except Exception as e:
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
         logger.error("\n%s" % (traceback.format_exc()))
