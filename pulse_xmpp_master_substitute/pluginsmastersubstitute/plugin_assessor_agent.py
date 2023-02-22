@@ -62,10 +62,11 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     try:
         compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
         if compteurcallplugin == 0:
-            objectxmpp.compteur_de_traitement=0
-            objectxmpp.listconfiguration=[]
-            objectxmpp.simultaneous_processing=50
-            #objectxmpp.assessor_agent_errorconf=False
+            objectxmpp.compteur_de_traitement = 0
+            objectxmpp.listconfiguration = []
+            objectxmpp.simultaneous_processing = 50
+            objectxmpp.show_queue_status = False
+            objectxmpp.assessor_agent_errorconf = False
             if statfuncton:
                 objectxmpp.stat_assessor_agent = statcallplugin(objectxmpp,
                                                                 plugin['NAME'])
@@ -87,7 +88,8 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
                                                  "sessionid" : sessionid,
                                                  "data" : data,
                                                  "msg" : msg })
-            logger.debug("poll  = %s reporte" % (objectxmpp.compteur_de_traitement))
+            if bool(xmppobject.show_queue_status):
+                logger.info("Pending pool counter = %s" % (objectxmpp.compteur_de_traitement))
             return
 
         objectxmpp.compteur_de_traitement=objectxmpp.compteur_de_traitement+1
@@ -110,7 +112,8 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
                     'sessionid': report['sessionid'],
                     'ret': 255,
                     'base64': False}
-            logger.debug("rappel plugin %s" % (plugin['NAME']))
+            if bool(objectxmpp.show_queue_status):
+                logger.info("Re-call plugin %s" % (plugin['NAME']))
             call_plugin( __file__,
                                 objectxmpp,
                                 action,
@@ -804,8 +807,9 @@ def read_conf_assessor(objectxmpp):
         le repertoire ou doit se trouver le fichier de configuration est dans la variable objectxmpp.config.pathdirconffile
     """
     objectxmpp.assessor_agent_showinfomachine = []
-    objectxmpp.simultaneous_processing= 50
+    objectxmpp.simultaneous_processing = 50
     objectxmpp.assessor_agent_errorconf = False
+    objectxmpp.show_queue_status = False
     namefichierconf = plugin['NAME'] + ".ini"
     objectxmpp.pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf)
     if not os.path.isfile(objectxmpp.pathfileconf):
@@ -858,6 +862,11 @@ def read_conf_assessor(objectxmpp):
                 objectxmpp.simultaneous_processing= Config.getint('parameters', 'simultaneous_processing')
             else:
                 objectxmpp.simultaneous_processing= 50
+
+            if Config.has_option("parameters", "show_queue_status"):
+                objectxmpp.show_queue_status = Config.getbool('parameters', 'show_queue_status')
+            else:
+                objectxmpp.show_queue_status = False
 
             # default connection ##########################
             # Connection server parameters if no relay server is available ####
