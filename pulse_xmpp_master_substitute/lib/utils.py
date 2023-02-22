@@ -597,12 +597,17 @@ def call_plugin(name, *args, **kwargs):
     except AttributeError:
         count = 0
         setattr(args[0], "num_call%s" % args[1], count)
+    numcall = getattr(args[0], "num_call%s" % args[1])
+    if (numcall % 100) == 0:
+        logging.getLogger().info("[congruences alignement 100 appels]  count plugin [%s]->%s" % (args[1],
+                                                            numcall))
     try:
         pluginaction = loadModule(name)
         pluginaction.action(*args, **kwargs)
     except:
         logging.getLogger().error("An error occured while calling the plugin:  %s" % args[1])
         logging.getLogger().error("We hit the following traceback \n %s" % traceback.format_exc())
+
 
 def getshortenedmacaddress():
     listmacadress = {}
