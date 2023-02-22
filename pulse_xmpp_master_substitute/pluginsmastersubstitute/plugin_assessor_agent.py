@@ -87,7 +87,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             objectxmpp.listconfiguration.append([int(time.time()), {"action" : action,
                                                  "sessionid" : sessionid,
                                                  "data" : data,
-                                                 "msg" : msg })
+                                                 "msg" : msg }])
             if bool(xmppobject.show_queue_status):
                 logger.info("Pending pool counter = %s" % (objectxmpp.compteur_de_traitement))
             return
@@ -867,7 +867,7 @@ def read_conf_assessor(objectxmpp):
                 objectxmpp.simultaneous_processing= 50
 
             if Config.has_option("parameters", "show_queue_status"):
-                objectxmpp.show_queue_status = Config.getbool('parameters', 'show_queue_status')
+                objectxmpp.show_queue_status = Config.getboolean('parameters', 'show_queue_status')
             else:
                 objectxmpp.show_queue_status = False
 

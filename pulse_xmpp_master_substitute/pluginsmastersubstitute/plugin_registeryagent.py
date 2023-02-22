@@ -1276,7 +1276,7 @@ def read_conf_remote_registeryagent(xmppobject):
             xmppobject.simultaneous_processing= 50
 
         if Config.has_option("parameters", "show_queue_status"):
-            xmppobject.show_queue_status= Config.getbool('parameters', 'show_queue_status')
+            xmppobject.show_queue_status= Config.getboolean('parameters', 'show_queue_status')
         else:
             xmppobject.show_queue_status = False
 
