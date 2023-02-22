@@ -579,7 +579,6 @@ class MscDatabase(DatabaseHelper):
         session = create_session()
         session.begin()
         try:
-
             bundle = session.query(Bundle).get(bundle_id)
             if not bundle:
                 self.logger.warning("Unable to find bundle (id=%s)" % bundle_id)
@@ -1243,7 +1242,6 @@ class MscDatabase(DatabaseHelper):
 
         result = {"total": nb, "elements": []}
         for element in res:
-
             result["elements"].append(
                 {
                     "cmd_id": element[0],

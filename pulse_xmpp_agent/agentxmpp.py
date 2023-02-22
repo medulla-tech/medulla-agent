@@ -245,7 +245,6 @@ class MUCBot(slixmpp.ClientXMPP):
         eventkillpipe,
         pidprogrammprincipal,
     ):
-
         logging.log(
             DEBUGPULSE, "start machine  %s Type %s" % (conf.jidagent, conf.agenttype)
         )
@@ -1735,7 +1734,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 )
                 return result_waitting
             except Exception as e:
-
                 ret = '{"err" : "timeout %s" }' % mtimeout
                 return ret
 

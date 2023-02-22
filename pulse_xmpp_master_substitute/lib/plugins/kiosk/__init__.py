@@ -341,7 +341,6 @@ class KioskDatabase(DatabaseHelper):
         if len(packages) > 0:
             for status in list(packages.keys()):
                 for uuid in packages[status]:
-
                     # get the package id and link it with the profile
                     result = session.query(Packages.id).filter(
                         Packages.package_uuid == uuid
@@ -627,7 +626,6 @@ class KioskDatabase(DatabaseHelper):
         if len(packages) > 0:
             for status in list(packages.keys()):
                 for uuid in packages[status]:
-
                     # get the package id and link it with the profile
                     result = session.query(Packages.id).filter(
                         Packages.package_uuid == uuid

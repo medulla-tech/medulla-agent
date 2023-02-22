@@ -289,7 +289,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         )
 
             for nbcmd in range(3):
-
                 try:
                     if os.path.exists(namefilexml):
                         cmd = """\"%s\" %s %s """ """--additional-content=%s """ % (

@@ -95,7 +95,6 @@ class resource_plugin:
         del self.resource[nameresource]
 
     def take_resource(self, nameresource, timeout=100):
-
         if nameresource in self.resource:
             jeton = getRandomName(10, "resourcejeton")
             t = time.time() + timeout

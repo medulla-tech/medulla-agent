@@ -165,7 +165,7 @@ class manage_scheduler:
         if len(start) == len(end):
             # the descriptors
             mergeinfolist = list(zip(start, end))
-            for (x, y) in mergeinfolist:
+            for x, y in mergeinfolist:
                 replacedata = {}
                 # print descrip[int(x+2):int(y-1)]
                 l = descrip[int(x + 2) : int(y - 1)].split(",")

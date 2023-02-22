@@ -69,7 +69,6 @@ class process_serverPipe:
         queueout,
         eventkillpipe,
     ):
-
         if platform.system() == "Windows":
             # Windows does not support ANSI escapes and we are using API calls
             # to set the console color
@@ -180,7 +179,6 @@ class process_tcp_serveur:
         queueout,
         eventkilltcp,
     ):
-
         if platform.system() == "Windows":
             # Windows does not support ANSI escapes and we are using API calls
             # to set the console color

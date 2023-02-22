@@ -38,7 +38,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     # print json.dumps(data, indent=4)
 
     if xmppobject.config.agenttype in ["relayserver"]:
-
         import MySQLdb
 
         # Get reversessh remote port and run reverse_ssh_on

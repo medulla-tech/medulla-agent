@@ -53,7 +53,6 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
                 data["completion"], data["iddeploybase"], message["from"]
             )
         elif "initialisation" in data["subaction"]:
-
             # logger.debug("=====================================================")
             # le plugin a pour mission de deployer les partage sur les ARS du cluster.
             # puis propager les partages vers les machines. les machines en fonction de leur ARS attribués.

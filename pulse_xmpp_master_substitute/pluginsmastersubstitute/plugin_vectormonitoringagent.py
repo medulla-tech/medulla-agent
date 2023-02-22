@@ -323,7 +323,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         "terminalinformations",
         "terminalalert",
     ]:
-
         logger.debug("package json correct %s" % (data["subaction"]))
 
         if "device_service" in data:

@@ -94,7 +94,6 @@ def schedule_main(xmppobject):
 
                 keyclean = []
                 for newfingerprint in newfingerprints:
-
                     if newfingerprint in xmppobject.config.PACKAGES_ID:
                         file_src = os.path.join(
                             xmppobject.config.pakage_print_fingers_base, newfingerprint
@@ -596,7 +595,6 @@ class lncreate:
     def remove_links(self):
         for f in os.listdir(self.path_abs_dest):
             if len(f) == 36:
-
                 ln = os.path.join(self.path_abs_dest, f)
                 if not os.path.exists(ln) and os.path.islink(ln):
                     os.unlink(ln)

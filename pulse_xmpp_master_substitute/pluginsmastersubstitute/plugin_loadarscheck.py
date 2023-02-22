@@ -210,7 +210,6 @@ def ping_ejabberd_and_relay(self, jid_client):
         rep["ars"]["presence"] = 2
         rep["server"]["presence"] = 2
     else:
-
         rep["ars"]["presence"] = 0
         result = self.send_ping_relay(server_jid, self.check_timeout_ping)
         if result == 1:

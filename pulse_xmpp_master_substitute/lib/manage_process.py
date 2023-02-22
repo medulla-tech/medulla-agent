@@ -454,7 +454,6 @@ class mannageprocess:
                     msgout["result"]["codeerror"] = cmd.code_error
                     queue_out_session.put(msgout)
                 else:
-
                     # "10@firstlines" : "",
                     # "10@lastlines": "",
                     # "@resultcommand":""

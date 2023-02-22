@@ -434,7 +434,6 @@ def refreshfingerprint():
 def file_get_contents(
     filename, use_include_path=0, context=None, offset=-1, maxlen=-1, encoding=None
 ):
-
     if filename.find("://") > 0:
         ret = urllib.request.urlopen(filename).read()
         if offset > 0:
@@ -753,7 +752,9 @@ def MacAdressToIp(ip):
         try:
             if_mac = addrs[netifaces.AF_LINK][0]["addr"]
             if_ip = addrs[netifaces.AF_INET][0]["addr"]
-        except BaseException:  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
+        except (
+            BaseException
+        ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
             if_mac = if_ip = None
         if if_ip == ip:
             return if_mac
@@ -2564,7 +2565,6 @@ class geolocalisation_agent:
         ip_public=None,
         strlistgeoserveur="",
     ):
-
         self.determination = False
         self.geolocalisation = geolocalisation
         self.ip_public = ip_public

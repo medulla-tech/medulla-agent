@@ -44,7 +44,6 @@ class SingletonDecorator:
 
 @SingletonDecorator
 class confParameter:
-
     # dbport = None
     # dbsslenable = False
 

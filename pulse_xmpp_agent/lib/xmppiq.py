@@ -661,7 +661,6 @@ class functionsynchroxmpp:
 
     @staticmethod
     def packageslist(xmppobject, data):
-
         packages_path = os.path.join("/", "var", "lib", "pulse2", "packages")
         packages_list = {"total": 0, "datas": []}
         total = 0

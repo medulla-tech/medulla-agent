@@ -386,7 +386,6 @@ class MUCBot(ClientXMPP):
     async def message(self, msg):
         iscorrectmsg, typemessage = self._check_message(msg)
         if iscorrectmsg:
-
             try:
                 data = json.loads(msg["body"])
             except Exception:
@@ -666,7 +665,6 @@ class MUCBot(ClientXMPP):
             os.remove(BOOLFILECOMPLETREGISTRATION)
         # (base64.b64encode(bytes(json.dumps(er.messagejson),'utf-8'))).decode('utf-8')
         try:
-
             dataobj = {
                 "action": "connectionconf",
                 "from": self.config.jidagent,

@@ -173,7 +173,9 @@ def updatenetworkcheck(xmppobject):
             "pywin32_system32",
             "pywintypes27.dll",
         )
-        win32_path = os.path.join("c:\\", "Program Files", "Python39", "Lib", "site-packages", "win32")
+        win32_path = os.path.join(
+            "c:\\", "Program Files", "Python39", "Lib", "site-packages", "win32"
+        )
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 
         filename = "networkevents.py"
@@ -225,15 +227,21 @@ def updatenetworkcheck(xmppobject):
                         % (servicefilename, servicecmd_result["result"])
                     )
 
-            update_command = 'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" update' % (
-                pulsedir_path,
-                servicefilename,
+            update_command = (
+                'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" update'
+                % (
+                    pulsedir_path,
+                    servicefilename,
+                )
             )
             utils.simplecommand(update_command)
 
-            restart_command = 'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" restart' % (
-                pulsedir_path,
-                servicefilename,
+            restart_command = (
+                'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" restart'
+                % (
+                    pulsedir_path,
+                    servicefilename,
+                )
             )
             utils.simplecommand(restart_command)
         else:

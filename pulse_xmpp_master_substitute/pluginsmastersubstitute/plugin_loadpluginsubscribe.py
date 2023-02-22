@@ -152,7 +152,6 @@ def read_conf_load_plugin_subscribe(objectxmpp):
         if os.path.exists(objectxmpp.pathfileconf + ".local"):
             Config.read(objectxmpp.pathfileconf + ".local")
         if Config.has_section("parameters"):
-
             if statfuncton:
                 objectxmpp.stat_subcription_agent.load_param_lap_time_stat_(Config)
                 objectxmpp.stat_subcription_agent.display_param_config("CONFIG")

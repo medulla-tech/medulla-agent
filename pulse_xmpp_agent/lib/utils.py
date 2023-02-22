@@ -794,7 +794,9 @@ def MacAdressToIp(ip):
         try:
             if_mac = addrs[netifaces.AF_LINK][0]["addr"]
             if_ip = addrs[netifaces.AF_INET][0]["addr"]
-        except BaseException:  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
+        except (
+            BaseException
+        ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
             if_mac = if_ip = None
         if if_ip == ip:
             return if_mac
@@ -3566,7 +3568,9 @@ class downloadfile:
             return False, "I/O error {0} on file {1}: {2}".format(
                 e.errno, self.urllocalfile, e.strerror
             )
-        except BaseException:  # handle other exceptions such as attribute errors skipcq: FLK-E722
+        except (
+            BaseException
+        ):  # handle other exceptions such as attribute errors skipcq: FLK-E722
             return False, "Unexpected error: %s", sys.exc_info()[0]
 
 
@@ -3986,7 +3990,6 @@ class file_message_iq:
             if delta_time is None:
                 delta_time = self.timescrutation
             while True:
-
                 if time.time() > time_end:
                     logger.warning("quit sur timeout")
                     if self.dev_mod:

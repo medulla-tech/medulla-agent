@@ -167,7 +167,6 @@ class LiberalBoolean(TypeDecorator):
     impl = Boolean
 
     def process_bind_param(self, value, dialect):
-
         if value is not None:
             if isinstance(value, tuple):
                 value = value[0]
@@ -1877,7 +1876,6 @@ class XmppMasterDatabase(DatabaseHelper):
         glpi_entity_id=1,
         glpi_location_id=None,
     ):
-
         if uuid_inventorymachine is None:
             uuid_inventorymachine = ""
         msg = "Create Machine"
@@ -2287,7 +2285,6 @@ class XmppMasterDatabase(DatabaseHelper):
         hostname="",
         username="",
     ):
-
         id = self.uuidtoid(id_inventory)
         new_Organization = Organization_ad()
         new_Organization.id_inventory = id
@@ -3147,7 +3144,6 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def stat_syncthing_transfert(self, session, idgrp, idcmd):
-
         ddistribution = self.stat_syncthing_distributon(idgrp, idcmd)
         distibution = {"nbvalue": len(ddistribution), "data_dist": ddistribution}
 
@@ -3419,7 +3415,6 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def change_end_deploy_syncthing(self, session, iddeploy, offsettime=60):
-
         dateend = datetime.now() + timedelta(minutes=offsettime)
         sql = """ UPDATE `xmppmaster`.`syncthing_deploy_group` SET `dateend`=%s
                 WHERE `id`= "%s";""" % (
@@ -4559,7 +4554,6 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getdeploybyuserpast(self, session, login, duree, min=None, max=None, filt=None):
-
         deploylog = session.query(Deploy)
         if login:
             deploylog = deploylog.filter(Deploy.login == login)
@@ -6614,7 +6608,6 @@ class XmppMasterDatabase(DatabaseHelper):
          or false si guacamole is not configued.
         """
         if existtest is None:
-
             ret = (
                 session.query(Has_guacamole.idguacamole, Has_guacamole.protocol)
                 .filter(
@@ -8523,7 +8516,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         )
                         continue
                     else:
-
                         self.logger.debug("no_success_binding_cmd  %s " % msg)
                         self.logger.debug(
                             "The content of the 'expecting to fail binding' is: %s " % z

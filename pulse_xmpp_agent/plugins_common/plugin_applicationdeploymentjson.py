@@ -120,7 +120,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     initialisesequence(datasend, objectxmpp, sessionid)
                     return
             elif data["actionscheduler"] == "pause":
-
                 return
             elif data["actionscheduler"] == "abandonmentdeploy":
                 objectxmpp.xmpplog(
@@ -2519,7 +2518,6 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
 
 
 def cleandescriptor(datasend):
-
     if sys.platform.startswith("linux"):
         try:
             del datasend["descriptor"]["win"]
