@@ -421,13 +421,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "config.xml")
             self.tmpfile = "/tmp/confsyncting.txt"
         # TODO: Disable this try if synthing is not activated. Prevent backtraces
-        try:
-            hostnameiddevice = None
-            if self.boundjid.domain == "pulse":
-                hostnameiddevice = "pulse"
-            self.deviceid = iddevice(configfile=self.fichierconfsyncthing, deviceName=hostnameiddevice)
-        except Exception:
-            pass
+        if  os.path.isfile(self.fichierconfsyncthing) :
+            try:
+                hostnameiddevice = None
+                if self.boundjid.domain == "pulse":
+                    hostnameiddevice = "pulse"
+                self.deviceid = iddevice(configfile=self.fichierconfsyncthing, deviceName=hostnameiddevice)
+            except Exception:
+                self.deviceid=""
+                pass
+        else:
+            self.deviceid=""
 
         if self.config.agenttype in ['relayserver']:
             # We remove the start sessions of the agent.
@@ -1896,15 +1900,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def initialise_syncthing(self):
         try:
-            logger.info("____________________________________________")
-            logger.info("___________ INITIALISE SYNCTHING ___________")
-            logger.info("____________________________________________")
             self.config.syncthing_on
         except NameError:
             self.config.syncthing_on = False
 
         # Syncthing initialisation
         if self.config.syncthing_on:
+            logger.info("____________________________________________")
+            logger.info("___________ INITIALISE SYNCTHING ___________")
+            logger.info("____________________________________________")
             if self.config.agenttype not in ['relayserver']:
                 if self.config.sched_check_syncthing_deployment:
                     self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
@@ -1931,6 +1935,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 logging.error("syncthing initialisation : %s" % str(e))
                 logger.error("\n%s" % traceback.format_exc())
                 logger.error("Syncthing is not functionnal. Using the degraded mode")
+        else:
+            logger.warning("INITIALISE SYNCTHING OFF")
 
     def send_message_agent(self,
                            mto,
