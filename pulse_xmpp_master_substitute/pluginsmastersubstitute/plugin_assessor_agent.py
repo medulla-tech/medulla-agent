@@ -88,7 +88,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
                                                  "sessionid" : sessionid,
                                                  "data" : data,
                                                  "msg" : msg }])
-            if bool(xmppobject.show_queue_status):
+            if bool(objectxmpp.show_queue_status):
                 logger.info("Pending pool counter = %s" % (objectxmpp.compteur_de_traitement))
             return
 
@@ -124,7 +124,10 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
                                     0,
                                     dataerreur)
             else:
-                logger.debug("Timeout re-calling plugin %s" % (plugin['NAME']))
+                if bool(objectxmpp.show_queue_status):
+                    if "from" in report[1]['data']:
+                        mach=report[1]['data']['from'].split("/")[1]
+                        logger.info("Timeout re-calling plugin %s on machine %s" % (plugin['NAME'], mach))
     except Exception as e:
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
         logger.error("\n%s" % (traceback.format_exc()))
