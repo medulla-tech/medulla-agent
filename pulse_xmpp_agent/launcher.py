@@ -812,7 +812,7 @@ def simplecommandstr(cmd, emptyline=True):
     obj['result'] = "\n".join(result)
     return obj
 
-def simplecommand(cmd):
+def simplecommand(cmd,  emptyline=True):
     obj = {}
     p = subprocess.Popen(cmd,
                          shell=True,
@@ -820,7 +820,10 @@ def simplecommand(cmd):
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
     obj['code'] = p.wait()
-    obj['result'] = result
+    if emptyline:
+        obj['result'] = [ x.strip("\n") for x in result if x.strip() != ""]
+    else:
+        obj['result'] = result
     return obj
 
 def file_get_contents(filename,
@@ -1028,6 +1031,7 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
                                         typeagent])
 
 if __name__ == '__main__':
+    start_time = datetime.now()
     ProcessData = global_data_process()
 
 
@@ -1103,10 +1107,16 @@ if __name__ == '__main__':
     if opts.consoledebug:
         logging.basicConfig(level = logging.DEBUG, format=format)
     else:
-        logging.basicConfig(level = logging.DEBUG,
-                            format=format,
-                            filename = logfile,
-                            filemode = 'a')
+        mfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),"DEBUG_LAUNCHER")
+        if os.path.isfile(mfile):
+            LOGMODE = logging.DEBUG
+        else:
+            LOGMODE = logging.INFO
+        logging.basicConfig(level = LOGMODE,
+                        format=format,
+                        filename = logfile,
+                        filemode = 'a')
+        logger.info(' LOG MODE %s' % LOGMODE )
 
     if sys.platform.startswith('win'):
         result = win32api.SetConsoleCtrlHandler(ProcessData._CtrlHandler, 1)
@@ -1205,17 +1215,23 @@ if __name__ == '__main__':
 
         ProcessData.is_alive()
         ProcessData.load_child_process()
-
         try:
+            end_time = datetime.now()
+            logger.debug('time progam on: {}'.format(end_time - start_time))
+            logger.debug('### LOOP LAUNCHER CYCLE %s###' % countcycle)
             if (countcycle % 6) == 0: # Every 60 secondes.
                 if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                     # Actions to proceed on the Linux server
                     # FIXME: Really needed ?
                     logger.debug('monitoring memoire linux')
-                    ret = simplecommandstr("free -m",  emptyline=False)
-                    logger.debug("%s" % ret['result'])
-                    ret = simplecommandstr("mpstat -P ALL",  emptyline=False)
-                    logger.debug("%s" % ret['result'])
+                    ret = simplecommand("free -m")
+                    re=[("%s\n") % x for x in ret['result'] if x != ""]
+                    res="".join(re)
+                    logger.debug("\n%s" % res)
+                    ret = simplecommand("mpstat -P ALL")
+                    re=[("%s\n") % x for x in ret['result'] if x != ""]
+                    res="".join(re)
+                    logger.debug("\n%s" % res)
 
             if (countcycle % 18) == 0: # Every 180 seconds
                 logger.debug("traitement watch dog AT : %s" % str(datetime.now()))
