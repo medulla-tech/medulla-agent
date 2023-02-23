@@ -206,6 +206,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                     macadressstr,
                                                                     result[0]))
                             raise
+                        if machine['enabled'] == False:
+                            #on passe la machine a 1
+                            XmppMasterDatabase().SetPresenceMachine(msg['from'].user,presence=1)
                         machine['enabled'] = 1
                     except Exception:
                         # incoherence entre machine list et network list mac table
