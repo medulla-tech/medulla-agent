@@ -25,14 +25,17 @@ import os
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
+from lib.utils import file_put_contents, \
+                      call_plugin
 import re
+import ConfigParser
 
 # this import will be used later
 # import types
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.02", "NAME": "xmpplog", "TYPE": "substitute"}
+plugin = {"VERSION": "1.03", "NAME": "xmpplog", "TYPE": "substitute"}
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
@@ -40,6 +43,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
     if compteurcallplugin == 0:
+        xmppobject.compteur_de_traitement = 0
+        xmppobject.listconfiguration = []
+        xmppobject.simultaneous_processing = 50
+        xmppobject.show_queue_status = False
         xmppobject.status_rules = []
         loggerliststatus = XmppMasterDatabase().get_log_status()
         try:
@@ -50,7 +57,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         except:
             logger.error("\n%s" % (traceback.format_exc()))
         read_conf_log_agent(xmppobject)
+    if xmppobject.compteur_de_traitement >= xmppobject.simultaneous_processing:
+        xmppobject.listconfiguration.append({ "action" : action,
+                                              "sessionid" : sessionid,
+                                              "data" : data,
+                                              "msg" : msg })
+        if bool(xmppobject.show_queue_status):
+            logger.info("Pending pool counter = %s" % (xmppobject.compteur_de_traitement))
+        return
     try :
+        xmppobject.compteur_de_traitement=xmppobject.compteur_de_traitement+1
         dataobj = data
         if "type" in dataobj and dataobj['type'] == "deploy" and  'text' in dataobj:
             re_status = searchstatus(xmppobject, dataobj['text'])
@@ -72,6 +88,31 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     except Exception as e:
         logging.error("structure Message from %s %s " % (msg['from'], str(e)))
         logger.error("\n%s" % (traceback.format_exc()))
+    finally:
+        xmppobject.compteur_de_traitement=xmppobject.compteur_de_traitement-1
+        if xmppobject.compteur_de_traitement<0:
+            xmppobject.compteur_de_traitement=0
+        while xmppobject.compteur_de_traitement > 0 and \
+            xmppobject.compteur_de_traitement < xmppobject.simultaneous_processing and \
+                len(xmppobject.listconfiguration):
+            ## call plugin
+            report=xmppobject.listconfiguration.pop(0)
+            dataerreur={ "action" : "result" + plugin['NAME'],
+                    "data" : { "msg" : "error plugin : " + plugin['NAME']},
+                    'sessionid': report['sessionid'],
+                    'ret': 255,
+                    'base64': False}
+            if bool(xmppobject.show_queue_status):
+                logger.info("Re-call plugin %s" % (plugin['NAME']))
+            call_plugin( __file__,
+                                xmppobject,
+                                action,
+                                report['sessionid'],
+                                report['data'],
+                                report['msg'],
+                                0,
+                                dataerreur)
+
 
 def createlog(xmppobject, dataobj):
     """
@@ -177,10 +218,38 @@ def xmpplogdeploy(xmppobject, data):
         logger.error("\n%s" % (traceback.format_exc()))
 
 def read_conf_log_agent(xmppobject):
+    xmppobject.simultaneous_processing = 50
+    xmppobject.show_queue_status = False
     namefichierconf = plugin['NAME'] + ".ini"
     pathfileconf = os.path.join(xmppobject.config.pathdirconffile, namefichierconf)
+    logger.warning("Config file %s for plugin %s" % (pathfileconf,
+                                                   plugin["NAME"]))
     if not os.path.isfile(pathfileconf):
-        pass
+        logger.warning("Plugin %s\nConfiguration file :" \
+                     "\n\t%s missing" \
+                     "\neg conf:\n[parameters]\n" \
+                     "simultaneous_processing = 50" % (plugin['NAME'], pathfileconf))
+        logger.warning("create default conf file %s" % pathfileconf)
+        file_put_contents(pathfileconf, "[parameters]\nsimultaneous_processing = 50\n")
+    else:
+        Config = ConfigParser.ConfigParser()
+        Config.read(pathfileconf)
+        logger.debug("Config file %s for plugin %s" % (pathfileconf,
+                                                    plugin["NAME"]))
+        if os.path.exists(pathfileconf + ".local"):
+            Config.read(pathfileconf + ".local")
+            logger.debug("read file %s.local" % pathfileconf)
+
+        if Config.has_option("parameters", "simultaneous_processing"):
+            xmppobject.simultaneous_processing= Config.getint('parameters', 'simultaneous_processing')
+        else:
+            xmppobject.simultaneous_processing= 50
+
+        if Config.has_option("parameters", "show_queue_status"):
+            xmppobject.show_queue_status = Config.getboolean('parameters', 'show_queue_status')
+        else:
+            xmppobject.show_queue_status = False
+
 
 def searchstatus(xmppobject, chaine):
     for t in xmppobject.status_rules:
