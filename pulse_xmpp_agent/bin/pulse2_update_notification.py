@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
-# color boite   0067b3
-# file /pulse2_update_notification.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 import sys
 import signal
 from optparse import OptionParser
