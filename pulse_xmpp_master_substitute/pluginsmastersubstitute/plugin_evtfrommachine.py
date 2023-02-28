@@ -20,7 +20,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug(plugin)
     logger.debug("-----------------------------------------------------------------------------------------")
     logger.debug("EVENT \"%s\" from %s"%( data['event'], msg['from']))
-    if data['event'] == "SHUTDOWN_EVENT":
+    if data['event'] == "SHUTDOWN_EVENT" or data['event'].startswith("CTRL_C_EVENT"):
         msg_changed_status = {
             "from": data['machine'],
             "type": 'unavailable'
