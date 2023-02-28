@@ -87,14 +87,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
 
-        #create tmp config file
+        # Create tmp config file
         namefileconfiguration = conffilename(self.config.agenttype)
         namefileconfigurationtmp = conffilenametmp(self.config.agenttype)
         logging.log(DEBUGPULSE,"copy  %s %s" % (namefileconfiguration,
                                                 namefileconfigurationtmp))
         shutil.copyfile(namefileconfiguration, namefileconfigurationtmp)
 
-        ### update level log for sleekxmpp
+        # Update level log for sleekxmpp
         handler_sleekxmpp = logging.getLogger('sleekxmpp')
         logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
         handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
@@ -464,7 +464,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             logger.debug("rotate configuration")
                             rotation_file(namefileconfiguration)
                             logger.debug("write new configuration")
-                            shutil.copyfile(namefileconfigurationtmp,namefileconfiguration)
+                            shutil.move(namefileconfigurationtmp,namefileconfiguration)
                             logger.debug("make finger print conf file")
                             refreshfingerprintconf(opts.typemachine)
                         except Exception:
