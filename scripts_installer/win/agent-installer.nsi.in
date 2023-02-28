@@ -176,6 +176,7 @@ Section "Python" sec_py
 
   ; Delete previous rescue folder if any
   RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\agentrescue
+  RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\img_agent
 
   ; Install of Python
   ; Get location
