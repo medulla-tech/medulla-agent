@@ -527,8 +527,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         else:
             logging.warning("Network Changing disable")
         if self.config.agenttype not in ['relayserver']:
-            self.schedule('check_subscripbe', 900,
-                            self.check_subscripbe,
+            self.schedule('check_subscribe', 900,
+                            self.check_subscribe,
                             repeat=True)
             if self.config.sched_send_ping_kiosk:
                 self.schedule('send_ping', laps_time_send_ping_to_kiosk,
@@ -655,9 +655,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         self.initialise_syncthing,
                         repeat=False)
 
-    def check_subscripbe(self):
+    def check_subscribe(self):
         if self.presencectrlsubscribe != "available":
-            logger.warning("subcribe [%s] status = %s" % (self.sub_subscribe, self.presencectrlsubscribe))
+            logger.warning("Subscription [%s] status = %s" % (self.sub_subscribe, self.presencectrlsubscribe))
 
     def stabilized_start(self):
         """
@@ -1741,13 +1741,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         frommsg = jid.JID(presence['from'])
         logger.info("**********   changed_status %s %s"%(presence['from'],presence['type'] ))
         if frommsg.bare == self.boundjid.bare and presence['type'] == 'available':
-            logger.debug( "Machine available for xmpp launcher registration")
+            logger.debug( "Machine available for registration")
             self.update_plugin()
-            logger.debug( "Machine available for xmpp launcher registration")
+            logger.debug( "Machine available for registration")
             self.subscribe_initialisation()
         elif frommsg.bare == self.sub_subscribe:
             if self.presencectrlsubscribe != presence['type'] and presence['type'] != 'available':
-                logger.warning( "subscribe %s ON to OFF" % self.sub_subscribe )
+                logger.warning( "Sunscription [%s] ON to OFF" % self.sub_subscribe )
             self.presencectrlsubscribe = presence['type']
 
     def unsubscribe_agent(self):
@@ -1770,12 +1770,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.info("subscribe_initialisation agent %s" % self.sub_subscribe)
         self.unsubscribe_agent()
         if self.sub_subscribe not in self.client_roster.keys():
-            logger.warning("subscribe [%s] is not yet in the roster %s" % (self.sub_subscribe,
+            logger.warning("Subscription [%s] is not yet in the roster %s" % (self.sub_subscribe,
                                                                self.client_roster.keys()))
-        logger.info("%s roster is  %s substitut conf is %s" % (self.config.agenttype,
+        logger.info("%s roster is %s configured substitute is %s" % (self.config.agenttype,
                                                                self.client_roster.keys(),
                                                                self.sub_subscribe))
-        self.xmpplog("%s roster is  %s substitut conf is %s" % (self.config.agenttype,
+        self.xmpplog("%s roster is %s configured substitute is %s" % (self.config.agenttype,
                                                                 self.client_roster.keys(),
                                                                 self.sub_subscribe),
                     type='info',
