@@ -977,41 +977,41 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
         agentfunction =  os.path.join(pathagent, "agentxmpp.py")
 
     modeagent = " -c " if console else ""
-    logger.debug('AGENT %s'%agent)
+    # logger.debug('AGENT %s'%agent)
     if agent == "connection" :
-        logger.debug("Starting configuration agent")
+        # logger.debug("Starting configuration agent")
 
         if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-            logger.debug('launcher for os system  %s %s%s -t %s' % (pythonexec,
-                                                         agentfunction,
-                                                         modeagent,
-                                                         typeagent))
+            # logger.debug('launcher for os system  %s %s%s -t %s' % (pythonexec,
+            #                                              agentfunction,
+            #                                              modeagent,
+            #                                              typeagent))
             os.system('%s %s%s -t %s' % (pythonexec,
                                          agentfunction,
                                          modeagent,
                                          typeagent))
         else:
-            logger.debug('launcher for python %s%s -t %s' % (agentfunction,
-                                                             modeagent,
-                                                             typeagent))
+            # logger.debug('launcher for python %s%s -t %s' % (agentfunction,
+            #                                                  modeagent,
+            #                                                  typeagent))
             os.system('python %s%s -t %s' % (agentfunction,
                                              modeagent,
                                              typeagent))
-        logger.debug("Refreshing fingerprint of configuration agent after its reconfiguration")
+        # logger.debug("Refreshing fingerprint of configuration agent after its reconfiguration")
         refreshfingerprintconf("machine")
     else:
-        logger.debug("start agent machine ")
+        # logger.debug("start agent machine ")
         ProcessData = global_data_process()
         ProcessData.start_process_agent([pythonexec,
                                          agentfunction,
                                          modeagent,
                                          "-t",
                                          typeagent])
-        logger.debug('start agent %s'%[ pythonexec,
-                                        agentfunction,
-                                        modeagent,
-                                        "-t",
-                                        typeagent])
+        # logger.debug('start agent %s'%[ pythonexec,
+        #                                 agentfunction,
+        #                                 modeagent,
+        #                                 "-t",
+        #                                 typeagent])
 
 if __name__ == '__main__':
     start_time = datetime.now()
@@ -1099,20 +1099,20 @@ if __name__ == '__main__':
                         format=format,
                         filename = logfile,
                         filemode = 'a')
-        logger.info(' LOG MODE %s' % LOGMODE )
+        # logger.info(' LOG MODE %s' % LOGMODE )
 
     if sys.platform.startswith('win'):
         result = win32api.SetConsoleCtrlHandler(ProcessData._CtrlHandler, 1)
         if result == 0:
-            logger.debug('Could not SetConsoleCtrlHandler (error %r)' %
-                            win32api.GetLastError())
+            # logger.debug('Could not SetConsoleCtrlHandler (error %r)' %
+            #                win32api.GetLastError())
         else:
-            logger.debug('Set handler for console events.')
+            # logger.debug('Set handler for console events.')
     elif sys.platform.startswith('linux') :
         signal.signal(signal.SIGINT, ProcessData.signal_handler)
         signal.signal(signal.SIGQUIT, ProcessData.signal_handler)
 
-    logger.debug("Starting the launcher")
+    # logger.debug("Starting the launcher")
 
     if not opts.typemachine.lower() in ["machine",'relayserver']:
         logger.error("The parameter for the -t option is wrong. It must be machine or relayserver")
@@ -1132,12 +1132,12 @@ if __name__ == '__main__':
         ret = install_rescue_image().reinstall_agent_rescue()
 
     if networkchanged:
-        logger.debug("The network changed. We need to reconfigure")
+        # logger.debug("The network changed. We need to reconfigure")
         refreshfingerprint()
 
     configchanged = confchanged(opts.typemachine)
     if configchanged:
-        logger.info ("The configuration changed. We need to reconfigure")
+        # logger.info ("The configuration changed. We need to reconfigure")
         refreshfingerprintconf(opts.typemachine)
 
     testagenttype = testagentconf(opts.typemachine)
