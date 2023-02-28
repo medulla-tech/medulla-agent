@@ -2,6 +2,8 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+# file : /pluginsmastersubstitute/plugin_assessor_agent.py
+
 import base64
 import json
 import os
@@ -36,14 +38,18 @@ DEBUGPULSEPLUGIN = 25
 
 plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}
 
+params = {"duree" : 300 }
+
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
+    msgq={ 'to' : str(msg['to']),'from' : str(msg['from']) }
     try:
+        timeact=int(time.time())
         compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
         if compteurcallplugin == 0:
-            objectxmpp.compteur_de_traitement = 0
+            objectxmpp.compteur_de_traitement = {}
             objectxmpp.listconfiguration = []
             objectxmpp.simultaneous_processing = 50
             objectxmpp.show_queue_status = False
@@ -58,37 +64,81 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         else:
             if statfuncton:
                 objectxmpp.stat_assessor_agent.statutility()
-
+        # ______________________________________
+        # error configuration on quitte et signale erreur au configurateur distant
         if objectxmpp.assessor_agent_errorconf:
             logger.error("error configuration no process action %s for machine %s" % (action, msg['from']))
-            sendErrorConnectionConf(objectxmpp,sessionid,msg)
+            sendErrorConnectionConf(objectxmpp, sessionid, msg)
             return
+        # ______________________________________
+        # delete compteur expire
+        deletelist=[]
+        for sessionid_save in objectxmpp.compteur_de_traitement.keys():
+            #logger.warning("time creation %s" % objectxmpp.compteur_de_traitement[sessionid_save][0])
+            #logger.warning("time maintenant %s" % int(time.time()) )
+            #logger.warning("time timeact %s" % timeact)
+            #logger.warning("delay %s > %s"%(int(time.time()) - int(objectxmpp.compteur_de_traitement[sessionid_save][0]),params["duree"] ))
+            if (timeact - int(objectxmpp.compteur_de_traitement[sessionid_save][0])) > params["duree"]:
+                msglist = objectxmpp.compteur_de_traitement[sessionid_save][1]
+                deletelist.append(sessionid_save)
+                file_plugin = os.path.join(os.path.dirname( __file__),
+                                                        "plugin_resultcleanconfaccount.py")
+                call_plugin( file_plugin,
+                                objectxmpp,
+                                "resultcleanconfaccount",
+                                sessionid_save,
+                                {"useraccount" : str(msglist['to']) },
+                                msglist,
+                                0,
+                                {})
+        for t in deletelist:
+            del objectxmpp.compteur_de_traitement[t]
+        # ______________________________________
 
-        if objectxmpp.compteur_de_traitement >= objectxmpp.simultaneous_processing:
-            objectxmpp.listconfiguration.append([int(time.time()), {"action" : action,
+        # ______________________________________
+        # add report dans la liste
+        if len(objectxmpp.compteur_de_traitement) >= objectxmpp.simultaneous_processing:
+            objectxmpp.listconfiguration.append([int(time.time()),  {"action" : action,
                                                  "sessionid" : sessionid,
                                                  "data" : data,
-                                                 "msg" : msg }])
-            if bool(objectxmpp.show_queue_status):
-                logger.info("Pending pool counter = %s" % (objectxmpp.compteur_de_traitement))
-            return
+                                                 "msg" : msgq }])
+            #logger.warning("ADD dans listconfiguration %s %s"%(len(objectxmpp.listconfiguration), msg['from']))
 
-        objectxmpp.compteur_de_traitement=objectxmpp.compteur_de_traitement+1
-        Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
-                                                      action,
-                                                      sessionid,
-                                                      data,
-                                                      msg)
-        objectxmpp.compteur_de_traitement=objectxmpp.compteur_de_traitement-1
-        if objectxmpp.compteur_de_traitement<0:
-            objectxmpp.compteur_de_traitement=0
-        timeact=int(time.time())
-        while objectxmpp.compteur_de_traitement > 0 and \
-            objectxmpp.compteur_de_traitement < objectxmpp.simultaneous_processing and \
-                len(objectxmpp.listconfiguration):
+            if bool(objectxmpp.show_queue_status):
+                logger.info("add (%s) : Pending pool counter = %s" % (msgq['from'].split("/")[1],
+                                                                    len(objectxmpp.compteur_de_traitement)))
+            return
+        # ______________________________________
+
+        # ______________________________________
+        # execute configuration
+        try:
+            objectxmpp.compteur_de_traitement[sessionid] = [timeact, msgq]
+            #logger.info("add in compteur_de_traitement session %s %s" % ([sessionid] , objectxmpp.compteur_de_traitement[sessionid] ))
+            if bool(objectxmpp.show_queue_status):
+                logger.info("Pending pool counter = %s" % (len(objectxmpp.compteur_de_traitement)))
+
+            Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
+                                                        action,
+                                                        sessionid,
+                                                        data,
+                                                        msg)
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        finally:
+            if sessionid in objectxmpp.compteur_de_traitement:
+                #logger.info("delete in compteur_de_traitement session %s %s" % ([sessionid] , objectxmpp.compteur_de_traitement[sessionid] ))
+                #logger.info("nb compteur_de_traitement session %s" % ( len(objectxmpp.compteur_de_traitement) ))
+                del objectxmpp.compteur_de_traitement[sessionid]
+        # ______________________________________
+
+        # ______________________________________
+        # relance ou suprime depuis la liste
+        while objectxmpp.listconfiguration and \
+            len(objectxmpp.compteur_de_traitement) < objectxmpp.simultaneous_processing:
             ## call plugin
             report=objectxmpp.listconfiguration.pop(0)
-            if len(report) == 2 and (timeact - report[0]) < 300:
+            if len(report) == 2 and (timeact - report[0]) < params["duree"]:
                 dataerreur={ "action" : "result" + plugin['NAME'],
                         "data" : { "msg" : "error plugin : " + plugin['NAME']},
                         'sessionid': report[1]['sessionid'],
@@ -109,6 +159,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
                     if "from" in report[1]['data']:
                         mach=report[1]['data']['from'].split("/")[1]
                         logger.info("Timeout re-calling plugin %s on machine %s" % (plugin['NAME'], mach))
+        # ______________________________________
     except Exception as e:
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
         logger.error("\n%s" % (traceback.format_exc()))
