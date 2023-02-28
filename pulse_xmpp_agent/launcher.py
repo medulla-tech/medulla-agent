@@ -125,7 +125,7 @@ class global_data_process:
                 gone, still_alive = psutil.wait_procs(children, timeout=5)
                 if is_parent:
                     try:
-                        logger.debug("kill parent process %s" % parent.pid)
+                        # logger.debug("kill parent process %s" % parent.pid)
                         parent.kill()
                         parent.wait(5)
                     except:
@@ -159,13 +159,13 @@ class global_data_process:
         try:
             if self.ProcessObj is not None:
                 strpid="PID agent %s" % (self.PIDagent)
-                logger.debug(strpid)
+                #logger.debug(strpid)
                 logstring = "\\_ -Launcher\n    \\_ -%s" % self.PIDagent
                 for childpid in self.pid_child:
                     logstring = logstring + "\n\t\\_ -%s" % childpid
-                logger.debug("\n%s" % logstring)
-            else:
-                logger.debug("No processes started.")
+                #logger.debug("\n%s" % logstring)
+            # else:
+                # logger.debug("No processes started.")
         except:
             pass
 
@@ -175,32 +175,32 @@ class global_data_process:
         """
         if sys.platform.startswith('win'):
             if evt == win32con.CTRL_SHUTDOWN_EVENT:
-                logger.debug("SIGNAL EVENT CTRL_SHUTDOWN_EVENT")
+                # logger.debug("SIGNAL EVENT CTRL_SHUTDOWN_EVENT")
                 self.terminate_process=True
                 self.stop_process_agent()
                 return True
             elif evt == win32con.CTRL_LOGOFF_EVENT:
-                logger.debug("SIGNAL EVENT CTRL_LOGOFF EVENT")
+                # logger.debug("SIGNAL EVENT CTRL_LOGOFF EVENT")
                 return True
             elif evt == win32con.CTRL_BREAK_EVENT:
-                logger.debug("SIGNAL EVENT CTRL_BREAK_EVENT")
+                # logger.debug("SIGNAL EVENT CTRL_BREAK_EVENT")
                 return True
             elif evt == win32con.CTRL_CLOSE_EVENT:
-                logger.debug("SIGNAL EVENT CTRL_CLOSE_EVENT")
+                # logger.debug("SIGNAL EVENT CTRL_CLOSE_EVENT")
                 return True
             elif evt == win32con.CTRL_C_EVENT:
-                logger.debug("SIGNAL EVENT CTRL_C_EVENT")
+                # logger.debug("SIGNAL EVENT CTRL_C_EVENT")
                 self.terminate_process=True
                 self.stop_process_agent()
                 return True
-            logger.debug("SIGNAL EVENT INCONUE")
+            # logger.debug("SIGNAL EVENT INCONUE")
         else:
             pass
         return False
 
     def signal_handler(self, signal_in, frame):
         if signal_in in [signal.SIGINT, signal.SIGQUIT,signal.SIGQUIT]:
-            logger.debug("SIGNAL EVENT %s"%signal_in)
+            # logger.debug("SIGNAL EVENT %s"%signal_in)
             self.terminate_process=True
             self.stop_process_agent()
 
@@ -241,7 +241,7 @@ class base_folder:
             It removes the rescue agent from the filesystem.
         """
         if self._exist_rescue():
-            logger.debug('We are removing the rescue agent from %s' % self.path_rescue)
+            # logger.debug('We are removing the rescue agent from %s' % self.path_rescue)
             shutil.rmtree(self.path_rescue)
 
     def copytree1(self, src, dst, symlinks=False, ignore=None):
@@ -265,7 +265,7 @@ class base_folder:
             See shutil.copytree documentation:
             https://docs.python.org/2/library/shutil.html#shutil.copytree
         """
-        logger.debug('copytree %s '%src)
+        # logger.debug('copytree %s ' % src)
         for item in os.listdir(src):
             s = os.path.join(src, item)
             d = os.path.join(dst, item)
@@ -285,9 +285,9 @@ class base_folder:
                 dst: The destination where we copy.
         """
         if os.path.isfile(dest):
-            logger.debug('remove %s' %(dest))
+            # logger.debug('remove %s' %(dest))
             os.remove(dest)
-        logger.debug('reinstall %s %s' %(src, dest))
+        # logger.debug('reinstall %s %s' %(src, dest))
         shutil.copy2(src, dest)
 
     def clean_agent_src(self):
@@ -394,51 +394,51 @@ class create_rescue_agent:
         """
         self.info._clean_rescue_agent()
         self.info._create_folder_rescue()
-        logger.debug('We are copying the file agentversion')
+        # logger.debug('We are copying the file agentversion')
         src = os.path.join(self.info.path_agent, "agentversion")
         dest = os.path.join(self.info.path_rescue,"agentversion")
-        logger.debug('copy %s into %s' % (src, dest))
+        # logger.debug('copy %s into %s' % (src, dest))
         shutil.copy2(src, dest)
 
-        logger.debug('We are copying the file JIDSUFFIXE')
+        # logger.debug('We are copying the file JIDSUFFIXE')
         src = os.path.join(self.info.path_agent, "lib", "INFOSTMP", "JIDSUFFIXE")
         dest = os.path.join(self.info.path_rescue,"JIDSUFFIXE","JIDSUFFIXE")
-        logger.debug('copy %s into %s' % (src, dest))
+        # logger.debug('copy %s into %s' % (src, dest))
         shutil.copy2(src, dest)
 
-        logger.debug('We are copying the python files')
+        # logger.debug('We are copying the python files')
         for keysfile in self.info.files_agent:
             for files in self.info.files_agent[keysfile]:
                 src = os.path.join(self.info.path_agent, keysfile,files)
                 dest = os.path.join(self.info.path_rescue, keysfile, files)
-                logger.debug('copy %s into %s' % (src, dest))
+                # logger.debug('copy %s into %s' % (src, dest))
                 shutil.copy2(src, dest)
 
-        logger.debug('We are copying the major python scripts')
+        # logger.debug('We are copying the major python scripts')
         for files in self.info.list_script_python_for_update:
             src = os.path.join(self.info.path_agent, files)
             dest = os.path.join(self.info.path_rescue, files)
-            logger.debug('copy %s into %s' % (src, dest))
+            # logger.debug('copy %s into %s' % (src, dest))
             shutil.copy2(src, dest)
 
-        logger.debug('We are copying the other python scripts')
+        # logger.debug('We are copying the other python scripts')
         for files in self.info.files_agent_script:
             src = os.path.join(self.info.path_agent, "script", files)
             dest = os.path.join(self.info.path_rescue,"script", files)
-            logger.debug('copy %s into %s' % (src, dest))
+            # logger.debug('copy %s into %s' % (src, dest))
             shutil.copy2(src, dest)
 
-        logger.debug('We are copying the configuration files')
+        # logger.debug('We are copying the configuration files')
         for files in self.info.list_config_file_ini:
             src = os.path.join(self.info.path_files_configuration, files)
             dest = os.path.join(self.info.path_rescue,"etc", files)
-            logger.debug('copy %s into %s' % (src, dest))
+            # logger.debug('copy %s into %s' % (src, dest))
             shutil.copy2(src, dest)
 
-        logger.debug('rescue fileviewer resource')
+        # logger.debug('rescue fileviewer resource')
         src = os.path.join(self.info.path_agent, "lib", "ressources","fileviewer")
         dest = os.path.join(self.info.path_rescue,"fileviewer")
-        logger.debug('copy %s into %s' % (src, dest))
+        # logger.debug('copy %s into %s' % (src, dest))
         self.info.copytree(src, dest)
 
 class install_rescue_image:
@@ -450,52 +450,52 @@ class install_rescue_image:
             It reinstalls a working Medulla Agent based on the rescue copy.
         """
         self.info.clean_agent_src()
-        logger.debug('We are reinstalling the file agentversion')
+        # logger.debug('We are reinstalling the file agentversion')
         dest = os.path.join(self.info.path_agent, "agentversion")
         src = os.path.join(self.info.path_rescue,"agentversion")
-        logger.debug('reinstalling %s into %s' % (src, dest))
+        # logger.debug('reinstalling %s into %s' % (src, dest))
         self.info.remove_and_copy(src, dest)
 
-        logger.debug('We are copying the file JIDSUFFIXE')
+        # logger.debug('We are copying the file JIDSUFFIXE')
         dest = os.path.join(self.info.path_agent, "lib", "INFOSTMP", "JIDSUFFIXE")
         src = os.path.join(self.info.path_rescue,"JIDSUFFIXE","JIDSUFFIXE")
-        logger.debug('reinstalling %s into %s' % (src, dest))
+        # logger.debug('reinstalling %s into %s' % (src, dest))
         self.info.remove_and_copy(src, dest)
 
-        logger.debug('We are reintalling the python files')
+        # logger.debug('We are reintalling the python files')
         for keysfile in self.info.files_agent:
-            logger.debug('***************** %s ***************' %(keysfile))
+            # logger.debug('***************** %s ***************' %(keysfile))
             for files in self.info.files_agent[keysfile]:
                 dest = os.path.join(self.info.path_agent, keysfile,files)
                 src = os.path.join(self.info.path_rescue, keysfile, files)
-                logger.debug('reinstall %s into %s' % (src, dest))
+                # logger.debug('reinstall %s into %s' % (src, dest))
                 self.info.remove_and_copy(src, dest)
 
-        logger.debug('We are reintalling the python files')
+        # logger.debug('We are reintalling the python files')
         for files in self.info.list_script_python_for_update:
             dest  = os.path.join(self.info.path_agent, files)
             src = os.path.join(self.info.path_rescue, files)
-            logger.debug('reinstall %s %s' % (src, dest))
+            # logger.debug('reinstall %s %s' % (src, dest))
             self.info.remove_and_copy(src, dest)
 
-        logger.debug('We are reintalling the other python scripts')
+        # logger.debug('We are reintalling the other python scripts')
         for files in self.info.files_agent_script:
             dest = os.path.join(self.info.path_agent, "script", files)
             src = os.path.join(self.info.path_rescue, "script", files)
-            logger.debug('reinstall %s %s' % (src, dest))
+            # logger.debug('reinstall %s %s' % (src, dest))
             self.info.remove_and_copy(src, dest)
 
-        logger.debug('We are reintalling the configuration files')
+        # logger.debug('We are reintalling the configuration files')
         for files in self.info.list_config_file_ini:
             dest = os.path.join(directoryconffile(), files)
             src = os.path.join(self.info.path_rescue, "etc", files)
-            logger.debug('reinstall %s %s' % (src, dest))
+            # logger.debug('reinstall %s %s' % (src, dest))
             self.info.remove_and_copy(src, dest)
 
-        logger.debug('We are reinstalling the fileviewer resources')
+        # logger.debug('We are reinstalling the fileviewer resources')
         dest = os.path.join(self.info.path_agent, "lib", "ressources", "fileviewer")
         src = os.path.join(self.info.path_rescue,"fileviewer")
-        logger.debug('reinstall %s %s' % (src, dest))
+        # logger.debug('reinstall %s %s' % (src, dest))
         shutil.rmtree(dest)
         self.info.copytree1(src, dest)
 
@@ -528,7 +528,7 @@ class Update_Remote_Agent:
         for path_dir_remoteagent in dir_create:
             if not os.path.exists(path_dir_remoteagent):
                 os.makedirs(path_dir_remoteagent)
-                logging.getLogger().debug("Creating folder for remote base agent : %s" % dir_agent_base)
+                # logging.getLogger().debug("Creating folder for remote base agent : %s" % dir_agent_base)
         if os.path.exists(os.path.join(dir_agent_base, 'agentversion')):
             self.load_list_md5_agentbase()
 
@@ -614,7 +614,7 @@ def agentinfoversion(xmppobject):
               imgdescriptor, actiontxt, conf and plugins)
     """
     cmd = "python %s -i -v" % (os.path.join(xmppobject.pathagent, "replicator.py"))
-    logger.debug("cmd : %s" % (cmd))
+    # logger.debug("cmd : %s" % (cmd))
     result = simplecommand(cmd)
     resultobj = {}
     rr = [x.rstrip() for x in result['result']]
