@@ -1747,7 +1747,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.subscribe_initialisation()
         elif frommsg.bare == self.sub_subscribe:
             if self.presencectrlsubscribe != presence['type'] and presence['type'] != 'available':
-                logger.warning( "Sunscription [%s] ON to OFF" % self.sub_subscribe )
+                logger.warning( "Subscription [%s] ON to OFF" % self.sub_subscribe )
             self.presencectrlsubscribe = presence['type']
 
     def unsubscribe_agent(self):
