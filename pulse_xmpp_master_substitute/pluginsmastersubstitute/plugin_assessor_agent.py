@@ -38,7 +38,10 @@ DEBUGPULSEPLUGIN = 25
 
 plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}
 
-params = {"duree" : 300 }
+params = {"duration" : 300 }
+# The parameter named duration is the time after which a configuration request is considered as expired.
+# The connection agent re-sends a configuration request after 300 seconds, thus making the previous one
+# obsolete as it will not be processed
 
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
@@ -77,8 +80,8 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             #logger.warning("time creation %s" % objectxmpp.compteur_de_traitement[sessionid_save][0])
             #logger.warning("time maintenant %s" % int(time.time()) )
             #logger.warning("time timeact %s" % timeact)
-            #logger.warning("delay %s > %s"%(int(time.time()) - int(objectxmpp.compteur_de_traitement[sessionid_save][0]),params["duree"] ))
-            if (timeact - int(objectxmpp.compteur_de_traitement[sessionid_save][0])) > params["duree"]:
+            #logger.warning("delay %s > %s"%(int(time.time()) - int(objectxmpp.compteur_de_traitement[sessionid_save][0]),params["duration"] ))
+            if (timeact - int(objectxmpp.compteur_de_traitement[sessionid_save][0])) > params["duration"]:
                 msglist = objectxmpp.compteur_de_traitement[sessionid_save][1]
                 deletelist.append(sessionid_save)
                 file_plugin = os.path.join(os.path.dirname( __file__),
@@ -138,7 +141,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             len(objectxmpp.compteur_de_traitement) < objectxmpp.simultaneous_processing:
             ## call plugin
             report=objectxmpp.listconfiguration.pop(0)
-            if len(report) == 2 and (timeact - report[0]) < params["duree"]:
+            if len(report) == 2 and (timeact - report[0]) < params["duration"]:
                 dataerreur={ "action" : "result" + plugin['NAME'],
                         "data" : { "msg" : "error plugin : " + plugin['NAME']},
                         'sessionid': report[1]['sessionid'],
