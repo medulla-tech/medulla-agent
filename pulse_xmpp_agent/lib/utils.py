@@ -273,6 +273,14 @@ def listback_to_deploy(objectxmpp):
 
 
 def testagentconf(typeconf):
+    """
+    Test the configuration file to see if it is completly configured and working.
+    Args:
+        typeconf: Type of the agent (machine, relayserver)
+
+    Returns:
+        It returns True if this is a relayserver or a valid config file.
+    """
     if typeconf == "relayserver":
         return True
     Config = ConfigParser.ConfigParser()
@@ -286,6 +294,28 @@ def testagentconf(typeconf):
             and Config.get('connection', 'port') != ""\
             and Config.get('connection', 'server') != ""\
             and Config.get('global', 'relayserver_agent') != "":
+        return True
+    return False
+
+def isTemplateConfFile(typeconf):
+    """
+    Test the configuration file to see if this is a valid template file.
+    Args:
+        typeconf: Type of the agent (machine, relayserver)
+
+    Returns:
+        It returns True if this is a relayserver or a valid template file.
+    """
+    if typeconf == "relayserver":
+        return True
+    Config = ConfigParser.ConfigParser()
+    namefileconfig = conffilename(typeconf)
+    Config.read(namefileconfig)
+    if Config.has_option("configuration_server", "confserver")\
+            and Config.has_option('configuration_server', 'confport')\
+            and Config.has_option('configuration_server', 'confpassword')\
+            and Config.has_option('configuration_server', 'confdomain')\
+            and Config.get('configuration_server', 'keyAES32') != ""
         return True
     return False
 
