@@ -1,11 +1,11 @@
-%define tarname		pulse-xmpp-agent
+%define tarname		medulla-agent
 %define git                    SHA
 %define use_git         1
 %define branch integration
 %define filetree_version 0.2
 
-Summary:	Pulse XMPP Agent
-Name:		pulse-xmpp-agent
+Summary:	Medulla Agent
+Name:		medulla-agent
 Version:	2.1.9
 %if ! %use_git
 Release:        1%{?dist}
