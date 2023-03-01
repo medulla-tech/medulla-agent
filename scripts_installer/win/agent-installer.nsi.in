@@ -192,6 +192,10 @@ Section "Python" sec_py
     ${EndIf}
   ${EndIf}
 
+  ; Previously stop service
+  nsExec::Exec 'sc stop medullaagent'
+  nsExec::Exec 'sc stop medullanetnotify'
+
   ; Delete previous rescue folder if any
   RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\agentrescue
   RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\img_agent
