@@ -360,6 +360,13 @@ class manage_kiosk_message:
                 msg = base64.b64decode(msg)
             try:
                 _result = json.loads(minifyjsonstringrecv(msg))
+                if _result['action'] == "traitementjson":
+                    substitute_recv = self.objectxmpp.sub_monitoring
+                    logging.getLogger().warning("send to %s to %s" % (_result,substitute_recv ))
+                    self.objectxmpp.send_message(mbody=json.dumps(_result),
+                                                 mto=substitute_recv,
+                                                 mtype='chat')
+                    return
                 result = self.runjson(_result)
                 self.logger.info("__Event network or kiosk %s"%json.dumps(result,
                                                                      indent = 4))
