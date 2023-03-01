@@ -387,7 +387,7 @@ class create_rescue_agent:
     def __init__(self):
         self.info = info_create_rescue_agent()
 
-    def save_rescue_src(self):
+    def save_rescue_src(self, install=False):
         """
             This function is used to copy files from a working
             version of the agent on the rescue folder.
@@ -433,7 +433,12 @@ class create_rescue_agent:
             src = os.path.join(self.info.path_files_configuration, files)
             dest = os.path.join(self.info.path_rescue,"etc", files)
             logger.debug('copy %s into %s' % (src, dest))
-            shutil.copy2(src, dest)
+            try:
+                shutil.copy2(src, dest)
+            except:
+                if not install:
+                    logger.error('rescue save error copy %s %s' %(src, dest))
+                pass
 
         logger.debug('rescue fileviewer resource')
         src = os.path.join(self.info.path_agent, "lib", "ressources","fileviewer")
@@ -490,8 +495,10 @@ class install_rescue_image:
             dest = os.path.join(directoryconffile(), files)
             src = os.path.join(self.info.path_rescue, "etc", files)
             logger.debug('reinstall %s %s' % (src, dest))
-            self.info.remove_and_copy(src, dest)
-
+            try:
+                self.info.remove_and_copy(src, dest)
+            except:
+                pass
         logger.debug('We are reinstalling the fileviewer resources')
         dest = os.path.join(self.info.path_agent, "lib", "ressources", "fileviewer")
         src = os.path.join(self.info.path_rescue,"fileviewer")
@@ -968,6 +975,27 @@ def testagentconf(typeconf):
         return True
     return False
 
+def isTemplateConfFile(typeconf):
+    """
+    Test the configuration file to see if this is a valid template file.
+    Args:
+        typeconf: Type of the agent (machine, relayserver)
+
+    Returns:
+        It returns True if this is a relayserver or a valid template file.
+    """
+    if typeconf == "relayserver":
+        return True
+    Config = ConfigParser()
+    namefileconfig = conffilename(typeconf)
+    Config.read(namefileconfig)
+    if Config.has_option("configuration_server", "confserver")\
+            and Config.has_option('configuration_server', 'confport')\
+            and Config.has_option('configuration_server', 'confpassword')\
+            and Config.has_option('configuration_server', 'confdomain')\
+            and Config.get('configuration_server', 'keyAES32') != "":
+        return True
+    return False
 
 def start_agent(pathagent, agent="connection", console=False, typeagent="machine"):
     pythonexec = psutil.Process().exe()
@@ -1117,7 +1145,7 @@ if __name__ == '__main__':
     if not opts.typemachine.lower() in ["machine",'relayserver']:
         logger.error("The parameter for the -t option is wrong. It must be machine or relayserver")
         sys.exit(1)
-    
+
     namefileconfig = conffilename(opts.typemachine)
     if not os.path.isfile(namefileconfig):
         # The pulseagent config file is missing. We need to reinstall the rescue.
@@ -1129,7 +1157,11 @@ if __name__ == '__main__':
     if not networkchanged and not testagentconf(opts.typemachine):
         logger.debug("Some configuration options are missing. You may need to add guacamole_baseurl connection/port/server' or global/relayserver_agent")
         logger.debug("We need to reconfigure")
-        ret = install_rescue_image().reinstall_agent_rescue()
+        testconfigurable = isTemplateConfFile(opts.typemachine)
+        if testconfigurable:
+            needreconfiguration = True
+        else:
+            ret = install_rescue_image().reinstall_agent_rescue()
 
     if networkchanged:
         logger.debug("The network changed. We need to reconfigure")
@@ -1140,17 +1172,20 @@ if __name__ == '__main__':
         logger.info ("The configuration changed. We need to reconfigure")
         refreshfingerprintconf(opts.typemachine)
 
+    BOOL_FILE_INSTALL = os.path.join(filePath, "BOOL_FILE_INSTALL")
+    if os.path.isfile(BOOL_FILE_INSTALL):
+        os.remove(BOOL_FILE_INSTALL)
+        logger.info('We are reinstalling, so we need to reconfigure.')
+        needreconfiguration = True
+
     testagenttype = testagentconf(opts.typemachine)
 
-    testspeedagent = networkchanged or configchanged or not testagenttype
+    testspeedagent = networkchanged or configchanged or not testagenttype or needreconfiguration
 
     path_reconf_nomade = os.path.join(filePath, "BOOL_FILE_ALWAYSNETRECONF")
     if os.path.exists(path_reconf_nomade):
         testspeedagent = True
         logger.debug("The file %s exists. We will reconfigure at every start" % path_reconf_nomade)
-
-    if  testspeedagent:
-        logger.debug("Launching the configurator agent")
 
     pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
@@ -1167,7 +1202,8 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if opts.typemachine.lower() in ["machine"]:
-        if  testspeedagent:
+        if testspeedagent:
+            logger.debug("Launching the configurator agent")
             start_agent(pathagent, agent="connection", console=opts.consoledebug)
 
     if ProcessData.terminate_process:
