@@ -200,6 +200,11 @@ Section "Python" sec_py
   RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\agentrescue
   RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\img_agent
 
+  ; Prevent agentrescue to be run at first launcher execution
+  FileOpen $0 "C:\Python27\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
+  FileClose $0
+
+
   ; Install of Python
   ; Get location
   Var /GLOBAL PYTHON_FILENAME
