@@ -3155,27 +3155,21 @@ class process_xmpp_agent():
             xmpp.register_plugin('xep_0077') # In-band Registration
             xmpp['xep_0077'].force_registration = True
 
-            #tg = tgconf(optstypemachine)
-            #xmpp.config.__dict__.update(tg.__dict__)
             # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
             if xmpp.config.agenttype in ['relayserver']:
                 attempt = True
             else:
                 attempt = False
-            logging.log(DEBUGPULSE,"connect to %s"%ipfromdns(tg.Server))
-            logging.log(DEBUGPULSE,"connect to port %s"%tg.Port)
+            logging.log(DEBUGPULSE,"connecting to to %s:%s" % (ipfromdns(tg.Server), tg.Port)
             time.sleep(5)
             if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
                 xmpp.process(block=True)
-                logging.log(DEBUGPULSE,"terminate infocommand")
-                logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
-                logging.log(DEBUGPULSE,"RESTART %s"%setgetrestart(-1))
-                logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
+                logging.log(DEBUGPULSE,"connected to %s:%s" % (ipfromdns(tg.Server), tg.Port)
                 time.sleep(2)
             else:
                 logging.log(DEBUGPULSE,"Unable to connect. search alternative")
+                logging.log(DEBUGPULSE,"Unable to connect to %s:%s" % (ipfromdns(tg.Server), tg.Port)
                 setgetrestart(0)
-                logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
                 time.sleep(2)
             if signalint:
                 logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
@@ -3190,7 +3184,6 @@ class process_xmpp_agent():
                 terminateserver(xmpp)
 
             if setgetrestart(-1) == 0:
-                logging.log(DEBUGPULSE,"not restart")
                 # verify if signal stop
                 # verify if alternative connection
                 if os.path.isfile(conffilename("cluster")):
