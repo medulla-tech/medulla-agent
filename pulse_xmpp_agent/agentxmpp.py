@@ -200,20 +200,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.debug("filename: %s" % filetempinfolibfingerprint)
         if os.path.exists(filetempinfolibfingerprint):
             logging.debug("current fingerprint file %s" % file_get_contents(filetempinfolibfingerprint))
-            # comparaison
             if netfingerprintstart != file_get_contents(filetempinfolibfingerprint):
                 logging.warning("after start : registration must update the information in the xmpp tables.")
                 self.force_full_registration()
         # ______________________________________________________
         Env.agenttype = self.config.agenttype
         managepackage.agenttype = self.config.agenttype
-        # creation object session ##########
+        # creation object session
         self.session = session(self.config.agenttype)
         self.boolinventory=False # cette variable permet de faire demander 1
                                  # inventaire suite a 1 changement de reseau.
                                  # inventaire sera demander quand l'agent sera dans 1 mode moins transitoire.
-        # CREATE MANAGE SCHEDULER##############
-        logging.debug("### CREATION MANAGER PLUGINSCHULING ##########")
+        # CREATE MANAGE SCHEDULER
+        logging.debug("### CREATION MANAGER PLUGINSCHEDULING ##########")
         self.manage_scheduler = manage_scheduler(self)
         logging.debug("##############################################")
         # Definition path directory plugin
@@ -304,10 +303,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # We remove the fingerprint file
             pathfingerprint = os.path.join( Setdirectorytempinfo(),
                                             'fingerprintconf')
-            logger.error("configuration error del figerprint %s"%pathfingerprint)
+            logger.error("configuration error del fingerprint %s" % pathfingerprint)
             if os.path.isfile(pathfingerprint):
                 os.remove(pathfingerprint)
-                logger.error("configuration error del figerprint %s"%pathfingerprint)
+                logger.error("configuration error del fingerprint %s" % pathfingerprint)
         self.agentsiveo = self.config.jidagentsiveo
 
         self.agentmaster = jid.JID("master@pulse")
@@ -547,7 +546,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.config.inventory_interval != 0:
             if self.config.inventory_interval < 3600:
                 self.config.inventory_interval = 3600
-                logging.warning("chang minimun time cyclic inventory : 3600")
+                logging.warning("change minimun time cyclic inventory : 3600")
                 logging.warning("we make sure that the time for "\
                     " the inventories is greater than or equal to 1 hour.")
             if self.config.sched_check_inventory:
