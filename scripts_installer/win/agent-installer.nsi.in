@@ -174,19 +174,6 @@ Section "Python" sec_py
     ${EndIf}
   ${EndIf}
 
-  ; Previously stop service
-  nsExec::Exec 'sc stop medullaagent'
-  nsExec::Exec 'sc stop medullanetnotify'
-
-  ; Delete previous rescue folder if any
-  RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\agentrescue
-  RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\img_agent
-
-  ; Prevent agentrescue to be run at first launcher execution
-  FileOpen $0 "C:\Python27\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
-  FileClose $0
-
-
   ; Install of Python
   ; Get location
   Var /GLOBAL PYTHON_FILENAME
@@ -277,6 +264,22 @@ Section "Python" sec_py
   Delete $INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}
   Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
 SectionEnd
+
+; ####################### Prevent from previous Medulla installation #######################
+  ; Previously stop service
+  nsExec::Exec 'sc stop medullaagent'
+  nsExec::Exec 'sc stop medullanetnotify'
+
+  ; Delete previous rescue folder if any
+  RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\agentrescue
+  RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\img_agent
+
+  ; Prevent agentrescue to be run at first launcher execution
+  FileOpen $0 "C:\Python27\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
+  FileClose $0
+
+  ; Remove old three random characters for unicity
+  Delete C:\Python27\Lib\site-packages\pulse_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
 
 ; ####################### Installation of Medulla Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
