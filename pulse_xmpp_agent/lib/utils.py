@@ -52,6 +52,7 @@ from Crypto.Cipher import AES
 import tarfile
 from functools import wraps
 import string
+import platform
 
 logger = logging.getLogger()
 
@@ -93,6 +94,19 @@ class Env(object):
         else:
             return os.path.expanduser('~pulseuser')
 
+
+
+def os_version():
+    """
+        Retrieve the name of the real Windows version
+    """
+    os_version_name = platform.platform()
+    if sys.platform.startswith('win'):
+        pythoncom.CoInitialize()
+        c = wmi.WMI()
+        for os in c.Win32_OperatingSystem():
+            os_version_name = os.Caption
+    return os_version_name
 
 # debug decorator
 def minimum_runtime(t):
@@ -211,6 +225,49 @@ def save_count_start():
     file_put_contents(filecount, str(countstart))
     return countstart
 
+def unregister_agent(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfo = {"user": user, "domain" : domain, "resource": resource}
+    filejid = os.path.join(Setdirectorytempinfo(), 'jid')
+    if not os.path.exists(filejid):
+        savejsonfile(filejid, jidinfo)
+        return False, jidinfo
+    oldjid = loadjsonfile(filejid)
+    if oldjid['user'] != user or oldjid['domain'] != domain:
+        savejsonfile(filejid, jidinfo)
+        return True, jidinfo
+    if oldjid['resource'] != resource:
+        savejsonfile(filejid, jidinfo)
+    return False, jidinfo
+
+def unregister_subscribe(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfosubscribe = {"user": user, "domain" : domain, "resource": resource}
+    filejidsubscribe = os.path.join(Setdirectorytempinfo(), 'subscribe')
+    if not os.path.exists(filejidsubscribe):
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return False, jidinfosubscribe
+    oldjidsubscribe = loadjsonfile(filejidsubscribe)
+    if oldjidsubscribe['user'] != user or oldjidsubscribe['domain'] != domain:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return True, jidinfosubscribe
+    if oldjidsubscribe['resource'] != resource:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+    return False, jidinfosubscribe
 
 def save_back_to_deploy(obj):
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
@@ -1441,27 +1498,30 @@ def shutdown_command(time=0, msg=''):
             msg:  the message that will be displayed
 
     """
+    if msg != "":
+        msg = msg.strip("\" ")
+        msg = '"%s"' % msg
     if sys.platform.startswith('linux'):
         if int(time) == 0 or msg == '':
             cmd = "shutdown now"
         else:
             cmd = "shutdown -P -f -t %s %s" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     elif sys.platform.startswith('win'):
         if int(time) == 0 or msg == '':
             cmd = "shutdown /p"
         else:
             cmd = "shutdown /s /t %s /c %s" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     elif sys.platform.startswith('darwin'):
         if int(time) == 0 or msg == '':
             cmd = "shutdown -h now"
         else:
             cmd = "shutdown -h +%s \"%s\"" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     return
 
 def vnc_set_permission(askpermission=1):

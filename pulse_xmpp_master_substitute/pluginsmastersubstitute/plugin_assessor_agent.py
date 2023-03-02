@@ -25,9 +25,11 @@ import base64
 import json
 import os
 import logging
+import time
 from lib.utils import ipfromdns, \
                       AESCipher, \
-                      subnetnetwork
+                      subnetnetwork, \
+                      call_plugin
 from lib.localisation import Point
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.manageADorganization import manage_fqdn_window_activedirectory
@@ -60,23 +62,63 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     try:
         compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
         if compteurcallplugin == 0:
+            objectxmpp.compteur_de_traitement=0
+            objectxmpp.listconfiguration=[]
+            objectxmpp.simultaneous_processing=50
+            #objectxmpp.assessor_agent_errorconf=False
             if statfuncton:
                 objectxmpp.stat_assessor_agent = statcallplugin(objectxmpp,
                                                                 plugin['NAME'])
-            read_conf_assessor(objectxmpp)
+            try:
+                read_conf_assessor(objectxmpp)
+            except:
+                logger.error("\n%s" % (traceback.format_exc()))
         else:
             if statfuncton:
                 objectxmpp.stat_assessor_agent.statutility()
+
         if objectxmpp.assessor_agent_errorconf:
             logger.error("error configuration no process action %s for machine %s" % (action, msg['from']))
             sendErrorConnectionConf(objectxmpp,sessionid,msg)
             return
 
+        if objectxmpp.compteur_de_traitement >= objectxmpp.simultaneous_processing:
+            objectxmpp.listconfiguration.append({"action" : action,
+                                                 "sessionid" : sessionid,
+                                                 "data" : data,
+                                                 "msg" : msg })
+            logger.debug("poll  = %s reporte" % (objectxmpp.compteur_de_traitement))
+            return
+
+        objectxmpp.compteur_de_traitement=objectxmpp.compteur_de_traitement+1
         Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                       action,
                                                       sessionid,
                                                       data,
                                                       msg)
+        objectxmpp.compteur_de_traitement=objectxmpp.compteur_de_traitement-1
+        if objectxmpp.compteur_de_traitement<0:
+            objectxmpp.compteur_de_traitement=0
+
+        while objectxmpp.compteur_de_traitement > 0 and \
+            objectxmpp.compteur_de_traitement < objectxmpp.simultaneous_processing and \
+                len(objectxmpp.listconfiguration):
+            ## call plugin
+            report=objectxmpp.listconfiguration.pop(0)
+            dataerreur={ "action" : "result" + plugin['NAME'],
+                    "data" : { "msg" : "error plugin : " + plugin['NAME']},
+                    'sessionid': report['sessionid'],
+                    'ret': 255,
+                    'base64': False}
+            logger.debug("rappel plugin %s" % (plugin['NAME']))
+            call_plugin( __file__,
+                                objectxmpp,
+                                action,
+                                report['sessionid'],
+                                report['data'],
+                                report['msg'],
+                                0,
+                                dataerreur)
     except Exception as e:
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
         logger.error("\n%s" % (traceback.format_exc()))
@@ -761,6 +803,8 @@ def read_conf_assessor(objectxmpp):
         lit la configuration du plugin
         le repertoire ou doit se trouver le fichier de configuration est dans la variable objectxmpp.config.pathdirconffile
     """
+    objectxmpp.assessor_agent_showinfomachine = []
+    objectxmpp.simultaneous_processing= 50
     objectxmpp.assessor_agent_errorconf = False
     namefichierconf = plugin['NAME'] + ".ini"
     objectxmpp.pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf)
@@ -773,6 +817,7 @@ def read_conf_assessor(objectxmpp):
             objectxmpp.stat_assessor_agent.display_param_config( msg="DEFAULT")
         return False
     else:
+        logger.info("Configuration file plugin %s is %s" % (plugin['NAME'],objectxmpp.pathfileconf))
         objectxmpp.assessor_agent_errorconf = False
         Config = ConfigParser.ConfigParser()
         Config.read(objectxmpp.pathfileconf)
@@ -808,6 +853,11 @@ def read_conf_assessor(objectxmpp):
             else:
                 objectxmpp.assessor_agent_announce_server = "default"
                 logger.warning("announce_server for syncthing default value is default")
+
+            if Config.has_option("parameters", "simultaneous_processing"):
+                objectxmpp.simultaneous_processing= Config.getint('parameters', 'simultaneous_processing')
+            else:
+                objectxmpp.simultaneous_processing= 50
 
             # default connection ##########################
             # Connection server parameters if no relay server is available ####
@@ -901,4 +951,6 @@ def message_config(nameplugin, pathfileconf):
                  "-OHEFK3P-JHSB6KH-OHHYABS-YEWJRVC-M6F4NLZ-D6U55ES-VXIVMA3")
     logger.error("#for authentification key AES 32 chars")
     logger.error("keyAES32 = abcdefghijklnmopqrstuvwxyz012345")
+    logger.error("#maximum number of simultaneous processing")
+    logger.error("simultaneous_processing = 50")
     logger.error("showinfomachine = infra_jfk_deb1, infra_jfk_deb2")

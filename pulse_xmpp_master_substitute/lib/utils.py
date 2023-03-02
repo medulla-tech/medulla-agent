@@ -71,17 +71,70 @@ if sys.platform.startswith('win'):
     from win32com.client import GetObjectif
     import ctypes
     from ctypes.wintypes import LPCWSTR, LPCSTR, WinError
+    import msvcrt
 if sys.platform.startswith('linux'):
     import pwd
     import grp
-
+    import fcntl
 if sys.platform.startswith('darwin'):
     import pwd
     import grp
+    import fcntl
+
 
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
+
+class Locker:
+    """
+        Cette class permet de verrouiller 1 partie de code entre application sur 1 même machine
+        les fichiers de lock et temoin sont mis dans :
+           /usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/lib/INFOSTMP
+    """
+    def __init__(self, lock_filename,text_lock_indicator_file="notext", lock_indicator_file="lockindicator"):
+        dirfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                               "INFOSTMP")
+        self.indicatorfile = os.path.join(dirfile, lock_indicator_file )
+        self.text_lock_indicator_file=text_lock_indicator_file
+        if not os.path.exists(dirfile):
+            os.makedirs(dirfile)
+        lock_filename = os.path.join(dirfile, lock_filename)
+        self.lock_filename = lock_filename
+        if not os.path.isfile(self.lock_filename):
+            open(self.lock_filename, "w").close()
+
+    def __enter__(self):
+        self.fp = open(self.lock_filename)
+        if os.name == "nt":
+            self.portable_locknt(self.fp)
+        else:
+            self.portable_lockli(self.fp)
+        with open(self.indicatorfile,"w") as infile:
+            infile.write(self.text_lock_indicator_file)
+
+    def __exit__(self, _type, value, tb):
+        if os.name == "nt":
+            self.portable_unlocknt(self.fp)
+        else:
+            self.portable_unlockli(self.fp)
+        if os.path.exists(self.indicatorfile):
+            os.remove(self.indicatorfile)
+        self.fp.close()
+
+    def portable_locknt(self,fp):
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_LOCK, 1)
+
+    def portable_unlocknt(self, fp):
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_UNLCK, 1)
+
+    def portable_lockli(self, fp):
+        fcntl.flock(fp.fileno(), fcntl.LOCK_EX)
+
+    def portable_unlockli(self, fp):
+        fcntl.flock(fp.fileno(), fcntl.LOCK_UN)
 
 
 class Env(object):
@@ -207,23 +260,64 @@ def save_count_start():
     file_put_contents(filecount, str(countstart))
     return countstart
 
+def unregister_agent(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old JID
+        Args:
+            user: User for the JID
+            domain: Domain for the JID
+            resource: Resource of the JID
+        Returns:
+            It returns `True` if we need to unregister an old JID.
+    """
+    jidinfo = {"user": user, "domain" : domain, "resource" : resource}
+    filejid = os.path.join(Setdirectorytempinfo(), 'jid')
+    if not os.path.exists(filejid):
+        savejsonfile(filejid, jidinfo)
+        return  False, jidinfo
+    oldjid = loadjsonfile(filejid)
+    if oldjid['user'] != user or oldjid['domain'] != domain:
+        savejsonfile(filejid, jidinfo)
+        return True, jidinfo
+    if oldjid['resource'] != resource:
+        savejsonfile(filejid, jidinfo)
+    return False, jidinfo
+
+def unregister_subscribe(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfosubscribe = {"user": user, "domain" : domain, "resource": resource}
+    filejidsubscribe = os.path.join(Setdirectorytempinfo(), 'subscribe')
+    if not os.path.exists(filejidsubscribe):
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return False, jidinfosubscribe
+    oldjidsubscribe = loadjsonfile(filejidsubscribe)
+    if oldjidsubscribe['user'] != user or oldjidsubscribe['domain'] != domain:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return True, jidinfosubscribe
+    if oldjidsubscribe['resource'] != resource:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+    return False, jidinfosubscribe
 
 def save_back_to_deploy(obj):
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     save_obj(obj, fileback_to_deploy)
 
-
 def load_back_to_deploy():
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     return load_obj(fileback_to_deploy)
-
 
 def listback_to_deploy(objectxmpp):
     if len(objectxmpp.back_to_deploy) != 0:
         print "list session pris en compte back_to_deploy"
         for u in objectxmpp.back_to_deploy:
             print u
-
 
 def testagentconf(typeconf):
     if typeconf == "relayserver":
@@ -242,7 +336,6 @@ def testagentconf(typeconf):
         return True
     return False
 
-
 def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
@@ -256,18 +349,15 @@ def createfingerprintnetwork():
         md5network = hashlib.md5(obj['result']).hexdigest()
     return md5network
 
-
 def createfingerprintconf(typeconf):
     namefileconfig = conffilename(typeconf)
     return hashlib.md5(file_get_contents(namefileconfig)).hexdigest()
-
 
 def confinfoexist():
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), 'fingerprintconf')
     if os.path.exists(filenetworkinfo):
         return True
     return False
-
 
 def confchanged(typeconf):
     if confinfoexist():
@@ -280,14 +370,12 @@ def confchanged(typeconf):
             return False
     return True
 
-
 def refreshfingerprintconf(typeconf):
     fp = createfingerprintconf(typeconf)
     file_put_contents(os.path.join(Setdirectorytempinfo(),
                       'fingerprintconf'),
                       fp)
     return fp
-
 
 def networkchanged():
     if networkinfoexist():
@@ -299,14 +387,12 @@ def networkchanged():
     else:
         return True
 
-
 def refreshfingerprint():
     fp = createfingerprintnetwork()
     file_put_contents(os.path.join(Setdirectorytempinfo(),
                                    'fingerprintnetwork'),
                       fp)
     return fp
-
 
 def file_get_contents(filename,
                       use_include_path=0,
@@ -501,17 +587,22 @@ def loadModule(filename):
             fp.close()
     return module
 
+
 def call_plugin(name, *args, **kwargs):
     # add compteur appel plugins
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
+        setattr(args[0], "num_call%s" % args[1], count+1)
     except AttributeError:
         count = 0
         setattr(args[0], "num_call%s" % args[1], count)
-    pluginaction = loadModule(name)
-    pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s" % args[1], count +1)
+    try:
+        pluginaction = loadModule(name)
+        pluginaction.action(*args, **kwargs)
+    except:
+        logging.getLogger().error("An error occured while calling the plugin:  %s" % args[1])
+        logging.getLogger().error("We hit the following traceback \n %s" % traceback.format_exc())
 
 def getshortenedmacaddress():
     listmacadress = {}
@@ -1290,27 +1381,30 @@ def shutdown_command(time=0, msg=''):
             msg:  the message that will be displayed
 
     """
+    if msg != "":
+        msg = msg.strip("\" ")
+        msg = '"%s"' % msg
     if sys.platform.startswith('linux'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown now"
         else:
             cmd = "shutdown -P -f -t %s %s" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     elif sys.platform.startswith('win'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown /p"
         else:
             cmd = "shutdown /s /t %s /c %s" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     elif sys.platform.startswith('darwin'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown -h now"
         else:
             cmd = "shutdown -h +%s \"%s\"" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     return
 
 def vnc_set_permission(askpermission=1):

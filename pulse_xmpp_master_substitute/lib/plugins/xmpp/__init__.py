@@ -321,8 +321,35 @@ class XmppMasterDatabase(DatabaseHelper):
             q = q.filter(Subscription.macadress == macadress).delete()
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as  e:
             logging.getLogger().error(str(e))
+
+    @DatabaseHelper._sessionm
+    def update_count_subscription(self,
+                                  session,
+                                  agentsubtitutename,
+                                  countroster):
+        logging.getLogger().debug("update_count_subscription %s" % agentsubtitutename)
+        try:
+            result = session.query(Substituteconf).filter(Substituteconf.jidsubtitute == agentsubtitutename).all()
+            first_value = True
+            for t in result:
+                logging.getLogger().debug("The ARS id: %s contains %s machines on the substitute %s" % (t.relayserver_id,
+                                                                                                        t.countsub,
+                                                                                                        t.jidsubtitute))
+
+                if first_value:
+                    first_value = False
+                    t.countsub = countroster
+                else:
+                    t.countsub = 0
+            session.commit()
+            session.flush()
+            return True
+        except Exception as e:
+            logging.getLogger().error("An error occured on update_count_subscription function.")
+            logging.getLogger().error("We obtained the error: \n %s" % str(e))
+            return False
 
     @DatabaseHelper._sessionm
     def update_enable_for_agent_subscription(self,
@@ -387,6 +414,35 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
+    def check_hash_rules(self, session, rules):
+        """Add the specified deployment status rules if they are not existing.
+        Params:
+            session: sqlalchemy session
+            rules: dict containing rules to check.
+            i.e:
+            rules = {
+                "STATUS" : ["regexp", "STATUS", "label"]
+                "ABORT HASH INVALID": [".*hashes is invalid.*", "ABORT HASH INVALID", "aborthashinvalid"],
+                "ERROR HASH MISSING":[".*hashes have not been generated.*", "ERROR HASH MISSING", "errorhashmissing"]
+            }"""
+
+        query = session.query(Def_remote_deploy_status).filter(Def_remote_deploy_status.status.in_(rules.keys())).all()
+
+        founded_status = [response.status for response in query if query is not None]
+        status_to_add = []
+        for status in rules:
+            if status not in founded_status:
+
+                tmp = Def_remote_deploy_status()
+                tmp.regex_logmessage = rules[status][0]
+                tmp.status = status
+                tmp.label = rules[status][2]
+
+                session.add(tmp)
+                session.commit()
+                session.flush()
+
+    @DatabaseHelper._sessionm
     def search_machines_from_state(self, session, state):
         dateend = datetime.now()
         sql = """SELECT
@@ -424,7 +480,6 @@ class XmppMasterDatabase(DatabaseHelper):
                           "result": t[18]}
             resultlist.append(listresult)
         return resultlist
-
     @DatabaseHelper._sessionm
     def Timeouterrordeploy(self, session):
         # test les evenements states qui ne sont plus valides sur intervalle de deployement.
@@ -483,16 +538,96 @@ class XmppMasterDatabase(DatabaseHelper):
             return resultlist
 
     @DatabaseHelper._sessionm
-    def update_state_deploy(self, session, id, state):
+    def update_state_deploy(self, session, sql_id, state):
+        """
+            Reset the state of the deploiement to `state` for the
+            `sql_id` deploiements
+            Args:
+                session: The SQL Alchemy session
+                sql_id: The id of the deploiement that need to be reset
+                state: The new state of the deploiement
+        """
         try:
             sql = """UPDATE `xmppmaster`.`deploy`
                      SET `state`='%s'
-                     WHERE `id`='%s';""" % (state, id)
+                     WHERE `id`='%s';""" % (state, sql_id)
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
+
+    def replaydeploysessionid(self, sessionid, force_redeploy=0, reschedule=0):
+        """
+            Call the mmc_restart_deploy_sessionid stored procedure
+            Args:
+                session: The SQL Alchemy session
+                sessionid: The sessionid of the deploiement
+                force_redeploy: Tells if we force to redeploy ALL.
+                reschedule: Tell if we reschedule the deploiements
+        """
+
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+            self.logger.info("Call the mmc_restart_deploy_sessionid stored procedure for the sessionid: %s"
+                             "force_redeploy is set to %s and reschedule is set to %s" % (sessionid,
+                                                                                          force_redeploy,
+                                                                                          reschedule))
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_deploy_sessionid", [sessionid, force_redeploy, reschedule])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        return
+
+
+    def restart_blocked_deployments(self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments stored procedure
+            It plans with blocked deployments again
+        """
+        self.restart_blocked_deployments_on_status_transfer_failed(nb_reload)
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_blocked_deployments", [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+
+        if results:
+            results = "%s" % results[0]
+            self.logger.info("Calling the mmc_restart_deploy_sessionid stored procedure with %s" % nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
+
+
+    def restart_blocked_deployments_on_status_transfer_failed(self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments_transfer_error stored procedure
+            It plans with transfert failed blocked deployments again
+        """
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_blocked_deployments_transfer_error", [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        if results:
+            results = "%s" % results[0]
+            self.logger.info("Calling the mmc_restart_blocked_deployments_transfer_error stored procedure with %s" % nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
+
 
     @DatabaseHelper._sessionm
     def updatedeploytosessionid(self, session, status, sessionid):
@@ -503,7 +638,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -516,7 +651,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -534,7 +669,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
             ret=[elt for elt in req]
             return ret[0][0]
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return 0
 
@@ -1587,6 +1722,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 uuidnew = "None"
             else:
                 uuidnew = str(uuid_inventorymachine)
+            if lastuser is None or lastuser == "":
+                lastuser = str(machineforupdate['lastuser'])
             maxuuid=max([len(uuidold), len(uuidnew)])
             msg ="Update Machine %8s (%s)\n" \
                 "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|\n" \
@@ -2164,8 +2301,7 @@ class XmppMasterDatabase(DatabaseHelper):
                   endcmd=None,
                   macadress=None,
                   result=None,
-                  syncthing=None
-                  ):
+                  syncthing=None):
         """
         parameters
         startcmd and endcmd  int(timestamp) either str(datetime)
@@ -3087,7 +3223,8 @@ class XmppMasterDatabase(DatabaseHelper):
             this function return the machines list for 1 group id and 1 command id
         """
         machine = session.query(Deploy).filter(and_(Deploy.group_uuid == grpid,
-                                                    Deploy.command == cmdid))
+                                                        Deploy.command == cmdid,
+                                                        not_(Deploy.sessionid.like('missingagent%'))))
         machine = machine.all()
         session.commit()
         session.flush()
@@ -3894,6 +4031,41 @@ class XmppMasterDatabase(DatabaseHelper):
             ret['tabdeploy']['title'].append(linedeploy.title)
         return ret
 
+
+    @DatabaseHelper._sessionm
+    def getRelayServerfromjiddomain(self,
+                                    session,
+                                    jiddomain):
+        relayserver = session.query(RelayServer).filter(RelayServer.jid.like("%%@%s/%%" % jiddomain))
+        relayserver = relayserver.first()
+        session.commit()
+        session.flush()
+        try:
+            result = {'id': relayserver.id,
+                      'urlguacamole': relayserver.urlguacamole,
+                      'subnet': relayserver.subnet,
+                      'nameserver': relayserver.nameserver,
+                      'ipserver': relayserver.ipserver,
+                      'ipconnection': relayserver.ipconnection,
+                      'port': relayserver.port,
+                      'portconnection': relayserver.portconnection,
+                      'mask': relayserver.mask,
+                      'jid': relayserver.jid,
+                      'longitude': relayserver.longitude,
+                      'latitude': relayserver.latitude,
+                      'enabled': relayserver.enabled,
+                      'switchonoff': relayserver.switchonoff,
+                      'mandatory': relayserver.mandatory,
+                      'classutil': relayserver.classutil,
+                      'groupdeploy': relayserver.groupdeploy,
+                      'package_server_ip': relayserver.package_server_ip,
+                      'package_server_port': relayserver.package_server_port,
+                      'moderelayserver': relayserver.moderelayserver,
+                      'keysyncthing': relayserver.keysyncthing,
+                      'syncthing_port': relayserver.syncthing_port}
+        except Exception:
+            result = {}
+        return result
 
     @DatabaseHelper._sessionm
     def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None):
@@ -4849,7 +5021,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return updatedb
 
     @DatabaseHelper._sessionm
-    def getPresenceuuidenabled(self, session, uuid, enabled = 0):
+    def getPresenceuuidenabled(self, session, uuid, enabled=0):
         return session.query(exists().where (and_(Machines.uuid_inventorymachine == uuid,
                                               Machines.enabled == enabled))).scalar()
     @DatabaseHelper._sessionm
@@ -5946,51 +6118,87 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def substituteinfo(self, session, listconfsubstitute, arsname):
         """
-            search  subtitute agent jid for agent machine
+            This function creates sorted lists of substitutes to configure machines.
+            It uses the sum of every substitute and attribute the one with the less machines in. It is used for the load balancing.
+            The calculation is done taking into consideration all the substitutes associated to the relay to which the machine is connected.
+
+            Args:
+                session: The SQL Alchemy session
+                listconfsubstitute: The list of the substitutes in the machine configuration
+                arsname: The ars where the machine is connected to.
+            Returns:
         """
         try:
-            exclud = 'master@pulse'
+            excluded_account = 'master@pulse'
 
-            incrementeiscount=[]
-            for t in listconfsubstitute['conflist']:
-                result = session.query(Substituteconf.id.label("id"),
-                                       Substituteconf.jidsubtitute.label("jidsubtitute"),
-                                       Substituteconf.countsub.label("countsub"),
-                                       RelayServer.jid.label("namerelayser")).\
-                    join(RelayServer, Substituteconf.relayserver_id == RelayServer.id).\
-                        filter( and_(not_(Substituteconf.jidsubtitute.like(exclud)),
-                                    Substituteconf.type.like(t),
-                                    RelayServer.jid == arsname)).order_by(Substituteconf.countsub).all()
-                listcommand = []
-                test = False
-                for y in result:
-                    listcommand.append(y.jidsubtitute)
-                    if not test:
-                        test = True
-                        incrementeiscount.append(str(y.id))
-                        # y.countsub = y.countsub + 1
-                # session.commit()
-                # session.flush()
-                listcommand.append(exclud)
-                listconfsubstitute[t] = listcommand
+            incrementeiscount = []
+            for substituteinfo in listconfsubstitute['conflist']:
+                try:
+                    sql = """SELECT
+                                substituteconf.id AS id,
+                                substituteconf.jidsubtitute AS jidsubtitute,
+                                substituteconf.countsub AS countsub,
+                                substituteconf.type AS type,
+                                relayserver.jid AS namerelayser,
+                                SUM(substituteconf.countsub) AS totsub
+                            FROM
+                                substituteconf
+                                    JOIN
+                                relayserver ON substituteconf.relayserver_id = relayserver.id
+                            WHERE
+                                substituteconf.jidsubtitute NOT LIKE '%s'
+                                    AND substituteconf.type LIKE '%s'
+                                    AND (substituteconf.jidsubtitute IN (SELECT
+                                        substituteconf.jidsubtitute
+                                    FROM
+                                        substituteconf
+                                    WHERE
+                                        substituteconf.relayserver_id = (SELECT
+                                                id
+                                            FROM
+                                                relayserver
+                                            WHERE
+                                                relayserver.jid LIKE '%s')))
+                            GROUP BY substituteconf.jidsubtitute
+                            ORDER BY totsub;
+                            ;""" % (excluded_account, substituteinfo, arsname)
+                    resultproxy = session.execute(sql)
+                    listcommand = []
+                    infsub = [{"id": x[0], "sub": x[1] , "totalcount": int(x[5])} for x in resultproxy]
+                    self.logger.debug("%s -> %s" % (substituteinfo ,infsub))
+                    if infsub:
+                        incrementeiscount.append(str(infsub[0]['id']))
+                    for t in infsub:
+                        listcommand.append(t['sub'])
+                    listcommand.append(excluded_account)
+                    listconfsubstitute[substituteinfo] = listcommand
+                except Exception as e:
+                    self.logger.error("An error occured while fetching the ordered list of subsitutes.")
+                    self.logger.error("We hit the backtrace: \n%s" % (traceback.format_exc()))
+
             if len(incrementeiscount) != 0:
-                #update contsub
-                sql="""UPDATE `xmppmaster`.`substituteconf`
+                sql = """UPDATE `xmppmaster`.`substituteconf`
                     SET
                         `countsub` = `countsub` + '1'
                     WHERE
                         `id` IN (%s);""" % ','.join([x for x in incrementeiscount])
                 result = session.execute(sql)
                 session.commit()
-                session.flush()
         except Exception, e:
             logging.getLogger().error("substituteinfo : %s" % str(e))
+        logging.getLogger().debug("substitute list : %s"  % listconfsubstitute)
         return listconfsubstitute
 
     @DatabaseHelper._sessionm
     def GetMachine(self, session, jid):
         """
             Initialize boolean presence in table machines
+            This function tells if the machine is present of not.
+            Args:
+                session: The SQL Alchemy session
+                jid: The JID of the machine
+            Returns:
+                It returns None in case of error.
         """
         user = str(jid).split("@")[0]
         try:
@@ -6000,15 +6208,16 @@ class XmppMasterDatabase(DatabaseHelper):
                         `xmppmaster`.`machines`
                     WHERE
                         `xmppmaster`.`machines`.jid like('%s@%%')
-                    LIMIT 1;"""%user
+                    LIMIT 1;""" % user
             result = session.execute(sql)
             session.commit()
             session.flush()
             return [x for x in result][0]
-        except IndexError:
+        except IndexError as index_error:
+            logging.getLogger().error("An index error occured while trying to set up online/offline machine: %s" % str(index_error))
             return None
-        except Exception, e:
-            logging.getLogger().error("GetMachine : %s" % str(e))
+        except Exception as e:
+            logging.getLogger().error("An error occured while trying to set up online/offline machine: %s" % str(e))
             return None
 
     @DatabaseHelper._sessionm

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2021 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -28,14 +28,24 @@ import traceback
 from sleekxmpp import jid
 import types
 from lib.plugins.xmpp import XmppMasterDatabase
-
+import os
 import time
+
+import subprocess
+from lib.utils import file_put_contents, simplecommandstr
+import ConfigParser
+try:
+    from lib.stat import statcallplugin
+    statfuncton = True
+except:
+    statfuncton = False
+
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION": "1.10", "NAME": "loadpluginsubscribe", "TYPE": "substitute"}
+plugin = {"VERSION": "1.12", "NAME": "loadpluginsubscribe", "TYPE": "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -44,32 +54,101 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 
     compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
     if compteurcallplugin == 0:
+        if statfuncton:
+            objectxmpp.stat_subcription_agent = statcallplugin(objectxmpp,
+                                                            plugin['NAME'])
         read_conf_load_plugin_subscribe(objectxmpp)
+
+        objectxmpp.changed_status = types.MethodType(changed_status, objectxmpp)
         objectxmpp.add_event_handler('changed_status', objectxmpp.changed_status)
 
         XmppMasterDatabase().update_enable_for_agent_subscription(objectxmpp.boundjid.bare)  # update down machine substitute manage by self agent
 
-        # self.add_event_handler('presence_unavailable', objectxmpp.presence_unavailable)
-        # self.add_event_handler('presence_available', objectxmpp.presence_available)
 
-        # self.add_event_handler('presence_subscribe', objectxmpp.presence_subscribe)
-        # self.add_event_handler('presence_subscribed', objectxmpp.presence_subscribed)
+        # add function clean_roster et synchro_count_substitut
+        objectxmpp.synchro_count_substitut = types.MethodType(synchro_count_substitut,
+                                                              objectxmpp)
+        objectxmpp.clean_roster = types.MethodType(clean_roster,
+                                                   objectxmpp)
 
-        # self.add_event_handler('presence_unsubscribe', objectxmpp.presence_unsubscribe)
-        # self.add_event_handler('presence_unsubscribed', objectxmpp.presence_unsubscribed)
+        objectxmpp.schedule('clean_roster',
+                            60,
+                            objectxmpp.clean_roster,
+                            repeat=True)
 
-        # self.add_event_handler('changed_subscription', objectxmpp.changed_subscription)
+def clean_roster(self):
+    """
+    This function does several actions:
+        - removes master@pulse from the roster
+        - removes all the unactive machines from the roster ( none none )
+        - count how many contacts are in the roster
+    """
+    try:
+        cmd=["ejabberdctl process_rosteritems delete any any %s master@pulse" % self.boundjid.bare,
+                "ejabberdctl process_rosteritems delete none:to none %s any" % str(self.boundjid.bare)]
+        for command in cmd:
+            simplecommandstr(command)
+    except Exception as error_cleaning:
+        logger.error("An error occured while cleaning the roster. We got the error %s" % str(error_cleaning))
+        logger.error("We hit the backtrace: \n%s" % (traceback.format_exc()))
+    self.synchro_count_substitut()
 
+def synchro_count_substitut(self):
+    """
+        This function is used to count the number of contacts in the roster.
+        And add them to the database. 
+    """
+    try:
+        cmd = "ejabberdctl get_roster %s %s | "\
+            "awk '{print $3;}' | grep -v out | wc -l " % (str(self.boundjid.user),
+                                                          str(self.boundjid.domain))
+        result = simplecommandstr(str(cmd))
+        cardinal_roster = int(result['result'].strip()) if result else 0
+        logger.debug("roster number (%s) %s" % (cardinal_roster,
+                                                str(self.boundjid.user)))
+
+        XmppMasterDatabase().update_count_subscription(self.boundjid.bare,
+                                                       cardinal_roster)
+    except Exception as error_count:
+        logger.error("An error occured while counting the roster. We got the error %s" % str(error_count))
+        logger.error("We hit the backtrace: \n%s" % (traceback.format_exc()))
 
 def read_conf_load_plugin_subscribe(objectxmpp):
     """
         It reads the configuration plugin
         The folder where the configuration file must be is in the objectxmpp.config.pathdirconffile variable.
     """
-    objectxmpp.changed_status = types.MethodType(changed_status, objectxmpp)
+    namefichierconf = plugin['NAME'] + ".ini"
+    objectxmpp.pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf)
+    if not os.path.isfile(objectxmpp.pathfileconf):
+        logger.error("plugin %s\nConfiguration file  missing\n  %s" % (plugin['NAME'],
+                                                                       objectxmpp.pathfileconf))
+        dataconfigfile ="[parameters]\ntime_between_checks =  60\n"
+        file_put_contents(objectxmpp.pathfileconf, dataconfigfile)
+        if statfuncton:
+            objectxmpp.stat_subcription_agent.display_param_config( msg="DEFAULT")
+        return False
+    else:
+        Config = ConfigParser.ConfigParser()
+        Config.read(objectxmpp.pathfileconf)
+        if os.path.exists(objectxmpp.pathfileconf + ".local"):
+            Config.read(objectxmpp.pathfileconf + ".local")
+        if Config.has_section("parameters"):
 
+            if statfuncton:
+                objectxmpp.stat_subcription_agent.load_param_lap_time_stat_(Config)
+                objectxmpp.stat_subcription_agent.display_param_config("CONFIG")
+        else:
+            logger.error("see SECTION [parameters] mising in file : %s " % objectxmpp.pathfileconf)
+            objectxmpp.assessor_agent_errorconf = True
+            if statfuncton:
+                objectxmpp.stat_subcription_agent.display_param_config("DEFAULT")
+            return False
+    return True
 
 def changed_status(self, presence):
+    if statfuncton:
+        self.stat_subcription_agent.statutility()
     frommsg = jid.JID(presence['from'])
     logger.debug("Message from %s" % frommsg)
     spresence = str(presence['from'])

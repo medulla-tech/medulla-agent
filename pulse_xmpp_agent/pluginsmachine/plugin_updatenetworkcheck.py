@@ -26,11 +26,11 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-NETWORKVERSION = '2.1.7'
+NETWORKVERSION = '2.1.8'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatenetworkcheck", "TYPE": "machine"}
+plugin = {"VERSION": "1.6", "NAME": "updatenetworkcheck", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
