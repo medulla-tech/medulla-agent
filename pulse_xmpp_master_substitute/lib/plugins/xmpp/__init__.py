@@ -71,6 +71,7 @@ import re
 import uuid
 from lib.configuration import confParameter
 import functools
+from netaddr import *
 
 try:
     from sqlalchemy.orm.util import _entity_descriptor
@@ -3515,8 +3516,19 @@ class XmppMasterDatabase(DatabaseHelper):
         #self.delNetwork_for_machines_id(id_machine)
         try:
             new_network = Network()
+            mask = mask.strip()
+            ipaddress = ipaddress.strip()
+            broadcast = broadcast.strip()
+            macaddress = macaddress.strip()
+            gateway = gateway.strip()
             new_network.macaddress=macaddress
             new_network.ipaddress=ipaddress
+            if not broadcast and mask and ipaddress :
+                netmask_bits = IPAddress(mask).netmask_bits()
+                CIDR = IPNetwork("%s/%s"%(ipaddress, netmask_bits))
+                broadcast = CIDR.broadcast
+                if broadcast is None or broadcast == "None":
+                    broadcast = ""
             new_network.broadcast=broadcast
             new_network.gateway=gateway
             new_network.mask=mask
@@ -3525,10 +3537,8 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_network)
             session.commit()
             session.flush()
-        except Exception, e:
-            # logging.getLogger().error("addPresenceNetwork : %s " % new_network)
-            logging.getLogger().error(str(e))
-        # return new_network.toDict()
+        except Exception as e:
+            logging.getLogger().error("add Presence Network : %s " % str(e))
 
     @DatabaseHelper._sessionm
     def addServerRelay(self, session,
