@@ -3163,11 +3163,11 @@ class process_xmpp_agent():
             time.sleep(5)
             if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
                 xmpp.process(block=True)
-                logging.log(DEBUGPULSE,"connected to %s:%s" % (ipfromdns(tg.Server), tg.Port)
+                logging.log(DEBUGPULSE,"connected to %s:%s" % (ipfromdns(tg.Server), tg.Port))
                 time.sleep(2)
             else:
                 logging.log(DEBUGPULSE,"Unable to connect. search alternative")
-                logging.log(DEBUGPULSE,"Unable to connect to %s:%s" % (ipfromdns(tg.Server), tg.Port)
+                logging.log(DEBUGPULSE,"Unable to connect to %s:%s" % (ipfromdns(tg.Server), tg.Port))
                 setgetrestart(0)
                 time.sleep(2)
             if signalint:
