@@ -183,15 +183,3 @@ def read_config_plugin_agent(objectxmpp):
         objectxmpp.trigger_size = Config.getint('rotation_file', 'trigger_size')
     except BaseException:
         objectxmpp.trigger_size = 5242880
-
-    logger.info("\nParameters\n\tlog file is : %s\n" \
-                "\tconfiguration file is : %s\n" \
-                "\tnumber file in rotation is : %s\n" \
-                "\tcompress mode is : %s\n" \
-                "\ttrigger_size is %s bytes\n" \
-                "\tLevel logging %s" % (objectxmpp.config.logfile,
-                                        objectxmpp.pathfileconf,
-                                        objectxmpp.nbrotfile,
-                                        objectxmpp.compress,
-                                        objectxmpp.trigger_size,
-                                        logging.getLevelName(logger.getEffectiveLevel())))
