@@ -3136,7 +3136,6 @@ class process_xmpp_agent():
         setgetcountcycle()
         while True:
             setgetrestart()
-            logging.log(DEBUGPULSE,"WHILE RESTART VARIABLE %s"%setgetrestart(-1))
             tg = tgconf(optstypemachine)
             xmpp = MUCBot(tg,
                           queue_recv_tcp_to_xmpp,
