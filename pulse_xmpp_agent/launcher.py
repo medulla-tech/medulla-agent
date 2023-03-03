@@ -1171,6 +1171,8 @@ if __name__ == '__main__':
 
     # first start network changed
     networkchanged = networkchanged()
+    needreconfiguration = False
+
     if not networkchanged and not testagentconf(opts.typemachine):
         logger.debug("Some configuration options are missing. You may need to add guacamole_baseurl connection/port/server' or global/relayserver_agent")
         logger.debug("We need to reconfigure")
