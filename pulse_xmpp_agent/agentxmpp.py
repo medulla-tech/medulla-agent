@@ -1775,7 +1775,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.info("Subscribe %s" % self.sub_subscribe)
         # send iq to subscribe
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
-        logger.info("get_roster")
         self.get_roster()
         self.ipconnection = self.config.Server
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
