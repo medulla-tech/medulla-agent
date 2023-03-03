@@ -3159,7 +3159,7 @@ class process_xmpp_agent():
                 attempt = True
             else:
                 attempt = False
-            logging.log(DEBUGPULSE,"connecting to to %s:%s" % (ipfromdns(tg.Server), tg.Port)
+            logging.log(DEBUGPULSE,"connecting to to %s:%s" % (ipfromdns(tg.Server), tg.Port))
             time.sleep(5)
             if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
                 xmpp.process(block=True)
