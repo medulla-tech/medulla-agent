@@ -169,13 +169,11 @@ class syncthingapi():
         time.sleep(5)
         self.reload_config()
         try:
-            logger.info("___________________________________")
-            logger.info("Syncthing  Version %s" % self.version)
-            logger.info("Device id %s" % self.device_id)
-            logger.info("config file %s" % configfile)
-            logger.info("___________________________________")
+            logger.debug("Syncthing  Version %s" % self.version)
+            logger.debug("Device id %s" % self.device_id)
+            logger.debug("config file %s" % configfile)
         except:
-            logger.error("Syncthing configuration")
+            logger.error("An error occured while trying to configure syncthing.")
         # bash command xmllint --xpath "//configuration/gui/apikey/text()" /var/lib/syncthing/.config/syncthing/config.xml
 
     def taille_config_xml(self):
