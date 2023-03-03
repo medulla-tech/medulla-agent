@@ -1748,8 +1748,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def subscribe_initialisation(self):
         self.unsubscribe_agent()
-        logger.info("The client roster is %s " % self.client_roster.keys())
-        logger.info("The roster is %s " % self.roster)
+        logger.debug("The client roster is %s " % self.client_roster.keys())
+        logger.debug("The roster is %s " % self.roster)
         self.xmpplog("%s roster is  %s" % (self.config.agenttype, self.sub_subscribe),
                     type='info',
                     sessionname="",
