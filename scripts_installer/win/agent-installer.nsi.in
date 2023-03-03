@@ -284,6 +284,7 @@ Section "Python" sec_py
 SectionEnd
 
 ; ####################### Prevent from previous Medulla installation #######################
+Section "!${PRODUCT_NAME}" prevent_update
   ; Previously stop service
   nsExec::Exec 'sc stop medullaagent'
   nsExec::Exec 'sc stop medullanetnotify'
@@ -298,7 +299,7 @@ SectionEnd
 
   ; Remove old three random characters for unicity
   Delete C:\Python27\Lib\site-packages\pulse_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
-
+SectionEnd
 ; ####################### Installation of Medulla Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
