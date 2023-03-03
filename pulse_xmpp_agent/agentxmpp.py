@@ -3166,12 +3166,12 @@ class process_xmpp_agent():
                 logging.log(DEBUGPULSE,"connected to %s:%s" % (ipfromdns(tg.Server), tg.Port))
                 time.sleep(2)
             else:
-                logging.log(DEBUGPULSE,"Unable to connect. search alternative")
                 logging.log(DEBUGPULSE,"Unable to connect to %s:%s" % (ipfromdns(tg.Server), tg.Port))
+                logging.log(DEBUGPULSE,"We are now searching for an alternative server")
                 setgetrestart(0)
                 time.sleep(2)
             if signalint:
-                logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
+                logging.log(DEBUGPULSE,"CTRL-C have been called. We are closing the medulla agent.")
                 try:
                     xmpp.eventkilltcp.set()
                     xmpp.eventkillpipe.set()
@@ -3183,18 +3183,13 @@ class process_xmpp_agent():
                 terminateserver(xmpp)
 
             if setgetrestart(-1) == 0:
-                # verify if signal stop
-                # verify if alternative connection
                 if os.path.isfile(conffilename("cluster")):
-                    # il y a une configuration alternative
-                    logging.log(DEBUGPULSE,"analyse alternative alternative connection")
-                    logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
-                    logging.log(DEBUGPULSE, "alternative configuration")
+                    logger.debug("We restart and use the %s file to find the alternatives" % conffilename("cluster"))
                     xmpp.force_full_registration()
                     setgetcountcycle(1)
                     try:
                         timealternatifars = random.randint(*xmpp.config.timealternatif)
-                        logging.log(DEBUGPULSE,"waiting %s for reconnection alternatif ARS"%timealternatifars)
+                        logging.log(DEBUGPULSE,"We are waiting %s seconds before trying again" % timealternatifars)
                         time.sleep(timealternatifars)
                         newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
 
@@ -3204,18 +3199,18 @@ class process_xmpp_agent():
                                         newparametersconnect[0],
                                         newparametersconnect[3])
                         if newparametersconnect[5] < setgetcountcycle(-1):
-                            # if plus d'un cycle fait on relance le configurateur
+                            # If more than one cycle, we restart the configurator.
                             setgetcountcycle()
-                            logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
+                            logging.log(DEBUGPULSE,"We start the connector to find a new server")
                             nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
                             args = ['python', nameprogconnection, '-t', 'machine']
                             subprocess.call(args)
                             time.sleep(10)
                     except Exception:
-                        logging.log(40," ERROR analyse alternative connection")
-                        logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
+                        logger.error("An error occured while searching for an alternative server")
+                        logger.error("Please check the file %s" % conffilename(xmpp.config.agenttype))
                 else:
-                    logging.log(40,"The file %s is missing" % conffilename("cluster"))
+                    logging.error("The file %s is missing" % conffilename("cluster"))
                     setgetcountcycle(1)
                     if setgetcountcycle(-1) > 3:
                         setgetcountcycle()
