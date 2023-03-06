@@ -1918,11 +1918,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     except OSError:
                         logging.error("We failed to remove the file %s" % self.tmpfile)
                         pass
-            logger.info("Initialisation of syncthing finished.")
             except Exception as e:
                 logging.error("The initialisation of syncthing failed with the error %s: " % str(e))
                 logger.error("We hit the following backtrace: \n%s" % traceback.format_exc())
                 logger.error("Syncthing is not functionnal. Using the degraded mode")
+
+            logger.info("Initialisation of syncthing finished.")
 
     def send_message_agent(self,
                            mto,
