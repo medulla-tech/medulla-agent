@@ -599,7 +599,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler('changed_subscription', self.changed_subscription)
 
         self.RSA = MsgsignedRSA(self.config.agenttype)
-        logger.info("VERSION AGENT IS %s"%self.version_agent())
+        logger.info("The version of the agent is %s" % self.version_agent())
         #### manage information extern for Agent RS(relayserver only dont working on windows.)
         ##################
         if  self.config.agenttype in ['relayserver']:
@@ -2256,8 +2256,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def reinstall_agent(self):
         file_put_contents(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"),
                         "use file boolean update. enable verify update.")
-        logger.debug("RE_INSTALL AGENT VERSION %s to %s"%(file_get_contents(os.path.join(self.img_agent,
-                                                                                        "agentversion")),
+        logger.debug("We will update Medulla agent from version %s to %s" % (file_get_contents(os.path.join(self.img_agent,
+                                                                                               "agentversion")),
                                                         self.boundjid.bare ))
         agentversion = os.path.join(self.pathagent, "agentversion")
         versiondata = file_get_contents(os.path.join(self.img_agent, "agentversion")).replace("\n","").replace("\r","").strip()
@@ -2271,9 +2271,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.debug("cmd : %s" % (replycatorcmd))
         result = simplecommand(replycatorcmd)
         if result['code'] == 0:
-            logger.warning("the agent is already installed for version  %s"%(versiondata))
+            logger.warning("The medulla agent is already installed with version %s" % versiondata)
         elif result['code'] == 1:
-            logger.info("installed success agent version %s"%(versiondata))
+            logger.info("Medulla agent version %s installed with success." % versiondata)
         elif result['code'] == 120:
             logger.error("installed default agent version %s (rollback previous version.). We will not switch to new agent."%(versiondata))
         elif result['code'] == 121:
@@ -2287,7 +2287,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("return code is : %s"%(result['code']))
 
     def checkinstallagent(self):
-        # verify si boollean existe.
         if self.config.updating == 1:
             if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
                 if self.descriptor_master is not None:
