@@ -155,8 +155,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                  queueout,
                  eventkilltcp,
                  eventkillpipe):
-        logging.log(DEBUGPULSE, "start machine  %s Type %s" % (conf.jidagent,
-                                                               conf.agenttype))
+        logger.info("start machine  %s Type %s" % (conf.jidagent,
+                                                   conf.agenttype))
         # create mutex
         self.mutex = threading.Lock()
         self.mutexslotquickactioncount = threading.Lock()
@@ -172,22 +172,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                           "syncthingdescriptor")
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs(self.dirsyncthing, 0755)
-        logger.info("start machine1  %s Type %s" % (conf.jidagent,
-                                                    conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent),
                                       conf.passwordconnection)
         laps_time_update_plugin = 3600
         laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
-        logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
         laps_time_send_ping_to_kiosk = 350
         self.back_to_deploy = {}
         self.config = conf
 
         ### update level log for sleekxmpp
         handler_sleekxmpp = logging.getLogger('sleekxmpp')
-        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
+        logger.debug("Sleekxmpp log level is %s" % self.config.log_level_sleekxmpp)
         handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
 
         # _____________ verify network interface _____________
@@ -212,9 +209,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                  # inventaire suite a 1 changement de reseau.
                                  # inventaire sera demander quand l'agent sera dans 1 mode moins transitoire.
         # CREATE MANAGE SCHEDULER
-        logging.debug("### CREATION MANAGER PLUGINSCHEDULING ##########")
+        logging.debug("CREATION MANAGER PLUGINSCHEDULING")
         self.manage_scheduler = manage_scheduler(self)
-        logging.debug("##############################################")
         # Definition path directory plugin
         namelibplugins = "pluginsmachine"
         if self.config.agenttype in ['relayserver']:
@@ -227,15 +223,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.charge_apparente_cluster = {}
 
         self.laps_time_networkMonitor = self.config.detectiontime
-        logging.warning("laps time network changing %s" % self.laps_time_networkMonitor)
-        # self.quitserverkiosk = False
-        # self.quitserverpipe  = True
-        # Update agent from MAster#############################
         self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
         self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                       "img_agent")
         if os.path.isdir(self.img_agent):
-            logging.warning('deleting directory %s' % self.img_agent)
+            logging.debug('deleting directory %s' % self.img_agent)
             try:
                 shutil.rmtree(self.img_agent)
             except Exception as e:
@@ -539,7 +531,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                              'xmpp_baseremoteagent')
             self.Update_Remote_Agentlist = Update_Remote_Agent(
                 self.diragentbase, True)
-            # ######################Update remote agent#########################
         # we make sure that the temp for the inventories is greater than or equal to 1 hour.
         # if the time for the inventories is 0, it is left at 0.
         # this deactive cycle inventory
@@ -555,9 +546,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             self.handleinventory,
                             repeat=True)
         else:
-            logging.warning("not enable cyclic inventory")
+            logging.debug("The cyclic inventory is disabled")
 
-        #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if self.config.agenttype not in ['relayserver']:
             if self.config.sched_session_reload:
                 self.schedule('session reload',
@@ -610,10 +600,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if sys.platform.startswith('win'):
             result = win32api.SetConsoleCtrlHandler(self._CtrlHandler, 1)
             if result == 0:
-                logging.log(DEBUGPULSE,'Could not SetConsoleCtrlHandler (error %r)' %
+                logger.debug('Could not SetConsoleCtrlHandler (error %r)' %
                              win32api.GetLastError())
             else:
-                logging.log(DEBUGPULSE,'Set handler for console events.')
+                logger.debug('Set handler for console events.')
                 self.is_set = True
         elif sys.platform.startswith('linux') :
             signal.signal(signal.SIGINT, self.signal_handler)
@@ -1901,9 +1891,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         # Syncthing initialisation
         if self.config.syncthing_on:
-            logger.info("____________________________________________")
-            logger.info("___________ INITIALISE SYNCTHING ___________")
-            logger.info("____________________________________________")
+            logger.info("Initialisation of syncthing in progress.")
             if self.config.agenttype not in ['relayserver']:
                 if self.config.sched_check_syncthing_deployment:
                     self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
@@ -2128,16 +2116,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # retrieve existing sessions
         if not self.session.loadsessions():
             return
-        logging.log(DEBUGPULSE,"RELOAD SESSION DEPLOY")
+        logger.debug("RELOAD SESSION DEPLOY")
         try:
             # load back to deploy after read session
             self.back_to_deploy = load_back_to_deploy()
-            logging.log(DEBUGPULSE,"RELOAD DEPENDENCY MANAGER")
+            logger.debug("RELOAD DEPENDENCY MANAGER")
         except IOError:
             self.back_to_deploy = {}
         cleanbacktodeploy(self)
         for i in self.session.sessiondata:
-            logging.log(DEBUGPULSE,"DEPLOYMENT AFTER RESTART OU RESTART BOT")
+            logger.debug("DEPLOYMENT AFTER RESTART OU RESTART BOT")
             msg={
                 'from': self.boundjid.bare,
                 'to': self.boundjid.bare
@@ -2886,7 +2874,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                                      "INFOSTMP",
                                      "pidagentwintreename")
     file_put_contents(windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid ))
-    logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+    logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
                                                       p.name,
                                                       p.pid))
@@ -2910,14 +2898,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     file_put_contents_w_a(windowfilepidname,
                           "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
                           option="a")
-    logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+    logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
                                                       p.name,
                                                       p.pid))
     if sys.platform.startswith('win'):
-        logger.debug("_______________________________________________________")
-        logger.info("__________ INSTALL SERVER PIPE NAMED WINDOWS __________")
-        logger.debug("_______________________________________________________")
+        logger.debug("__________ INSTALL SERVER PIPE NAMED WINDOWS __________")
         #using event eventkillpipe for signal stop thread
         p = Process(target=process_serverPipe,
                     name="serveur pipe windows",
@@ -2938,7 +2924,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         file_put_contents_w_a(windowfilepidname,
                             "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
                             option="a")
-        logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+        logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                           p.pid,
                                                           p.name,
                                                           p.pid))
@@ -3160,7 +3146,7 @@ class process_xmpp_agent():
                 attempt = True
             else:
                 attempt = False
-            logging.log(DEBUGPULSE,"connecting to to %s:%s" % (ipfromdns(tg.Server), tg.Port))
+            logging.log(DEBUGPULSE,"connecting to %s:%s" % (ipfromdns(tg.Server), tg.Port))
             time.sleep(5)
             if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
                 xmpp.process(block=True)

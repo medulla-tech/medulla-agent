@@ -1127,7 +1127,6 @@ if __name__ == '__main__':
                         format=format,
                         filename = logfile,
                         filemode = 'a')
-        logger.info(' LOG MODE %s' % LOGMODE )
 
     if sys.platform.startswith('win'):
         result = win32api.SetConsoleCtrlHandler(ProcessData._CtrlHandler, 1)

@@ -385,13 +385,11 @@ class confParameter:
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
             self.moderelayserver = Config.get('type', 'moderelayserver')
-        logger.info('moderelayserver %s'%self.moderelayserver)
 
         if Config.has_option("updateagent", "updating"):
             self.updating = Config.getint('updateagent', 'updating')
         else:
             self.updating = 1
-        logger.info('updating %s'%self.updating)
 
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
@@ -400,13 +398,11 @@ class confParameter:
                 self.netchanging = 0
             else:
                 self.netchanging = 1
-        logger.info('netchanging %s'%self.netchanging)
 
         if Config.has_option("networkstatus", "detectiontime"):
             self.detectiontime = Config.getint('networkstatus', 'detectiontime')
         else:
             self.detectiontime = 300
-        logger.info('detection time for networkstatus%s'%self.detectiontime)
 
         self.parametersscriptconnection = {}
 
@@ -657,8 +653,7 @@ class confParameter:
                         self.timealternatif[1] = 30
             except Exception:
                 self.timealternatif=[2,30]
-                logger.warning('default [Global] parameter "alternativetimedelta" is %s'%self.timealternatif)
-            logger.info('[Global] Parameter "alternativetimedelta" is %s'%self.timealternatif)
+            logger.debug('[Global] Parameter "alternativetimedelta" is %s' % self.timealternatif)
 
         try:
             self.levellog = self._levellogdata(Config.get('global', 'log_level'))
@@ -704,7 +699,7 @@ class confParameter:
         if Config.has_option("quick_deploy", "concurrentdeployments"):
             self.nbconcurrentquickdeployments = Config.getint("quick_deploy",
                                                     "concurrentdeployments")
-        # we make sure that the temp for the
+        # we make sure that the time for the
         # inventories is greater than or equal to 1 hour.
         # if the time for the inventories is 0, it is left at 0.
         # this deactive cycle inventory
@@ -712,10 +707,10 @@ class confParameter:
         if Config.has_option("inventory", "inventory_interval"):
             self.inventory_interval = Config.getint("inventory",
                                                     "inventory_interval")
-            if self.inventory_interval !=0 and self.inventory_interval < 3600:
+            if self.inventory_interval != 0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
-        # ########################## DEBUG switch_scheduling ########################
-        #clean session if ban jid for deploy
+        # DEBUG switch_scheduling
+        # clean session if ban jid for deploy
         self.sched_remove_ban = True
         self.sched_check_connection = True
         self.sched_quick_deployment_load = True
