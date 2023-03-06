@@ -173,8 +173,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                  queueout,
                  eventkilltcp,
                  eventkillpipe):
-        logger.info("start machine  %s Type %s" % (conf.jidagent,
-                                                   conf.agenttype))
+        logger.info("start machine %s Type %s" % (conf.jidagent,
+                                                  conf.agenttype))
         # create mutex
         self.mutex = threading.Lock()
         self.mutexslotquickactioncount = threading.Lock()
