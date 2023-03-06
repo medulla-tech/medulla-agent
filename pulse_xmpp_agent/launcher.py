@@ -1254,7 +1254,6 @@ if __name__ == '__main__':
                     logger.debug("\n%s" % res)
 
             if (countcycle % 18) == 0: # Every 180 seconds
-                logger.debug("traitement watch dog AT : %s" % str(datetime.now()))
                 ProcessData.display_Process()
                 if os.path.isfile(BOOL_FILE_CONTROL_WATCH_DOG):
                     data_file = file_get_contents(BOOL_FILE_CONTROL_WATCH_DOG)
@@ -1267,6 +1266,7 @@ if __name__ == '__main__':
                                 logger.info('We are saving the current agent into the rescue copy.')
                                 rescue_image = create_rescue_agent().save_rescue_src()
                                 update_rescue_on_stabilisation = True
+                                logger.info('The copy of the rescue agent is finished.')
                             except:
                                 logger.error("We hit a backtrace when saving the rescue agent \n %s" % traceback.format_exc())
                         else:
@@ -1275,9 +1275,9 @@ if __name__ == '__main__':
                     # probleme sur agent. reinstalle rescue
                     # We stop the agent.
                     ProcessData.stop_process_agent()
-                    logger.debug('We reinstall the agent thanks to the rescue image')
+                    logger.debug('We are reinstalling the agent thanks to the rescue image')
                     ret = install_rescue_image().reinstall_agent_rescue()
-                    logger.debug('We start a reconfiguration')
+                    logger.debug('The rescue is done, now We start a reconfiguration')
                     if opts.typemachine.lower() in ["machine"]:
                         start_agent(pathagent,
                                     agent="connection",
