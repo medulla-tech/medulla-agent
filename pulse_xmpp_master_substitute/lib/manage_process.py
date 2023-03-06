@@ -136,7 +136,7 @@ class process_on_end_send_message_xmpp:
     def __init__(self, queue_out_session) :
         self.processtable = []
         self.queue_out_session = queue_out_session
-        logging.info('manage process start')
+        logging.debug('manage process start')
 
     def add_processcommand(self, command, message, tosucces=None, toerror=None, timeout = 50, step = None):
         message['data']['tosucces'] = tosucces
@@ -300,7 +300,7 @@ class mannageprocess:
     def __init__(self, queue_out_session) :
         self.processtable = []
         self.queue_out_session = queue_out_session
-        logging.info('manage process start')
+        logging.debug('manage process start')
 
 
     def add_processcommand(self, command , sessionid, eventstart = False, eventfinish = False, eventerror = False, timeout = 50, keysdescriptor = []):
