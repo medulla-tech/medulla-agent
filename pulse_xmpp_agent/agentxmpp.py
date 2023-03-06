@@ -1904,8 +1904,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.Ctrlsyncthingprogram.restart_syncthing()
 
             try:
-                logging.debug("initialisation syncthing file conf : %s port %s" % (self.fichierconfsyncthing,
-                                                                                   self.config.syncthing_gui_port))
                 self.syncthing = syncthing(configfile=self.fichierconfsyncthing, port=self.config.syncthing_gui_port)
                 if logger.level <= 10:
                     self.syncthing.save_conf_to_file(self.tmpfile)
@@ -1913,13 +1911,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     try:
                         os.remove(self.tmpfile)
                     except OSError:
+                        logging.error("We failed to remove the file %s" % self.tmpfile)
                         pass
+            logger.info("Initialisation of syncthing finished.")
             except Exception as e:
-                logging.error("syncthing initialisation : %s" % str(e))
-                logger.error("\n%s" % traceback.format_exc())
+                logging.error("The initialisation of syncthing failed with the error %s: " % str(e))
+                logger.error("We hit the following backtrace: \n%s" % traceback.format_exc())
                 logger.error("Syncthing is not functionnal. Using the degraded mode")
         else:
-            logger.warning("INITIALISE SYNCTHING OFF")
+            logger.warning("Syncthing is disabled, we won't initialise it.")
 
     def send_message_agent(self,
                            mto,
