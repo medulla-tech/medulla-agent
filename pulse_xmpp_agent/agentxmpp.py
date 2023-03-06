@@ -2888,7 +2888,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                                      "INFOSTMP",
                                      "pidagentwintreename")
     file_put_contents(windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid ))
-    logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+    logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
                                                       p.name,
                                                       p.pid))
@@ -2912,7 +2912,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     file_put_contents_w_a(windowfilepidname,
                           "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
                           option="a")
-    logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+    logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
                                                       p.name,
                                                       p.pid))
@@ -2940,7 +2940,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         file_put_contents_w_a(windowfilepidname,
                             "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
                             option="a")
-        logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+        logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                           p.pid,
                                                           p.name,
                                                           p.pid))
