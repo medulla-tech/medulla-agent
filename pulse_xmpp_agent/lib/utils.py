@@ -1195,8 +1195,8 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     """
     resultip = ''
     xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
+    logger.debug("Searching with which IP the agent is connected to the Ejabberd server") 
     if sys.platform.startswith('linux'):
-        logger.info("Searching for the XMPP Server IP Adress")
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, xmpp_server_ipaddress))
@@ -1211,7 +1211,6 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
             if len(b) != 0:
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         obj = simplecommand(
             'netstat -an | findstr %s | findstr "ESTABLISHED SYN_SENT SYN_RECV"' %
             Port)
@@ -1223,7 +1222,6 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
             (Port, xmpp_server_ipaddress))
@@ -1243,11 +1241,10 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
             b = [x for x in a.split(' ') if x != ""]
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
+    logger.debug("The agent is connected to the Ejabberd server with the IP: %s" % resultip)
     return resultip
 
 # 3 functions used for subnet network
-
-
 def ipV4toDecimal(ipv4):
     d = ipv4.split('.')
     return (int(d[0]) * 256 * 256 * 256) + (int(d[1])

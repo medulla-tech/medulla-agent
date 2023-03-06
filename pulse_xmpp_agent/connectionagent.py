@@ -82,7 +82,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+self.HostNameSystem
         self.agentmaster =jid.JID("master@pulse")
         self.session = ""
-        logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
+        logger.info("start machine %s Type %s" % ( conf.jidagent, conf.agenttype))
 
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
@@ -90,13 +90,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # Create tmp config file
         namefileconfiguration = conffilename(self.config.agenttype)
         namefileconfigurationtmp = conffilenametmp(self.config.agenttype)
-        logging.log(DEBUGPULSE,"copy  %s %s" % (namefileconfiguration,
-                                                namefileconfigurationtmp))
         shutil.copyfile(namefileconfiguration, namefileconfigurationtmp)
 
         # Update level log for sleekxmpp
         handler_sleekxmpp = logging.getLogger('sleekxmpp')
-        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
         handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
 
         if not hasattr(self.config, 'geoservers'):
@@ -188,10 +185,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     except :
                         pass
                 time.sleep(1)
-                try:
-                    self.deviceid = iddevice(configfile=self.fichierconfsyncthing)
-                except Exception:
-                    pass
+                if os.path.isfile(self.fichierconfsyncthing):
+                    try:
+                        self.deviceid = iddevice(configfile=self.fichierconfsyncthing)
+                    except Exception:
+                        pass
 
                 logger.debug("device local syncthing : [%s]" % self.deviceid)
             except Exception as e:

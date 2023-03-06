@@ -89,9 +89,7 @@ class process_serverPipe():
                                  filename = tglogfile,
                                  filemode = 'a')
         self.logger = logging.getLogger()
-        self.logger.debug("_____________________________________________________________")
-        self.logger.debug("________________ INITIALISATION SERVER PIPE _________________")
-        self.logger.debug("_____________________________________________________________")
+        self.logger.debug(" INITIALISATION SERVER PIPE")
 
         tg = confParameter(optstypemachine)
         self.eventkillpipe=eventkillpipe
@@ -99,13 +97,10 @@ class process_serverPipe():
         # just do one connection and terminate.
         # self.quitserverpipe = False
         if platform.system()=='Windows':
-            self.logger.debug("________________________________________________________________")
-            self.logger.info ("________ START SERVER WATCHES NETWORK INTERFACE WINDOWS ________")
-            self.logger.debug("________________________________________________________________")
-            #self.eventkillpipe = threading.Event()
+            self.logger.debug("Starting the server that watches for network interface changes")
             pid = os.getpid()
             while not self.eventkillpipe.wait(1):
-                self.logger.debug ("WAITING INTERFACE INFORMATION")
+                self.logger.debug ("Waiting for interface informations")
                 try:
                     self.pipe_handle = win32pipe.CreateNamedPipe(r'\\.\pipe\interfacechang',
                                                 win32pipe.PIPE_ACCESS_DUPLEX,
@@ -116,7 +111,7 @@ class process_serverPipe():
                                                 300,
                                                 None)
                     win32pipe.ConnectNamedPipe(self.pipe_handle, None)
-                    self.logger.debug("___Waitting event network chang___ pid %s" % pid)
+                    self.logger.debug("Waiting event network change pid %s" % pid)
                     data = win32file.ReadFile(self.pipe_handle, 4096)
                 except Exception as e:
                     self.logger.error("read input from Pipenammed error %s"%str(e))
@@ -124,23 +119,15 @@ class process_serverPipe():
                     continue
                 finally:
                     self.pipe_handle.Close()
-                self.logger.debug("lecture")
                 if len(data) >= 2:
                     if data[1] == "terminate":
-                        self.logger.debug("__Terminate event network listen Server__")
+                        self.logger.debug("Terminate event network listen Server")
                     else:
                         try:
                             self.logger.debug("_____________%s"%data[1])
-                            # result = json.loads(data[1])
-                            # self.logger.debug("_____________%s"%result)
-                            # sendinterfacedata ={'interface': True,
-                                                # 'data': result }
-                            # self.logger.debug("_____________%s"%sendinterfacedata)
                             self.queue_recv_tcp_to_xmpp.put(data[1])
                         except Exception as e:
                             self.logger.warning("read input from Pipe nammed error %s"%str(e))
-        self.logger.info("QUIT process_serverPipe")
-
 
 class process_tcp_serveur():
     def __init__(self,
@@ -178,9 +165,7 @@ class process_tcp_serveur():
                                  filename = tglogfile,
                                  filemode = 'a')
         self.logger = logging.getLogger()
-        self.logger.debug("____________________________________________________________")
-        self.logger.debug("_______________ INITIALISATION SERVER KIOSK ________________")
-        self.logger.debug("____________________________________________________________")
+        self.logger.debug("Initialisation of the Kiosk server")
 
         tg = confParameter(optstypemachine)
 
@@ -201,7 +186,7 @@ class process_tcp_serveur():
         server_address = ('localhost',  self.port)
         for t in range(20):
             try:
-                self.logger.info("Binding to kiosk server %s" % str(server_address))
+                self.logger.debug("Binding to kiosk server %s" % str(server_address))
                 self.sock.bind(server_address)
                 break
             except Exception as e:
@@ -209,9 +194,7 @@ class process_tcp_serveur():
                 time.sleep(40)
         # Listen for incoming connections
         self.sock.listen(5)
-        self.logger.debug("_______________________________________________")
         self.logger.debug("_____________ START SERVER KIOSK ______________")
-        self.logger.debug("_______________________________________________")
         pid = os.getpid()
         while not self.eventkill.wait(1):
             self.logger.debug("The process of the KIOSK server is %s" % pid)
@@ -312,21 +295,21 @@ class manage_kiosk_message:
         self.queue_in.put(msg)
 
     def manage_event_kiosk(self):
-        self.logger.info('loop event wait start')
+        self.logger.debug('loop event wait start')
         while self.running:
             try:
                 event = self.queue_in.get(5)
-                self.logger.info('Loop event wait start')
+                self.logger.debug('Loop event wait start')
                 if event == self.key_quit:
-                    self.logger.info('Quit server manage event kiosk')
+                    self.logger.debug('Quit server manage event kiosk')
                     break
                 self.handle_client_connection(str(event))
             except Queue.Empty:
-                self.logger.debug("VIDE")
+                self.logger.debug("The loop is empty")
             except KeyboardInterrupt:
                 pass
             finally:
-                self.logger.info('loop event wait stop')
+                self.logger.debug('loop event wait stop')
 
 
     def test_type(self, value):
