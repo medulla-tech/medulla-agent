@@ -1925,6 +1925,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
             logger.info("Initialisation of syncthing finished.")
 
+        else:
+            logger.warning("Syncthing is disabled, we won't initialise it.")
+
     def send_message_agent(self,
                            mto,
                            mbody,
