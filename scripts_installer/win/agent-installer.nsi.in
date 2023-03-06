@@ -281,10 +281,8 @@ Section "Python" sec_py
   Delete $INSTDIR\tmp\${PYTHON64_FILENAME}
   Delete $INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}
   Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
-SectionEnd
 
-; ####################### Prevent from previous Medulla installation #######################
-Section "!${PRODUCT_NAME}" prevent_update
+  ; ####################### Prevent from previous Medulla installation #######################
   ; Previously stop service
   nsExec::Exec 'sc stop medullaagent'
   nsExec::Exec 'sc stop medullanetnotify'
