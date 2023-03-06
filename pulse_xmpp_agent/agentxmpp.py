@@ -2243,7 +2243,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if os.path.isfile(BOOLFILEINVENTORYONCHANGINTERFACE):
                     # if on a ce fichier alors on genere 1 nouveau inventaire
                     os.remove(BOOLFILEINVENTORYONCHANGINTERFACE)
-                    logging.log(DEBUGPULSE,"send inventory on chang network")
+                    logging.log(DEBUGPULSE, "The network changed. We will send a new inventory")
                     self.handleinventory()
         except Exception as e:
             logging.error(" %s " %(str(e)))
@@ -2260,7 +2260,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         try:
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
-        except OSError:
+        except OSError as remove_error:
+            logger.error("An error occured while trying to remove the %s file. \n We obtained the error %s" % (os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"), remove_error))
             pass
 
         replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
