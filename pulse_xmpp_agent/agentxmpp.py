@@ -509,14 +509,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         repeat=True)
 
         if self.config.netchanging == 1:
-            logging.warning("Network Changing enable")
+            logging.debug("Network Changing enable")
             if self.config.sched_check_network:
                 self.schedule('check network',
                                 self.laps_time_networkMonitor,
                                 self.networkMonitor,
                                 repeat=True)
         else:
-            logging.warning("Network Changing disable")
+            logging.debug("Network Changing disable")
         if self.config.agenttype not in ['relayserver']:
             if self.config.sched_send_ping_kiosk:
                 self.schedule('send_ping', laps_time_send_ping_to_kiosk,
@@ -563,7 +563,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             self.handleinventory,
                             repeat=True)
         else:
-            logging.warning("not enable cyclic inventory")
+            logging.debug("The cyclic inventory feature is disabled")
 
         #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if self.config.agenttype not in ['relayserver']:
