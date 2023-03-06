@@ -2204,7 +2204,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if os.path.isfile(namefilebool):
                 break
             time.sleep(2)
-        logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
+        logging.log(DEBUGPULSE,"A new configuration has been detected on %s. We will reconfigure it." % self.boundjid.user)
         self.force_full_registration()
         self.restartBot()
 
@@ -2215,9 +2215,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def networkMonitor(self):
         try:
-            logging.log(DEBUGPULSE,"network monitor time  "\
-                "%ss %s!" % (self.laps_time_networkMonitor,
-                             self.boundjid.user))
+            logging.debug("network monitor time  "\
+                          "%ss %s!" % (self.laps_time_networkMonitor,
+                                       self.boundjid.user))
             md5ctl = createfingerprintnetwork()
             force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
             if self.md5reseau != md5ctl or os.path.isfile(force_reconfiguration):
@@ -2303,9 +2303,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     logger.warning("ask update but descriptor_agent base missing.")
 
     def restartBot(self, wait=10):
-        logging.log(DEBUGPULSE,"RESTART BOOT")
         setgetrestart(1)
-        logging.log(DEBUGPULSE,"restart xmpp agent %s!" % self.boundjid.user)
+        logging.log(DEBUGPULSE,"We restart the medulla agent for the machine %s" % self.boundjid.user)
         self.disconnect(wait=wait)
 
     def quit_application(self, wait=2):
