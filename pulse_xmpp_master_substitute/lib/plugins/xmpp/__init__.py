@@ -2482,6 +2482,38 @@ class XmppMasterDatabase(DatabaseHelper):
         return list(id_deploylist)
 
     # =====================================================================
+    # xmppmaster verification jid for deploy
+    # =====================================================================
+    @DatabaseHelper._sessionm
+    def update_jid_if_changed(self,
+                              session,
+                              jidmachine):
+        try:
+            sql = """SELECT
+                        xmppmaster.machines.jid,
+                        xmppmaster.machines.groupdeploy
+                    FROM
+                        xmppmaster.machines
+                    WHERE
+                        xmppmaster.machines.hostname = xmppmaster.FS_JIDUSERTRUE('%s')
+                            limit 1;"""%(jidmachine)
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            if not resultproxy:
+                logging.getLogger().error("JFKJFK not result")
+                return []
+            else:
+                ret = self._return_dict_from_dataset_mysql(resultproxy)
+                logging.getLogger().error("JFKJFK %s" % ret)
+                logging.getLogger().error("JFKJFK %s" % type(ret))
+                return ret
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return False
+        return []
+
+    # =====================================================================
     # xmppmaster FUNCTIONS deploy syncthing
     # =====================================================================
     @DatabaseHelper._sessionm
