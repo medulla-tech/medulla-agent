@@ -1210,7 +1210,7 @@ def applicationdeploymentjson(self,
 
             if state != 'ERROR HASH MISSING':
                 # lance deployment to ars
-                 try:
+                try:
                     result =  XmppMasterDatabase().update_jid_if_changed(jidmachine )
                     if result:
                         if result[0]['jid'] != jidmachine:
