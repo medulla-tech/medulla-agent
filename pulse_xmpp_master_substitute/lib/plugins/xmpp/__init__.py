@@ -2482,6 +2482,38 @@ class XmppMasterDatabase(DatabaseHelper):
         return list(id_deploylist)
 
     # =====================================================================
+    # xmppmaster verification jid for deploy
+    # =====================================================================
+    @DatabaseHelper._sessionm
+    def update_jid_if_changed(self,
+                              session,
+                              jidmachine):
+        try:
+            sql = """SELECT
+                        xmppmaster.machines.jid,
+                        xmppmaster.machines.groupdeploy
+                    FROM
+                        xmppmaster.machines
+                    WHERE
+                        xmppmaster.machines.hostname = xmppmaster.FS_JIDUSERTRUE('%s')
+                            limit 1;"""%(jidmachine)
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            if not resultproxy:
+                logging.getLogger().error("JFKJFK not result")
+                return []
+            else:
+                ret = self._return_dict_from_dataset_mysql(resultproxy)
+                logging.getLogger().error("JFKJFK %s" % ret)
+                logging.getLogger().error("JFKJFK %s" % type(ret))
+                return ret
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return False
+        return []
+
+    # =====================================================================
     # xmppmaster FUNCTIONS deploy syncthing
     # =====================================================================
     @DatabaseHelper._sessionm
@@ -6169,6 +6201,12 @@ class XmppMasterDatabase(DatabaseHelper):
 
         return [element for element in result]
 
+    def list_substitut(self):
+        """
+            This function renvoi la liste des table produitss a prendre en compte pour les updates.
+        """
+        return self.simple_list_table("substituteconf")
+
     @DatabaseHelper._sessionm
     def substituteinfo(self, session, listconfsubstitute, arsname):
         """
@@ -9390,3 +9428,26 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [{column: value for column, value in rowproxy.items()}
                 for rowproxy in resultproxy]
+
+    @DatabaseHelper._sessionm
+    def simple_list_table(self, session, table):
+        """
+            This function renvoi la liste des table
+        """
+        ret ={}
+        try:
+            sql="""SELECT
+                        *
+                    FROM
+                        xmppmaster.%s;"""%table
+            req = session.execute(sql)
+            session.commit()
+            session.flush()
+            ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql list_table %s : %s" % (table, traceback.format_exc()))
+        return ret
+
+
+
+
