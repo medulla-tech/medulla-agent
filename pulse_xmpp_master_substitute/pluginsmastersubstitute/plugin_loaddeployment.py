@@ -819,8 +819,8 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
     if os.path.exists(dest):
         shutil.rmtree(dest)
 
-    if os.path.exists(os.path.join(dest, ".hash")):
-        os.remove(os.path.join(dest, ".hash"))
+    if os.path.exists(dest + ".hash"):
+        os.remove(dest + ".hash")
 
     try:
         file_hash = hashlib.new(hash_type)
