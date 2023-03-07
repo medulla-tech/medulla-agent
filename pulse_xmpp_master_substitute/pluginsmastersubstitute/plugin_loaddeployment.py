@@ -423,7 +423,6 @@ def scheduledeployrecoveryjob(self):
                         datasession = self.sessiondeploysubstitute.sessiongetdata(machine['sessionid'])
                         msglog.append("Starting deployment on machine %s from ARS %s" % (machine['jidmachine'],
                                                                                         machine['jid_relay']))
-
                         command = {'action': "applicationdeploymentjson",
                                 'base64': False,
                                 'sessionid': machine['sessionid'],
@@ -931,6 +930,7 @@ def applicationdeploymentjson(self,
     1st action: synchronizes the previous package name
     The package is already on the machine and also in relay server.
     """
+
     logger.debug("PARAMETER jidrelay (%s)" % (jidrelay))
     logger.debug("PARAMETER jidmachine (%s)" % (jidmachine))
     logger.debug("PARAMETER idcommand (%s)" % (idcommand))
@@ -1230,6 +1230,19 @@ def applicationdeploymentjson(self,
                     state = 'ERROR HASH MISSING'
 
             if state != 'ERROR HASH MISSING':
+                # lance deployment to ars
+                try:
+                    result =  XmppMasterDatabase().update_jid_if_changed(jidmachine )
+                    if result:
+                        if result[0]['jid'] != jidmachine:
+                            logging.warning("Machine JID changed since creation of deployment")
+                            logging.warning("Machine JID %s -> %s"%(jidmachine,result[0]['jid'] ))
+                            logging.warning("Relay server JID %s -> %s"%(jidrelay,result[0]['groupdeploy'] ))
+                            jidmachine =  result[0]['jid']
+                            jidrelay =  result[0]['groupdeploy']
+                except Exception as e:
+                    logging.error("Error checking for JID changes")
+
                 sessionid = self.send_session_command(jidrelay,
                                                         "applicationdeploymentjson",
                                                         data,
