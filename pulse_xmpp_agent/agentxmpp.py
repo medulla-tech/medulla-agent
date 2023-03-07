@@ -1909,11 +1909,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if logger.level <= 10:
                     self.syncthing.save_conf_to_file(self.tmpfile)
                 else:
-                    try:
-                        os.remove(self.tmpfile)
-                    except OSError:
-                        logging.error("We failed to remove the file %s" % self.tmpfile)
-                        pass
+                    if os.path.isfile(self.tmpfile):
+                        try:
+                            os.remove(self.tmpfile)
+                        except OSError:
+                            logging.error("We failed to remove the file %s" % self.tmpfile)
+                            pass
             except Exception as e:
                 logging.error("The initialisation of syncthing failed with the error %s: " % str(e))
                 logger.error("We hit the following backtrace: \n%s" % traceback.format_exc())
