@@ -2501,12 +2501,9 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             if not resultproxy:
-                logging.getLogger().error("JFKJFK not result")
                 return []
             else:
                 ret = self._return_dict_from_dataset_mysql(resultproxy)
-                logging.getLogger().error("JFKJFK %s" % ret)
-                logging.getLogger().error("JFKJFK %s" % type(ret))
                 return ret
         except Exception as e:
             logging.getLogger().error(str(e))
