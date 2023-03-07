@@ -1154,6 +1154,19 @@ def applicationdeploymentjson(self,
                     state = 'ERROR HASH MISSING'
                     
             if state != 'ERROR HASH MISSING':
+                # lance deployment to ars
+                 try:
+                    result =  XmppMasterDatabase().update_jid_if_changed(jidmachine )
+                    if result:
+                        if result[0]['jid'] != jidmachine:
+                            logging.warning("Machine JID changed since creation of deployment")
+                            logging.warning("Machine JID %s -> %s"%(jidmachine,result[0]['jid'] ))
+                            logging.warning("Relay server JID %s -> %s"%(jidrelay,result[0]['groupdeploy'] ))
+                            jidmachine =  result[0]['jid']
+                            jidrelay =  result[0]['groupdeploy']
+                except Exception as e:
+                    logging.error("Error checking for JID changes")
+
                 sessionid = self.send_session_command(jidrelay,
                                                         "applicationdeploymentjson",
                                                         data,
