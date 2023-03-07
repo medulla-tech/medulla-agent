@@ -1214,13 +1214,13 @@ def applicationdeploymentjson(self,
                     result =  XmppMasterDatabase().update_jid_if_changed(jidmachine )
                     if result:
                         if result[0]['jid'] != jidmachine:
-                            logging.warning("jid machine changed from creation deploy")
-                            logging.warning("jid machine %s -> %s"%(jidmachine,result[0]['jid'] ))
-                            logging.warning("jid relay server %s -> %s"%(jidrelay,result[0]['groupdeploy'] ))
+                            logging.warning("Machine JID changed since creation of deployment")
+                            logging.warning("Machine JID %s -> %s"%(jidmachine,result[0]['jid'] ))
+                            logging.warning("Relay server JID %s -> %s"%(jidrelay,result[0]['groupdeploy'] ))
                             jidmachine =  result[0]['jid']
                             jidrelay =  result[0]['groupdeploy']
                 except Exception as e:
-                    logging.error("checking jid adress changing")
+                    logging.error("Error checking for JID changes")
 
                 sessionid = self.send_session_command(jidrelay,
                                                         "applicationdeploymentjson",
