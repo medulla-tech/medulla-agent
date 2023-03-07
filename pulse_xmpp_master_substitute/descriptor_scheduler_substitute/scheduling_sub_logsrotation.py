@@ -38,6 +38,14 @@ def schedule_main(objectxmpp):
         logger.debug("num_compteur %s"% num_compteur)
         if num_compteur == 0:
             read_config_plugin_agent(objectxmpp)
+
+        sizelogfile = 0
+        if os.path.isfile(objectxmpp.config.logfile):
+            sizelogfile = os.path.getsize(objectxmpp.config.logfile)
+        else:
+            logger.warning("The log file %s is missing" % objectxmpp.config.logfile)
+
+        if num_compteur == 0:
             logger.debug("\nParameters\n\tlog file is : %s (%s bytes %s kbytes - %s Mbytes)\n" \
                         "\tconfiguration file is : %s\n" \
                         "\tnumber file in rotation is : %s\n" \
@@ -54,12 +62,6 @@ def schedule_main(objectxmpp):
                                                 objectxmpp.trigger_size/1024,
                                                 objectxmpp.trigger_size/(1024*1024),
                                                 logging.getLevelName(logger.getEffectiveLevel())))
-
-        sizelogfile = 0
-        if os.path.isfile(objectxmpp.config.logfile):
-            sizelogfile = os.path.getsize(objectxmpp.config.logfile)
-        else:
-            logger.warning("The log file %s is missing" % objectxmpp.config.logfile)
 
         compression_mode = objectxmpp.compress # mode in zip, gzip, bz2, No
 
