@@ -131,6 +131,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         elif interface['macaddress'] not in macaddressesadded:
                             interfacedata.append(interface)
                             macaddressesadded.append(interface['macaddress'])
+
                     data['information']["listipinfo"] = interfacedata
                     if showinfobool:
                         logger.info("machine %s" % str(msg['from']))
@@ -204,6 +205,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                     macadressstr,
                                                                     result[0]))
                             raise
+                        if machine['enabled'] == False:
+                            #on passe la machine a 1
+                            XmppMasterDatabase().SetPresenceMachine(msg['from'].user,presence=1)
                         machine['enabled'] = 1
                     except Exception:
                         # incoherence entre machine list et network list mac table
@@ -302,7 +306,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             # correspond au hostname dans glpi.
                             hostname = None
                             if showinfobool:
-                                if btestfindcomputer:
                                 logger.info("Searching for incoherences between " \
                                             "xmpp and glpi for uuid %s : " % machine['uuid_inventorymachine'])
                             try:
@@ -389,7 +392,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                     if showinfobool:
                                         logger.info("machine registerd [%s] " % ( data['from']))
                                 return
-
                         else:
                             # il faut verifier si guacamole est initialisé.
                             # logger.debug("UUID is %s"%uuid_inventorymachine)
@@ -562,12 +564,13 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                             lastuser=data['lastusersession'],
                                                                             keysyncthing=data['keysyncthing'],
                                                                             uuid_serial_machine=data['uuid_serial_machine'])
+
                 if msgret.startswith("Update Machine"):
                     if showinfobool:
                         logger.info("%s" % msgret)
                     XmppMasterDatabase().setlogxmpp(msgret,
                                                     "warn",
-                                                   sessionid,
+                                                    sessionid,
                                                     -1,
                                                     msg['from'],
                                                     '',
@@ -611,7 +614,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
                     if useradd != -1:
                         XmppMasterDatabase().hasmachineusers(useradd, idmachine)
-                   else:
+                    else:
                         logger.warning("** No user found for the machine %s" % msg['from'])
                         XmppMasterDatabase().setlogxmpp("Machine %s not registered. No user found" % msg['from'],
                                                         "info",
@@ -631,7 +634,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             broadcast = str(netaddr.IPNetwork('%s/%s' % (i['ipaddress'], i['mask'])).broadcast)
                         except Exception:
                             broadcast = ''
-
                         if showinfobool:
                             logger.info("** Adding interface %s in database for machine %s" % (str(i['macaddress']),
                                                                                             msg['from']))
