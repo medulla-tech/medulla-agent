@@ -1486,6 +1486,7 @@ def ipfromdns(name_domaine_or_ip):
         try:
             return socket.gethostbyname(name_domaine_or_ip)
         except socket.gaierror:
+            logger.error("The hostname %s is invalid or temporarily unresolved" % name_domaine_or_ip)
             return ""
         except Exception:
             return ""
@@ -1511,6 +1512,7 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         socket.getaddrinfo(ip, port)
         return True
     except socket.gaierror:
+        logger.error("The hostname %s is invalid or temporarily unresolved" % name_domaine_or_ip)
         return False
     except Exception:
         return False
