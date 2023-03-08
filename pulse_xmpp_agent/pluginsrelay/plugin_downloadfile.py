@@ -183,11 +183,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     else:
         logger.debug("We are using default pulsetransfert user.")
 
-        if hasattr(objectxmpp.config, 'server_ssh_user'):
-            paramglobal['server_ssh_user'] = objectxmpp.config.server_ssh_user
-        else:
-            logger.debug("We are using default pulsetransfert user.")
-
     dest = create_path(type ="linux",
                        host=paramglobal['server_ssh_user'],
                        ipordomain=data['ipmaster'],
