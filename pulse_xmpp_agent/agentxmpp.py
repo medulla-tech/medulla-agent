@@ -182,7 +182,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp
         self.queueout = queueout
-
         self.presencectrlsubscribe = "unavailable"
         self.concurrentquickdeployments = {}
 
@@ -439,7 +438,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.schedule('subscription',
                       1800,
-                      self.unsubscribe_agent,                       
+                      self.unsubscribe_agent,
                       repeat=True)
         self.reversessh = None
         self.reversesshmanage = {}
@@ -518,6 +517,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 repeat=True)
         else:
             logging.debug("Network Changing disable")
+
         if self.config.agenttype not in ['relayserver']:
             self.schedule('check_subscribe', 900,
                             self.check_subscribe,
@@ -542,7 +542,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             self.reloaddeploy,
                             repeat=True)
 
-            # ######################Update remote agent#########################
             self.diragentbase = os.path.join('/',
                                              'var',
                                              'lib',
@@ -568,7 +567,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         else:
             logging.debug("The cyclic inventory feature is disabled")
 
-        #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if self.config.agenttype not in ['relayserver']:
             if self.config.sched_session_reload:
                 self.schedule('session reload',
@@ -1782,13 +1780,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     touser="")
 
     def start(self, event):
-
         self.send_presence()
         logger.info("Subscribe %s" % self.sub_subscribe)
         # send iq to subscribe
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         self.get_roster()
-
         self.ipconnection = self.config.Server
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         self.__clean_message_box()
