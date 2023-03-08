@@ -728,7 +728,7 @@ class confParameter:
                                                     "inventory_interval")
             if self.inventory_interval != 0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
-        # DEBUG switch_scheduling ########################
+        # DEBUG switch_scheduling
         # clean session if ban jid for deploy
         self.sched_remove_ban = True
         self.sched_check_connection = True
