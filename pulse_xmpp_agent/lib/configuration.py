@@ -718,7 +718,7 @@ class confParameter:
         if Config.has_option("quick_deploy", "concurrentdeployments"):
             self.nbconcurrentquickdeployments = Config.getint("quick_deploy",
                                                     "concurrentdeployments")
-        # we make sure that the temp for the
+        # we make sure that the time for the
         # inventories is greater than or equal to 1 hour.
         # if the time for the inventories is 0, it is left at 0.
         # this deactive cycle inventory
@@ -726,10 +726,10 @@ class confParameter:
         if Config.has_option("inventory", "inventory_interval"):
             self.inventory_interval = Config.getint("inventory",
                                                     "inventory_interval")
-            if self.inventory_interval !=0 and self.inventory_interval < 3600:
+            if self.inventory_interval != 0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
-        # ########################## DEBUG switch_scheduling ########################
-        #clean session if ban jid for deploy
+        # DEBUG switch_scheduling ########################
+        # clean session if ban jid for deploy
         self.sched_remove_ban = True
         self.sched_check_connection = True
         self.sched_quick_deployment_load = True
