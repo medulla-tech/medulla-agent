@@ -66,6 +66,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     msgq={ 'to' : str(msg['to']),'from' : str(msg['from']) }
     try:
+        timeact=int(time.time()
         compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
         if compteurcallplugin == 0:
             objectxmpp.compteur_de_traitement = {}
@@ -83,14 +84,12 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         else:
             if statfuncton:
                 objectxmpp.stat_assessor_agent.statutility()
-
         # ______________________________________
         # error configuration on quitte et signale erreur au configurateur distant
         if objectxmpp.assessor_agent_errorconf:
             logger.error("error configuration no process action %s for machine %s" % (action, msg['from']))
             sendErrorConnectionConf(objectxmpp, sessionid, msg)
             return
-
         # ______________________________________
         # delete compteur expire
         deletelist=[]
@@ -122,7 +121,9 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             objectxmpp.listconfiguration.append([int(time.time()),  {"action" : action,
                                                  "sessionid" : sessionid,
                                                  "data" : data,
-                                                 "msg" : msg }])
+                                                 "msg" : msgq }])
+            #logger.warning("ADD dans listconfiguration %s %s"%(len(objectxmpp.listconfiguration), msg['from']))
+
             if bool(objectxmpp.show_queue_status):
                 logger.info("add (%s) : Pending pool counter = %s" % (msgq['from'].split("/")[1],
                                                                     len(objectxmpp.compteur_de_traitement)))
