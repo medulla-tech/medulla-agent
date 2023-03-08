@@ -32,7 +32,6 @@ logger = logging.getLogger()
 from utils import decode_strconsole, encode_strconsole
 
 def processcommand(command , queue_out_session, messagestr, timeout):
-    logging.error("########processcommand")
     try:
         message = json.loads(messagestr)
     except:
