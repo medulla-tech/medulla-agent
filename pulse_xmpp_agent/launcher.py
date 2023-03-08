@@ -1165,19 +1165,21 @@ if __name__ == '__main__':
             ret = install_rescue_image().reinstall_agent_rescue()
 
     if networkchanged:
-        logger.debug("The network changed. We need to reconfigure")
+        logger.debug("We detected modifications in the network configuration.")
         refreshfingerprint()
 
     configchanged = confchanged(opts.typemachine)
     if configchanged:
-        logger.info ("The configuration changed. We need to reconfigure")
+        logger.info ("We detected modifications in the configuration")
         refreshfingerprintconf(opts.typemachine)
 
     BOOL_FILE_INSTALL = os.path.join(filePath, "BOOL_FILE_INSTALL")
     if os.path.isfile(BOOL_FILE_INSTALL):
         os.remove(BOOL_FILE_INSTALL)
-        logger.info('We are reinstalling, so we need to reconfigure.')
         needreconfiguration = True
+
+    if networkchanged or configchanged or needreconfiguration:
+        logger.info('We start a reconfiguration of the medulla agent')
 
     testagenttype = testagentconf(opts.typemachine)
 
