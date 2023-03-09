@@ -2477,6 +2477,38 @@ class XmppMasterDatabase(DatabaseHelper):
             return False
         return []
 
+    @DatabaseHelper._sessionm
+    def replace_jid_mach_ars_in_deploy(self,
+                                       session,
+                                       jidmachine,
+                                       jidrelay,
+                                       title
+                                       ):
+        """
+            Cette fonction est utilise pour mettre a jour les jid dans deploy quand 1 machine reenregistre change de jid.
+
+            Args:
+                jidmachine : new JID
+                jidrelay : new jidrelay
+                title : title du deploy
+        """
+        try:
+            sql = """
+                    UPDATE `xmppmaster`.`deploy`
+                    SET
+                        `jidmachine` = '%s',
+                        `jid_relay` = '%s'
+                    WHERE
+                        (`title` = '%s');""" % (jidmachine,
+                                                jidrelay,
+                                                title)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception, e:
+            logging.getLogger().error(str(e))
+
+
     # =====================================================================
     # xmppmaster FUNCTIONS deploy syncthing
     # =====================================================================

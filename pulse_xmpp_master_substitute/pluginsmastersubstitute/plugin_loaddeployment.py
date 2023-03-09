@@ -405,6 +405,26 @@ def scheduledeployrecoveryjob(self):
                         datasession = self.sessiondeploysubstitute.sessiongetdata(machine['sessionid'])
                         msglog.append("Starting deployment on machine %s from ARS %s" % (machine['jidmachine'],
                                                                                          machine['jid_relay']))
+                        # lance deployment to ars
+                        try:
+                            if 'jidmachine' in data and data['jidmachine'] != "" :
+                                result =  XmppMasterDatabase().update_jid_if_changed(data['jidmachine'] )
+                                if result:
+                                    if result[0]['jid'] != data['jidmachine']:
+                                        logging.warning("Machine JID changed since creation of deployment")
+                                        logging.warning("Machine JID %s -> %s"%(data['jidmachine'],result[0]['jid'] ))
+                                        logging.warning("Relay server JID %s -> %s"%(data['jidrelay'],result[0]['groupdeploy'] ))
+                                        msglog.append("jid machine changed : replace jid mach from %s to %s" % (data['jidmachine'], result[0]['jid']))
+                                        msglog.append("replace jid ars from %s to %s" % (data['jidrelay'], result[0]['groupdeploy'] ))
+                                        data['jidmachine'] =  result[0]['jid']
+                                        data['jidrelay'] =  result[0]['groupdeploy']
+                                        XmppMasterDatabase().replace_jid_mach_ars_in_deploy(data['jidmachine'],
+                                                                                            data['jidrelay'],
+                                                                                            data['title'])
+
+                        except Exception as e:
+                            logger.error("%s" % (traceback.format_exc()))
+                            logging.error("Error checking for JID changes")
 
                         command = {'action': "applicationdeploymentjson",
                                    'base64': False,
@@ -1154,19 +1174,6 @@ def applicationdeploymentjson(self,
                     state = 'ERROR HASH MISSING'
                     
             if state != 'ERROR HASH MISSING':
-                # lance deployment to ars
-                try:
-                    result =  XmppMasterDatabase().update_jid_if_changed(jidmachine )
-                    if result:
-                        if result[0]['jid'] != jidmachine:
-                            logging.warning("Machine JID changed since creation of deployment")
-                            logging.warning("Machine JID %s -> %s"%(jidmachine,result[0]['jid'] ))
-                            logging.warning("Relay server JID %s -> %s"%(jidrelay,result[0]['groupdeploy'] ))
-                            jidmachine =  result[0]['jid']
-                            jidrelay =  result[0]['groupdeploy']
-                except Exception as e:
-                    logging.error("Error checking for JID changes")
-
                 sessionid = self.send_session_command(jidrelay,
                                                         "applicationdeploymentjson",
                                                         data,
