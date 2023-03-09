@@ -66,7 +66,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     msgq={ 'to' : str(msg['to']),'from' : str(msg['from']) }
     try:
-        timeact=int(time.time()
+        timeact=int(time.time())
         compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
         if compteurcallplugin == 0:
             objectxmpp.compteur_de_traitement = {}
