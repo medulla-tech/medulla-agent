@@ -3394,18 +3394,18 @@ class offline_search_kb:
                     line =[
                         decode_strconsole(x.strip())
                         for x in result["result"] if x.strip()]
-                    line.pop(0)
-                    line.pop(0)
-                    retdict ={}
-                    for t in set(line):
-                        t=t.split()
-                        retdict[t[1]]=t[0]
-                        ret.append(t[1])
-                    strt=("%s"%retdict.keys()).replace('[','').replace(']','').replace('dict_keys','')
-                    return ret
+                    if line:
+                        line.pop(0)
+                        line.pop(0)
+                        retdict ={}
+                        for t in set(line):
+                            t=t.split()
+                            retdict[t[1]]=t[0]
+                            ret.append(t[1])
+                        strt=("%s"%retdict.keys()).replace('[','').replace(']','').replace('dict_keys','')
             except IndexError as e:
-                logger.error("search_history_update : %s" %e)
-                logger.error (traceback.format_exc())
+                logger.error("An error occured while trying to get the history update. \n We obtained this error:%s" % e)
+                logger.error("We hit this backtrace: \n %s" % traceback.format_exc())
         return ret
 
     def search_net_info_reg(self):
