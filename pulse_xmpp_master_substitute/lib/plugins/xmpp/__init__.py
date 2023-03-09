@@ -3561,11 +3561,12 @@ class XmppMasterDatabase(DatabaseHelper):
         #self.delNetwork_for_machines_id(id_machine)
         try:
             new_network = Network()
-            mask = mask.strip() if mask is not None else mask
-            ipaddress = ipaddress.strip() if ipaddress is not None else ipaddress
-            broadcast = broadcast.strip() if broadcast is not None else broadcast
-            macaddress = macaddress.strip() if macaddress is not None else macaddress
-            gateway = gateway.strip() if gateway is not None else gateway
+            if broadcast is None or broadcast == "None": broadcast = ""
+            if isinstance(mask,(str,unicode)): mask = mask.strip()
+            if isinstance(ipaddress,(str,unicode)): ipaddress = ipaddress.strip()
+            if isinstance(broadcast,(str,unicode)): broadcast = broadcast.strip()
+            if isinstance(macaddress,(str,unicode)): macaddress = macaddress.strip()
+            if isinstance(gateway,(str,unicode)): gateway = gateway.strip()
             new_network.macaddress=macaddress
             new_network.ipaddress=ipaddress
             if not broadcast and mask and ipaddress :
