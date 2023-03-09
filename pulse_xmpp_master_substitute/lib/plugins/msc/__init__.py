@@ -1041,6 +1041,8 @@ class MscDatabase(DatabaseHelper):
         res = query.first()
         if not res:
             return False
+        if res.deployment_intervals =="":
+            return True
         # analyse si deploy true or false
         tb=[re.sub("[-'*;|@#\"]{1}", "-", x) for x in res.deployment_intervals.split(',') if self.pattern.match(x.strip())]
         for c in tb:
