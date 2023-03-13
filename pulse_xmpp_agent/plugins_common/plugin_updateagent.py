@@ -28,8 +28,9 @@ import base64
 import traceback
 from lib import utils, \
                 update_remote_agent
+import signal
 
-plugin = {"VERSION": "2.1", 'VERSIONAGENT': '2.0', "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}
+plugin = {"VERSION": "2.3", 'VERSIONAGENT': '2.0', "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -39,6 +40,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("call %s from %s"%(plugin, message['from']))
     logger.debug("###################################################")
     logger.debug("%s"%json.dumps(data, indent =4))
+
+    restartAgent = False
 
     if "subaction" in data :
         if data['subaction'] == "descriptor":
@@ -96,7 +99,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 if (objectxmpp.descriptor_master['fingerprint'] == descriptorimage['fingerprint']) and\
                    ( objectxmpp.descriptor_master['fingerprint'] != descriptoragent['fingerprint']):
                     # on peut mettre a jour l'agent suite a une suppression de fichier inutile
-                    objectxmpp.reinstall_agent()
+                    reinstalled_state = objectxmpp.reinstall_agent()
+
+                    if reinstalled_state == 1:
+                        restartAgent = True
 
             logger.debug("to updating files %s"%json.dumps(difference, indent = 4))
             try :
@@ -148,6 +154,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             else:
                 content = zlib.decompress(base64.b64decode(data['content']))
                 dump_file_in_img(objectxmpp, data['namescript'], content, "lib_agent")
+                restartAgent = True
         elif data['subaction'] == "install_program_agent":
             if not ('namescript' in data and data['namescript'] != ""):
                 logger.error("update agent install program name missing")
@@ -155,6 +162,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             else:
                 content = zlib.decompress(base64.b64decode(data['content']))
                 dump_file_in_img(objectxmpp, data['namescript'], content, "program_agent")
+                restartAgent = True
         elif data['subaction'] == "install_script_agent":
             if not ('namescript' in data and data['namescript'] != ""):
                 logger.error("updateagent install script name missing")
@@ -162,6 +170,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             else:
                 content = zlib.decompress(base64.b64decode(data['content']))
                 dump_file_in_img(objectxmpp, data['namescript'], content, "script_agent")
+                restartAgent = True
         elif data['subaction'] == "ars_update":
             #verify agent type relayserver.
             logger.debug( "recu update agent from %s"\
@@ -170,6 +179,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                             data['jidagent'],
                                             data['descriptoragent']))
             senddescriptormd5(objectxmpp, data)
+
+        if restartAgent is True:
+            logger.info("The updateagent plugin updated the agent. In order to use the new libraries we will restart the agent")
+            # TODO: Change into self.killMedullaAgent() in Medulla 5.0
+            killMedullaAgent()
 
 def search_action_on_agent_cp_and_del(fromimg, frommachine):
     """
@@ -241,3 +255,14 @@ def senddescriptormd5(objectxmpp, data):
     objectxmpp.send_message(data['jidagent'],
                         mbody=json.dumps(datasend),
                         mtype='chat')
+
+def killMedullaAgent():
+    """
+        This function is used to kill the Medulla Agent.
+        It is used mainly after an autoupdate, to ensure we use the last version.
+
+        It uses the pid of the agent, which is stored in the `pidagent` file.
+    """
+    pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "INFOSTMP", "pidagent")
+    pid = int(utils.file_get_contents(pidfile).strip())
+    os.kill(pid, signal.SIGTERM)

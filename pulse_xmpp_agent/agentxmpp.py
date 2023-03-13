@@ -2302,6 +2302,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("installed agent version %s (indefinie operation). We will not switch to new agent."%(versiondata))
             logger.error("return code is : %s"%(result['code']))
 
+        return result['code']
+
     def checkinstallagent(self):
         if self.config.updating == 1:
             if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
@@ -2313,7 +2315,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     logger.debug("Fingerprint of Master Image: %s" % self.descriptor_master['fingerprint'] )
                     if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base() and \
                     Update_Remote_Img.get_fingerprint_agent_base() ==  self.descriptor_master['fingerprint']:
-                        self.reinstall_agent()
+                        reinstalled_state = self.reinstall_agent()
+
+                    if reinstalled_state == 1:
+                        logger.info("In order to use the new libraries we will restart the agent")
+                        utils.killMedullaAgent()
                 else:
                     logger.warning("ask update but descriptor_agent base missing.")
 

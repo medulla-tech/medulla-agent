@@ -1006,6 +1006,18 @@ def windowsservice(name, action):
             pass
 
 
+def killMedullaAgent():
+    """
+        This function is used to kill the Medulla Agent.
+        It is used mainly after an autoupdate, to ensure we use the last version.
+
+        It uses the pid of the agent, which is stored in the `pidagent` file.
+    """
+    pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "INFOSTMP", "pidagent")
+    pid = int(utils.file_get_contents(pidfile).strip())
+    os.kill(pid, signal.SIGTERM)
+
+
 def methodservice():
     import pythoncom
     import wmi
