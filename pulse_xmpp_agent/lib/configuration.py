@@ -521,9 +521,8 @@ class confParameter:
                         setattr(self, keyparameter, valueparameter)
                 else:
                     logger.warning(
-                        "parameter File plugin %s : missing" %
-                        self.nameplugindir)
-                    #self.nameplugindir=""
+                            "The configuration file: %s is missing" %
+                            namefile)
         try:
             self.agentcommand = Config.get('global', 'relayserver_agent')
         except BaseException:
