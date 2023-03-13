@@ -34,6 +34,9 @@ AGENT_VERSION="2.1.7"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
+TIGHTVNC_CONFFILE_FILENAME="updatetightvnc.ini"
+OPENSSH_CONFFILE_FILENAME="updateopenssh.ini"
+BACKUPCLIENT_CONFFILE_FILENAME="updatebackupclient.ini"
 PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
 PULSE_START_CONFFILE_FILENAME="start_machine.ini"
@@ -185,8 +188,8 @@ generate_agent_package() {
 	colored_echo blue "### INFO Generating agent package..."
 
 	# We copy the config files to deb bundle
-	mkdir -p deb/pulse-agent-linux/etc/pulse-xmpp-agent
-	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME $PULSE_STARTUPDATE_CONFFILE_FILENAME $PULSE_START_CONFFILE_FILENAME; do
+	mkdir -p deb/pulse-agent-linux/etc/pulse-xmpp-agent/
+	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME $PULSE_STARTUPDATE_CONFFILE_FILENAME $PULSE_START_CONFFILE_FILENAME $TIGHTVNC_CONFFILE_FILENAME $OPENSSH_CONFFILE_FILENAME $BACKUPCLIENT_CONFFILE_FILENAME; do
 		cp /var/lib/pulse2/clients/config/$config_files deb/pulse-agent-linux/etc/pulse-xmpp-agent/
 	done
 	mkdir -p deb/pulse-agent-linux/home/pulseuser/.ssh
