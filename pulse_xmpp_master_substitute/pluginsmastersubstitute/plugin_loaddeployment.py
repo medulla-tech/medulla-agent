@@ -1119,9 +1119,9 @@ def applicationdeploymentjson(self,
                         need_hash = False
                         counter_no_hash = 0
                         counter_hash = 0
-                        
+
                         for file_not_hashed in os.listdir(dest_not_hash):
-                            counter_no_hash +=1
+                            counter_no_hash += 1
 
                         if not os.path.exists(dest):
                             need_hash = True
@@ -1132,7 +1132,7 @@ def applicationdeploymentjson(self,
                                 filelist = os.listdir(dest)
                                 for file_package in filelist:
                                     file_package_no_hash = file_package.replace('.hash','')
-                                    counter_hash +=1
+                                    counter_hash += 1
                                     if counter_hash == counter_no_hash:
                                         if os.path.getmtime(dest + "/" + file_package) < os.path.getmtime(dest_not_hash + "/" + file_package_no_hash):
                                             need_hash = True
