@@ -27,6 +27,7 @@
 # pluginsmastersubstitute/plugin_loaddeployment.py
 #
 import base64
+import shutil
 import traceback
 import os
 import sys
@@ -840,6 +841,12 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
     source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
     dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
     BLOCK_SIZE = 65535
+    
+    if os.path.exists(dest):
+        shutil.rmtree(dest)
+
+    if os.path.exists(dest + ".hash"):
+        os.remove(dest + ".hash")
 
     try:
         file_hash = hashlib.new(hash_type)
@@ -1139,7 +1146,7 @@ def applicationdeploymentjson(self,
                         counter_no_hash = 0
                         counter_hash = 0
 
-                        for file_not_hashed in dest_not_hash:
+                        for file_not_hashed in os.listdir(dest_not_hash):
                             counter_no_hash += 1
 
                         if not os.path.exists(dest):
@@ -1152,8 +1159,9 @@ def applicationdeploymentjson(self,
                                 for file_package in filelist:
                                     file_package_no_hash = file_package.replace('.hash','')
                                     counter_hash += 1
-                                    if os.path.getmtime(dest + "/" + file_package) < os.path.getmtime(dest_not_hash + "/" + file_package_no_hash):
-                                        need_hash = True
+                                    if counter_hash == counter_no_hash:
+                                        if os.path.getmtime(dest + "/" + file_package) < os.path.getmtime(dest_not_hash + "/" + file_package_no_hash):
+                                            need_hash = True
                             if counter_hash != counter_no_hash:
                                 need_hash = True
 
