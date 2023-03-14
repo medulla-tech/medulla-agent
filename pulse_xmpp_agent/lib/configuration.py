@@ -63,8 +63,9 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
     Config.read(conffile)
     domain = jid.JID(jidrelayserver).domain
     if not Config.has_option("configuration_server", "confdomain"):
-        logger.warning("confdomain parameter missing in configuration_server")
-        logger.warning("parameters confdomain in configuration_server initialiastion value\"pulse\"")
+        logger.warning("The confdomain parameter is missing in the configuration_server section.")
+        logger.warning("We will force the configuration by using \"pulse\" for confdomain.")
+
         Config.set(
             'configuration_server',
             'confdomain',
