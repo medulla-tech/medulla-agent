@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.73", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.74", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -67,7 +67,7 @@ def check_if_binary_ok():
         if os.path.isfile(sshdaemon_bin_path):
             logger.debug("OpenSSH is correctly installed. Nothing to do")
         else:
-            logger.error("Something went wrong, we need to reinstall the component.")
+            logger.error("Something went wrong while installing OpenSSH, we need to reinstall the component.")
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
@@ -75,7 +75,7 @@ def check_if_binary_ok():
             if result['code'] == 0:
                 logger.debug("The OpenSSH module is ready to be reinstalled.")
             else:
-                logger.debug("We failed to reinitialize the registry entry.")
+                logger.debug("We failed to reinitialize the registry entry for OpenSSH.")
 
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
@@ -231,7 +231,7 @@ def updateopenssh(xmppobject, installed_version):
                 os.chdir(mandriva_sshdir_path)
                 uninstall_mandriva_ssh = utils.simplecommand("uninst.exe /S")
                 if uninstall_mandriva_ssh['code'] == 0:
-                    logger.debug("Uninstallation successful")
+                    logger.debug("Uninstallation successful of the old Mandriva ssh agent.")
 
                 os.chdir(current_dir)
                 os.rmdir(uninstall_mandriva_ssh)
