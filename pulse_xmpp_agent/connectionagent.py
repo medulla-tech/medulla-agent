@@ -445,11 +445,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             shutil.move(namefileconfigurationtmp,namefileconfiguration)
                             logger.debug("make finger print conf file")
                             refreshfingerprintconf(opts.typemachine)
-                        except Exception:
-                            logger.error("configuration connection %s" % traceback.format_exc())
-                            logger.error("configuration no changing")
+                        except Exception as configuration_error:
+                            logger.error("An error occurent while modifying the configuration")
+                            logger.error("We obtained the error %s" % configuration_error)
+                            logger.error("We hit the backtrace %s " % traceback.format_exc())
+
                     except Exception:
-                        # conpatibility version old agent master
+                        # We failed to read the configuration file. Trying with the old version for compatibility.
                         try:
                             logger.debug("old configuration structure")
                             changeconnection(conffilenametmp(opts.typemachine),
@@ -457,9 +459,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         data['data'][0],
                                         data['data'][2],
                                         data['data'][3])
-                        except Exception:
-                            logger.error("configuration connection %s" % traceback.format_exc())
-                            logger.error("configuration no changing")
+                        except Exception as configuration_error:
+                            logger.error("An error occurent while modifying the configuration in old format.")
+                            logger.error("We obtained the error %s" % configuration_error)
+                            logger.error("The data variable contains the value: %s" % data)
+                            logger.error("We hit the backtrace %s " % traceback.format_exc())
             else:
                 logging.error("The configuration failed.")
                 logging.error("The AES key may be invalid. On this machine, this is configured to use the key %s" % self.config.keyAES32)
