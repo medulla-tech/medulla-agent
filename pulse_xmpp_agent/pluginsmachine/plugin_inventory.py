@@ -190,7 +190,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                        date=None)
                     raise Exception(str(e))
             else:
-                raise Exception('Inventory file does not exist')
+                logger.warning("The inventory file %s does not exits" % inventoryfile)
+                logger.warning("If the Medulla agent just started, this error is normal")
+                logger.warning("But if it starts for a while please check that FusionInventory is correctly installed and working")
         except Exception as e:
             dataerreur['data']['msg'] = "Plugin inventory error %s : %s" % (dataerreur['data']['msg'], str(e))
             logger.error("\n%s" % (traceback.format_exc()))
