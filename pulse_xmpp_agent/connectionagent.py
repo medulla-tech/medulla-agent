@@ -446,7 +446,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             logger.debug("make finger print conf file")
                             refreshfingerprintconf(opts.typemachine)
                         except Exception as configuration_error:
-                            logger.error("An error occurent while modifying the configuration")
+                            logger.error("An error occured while modifying the configuration")
                             logger.error("We obtained the error %s" % configuration_error)
                             logger.error("We hit the backtrace %s " % traceback.format_exc())
 
@@ -460,7 +460,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         data['data'][2],
                                         data['data'][3])
                         except Exception as configuration_error:
-                            logger.error("An error occurent while modifying the configuration in old format.")
+                            logger.error("An error occured while modifying the configuration in old format.")
                             logger.error("We obtained the error %s" % configuration_error)
                             logger.error("The data variable contains the value: %s" % data)
                             logger.error("We hit the backtrace %s " % traceback.format_exc())
