@@ -894,37 +894,65 @@ class MscDatabase(DatabaseHelper):
                 datenow = datetime.datetime.now()
                 datestr = datenow.strftime('%Y-%m-%d %H:%M:%S')
                 hactuel = int(datenow.strftime('%H'))
-                sqlselect="""
-                SELECT
-                        `commands`.`id` AS commands_id,
-                        `commands`.`title` AS commands_title,
-                        `commands`.`creator` AS commands_creator,
-                        `commands`.`package_id` AS commands_package_id,
-                        `commands`.`deployment_intervals` AS deployment_intervals,
-                        `commands`.`start_date` AS commands_start_date,
-                        `commands`.`end_date` AS commands_end_date,
-                        `commands_on_host`.`id` AS commands_on_host_id,
-                        `target`.`target_name` AS target_target_name,
-                        `target`.`target_uuid` AS target_target_uuid,
-                        `target`.`id_group` AS target_id_group,
-                        `target`.`target_macaddr` AS target_target_macaddr
-                    FROM
-                        commands_on_host
-                            INNER JOIN
-                        commands ON commands.id = commands_on_host.fk_commands
-                            INNER JOIN
-                        target ON target.id = commands_on_host.fk_target
-                            INNER JOIN
-                        `phase` ON `phase`.fk_commands_on_host = `commands_on_host`.`id`
-                    WHERE
-                        `phase`.`name` = 'execute'
-                            AND
-                        `phase`.`state` = 'ready'
-                            AND
-                            '%s' BETWEEN commands.start_date AND commands.end_date group by `target`.`target_name` limit %s;""" % (datenow,
-                                                                                                                                limitnbr);
-
-                #session.execute("LOCK TABLES commands_on_host WRITE, commands READ , target READ, phase WRITE;")
+                sqlselect="""(SELECT
+                                `commands`.`id` AS commands_id,
+                                `commands`.`title` AS commands_title,
+                                `commands`.`creator` AS commands_creator,
+                                `commands`.`package_id` AS commands_package_id,
+                                `commands`.`deployment_intervals` AS deployment_intervals,
+                                `commands`.`start_date` AS commands_start_date,
+                                `commands`.`end_date` AS commands_end_date,
+                                `commands_on_host`.`id` AS commands_on_host_id,
+                                `target`.`target_name` AS target_target_name,
+                                `target`.`target_uuid` AS target_target_uuid,
+                                `target`.`id_group` AS target_id_group,
+                                `target`.`target_macaddr` AS target_target_macaddr
+                            FROM
+                                commands_on_host
+                                    INNER JOIN
+                                commands ON commands.id = commands_on_host.fk_commands
+                                    INNER JOIN
+                                target ON target.id = commands_on_host.fk_target
+                                    INNER JOIN
+                                `phase` ON `phase`.fk_commands_on_host = `commands_on_host`.`id`
+                            WHERE
+                                `phase`.`name` = 'execute'
+                                    AND `phase`.`state` = 'ready'
+                                    AND NOW() BETWEEN commands.start_date AND commands.end_date
+                                    AND commands.deployment_intervals = ''
+                            GROUP BY `target`.`target_name`
+                            LIMIT %s )
+                            UNION
+                            (SELECT
+                                `commands`.`id` AS commands_id,
+                                `commands`.`title` AS commands_title,
+                                `commands`.`creator` AS commands_creator,
+                                `commands`.`package_id` AS commands_package_id,
+                                `commands`.`deployment_intervals` AS deployment_intervals,
+                                `commands`.`start_date` AS commands_start_date,
+                                `commands`.`end_date` AS commands_end_date,
+                                `commands_on_host`.`id` AS commands_on_host_id,
+                                `target`.`target_name` AS target_target_name,
+                                `target`.`target_uuid` AS target_target_uuid,
+                                `target`.`id_group` AS target_id_group,
+                                `target`.`target_macaddr` AS target_target_macaddr
+                            FROM
+                                commands_on_host
+                                    INNER JOIN
+                                commands ON commands.id = commands_on_host.fk_commands
+                                    INNER JOIN
+                                target ON target.id = commands_on_host.fk_target
+                                    INNER JOIN
+                                `phase` ON `phase`.fk_commands_on_host = `commands_on_host`.`id`
+                            WHERE
+                                `phase`.`name` = 'execute'
+                                    AND `phase`.`state` = 'ready'
+                                    AND NOW() BETWEEN commands.start_date AND commands.end_date
+                                    AND commands.deployment_intervals != ''
+                            GROUP BY `target`.`target_name`
+                            ORDER BY RAND()
+                            LIMIT %s);""" % (limitnbr, limitnbr);
+                #self.logger.debug(sqlselect)
 
                 selectedMachines = session.execute(sqlselect)
                 nb_machine_select_for_deploy_cycle = selectedMachines.rowcount
