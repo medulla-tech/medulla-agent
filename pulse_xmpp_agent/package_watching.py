@@ -36,6 +36,7 @@ import ConfigParser
 import logging
 import getopt
 import base64
+from lib.utils import simplecommandstr, decode_strconsole
 
 conf ={}
 
@@ -76,7 +77,7 @@ def conf_information(conffile):
     if Config.has_option("watchingfile", "filelist"):
         filelist = Config.get('watchingfile', 'filelist')
     else:
-        raise configerror(msg='filelist parameter is missing')
+        filelist = '/var/lib/pulse2/packages'
 
     if filelist =='':
         raise configerror(msg='filelist is empty')
@@ -94,6 +95,44 @@ def conf_information(conffile):
         configdata['excludelist'] = None
 
     configdata['filelist'] = filelist.split(',')
+
+    if Config.has_option("notifyars", "enable"):
+        configdata['notifyars_enable'] = Config.getboolean('notifyars', 'enable')
+    else:
+        configdata['notifyars_enable'] = True
+
+    if Config.has_option("rsynctocdn", "enable"):
+        configdata['rsynctocdn_enable'] = Config.getboolean('rsynctocdn', 'enable')
+    else:
+        configdata['rsynctocdn_enable'] = False
+    if Config.has_option("rsynctocdn", "localfolder"):
+        configdata['rsynctocdn_localfolder'] = Config.get('rsynctocdn', 'localfolder')
+    else:
+        configdata['rsynctocdn_localfolder'] = '/var/lib/pulse2/packages/sharing'
+    if Config.has_option("rsynctocdn", "rsync_options"):
+        configdata['rsynctocdn_rsync_options'] = Config.get('rsynctocdn', 'rsync_options')
+    else:
+        configdata['rsynctocdn_rsync_options'] = '--archive --del --exclude ".stfolder"'
+    if Config.has_option("rsynctocdn", "ssh_privkey_path"):
+        configdata['rsynctocdn_ssh_privkey_path'] = Config.get('rsynctocdn', 'ssh_privkey_path')
+    else:
+        configdata['rsynctocdn_ssh_privkey_path'] = '/root/.ssh/id_rsa'
+    if Config.has_option("rsynctocdn", "ssh_options"):
+        configdata['rsynctocdn_ssh_options'] = Config.get('rsynctocdn', 'ssh_options')
+    else:
+        configdata['rsynctocdn_ssh_options'] = '-oBatchMode=yes -oServerAliveInterval=5 -oCheckHostIP=no -oLogLevel=ERROR -oConnectTimeout=40 -oHostKeyAlgorithms=+ssh-dss'
+    if Config.has_option("rsynctocdn", "ssh_remoteuser"):
+        configdata['rsynctocdn_ssh_remoteuser'] = Config.get('rsynctocdn', 'ssh_remoteuser')
+    elif configdata['rsynctocdn_enable']:
+        raise configerror(msg='ssh_remoteuser is not defined')
+    if Config.has_option("rsynctocdn", "ssh_servername"):
+        configdata['rsynctocdn_ssh_servername'] = Config.get('rsynctocdn', 'ssh_servername')
+    elif configdata['rsynctocdn_enable']:
+        raise configerror(msg='ssh_servername is not defined')
+    if Config.has_option("rsynctocdn", "ssh_destpath"):
+        configdata['rsynctocdn_ssh_destpath'] = Config.get('rsynctocdn', 'ssh_destpath')
+    elif configdata['rsynctocdn_enable']:
+        raise configerror(msg='ssh_destpath is not defined')
 
     return configdata
 
@@ -118,6 +157,26 @@ def send_agent_data(datastrdata, conf):
         #traceback.print_exc(file=sys.stdout)
     finally:
         sock.close()
+
+def rsync_to_cdn(conf):
+    if not conf['rsynctocdn_localfolder'].endswith(os.sep):
+        localfolder = conf['rsynctocdn_localfolder'] + os.sep
+    else:
+        localfolder = conf['rsynctocdn_localfolder']
+    if not conf['rsynctocdn_ssh_destpath'].endswith(os.sep):
+        remotefolder = conf['rsynctocdn_ssh_destpath'] + os.sep
+    else:
+        remotefolder = conf['rsynctocdn_ssh_destpath']
+    rsync_cmd = 'rsync %s -e "ssh -i %s %s" %s %s@%s:%s' % (conf['rsynctocdn_rsync_options'],
+                                                          conf['rsynctocdn_ssh_privkey_path'],
+                                                          conf['rsynctocdn_ssh_options'],
+                                                          localfolder,
+                                                          conf['rsynctocdn_ssh_remoteuser'],
+                                                          conf['rsynctocdn_ssh_servername'],
+                                                          remotefolder)
+    objcmd = simplecommandstr(rsync_cmd)
+    if objcmd['code'] != 0:
+        logging.getLogger().error("Error synchronizing packages to CDN" % decode_strconsole(objcmd['result']))
 
 def pathlist(watch):
     pathlistrep = []
@@ -164,61 +223,77 @@ class MyEventHandler(pyinotify.ProcessEvent):
         if event.dir:
             pass
         else:
+            if self.config['notifyars_enable']:
+                difffile = []
+                datasend = self.msg_structure()
+                difffile.append(os.path.dirname(event.pathname))
+                datasend['data'] = { "MotifyFile"  : event.pathname,
+                                    "notifydir" : difffile ,
+                                    "packageid" : os.path.basename(os.path.dirname(event.pathname))}
+                datasendstr = json.dumps(datasend, indent=4)
+                logging.getLogger().debug("Msg : %s"% datasendstr)
+                send_agent_data(datasendstr, self.config)
+                #send_agent_data("Copie de fichier :", self.config)
+            if self.config['rsynctocdn_enable']:
+                # Run rsync command
+                rsync_to_cdn(self.config)
+
+    def process_IN_MODIFY(self, event):
+        if self.config['notifyars_enable']:
+            namefile = str(os.path.basename(event.pathname))
+            if namefile.startswith(".syncthing"):
+                return
             difffile = []
             datasend = self.msg_structure()
             difffile.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "MotifyFile"  : event.pathname,
+            datasend['data'] = { "difffile"  : event.pathname,
                                 "notifydir" : difffile ,
                                 "packageid" : os.path.basename(os.path.dirname(event.pathname))}
             datasendstr = json.dumps(datasend, indent=4)
             logging.getLogger().debug("Msg : %s"% datasendstr)
             send_agent_data(datasendstr, self.config)
-            #send_agent_data("Copie de fichier :", self.config)
-
-    def process_IN_MODIFY(self, event):
-        namefile = str(os.path.basename(event.pathname))
-        if namefile.startswith(".syncthing"):
-            return
-        difffile = []
-        datasend = self.msg_structure()
-        difffile.append(os.path.dirname(event.pathname))
-        datasend['data'] = { "difffile"  : event.pathname,
-                             "notifydir" : difffile ,
-                             "packageid" : os.path.basename(os.path.dirname(event.pathname))}
-        datasendstr = json.dumps(datasend, indent=4)
-        logging.getLogger().debug("Msg : %s"% datasendstr)
-        send_agent_data(datasendstr, self.config)
+        if self.config['rsynctocdn_enable']:
+            # Run rsync command
+            rsync_to_cdn(self.config)
 
     def process_IN_DELETE(self, event):
-        disupp = []
-        datasend = self.msg_structure()
-        if event.dir:
-            disupp.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "suppdir" : event.pathname,
-                                 "notifydir" : disupp,
-                                 "packageid" : os.path.basename(event.pathname)}
-            datasendstr = json.dumps(datasend, indent=4)
-        else:
-            return
-            disupp.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "suppfile" : event.pathname,
-                                 "notifydir" : disupp ,
-                                "packageid" : os.path.basename(os.path.dirname(event.pathname))}
-            datasendstr = json.dumps(datasend, indent=4)
-        logging.getLogger().debug("Msg : %s"% datasendstr)
-        send_agent_data(datasendstr, self.config)
-
-    def process_IN_CREATE(self, event):
-        directory_added = []
-        datasend = self.msg_structure()
-        if event.dir:
-            directory_added.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "adddir" : event.pathname,
-                                 "notifydir" : directory_added,
-                                 "packageid" : os.path.basename(event.pathname)}
-            datasendstr = json.dumps(datasend, indent=4)
+        if self.config['notifyars_enable']:
+            disupp = []
+            datasend = self.msg_structure()
+            if event.dir:
+                disupp.append(os.path.dirname(event.pathname))
+                datasend['data'] = { "suppdir" : event.pathname,
+                                    "notifydir" : disupp,
+                                    "packageid" : os.path.basename(event.pathname)}
+                datasendstr = json.dumps(datasend, indent=4)
+            else:
+                return
+                disupp.append(os.path.dirname(event.pathname))
+                datasend['data'] = { "suppfile" : event.pathname,
+                                    "notifydir" : disupp ,
+                                    "packageid" : os.path.basename(os.path.dirname(event.pathname))}
+                datasendstr = json.dumps(datasend, indent=4)
             logging.getLogger().debug("Msg : %s"% datasendstr)
             send_agent_data(datasendstr, self.config)
+        if self.config['rsynctocdn_enable']:
+            # Run rsync command
+            rsync_to_cdn(self.config)
+
+    def process_IN_CREATE(self, event):
+        if self.config['notifyars_enable']:
+            directory_added = []
+            datasend = self.msg_structure()
+            if event.dir:
+                directory_added.append(os.path.dirname(event.pathname))
+                datasend['data'] = { "adddir" : event.pathname,
+                                    "notifydir" : directory_added,
+                                    "packageid" : os.path.basename(event.pathname)}
+                datasendstr = json.dumps(datasend, indent=4)
+                logging.getLogger().debug("Msg : %s"% datasendstr)
+                send_agent_data(datasendstr, self.config)
+        if self.config['rsynctocdn_enable']:
+            # Run rsync command
+            rsync_to_cdn(self.config)
 
 class watchingfilepartage:
     def __init__(self, config):

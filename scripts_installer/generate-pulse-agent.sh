@@ -284,24 +284,24 @@ extract_parameters() {
 }
 
 generate_agent_win() {
-	# Generate Pulse Agent for Windows
-	colored_echo blue "Generating Pulse Agent for Windows..."
+	# Generate Medulla Agent for Windows
+	colored_echo blue "Generating Medulla Agent for Windows..."
 	COMMAND="./win/generate-pulse-agent-win.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
 	echo "Running "${COMMAND}
 	${COMMAND}
 }
 
 generate_agent_lin() {
-    # Generate Pulse Agent for Linux
-	colored_echo blue "Generating Pulse Agent for Linux..."
+    # Generate Medulla Agent for Linux
+	colored_echo blue "Generating Medulla Agent for Linux..."
 	COMMAND="./lin/generate-pulse-agent-linux.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
 	echo "Running "${COMMAND}
 	${COMMAND}
 }
 
 generate_agent_mac() {
-    # Generate Pulse Agent for MacOS
-    colored_echo blue "Generating Pulse Agent for MacOS..."
+    # Generate Medulla Agent for MacOS
+    colored_echo blue "Generating Medulla Agent for MacOS..."
     COMMAND="./mac/generate-pulse-agent-mac.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
     echo "Running "${COMMAND}
     ${COMMAND}

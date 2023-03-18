@@ -132,7 +132,7 @@ def conffilenametmp(agenttype):
         conffilenameparameter = "relayconftmp.ini"
 
     if directoryconffile() is not None:
-        fileconf = os.path.join(directoryconffile(), conffilenameparameter)
+        fileconf = os.path.join(pulseTempDir(), conffilenameparameter)
     else:
         fileconf = conffilenameparameter
 
