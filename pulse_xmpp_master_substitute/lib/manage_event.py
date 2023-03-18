@@ -41,10 +41,9 @@ class manage_event:
         self.threadevent = threading.Thread(
             name=self.namethread, target=self.manage_event_command)
         self.threadevent.start()
-        logging.info('manage event start')
+        logging.debug('manage event start')
 
     def show_eventloop(self):
-        print "boucle evenement"
         for i in self.event:
             print '------------\n%s\n------------' % i
 
@@ -147,7 +146,7 @@ class manage_event:
         self.event = [x for x in self.event if x['sessionid'] != sessionid]
 
     def manage_event_command(self):
-        logging.info('loop event wait start')
+        logging.debug('loop event wait start')
         try:
             while True:
                 try:

@@ -49,6 +49,7 @@ import time
 from datetime import datetime
 import imp
 import requests
+from requests.exceptions import Timeout
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
 import random
@@ -57,6 +58,7 @@ from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
 import string
+from netaddr import *
 
 if sys.platform.startswith('win'):
     import wmi
@@ -71,17 +73,70 @@ if sys.platform.startswith('win'):
     from win32com.client import GetObjectif
     import ctypes
     from ctypes.wintypes import LPCWSTR, LPCSTR, WinError
+    import msvcrt
 if sys.platform.startswith('linux'):
     import pwd
     import grp
-
+    import fcntl
 if sys.platform.startswith('darwin'):
     import pwd
     import grp
+    import fcntl
+
 
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
+
+class Locker:
+    """
+        Cette class permet de verrouiller 1 partie de code entre application sur 1 même machine
+        les fichiers de lock et temoin sont mis dans :
+           /usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/lib/INFOSTMP
+    """
+    def __init__(self, lock_filename,text_lock_indicator_file="notext", lock_indicator_file="lockindicator"):
+        dirfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                               "INFOSTMP")
+        self.indicatorfile = os.path.join(dirfile, lock_indicator_file )
+        self.text_lock_indicator_file=text_lock_indicator_file
+        if not os.path.exists(dirfile):
+            os.makedirs(dirfile)
+        lock_filename = os.path.join(dirfile, lock_filename)
+        self.lock_filename = lock_filename
+        if not os.path.isfile(self.lock_filename):
+            open(self.lock_filename, "w").close()
+
+    def __enter__(self):
+        self.fp = open(self.lock_filename)
+        if os.name == "nt":
+            self.portable_locknt(self.fp)
+        else:
+            self.portable_lockli(self.fp)
+        with open(self.indicatorfile,"w") as infile:
+            infile.write(self.text_lock_indicator_file)
+
+    def __exit__(self, _type, value, tb):
+        if os.name == "nt":
+            self.portable_unlocknt(self.fp)
+        else:
+            self.portable_unlockli(self.fp)
+        if os.path.exists(self.indicatorfile):
+            os.remove(self.indicatorfile)
+        self.fp.close()
+
+    def portable_locknt(self,fp):
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_LOCK, 1)
+
+    def portable_unlocknt(self, fp):
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_UNLCK, 1)
+
+    def portable_lockli(self, fp):
+        fcntl.flock(fp.fileno(), fcntl.LOCK_EX)
+
+    def portable_unlockli(self, fp):
+        fcntl.flock(fp.fileno(), fcntl.LOCK_UN)
 
 
 class Env(object):
@@ -158,6 +213,24 @@ def dump_parameter(para=True, out=True, timeprocess=True):
         return wrapper
     return decorated
 
+def CIDR_ip(ipaddress, mask):
+    mask = mask.strip()
+    ipaddress = ipaddress.strip()
+    broadcast=''
+    if mask and ipaddress :
+        netmask_bits = IPAddress(mask).netmask_bits()
+        CIDR = IPNetwork("%s/%s"%(ipaddress, netmask_bits))
+        broadcast = str(CIDR.broadcast)
+    print (broadcast)
+    print (type(broadcast))
+    if broadcast is None or broadcast == "None":
+        broadcast = ""
+    return { "ipaddress" : ipaddress,
+                "mask" : mask,
+                "CIDR" : str(CIDR),
+                "broadcast" : broadcast }
+
+
 def Setdirectorytempinfo():
     """
     This functions create a temporary directory.
@@ -207,23 +280,64 @@ def save_count_start():
     file_put_contents(filecount, str(countstart))
     return countstart
 
+def unregister_agent(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old JID
+        Args:
+            user: User for the JID
+            domain: Domain for the JID
+            resource: Resource of the JID
+        Returns:
+            It returns `True` if we need to unregister an old JID.
+    """
+    jidinfo = {"user": user, "domain" : domain, "resource" : resource}
+    filejid = os.path.join(Setdirectorytempinfo(), 'jid')
+    if not os.path.exists(filejid):
+        savejsonfile(filejid, jidinfo)
+        return  False, jidinfo
+    oldjid = loadjsonfile(filejid)
+    if oldjid['user'] != user or oldjid['domain'] != domain:
+        savejsonfile(filejid, jidinfo)
+        return True, jidinfo
+    if oldjid['resource'] != resource:
+        savejsonfile(filejid, jidinfo)
+    return False, jidinfo
+
+def unregister_subscribe(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfosubscribe = {"user": user, "domain" : domain, "resource": resource}
+    filejidsubscribe = os.path.join(Setdirectorytempinfo(), 'subscribe')
+    if not os.path.exists(filejidsubscribe):
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return False, jidinfosubscribe
+    oldjidsubscribe = loadjsonfile(filejidsubscribe)
+    if oldjidsubscribe['user'] != user or oldjidsubscribe['domain'] != domain:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return True, jidinfosubscribe
+    if oldjidsubscribe['resource'] != resource:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+    return False, jidinfosubscribe
 
 def save_back_to_deploy(obj):
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     save_obj(obj, fileback_to_deploy)
 
-
 def load_back_to_deploy():
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     return load_obj(fileback_to_deploy)
-
 
 def listback_to_deploy(objectxmpp):
     if len(objectxmpp.back_to_deploy) != 0:
         print "list session pris en compte back_to_deploy"
         for u in objectxmpp.back_to_deploy:
             print u
-
 
 def testagentconf(typeconf):
     if typeconf == "relayserver":
@@ -242,7 +356,6 @@ def testagentconf(typeconf):
         return True
     return False
 
-
 def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
@@ -256,18 +369,15 @@ def createfingerprintnetwork():
         md5network = hashlib.md5(obj['result']).hexdigest()
     return md5network
 
-
 def createfingerprintconf(typeconf):
     namefileconfig = conffilename(typeconf)
     return hashlib.md5(file_get_contents(namefileconfig)).hexdigest()
-
 
 def confinfoexist():
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), 'fingerprintconf')
     if os.path.exists(filenetworkinfo):
         return True
     return False
-
 
 def confchanged(typeconf):
     if confinfoexist():
@@ -280,14 +390,12 @@ def confchanged(typeconf):
             return False
     return True
 
-
 def refreshfingerprintconf(typeconf):
     fp = createfingerprintconf(typeconf)
     file_put_contents(os.path.join(Setdirectorytempinfo(),
                       'fingerprintconf'),
                       fp)
     return fp
-
 
 def networkchanged():
     if networkinfoexist():
@@ -299,14 +407,12 @@ def networkchanged():
     else:
         return True
 
-
 def refreshfingerprint():
     fp = createfingerprintnetwork()
     file_put_contents(os.path.join(Setdirectorytempinfo(),
                                    'fingerprintnetwork'),
                       fp)
     return fp
-
 
 def file_get_contents(filename,
                       use_include_path=0,
@@ -446,7 +552,6 @@ def isMacOsUserAdmin():
     else:
         return False
 
-
 # listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
@@ -501,17 +606,27 @@ def loadModule(filename):
             fp.close()
     return module
 
+
 def call_plugin(name, *args, **kwargs):
     # add compteur appel plugins
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
+        setattr(args[0], "num_call%s" % args[1], count+1)
     except AttributeError:
         count = 0
         setattr(args[0], "num_call%s" % args[1], count)
-    pluginaction = loadModule(name)
-    pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s" % args[1], count +1)
+    numcall = getattr(args[0], "num_call%s" % args[1])
+    if (numcall % 100) == 0:
+        logging.getLogger().info("[congruences alignement 100 appels]  count plugin [%s]->%s" % (args[1],
+                                                            numcall))
+    try:
+        pluginaction = loadModule(name)
+        pluginaction.action(*args, **kwargs)
+    except:
+        logging.getLogger().error("An error occured while calling the plugin:  %s" % args[1])
+        logging.getLogger().error("We hit the following traceback \n %s" % traceback.format_exc())
+
 
 def getshortenedmacaddress():
     listmacadress = {}
@@ -1233,6 +1348,7 @@ def ipfromdns(name_domaine_or_ip):
         try:
             return socket.gethostbyname(name_domaine_or_ip)
         except socket.gaierror:
+            logger.error("The hostname %s is invalid or temporarily unresolved" % name_domaine_or_ip)
             return ""
         except Exception:
             return ""
@@ -1248,6 +1364,7 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         socket.getaddrinfo(ip, port)
         return True
     except socket.gaierror:
+        logger.error("The hostname %s is invalid or temporarily unresolved" % name_domaine_or_ip)
         return False
     except Exception:
         return False
@@ -1290,27 +1407,30 @@ def shutdown_command(time=0, msg=''):
             msg:  the message that will be displayed
 
     """
+    if msg != "":
+        msg = msg.strip("\" ")
+        msg = '"%s"' % msg
     if sys.platform.startswith('linux'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown now"
         else:
             cmd = "shutdown -P -f -t %s %s" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     elif sys.platform.startswith('win'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown /p"
         else:
             cmd = "shutdown /s /t %s /c %s" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     elif sys.platform.startswith('darwin'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown -h now"
         else:
             cmd = "shutdown -h +%s \"%s\"" % (time, msg)
-            logging.debug(cmd)
-            os.system(cmd)
+        logging.debug(cmd)
+        os.system(cmd)
     return
 
 def vnc_set_permission(askpermission=1):
@@ -1948,7 +2068,7 @@ def delete_profile(username='pulseuser'):
                     if result['code'] == 0:
                         logger.debug('Deleted %s folder' % os.path.join('C:/Users/', name))
                     else:
-                        logger.debug('Error deleting %s folder' % os.path.join('C:/Users/', name))
+                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
         except Exception as e:
             pass
         # Delete profile
@@ -1958,7 +2078,7 @@ def delete_profile(username='pulseuser'):
         if delete_profile_result == 0:
             logger.debug('%s profile deleted.' % username)
         else:
-            logger.debug('Error deleting %s profile: %s' % (username, delete_profile_result))
+            logger.error('Error deleting %s profile: %s' % (username, delete_profile_result))
     return True
 
 def create_idrsa_on_client(username='pulseuser', key=''):
@@ -1984,7 +2104,7 @@ def create_idrsa_on_client(username='pulseuser', key=''):
 def apply_perms_sshkey(path, private=True):
     """
     Apply permissions on ssh key.
-    If private = True, the permissions are based on the user that is executing Pulse Agent
+    If private = True, the permissions are based on the user that is executing Medulla Agent
     If private = False, the permissions are based on pulseuser
     """
     if not os.path.isfile(path):
@@ -2305,3 +2425,87 @@ class geolocalisation_agent:
             except BaseException:
                 pass
         return None
+
+
+class kb_catalogue:
+    """
+        class for request catalog update site
+        eg : utilisation
+            print( kb_catalogue().KB_update_exits("KB4586864"))
+    """
+    URL = "https://www.catalog.update.microsoft.com/Search.aspx"
+    filter = "We did not find any results for"
+    def __init__(self):
+        pass
+
+    def KB_update_exits(self, location):
+        """
+            return if kb existe in update catalogue
+        """
+        PARAMS = { 'q' : location }
+        status, textresult = self.__get_requests(kb_catalogue.URL, params = PARAMS)
+        if status == 200 and textresult.find(kb_catalogue.filter) == -1:
+            return True
+        else:
+            return False
+
+    def __get_requests(self, url, params, timeout=5):
+        """
+        this function send get to url
+        return status et content text request
+        status 200 correct reponse
+        status 408 incorrect reponse content text empty
+        """
+        status = 408 # error timeout
+        text_result = ""
+        try:
+            r = requests.get(url = url, params = params, timeout=timeout)
+            status = r.status_code
+            if status == 200:
+                text_result = r.text
+        except Timeout:
+            status = 408,
+        return status, text_result
+
+def download_file_windows_update(url, connecttimeout=30, outdirname=None):
+    """
+        Cette function download file dans base windows
+        wget system linux is used
+    """
+    if sys.platform.startswith("linux"):
+        regex = re.compile(
+            r'^(?:http|ftp)s?://' # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+            r'localhost|' #localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+            r'(?::\d+)?' # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        if not re.match(regex,url) is not None:
+            "url non conforme"
+            logging.getLogger().error("incorrect url [%s]" % (url))
+            return False
+        if  outdir is None:
+            base_file= os.path.join("/","var","lib","pulse2","base_file_update")
+        else:
+            base_file= os.path.join("/","var","lib","pulse2",outdirname)
+        if os.path.dirname(base_file) !=  os.path.join("/","var","lib","pulse2"):
+            # name repertoire non conforme
+            logging.getLogger().error("download_file_windows_update incorrect path [%s]" % (base_file))
+            return False
+        try:
+            os.makedirs(base_file)
+        except OSError:
+            if not os.path.isdir(base_file):
+                Raise
+        #os.makedirs(base_file, exist_ok=True)
+        res=simplecommand("wget --connect-timeout=20 '%s'"% sys.argv[1])
+        if res["code"] == 0:
+            # correct download
+            logging.getLogger().debug("download %s in [%s]" % (url, base_file))
+            return True
+        else:
+            # incorrect download
+            logging.getLogger().error("download_file_windows_update incorrect download %s [%s]" % (url, res['result']))
+    else:
+        logging.getLogger().error("download_file_windows_update function download_file_windows_update linux only")
+    return False

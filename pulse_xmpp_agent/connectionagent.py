@@ -47,7 +47,7 @@ from lib.utils import DEBUGPULSE, getIpXmppInterface,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
                       getRandomName, AESCipher, refreshfingerprintconf, \
                         geolocalisation_agent, \
-                        serialnumbermachine
+                        serialnumbermachine, offline_search_kb
 
 from optparse import OptionParser
 
@@ -82,21 +82,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
         conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+self.HostNameSystem
         self.agentmaster =jid.JID("master@pulse")
         self.session = ""
-        logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
+        logger.info("start machine %s Type %s" % ( conf.jidagent, conf.agenttype))
 
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
 
-        #create tmp config file
+        # Create tmp config file
         namefileconfiguration = conffilename(self.config.agenttype)
         namefileconfigurationtmp = conffilenametmp(self.config.agenttype)
-        logging.log(DEBUGPULSE,"copy  %s %s" % (namefileconfiguration,
-                                                namefileconfigurationtmp))
         shutil.copyfile(namefileconfiguration, namefileconfigurationtmp)
 
-        ### update level log for sleekxmpp
+        # Update level log for sleekxmpp
         handler_sleekxmpp = logging.getLogger('sleekxmpp')
-        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
         handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
 
         if not hasattr(self.config, 'geoservers'):
@@ -149,7 +146,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.config.syncthing_on:
             logger.info("---initialisation syncthing---")
             self.deviceid=""
-            ################################### initialise syncthing ###################################
+            # initialise syncthing
             if logger.level <= 10:
                 console = False
                 browser = True
@@ -188,18 +185,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     except :
                         pass
                 time.sleep(1)
-                try:
-                    self.deviceid = iddevice(configfile=self.fichierconfsyncthing)
-                except Exception:
-                    pass
+                if os.path.isfile(self.fichierconfsyncthing):
+                    try:
+                        self.deviceid = iddevice(configfile=self.fichierconfsyncthing)
+                    except Exception:
+                        pass
 
-                # self.deviceid = self.syncthing.get_id_device_local()
                 logger.debug("device local syncthing : [%s]" % self.deviceid)
             except Exception as e:
-                logger.error("syncthing initialisation : %s" % str(e))
+                logger.error("The initialisation of syncthing failed. We got the error %s" % str(e))
                 informationerror = traceback.format_exc()
-                logger.error("\n%s"%(informationerror))
-                logger.error("functioning of the degraded agent. impossible to use syncthing")
+                logger.error("\n%s" % informationerror)
+                logger.error("Syncthing is not functionnal. Using the degraded mode")
                 confsyncthing = {"action": "resultconfsyncthing",
                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                 "ret" : 255,
@@ -207,7 +204,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.send_message(mto =  self.sub_assessor,
                                     mbody = json.dumps(confsyncthing),
                                     mtype = 'chat')
-        ################################### syncthing ###################################
+    # syncthing
 
     def start(self, event):
         self.get_roster()
@@ -273,13 +270,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         resp['register']['password'] = self.password
         try:
             resp.send(now=True)
-            logging.info("Account created for %s!" % self.boundjid)
+            logging.info("Account created for %s" % self.boundjid)
         except IqError as e:
             if e.iq['error']['code'] == "409":
-                logging.warning("Could not register account %s : User already exists" %\
+                logging.debug("Could not register account %s : User already exists" %\
                         resp['register']['username'])
             else:
-                logging.error("Could not register account %s : %s" %\
+                logging.debug("Could not register account %s : %s" %\
                         (resp['register']['username'], e.iq['error']['text']))
         except IqTimeout:
             logging.error("No response from server.")
@@ -292,7 +289,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if resource=="":
             resource = namerelay
         if not self.is_exist_device_in_config(keydevicesyncthing):
-            logger.info("add device syncthing name : %s key: %s"%(namerelay ,
+            logger.debug("add device syncthing name : %s key: %s"%(namerelay ,
                                                                   keydevicesyncthing))
             dsyncthing_tmp = self.syncthing.\
                 create_template_struct_device( resource,
@@ -300,13 +297,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                introducer = True,
                                                autoAcceptFolders=True,
                                                address = address)
-            logger.info("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
+            logger.debug("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
                                                                  namerelay,
                                                                  json.dumps(dsyncthing_tmp,
                                                                             indent = 4)))
             self.syncthing.config['devices'].append(dsyncthing_tmp)
         else:
-            #chang conf for introducer and autoAcceptFolders
+            # Change conf for introducer and autoAcceptFolders
             for dev in self.syncthing.config['devices']:
                 if dev['name'] == namerelay or dev['deviceID'] == keydevicesyncthing:
                     dev["introducer"] = True
@@ -314,7 +311,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if dev['name'] == jid.JID(namerelay).resource:
                     dev['name'] = "pulse"
                 dev['addresses'] = address
-                logger.info("Device [%s] syncthing to ars %s\n%s"%( dev['deviceID'],
+                logger.debug("Device [%s] syncthing to ars %s\n%s"%( dev['deviceID'],
                                                                     dev['name'],
                                                                     json.dumps( dev,
                                                                                 indent = 4)))
@@ -327,7 +324,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def is_format_key_device(self, keydevicesyncthing):
         if len(str(keydevicesyncthing)) != 63:
-            logger.warning("size key device diff of 63")
+            logger.warning("The size of the syncthing key is incorrect.")
         listtest = keydevicesyncthing.split("-")
         if len(listtest) != 8:
             logger.error("group key diff of 8")
@@ -397,7 +394,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                     address=["tcp4://%s:%s" % (x[0],
                                                                                                x[6])])
                                 logger.debug("synchro config %s"%self.syncthing.is_config_sync())
-                                logging.log(DEBUGPULSE, "write new config syncthing")
+                                logging.log(DEBUGPULSE, "New syncthing configuration written")
                                 self.syncthing.validate_chang_config()
                                 time.sleep(2)
                                 filesyncthing = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -464,14 +461,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             logger.debug("rotate configuration")
                             rotation_file(namefileconfiguration)
                             logger.debug("write new configuration")
-                            shutil.copyfile(namefileconfigurationtmp,namefileconfiguration)
+                            shutil.move(namefileconfigurationtmp,namefileconfiguration)
                             logger.debug("make finger print conf file")
                             refreshfingerprintconf(opts.typemachine)
-                        except Exception:
-                            logger.error("configuration connection %s" % traceback.format_exc())
-                            logger.error("configuration no changing")
+                        except Exception as configuration_error:
+                            logger.error("An error occured while modifying the configuration")
+                            logger.error("We obtained the error %s" % configuration_error)
+                            logger.error("We hit the backtrace %s " % traceback.format_exc())
+
                     except Exception:
-                        # conpatibility version old agent master
+                        # We failed to read the configuration file. Trying with the old version for compatibility.
                         try:
                             logger.debug("old configuration structure")
                             changeconnection(conffilenametmp(opts.typemachine),
@@ -479,11 +478,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         data['data'][0],
                                         data['data'][2],
                                         data['data'][3])
-                        except Exception:
-                            logger.error("configuration connection %s" % traceback.format_exc())
-                            logger.error("configuration no changing")
+                        except Exception as configuration_error:
+                            logger.error("An error occured while modifying the configuration in old format.")
+                            logger.error("We obtained the error %s" % configuration_error)
+                            logger.error("The data variable contains the value: %s" % data)
+                            logger.error("We hit the backtrace %s " % traceback.format_exc())
             else:
-                logging.error("configuration dynamic error")
+                logging.error("The configuration failed.")
+                logging.error("The AES key may be invalid. On this machine, this is configured to use the key %s" % self.config.keyAES32)
+                logging.error("Please check on the server on the /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local")
             self.disconnect(wait=5)
 
     def terminate(self):
@@ -578,7 +581,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'adorgbyuser': '',
             'agent_machine_name':self.agent_machine_name,
             'uuid_serial_machine' : serialnumbermachine(),
-            'regcomplet': self.FullRegistration
+            'regcomplet': self.FullRegistration,
+            'system_info' :  offline_search_kb().search_system_info_reg()
         }
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
@@ -684,14 +688,11 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         if ipfromdns(tg.confserver) != "" and \
             check_exist_ip_port(ipfromdns(tg.confserver), tg.confport):
             break
-        logging.log(DEBUGPULSE,"ERROR CONNECTOR")
-        logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
-            " Check that %s can be resolved"%(tg.confserver,
-                                              tg.confport,
-                                              tg.confserver))
-        logging.log(DEBUGPULSE,"verify a information ip or dns for connection configurator")
+        logging.error("The connector failed.")
+        logging.error("Unable to connect to %s:%s." %(tg.confserver,
+                                                      tg.confport))
         if ipfromdns(tg.confserver) == "" :
-            logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.confserver)
+            logging.log(DEBUGPULSE, "We cannot contact: %s " % tg.confserver)
 
         time.sleep(2)
 
@@ -710,7 +711,6 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp['xep_0077'].force_registration = True
 
         # Connect to the XMPP server and start processing XMPP
-        # stanzas.address=(args.host, args.port)
         if xmpp.connect(address=(ipfromdns(tg.confserver),tg.confport)):
             t = Timer(300, xmpp.terminate)
             t.start()
@@ -722,20 +722,20 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             fichier= open(namefilebool,"w")
             fichier.close()
         else:
-            logging.log(DEBUGPULSE,"Unable to connect.")
+            logging.log(DEBUGPULSE,"Unable to connect to %s" % tg.confserver)
     else:
         logging.log(DEBUGPULSE,"Warning: A relay server holds a Static "\
             "configuration. Do not run configurator agent on relay servers.")
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
-        print "Agent must be running as root"
+        logging.error("Agent must be running as root")
         sys.exit(0)
     elif sys.platform.startswith('win') and isWinUserAdmin() == 0 :
-        print "Pulse agent must be running as Administrator"
+        logging.error("Medulla agent must be running as Administrator")
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        print "Pulse agent must be running as root"
+        logging.error("Medulla agent must be running as root")
         sys.exit(0)
 
     optp = OptionParser()

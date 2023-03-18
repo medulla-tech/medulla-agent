@@ -158,9 +158,10 @@ class functionsynchroxmpp:
         if sys.platform.startswith('linux'):
             filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
             dd = """#!/bin/bash
-            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
             """ % (datareverse['type_reverse'],
                    datareverse['portproxy'],
+                   datareverse['ipAM'],
                    datareverse['remoteport'],
                    filekey,
                    datareverse['ipARS'],
@@ -196,9 +197,10 @@ class functionsynchroxmpp:
                                          "bin",
                                          "reversessh.bat")
             linecmd = []
-            cmd = """\\"%s\\" -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
+            cmd = """\\"%s\\" -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
                                                                                                                              datareverse['type_reverse'],
                                                                                                                              datareverse['portproxy'],
+                                                                                                                             datareverse['ipAM'],
                                                                                                                              datareverse['remoteport'],
                                                                                                                              filekey,
                                                                                                                              datareverse['ipARS'],
@@ -223,9 +225,10 @@ class functionsynchroxmpp:
                                    ".ssh",
                                    "id_rsa")
             cmd = """#!/bin/bash
-            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
             """ % (datareverse['type_reverse'],
                    datareverse['portproxy'],
+                   datareverse['ipAM'],
                    datareverse['remoteport'],
                    filekey,
                    datareverse['ipARS'],
@@ -429,13 +432,6 @@ class functionsynchroxmpp:
                     result['result']['informationresult'][info_ask] = decode_strconsole(netstat())
                 if info_ask == "profiluserpulse":
                     profilname = 'pulseuser'
-                    if sys.platform.startswith('win'):
-                        # check if pulse account exists
-                        try:
-                            win32net.NetUserGetInfo('', 'pulseuser', 0)
-                            profilname = 'pulseuser'
-                        except Exception:
-                            profilname = 'pulse'
                     result['result']['informationresult'][info_ask] = profilname
             except Exception:
                 result['result']['informationresult'][info_ask] = ""

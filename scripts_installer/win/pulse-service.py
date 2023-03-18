@@ -128,8 +128,8 @@ def file_get_contents(filename, use_include_path=0,
             fp.close()
 
 class PulseAgentService(SMWinservice):
-    _svc_name_ = "pulseagent"
-    _svc_display_name_ = "Pulse agent"
+    _svc_name_ = "medullaagent"
+    _svc_display_name_ = "Medulla agent"
     _svc_description_ = "Workstation management agent"
     isrunning = False
     isdebug = False
@@ -162,7 +162,7 @@ class PulseAgentService(SMWinservice):
         while self.isrunning:
             batcmd ="NET START"
             result = subprocess.check_output(batcmd, shell=True)
-            filter = "pulseagent"
+            filter = "medullaagent"
             if not re.search(filter, result):
                 if not self.isdebug:
                     os.system(os.path.join("c:\\", "Python27", "python.exe") + " " + os.path.join(agent_dir, "launcher.py") + " -t machine")

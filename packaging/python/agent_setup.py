@@ -32,7 +32,7 @@ for scheme in INSTALL_SCHEMES.values():
 
 setup(
     name="pulse_xmpp_agent",
-    version="2.1.7",
+    version="2.1.9",
     author="SIVEO",
     author_email="support@siveo.net",
     description="XMPP Agent for pulse",
@@ -48,7 +48,6 @@ setup(
     install_requires=[
         'netifaces >= 0.10.5',
         'configparser >= 3.5.0',
-        'utils >= 0.9.0',
         'sleekxmpp >= 1.3.1',
         'zipfile2 >= 0.0.12',
         'pycurl >= 7.43.0',

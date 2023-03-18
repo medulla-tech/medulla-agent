@@ -34,12 +34,17 @@ plugin = {"VERSION" : "2.1", "NAME" : "start", "TYPE" : "all"}
 
 def read_conf_plugin_start(objectxmpp):
     objectxmpp.liststartplugin = []
-    configfilename = os.path.join(directoryconffile(),"start.ini")
+    if objectxmpp.config.agenttype in ['machine']:
+        configfilename = os.path.join(directoryconffile(),"start_machine.ini")
+    elif objectxmpp.config.agenttype in ['relayserver']:
+        configfilename = os.path.join(directoryconffile(),"start_relay.ini")
     objectxmpp.time_differed_start = 10
     if os.path.isfile(configfilename):
         # lit la configuration
         Config = ConfigParser.ConfigParser()
         Config.read(configfilename)
+        if os.path.isfile(configfilename + ".local"):
+            Config.read(configfilename + ".local")
         if Config.has_option('plugins', 'time_differed_start'):
            objectxmpp.time_differed_start = Config.getint('plugins', 'time_differed_start')
         if Config.has_option('plugins', 'liststartplugin'):
@@ -77,8 +82,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         dataerreur["action"] = "result" + startupdate["action"]
         dataerreur["data"] = {"msg": "error plugin: "+ startupdate["action"]}
         dataerreur["ret"] = 255
-        logger.info("Call of %s by plugin_start differed by %s s" % (pluginstart,
-                                                                objectxmpp.time_differed_start))
+        logger.debug("Call of %s by plugin_start differed by %s s" % (pluginstart,
+                                                                      objectxmpp.time_differed_start))
         params ={ "descriptor" : startupdate,
                   "errordescriptor" : dataerreur,
                   "msg" : msg}

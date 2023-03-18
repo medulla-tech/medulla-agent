@@ -77,13 +77,13 @@ install_agent() {
         ;;
         debian)
             if [[ ${VERSION} == "9" ]]; then
-                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-crypto python-pip pulse-agent-linux python-cherrypy3
+                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-zipfile2 python-crypto python-pip pulse-agent-linux python-cherrypy3
             elif [[ ${VERSION} == "10" ]]; then
-                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-pip pulse-agent-linux python-cherrypy3
+                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-zipfile2 python-pip pulse-agent-linux python-cherrypy3
             fi
         ;;
         ubuntu)
-            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-pip pulse-agent-linux python-cherrypy3
+            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-zipfile2 python-pip pulse-agent-linux python-cherrypy3
 
         ;;
         esac

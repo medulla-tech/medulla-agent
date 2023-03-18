@@ -36,27 +36,30 @@ SYNCTHINGVERSION = '1.18.0'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.22", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.23", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
-    try:
-        # Update if version is lower
-        installed_version = checksyncthingversion()
-        if StrictVersion(installed_version) < StrictVersion(SYNCTHINGVERSION):
-            updatesyncthing(xmppobject, installed_version)
+    if sys.platform.startswith('win'):
+        try:
+            # Update if version is lower
+            installed_version = checksyncthingversion()
+            if StrictVersion(installed_version) < StrictVersion(SYNCTHINGVERSION):
+                updatesyncthing(xmppobject, installed_version)
 
-        # Configure syncthing
-        syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
-        syncthing_configfile = os.path.join(syncthingconfig_path, 'config.xml')
-        if os.path.isfile(syncthing_configfile):
-            configuresyncthing(syncthing_configfile)
+            # Configure syncthing
+            syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
+            syncthing_configfile = os.path.join(syncthingconfig_path, 'config.xml')
+            if os.path.isfile(syncthing_configfile):
+                configuresyncthing(syncthing_configfile)
 
-    except Exception:
-        pass
+        except Exception:
+            pass
+    else:
+        logger.debug("This plugin only support the Windows Platform")
 
 
 def checksyncthingversion():
