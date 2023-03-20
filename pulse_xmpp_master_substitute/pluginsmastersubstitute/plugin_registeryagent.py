@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
 # SPDX-License-Identifier: GPL-2.0-or-later 
 
+# file pluginsmastersubstitute/plugin_registeryagent.py
 """
 plugin register machine dans presence table xmpp.
 """
@@ -22,12 +23,18 @@ from distutils.version import LooseVersion
 import ConfigParser
 import netaddr
 
+import time
 # this import will be used later
 # import types
 
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.54", "NAME": "registeryagent", "TYPE": "substitute"}
+
+params = {"duration" : 300 }
+# The parameter named duration is the time after which a configuration request is considered as expired.
+# The connection agent re-sends a configuration request after 300 seconds, thus making the previous one
+# obsolete as it will not be processed
 
 # function comment for next feature
 # this functions will be used later
@@ -43,10 +50,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("=====================================================")
         logger.debug("call %s from %s" % (plugin, msg['from']))
         logger.debug("=====================================================")
+        msgq={ 'to' : str(msg['to']),'from' : str(msg['from']) }
+        timeact=int(time.time())
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
 
         if compteurcallplugin == 0:
-            xmppobject.compteur_de_traitement = 0
+            xmppobject.compteur_de_traitement = {}
             xmppobject.listconfiguration = []
             xmppobject.simultaneous_processing = 50
             xmppobject.show_queue_status = False
@@ -62,16 +71,42 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             # add function for event change staus des autre agent
             # function_dynamique_declaration_plugin(xmppobject)
             # intercepte event change status call function
-        if xmppobject.compteur_de_traitement >= xmppobject.simultaneous_processing:
-            xmppobject.listconfiguration.append({"action" : action,
+        # ______________________________________
+        # delete compteur expire
+        deletelist=[]
+        for sessionid_save in xmppobject.compteur_de_traitement.keys():
+            #logger.warning("time creation %s" % xmppobject.compteur_de_traitement[sessionid_save][0])
+            #logger.warning("time maintenant %s" % int(time.time()) )
+            #logger.warning("time timeact %s" % timeact)
+            #logger.warning("delay %s > %s"%(int(time.time()) - int(xmppobject.compteur_de_traitement[sessionid_save][0]),params["duration"] ))
+            if (timeact - int(xmppobject.compteur_de_traitement[sessionid_save][0])) > params["duration"]:
+                msglist = xmppobject.compteur_de_traitement[sessionid_save][1]
+                deletelist.append(sessionid_save)
+        for t in deletelist:
+            del xmppobject.compteur_de_traitement[t]
+        # ______________________________________
+        # ______________________________________
+        # add report dans la liste
+        if len(xmppobject.compteur_de_traitement) >= xmppobject.simultaneous_processing:
+            xmppobject.listconfiguration.append([int(time.time()),  {"action" : action,
                                                  "sessionid" : sessionid,
                                                  "data" : data,
-                                                 "msg" : msg })
+                                                 "msg" : msgq }])
+            #logger.warning("ADD dans listconfiguration %s %s"%(len(xmppobject.listconfiguration), msg['from']))
+
             if bool(xmppobject.show_queue_status):
-                logger.info("Pending pool counter = %s" % (xmppobject.compteur_de_traitement))
+                logger.info("add (%s) : Pending pool counter = %s" % (msgq['from'].split("/")[1],
+                                                                    len(xmppobject.compteur_de_traitement)))
             return
+        # ______________________________________
+        # execute configuration
+        # execute configuration
         try:
-            xmppobject.compteur_de_traitement=xmppobject.compteur_de_traitement+1
+            xmppobject.compteur_de_traitement[sessionid] = [timeact, msgq]
+            #logger.info("add in compteur_de_traitement session %s %s" % ([sessionid] , xmppobject.compteur_de_traitement[sessionid] ))
+            if bool(xmppobject.show_queue_status):
+                logger.info("Pending pool counter = %s" % (len(xmppobject.compteur_de_traitement)))
+
             showinfobool = False
             listupt = [x.upper() for x in xmppobject.registeryagent_showinfomachine]
             for x in listupt:
@@ -776,18 +811,20 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                             xmppobject.boundjid.bare,
                                             xmppobject.boundjid.bare)
         finally:
-            xmppobject.compteur_de_traitement=xmppobject.compteur_de_traitement-1
+            if sessionid in xmppobject.compteur_de_traitement:
+                del xmppobject.compteur_de_traitement[sessionid]
+        # ______________________________________
 
-            if xmppobject.compteur_de_traitement<0:
-                xmppobject.compteur_de_traitement=0
-            while xmppobject.compteur_de_traitement > 0 and \
-                xmppobject.compteur_de_traitement < xmppobject.simultaneous_processing and \
-                    len(xmppobject.listconfiguration):
-                ## call plugin
-                report=xmppobject.listconfiguration.pop(0)
+        # ______________________________________
+        # relance ou suprime depuis la liste
+        while xmppobject.listconfiguration and \
+            len(xmppobject.compteur_de_traitement) < xmppobject.simultaneous_processing:
+            ## call plugin
+            report=xmppobject.listconfiguration.pop(0)
+            if len(report) == 2 and (timeact - report[0]) < params["duration"]:
                 dataerreur={ "action" : "result" + plugin['NAME'],
                         "data" : { "msg" : "error plugin : " + plugin['NAME']},
-                        'sessionid': report['sessionid'],
+                        'sessionid': report[1]['sessionid'],
                         'ret': 255,
                         'base64': False}
                 if bool(xmppobject.show_queue_status):
@@ -795,11 +832,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 call_plugin( __file__,
                                     xmppobject,
                                     action,
-                                    report['sessionid'],
-                                    report['data'],
-                                    report['msg'],
+                                    report[1]['sessionid'],
+                                    report[1]['data'],
+                                    report[1]['msg'],
                                     0,
                                     dataerreur)
+            else:
+                if bool(xmppobject.show_queue_status):
+                    if "from" in report[1]['data']:
+                        mach=report[1]['data']['from'].split("/")[1]
+                        logger.info("Timeout re-calling plugin %s on machine %s" % (plugin['NAME'], mach))
     except Exception as e:
         logger.error("Error on machine %s : %s\n%s" % (msg['from'], str(e), traceback.format_exc()))
         XmppMasterDatabase().setlogxmpp("Error on machine %s : %s" % (msg['from'], str(e)),
