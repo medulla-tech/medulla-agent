@@ -3,6 +3,8 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+# file : pluginsmastersubstitute/plugin_wakeonlangroup.py
+
 import json
 import sys
 from lib.plugins.xmpp import XmppMasterDatabase
@@ -29,6 +31,18 @@ def action(xmppobject, action, sessionid, data, message, ret):
         logger.debug("compteurcallplugin %s" % compteurcallplugin)
         if compteurcallplugin == 0:
             read_conf_wol(xmppobject)
+            xmppobject.brodcastwol=[]
+            for ifaceName in interfaces():
+                addrs = ifaddresses(ifaceName)
+                k=addrs[AF_INET]
+                for t in k:
+                    if 'broadcast' not in t:
+                        break
+                    if 'netmask' not in t:
+                        break
+                    if 'addr' not in t:
+                        break
+                    xmppobject.brodcastwol.append(t['broadcast'])
     except:
         logger.error("plugin %s\n%s" % (plugin['NAME'], traceback.format_exc()))
 
@@ -55,7 +69,6 @@ def action(xmppobject, action, sessionid, data, message, ret):
                     # send magic to broadcast network
                     datamac = XmppMasterDatabase().wolbroadcastadressmacadress(data['macadress'])
                     for t in datamac:
-                        strdede =",".join(datamac[t])
                         wol.send_magic_packet(*datamac[t],
                                             ip_address=t,
                                             port=xmppobject.wakeonlangroupport)
@@ -65,10 +78,22 @@ def action(xmppobject, action, sessionid, data, message, ret):
                         historymessage(xmppobject, sessionid, msglog)
                         logger.debug(msglog)
                 else:
-                    wol.send_magic_packet(*data['macadress'],
-                                        port=xmppobject.wakeonlangroupport)
+                    dellist=[]
+                    for z in xmppobject.brodcastwol:
+                        try:
+                            wol.send_magic_packet(*data['macadress'],
+                                                    ip_address=z,
+                                                    port=xmppobject.wakeonlangroupport)
+                        except Exception as e:
+                            if "Connection refused" in str(e):
+                                logger.debug('WOL impossible on broadcast %s' % z)
+                                dellist.append(z)
+                    for t in dellist:
+                        xmppobject.brodcastwol.remove(t)
+
                     msglog = "A local lan WOL request have been sent to the" \
-                            " mac address %s and port %s" % (data['macadress'],
+                                "(display only for 10 addresses) mac " \
+                                "address %s and port %s" % (data['macadress'][:10],
                                                             xmppobject.wakeonlangroupport)
                     historymessage(xmppobject, sessionid, msglog)
                     logger.debug(msglog)
@@ -117,7 +142,7 @@ def read_conf_wol(xmppobject):
     logger.debug("The configuration file is %s" % pathfileconf)
     xmppobject.wakeonlangroupremotelan = False
     xmppobject.wakeonlangroupport = 9
-    xmppobject.wakeonlantargetsubnet = False
+    xmppobject.wakeonlantargetsubnet = True
 
     if not os.path.isfile(pathfileconf):
         logger.error("The configuration file for the plugin %s is missing.\n" \
@@ -145,6 +170,7 @@ def read_conf_wol(xmppobject):
 
             if Config.has_option("parameters", "targetsubnet"):
                 xmppobject.wakeonlantargetsubnet = Config.getboolean('parameters', 'targetsubnet')
+
         if not xmppobject.wakeonlangroupremotelan:
             logger.debug("The used parameters are\nremotelan %s"\
                 "\nwakeonlanport %s\ntargetsubnet %s" % (xmppobject.wakeonlangroupremotelan,
