@@ -8,7 +8,7 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-NETWORKVERSION = '2.1.7'
+NETWORKVERSION = '2.2.0'
 
 logger = logging.getLogger()
 
