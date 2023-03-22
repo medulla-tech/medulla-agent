@@ -30,6 +30,7 @@ import logging
 import os
 from wakeonlan import wol
 import ConfigParser
+from netifaces import interfaces, ifaddresses, AF_INET
 
 logger = logging.getLogger()
 
