@@ -2449,6 +2449,67 @@ class XmppMasterDatabase(DatabaseHelper):
         return list(id_deploylist)
 
     # =====================================================================
+    # xmppmaster verification jid for deploy
+    # =====================================================================
+    @DatabaseHelper._sessionm
+    def update_jid_if_changed(self,
+                              session,
+                              jidmachine):
+        try:
+            sql = """SELECT
+                        xmppmaster.machines.jid,
+                        xmppmaster.machines.groupdeploy
+                    FROM
+                        xmppmaster.machines
+                    WHERE
+                        xmppmaster.machines.hostname = xmppmaster.FS_JIDUSERTRUE('%s')
+                            limit 1;"""%(jidmachine)
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            if not resultproxy:
+                return []
+            else:
+                ret = self._return_dict_from_dataset_mysql(resultproxy)
+                return ret
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return False
+        return []
+
+    @DatabaseHelper._sessionm
+    def replace_jid_mach_ars_in_deploy(self,
+                                       session,
+                                       jidmachine,
+                                       jidrelay,
+                                       title
+                                       ):
+        """
+            Cette fonction est utilise pour mettre a jour les jid dans deploy quand 1 machine reenregistre change de jid.
+
+            Args:
+                jidmachine : new JID
+                jidrelay : new jidrelay
+                title : title du deploy
+        """
+        try:
+            sql = """
+                    UPDATE `xmppmaster`.`deploy`
+                    SET
+                        `jidmachine` = '%s',
+                        `jid_relay` = '%s'
+                    WHERE
+                        (`title` = '%s');""" % (jidmachine,
+                                                jidrelay,
+                                                title)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception, e:
+            logging.getLogger().error(str(e))
+
+
+    # =====================================================================
     # xmppmaster FUNCTIONS deploy syncthing
     # =====================================================================
     @DatabaseHelper._sessionm
@@ -3516,11 +3577,12 @@ class XmppMasterDatabase(DatabaseHelper):
         #self.delNetwork_for_machines_id(id_machine)
         try:
             new_network = Network()
-            mask = mask.strip()
-            ipaddress = ipaddress.strip()
-            broadcast = broadcast.strip()
-            macaddress = macaddress.strip()
-            gateway = gateway.strip()
+            if broadcast is None or broadcast == "None": broadcast = ""
+            if isinstance(mask,(str,unicode)): mask = mask.strip()
+            if isinstance(ipaddress,(str,unicode)): ipaddress = ipaddress.strip()
+            if isinstance(broadcast,(str,unicode)): broadcast = broadcast.strip()
+            if isinstance(macaddress,(str,unicode)): macaddress = macaddress.strip()
+            if isinstance(gateway,(str,unicode)): gateway = gateway.strip()
             new_network.macaddress=macaddress
             new_network.ipaddress=ipaddress
             if not broadcast and mask and ipaddress :
