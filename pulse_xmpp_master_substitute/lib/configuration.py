@@ -105,7 +105,7 @@ class confParameter:
 
         ################################################################
         # list des noms des plugins start executer au demarage.
-        # le code de ces plugins est executé au démarage. il commence par start
+        # le code de ces plugins est execute au demarage. il commence par start
 
         #pluginlist = 'load_plugins_base, load_plugin_base_scheduled,autoupdateagent'
         self.pluginliststart = 'loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration'
