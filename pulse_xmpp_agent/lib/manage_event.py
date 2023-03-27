@@ -129,18 +129,16 @@ class manage_event:
     def delmessage_loop(self, devent):
         # supprime message loop devent
         for i in self.event:
-            if 'event' not in i:
-                if i['data']['Devent'] == devent:
-                    self.event.remove(i)
-                    break
+            if 'event' not in i and i['data']['Devent'] == devent:
+                self.event.remove(i)
+                break
 
     def delmessage_loop_Dtypequery(self, Dtypequery):
         # supprime message loop devent
         for i in self.event:
-            if 'event' not in i:
-                if i['data']['Dtypequery'] == Dtypequery:
-                    self.event.remove(i)
-                    break
+            if 'event' not in i and i['data']['Dtypequery'] == Dtypequery:
+                self.event.remove(i)
+                break
 
     def clear(self, sessionid):
         self.event = [x for x in self.event if x['sessionid'] != sessionid]

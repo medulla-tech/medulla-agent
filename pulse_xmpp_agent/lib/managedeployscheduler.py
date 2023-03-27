@@ -72,20 +72,26 @@ class manageschedulerdeploy:
             try:
                 self.dbsessionscheduler = plyvel.DB(self.name_basesession, create_if_missing=True)
             except Exception:
-                logger.error("An error occured while opening the database: %s" % self.name_basesession)
+                logger.error(
+                    f"An error occured while opening the database: {self.name_basesession}"
+                )
                 os.remove(self.name_basesession)
                 self.dbsessionscheduler = plyvel.DB(self.name_basesession, create_if_missing=True)
             try:
                 self.dbcmdscheduler = plyvel.DB(self.name_basecmd, create_if_missing=True)
             except Exception:
-                logger.error("An error occured while opening the database: %s" % self.name_basecmd)
+                logger.error(
+                    f"An error occured while opening the database: {self.name_basecmd}"
+                )
                 os.remove(self.name_basecmd)
                 self.dbcmdscheduler = plyvel.DB(self.name_basecmd, create_if_missing=True)
         else:
             try:
                 self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
             except DBInvalidArgError:
-                logger.error("An error occured while opening the bsddb database: %s" % self.name_basecmd)
+                logger.error(
+                    f"An error occured while opening the bsddb database: {self.name_basecmd}"
+                )
                 os.remove(self.name_basecmd)
                 self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
             except Exception as error:
@@ -96,7 +102,9 @@ class manageschedulerdeploy:
             try:
                 self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
             except DBInvalidArgError:
-                logger.error("An error occured while opening the bsddb database: %s" % self.name_basesession)
+                logger.error(
+                    f"An error occured while opening the bsddb database: {self.name_basesession}"
+                )
                 os.remove(self.name_basesession)
                 self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
             except Exception as error:
@@ -141,9 +149,8 @@ class manageschedulerdeploy:
                 data = self.dbsessionscheduler.get(bytearray(sessionid))
                 if data is None:
                     data =""
-            else:
-                if self.dbsessionscheduler.has_key(str(sessionid)):
-                    data = self.dbsessionscheduler[sessionid]
+            elif self.dbsessionscheduler.has_key(sessionid):
+                data = self.dbsessionscheduler[sessionid]
         except Exception as exception_error:
             logger.error("In the function get_sesionscheduler the plugin %s failed with the error: \n %s" % (self.name_basesession, exception_error))
         finally:
@@ -157,10 +164,9 @@ class manageschedulerdeploy:
             self.openbase()
             if sys.platform.startswith('darwin'):
                 data = self.dbsessionscheduler.delete(bytearray(sessionid))
-            else:
-                if self.dbsessionscheduler.has_key(sessionid):
-                    del self.dbsessionscheduler[sessionid]
-                    self.dbsessionscheduler.sync()
+            elif self.dbsessionscheduler.has_key(sessionid):
+                del self.dbsessionscheduler[sessionid]
+                self.dbsessionscheduler.sync()
         except Exception as exception_error:
             logger.error("In the function del_sesionscheduler the plugin %s failed with the error: \n %s" % (self.name_basesession, exception_error))
         finally:

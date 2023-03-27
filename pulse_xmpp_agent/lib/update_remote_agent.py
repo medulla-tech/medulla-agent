@@ -57,7 +57,9 @@ class Update_Remote_Agent:
         for path_dir_remoteagent in dir_create:
             if not os.path.exists(path_dir_remoteagent):
                 os.makedirs(path_dir_remoteagent)
-                logging.getLogger().debug("Creating folder for remote base agent : %s" % dir_agent_base)
+                logging.getLogger().debug(
+                    f"Creating folder for remote base agent : {dir_agent_base}"
+                )
         if os.path.exists(os.path.join(dir_agent_base, 'agentversion')):
             self.load_list_md5_agentbase()
 
@@ -98,7 +100,6 @@ class Update_Remote_Agent:
         """
         This function fill the directory structure with the values
         """
-        listmd5 = []
         self.directory = {"program_agent": {},
                           "version": "",
                           "version_agent": "",
@@ -107,7 +108,7 @@ class Update_Remote_Agent:
                           "fingerprint": ""}
         self.directory["version"] = file_get_contents(os.path.join(self.dir_agent_base, 'agentversion')).replace("\n", "").replace("\r", "").strip()
         self.directory["version_agent"] = hashlib.md5(self.directory["version"]).hexdigest()
-        listmd5.append(self.directory["version_agent"])
+        listmd5 = [self.directory["version_agent"]]
         list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py', 'replicator.py']
 
         for fichiername in list_script_python_for_update:
@@ -131,8 +132,8 @@ def agentinfoversion(xmppobject):
             (like testmodule , pathagent, agentdescriptor, pathimg,
               imgdescriptor, actiontxt, conf and plugins)
     """
-    cmd = "python %s -i -v" % (os.path.join(xmppobject.pathagent, "replicator.py"))
-    logger.debug("cmd : %s" % (cmd))
+    cmd = f'python {os.path.join(xmppobject.pathagent, "replicator.py")} -i -v'
+    logger.debug(f"cmd : {cmd}")
     result = simplecommand(cmd)
     resultobj = {}
     rr = [x.rstrip() for x in result['result']]
@@ -150,7 +151,7 @@ def agentinfoversion(xmppobject):
             boottrap = boottrap + 1
             continue
 
-        if not val[boottrap] in resultobj:
+        if val[boottrap] not in resultobj:
             resultobj[val[boottrap]] = []
         resultobj[val[boottrap]].append(t.strip())
 
@@ -170,5 +171,4 @@ def agentinfoversion(xmppobject):
            'actiontxt': actiontxt,
            "conf": xmppobject.config.updating,
            "plugins": xmppobject.dataplugininstall}
-    l = json.dumps(res, indent=4)
-    return l
+    return json.dumps(res, indent=4)

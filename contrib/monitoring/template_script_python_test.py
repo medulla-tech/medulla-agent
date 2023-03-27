@@ -51,30 +51,27 @@ class Mysqlbase():
     def connection_Mysql(self):
         if self.boolconnectionbase:
             return self.dbconnectionMysql
-        else:
-            try:
-                self.dbconnectionMysql = \
+        try:
+            self.dbconnectionMysql = \
                     MySQLdb.connect(host=self.Mysql_dbhost,
-                                    user=self.Mysql_dbuser,
-                                    passwd=self.Mysql_dbpasswd,
-                                    db=self.Mysql_dbname,
-                                    port=self.Mysql_dbport,
-                                    connect_timeout=self.Mysql_connect_timeout)
-                self.boolconnectionbase = True
-                return self.dbconnectionMysql
-            except MySQLdb.Error as e:
-                self.boolconnectionbase = False
-                self.dbconnectionMysql = None
-                print(
-                    "We failed to connect to the database and got the error %s" %
-                    str(e))
-                print("\n%s" % (traceback.format_exc()))
-                return self.dbconnectionMysql
-            except Exception as e:
-                self.boolconnectionbase = False
-                self.dbconnectionMysql = None
-                print("\n%s" % (traceback.format_exc()))
-                return self.dbconnectionMysql
+                                user=self.Mysql_dbuser,
+                                passwd=self.Mysql_dbpasswd,
+                                db=self.Mysql_dbname,
+                                port=self.Mysql_dbport,
+                                connect_timeout=self.Mysql_connect_timeout)
+            self.boolconnectionbase = True
+            return self.dbconnectionMysql
+        except MySQLdb.Error as e:
+            self.boolconnectionbase = False
+            self.dbconnectionMysql = None
+            print(f"We failed to connect to the database and got the error {str(e)}")
+            print("\n%s" % (traceback.format_exc()))
+            return self.dbconnectionMysql
+        except Exception as e:
+            self.boolconnectionbase = False
+            self.dbconnectionMysql = None
+            print("\n%s" % (traceback.format_exc()))
+            return self.dbconnectionMysql
 
     def disconnect_mysql(self):
         if self.boolconnectionbase:
@@ -96,19 +93,16 @@ class Mysqlbase():
                     print(query)
                     cursor.execute(query)
                     results = cursor.fetchall()
-                    resultproxy = []
                     columnNames = [column[0] for column in cursor.description]
-                    for record in results:
-                        resultproxy.append(dict(zip(columnNames, record)))
-                    return resultproxy
+                    return [dict(zip(columnNames, record)) for record in results]
                 except MySQLdb.Error as e:
-                    print("Error: unable to fecth data %s" % str(e))
+                    print(f"Error: unable to fecth data {str(e)}")
                     print("\n%s" % (traceback.format_exc()))
                     return results
                 finally:
                     cursor.close()
         except Exception as e:
-            print("Error: unable to connection %s" % str(e))
+            print(f"Error: unable to connection {str(e)}")
             print("\n%s" % (traceback.format_exc()))
             return results
         return results
@@ -126,20 +120,17 @@ class Mysqlbase():
                     print(query)
                     results = cursor.execute(query)
                     self.dbconnectionMysql.commit()
-                    resultproxy = []
                     columnNames = [column[0] for column in cursor.description]
-                    for record in results:
-                        resultproxy.append(dict(zip(columnNames, record)))
-                    return resultproxy
+                    return [dict(zip(columnNames, record)) for record in results]
                 except MySQLdb.Error as e:
                     self.dbconnectionMysql.rollback()
-                    print("Error: unable to commit data %s" % str(e))
+                    print(f"Error: unable to commit data {str(e)}")
                     print("\n%s" % (traceback.format_exc()))
                     return results
                 finally:
                     cursor.close()
         except Exception as e:
-            print("Error: unable to connect: %s" % str(e))
+            print(f"Error: unable to connect: {str(e)}")
             print("\n%s" % (traceback.format_exc()))
             return results
         return results

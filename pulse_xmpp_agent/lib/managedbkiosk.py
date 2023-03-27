@@ -84,9 +84,8 @@ class manageskioskdb:
             data = self.dblaunchcmd.get(bytearray(idpackage))
             if data is None:
                 data =""
-        else:
-            if self.dblaunchcmd.has_key(str(idpackage)):
-                data = self.dblaunchcmd[idpackage]
+        elif self.dblaunchcmd.has_key(idpackage):
+            data = self.dblaunchcmd[idpackage]
         self.closebase()
         return str(data)
 
@@ -95,10 +94,9 @@ class manageskioskdb:
         self.openbase()
         if sys.platform.startswith('darwin'):
             data = self.dblaunchcmd.delete(bytearray(idpackage))
-        else:
-            if self.dblaunchcmd.has_key(idpackage):
-                del self.dblaunchcmd[idpackage]
-                self.dblaunchcmd.sync()
+        elif self.dblaunchcmd.has_key(idpackage):
+            del self.dblaunchcmd[idpackage]
+            self.dblaunchcmd.sync()
         self.closebase()
 
     def get_all_obj_launch(self):
@@ -133,11 +131,7 @@ class manageskioskdb:
     def get_obj_ref(self):
         str_name_idpackage = {}
         strjson = self.get_cmd_launch("str_json_name_id_package")
-        if strjson != "":
-            str_name_idpackage = json.loads(str(strjson))
-        else:
-            str_name_idpackage = {}
-        return str_name_idpackage
+        return json.loads(str(strjson)) if strjson != "" else {}
 
     def get_ref_package_for_name(self, name):
         str_name_idpackage = ""

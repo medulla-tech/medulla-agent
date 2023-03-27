@@ -47,7 +47,7 @@ def uniq(input):
   return output
 
 def changeconfigurationsubtitute(conffile, confsubtitute):
-    """
+  """
     This function allow to modify the machine agent to use substitute by default
 
     Args:
@@ -55,17 +55,17 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     confsubtitute: the substitute to add in the configuration file
 
     """
-    Config = ConfigParser.ConfigParser()
-    Config.read(conffile)
-    if not Config.has_section('substitute'):
-        Config.add_section('substitute')
-    for t in confsubtitute['conflist']:
-        uniq_list = uniq(confsubtitute[t])
-        Config.set('substitute', t, ",".join(uniq_list))
-        logger.info("application substitut %s for %s"%(uniq_list[0],t))
-    logger.debug("writing parameters of the substitutes")
-    with open(conffile, 'w') as configfile:
-        Config.write(configfile)
+  Config = ConfigParser.ConfigParser()
+  Config.read(conffile)
+  if not Config.has_section('substitute'):
+      Config.add_section('substitute')
+  for t in confsubtitute['conflist']:
+    uniq_list = uniq(confsubtitute[t])
+    Config.set('substitute', t, ",".join(uniq_list))
+    logger.info(f"application substitut {uniq_list[0]} for {t}")
+  logger.debug("writing parameters of the substitutes")
+  with open(conffile, 'w') as configfile:
+      Config.write(configfile)
 
 def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole):
     """
@@ -98,30 +98,28 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
         Config.write(configfile)
 
 def alternativeclusterconnection(conffile, data):
-    """
+  """
     This function allow to add a alternative cluster.
     Args:
         conffile: the configuration file in which we add the alternative cluster
         data: the informations about the cluster
     """
-    logger.debug("We write the file %s to handle alternative connections" % conffile)
-    with open(conffile, 'w') as configfile:
-        if len(data) != 0:
-            listalternative = [str(x[2]) for x in data]
-            nb_alternativeserver =  len(listalternative)
-            configfile.write("[alternativelist]" + os.linesep)
-            configfile.write("listars = %s%s"%(",".join(listalternative), os.linesep))
-            configfile.write("nbserver = %s%s"%(nb_alternativeserver, os.linesep))
-            configfile.write("nextserver = 1%s"%os.linesep)
-            for arsdataconection in data:
-                configfile.write("[%s]%s"%(str(arsdataconection[2]),os.linesep))
-                configfile.write("port = %s%s"%(str(arsdataconection[1]),os.linesep))
-                configfile.write("server = %s%s"%(ipfromdns(str(str(arsdataconection[0]))),os.linesep))
-                configfile.write("guacamole_baseurl = %s%s"%(str(arsdataconection[3]),
-                                                             os.linesep))
-        else:
-            if os.path.isfile(conffile):
-                os.unlink(conffile)
+  logger.debug(f"We write the file {conffile} to handle alternative connections")
+  with open(conffile, 'w') as configfile:
+    if len(data) != 0:
+      listalternative = [str(x[2]) for x in data]
+      nb_alternativeserver =  len(listalternative)
+      configfile.write(f"[alternativelist]{os.linesep}")
+      configfile.write(f'listars = {",".join(listalternative)}{os.linesep}')
+      configfile.write(f"nbserver = {nb_alternativeserver}{os.linesep}")
+      configfile.write(f"nextserver = 1{os.linesep}")
+      for arsdataconection in data:
+        configfile.write(f"[{str(arsdataconection[2])}]{os.linesep}")
+        configfile.write(f"port = {str(arsdataconection[1])}{os.linesep}")
+        configfile.write(f"server = {ipfromdns(str(arsdataconection[0]))}{os.linesep}")
+        configfile.write(f"guacamole_baseurl = {str(arsdataconection[3])}{os.linesep}")
+    elif os.path.isfile(conffile):
+      os.unlink(conffile)
 
 def nextalternativeclusterconnection(conffile):
     """
@@ -169,9 +167,9 @@ class SingletonDecorator:
         self.instance = None
 
     def __call__(self, *args, **kwds):
-        if self.instance == None:
-            self.instance = self.klass(*args, **kwds)
-        return self.instance
+      if self.instance is None:
+        self.instance = self.klass(*args, **kwds)
+      return self.instance
 
 
 def infos_network_packageserver():
@@ -212,7 +210,7 @@ def infos_network_packageserver():
 
 
 def loadparameters(namefile, group, key):
-    """
+  """
     This function allow to obtain the parameters from group and key
 
     Args:
@@ -224,72 +222,66 @@ def loadparameters(namefile, group, key):
         the Value defined by the group/key couple.
     """
 
-    Config = ConfigParser.ConfigParser()
-    Config.read(namefile)
-    value = ""
-    if Config.has_option("group", "key"):
-        value = Config.get('group', 'key')
-    return value
+  Config = ConfigParser.ConfigParser()
+  Config.read(namefile)
+  return Config.get('group', 'key') if Config.has_option("group", "key") else ""
 
 class substitutelist:
     def __init__(self):
-        Config = ConfigParser.ConfigParser()
-        namefileconfig = conffilename('machine')
-        Config.read(namefileconfig)
-        if os.path.exists(namefileconfig + ".local"):
-            Config.read(namefileconfig + ".local")
-        #################substitute####################
+      Config = ConfigParser.ConfigParser()
+      namefileconfig = conffilename('machine')
+      Config.read(namefileconfig)
+      if os.path.exists(f"{namefileconfig}.local"):
+        Config.read(f"{namefileconfig}.local")
+      #################substitute####################
 
-        self.sub_inventory = ["master_inv@pulse"]
-        self.sub_subscribe = ["master_subs@pulse"]
-        self.sub_registration = ["master_reg@pulse"]
-        self.sub_assessor = ["master_asse@pulse"]
-        self.sub_logger = ["log@pulse", "maste_log@pulse"]
-        self.sub_monitoring = ["master_mon@pulse"]
-        self.sub_updates = ["master_upd@pulse"]
+      self.sub_inventory = ["master_inv@pulse"]
+      self.sub_subscribe = ["master_subs@pulse"]
+      self.sub_registration = ["master_reg@pulse"]
+      self.sub_assessor = ["master_asse@pulse"]
+      self.sub_logger = ["log@pulse", "maste_log@pulse"]
+      self.sub_monitoring = ["master_mon@pulse"]
+      self.sub_updates = ["master_upd@pulse"]
 
-        if Config.has_option('substitute', 'subscription'):
-            sub_subscribelocal = Config.get('substitute', 'subscription')
-            self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
+      if Config.has_option('substitute', 'subscription'):
+          sub_subscribelocal = Config.get('substitute', 'subscription')
+          self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
 
-        if Config.has_option('substitute', 'inventory'):
-            sub_inventorylocal = Config.get('substitute', 'inventory')
-            self.sub_inventory = [x.strip() for x in sub_inventorylocal.split(",")]
+      if Config.has_option('substitute', 'inventory'):
+          sub_inventorylocal = Config.get('substitute', 'inventory')
+          self.sub_inventory = [x.strip() for x in sub_inventorylocal.split(",")]
 
-        if Config.has_option('substitute', 'registration'):
-            sub_registrationlocal = Config.get('substitute', 'registration')
-            self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
+      if Config.has_option('substitute', 'registration'):
+          sub_registrationlocal = Config.get('substitute', 'registration')
+          self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
 
-        if Config.has_option('substitute', 'assessor'):
-            sub_assessorlocal = Config.get('substitute', 'assessor')
-            self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
+      if Config.has_option('substitute', 'assessor'):
+          sub_assessorlocal = Config.get('substitute', 'assessor')
+          self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
 
-        if Config.has_option('substitute', 'logger'):
-            sub_loggerlocal = Config.get('substitute', 'logger')
-            self.sub_logger = [x.strip() for x in sub_loggerlocal.split(",")]
+      if Config.has_option('substitute', 'logger'):
+          sub_loggerlocal = Config.get('substitute', 'logger')
+          self.sub_logger = [x.strip() for x in sub_loggerlocal.split(",")]
 
-        if Config.has_option('substitute', 'monitoring'):
-            sub_monitoringlocal = Config.get('substitute', 'monitoring')
-            self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
+      if Config.has_option('substitute', 'monitoring'):
+          sub_monitoringlocal = Config.get('substitute', 'monitoring')
+          self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
 
-        if Config.has_option('substitute', 'updates'):
-            sub_updateslocal = Config.get('substitute', 'updates')
-            self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
+      if Config.has_option('substitute', 'updates'):
+          sub_updateslocal = Config.get('substitute', 'updates')
+          self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
 
     def parameterssubtitute(self):
-        conflist = []
-        data={ 'subscription': self.sub_subscribe,
-               'inventory': self.sub_inventory,
-               'registration': self.sub_registration,
-               'assessor': self.sub_assessor,
-               'logger': self.sub_logger,
-               'monitoring': self.sub_monitoring,
-               'updates': self.sub_updates}
-        for t in data:
-            #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
-            conflist.append(t)
-        data['conflist'] = conflist
-        return data
+      data={ 'subscription': self.sub_subscribe,
+             'inventory': self.sub_inventory,
+             'registration': self.sub_registration,
+             'assessor': self.sub_assessor,
+             'logger': self.sub_logger,
+             'monitoring': self.sub_monitoring,
+             'updates': self.sub_updates}
+      conflist = list(data)
+      data['conflist'] = conflist
+      return data
 
 class confParameter:
     def __init__(self, typeconf='machine'):

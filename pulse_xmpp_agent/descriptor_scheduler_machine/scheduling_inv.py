@@ -36,9 +36,7 @@ def schedule_main(objectxmpp):
             'to': objectxmpp.boundjid.bare
             }
     sessionid = utils.getRandomName(6, "inventory")
-    dataerreur = {}
-    dataerreur['action']= "resultinventory"
-    dataerreur['data']={}
+    dataerreur = {'action': "resultinventory", 'data': {}}
     dataerreur['data']['msg'] = "ERROR : inventory"
     dataerreur['sessionid'] = sessionid
     dataerreur['ret'] = 255
@@ -51,14 +49,15 @@ def schedule_main(objectxmpp):
                     msg,
                     dataerreur)
     objectxmpp.xmpplog(
-                "Sent Inventory from agent %s"%(objectxmpp.boundjid.bare),
-                type = 'noset',
-                sessionname = sessionid,
-                priority = 0,
-                action = "xmpplog",
-                who = objectxmpp.boundjid.bare,
-                how = "Planned",
-                why = "",
-                module = "Inventory | Inventory reception | Planned",
-                fromuser = "",
-                touser = "")
+        f"Sent Inventory from agent {objectxmpp.boundjid.bare}",
+        type='noset',
+        sessionname=sessionid,
+        priority=0,
+        action="xmpplog",
+        who=objectxmpp.boundjid.bare,
+        how="Planned",
+        why="",
+        module="Inventory | Inventory reception | Planned",
+        fromuser="",
+        touser="",
+    )

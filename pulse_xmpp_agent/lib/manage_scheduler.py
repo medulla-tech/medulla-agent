@@ -153,10 +153,7 @@ class manage_scheduler:
         tabcron = datascheduler['schedule']
         cron = croniter.croniter(tabcron, self.now)
         nextd = cron.get_next(datetime)
-        if 'nb' in datascheduler:
-            nbcount = datascheduler['nb']
-        else:
-            nbcount = -1
+        nbcount = datascheduler['nb'] if 'nb' in datascheduler else -1
         obj=  {"name": name, "exectime" : time.mktime(nextd.timetuple()) , "tabcron" : tabcron , "timestart" : str(self.now), "nbcount" : nbcount, "count" : 0 }
         self.taches.append(obj)
 
@@ -170,7 +167,7 @@ class manage_scheduler:
                 t["count"] = t["count"] + 1
                 if "nbcount" in t and t["nbcount"] != -1 and  t["count"] > t["nbcount"]:
                     deleted.append(t)
-                    logging.getLogger().debug("terminate plugin %s"%t)
+                    logging.getLogger().debug(f"terminate plugin {t}")
                     continue
                 cron = croniter.croniter(t["tabcron"], now)
                 nextd = cron.get_next(datetime)
@@ -180,28 +177,32 @@ class manage_scheduler:
             self.taches.remove(y)
 
     def call_scheduling_main(self, name, *args, **kwargs):
-        if self.objectxmpp.config.scheduling_plugin_action :
-            if name not in self.objectxmpp.config.excludedscheduledplugins :
-                logging.getLogger().debug("execution of the plugin scheduling_%s" % name)
+        if self.objectxmpp.config.scheduling_plugin_action:
+            if name not in self.objectxmpp.config.excludedscheduledplugins:
+                logging.getLogger().debug(f"execution of the plugin scheduling_{name}")
                 try:
-                    count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
+                    count = getattr(self.objectxmpp, f"num_call_scheduling_{name}")
                     count = count + 1
                 except AttributeError:
                     count=0
-                logging.getLogger().debug("num_call_scheduling_%s  %s" % (name, count))
-                setattr(self.objectxmpp, "num_call_scheduling_%s" % name, count)
-                mod = __import__("scheduling_%s" % name)
+                logging.getLogger().debug(f"num_call_scheduling_{name}  {count}")
+                setattr(self.objectxmpp, f"num_call_scheduling_{name}", count)
+                mod = __import__(f"scheduling_{name}")
                 mod.schedule_main(*args, **kwargs)
             else:
-                logging.getLogger().debug("The plugin %s is not allowed to run as it has been excluded" % name)
+                logging.getLogger().debug(
+                    f"The plugin {name} is not allowed to run as it has been excluded"
+                )
         else:
-            logging.getLogger().debug("the parameter scheduling_plugin_action does not allow the call of the plugin %s" % name)
+            logging.getLogger().debug(
+                f"the parameter scheduling_plugin_action does not allow the call of the plugin {name}"
+            )
 
     def call_scheduling_mainspe(self, name, *args, **kwargs):
-        mod = __import__("scheduling_%s" % name)
+        mod = __import__(f"scheduling_{name}")
 
         return mod.schedule_main
 
     def litschedule(self, name):
-        mod = __import__("scheduling_%s" % name)
+        mod = __import__(f"scheduling_{name}")
         return mod.SCHEDULE

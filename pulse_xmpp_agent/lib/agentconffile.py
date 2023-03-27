@@ -50,10 +50,7 @@ def directoryconffile():
             "/opt",
             "Pulse",
             "etc")
-    if os.path.isdir(fileconf):
-        return fileconf
-    else:
-        return None
+    return fileconf if os.path.isdir(fileconf) else None
 
 
 def pulseTempDir():
@@ -107,10 +104,7 @@ def conffilename(agenttype):
     if conffilenameparameter == "cluster.ini":
         return fileconf
 
-    if os.path.isfile(fileconf):
-        return fileconf
-    else:
-        return conffilenameparameter
+    return fileconf if os.path.isfile(fileconf) else conffilenameparameter
 
 
 def conffilenametmp(agenttype):
@@ -131,15 +125,11 @@ def conffilenametmp(agenttype):
     else:
         conffilenameparameter = "relayconftmp.ini"
 
-    if directoryconffile() is not None:
-        fileconf = os.path.join(pulseTempDir(), conffilenameparameter)
-    else:
-        fileconf = conffilenameparameter
-
-    if conffilenameparameter == "clustertmp.ini":
-        return fileconf
-
-    return fileconf
+    return (
+        os.path.join(pulseTempDir(), conffilenameparameter)
+        if directoryconffile() is not None
+        else conffilenameparameter
+    )
 
 
 def rotation_file(namefile, suffixe=""):
@@ -150,10 +140,11 @@ def rotation_file(namefile, suffixe=""):
             namefile: name file rotation
 
     """
-    if suffixe != "": suffixe = "_" + suffixe
+    if suffixe != "":
+        suffixe = f"_{suffixe}"
     for x in range(5,0,-1):
-        src = "%s%s_%s"%(namefile,suffixe, x)
-        dest = "%s%s_%s"%(namefile,suffixe, x+1)
+        src = f"{namefile}{suffixe}_{x}"
+        dest = f"{namefile}{suffixe}_{x + 1}"
         if  os.path.isfile(src):
             shutil.copyfile(src, dest)
         if x == 1:

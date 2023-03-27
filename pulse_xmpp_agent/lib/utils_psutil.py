@@ -44,13 +44,12 @@ def sensors_battery():
         return result
     result = "charge:     %s%%" % round(batt.percent, 2)
     if batt.power_plugged:
-        va ="status:     %s" % (
-            "charging" if batt.percent < 100 else "fully charged")
+        va = f'status:     {"charging" if batt.percent < 100 else "fully charged"}'
         vb ="plugged in: yes"
         return result + "\n" + va + "\n" + vb
     else:
-        va = "left:       %s" % secs2hours(batt.secsleft)
-        vb = "status:     %s" % "discharging"
+        va = f"left:       {secs2hours(batt.secsleft)}"
+        vb = 'status:     discharging'
         vc = "plugged in: no"
         return result + "\n" + va + "\n" + vb + "\n" + vc
 
@@ -86,7 +85,7 @@ def winservices():
         result = result + "\n%r (%r)\n" % (info['name'], info['display_name'])
         result = result + "status: %s, start: %s, username: %s, pid: %s\n" % (
             info['status'], info['start_type'], info['username'], info['pid'])
-        result = result + "binpath: %s" % info['binpath']
+        result = f"{result}binpath: {info['binpath']}"
     return result
 
 
@@ -124,8 +123,7 @@ def clone_ps_aux():
     attrs = ['pid', 'cpu_percent', 'memory_percent', 'name', 'cpu_times',
              'create_time', 'memory_info', 'status']
     if os.name == 'posix':
-        attrs.append('uids')
-        attrs.append('terminal')
+        attrs.extend(('uids', 'terminal'))
     result = templ % ("USER", "PID", "%CPU", "%MEM", "VSZ", "RSS", "TTY",
                    "STAT", "START", "TIME", "COMMAND")
     for p in psutil.process_iter():
@@ -148,10 +146,7 @@ def clone_ps_aux():
                 user = p.username()
             except KeyError:
                 if os.name == 'posix':
-                    if pinfo['uids']:
-                        user = str(pinfo['uids'].real)
-                    else:
-                        user = ''
+                    user = str(pinfo['uids'].real) if pinfo['uids'] else ''
                 else:
                     raise
             except psutil.Error:
@@ -193,9 +188,7 @@ def bytes2human(n):
 
     """
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10
+    prefix = {s: 1 << (i + 1) * 10 for i, s in enumerate(symbols)}
     for s in reversed(symbols):
         if n >= prefix[s]:
             value = float(n) / prefix[s]
@@ -218,12 +211,11 @@ def disk_usage():
     result = templ % ("Device", "Total", "Used", "Free", "Use ", "Type",
                    "Mount")
     for part in psutil.disk_partitions(all=False):
-        if os.name == 'nt':
-            if 'cdrom' in part.opts or part.fstype == '':
-                # skip cd-rom drives with no disk in it; they may raise
-                # ENOENT, pop-up a Windows GUI error for a non-ready
-                # partition or just hang.
-                continue
+        if os.name == 'nt' and ('cdrom' in part.opts or part.fstype == ''):
+            # skip cd-rom drives with no disk in it; they may raise
+            # ENOENT, pop-up a Windows GUI error for a non-ready
+            # partition or just hang.
+            continue
         usage = psutil.disk_usage(part.mountpoint)
         result = result + templ % (
             part.device,
@@ -238,12 +230,10 @@ def disk_usage():
 def sensors_fans():
     result = ""
     if not hasattr(psutil, "sensors_fans"):
-        result = "sensors_fans platform not supported"
-        return result
+        return "sensors_fans platform not supported"
     fans = psutil.sensors_fans()
     if not fans:
-        result = "no fans detected"
-        return result
+        return "no fans detected"
     for name, entries in fans.items():
         result = result + name + "\n"
         for entry in entries:
@@ -265,22 +255,25 @@ def mmemory():
     virt = psutil.virtual_memory()
     swap = psutil.swap_memory()
     templ = "%-7s %10s %10s %10s %10s %10s %10s\n"
-    result = result + templ % ('', 'total', 'used', 'free', 'shared', 'buffers', 'cache')
-    result = result + templ % (
+    result += templ % ('', 'total', 'used', 'free', 'shared', 'buffers', 'cache')
+    result += templ % (
         'Mem:',
         int(virt.total / 1024),
         int(virt.used / 1024),
         int(virt.free / 1024),
-        int(getattr(virt, 'shared', 0) / 1024),
-        int(getattr(virt, 'buffers', 0) / 1024),
-        int(getattr(virt, 'cached', 0) / 1024))
-    result = result + templ % (
-        'Swap:', int(swap.total / 1024),
+        getattr(virt, 'shared', 0) // 1024,
+        getattr(virt, 'buffers', 0) // 1024,
+        getattr(virt, 'cached', 0) // 1024,
+    )
+    result += templ % (
+        'Swap:',
+        int(swap.total / 1024),
         int(swap.used / 1024),
         int(swap.free / 1024),
         '',
         '',
-        '')
+        '',
+    )
     return result
 
 
@@ -341,26 +334,20 @@ def ifconfig():
     stats = psutil.net_if_stats()
     io_counters = psutil.net_io_counters(pernic=True)
     for nic, addrs in psutil.net_if_addrs().items():
-        result = result + "%s:" % (nic) + "\n"
+        result = f"{result}{nic}:" + "\n"
         if nic in stats:
             st = stats[nic]
-            result = result + "    stats          : "
-            result = result + "speed=%sMB, duplex=%s, mtu=%s, up=%s" % (
-                st.speed, duplex_map[st.duplex], st.mtu,
-                "yes" if st.isup else "no")
+            result = f"{result}    stats          : "
+            result = f'{result}speed={st.speed}MB, duplex={duplex_map[st.duplex]}, mtu={st.mtu}, up={"yes" if st.isup else "no"}'
         if nic in io_counters:
             io = io_counters[nic]
             result = result + "\n    incoming       : "
-            result = result + "bytes=%s, pkts=%s, errs=%s, drops=%s" % (
-                bytes2human(io.bytes_recv), io.packets_recv, io.errin,
-                io.dropin)
+            result = f"{result}bytes={bytes2human(io.bytes_recv)}, pkts={io.packets_recv}, errs={io.errin}, drops={io.dropin}"
             result = result + "\n    outgoing       : "
-            result = result + "bytes=%s, pkts=%s, errs=%s, drops=%s" % (
-                bytes2human(io.bytes_sent), io.packets_sent, io.errout,
-                io.dropout)
+            result = f"{result}bytes={bytes2human(io.bytes_sent)}, pkts={io.packets_sent}, errs={io.errout}, drops={io.dropout}"
         for addr in addrs:
             result = result + "\n    %-4s" % af_map.get(addr.family, addr.family)
-            result = result + " address   : %s" % addr.address
+            result = f"{result} address   : {addr.address}"
             if addr.broadcast:
                 result = result + "\n         broadcast : %s" % addr.broadcast
             if addr.netmask:
@@ -378,41 +365,11 @@ def ifconfig():
 def cpu_num():
     result = ""
     if not hasattr(psutil, "cpu_count"):
-        result = result + "cpu_count on platform not supported"
+        result += "cpu_count on platform not supported"
         return result
     total = psutil.cpu_count()
-    result = result + "%s cpu" % total
+    result += f"{total} cpu"
 
-    #if hasattr(psutil.Process, "cpu_num"):
-        #while True:
-            ## header
-            ##clean_screen()
-            #cpus_percent = psutil.cpu_percent(percpu=True)
-            #for i in range(total):
-                #result = result + "CPU %-6i\n" % i
-            #result = result + "\n"
-            #for percent in cpus_percent:
-                #result = result + "%-10s" % percent
-            #result = result + "\n"
-
-            ## processes
-            #procs = collections.defaultdict(list)
-            #for p in psutil.process_iter(attrs=['name', 'cpu_num']):
-                #procs[p.info['cpu_num']].append(p.info['name'][:5])
-
-            #end_marker = [[] for x in range(total)]
-            #while True:
-                #for num in range(total):
-                    #try:
-                        #pname = procs[num].pop()
-                    #except IndexError:
-                        #pname = ""
-                    #result = result + "%-10s\n" % pname[:10]
-                #result = result + "\n"
-                #if procs.values() == end_marker:
-                    #break
-
-            #time.sleep(1)
     return result
 
 AD = "-"
@@ -440,15 +397,15 @@ def netstat():
     """
     result = ""
     templ = "%-5s %-30s %-30s %-13s %-6s %s\n"
-    result = result + templ % ("Proto",
-                               "Local address",
-                               "Remote address",
-                               "Status",
-                               "PID",
-                               "Program name")
-    proc_names = {}
-    for p in psutil.process_iter():
-        proc_names[p.pid] = p.name()
+    result += templ % (
+        "Proto",
+        "Local address",
+        "Remote address",
+        "Status",
+        "PID",
+        "Program name",
+    )
+    proc_names = {p.pid: p.name() for p in psutil.process_iter()}
     for c in psutil.net_connections(kind='inet'):
         laddr = "%s:%s" % (c.laddr)
         raddr = ""
@@ -465,18 +422,13 @@ def netstat():
     return result
 
 def __dictdata(datatuple):
-    result = {}
     # key du tuple
     keyattribut = datatuple.__dict__.keys()
-    for keyc in keyattribut:
-        #attribut du tuple vers key du dict
-        result[keyc]= getattr(datatuple,keyc)
-    return result
+    return {keyc: getattr(datatuple,keyc) for keyc in keyattribut}
 
-def cputimes (percpu=False):
-    result = {}
+def cputimes(percpu=False):
     infocpu =  psutil.cpu_times(percpu=False)
-    result['allcpu'] = __dictdata(infocpu)
+    result = {'allcpu': __dictdata(infocpu)}
     if percpu is False:
         # global time (all cpu)
         result['allcpu'] = __dictdata(infocpu)
@@ -484,6 +436,6 @@ def cputimes (percpu=False):
         infocpu =  psutil.cpu_times(percpu=percpu)
         nbcpu = len(infocpu)
         result['nbcpu'] = nbcpu
-        for cpu_nb in range(0, nbcpu):
-            result['cpu%s'% cpu_nb] = __dictdata(infocpu[cpu_nb])
+        for cpu_nb in range(nbcpu):
+            result[f'cpu{cpu_nb}'] = __dictdata(infocpu[cpu_nb])
     return result

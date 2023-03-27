@@ -124,7 +124,7 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
         file_names = os.listdir(dir_name)
         result = []
         result1 = []
-        prefix = '{}'.format(base_name)
+        prefix = f'{base_name}'
         for file_name in file_names:
             if file_name.startswith(prefix) and not file_name.endswith('.zip'):
                 f=os.path.join(dir_name, file_name )
@@ -146,7 +146,7 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
             dfn = self.get_files_by_date()
         except:
             return
-        dfn_zipped = '{}.zip'.format(dfn)
+        dfn_zipped = f'{dfn}.zip'
         if os.path.exists(dfn_zipped):
             os.remove(dfn_zipped)
         with zipfile.ZipFile(dfn_zipped, 'w') as f:
@@ -647,7 +647,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def check_subscribe(self):
         if self.presencectrlsubscribe != "available":
-            logger.warning("Subscription [%s] status = %s" % (self.sub_subscribe, self.presencectrlsubscribe))
+            logger.warning(
+                f"Subscription [{self.sub_subscribe}] status = {self.presencectrlsubscribe}"
+            )
 
     def stabilized_start(self):
         """
@@ -659,11 +661,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                   "INFOSTMP")
         BOOL_FILE_CONTROL_WATCH_DOG = os.path.join(directory_file,
                                                    "BOOL_FILE_CONTROL_WATCH_DOG")
-        pidprocess="process %s :(%s)" % (os.getpid(), str(datetime.now()))
-        logger.debug("creation %s [pid %s]" % (BOOL_FILE_CONTROL_WATCH_DOG,pidprocess ))
+        pidprocess = f"process {os.getpid()} :({str(datetime.now())})"
+        logger.debug(f"creation {BOOL_FILE_CONTROL_WATCH_DOG} [pid {pidprocess}]")
         file_put_contents(BOOL_FILE_CONTROL_WATCH_DOG,pidprocess)
 
-        logger.debug("creation BOOL_FILE_CONTROL_WATCH_DOG in %s" % BOOL_FILE_CONTROL_WATCH_DOG)
+        logger.debug(
+            f"creation BOOL_FILE_CONTROL_WATCH_DOG in {BOOL_FILE_CONTROL_WATCH_DOG}"
+        )
 
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
@@ -727,10 +731,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # creation repertoire si probleme
         dir_reprise_session = self.__dirsessionreprise()
         timecurrent=int(time.time())
-        timecurentdatetime= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(timecurrent)))
+        timecurentdatetime = time.strftime(
+            '%Y-%m-%d %H:%M:%S', time.localtime(timecurrent)
+        )
         # lit repertoire de fichier
         filelist = [ x for x in os.listdir(dir_reprise_session) \
-                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_protected')]
+                         if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_protected')]
         for t in filelist:
             try:
                 filenamejson = os.path.join(dir_reprise_session, t)
@@ -745,7 +751,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         # on est toujours dans le temps de deployements on relance la tache protegee apres 1 shutdown
                         try:
                             data['data']['repriseok']="<span class='log_warn'>Resumption deploy session id %s on"\
-                                            " step %s restart machine (timeloacal %s)in slot deploy from server[ %s -> %s ]</span>"%(detection[4] ,
+                                                " step %s restart machine (timeloacal %s)in slot deploy from server[ %s -> %s ]</span>"%(detection[4] ,
                                                                                                         detection[3],
                                                                                                         timecurentdatetime,
                                                                                                         slotdep,
@@ -756,7 +762,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     else:
                         try:
                             data['data']['repriseerror']="<span class='log_err'>ABORT DEPLOYMENT SHUTDOWND session id %s"\
-                                                            " step %s out slot deploy [ %s -> %s ]  (timeloacal machine %s)</span>"%(detection[4],
+                                                                " step %s out slot deploy [ %s -> %s ]  (timeloacal machine %s)</span>"%(detection[4],
                                                             detection[3],
                                                                                                     slotdep,
                                                                                                     slotend,
@@ -801,10 +807,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     ###############################################################
     # syncthing function
     def is_exist_folder_id(self, idfolder, config):
-        for folder in config['folders']:
-            if folder['id'] == idfolder:
-                return True
-        return False
+        return any(folder['id'] == idfolder for folder in config['folders'])
 
     def add_folder_dict_if_not_exist_id(self, dictaddfolder, config):
         if not self.is_exist_folder_id(dictaddfolder['id'], config):
@@ -832,10 +835,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         return result
 
     def is_exist_device_in_config(self, keydevicesyncthing, config):
-        for device in config['devices']:
-            if device['deviceID'] == keydevicesyncthing:
-                return True
-        return False
+        return any(
+            device['deviceID'] == keydevicesyncthing
+            for device in config['devices']
+        )
 
     def add_device_syncthing( self,
                             keydevicesyncthing,
@@ -848,7 +851,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         for device in config['devices']:
             if device['deviceID'] == keydevicesyncthing:
                 result = False
-        logger.debug("add device syncthing %s"%keydevicesyncthing)
+        logger.debug(f"add device syncthing {keydevicesyncthing}")
         dsyncthing_tmp = self.syncthing.create_template_struct_device(namerelay,
                                                             str(keydevicesyncthing),
                                                             introducer = introducer,
@@ -873,10 +876,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def pendingdevice_accept(self, config):
         modif=False
         if 'pendingDevices' in config and \
-            len(config['pendingDevices']) != 0:
+                len(config['pendingDevices']) != 0:
             #print "device trouve"
             for pendingdevice in config['pendingDevices']:
-                logger.info("pendingdevice %s"%pendingdevice)
+                logger.info(f"pendingdevice {pendingdevice}")
                 # exist device?
                 if not self.is_exist_device_in_config(pendingdevice['deviceID'], config):
                     # add device
@@ -889,8 +892,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 autoAcceptFolders=False,
                                                 address = ["dynamic"])
                     modif = True
-                else:
-                    pass
         #self.clean_pending(config)
         return modif
 
@@ -919,22 +920,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if 'remoteIgnoredDevices' in config:
             config['remoteIgnoredDevices'] = []
 
-        #pas de pathfolder definie. warning.
-        defaultFolderPath =  config['options']['defaultFolderPath']
-
-
         if 'defaultFolderPath' in config['options']:
-            for de in  config['devices']:
+            #pas de pathfolder definie. warning.
+            defaultFolderPath =  config['options']['defaultFolderPath']
+
+
+            for de in config['devices']:
                 if 'pendingFolders' in de and len(de['pendingFolders']) > 0:
                     #add folder
                     for devicefolder in de['pendingFolders']:
                         path_folder = os.path.join(defaultFolderPath,devicefolder['id'])
                         newfolder = self.syncthing.\
-                                create_template_struct_folder(devicefolder['label'],
+                                    create_template_struct_folder(devicefolder['label'],
                                                               path_folder,
                                                               id=devicefolder['id'])
-                        logging.debug("add shared folder %s"%path_folder)
-                        logger.info("add device in folder %s"%devicefolder['id'])
+                        logging.debug(f"add shared folder {path_folder}")
+                        logger.info(f"add device in folder {devicefolder['id']}")
                         self.add_folder_dict_if_not_exist_id(newfolder, config)
                         self.add_device_in_folder_if_not_exist( devicefolder['id'],
                                                                 de['deviceID'],
@@ -971,45 +972,41 @@ class MUCBot(sleekxmpp.ClientXMPP):
         syncthingroot = self.getsyncthingroot()
         if not os.path.exists(syncthingroot):
             os.makedirs(syncthingroot)
-        sharefolder = [x for x in os.listdir(syncthingroot)]
+        sharefolder = list(os.listdir(syncthingroot))
         listflo=[]
         for folder in sharefolder:
             folderpart = os.path.join(syncthingroot, folder)
             exist = self.syncthing.is_exist_folder_id(folder)
-            if not exist:
-                # If there is no shared folder, we remove the useless files from the share
-                # listflo.append(folderpart)
-                pass
-            if ((time.time() - os.stat(folderpart).st_mtime) / 3600) > duration:
-                if exist:
-                    # Shares older from 3 hours must be deleted
-                    # self.syncthing.del_folder(folder)
-                    self.syncthing.delete_folder_pulse_deploy(folder, reload = False)
-                    listflo.append(folderpart)
+            if (
+                (time.time() - os.stat(folderpart).st_mtime) / 3600
+            ) > duration and exist:
+                # Shares older from 3 hours must be deleted
+                # self.syncthing.del_folder(folder)
+                self.syncthing.delete_folder_pulse_deploy(folder, reload = False)
+                listflo.append(folderpart)
         self.syncthing.validate_chang_config()
         for deletedfolder in listflo:
             if os.path.isdir(deletedfolder):
                 try:
-                    logger.debug("Removing the shared folder %s" % deletedfolder)
+                    logger.debug(f"Removing the shared folder {deletedfolder}")
                     shutil.rmtree(deletedfolder)
                 except OSError:
-                    logger.error("Error while removing the shared folder %s" % (deletedfolder))
+                    logger.error(f"Error while removing the shared folder {deletedfolder}")
                     logger.error("\n%s" % (traceback.format_exc()))
 
     def getsyncthingroot(self):
         syncthingroot = ""
         if self.config.agenttype in ['relayserver']:
             return self.config.syncthing_share
-        else:
-            if sys.platform.startswith('win'):
-                syncthingroot = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
-            elif sys.platform.startswith('linux'):
-                syncthingroot = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
-            elif sys.platform.startswith('darwin'):
-                syncthingroot = os.path.join("/opt",
-                                            "Pulse",
-                                            "var",
-                                            "syncthing")
+        if sys.platform.startswith('win'):
+            syncthingroot = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
+        elif sys.platform.startswith('linux'):
+            syncthingroot = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
+        elif sys.platform.startswith('darwin'):
+            syncthingroot = os.path.join("/opt",
+                                        "Pulse",
+                                        "var",
+                                        "syncthing")
         return syncthingroot
 
     def scan_syncthing_deploy(self):
@@ -1018,7 +1015,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.clean_old_partage_syncting()
         self.clean_old_descriptor_syncting(self.dirsyncthing)
         listfilearssyncthing =  [os.path.join(self.dirsyncthing, x) \
-            for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
+                for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
 
         # get the root for the sync folders
         syncthingroot = self.getsyncthingroot()
@@ -1034,9 +1031,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                            syncthingtojson['objpartage']['repertoiredeploy'])
                 #verify le contenue de namesearch
                 if os.path.isdir(namesearch):
-                    logging.debug("deploy transfert syncthing : %s"%namesearch)
+                    logging.debug(f"deploy transfert syncthing : {namesearch}")
                     # Get the deploy json
-                    filedeploy = os.path.join("%s.descriptor"%filears[:-4])
+                    filedeploy = os.path.join(f"{filears[:-4]}.descriptor")
                     deploytojson = managepackage.loadjsonfile(filedeploy)
                     # Now we have :
                     #   - the .ars file root in filears
@@ -1052,12 +1049,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             #clean the dest package to be sure
                             try:
                                 shutil.rmtree(os.path.join(packagedir,dirname))
-                                logging.debug("clean package before copy %s" % (os.path.join(packagedir, dirname)))
+                                logging.debug(f"clean package before copy {os.path.join(packagedir, dirname)}")
                             except OSError:
                                 pass
                             try:
                                 self.xmpplog("Transfer complete on machine %s\n " \
-                                    "Start Deployement"%self.boundjid.bare,
+                                        "Start Deployement"%self.boundjid.bare,
                                             type='deploy',
                                             sessionname= syncthingtojson["sessionid"],
                                             priority=-1,
@@ -1071,17 +1068,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             touser="")
                                 shutil.copytree(os.path.join(namesearch, dirname), os.path.join(packagedir, dirname))
 
-                                logging.debug("copy %s to %s" % (os.path.join(namesearch, dirname), os.path.join(packagedir, dirname)))
+                                logging.debug(
+                                    f"copy {os.path.join(namesearch, dirname)} to {os.path.join(packagedir, dirname)}"
+                                )
                                 try:
-                                    logging.debug("Delete %s" % filears)
+                                    logging.debug(f"Delete {filears}")
                                     os.remove(filears)
                                 except Exception:
-                                    logging.warning("%s no exist" % filears)
+                                    logging.warning(f"{filears} no exist")
                                 try:
-                                    logging.debug("delete %s" % filedeploy)
+                                    logging.debug(f"delete {filedeploy}")
                                     os.remove(filedeploy)
                                 except Exception:
-                                    logging.warning("%s does no exist" % filedeploy)
+                                    logging.warning(f"{filedeploy} does no exist")
 
                                 dataerreur={
                                     "action": "resultapplicationdeploymentjson",
@@ -1117,41 +1116,44 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                            'ret': 0,
                                            'base64': False}
                                 strr = json.dumps(datasend)
-                                logging.warning("SEND MASTER %s : " % strr)
+                                logging.warning(f"SEND MASTER {strr} : ")
                                 logging.error("send to master")
-                                logging.error("%s " % strr)
+                                logging.error(f"{strr} ")
 
                                 self.send_message(mto=self.agentmaster,
                                                   mbody=strr,
                                                   mtype='chat')
                             except Exception:
-                                logging.error("The package's copy %s to %s failed" % (dirname, packagedir))
+                                logging.error(f"The package's copy {dirname} to {packagedir} failed")
                                 logger.error("\n%s" % (traceback.format_exc()))
                 else:
                     # we look if we have informations about the transfert
                     # print self.syncthing.get_db_status(syncthingtojson['id_deploy'])
-                    logging.debug("Recherche la completion de transfert %s" % namesearch)
+                    logging.debug(f"Recherche la completion de transfert {namesearch}")
                     result = self.syncthing.get_db_completion(syncthingtojson['objpartage']['repertoiredeploy'],
                                                               self.syncthing.device_id)
-                    if 'syncthing_deploy_group' in syncthingtojson['objpartage'] and len(self.syncthing.device_id) > 40:
-                        if 'completion' in result and result['completion'] != 0:
-                            datasend = {'action': "deploysyncthing",
-                                        'sessionid': syncthingtojson['sessionid'],
-                                        'data': {"subaction": "completion",
-                                                 "iddeploybase": syncthingtojson['objpartage']["syncthing_deploy_group"],
-                                                 "completion": result['completion'],
-                                                 "jidfull": self.boundjid.full},
-                                        'ret': 0,
-                                        'base64': False}
-                            strr = json.dumps(datasend)
-                            self.send_message(mto=syncthingtojson['objpartage']["agentdeploy"],
-                                              mbody=strr,
-                                              mtype='chat')
+                    if (
+                        'syncthing_deploy_group' in syncthingtojson['objpartage']
+                        and len(self.syncthing.device_id) > 40
+                        and 'completion' in result
+                        and result['completion'] != 0
+                    ):
+                        datasend = {'action': "deploysyncthing",
+                                    'sessionid': syncthingtojson['sessionid'],
+                                    'data': {"subaction": "completion",
+                                             "iddeploybase": syncthingtojson['objpartage']["syncthing_deploy_group"],
+                                             "completion": result['completion'],
+                                             "jidfull": self.boundjid.full},
+                                    'ret': 0,
+                                    'base64': False}
+                        strr = json.dumps(datasend)
+                        self.send_message(mto=syncthingtojson['objpartage']["agentdeploy"],
+                                          mbody=strr,
+                                          mtype='chat')
             else:
                 # todo supprimer le fichier ars et descriptor.
                 # signaler l'erreur de decodage du fichier json.
                 logger.error("\n%s" % (traceback.format_exc()))
-                pass
 
     # end syncthing function
 
@@ -1162,7 +1164,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         fileextern = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cmdexterne")
         if os.path.isfile(fileextern):
             aa = file_get_contents(fileextern).strip()
-            logging.info("cmd externe : %s " % aa)
+            logging.info(f"cmd externe : {aa} ")
             if aa.startswith('inventory'):
                 logging.info("send inventory")
                 self.handleinventory()
@@ -1178,11 +1180,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def iqsendpulse(self, to, datain, timeout):
         # send iq synchronous message
-        if type(datain) == dict or type(datain) == list:
+        if type(datain) in [dict, list]:
             try:
                 data = json.dumps(datain)
             except Exception as e:
-                logging.error("iqsendpulse : encode json : %s" % str(e))
+                logging.error(f"iqsendpulse : encode json : {str(e)}")
                 return '{"err" : "%s"}' % str(e).replace('"', "'")
         elif type(datain) == unicode:
             data = str(datain)
@@ -1191,7 +1193,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             data = data.encode("base64")
         except Exception as e:
-            logging.error("iqsendpulse : encode base64 : %s" % str(e))
+            logging.error(f"iqsendpulse : encode base64 : {str(e)}")
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         try:
             iq = self.make_iq_get(queryxmlns='custom_xep', ito=to)
@@ -1210,20 +1212,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     # TODO : Replace print by log
                                     #print z.tag[1:-5]
                                     return base64.b64decode(z.tag[1:-5])
-                                    try:
-                                        data = base64.b64decode(z.tag[1:-5])
-                                        # TODO : Replace print by log
-                                        #print "RECEIVED data"
-                                        #print data
-                                        return data
-                                    except Exception as e:
-                                        logging.error("iqsendpulse : %s" % str(e))
-                                        logger.error("\n%s"%(traceback.format_exc()))
-                                        return '{"err" : "%s"}' % str(e).replace('"', "'")
-                                    return "{}"
             except IqError as e:
                 err_resp = e.iq
-                logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
+                logging.error(f"""iqsendpulse : Iq error {str(err_resp).replace('"', "'")}""")
                 #logger.warning("traceback info\n%s" % (traceback.format_exc()))
                 return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
@@ -1231,7 +1222,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 logging.error("iqsendpulse : Timeout Error")
                 return '{"err" : "Timeout Error"}'
         except Exception as e:
-            logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
+            logging.error(f"""iqsendpulse : error {str(e).replace('"', "'")}""")
             logger.error("\n%s" % (traceback.format_exc()))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
@@ -1405,9 +1396,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # le deploiement est treminée pour cette session.
             self.managefifo.delsessionfifo(sessionid )
             logging.warning("stop deploy session %s "\
-                "(deployment slot has passed)"%sessionid)
+                    "(deployment slot has passed)"%sessionid)
             self.xmpplog('<span class="log_err">Deployment error in fifo : '\
-                         'timed out (sessionid %s)</span>' % (sessionid),
+                             'timed out (sessionid %s)</span>' % (sessionid),
                          type='deploy',
                          sessionname=sessionid,
                          priority=-1,
@@ -1453,14 +1444,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         if self.managefifo.getcount() != 0:
             logger.debug("FIFO DEPLOY %s level charge %s"\
-                " concurent deploy max %s"%(self.managefifo.getcount(),
+                    " concurent deploy max %s"%(self.managefifo.getcount(),
                                             self.levelcharge['charge'],
                                             self.config.concurrentdeployments))
 
             if self.levelcharge['charge'] < self.config.concurrentdeployments:
                 nbresource = self.config.concurrentdeployments - self.levelcharge['charge']
-                logger.debug("Possible Slot deploy %s"%nbresource)
-                for Slot in range(nbresource):
+                logger.debug(f"Possible Slot deploy {nbresource}")
+                for _ in range(nbresource):
                     if self.managefifo.getcount() != 0:
                         data = self.managefifo.getfifo()
                         datasend = { "action": data['action'],
@@ -1476,50 +1467,46 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mtype = 'chat')
 
     def _handle_custom_iq(self, iq):
-        if iq['type'] == 'get':
-            for child in iq.xml:
-                if child.tag.endswith('query'):
-                    for z in child:
-                        data = z.tag[1:-5]
+        if iq['type'] != 'get':
+            return
+        for child in iq.xml:
+            if child.tag.endswith('query'):
+                for z in child:
+                    data = z.tag[1:-5]
+                    try:
+                        data = base64.b64decode(data)
+                    except Exception as e:
+                        logging.error(f"_handle_custom_iq : decode base64 : {str(e)}")
+                        logger.error("\n%s"%(traceback.format_exc()))
+                        return
+                    try:
+                        # traitement de la function
+                        # result json str
+                        result = dispach_iq_command(self, data)
                         try:
-                            data = base64.b64decode(data)
+                            result = result.encode("base64")
                         except Exception as e:
-                            logging.error("_handle_custom_iq : decode base64 : %s"%str(e))
+                            logging.error(f"_handle_custom_iq : encode base64 : {str(e)}")
                             logger.error("\n%s"%(traceback.format_exc()))
-                            return
-                        try:
-                            # traitement de la function
-                            # result json str
-                            result = dispach_iq_command(self, data)
-                            try:
-                                result = result.encode("base64")
-                            except Exception as e:
-                                logging.error("_handle_custom_iq : encode base64 : %s"%str(e))
-                                logger.error("\n%s"%(traceback.format_exc()))
-                                return ""
-                        except Exception as e:
-                            logging.error("_handle_custom_iq : error function : %s"%str(e))
-                            logger.error("\n%s"%(traceback.format_exc()))
-                            return
-            #retourn result iq get
-            for child in iq.xml:
-                if child.tag.endswith('query'):
-                    for z in child:
-                        z.tag = '{%s}data' % result
-            iq['to'] = iq['from']
-            iq.reply(clear=False)
-            iq.send()
-        elif iq['type'] == 'set':
-            pass
-        else:
-            pass
+                            return ""
+                    except Exception as e:
+                        logging.error(f"_handle_custom_iq : error function : {str(e)}")
+                        logger.error("\n%s"%(traceback.format_exc()))
+                        return
+        #retourn result iq get
+        for child in iq.xml:
+            if child.tag.endswith('query'):
+                for z in child:
+                    z.tag = '{%s}data' % result
+        iq['to'] = iq['from']
+        iq.reply(clear=False)
+        iq.send()
 
     ########################################################
     ################## manage levelcharge ##################
     def checklevelcharge(self, ressource = 0):
         self.levelcharge['charge'] = self.levelcharge['charge'] + ressource
-        if self.levelcharge['charge'] < 0 :
-            self.levelcharge['charge'] = 0
+        self.levelcharge['charge'] = max(self.levelcharge['charge'], 0)
         return self.levelcharge['charge']
 
     def getlevelmachinelist(self, jidmachine = ""):
@@ -1559,9 +1546,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mtype ='chat')
 
     def send_message_to_master(self , msg):
-        self.send_message(  mbody = json.dumps(msg),
-                            mto = '%s/MASTER'%self.agentmaster,
-                            mtype ='chat')
+        self.send_message(
+            mbody=json.dumps(msg), mto=f'{self.agentmaster}/MASTER', mtype='chat'
+        )
 
     def _CtrlHandler(self, evt):
         """## todo intercep message in console program
@@ -1606,8 +1593,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 return True
             else:
                 return False
-        else:
-            pass
 
     def __sizeout(self, q):
         return q.qsize()
@@ -1635,23 +1620,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             dataobj = json.loads(event)
         except Exception as e:
-            logging.error("bad struct jsopn Message console %s : %s " %(event, str(e)))
-            q.put("bad struct jsopn Message console %s : %s " %(event, str(e)))
-        listaction = [] # cette liste contient les function directement appelable depuis console.
+            logging.error(f"bad struct jsopn Message console {event} : {str(e)} ")
+            q.put(f"bad struct jsopn Message console {event} : {str(e)} ")
         #check action in message
         if 'action' in dataobj:
             if 'sessionid' not in dataobj:
                 dataobj['sessionid'] = getRandomName(6, dataobj["action"])
+            listaction = [] # cette liste contient les function directement appelable depuis console.
             if dataobj["action"] in listaction:
                 #call fubnction agent direct
                 func = getattr(self, dataobj["action"])
                 if "params_by_val" in dataobj and "params_by_name" not in dataobj:
                     func(*dataobj["params_by_val"])
-                elif "params_by_val" in dataobj and "params_by_name" in dataobj:
+                elif "params_by_val" in dataobj:
                     func(*dataobj["params_by_val"], **dataobj["params_by_name"])
-                elif "params_by_name" in dataobj and "params_by_val" not in dataobj:
+                elif "params_by_name" in dataobj:
                     func( **dataobj["params_by_name"])
-                else :
+                else:
                     func()
             else:
                 #call plugin
@@ -1673,8 +1658,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
         else:
-            logging.error("action missing in json Message console %s" %(dataobj))
-            q.put("action missing in jsopn Message console %s" %(dataobj))
+            logging.error(f"action missing in json Message console {dataobj}")
+            q.put(f"action missing in jsopn Message console {dataobj}")
             return
     ##################
 
@@ -1697,30 +1682,44 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def presence_subscribe(self, presence):
         if presence['from'].bare != self.boundjid.bare:
-            logger.info("********** presence_subscribe %s %s"%(presence['from'],presence['type'] ))
+            logger.info(
+                f"********** presence_subscribe {presence['from']} {presence['type']}"
+            )
 
     def presence_subscribed(self, presence):
         if presence['from'].bare != self.boundjid.bare:
-            logger.info("********** presence_subscribed %s %s"%(presence['from'],presence['type'] ))
+            logger.info(
+                f"********** presence_subscribed {presence['from']} {presence['type']}"
+            )
 
     def changed_subscription(self, presence):
         if presence['from'].bare != self.boundjid.bare:
-            logger.info("********** changed_subscription %s %s"%(presence['from'],presence['type'] ))
+            logger.info(
+                f"********** changed_subscription {presence['from']} {presence['type']}"
+            )
 
     def presence_unavailable(self, presence):
         if presence['from'].bare != self.boundjid.bare:
-            logger.info("********** presence_unavailable %s %s"%(presence['from'],presence['type'] ))
+            logger.info(
+                f"********** presence_unavailable {presence['from']} {presence['type']}"
+            )
 
     def presence_available(self, presence):
         if presence['from'].bare != self.boundjid.bare:
-            logger.info("********** presence_available %s %s"%(presence['from'],presence['type'] ))
+            logger.info(
+                f"********** presence_available {presence['from']} {presence['type']}"
+            )
             self.unsubscribe_agent()
 
     def presence_unsubscribe(self, presence):
-        logger.info("**********   presence_unsubscribe %s %s"%(presence['from'],presence['type'] ))
+        logger.info(
+            f"**********   presence_unsubscribe {presence['from']} {presence['type']}"
+        )
 
     def presence_unsubscribed(self, presence):
-        logger.info("**********   presence_unsubscribed %s %s"%(presence['from'],presence['type'] ))
+        logger.info(
+            f"**********   presence_unsubscribed {presence['from']} {presence['type']}"
+        )
         self.get_roster()
 
     def changed_status(self, presence):
@@ -1729,23 +1728,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
             from ejabberd when the state of an affiliated agent changes.
         """
         frommsg = jid.JID(presence['from'])
-        logger.info("**********   changed_status %s %s"%(presence['from'],presence['type'] ))
+        logger.info(
+            f"**********   changed_status {presence['from']} {presence['type']}"
+        )
         if frommsg.bare == self.boundjid.bare and presence['type'] == 'available':
             logger.debug( "Machine available for registration")
             self.update_plugin()
             logger.debug( "Machine available for registration")
             self.subscribe_initialisation()
         elif frommsg.bare == self.sub_subscribe:
-            if self.presencectrlsubscribe != presence['type'] and presence['type'] != 'available':
-                logger.warning( "Subscription [%s] ON to OFF" % self.sub_subscribe )
+            if self.presencectrlsubscribe != presence['type'] != 'available':
+                logger.warning(f"Subscription [{self.sub_subscribe}] ON to OFF")
             self.presencectrlsubscribe = presence['type']
 
     def unsubscribe_agent(self):
         try:
             for t in self.client_roster:
-                if t == self.boundjid.bare or t in [self.sub_subscribe]:
+                if t in [self.boundjid.bare, self.sub_subscribe]:
                     continue
-                logger.info("Unsubscribe agent %s" % t)
+                logger.info(f"Unsubscribe agent {t}")
                 self.send_presence ( pto = t, ptype = 'unsubscribe' )
                 self.update_roster(t, subscription='remove')
         except Exception:
@@ -1757,31 +1758,32 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def subscribe_initialisation(self):
-        logger.info("subscribe_initialisation agent %s" % self.sub_subscribe)
+        logger.info(f"subscribe_initialisation agent {self.sub_subscribe}")
         self.unsubscribe_agent()
         if self.sub_subscribe not in self.client_roster.keys():
-            logger.warning("Subscription [%s] is not yet in the roster %s" % (self.sub_subscribe,
-                                                               self.client_roster.keys()))
-        logger.info("%s roster is %s configured substitute is %s" % (self.config.agenttype,
-                                                               self.client_roster.keys(),
-                                                               self.sub_subscribe))
-        self.xmpplog("%s roster is %s configured substitute is %s" % (self.config.agenttype,
-                                                                self.client_roster.keys(),
-                                                                self.sub_subscribe),
-                    type='info',
-                    sessionname="",
-                    priority=-1,
-                    action="xmpplog",
-                    who=self.boundjid.bare,
-                    how="",
-                    why="",
-                    date=None ,
-                    fromuser=self.boundjid.bare,
-                    touser="")
+            logger.warning(
+                f"Subscription [{self.sub_subscribe}] is not yet in the roster {self.client_roster.keys()}"
+            )
+        logger.info(
+            f"{self.config.agenttype} roster is {self.client_roster.keys()} configured substitute is {self.sub_subscribe}"
+        )
+        self.xmpplog(
+            f"{self.config.agenttype} roster is {self.client_roster.keys()} configured substitute is {self.sub_subscribe}",
+            type='info',
+            sessionname="",
+            priority=-1,
+            action="xmpplog",
+            who=self.boundjid.bare,
+            how="",
+            why="",
+            date=None,
+            fromuser=self.boundjid.bare,
+            touser="",
+        )
 
     def start(self, event):
         self.send_presence()
-        logger.info("Subscribe %s" % self.sub_subscribe)
+        logger.info(f"Subscribe {self.sub_subscribe}")
         # send iq to subscribe
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         self.get_roster()
@@ -1791,7 +1793,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.config.agenttype in ['relayserver']:
             try:
                 if self.config.public_ip_relayserver != "":
-                    logging.log(DEBUGPULSE,"Attribution ip public by configuration for ipconnexion: [%s]" % self.config.public_ip_relayserver)
+                    logging.log(
+                        DEBUGPULSE,
+                        f"Attribution ip public by configuration for ipconnexion: [{self.config.public_ip_relayserver}]",
+                    )
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
@@ -1802,7 +1807,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if result:
                 # We need to unregistrer jid_struct
                 # send unregistered user to ars old domain
-                ars = "rs%s@%s"%(jid_struct['domain'].strip(), jid_struct['domain'].strip())
+                ars = f"rs{jid_struct['domain'].strip()}@{jid_struct['domain'].strip()}"
                 datasend = {'action': 'unregister_agent',
                             'sessionid': getRandomName(6, "unregister_agent"),
                             'data': jid_struct,
@@ -1813,17 +1818,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                   mtype='chat')
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0]
 
-        self.xmpplog("Starting %s agent -> subscription agent is %s" % (self.config.agenttype, self.sub_subscribe),
-                     type='info',
-                     sessionname="",
-                     priority=-1,
-                     action="xmpplog",
-                     who=self.boundjid.bare,
-                     how="",
-                     why="",
-                     date=None ,
-                     fromuser=self.boundjid.bare,
-                     touser="")
+        self.xmpplog(
+            f"Starting {self.config.agenttype} agent -> subscription agent is {self.sub_subscribe}",
+            type='info',
+            sessionname="",
+            priority=-1,
+            action="xmpplog",
+            who=self.boundjid.bare,
+            how="",
+            why="",
+            date=None,
+            fromuser=self.boundjid.bare,
+            touser="",
+        )
         #notify master conf error in AM
         dataerrornotify = {'to': self.boundjid.bare,
                            'action': "notify",
@@ -1840,13 +1847,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
             pass
 
         if not os.path.isdir(self.config.defaultdir):
-            dataerrornotify['data']['msg'] = "An error occured while configuring the browserfile. The default dir %s does not exist on %s." % (self.boundjid.bare, self.config.defaultdir)
+            dataerrornotify['data'][
+                'msg'
+            ] = f"An error occured while configuring the browserfile. The default dir {self.boundjid.bare} does not exist on {self.config.defaultdir}."
             self.send_message(  mto = self.agentmaster,
                                 mbody = json.dumps(dataerrornotify),
                                 mtype = 'chat')
 
         if not os.path.isdir(self.config.rootfilesystem):
-            dataerrornotify['data']['msg'] = "An error occured while configuring the browserfile. The rootfilesystem dir %s does not exist on %s." % (self.boundjid.bare, self.config.rootfilesystem)
+            dataerrornotify['data'][
+                'msg'
+            ] = f"An error occured while configuring the browserfile. The rootfilesystem dir {self.boundjid.bare} does not exist on {self.config.rootfilesystem}."
         if dataerrornotify['data']['msg'] != "":
             self.send_message(mto=self.agentmaster,
                               mbody=json.dumps(dataerrornotify),
@@ -1911,9 +1922,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # Syncthing initialisation
         if self.config.syncthing_on:
             logger.info("Initialisation of syncthing in progress.")
-            if self.config.agenttype not in ['relayserver']:
-                if self.config.sched_check_syncthing_deployment:
-                    self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
+            if (
+                self.config.agenttype not in ['relayserver']
+                and self.config.sched_check_syncthing_deployment
+            ):
+                self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
             if self.config.sched_check_synthing_config:
                 self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
             if logger.level <= 10:
@@ -1926,15 +1939,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.syncthing = syncthing(configfile=self.fichierconfsyncthing, port=self.config.syncthing_gui_port)
                 if logger.level <= 10:
                     self.syncthing.save_conf_to_file(self.tmpfile)
-                else:
-                    if os.path.isfile(self.tmpfile):
-                        try:
-                            os.remove(self.tmpfile)
-                        except OSError:
-                            logging.error("We failed to remove the file %s" % self.tmpfile)
-                            pass
+                elif os.path.isfile(self.tmpfile):
+                    try:
+                        os.remove(self.tmpfile)
+                    except OSError:
+                        logging.error(f"We failed to remove the file {self.tmpfile}")
             except Exception as e:
-                logging.error("The initialisation of syncthing failed with the error %s: " % str(e))
+                logging.error(
+                    f"The initialisation of syncthing failed with the error {str(e)}: "
+                )
                 logger.error("We hit the following backtrace: \n%s" % traceback.format_exc())
                 logger.error("Syncthing is not functionnal. Using the degraded mode")
 
@@ -1978,7 +1991,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def logtopulse(self, text, type = 'noset', sessionname = '', priority = 0, who =""):
         if who == "":
             who = self.boundjid.bare
-        msgbody = {}
         data = {'log': 'xmpplog',
                 'action': 'xmpplog',
                 'text': text,
@@ -1987,10 +1999,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 'session':sessionname,
                 'priority':priority,
                 'who':who}
-        msgbody['data'] = data
-        msgbody['action'] = 'xmpplog'
-        msgbody['sessionid'] = sessionname
-        msgbody['session'] = sessionname
+        msgbody = {
+            'data': data,
+            'action': 'xmpplog',
+            'sessionid': sessionname,
+            'session': sessionname,
+        }
         self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
@@ -2014,7 +2028,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             who = self.boundjid.bare
         if touser == "":
             touser = self.boundjid.bare
-        msgbody = {}
         data = {'log': 'xmpplog',
                 'text': text,
                 'type': type,
@@ -2028,9 +2041,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 'date': None ,
                 'fromuser': fromuser,
                 'touser': touser}
-        msgbody['data'] = data
-        msgbody['action'] = 'xmpplog'
-        msgbody['sessionid'] = sessionname
+        msgbody = {'data': data, 'action': 'xmpplog', 'sessionid': sessionname}
         self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
@@ -2044,18 +2055,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
             datasend = {"forced" : "forced"}
         else:
             datasend = {"forced" : "noforced" }
-        if sessionid == None:
+        if sessionid is None:
             sessionid = getRandomName(6, "inventory")
-        dataerreur = {}
-        dataerreur['action'] = "resultinventory"
-        dataerreur['data']= datasend
+        dataerreur = {'action': "resultinventory", 'data': datasend}
         dataerreur['data']['msg'] = "ERROR : inventory"
         dataerreur['sessionid'] = sessionid
         dataerreur['ret'] = 255
         dataerreur['base64'] = False
 
         self.xmpplog("Sending inventory from agent"\
-                     " %s (Interval : %s)"%( self.boundjid.bare,
+                         " %s (Interval : %s)"%( self.boundjid.bare,
                                             self.config.inventory_interval),
                                             type = 'noset',
                                             sessionname = '',
@@ -2169,11 +2178,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "base64" : False,
                     "msg":  msgdata }
         try:
-            self.send_message(  mbody = json.dumps(logstruct),
-                                mto = '%s/MASTER'%self.agentmaster,
-                                mtype ='chat')
+            self.send_message(
+                mbody=json.dumps(logstruct),
+                mto=f'{self.agentmaster}/MASTER',
+                mtype='chat',
+            )
         except Exception as e:
-            logging.error("message log to '%s/MASTER': %s " %  ( self.agentmaster,str(e)))
+            logging.error(f"message log to '{self.agentmaster}/MASTER': {str(e)} ")
             logger.error("\n%s"%(traceback.format_exc()))
             return
 
@@ -2215,11 +2226,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
         connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
         subprocess.call(connectionagentArgs)
 
-        for i in range(15):
+        for _ in range(15):
             if os.path.isfile(namefilebool):
                 break
             time.sleep(2)
-        logging.log(DEBUGPULSE,"A new configuration has been detected on %s. We will reconfigure it." % self.boundjid.user)
+        logging.log(
+            DEBUGPULSE,
+            f"A new configuration has been detected on {self.boundjid.user}. We will reconfigure it.",
+        )
         self.force_full_registration()
         self.restartBot()
 
@@ -2231,7 +2245,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def networkMonitor(self):
         try:
             logging.debug("network monitor time  "\
-                          "%ss %s!" % (self.laps_time_networkMonitor,
+                              "%ss %s!" % (self.laps_time_networkMonitor,
                                        self.boundjid.user))
             md5ctl = createfingerprintnetwork()
             force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
@@ -2249,9 +2263,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     return
                 if not os.path.isfile(force_reconfiguration):
                     refreshfingerprint()
-                    logging.log(DEBUGPULSE,"by network changed. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
+                    logging.log(
+                        DEBUGPULSE,
+                        f"by network changed. The reconfiguration of the agent [{self.boundjid.user}] will be executed.",
+                    )
                 else:
-                    logging.log(DEBUGPULSE,"by request. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
+                    logging.log(
+                        DEBUGPULSE,
+                        f"by request. The reconfiguration of the agent [{self.boundjid.user}] will be executed.",
+                    )
                     os.remove(force_reconfiguration)
                 #### execution de convigurateur.
                 #### timeout 5 minutes.
@@ -2265,7 +2285,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     logging.log(DEBUGPULSE, "The network changed. We will send a new inventory")
                     self.handleinventory()
         except Exception as e:
-            logging.error(" %s " %(str(e)))
+            logging.error(f" {str(e)} ")
             logger.error("\n%s"%(traceback.format_exc()))
 
     def reinstall_agent(self):
@@ -2281,45 +2301,61 @@ class MUCBot(sleekxmpp.ClientXMPP):
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
         except OSError as remove_error:
             logger.error("An error occured while trying to remove the %s file. \n We obtained the error %s" % (os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"), remove_error))
-            pass
-
-        replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
-        logger.debug("cmd : %s" % (replycatorcmd))
+        replycatorcmd = f'python {os.path.join(self.pathagent, "replicator.py")}'
+        logger.debug(f"cmd : {replycatorcmd}")
         result = simplecommand(replycatorcmd)
         if result['code'] == 0:
-            logger.warning("The medulla agent is already installed with version %s" % versiondata)
+            logger.warning(
+                f"The medulla agent is already installed with version {versiondata}"
+            )
         elif result['code'] == 1:
-            logger.info("Medulla agent version %s installed with success." % versiondata)
+            logger.info(f"Medulla agent version {versiondata} installed with success.")
         elif result['code'] == 120:
-            logger.error("installed default agent version %s (rollback previous version.). We will not switch to new agent."%(versiondata))
+            logger.error(
+                f"installed default agent version {versiondata} (rollback previous version.). We will not switch to new agent."
+            )
         elif result['code'] == 121:
-            logger.warning("installed success agent version %s (unable to update the version in the registry.)"%(versiondata))
+            logger.warning(
+                f"installed success agent version {versiondata} (unable to update the version in the registry.)"
+            )
         elif result['code'] == 122:
             logger.warning("Some python modules needed for running lib are missing. We will not switch to new agent)")
         elif result['code'] == 5:
             logger.warning("mode replicator non permit dans pluging, ni installation agent. We will not switch to new agent.")
         else:
-            logger.error("installed agent version %s (indefinie operation). We will not switch to new agent."%(versiondata))
-            logger.error("return code is : %s"%(result['code']))
+            logger.error(
+                f"installed agent version {versiondata} (indefinie operation). We will not switch to new agent."
+            )
+            logger.error(f"return code is : {result['code']}")
 
     def checkinstallagent(self):
-        if self.config.updating == 1:
-            if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
-                if self.descriptor_master is not None:
-                    Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
-                    Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
-                    logger.debug("Fingerprint of Remote Agenttest: %s" % Update_Remote_Agenttest.get_fingerprint_agent_base() )
-                    logger.debug("Fingerprint of Remote Image: %s" % Update_Remote_Img.get_fingerprint_agent_base() )
-                    logger.debug("Fingerprint of Master Image: %s" % self.descriptor_master['fingerprint'] )
-                    if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base() and \
+        if self.config.updating != 1:
+            return
+        if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
+            if self.descriptor_master is not None:
+                Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
+                Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
+                logger.debug(
+                    f"Fingerprint of Remote Agenttest: {Update_Remote_Agenttest.get_fingerprint_agent_base()}"
+                )
+                logger.debug(
+                    f"Fingerprint of Remote Image: {Update_Remote_Img.get_fingerprint_agent_base()}"
+                )
+                logger.debug(
+                    f"Fingerprint of Master Image: {self.descriptor_master['fingerprint']}"
+                )
+                if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base() and \
                     Update_Remote_Img.get_fingerprint_agent_base() ==  self.descriptor_master['fingerprint']:
-                        self.reinstall_agent()
-                else:
-                    logger.warning("ask update but descriptor_agent base missing.")
+                    self.reinstall_agent()
+            else:
+                logger.warning("ask update but descriptor_agent base missing.")
 
     def restartBot(self, wait=10):
         setgetrestart(1)
-        logging.log(DEBUGPULSE,"We restart the medulla agent for the machine %s" % self.boundjid.user)
+        logging.log(
+            DEBUGPULSE,
+            f"We restart the medulla agent for the machine {self.boundjid.user}",
+        )
         self.disconnect(wait=wait)
 
     def quit_application(self, wait=2):
@@ -2335,14 +2371,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         resp['register']['password'] = self.password
         try:
             resp.send(now=True)
-            logging.info("Account created for %s!" % self.boundjid)
+            logging.info(f"Account created for {self.boundjid}!")
         except IqError as e:
             if e.iq['error']['code'] == "409":
-                logging.debug("Could not register account %s : User already exists" %\
-                        resp['register']['username'])
+                logging.debug(
+                    f"Could not register account {resp['register']['username']} : User already exists"
+                )
             else:
-                logging.debug("Could not register account %s : %s" %\
-                        (resp['register']['username'], e.iq['error']['text']))
+                logging.debug(
+                    f"Could not register account {resp['register']['username']} : {e.iq['error']['text']}"
+                )
         except IqTimeout:
             logging.error("No response from server.")
             logger.error("\n%s"%(traceback.format_exc()))

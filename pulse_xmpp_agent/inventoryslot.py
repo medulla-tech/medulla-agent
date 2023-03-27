@@ -9897,24 +9897,21 @@ def file_get_contents(filename, use_include_path=0, context=None, offset=-1, max
         try:
             if (offset > 0):
                 fp.seek(offset)
-            ret = fp.read(maxlen)
-            return ret
+            return fp.read(maxlen)
         finally:
             fp.close()
 
 def file_put_contents_w_a(filename, data, option = "w"):
-    if option == "a" or  option == "w":
-        f = open( filename, option )
-        f.write(data)
-        f.close()
+    if option in ["a", "w"]:
+        with open( filename, option ) as f:
+            f.write(data)
 
 def file_put_contents(filename,  data):
     """
     write content "data" to file "filename"
     """
-    f = open(filename, 'w')
-    f.write(data)
-    f.close()
+    with open(filename, 'w') as f:
+        f.write(data)
 
 def add_coloring_to_emit_windows(fn):
         # add methods we need to the class
@@ -10096,25 +10093,24 @@ class configuration:
     def getRandomName(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
         d=pref
-        for t in range(nb):
+        for _ in range(nb):
             d=d+a[random.randint(0,25)]
         return d
 
     def getRandomNameID(self, nb, pref=""):
         a="0123456789"
         d=pref
-        for t in range(nb):
+        for _ in range(nb):
             d=d+a[random.randint(0,9)]
         return d
 
     def get_local_ip_adresses(self):
-        ip_addresses = list()
+        ip_addresses = []
         interfaces = netifaces.interfaces()
         for i in interfaces:
             if i == 'lo':
                 continue
-            iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
-            if iface:
+            if iface := netifaces.ifaddresses(i).get(netifaces.AF_INET):
                 for j in iface:
                     addr = j['addr']
                     if addr != '127.0.0.1':
@@ -10130,7 +10126,7 @@ class configuration:
 def getRandomName(nb, pref=""):
     a="abcdefghijklnmopqrstuvwxyz0123456789"
     d=pref
-    for t in range(nb):
+    for _ in range(nb):
         d=d+a[random.randint(0,35)]
     return d
 
@@ -10207,8 +10203,8 @@ class actiontest(Thread):
 class inventoryinject:
     def __init__(self, conf):
         self.conf = conf
-        if  conf.testmode:
-            logger.warning("time interval is %s"%self.conf.nbmessagebyseconde)
+        if conf.testmode:
+            logger.warning(f"time interval is {self.conf.nbmessagebyseconde}")
         self.dirinventory = os.path.join("/","usr","lib","python2.7","dist-packages",
                                          "mmc","plugins","xmppmaster",
                                          "master","RecvInventory")
@@ -10218,13 +10214,8 @@ class inventoryinject:
               "User-Agent": "Proxy:FusionInventory/Pulse2/GLPI",
               "Content-Type": "application/x-compress",
               }
-        if self.conf.Url is not None:
-            self.url = self.conf.Url
-        else:
-            self.url = "http://localhost:9999/"
-
+        self.url = "http://localhost:9999/" if self.conf.Url is None else self.conf.Url
         signal.signal(signal.SIGINT, self.signal_handler)
-        pass
 
     def signal_handler(self, signal, frame):
         self.stop = True

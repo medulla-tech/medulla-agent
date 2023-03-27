@@ -40,7 +40,7 @@ class fifodeploy:
             "fifodeploy"))
         if not os.path.exists(self.dirsavedatafifo):
             os.makedirs(self.dirsavedatafifo, mode=0o007)
-        Logger.debug("Manager fifo : %s" % self.dirsavedatafifo)
+        Logger.debug(f"Manager fifo : {self.dirsavedatafifo}")
         # load les sessions fifos
         # parcoure le repertoire fifo, et charge les fifo dans FIFOdeploy
         #self.loadfifo() #charge fifo for deployement decommente cette line
@@ -74,21 +74,21 @@ class fifodeploy:
 
     def checking_deploy_slot_outdoor(self):
         try:
-            sessionterminate = []
             removefilefifo = []
             Logger.debug("Verify slot for fifo")
+            sessionterminate = []
             for fifodata in self.FIFOdeploy:
                 data = self.readfifo(fifodata)
                 if data['enddate'] < time.time():
-                    Logger.debug("fifo file of deployment slot has passed.%s" % (fifodata))
+                    Logger.debug(f"fifo file of deployment slot has passed.{fifodata}")
                     sessionterminate.append(data['sessionid'])
                     removefilefifo.append(fifodata)
                 else:
-                    Logger.debug("fifo waitting for deploy.%s" % (fifodata))
-                    pass
-                if len(sessionterminate) > 0:
-                    Logger.debug("return abandons the deployment of the session "\
-                        "the deployment slot has passed.%s" % (sessionterminate))
+                    Logger.debug(f"fifo waitting for deploy.{fifodata}")
+                if sessionterminate:
+                    Logger.debug(
+                        f"return abandons the deployment of the session the deployment slot has passed.{sessionterminate}"
+                    )
         except Exception as e:
             Logger.error("\n%s"%(traceback.format_exc()))
         return sessionterminate
@@ -104,23 +104,23 @@ class fifodeploy:
             pathnamefile = os.path.join(self.dirsavedatafifo, fifodata)
             if os.path.isfile(pathnamefile):
                 os.remove(pathnamefile)
-                Logger.debug("file %s in Manager fifo is cleanned" % (pathnamefile))
+                Logger.debug(f"file {pathnamefile} in Manager fifo is cleanned")
         self.FIFOdeploy = []
 
     def getcount(self):
         return len(self.FIFOdeploy)
 
     def setfifo(self, datajson, priority = None):
-        newfilefifo = str(time.time())+'.fifo'
+        newfilefifo = f'{str(time.time())}.fifo'
         pathnamefile = os.path.join(self.dirsavedatafifo, newfilefifo)
         with open(pathnamefile, 'w') as outfilejson:
             json.dump(datajson, outfilejson, indent = 4)
         if priority is not None and priority == "high":
             self.FIFOdeploy.insert(0, newfilefifo)
-            Logger.debug("set fifo high file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
+            Logger.debug(f"set fifo high file {newfilefifo}  fifo {self.FIFOdeploy}")
         else:
             self.FIFOdeploy.append(newfilefifo)
-            Logger.debug("set fifo low file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
+            Logger.debug(f"set fifo low file {newfilefifo}  fifo {self.FIFOdeploy}")
         self.SESSIONdeploy[datajson["sessionid"]] = newfilefifo
 
     def getfifo(self):
@@ -148,19 +148,19 @@ class fifodeploy:
             os.remove(pathnamefile)
             try:
                 del self.SESSIONdeploy[data['sessionid']]
-            except Exception as  e:
-                Logger.error("del session in FIFO : %s"%str(e))
+            except Exception as e:
+                Logger.error(f"del session in FIFO : {str(e)}")
             return data
-        except Exception as  e:
+        except Exception as e:
             if os.path.isfile(pathnamefile):
-                Logger.error("del fichier fifo on error json%s"%(pathnamefile))
+                Logger.error(f"del fichier fifo on error json{pathnamefile}")
                 os.remove(pathnamefile)
             Logger.error("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
             Logger.error("\n%s"%(traceback.format_exc()))
             return {}
 
     def delsessionfifo(self, sessionid ):
-        Logger.debug("del session id : %s" % sessionid)
+        Logger.debug(f"del session id : {sessionid}")
         try:
             namefile =  self.SESSIONdeploy[sessionid]
             try:
@@ -171,11 +171,10 @@ class fifodeploy:
             pathnamefile = os.path.join(self.dirsavedatafifo, namefile)
             os.remove(pathnamefile)
         except KeyError:
-            Logger.warning("the session %s no longer exists."%sessionid)
-        except Exception as  e:
-            Logger.error("del session fifo %s err : [%s]" % (sessionid, str(e)))
+            Logger.warning(f"the session {sessionid} no longer exists.")
+        except Exception as e:
+            Logger.error(f"del session fifo {sessionid} err : [{str(e)}]")
             Logger.error("\n%s"%(traceback.format_exc()))
-            pass
 
     def readfifo(self, namefifo):
         """
@@ -185,18 +184,18 @@ class fifodeploy:
             return {}
         pathnamefile = os.path.join(self.dirsavedatafifo, namefifo)
         if not os.path.isfile(pathnamefile):
-            Logger.error("file %s in Manager fifo is missing" % (pathnamefile))
+            Logger.error(f"file {pathnamefile} in Manager fifo is missing")
             return {}
         try:
             fichier_json = open( pathnamefile, 'r')
             with fichier_json as fichier:
                 data = json.load(fichier)      # load décode un fichier json
             return data
-        except Exception as  e:
+        except Exception as e:
             Logger.error("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
             #Logger.error("\n%s"%(traceback.format_exc()))
             if os.path.isfile(pathnamefile):
-                Logger.error("del fichier fifo on error json%s"%(pathnamefile))
+                Logger.error(f"del fichier fifo on error json{pathnamefile}")
                 os.remove(pathnamefile)
             return {}
 

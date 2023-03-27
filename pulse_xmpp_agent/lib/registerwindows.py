@@ -89,19 +89,13 @@ class constantregisterwindows:
         Returns:
         True if the key exist, False otherwise
         """
-        if key in self.keysregister:
-            return True
-        return False
+        return key in self.keysregister
 
     def is_exist_type(self, registrytype):
-        if type in self.typeregister:
-            return True
-        return False
+        return type in self.typeregister
 
     def descriptionkey(self, key):
-        if self.regkey_exists(key):
-            return self.keysregister[key]
-        return ""
+        return self.keysregister[key] if self.regkey_exists(key) else ""
 
     def descriptiontype(self, registertype):
         if self.is_exist_type(registertype):

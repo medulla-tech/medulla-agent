@@ -68,25 +68,23 @@ def listservice():
         print obj['result']
 
 def simplecommandstr(cmd):
-    obj = {}
     p = subprocess.Popen(cmd,
                          shell=True,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    obj['code'] = p.wait()
+    obj = {'code': p.wait()}
     obj['result'] = [x.strip() for x in result if x.strip() != ""]
     obj['result']="\n".join(obj['result'])
     return obj
 
 def simplecommand(cmd):
-    obj = {}
     p = subprocess.Popen(cmd,
                          shell=True,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    obj['code'] = p.wait()
+    obj = {'code': p.wait()}
     obj['result'] = result
     return obj
 
@@ -101,10 +99,7 @@ def loads_alert():
 
 
 def windowspath(namescript):
-    if sys.platform.startswith('win'):
-        return '"' + namescript + '"'
-    else:
-        return namescript
+    return f'"{namescript}"' if sys.platform.startswith('win') else namescript
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)

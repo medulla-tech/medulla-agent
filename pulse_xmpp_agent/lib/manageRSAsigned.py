@@ -55,13 +55,11 @@ class MsgsignedRSA:
         """
         self.type = type
         self.filekeypublic = os.path.join(
-            self.Setdirectorytempinfo(),
-            "%s-public-RSA.key" %
-            self.type)
+            self.Setdirectorytempinfo(), f"{self.type}-public-RSA.key"
+        )
         self.fileallkey = os.path.join(
-            self.Setdirectorytempinfo(),
-            "%s-all-RSA.key" %
-            self.type)
+            self.Setdirectorytempinfo(), f"{self.type}-all-RSA.key"
+        )
         self.dirtempinfo = self.Setdirectorytempinfo()
         self.allkey = None
         self.publickey = None
@@ -75,12 +73,10 @@ class MsgsignedRSA:
         if self.allkey is None or self.publickey is None:
             if os.path.exists(self.filekeypublic) and os.path.exists(
                     self.fileallkey):
-                f = open(self.fileallkey, 'r')
-                self.allkey = pickle.load(f)
-                f.close()
-                f = open(self.filekeypublic, 'r')
-                self.publickey = pickle.load(f)
-                f.close()
+                with open(self.fileallkey, 'r') as f:
+                    self.allkey = pickle.load(f)
+                with open(self.filekeypublic, 'r') as f:
+                    self.publickey = pickle.load(f)
             else:
                 # recherche keyfile si not exist then generate.
                 self.generateRSAclefagent()
@@ -90,18 +86,16 @@ class MsgsignedRSA:
         Function load from file the complete keys to object RSA key
         """
         if os.path.exists(self.fileallkey):
-            f = open(self.fileallkey, 'r')
-            self.allkey = pickle.load(f)
-            f.close()
+            with open(self.fileallkey, 'r') as f:
+                self.allkey = pickle.load(f)
 
     def loadkeypublic(self):
         """
         Function load from file the public key to object RSA key
         """
         if os.path.exists(self.filekeypublic):
-            f = open(self.filekeypublic, 'r')
-            self.allkey = pickle.load(f)
-            f.close()
+            with open(self.filekeypublic, 'r') as f:
+                self.allkey = pickle.load(f)
 
     def loadkeyalltostr(self):
         """
@@ -218,13 +212,9 @@ class MsgsignedRSA:
         :return boolean exist or not exist
         """
         filepublickey = os.path.join(
-            self.Setdirectorytempinfo(),
-            "%s-public-RSA.key" %
-            name)
-        if os.path.exists(filepublickey):
-            return True
-        else:
-            return False
+            self.Setdirectorytempinfo(), f"{name}-public-RSA.key"
+        )
+        return bool(os.path.exists(filepublickey))
 
 
 def installpublickey(name, keybase64):
@@ -241,19 +231,17 @@ def installpublickey(name, keybase64):
     :return: Function return objetkey load from file ou use keybase64 parameter
     """
     filepublickey = os.path.join(
-        os.path.dirname(
-            os.path.realpath(__file__)),
+        os.path.dirname(os.path.realpath(__file__)),
         "..",
         "INFOSTMP",
-        "%s-public-RSA.key" %
-        name)
+        f"{name}-public-RSA.key",
+    )
     if os.path.exists(filepublickey):
-        f = open(filepublickey, 'r')
-        key = pickle.load(f)
-        f.close()
-        return key
+        with open(filepublickey, 'r') as f:
+            key = pickle.load(f)
     else:
         # install key public
         key = pickle.loads(base64.b64decode(keybase64))
         pickle.dump(key, open(filepublickey, 'w'))
-        return key
+
+    return key

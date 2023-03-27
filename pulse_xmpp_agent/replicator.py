@@ -65,14 +65,11 @@ def copytree2(src, dst, symlinks=False):
                 os.symlink(linkto, dstname)
             elif os.path.isdir(srcname):
                 copytree2(srcname, dstname, symlinks)
-            else:
-                if not srcname.endswith(".pyc"):
-                    shutil.copy2(srcname, dstname)
-            # XXX What about devices, sockets etc.?
+            elif not srcname.endswith(".pyc"):
+                shutil.copy2(srcname, dstname)
+                    # XXX What about devices, sockets etc.?
         except (IOError, os.error) as why:
             errors.append((srcname, dstname, str(why)))
-        # catch the Error from the recursive copytree so that we can
-        # continue with other files
         except Exception as err:
             errors.extend(err.args[0])
     try:
@@ -82,11 +79,7 @@ def copytree2(src, dst, symlinks=False):
         pass
     except OSError as why:
         errors.extend((src, dst, str(why)))
-    #if errors:
-        #raise shutil.Error(errors)
-    if errors:
-        return False
-    return True
+    return not errors
 
 def search_action_on_agent_cp_and_del(fromimg, frommachine):
     """
@@ -95,7 +88,6 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
         list files to supp in mach
     """
     replace_file_mach_by_file_img = []
-    file_missing_in_mach = []
     file_supp_in_mach = []
     # il y aura 1 ou plusieurs fichier a supprimer dans l'agent.
     # search fiichier devenu inutile
@@ -108,10 +100,11 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
                 replace_file_mach_by_file_img.append(namefichier)
         else:
             file_supp_in_mach.append(namefichier)
-    for namefichier in fromimg:
-        #search fichier missing dans mach
-        if namefichier not in frommachine:
-            file_missing_in_mach.append(namefichier)
+    file_missing_in_mach = [
+        namefichier
+        for namefichier in fromimg
+        if namefichier not in frommachine
+    ]
     #les fichiers manquant dans machine sont aussi des fichier a rajouter.
     fichier_to_copie =  list(replace_file_mach_by_file_img)
     fichier_to_copie.extend(file_missing_in_mach)
@@ -149,8 +142,7 @@ def file_get_contents(filename, use_include_path=0,
         try:
             if (offset > 0):
                 fp.seek(offset)
-            ret = fp.read(maxlen)
-            return ret
+            return fp.read(maxlen)
         finally:
             fp.close()
 
@@ -176,7 +168,9 @@ class Update_Remote_Agent:
         for path_dir_remoteagent in dir_create:
             if not os.path.exists(path_dir_remoteagent):
                 os.makedirs(path_dir_remoteagent)
-                logging.getLogger().debug("Creating folder for remote base agent : %s"%dir_agent_base)
+                logging.getLogger().debug(
+                    f"Creating folder for remote base agent : {dir_agent_base}"
+                )
         if os.path.exists(os.path.join(dir_agent_base,'agentversion')):
             self.load_list_md5_agentbase()
 
@@ -190,7 +184,6 @@ class Update_Remote_Agent:
         return self.directory["fingerprint"]
 
     def load_list_md5_agentbase(self):
-        listmd5 = []
         self.directory = {  "program_agent" : {},
                             "version" : "",
                             "version_agent" : "",
@@ -199,7 +192,7 @@ class Update_Remote_Agent:
                             "fingerprint" : ""}
         self.directory["version"] = file_get_contents( os.path.join(self.dir_agent_base,'agentversion')).replace("\n","").replace("\r","").strip()
         self.directory["version_agent"] = hashlib.md5(self.directory["version"]).hexdigest()
-        listmd5.append(self.directory["version_agent"])
+        listmd5 = [self.directory["version_agent"]]
         list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py', 'replicator.py']
 
         #for fichiername in [ x for x in os.listdir(self.dir_agent_base) if x[-3:]== ".py"]:

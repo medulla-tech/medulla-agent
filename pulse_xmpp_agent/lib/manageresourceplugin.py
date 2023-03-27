@@ -74,8 +74,7 @@ class resource_plugin:
                        typeaction="call_plugin",
                        *args,
                        **kwargs):
-        logger.debug("Creation resource name %s de type %s" % (nameresource,
-                                                               typeaction))
+        logger.debug(f"Creation resource name {nameresource} de type {typeaction}")
         self.resource[nameresource] = {"plugin_name": nameplugin_or_handler,
                                        "typeaction": typeaction,
                                        "argv": args,
@@ -85,7 +84,7 @@ class resource_plugin:
                                        "jetonlist": {}}
 
     def deleteresource(self, nameresource):
-        logger.debug("Delete resource name %s" % (nameresource))
+        logger.debug(f"Delete resource name {nameresource}")
         del self.resource[nameresource]
 
     def take_resource(self, nameresource, timeout=100):
@@ -93,32 +92,35 @@ class resource_plugin:
         if nameresource in self.resource:
             jeton = getRandomName(10, "resourcejeton")
             t = time.time() + timeout
-            logger.debug("take resource %s jeton %s timemax %s ressource" % (
-                nameresource, jeton, timeout))
+            logger.debug(
+                f"take resource {nameresource} jeton {jeton} timemax {timeout} ressource"
+            )
             if self.resource[nameresource]["countresource"] == -1:
                 self.resource[nameresource]["countresource"] = 1
             else:
                 self.resource[nameresource]["countresource"] += 1
 
             self.resource[nameresource]["jetonlist"][jeton] = t
-            logger.debug("resource activate %s" % (
-                self.resource[nameresource]["countresource"]))
+            logger.debug(
+                f'resource activate {self.resource[nameresource]["countresource"]}'
+            )
             return jeton
         else:
             # error pas de resource existe.
-            logger.error("imposible take resouce name %s" % (nameresource))
+            logger.error(f"imposible take resouce name {nameresource}")
         return -1
 
     def free_resource(self, nameresource, jeton):
         """
         give back resource
         """
-        if nameresource in self.resource:
-            if jeton in self.resource[nameresource]["jetonlist"]:
-                logger.debug("give back resource %s jeton %s" % (
-                    nameresource, jeton))
-                del self.resource[nameresource]["jetonlist"][jeton]
-                self.resource[nameresource]["countresource"] -= 1
+        if (
+            nameresource in self.resource
+            and jeton in self.resource[nameresource]["jetonlist"]
+        ):
+            logger.debug(f"give back resource {nameresource} jeton {jeton}")
+            del self.resource[nameresource]["jetonlist"][jeton]
+            self.resource[nameresource]["countresource"] -= 1
 
     def action_resource(self):
         self.check_resource()
