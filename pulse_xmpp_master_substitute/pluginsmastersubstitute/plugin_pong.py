@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+<<<<<<< HEAD
 #
 # (c) 2021 siveo, http://www.siveo.net
 #
@@ -19,6 +20,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+=======
+# SPDX-FileCopyrightText: 2021-2023 Siveo <support@siveo.net> 
+# SPDX-License-Identifier: GPL-2.0-or-later 
+>>>>>>> integration
 
 """
     Plugin used to check if the presence machine call asynchome.

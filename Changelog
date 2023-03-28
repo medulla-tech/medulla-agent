@@ -1,6 +1,9 @@
 pulse-xmpp-agent 2.1.8
 ======================
 * [FEATURE] Add the possibility to use CDN for the deploiements
+* [FEATURE] Add Rescue Agent feature
+* [FEATURE] New OS Updates feature
+* [FEATURE] New Kiosk feature
 * [BUGFIX]  Fix the calculation of the substitute load and remove the machines
 not connected.
 * [BUGFIX]  Fix diplaying the name of the Windows in the Computer page.
@@ -15,6 +18,8 @@ pulse-xmpp-agent 2.1.7
 * [BUGFIX]  Fix backtrace in the substitute registration when there is more
 than on location.
 * [BUGFIX]  Fix handling some accounts creation
+* [BUGFIX]  Fix a backtrace when the Network changes and we ask for infos at
+the same moment
 
 pulse-xmpp-agent 2.1.6
 ======================

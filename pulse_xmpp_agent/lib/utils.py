@@ -1,26 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-
-# file : pulse_xmpp_agent/lib/utils.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import netifaces
 import json
@@ -47,6 +28,9 @@ import time
 from datetime import datetime
 import imp
 import requests
+
+from requests.exceptions import Timeout
+
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
@@ -208,11 +192,12 @@ def networkinfoexist():
         return True
     return False
 
+
 def save_count_start():
     filecount = os.path.join(Setdirectorytempinfo(), 'countstart')
     if not os.path.exists(filecount):
         file_put_contents(filecount, "1")
-        return  1
+        return 1
     countstart = file_get_contents(filecount)
     try:
         if countstart != "":
@@ -240,9 +225,10 @@ def unregister_agent(user, domain, resource):
         savejsonfile(filejid, jidinfo)
         return False, jidinfo
     oldjid = loadjsonfile(filejid)
+    
     if oldjid['user'] != user or oldjid['domain'] != domain:
         savejsonfile(filejid, jidinfo)
-        return True, jidinfo
+        return True, {"user":  oldjid['user'], "domain" : oldjid['domain'], "resource": oldjid['resource']}
     if oldjid['resource'] != resource:
         savejsonfile(filejid, jidinfo)
     return False, jidinfo
@@ -287,6 +273,14 @@ def listback_to_deploy(objectxmpp):
 
 
 def testagentconf(typeconf):
+    """
+    Test the configuration file to see if it is completly configured and working.
+    Args:
+        typeconf: Type of the agent (machine, relayserver)
+
+    Returns:
+        It returns True if this is a relayserver or a valid config file.
+    """
     if typeconf == "relayserver":
         return True
     Config = ConfigParser.ConfigParser()
@@ -303,11 +297,38 @@ def testagentconf(typeconf):
         return True
     return False
 
+def isTemplateConfFile(typeconf):
+    """
+    Test the configuration file to see if this is a valid template file.
+    Args:
+        typeconf: Type of the agent (machine, relayserver)
+
+    Returns:
+        It returns True if this is a relayserver or a valid template file.
+    """
+    if typeconf == "relayserver":
+        return True
+    Config = ConfigParser.ConfigParser()
+    namefileconfig = conffilename(typeconf)
+    Config.read(namefileconfig)
+    if Config.has_option("configuration_server", "confserver")\
+            and Config.has_option('configuration_server', 'confport')\
+            and Config.has_option('configuration_server', 'confpassword')\
+            and Config.has_option('configuration_server', 'confdomain')\
+            and Config.get('configuration_server', 'keyAES32') != "":
+        return True
+    return False
+
 
 def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
         obj = simplecommandstr("ipconfig")
+        if obj['code'] != 0 or obj['result'] == "":
+            logger.error("A error occured while determining the network. ipconfig failed.")
+            createfingerprintnetwork()
+        else:
+            logger.info("The network changes have been correctly catched.")
         md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('linux'):
         obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6")
@@ -782,11 +803,13 @@ def simplecommandstr(cmd):
     obj['result'] = "\n".join(result)
     return obj
 
+
 def windowspath(namescript):
     if sys.platform.startswith('win'):
         return '"' + namescript + '"'
     else:
         return namescript
+
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
@@ -1136,8 +1159,6 @@ def pulgindeploy1(func):
         return response
     return wrapper
 
-# determine address ip utiliser pour xmpp
-
 def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     """
         This function is used to retrieve the local IP from the client which is talking
@@ -1155,8 +1176,8 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     """
     resultip = ''
     xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
+    logger.debug("Searching with which IP the agent is connected to the Ejabberd server") 
     if sys.platform.startswith('linux'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, xmpp_server_ipaddress))
@@ -1171,7 +1192,6 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
             if len(b) != 0:
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         obj = simplecommand(
             'netstat -an | findstr %s | findstr "ESTABLISHED SYN_SENT SYN_RECV"' %
             Port)
@@ -1183,7 +1203,6 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
             (Port, xmpp_server_ipaddress))
@@ -1203,11 +1222,10 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
             b = [x for x in a.split(' ') if x != ""]
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
+    logger.debug("The agent is connected to the Ejabberd server with the IP: %s" % resultip)
     return resultip
 
 # 3 functions used for subnet network
-
-
 def ipV4toDecimal(ipv4):
     d = ipv4.split('.')
     return (int(d[0]) * 256 * 256 * 256) + (int(d[1])
@@ -1226,6 +1244,41 @@ def subnetnetwork(adressmachine, mask):
     adressmachine = adressmachine.split(":")[0]
     reseaumachine = ipV4toDecimal(adressmachine) & ipV4toDecimal(mask)
     return decimaltoIpV4(reseaumachine)
+
+
+def searchippublic(site=1):
+    if site == 1:
+        try:
+            page = urllib.urlopen("http://ifconfig.co/json").read()
+            objip = json.loads(page)
+            if is_valid_ipv4(objip['ip']):
+                return objip['ip']
+            else:
+                return searchippublic(2)
+        except BaseException:
+            return searchippublic(2)
+    elif site == 2:
+        try:
+            page = urllib.urlopen("http://www.monip.org/").read()
+            ip = page.split("IP : ")[1].split("<br>")[0]
+            if is_valid_ipv4(ip):
+                return ip
+            else:
+                return searchippublic(3)
+        except Exception:
+            return searchippublic(3)
+    elif site == 3:
+        try:
+            ip = urllib.urlopen("http://ip.42.pl/raw").read()
+            if is_valid_ipv4(ip):
+                return ip
+            else:
+                return searchippublic(4)
+        except Exception:
+            searchippublic(4)
+    elif site == 4:
+        return find_ip()
+    return None
 
 
 def find_ip():
@@ -1249,6 +1302,8 @@ def find_ip():
 # decorateur pour simplifier les plugins
 # verify session exist.
 # pas de session end
+
+
 def pulginmaster(func):
     def wrapper(objetxmpp, action, sessionid, data, message, ret):
         if action.startswith("result"):
@@ -1431,6 +1486,7 @@ def ipfromdns(name_domaine_or_ip):
         try:
             return socket.gethostbyname(name_domaine_or_ip)
         except socket.gaierror:
+            logger.error("The hostname %s is invalid or temporarily unresolved" % name_domaine_or_ip)
             return ""
         except Exception:
             return ""
@@ -1456,6 +1512,7 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         socket.getaddrinfo(ip, port)
         return True
     except socket.gaierror:
+        logger.error("The hostname %s is invalid or temporarily unresolved" % name_domaine_or_ip)
         return False
     except Exception:
         return False
@@ -1487,6 +1544,7 @@ if sys.platform.startswith('win'):
             return value
         except WindowsError:  # skipcq: PYL-E0602
             return None
+
 
 def shutdown_command(time=0, msg=''):
     """
@@ -1524,6 +1582,7 @@ def shutdown_command(time=0, msg=''):
         os.system(cmd)
     return
 
+
 def vnc_set_permission(askpermission=1):
     """
     This function allows to change the setting of VNC to ask for
@@ -1547,6 +1606,7 @@ def vnc_set_permission(askpermission=1):
 
     return
 
+
 def reboot_command():
     """
         This function allow to reboot a machine.
@@ -1559,6 +1619,7 @@ def reboot_command():
         os.system("shutdown -r now")
     return
 
+
 def isBase64(s):
     try:
         if base64.b64encode(base64.b64decode(s)) == s:
@@ -1566,6 +1627,7 @@ def isBase64(s):
     except Exception:
         pass
     return False
+
 
 def decode_strconsole(x):
     """
@@ -1579,6 +1641,7 @@ def decode_strconsole(x):
         return x.decode('utf-8', 'ignore')
     else:
         return x
+
 
 def encode_strconsole(x):
     """
@@ -1598,6 +1661,7 @@ def savejsonfile(filename, data, indent=4):
     with open(filename, 'w') as outfile:
         json.dump(data, outfile)
 
+
 def loadjsonfile(filename):
     if os.path.isfile(filename):
         with open(filename, 'r') as info:
@@ -1608,10 +1672,11 @@ def loadjsonfile(filename):
             logger.error("filename %s error decodage [%s]" % (filename, str(e)))
     return None
 
+
 def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), 'loginuser')
     if name is None:
-        userlist = list(set([users[0]  for users in psutil.users()]))
+        userlist = list(set([users[0] for users in psutil.users()]))
         if len(userlist) > 0:
             name = userlist[0]
     else:
@@ -1622,7 +1687,7 @@ def save_user_current(name=None):
                   'suite': [name],
                   'curent': name}
         savejsonfile(loginuser, result)
-        return  result['curent']
+        return result['curent']
 
     datauseruser = loadjsonfile(loginuser)
     if name in datauseruser:
@@ -1685,6 +1750,7 @@ def test_kiosk_presence():
     else:
         return "False"
 
+
 def utc2local(utc):
     """
     utc2local transform a utc datetime object to local object.
@@ -1697,6 +1763,7 @@ def utc2local(utc):
     epoch = time.mktime(utc.timetuple())
     offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
     return utc + offset
+
 
 def keypub():
     keypubstring = ""
@@ -2425,6 +2492,10 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
     elif sys.platform.startswith('win'):
         try:
             win32net.NetUserGetInfo('', username, 0)
+            # User exists. Adding it to Admins group
+            adminsgrpsid = win32security.ConvertStringSidToSid('S-1-5-32-544')
+            adminsgroup = win32security.LookupAccountSid('', adminsgrpsid)[0]
+            simplecommand(encode_strconsole('net localgroup %s "%s" /ADD' % (adminsgroup, username)))
             msg = '%s user account already exists. Nothing to do.' % username
             return True, msg
         except Exception:
@@ -2600,7 +2671,7 @@ def delete_profile(username='pulseuser'):
                     if result['code'] == 0:
                         logger.debug('Deleted %s folder' % os.path.join('C:/Users/', name))
                     else:
-                        logger.debug('Error deleting %s folder' % os.path.join('C:/Users/', name))
+                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
         except Exception as e:
             pass
         # Delete profile
@@ -2610,7 +2681,7 @@ def delete_profile(username='pulseuser'):
         if delete_profile_result == 0:
             logger.debug('%s profile deleted.' % username)
         else:
-            logger.debug('Error deleting %s profile: %s' % (username, delete_profile_result))
+            logger.error('Error deleting %s profile: %s' % (username, delete_profile_result))
     return True
 
 def create_idrsa_on_client(username='pulseuser', key=''):
@@ -2636,7 +2707,7 @@ def create_idrsa_on_client(username='pulseuser', key=''):
 def apply_perms_sshkey(path, private=True):
     """
     Apply permissions on ssh key.
-    If private = True, the permissions are based on the user that is executing Pulse Agent
+    If private = True, the permissions are based on the user that is executing Medulla Agent
     If private = False, the permissions are based on pulseuser
     """
     if not os.path.isfile(path):
@@ -2740,7 +2811,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
             return False, logs
         return True, msg
     # Function didn't return earlier, meaning the key is not present
-    msg = 'Error add key to authorizedkeys: id_rsa missing' 
+    msg = 'An error occured while adding the public key to the authorized_keys file. The id_rsa.pub key is missing'
     return False, msg
 
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
@@ -3103,3 +3174,388 @@ def serialnumbermachine():
     except Exception:
         logger.error("An error occured while using the serialnumbermachine function \n we got the error below \n%s" % (traceback.format_exc()))
     return serial_uuid_machine
+
+
+def send_data_tcp(datastrdata, hostaddress="127.0.0.1", port=8766):
+    """Send tcp message throught a web socket
+    Params:
+        datastrdata string of datas sent
+        hostaddress string of the destination addresse
+        port int is the port on which the data are sent
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_address = (hostaddress, port)
+    data = None
+    try:
+        sock.connect(server_address)
+        sock.sendall(datastrdata.encode('ascii'))
+        data = sock.recv(2048)
+    except Exception as e:
+        logger.error("[%s]" % (str(e)))
+        data = None
+    finally:
+        sock.close()
+        return data
+
+
+class kb_catalogue:
+    """
+        class for request catalog update site
+        eg : utilisation
+            print( kb_catalogue().KB_update_exits("KB4586864"))
+    """
+    URL = "https://www.catalog.update.microsoft.com/Search.aspx"
+    filter = "We did not find any results for"
+    def __init__(self):
+        pass
+
+    def KB_update_exits(self, location):
+        """
+            return if kb existe in update catalogue
+        """
+        PARAMS = { 'q' : location }
+        status, textresult = self.__get_requests(kb_catalogue.URL, params = PARAMS)
+        if status == 200 and textresult.find(kb_catalogue.filter) == -1:
+            return True
+        else:
+            return False
+
+    def __get_requests(self, url, params, timeout=5):
+        """
+        this function send get to url
+        return status et content text request
+        status 200 correct reponse
+        status 408 incorrect reponse content text empty
+        """
+        status = 408 # error timeout
+        text_result = ""
+        try:
+            r = requests.get(url = url, params = params, timeout=timeout)
+            status = r.status_code
+            if status == 200:
+                text_result = r.text
+        except Timeout:
+            status = 408,
+        return status, text_result
+
+
+
+def powerschellscript1ps1(namescript):
+    namescript = windowspath(namescript)
+    obj={"code" : -1, "result" : ""}
+    try:
+        obj = simplecommand(
+            "powershell -ExecutionPolicy Bypass -File %s" % namescript
+        )
+    except Exception:
+        logger.error("\n%s" % (traceback.format_exc()))
+    return obj
+
+class offline_search_kb:
+    def __init__(self):
+        self.info_package={ "history_package_uuid" : [],
+                                "version_net" :{},
+                                "kb_installed" : [],
+                                "version_edge": "",
+                                "infobuild" : { },
+                                "platform_info" : {}}
+
+        try:
+            self.info_package['platform_info'] = self.platform_info()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
+        try:
+            self.info_package['malicious_software_removal_tool'] = self.search_malicious_software_removal_tool()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
+        try:
+            self.info_package['version_edge'] = self.search_version_edge()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
+        try:
+            self.info_package['history_package_uuid'] = self.search_history_update()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            self.info_package['version_net'] = self.search_net_info_reg()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            searchkb =  self.searchpackage()
+            self.info_package['kb_installed'] = searchkb
+            self.info_package['kb_list'] = self.compact_kb(searchkb )
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            self.info_package['infobuild'] = self.search_system_info_reg()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
+
+    def get_json(self):
+        return json.dumps(self.info_package, indent=4, ensure_ascii=False)
+
+    def get(self):
+        return self.info_package
+
+    def compact_kb(self, listkb ):
+        compactlist=[]
+        for t in listkb:
+            compactlist.append(t['HotFixID'][2:])
+        return "(" + ",".join(compactlist) + ")"
+
+    def searchpackage(self):
+        endresult=[]
+        if sys.platform.startswith("win"):
+            try:
+                ret=simplecommand(encode_strconsole("wmic qfe list brief /format:texttablewsys"))
+                if ret["code"] == 0:
+                    for t in ret["result"]:
+                        t=decode_strconsole(t)
+                        resultat={}
+                        resultat['description'] =t[0:16].strip()
+                        # resultat['FixComments'] =t[17:29].strip()
+                        resultat['HotFixID'] =t[30:40].strip()
+                        if not resultat['HotFixID'].startswith("KB"):
+                            continue
+                        # resultat['InstallDate'] =t[41:53].strip()
+                        resultat['InstalledBy'] =t[54:74].strip()
+                        resultat['InstalledOn'] =t[75:87].strip()
+                        # resultat['Name'] =t[88:93].strip()
+                        # resultat['ServicePackInEffect'] =t[94:114].strip()
+                        # resultat['Status'] =t[115:].strip()
+                        endresult.append(resultat)
+            except Exception as e:
+                logger.error("searchpackage : %s" %e)
+                logger.error (traceback.format_exc())
+        return endresult
+
+    def search_malicious_software_removal_tool(self):
+        # 'Windows Malicious Software Removal Tool x64 - v5.100 (KB890830)'
+        # version de mrt.exec  (voir meta data)
+        # (Get-ChildItem 'C:\Windows\System32\mrt.exe').VersionInfo | Format-List *
+        # (Get-ChildItem 'C:\Windows\System32\mrt.exe').VersionInfo.ProductVersion
+        result_cmd={}
+        if sys.platform.startswith("win"):
+            if os.path.exists('C:\\Windows\\System32\\mrt.exe'):
+                informationlist = ("FileMajorPart", "FileMinorPart", "ProductVersion","ProductName")
+                try:
+                    cmd="""powershell "(Get-ChildItem 'C:\Windows\System32\mrt.exe').VersionInfo | Format-List *" """
+                    result = simplecommand(encode_strconsole(cmd))
+                    if int(result["code"]) == 0:
+                        line = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip().startswith(informationlist)]
+                        for t in line:
+                            lcmd = [ x for x in t.split (" ") if x != ""]
+                            if len(lcmd) >= 3:
+                                keystring = ' '.join(lcmd[2:])
+                                result_cmd[lcmd[0]] = keystring
+                        if "FileMajorPart" in result_cmd and "FileMinorPart" in result_cmd:
+                            result = "Windows Malicious Software Removal Tool %s - v%s.%s"%(self.info_package['platform_info']["machine"],
+                                                                                            result_cmd["FileMajorPart"],
+                                                                                            result_cmd["FileMinorPart"] )
+                            result_cmd["ProductName"]=result
+                    else:
+                        logging.getLogger().error("search search_malicious_software_removal_tool %s" % result['result'])
+                except:
+                    logging.getLogger().error(("%s" % (traceback.format_exc())))
+        return result_cmd
+
+    def search_version_edge(self):
+        Versionedge=""
+        if sys.platform.startswith("win"):
+            try:
+                cmd = """powershell.exe "(Get-AppxPackage Microsoft.MicrosoftEdge).Version" """
+                result = simplecommand(encode_strconsole(cmd))
+                if int(result["code"]) == 0:
+                    vers=[ x.strip() for x in result['result'] if x.strip() != ""]
+                    if vers:
+                        Versionedge=vers[0]
+            except:
+                logging.getLogger().error(("%s" % (traceback.format_exc())))
+        return Versionedge
+
+    def search_history_update(self):
+        ret = []
+        if sys.platform.startswith("win"):
+            script = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    "..",
+                    "script",
+                    "history_update.ps1"
+                )
+            )
+            result = powerschellscript1ps1(script)
+            try:
+                if result["code"] == 0:
+                    line =[
+                        decode_strconsole(x.strip())
+                        for x in result["result"] if x.strip()]
+                    if line:
+                        line.pop(0)
+                        line.pop(0)
+                        retdict ={}
+                        for t in set(line):
+                            t=t.split()
+                            retdict[t[1]]=t[0]
+                            ret.append(t[1])
+                        strt=("%s"%retdict.keys()).replace('[','').replace(']','').replace('dict_keys','')
+            except IndexError as e:
+                logger.error("An error occured while trying to get the history update. \n We obtained this error:%s" % e)
+                logger.error("We hit this backtrace: \n %s" % traceback.format_exc())
+        return ret
+
+    def search_net_info_reg(self):
+        result_cmd = { }
+        if sys.platform.startswith("win"):
+            informationlist = ("CBS", "Install", "InstallPath", "Release," "Servicing", "TargetVersion", "Version")
+            cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full" """
+            result = simplecommand(encode_strconsole(cmd))
+            if int(result["code"]) == 0:
+                # analyse result
+                line = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip().startswith(informationlist)]
+                for t in line:
+                    lcmd = [ x for x in t.split (" ") if x != ""]
+                    if len(lcmd) >= 3:
+                        keystring = ' '.join(lcmd[2:])
+                        result_cmd[lcmd[0]] = keystring
+            else:
+                logging.getLogger().error("search REG QUERY \"HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\"")
+        return result_cmd
+
+    def search_system_info_reg(self):
+        result_cmd = { }
+        if sys.platform.startswith("win"):
+            informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
+            cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" | findstr REG_SZ"""
+            result = simplecommand(encode_strconsole(cmd))
+            if int(result["code"]) == 0:
+                # analyse result
+                line = [ x.decode('ascii', 'ignore').encode('utf-8').strip() for x in result['result'] if x.strip().startswith(informationlist)]
+                for t in line:
+                    lcmd = [ x for x in t.split (" ") if x != ""]
+                    if len(lcmd) >= 3:
+                        result_cmd[lcmd[0]] = lcmd[2]
+            else:
+                logging.getLogger().error("search REG QUERY \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\"")
+            # search code langue
+            try:
+                result_cmd["Locale"] = {"LCID" : None , "Name" : "", "DisplayName" : "", "ThreeLetterWindowsLanguageName" : "" }
+                cmd = """powershell -ExecutionPolicy Bypass Get-WinSystemLocale"""
+                result = simplecommand(encode_strconsole(cmd))
+                if int(result["code"]) == 0:
+                    langs=[  x.decode('ascii', 'ignore').encode('utf-8').strip() for x in result['result'] if x.strip() != ""][-1:]
+                    langs=[  x.decode('ascii', 'ignore').encode('utf-8').strip() for x in langs[0].split('  ') if x != ""]
+                    if len(langs) >= 3:
+                        result_cmd["Locale"]["LCID"] = langs[0]
+                        result_cmd["Locale"]["Name"] = langs[1]
+                        result_cmd["Locale"]["DisplayName"] = langs[2]
+                else:
+                    logging.getLogger().error("search WinSystemLocale : %s" % result['result'])
+            except:
+                logging.getLogger().error(("%s" % (traceback.format_exc())))
+            try:
+                cmd="""powershell -ExecutionPolicy Bypass "Get-WinSystemLocale| select ThreeLetterWindowsLanguageName" """
+                result = simplecommand(encode_strconsole(cmd))
+                if int(result["code"]) == 0:
+
+                    T_L_W_LanguageName = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
+                    result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName
+                else:
+                    logging.getLogger().error("search ThreeLetterWindowsLanguageName %s" % result['result'])
+            except:
+                logging.getLogger().error(("%s" % (traceback.format_exc())))
+        return result_cmd
+
+
+    def platform_info(self):
+        res={"machine" :  platform.machine(),
+                "type" : "%s %s"%(platform.system(), platform.release() ),
+                "node" : platform.node(),
+                "platform" : platform.platform(aliased=0, terse=0),
+                "processor" : platform.processor(),
+                "version":platform.version()}
+                 # x.decode('cp850', 'ignore')
+        if sys.platform.startswith("win"):
+            informationlist ={}
+            cmd = """systeminfo.exe /FO csv /NH"""
+            result = simplecommand(cmd)
+            if int(result["code"]) == 0:
+                result['result'][0] = result['result'][0].decode('ascii', 'ignore').encode('utf-8')
+                line = [ x.strip("\" ") for x in result['result'][0].split('","')]
+                informationlist ={ "node": str(line[0]),
+                            "platform": line[1].lower(),
+                            "version":line[2],
+                            "OS Configuration":line[4],
+                            "Product ID":line[8],
+                            "Original Install Date":line[9],
+                            "System Model":line[12],
+                            "System Type":line[13],
+                            "BIOS Version":line[15],
+                            "System Locale":line[19],
+                            "Time Zone":line[21],
+                            "processor" : str(platform.processor()),
+                            "machine":line[13]
+                            }
+                if "x64" in informationlist["System Type"]:
+                    informationlist["machine"] = "x64"
+                if "windows 10" in informationlist["platform"]:
+                    informationlist["type"] = "Windows 10"
+                else:
+                    informationlist["type"] = informationlist["platform"]
+
+                return informationlist
+            else:
+                logging.getLogger().error("systeminfo error")
+        return res
+
+
+
+
+def download_file_windows_update(url, connecttimeout=30, outdirname=None):
+    """
+        Cette function download file dans base windows
+        wget system linux is used
+    """
+    if sys.platform.startswith("linux"):
+        regex = re.compile(
+            r'^(?:http|ftp)s?://' # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+            r'localhost|' #localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+            r'(?::\d+)?' # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        if not re.match(regex,url) is not None:
+            "url non conforme"
+            logging.getLogger().error("incorrect url [%s]" % (url))
+            return False
+        if  outdir is None:
+            base_file= os.path.join("/","var","lib","pulse2","base_file_update")
+        else:
+            base_file= os.path.join("/","var","lib","pulse2",outdirname)
+        if os.path.dirname(base_file) !=  os.path.join("/","var","lib","pulse2"):
+            # name repertoire non conforme
+            logging.getLogger().error("download_file_windows_update incorrect path [%s]" % (base_file))
+            return False
+        try:
+            os.makedirs(base_file)
+        except OSError:
+            if not os.path.isdir(base_file):
+                Raise
+        #os.makedirs(base_file, exist_ok=True)
+        res=simplecommand("wget --connect-timeout=20 '%s'"% sys.argv[1])
+        if res["code"] == 0:
+            # correct download
+            logging.getLogger().debug("download %s in [%s]" % (url, base_file))
+            return True
+        else:
+            # incorrect download
+            logging.getLogger().error("download_file_windows_update incorrect download %s [%s]" % (url, res['result']))
+    else:
+        logging.getLogger().error("download_file_windows_update function download_file_windows_update linux only")
+    return False
+
+

@@ -1,4 +1,4 @@
-Source: pulse-xmpp-agent
+Source: medulla-agent
 Section: python
 Architecture: all
 Priority: optional

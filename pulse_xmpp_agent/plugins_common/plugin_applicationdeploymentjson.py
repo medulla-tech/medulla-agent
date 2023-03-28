@@ -1,24 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2016-2021 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-# file  plugin_applicationdeploymentjson.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import base64
 import hashlib
@@ -45,7 +27,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.26", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.27", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -714,6 +696,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         #logger.debug("%s"%json.dumps(data, indent=4))
         namefolder = None
         msgdeploy=[]
+
 
         if hasattr(objectxmpp.config, 'cdn_enable') and bool(objectxmpp.config.cdn_enable):
             data['methodetransfert'] = 'pullcurl'
@@ -1425,7 +1408,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     # termine deploy on error
                     # We do not know folders_packages
                     logger.debug("DEPLOYMENT ABORTED: FOLDERS_PACKAGE MISSING")
-                    objectxmpp.xmpplog('<span class="log_err">Deployment error: folders_packages %s missing</span>',
+                    objectxmpp.xmpplog('<span class="log_err">Deployment error: The folders_packages is missing</span>',
                                        type='deploy',
                                        sessionname=sessionid,
                                        priority=0,
@@ -1664,34 +1647,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                                fromuser=data_in_session['login'],
                                                touser="")
                             obcmd = utils.simplecommandstr(cmdexec)
-                            if obcmd['code'] != 0:
-                                objectxmpp.xmpplog('<span class="log_err">%s transfer error : %s </span>' % (objectxmpp.config.pushmethod,
-                                                                                                             utils.decode_strconsole(obcmd['result'])),
-                                                   type='deploy',
-                                                   sessionname=sessionid,
-                                                   priority=-1,
-                                                   action="xmpplog",
-                                                   who=strjidagent,
-                                                   how="",
-                                                   why="",
-                                                   module="Deployment | Error | Download | Transfer",
-                                                   date=None,
-                                                   fromuser=data_in_session['login'],
-                                                   touser="")
-                                cmdexec = cmdexec.replace("pulseuser","pulse")
-                                objectxmpp.xmpplog("Command : " + cmdexec,
-                                                   type='deploy',
-                                                   sessionname=sessionid,
-                                                   priority=-1,
-                                                   action="xmpplog",
-                                                   who=strjidagent,
-                                                   how="",
-                                                   why="",
-                                                   module="Deployment | Error | Download | Transfer",
-                                                   date=None,
-                                                   fromuser=data_in_session['login'],
-                                                   touser="")
-                                obcmd = utils.simplecommandstr(cmdexec)
                         finally:
                             time.sleep(2)
                             removeresource(data_in_session, objectxmpp, sessionid)
@@ -1910,7 +1865,25 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                            date = None )
     # Install keys on client
     keyreversessh = utils.get_relayserver_reversessh_idrsa(username)
-    key = utils.get_relayserver_pubkey('root')
+    try:
+        key = utils.get_relayserver_pubkey('root')
+    except IOError as e:
+        msg = []
+        msg.append("The public key /root/.ssh/id_rsa.pub is missing on the ARS %s" % fromrelay)
+
+
+        msg.append("<span class='log_warn'>Please verify that the key is present.</span>")
+        msg.append("<span class='log_warn'>Trying to continue the deploiement</span>")
+        for line in msg:
+            objectxmpp.xmpplog( line,
+                                type = 'deploy',
+                                sessionname = sessionid,
+                                priority = 0,
+                                action = "xmpplog",
+                                who = fromrelay,
+                                module = "Deployment | Install",
+                                date = None )
+        return False
     time_out_install_key = 60
     resultiqstr = objectxmpp.iqsendpulse(tomachine,
                                          {"action": "keyinstall",
@@ -2376,7 +2349,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
                 curlgetdownloadfile(dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko)
-                changown_dir_of_file(dest)  # owner pulse or pulseuser.
+                changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
                 logger.debug(str(e))
@@ -2432,9 +2405,9 @@ def check_hash(objectxmpp, data):
             while len(file_block) > 0:
                 file_hash.update(file_block)
                 file_block = _file.read(BLOCK_SIZE)
-
+            
         concat_hash += file_hash.hexdigest()
-
+    
     concat_hash += salt
     try:
         file_hash = hashlib.new(hash_type)
@@ -2442,13 +2415,14 @@ def check_hash(objectxmpp, data):
         logger.error("Wrong hash type")
     file_hash.update(concat_hash)
     concat_hash = file_hash.hexdigest()
-
+    
     return concat_hash
 
 def recuperefilecdn(datasend, objectxmpp, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
         os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
+    
     uuidpackage = datasend['data']['path'].split('/')[-1]
     curlurlbase = datasend['data']['descriptor']['info']['localisation_server']['url']
     takeresource(datasend, objectxmpp, sessionid)
@@ -2494,9 +2468,9 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-
+                
                 curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
-                changown_dir_of_file(dest)  # owner pulse or pulseuser.
+                changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
                 logger.error('Traceback from downloading package via libcurl: %s' % str(e))

@@ -1,23 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2020 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# SPDX-FileCopyrightText: 2020-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 import os
@@ -32,7 +15,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.69", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.74", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -41,10 +24,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     try:
         # Update if version is lower
-        installed_version = checkopensshversion()
         check_if_binary_ok()
+        installed_version = checkopensshversion()
         if StrictVersion(installed_version) < StrictVersion(OPENSSHVERSION):
             updateopenssh(xmppobject, installed_version)
+        else:
+            configure_ssh(xmppobject)
         check_if_service_is_running()
     except Exception:
         pass
@@ -65,7 +50,7 @@ def check_if_binary_ok():
         if os.path.isfile(sshdaemon_bin_path):
             logger.debug("OpenSSH is correctly installed. Nothing to do")
         else:
-            logger.error("Something went wrong, we need to reinstall the component.")
+            logger.error("Something went wrong while installing OpenSSH, we need to reinstall the component.")
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
@@ -73,7 +58,7 @@ def check_if_binary_ok():
             if result['code'] == 0:
                 logger.debug("The OpenSSH module is ready to be reinstalled.")
             else:
-                logger.debug("We failed to reinitialize the registry entry.")
+                logger.debug("We failed to reinitialize the registry entry for OpenSSH.")
 
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
@@ -114,6 +99,66 @@ def updateopensshversion(version):
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
+
+def configure_ssh(xmppobject):
+    Used_ssh_port = "22"
+    programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
+
+    if hasattr(xmppobject.config, 'sshport'):
+        Used_ssh_port = xmppobject.config.sshport
+
+    restart_service = False
+
+    # Now we customize the config file
+    sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
+    sshport = "Port %s" % Used_ssh_port
+
+    if "#Port" in sshd_config_file or sshport not in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#Port 22", sshport)
+        restart_service = True
+
+    if "#PubkeyAuthentication" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#PubkeyAuthentication yes", "PubkeyAuthentication yes")
+        restart_service = True
+
+    if "#PasswordAuthentication" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#PasswordAuthentication yes", "PasswordAuthentication no")
+        restart_service = True
+
+    if "#PidFile" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
+        restart_service = True
+
+    if "AuthorizedKeysFile   .ssh/authorized_keys" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("AuthorizedKeysFile   .ssh/authorized_keys", "AuthorizedKeysFile       $\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"")
+        restart_service = True
+
+    if "#SyslogFacility" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#SyslogFacility AUTH", "SyslogFacility LOCAL0")
+        restart_service = True
+
+    if "#Match Group administrators" not in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
+        restart_service = True
+
+    if "#       AuthorizedKeysFile" not in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
+        restart_service = True
+
+    if "#GatewayPorts" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#GatewayPorts no", "GatewayPorts yes")
+        restart_service = True
+
+    if "GatewayPorts no" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("GatewayPorts no", "GatewayPorts yes")
+        restart_service = True
+
+    utils.file_put_contents(os.path.join(programdata_path, "sshd_config"), sshd_config_file)
+
+
+    if restart_service:
+        utils.simplecommand("sc stop sshdaemon")
+        utils.simplecommand("sc start sshdaemon")
 
 def updateopenssh(xmppobject, installed_version):
     Used_ssh_port = "22"
@@ -159,12 +204,17 @@ def updateopenssh(xmppobject, installed_version):
                 utils.simplecommand("sc.exe stop sshdaemon")
                 utils.simplecommand("sc.exe delete sshdaemon")
 
+            nativessh_uninstall = utils.simplecommand("sc.exe query sshd")
+            if nativessh_uninstall['code'] == 0:
+                utils.simplecommand("sc.exe stop sshd")
+                utils.simplecommand("sc.exe delete sshd")
+
             if os.path.isdir(mandriva_sshdir_path):
                 current_dir = os.getcwd()
                 os.chdir(mandriva_sshdir_path)
                 uninstall_mandriva_ssh = utils.simplecommand("uninst.exe /S")
                 if uninstall_mandriva_ssh['code'] == 0:
-                    logger.debug("Uninstallation successful")
+                    logger.debug("Uninstallation successful of the old Mandriva ssh agent.")
 
                 os.chdir(current_dir)
                 os.rmdir(uninstall_mandriva_ssh)
@@ -205,20 +255,7 @@ def updateopenssh(xmppobject, installed_version):
                 logger.debug("Failed to copy the files:  %s" % e)
                 return
 
-            # Now we customize the config file
-            sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
-            sshport = "Port %s" % Used_ssh_port
-            sshd_config_file = sshd_config_file.replace("#Port 22", sshport)
-            sshd_config_file = sshd_config_file.replace("#PubkeyAuthentication yes", "PubkeyAuthentication yes")
-            sshd_config_file = sshd_config_file.replace("#PasswordAuthentication yes", "PasswordAuthentication no")
-            sshd_config_file = sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
-            sshd_config_file = sshd_config_file.replace("AuthorizedKeysFile   .ssh/authorized_keys", "AuthorizedKeysFile       $\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"")
-            sshd_config_file = sshd_config_file.replace("#SyslogFacility AUTH", "SyslogFacility LOCAL0")
-            sshd_config_file = sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
-            sshd_config_file = sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
-
-            utils.file_put_contents(os.path.join(programdata_path, "sshd_config"), sshd_config_file)
-
+            configure_ssh(xmppobject)
             utils.simplecommand("sc start sshdaemon")
 
             utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Pulse\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)

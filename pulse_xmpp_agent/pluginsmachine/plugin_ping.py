@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+<<<<<<< HEAD
 #
 # (c) 2016 siveo, http://www.siveo.net
 #
@@ -19,6 +20,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 # file : pulse_xmpp_agent/pluginsmachine/plugin_pong.py
+=======
+# SPDX-FileCopyrightText: 2022-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
+>>>>>>> integration
 
 import logging
 import json

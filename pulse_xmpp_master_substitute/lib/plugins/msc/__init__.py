@@ -1,26 +1,8 @@
 # -*- coding: utf-8; -*-
-#
-# (c) 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
-# (c) 2007-2009 Mandriva, http://www.mandriva.com/
-#
-# $Id$
-#
-# This file is part of Pulse 2, http://pulse2.mandriva.org
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# SPDX-FileCopyrightText: 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
+# SPDX-FileCopyrightText: 2007-2009 Mandriva, http://www.mandriva.com/
+# SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net> 
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 """
 Provides access to MSC database
@@ -56,8 +38,10 @@ from lib.utils import Locker
 import logging
 import functools
 
+import traceback
 
 NB_DB_CONN_TRY = 2
+logger = logging.getLogger()
 
 
 class Singleton(object):
@@ -66,7 +50,6 @@ class Singleton(object):
         if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
-
 
 class ComputerLocationManager(Singleton):
     components = {}
@@ -81,7 +64,8 @@ class ComputerLocationManager(Singleton):
             if len(self.components) == 1:
                 name = self.components.keys()[0]
             else:
-                raise Exception("Can't auto-select a computer location manager, please configure one in pulse2.ini.")
+                raise Exception("Can't auto-select a computer " \
+                    "location manager, please configure one in pulse2.ini.")
         self.logger.info("Selecting computer location manager: %s" % name)
         self.main = name
 
@@ -201,7 +185,6 @@ class DatabaseHelper(Singleton):
         return __sessionm
 
 # TODO need to check for useless function (there should be many unused one...)
-
 class MscDatabase(DatabaseHelper):
     """
     Singleton Class to query the msc database.
@@ -875,6 +858,7 @@ class MscDatabase(DatabaseHelper):
         session.flush()
         session.close()
 
+
     @DatabaseHelper._sessionm
     def deployxmpp(self, session, limitnbr=100, textindicator="notext"):
         """
@@ -1422,7 +1406,8 @@ class MscDatabase(DatabaseHelper):
         conn = self.getDbConnection()
         c_ids = select([self.commands.c.id], self.commands.c.fk_bundle == fk_bundle).execute()
         c_ids = map(lambda x:x[0], c_ids)
-        result = select([self.commands_on_host.c.id, self.commands_on_host.c.scheduler], self.commands_on_host.c.fk_commands.in_(c_ids)).execute()
+        result = select([self.commands_on_host.c.id, self.commands_on_host.c.scheduler],
+                        self.commands_on_host.c.fk_commands.in_(c_ids)).execute()
         schedulers = {}
         for row in result:
             coh, scheduler = row
@@ -1440,7 +1425,8 @@ class MscDatabase(DatabaseHelper):
          - values: the related commands_on_host for each scheduler
         """
         conn = self.getDbConnection()
-        result = select([self.commands_on_host.c.id, self.commands_on_host.c.scheduler], self.commands_on_host.c.fk_commands == c_id).execute()
+        result = select([self.commands_on_host.c.id, self.commands_on_host.c.scheduler],
+                        self.commands_on_host.c.fk_commands == c_id).execute()
         schedulers = {}
         for row in result:
             coh, scheduler = row
@@ -1524,7 +1510,8 @@ class MscDatabase(DatabaseHelper):
         q = self.__queryUsersFilter(ctx, q)
         return q
 
-    def getAllCommandsonhostCurrentstate(self, ctx):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def getAllCommandsonhostCurrentstate(self, ctx):
+        # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         ret = self.__queryAllCommandsonhostBy(session, ctx)
         ret = ret.add_column(self.commands.c.max_connection_attempt).filter(self.commands_on_host.c.current_state <> ''). \
@@ -1542,34 +1529,42 @@ class MscDatabase(DatabaseHelper):
         session.close()
         return l
 
-    def countAllCommandsonhostByCurrentstate(self, ctx, current_state, filt=''):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def countAllCommandsonhostByCurrentstate(self, ctx, current_state, filt=''):
+        # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         ret = self.__queryAllCommandsonhostBy(session, ctx)
         if current_state == 'rescheduled':  # patch to have rescheduled as a "state" ... must be emulated
-            ret = ret.filter(and_(self.commands.c.max_connection_attempt != self.commands_on_host.c.attempts_left, self.commands_on_host.c.current_state == 'scheduled'))
+            ret = ret.filter(and_(self.commands.c.max_connection_attempt != self.commands_on_host.c.attempts_left,
+                                  self.commands_on_host.c.current_state == 'scheduled'))
         elif current_state == 'scheduled':
-            ret = ret.filter(and_(self.commands.c.max_connection_attempt == self.commands_on_host.c.attempts_left, self.commands_on_host.c.current_state == 'scheduled'))
+            ret = ret.filter(and_(self.commands.c.max_connection_attempt == self.commands_on_host.c.attempts_left,
+                                  self.commands_on_host.c.current_state == 'scheduled'))
         else:
             ret = ret.filter(self.commands_on_host.c.current_state == current_state)
         # the join in itself is useless here, but we want to have exactly
         # the same result as in getAllCommandsonhostByCurrentstate
         if filt != '':
-            ret = ret.filter(or_(self.commands_on_host.c.host.like('%'+filt+'%'), self.commands.c.title.like('%'+filt+'%')))
+            ret = ret.filter(or_(self.commands_on_host.c.host.like('%'+filt+'%'),
+                                 self.commands.c.title.like('%'+filt+'%')))
         c = ret.count()
         session.close()
         return c
 
-    def getAllCommandsonhostByCurrentstate(self, ctx, current_state, min=0, max=10, filt=''):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def getAllCommandsonhostByCurrentstate(self, ctx, current_state, min=0, max=10, filt=''):
+        # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         ret = self.__queryAllCommandsonhostBy(session, ctx)
         if current_state == 'rescheduled': # patch to have rescheduled as a "state" ... must be emulated
-            ret = ret.filter(and_(self.commands.c.max_connection_attempt != self.commands_on_host.c.attempts_left, self.commands_on_host.c.current_state == 'scheduled'))
+            ret = ret.filter(and_(self.commands.c.max_connection_attempt != self.commands_on_host.c.attempts_left,
+                                  self.commands_on_host.c.current_state == 'scheduled'))
         elif current_state == 'scheduled':
-            ret = ret.filter(and_(self.commands.c.max_connection_attempt == self.commands_on_host.c.attempts_left, self.commands_on_host.c.current_state == 'scheduled'))
+            ret = ret.filter(and_(self.commands.c.max_connection_attempt == self.commands_on_host.c.attempts_left,
+                                  self.commands_on_host.c.current_state == 'scheduled'))
         else:
             ret = ret.filter(self.commands_on_host.c.current_state == current_state)
         if filt != '':
-            ret = ret.filter(or_(self.commands_on_host.c.host.like('%'+filt+'%'), self.commands.c.title.like('%'+filt+'%')))
+            ret = ret.filter(or_(self.commands_on_host.c.host.like('%'+filt+'%'),
+                                 self.commands.c.title.like('%'+filt+'%')))
         ret = ret.order_by(desc(self.commands_on_host.c.id))
         ret = ret.offset(int(min))
         ret = ret.limit(int(max)-int(min))
@@ -1582,24 +1577,42 @@ class MscDatabase(DatabaseHelper):
         session.close()
         return l
 
-    def countAllCommandsonhostByType(self, ctx, type, filt=''):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def countAllCommandsonhostByType(self, ctx, type, filt=''):
+        # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         ret = self.__queryAllCommandsonhostBy(session, ctx)
         if filt != '':
-            ret = ret.filter(or_(self.commands_on_host.c.host.like('%' + filt + '%'), self.commands.c.title.like('%' + filt + '%')))
+            ret = ret.filter(or_(self.commands_on_host.c.host.like('%' + filt + '%'),
+                                 self.commands.c.title.like('%' + filt + '%')))
         if int(type) == 0:  # all
             pass
         elif int(type) == 1:  # pending
-            ret = ret.filter(self.commands_on_host.c.current_state.in_(('upload_failed', 'execution_failed', 'delete_failed', 'inventory_failed', 'not_reachable', 'pause', 'stop', 'stopped', 'scheduled')))
+            ret = ret.filter(self.commands_on_host.c.current_state.in_(('upload_failed',
+                                                                        'execution_failed',
+                                                                        'delete_failed',
+                                                                        'inventory_failed',
+                                                                        'not_reachable',
+                                                                        'pause',
+                                                                        'stop',
+                                                                        'stopped',
+                                                                        'scheduled')))
         elif int(type) == 2:  # running
-            ret = ret.filter(self.commands_on_host.c.current_state.in_(('upload_in_progress', 'upload_done', 'execution_in_progress', 'execution_done', 'delete_in_progress', 'delete_done', 'inventory_in_progress', 'inventory_done')))
+            ret = ret.filter(self.commands_on_host.c.current_state.in_(('upload_in_progress',
+                                                                        'upload_done',
+                                                                        'execution_in_progress',
+                                                                        'execution_done',
+                                                                        'delete_in_progress',
+                                                                        'delete_done',
+                                                                        'inventory_in_progress',
+                                                                        'inventory_done')))
         elif int(type) == 3:  # finished
             ret = ret.filter(self.commands_on_host.c.current_state.in_(('done', 'failed', 'over_timed')))
         c = ret.count()
         session.close()
         return c
 
-    def getAllCommandsonhostByType(self, ctx, type, min, max, filt=''):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def getAllCommandsonhostByType(self, ctx, type, min, max, filt=''):
+        # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         ret = self.__queryAllCommandsonhostBy(session, ctx)
         if filt != '':
@@ -1607,11 +1620,28 @@ class MscDatabase(DatabaseHelper):
         if int(type) == 0:  # all
             pass
         elif int(type) == 1:  # pending
-            ret = ret.filter(self.commands_on_host.c.current_state.in_(('upload_failed', 'execution_failed', 'delete_failed', 'inventory_failed', 'not_reachable', 'pause', 'stop', 'stopped', 'scheduled')))
+            ret = ret.filter(self.commands_on_host.c.current_state.in_(('upload_failed',
+                                                                        'execution_failed',
+                                                                        'delete_failed',
+                                                                        'inventory_failed',
+                                                                        'not_reachable',
+                                                                        'pause',
+                                                                        'stop',
+                                                                        'stopped',
+                                                                        'scheduled')))
         elif int(type) == 2:  # running
-            ret = ret.filter(self.commands_on_host.c.current_state.in_(('upload_in_progress', 'upload_done', 'execution_in_progress', 'execution_done', 'delete_in_progress', 'delete_done', 'inventory_in_progress', 'inventory_done')))
+            ret = ret.filter(self.commands_on_host.c.current_state.in_(('upload_in_progress',
+                                                                        'upload_done',
+                                                                        'execution_in_progress',
+                                                                        'execution_done',
+                                                                        'delete_in_progress',
+                                                                        'delete_done',
+                                                                        'inventory_in_progress',
+                                                                        'inventory_done')))
         elif int(type) == 3:  # finished
-            ret = ret.filter(self.commands_on_host.c.current_state.in_(('done', 'failed', 'over_timed')))
+            ret = ret.filter(self.commands_on_host.c.current_state.in_(('done',
+                                                                        'failed',
+                                                                        'over_timed')))
         ret = ret.order_by(desc(self.commands_on_host.c.id))
         ret = ret.offset(int(min))
         ret = ret.limit(int(max) - int(min))
@@ -1624,7 +1654,8 @@ class MscDatabase(DatabaseHelper):
         session.close()
         return l
 
-    def countAllCommandsOnHostBundle(self, ctx, uuid, fk_bundle, filt, history):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def countAllCommandsOnHostBundle(self, ctx, uuid, fk_bundle, filt, history):
+        # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         ret = session.query(CommandsOnHost).select_from(self.commands_on_host.join(self.commands).join(self.target)).filter(self.target.c.target_uuid == uuid).filter(self.commands.c.creator == ctx.userid).filter(self.commands.c.fk_bundle == fk_bundle)
         # ret = ret.filter(self.commands_on_host.c.id == self.target.c.fk_commands_on_host)
@@ -1698,7 +1729,8 @@ class MscDatabase(DatabaseHelper):
         # ====== CALCULATING COUNT ============================
 
         query = session.query(func.count(distinct(Commands.id)))
-        query = query.select_from(self.commands.join(self.commands_on_host, self.commands_on_host.c.fk_commands == self.commands.c.id)\
+        query = query.select_from(self.commands.join(self.commands_on_host,
+                                                     self.commands_on_host.c.fk_commands == self.commands.c.id)\
                     .join(self.target, self.commands_on_host.c.fk_target == self.target.c.id)\
                     .outerjoin(self.bundle, self.commands.c.fk_bundle == self.bundle.c.id))
         # Filtering on filters
@@ -1714,7 +1746,8 @@ class MscDatabase(DatabaseHelper):
         query = query.add_column(self.commands.c.fk_bundle).add_column(self.commands_on_host.c.host).add_column(self.commands_on_host.c.id)
         query = query.add_column(self.target.c.id_group).add_column(self.bundle.c.title).add_column(self.target.c.target_uuid)
         query = query.add_column(self.pull_targets.c.target_uuid)
-        query = query.select_from(self.commands.join(self.commands_on_host, self.commands_on_host.c.fk_commands == self.commands.c.id)\
+        query = query.select_from(self.commands.join(self.commands_on_host,
+                                                     self.commands_on_host.c.fk_commands == self.commands.c.id)\
                     .join(self.target, self.commands_on_host.c.fk_target == self.target.c.id)\
                     .outerjoin(self.bundle, self.commands.c.fk_bundle == self.bundle.c.id)) \
                     .outerjoin(self.pull_targets, self.target.c.target_uuid == self.pull_targets.c.target_uuid)
@@ -1722,7 +1755,9 @@ class MscDatabase(DatabaseHelper):
         query = query.filter(filters)
         # Grouping bundle commands by fk_bundle only if fk_bundle is not null
         # So we generate random md5 hash for command that have null fk_bundle
-        query = query.group_by(func.ifnull(self.commands.c.fk_bundle, func.md5(self.commands.c.id)))  # .group_by(self.commands.c.id)
+        query = query.group_by(func.ifnull(self.commands.c.fk_bundle,
+                                           func.md5(self.commands.c.id)))
+        # .group_by(self.commands.c.id)
         query = query.order_by(desc(self.commands.c.id))
         # Limit result
         cmds = query.offset(int(min)).limit(int(max) - int(min)).all()

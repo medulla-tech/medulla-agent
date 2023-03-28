@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
+<<<<<<< HEAD
 #
 # (c) 2016-2017 siveo, http://www.siveo.net
 #
@@ -21,6 +22,10 @@
 # MA 02110-1301, USA.
 #
 
+=======
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
+# SPDX-License-Identifier: GPL-2.0-or-later 
+>>>>>>> integration
 import logging
 import traceback
 import json

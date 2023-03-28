@@ -1,23 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2020 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 import os
@@ -32,7 +15,7 @@ import re
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.11", "NAME": "updatedoublerun", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "updatedoublerun", "TYPE": "machine"}
 
 RSYNC_VERSION = "3.1.2.1"
 
@@ -178,6 +161,10 @@ def disabledoublerun(xmppobject):
             windows_system = 'SysWOW64'
         else:
             windows_system = 'System32'
+        
+        # TODO: We can add the search of the DisplayVersion to allow updating RSync
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayName"'
+        result = utils.simplecommand(cmd)
 
         installed_rsync = checkrsyncversion()
 
@@ -225,7 +212,7 @@ def disabledoublerun(xmppobject):
                 utils.simplecommand(add_name)
 
                 add_version = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" '\
-                        '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % RSYNC_VERSION
+                    '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % RSYNC_VERSION
                 utils.simplecommand(add_version)
 
                 # Disable autostart Nytrio sshd
