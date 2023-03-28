@@ -445,3 +445,4 @@ cp -fv contrib/monitoring/* %buildroot%_var/lib/pulse2/script_monitoring/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
+rm -fv %buildroot%{python2_sitelib}/pulse_xmpp_agent/bin/pulse2_update_notification.py
