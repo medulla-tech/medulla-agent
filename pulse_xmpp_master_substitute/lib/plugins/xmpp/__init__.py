@@ -4171,9 +4171,6 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None):
-
-    @DatabaseHelper._sessionm
     def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None, typedeploy="command"):
 
         deploylog = session.query(Deploy).filter(Deploy.sessionid.like('%s%%'%(typedeploy)))
