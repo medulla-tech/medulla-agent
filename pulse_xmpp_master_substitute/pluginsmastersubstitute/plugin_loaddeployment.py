@@ -364,6 +364,12 @@ def scheduledeployrecoveryjob(self):
         # We check which machines of machines_waiting_online are now online
         for machine in machines_waiting_online:
             logger.info("Restarting the deploiement %s actually in  machines_waiting_online state" %  machine['sessionid'])
+            # ----------------- contrainte slopt partiel-----------------------
+            res = MscDatabase().test_deploy_in_partiel_slot( machine['title'])
+            if not res:
+                # machine avec contrainte slot partiel on est pas dans le slot
+                continue
+            # -----------------------------------------------------------------
             try:
                 data = json.loads(machine['result'])
                 if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
