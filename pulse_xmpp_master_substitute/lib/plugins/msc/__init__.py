@@ -659,8 +659,22 @@ class MscDatabase(DatabaseHelper):
             result['connect_as'] = x.connect_as
         return result
 
-    def deployxmppscheduler(self, login, min , max, filt):
-        datenow = datetime.datetime.now()
+    def deployxmppscheduler(self, login, minimum , maximum, filt):
+        """
+        This function isued to retrieve all the scheduled deployments on msc
+
+        Args:
+            login: The login of the user
+            minimum: Minimum value ( for pagination )
+            maximum: Maximum value ( for pagination )
+            filt: Filter of the search
+        Returns:
+            It returns the list of all the scheduled deployments on msc
+        """
+        listuser = []
+        if isinstance(login, list):
+            listuser = [ '"%s"'%x.strip() for x in login if x.strip() != ""]
+        #datenow = datetime.datetime.now()
         sqlselect="""
             SELECT
                 COUNT(*) as nbmachine,
@@ -678,6 +692,8 @@ class MscDatabase(DatabaseHelper):
                 commands.creator AS commands_creator,
                 commands.title AS commands_title,
                 commands.package_id AS commands_package_id,
+                commands.deployment_intervals as contrainte,
+                if (commands.start_date < now() + INTERVAL 1 day,1,0 ) as journee ,
                 target.target_uuid AS target_target_uuid,
                 target.target_macaddr AS target_target_macaddr,
                 phase.name AS phase_name,
@@ -691,44 +707,52 @@ class MscDatabase(DatabaseHelper):
                     INNER JOIN
                 phase ON commands_on_host.id = phase.fk_commands_on_host
             WHERE
-            commands.start_date > '%s'
-            AND
-            """ % datenow.strftime('%Y-%m-%d %H:%M:%S')
+            commands.start_date > now()
+            AND """
+            #% datenow.strftime('%Y-%m-%d %H:%M:%S')
         sqlfilter = """
             phase.name = 'execute'
                 AND
                     phase.state = 'ready'"""
 
         if login:
-            sqlfilter = sqlfilter + """
-            AND
-                commands.creator = '%s'""" % login
+            if listuser:
+                sqlfilter = sqlfilter + """
+                AND
+                    commands.creator REGEXP %s """ % "|".join(listuser)
+            else:
+                sqlfilter = sqlfilter + """
+                AND
+                    commands.creator = '%s'""" % login
 
         if filt:
+            recherche="%%%%%s%%%%"%(filt)
             sqlfilter = sqlfilter + """
             AND
-            (commands.title like %%%s%%
+            (commands.title LIKE '%s'
             OR
-            commands.creator like %%%s%%
+            commands.creator LIKE '%s'
             OR
-            commands.start_date like %%%s%%)""" % (filt, filt, filt)
+            commands.start_date LIKE '%s' ) """%(recherche, recherche, recherche)
 
         reqsql = sqlselect + sqlfilter
 
         sqllimit=""
-        if min and max:
+
+        sqlorder=""" order by commands.start_date """
+
+        if minimum and maximum:
             sqllimit = """
                 LIMIT %d
-                OFFSET %d""" % (int(max) - int(min), int(min))
+                OFFSET %d"""%(int(maximum)-int(minimum), int(minimum))
             reqsql = reqsql + sqllimit
 
         sqlgroupby = """
             GROUP BY titledeploy"""
 
-        reqsql = reqsql + sqlgroupby+";"
+        reqsql = reqsql + sqlgroupby+ sqlorder +";"
 
-        # print reqsql
-
+        self.logger.debug("reqsql %s"%reqsql)
         sqlselect="""
             Select COUNT(nb) AS TotalRecords from(
                 SELECT
@@ -747,17 +771,19 @@ class MscDatabase(DatabaseHelper):
                         INNER JOIN
                     phase ON commands_on_host.id = phase.fk_commands_on_host
                 WHERE
-                    commands.start_date > '%s'
+                    commands.start_date > now()
             AND
-            """ % datenow.strftime('%Y-%m-%d %H:%M:%S')
-        reqsql1 = sqlselect + sqlfilter + sqllimit + sqlgroupby + ") as tmp;"
-        result = {}
-        resulta = self.session.execute(reqsql)
-        resultb = self.session.execute(reqsql1)
+            """
+            #% datenow.strftime('%Y-%m-%d %H:%M:%S')
+        reqsql1 = sqlselect + sqlfilter + sqllimit + sqlgroupby + ") as tmp;";
+
+        result={}
+        resulta = self.db.execute(reqsql)
+        resultb = self.db.execute(reqsql1)
         sizereq = [x for x in resultb][0][0]
         result['lentotal'] = sizereq
-        result['min'] = int(min)
-        result['nb'] = (int(max) - int(min))
+        result['min'] = int(minimum)
+        result['nb']  = (int(maximum)-int(minimum))
         result['tabdeploy'] = {}
         inventoryuuid = []
         host = []
@@ -765,12 +791,15 @@ class MscDatabase(DatabaseHelper):
         pathpackage = []
         start = []
         end = []
+        tabdeploy = {}
         creator = []
         title = []
         groupid = []
         macadress = []
         nbmachine = []
         titledeploy = []
+        contrainte = []
+        journee = []
         for x in resulta:
             nbmachine.append(x.nbmachine)
             host.append(x.commands_on_host_host)
@@ -784,19 +813,24 @@ class MscDatabase(DatabaseHelper):
             titledeploy.append(x.titledeploy)
             groupid.append(x.GRP)
             macadress.append(x.target_target_macaddr)
-        result['tabdeploy']['nbmachine'] = nbmachine
-        result['tabdeploy']['host'] = host
-        result['tabdeploy']['inventoryuuid'] = inventoryuuid
-        result['tabdeploy']['command'] = command
-        result['tabdeploy']['pathpackage'] = pathpackage
-        result['tabdeploy']['start'] = start
+            contrainte.append(x.contrainte)
+            journee.append(x.journee)
+        result['tabdeploy']['nbmachine']=nbmachine
+        result['tabdeploy']['host']=host
+        result['tabdeploy']['inventoryuuid']=inventoryuuid
+        result['tabdeploy']['command']=command
+        result['tabdeploy']['pathpackage']=pathpackage
+        result['tabdeploy']['start']=start
         result['tabdeploy']['end'] = end
-        result['tabdeploy']['creator'] = creator
+        result['tabdeploy']['creator']=creator
         result['tabdeploy']['title'] = title
         result['tabdeploy']['macadress'] = macadress
         result['tabdeploy']['groupid'] = groupid
         result['tabdeploy']['titledeploy'] = titledeploy
+        result['tabdeploy']['deployment_intervals'] = contrainte
+        result['tabdeploy']['journee'] = journee
         return result
+
 
     def updategroup(self, group):
         session = create_session()
