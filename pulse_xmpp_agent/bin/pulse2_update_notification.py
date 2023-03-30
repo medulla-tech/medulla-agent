@@ -102,7 +102,7 @@ class dialogboxnotification:
         self.root.configure(bg='#0067b3')
 
         if not self.titrebox:
-            self.root.overrideredirect(TRUE)
+            self.root.overrideredirect(True)
         else:
             self.root.title(self.titrebox)
             # Image_Data = 'iVBORw0KGgoAAAANSUhEUgAAAQ='
@@ -179,14 +179,14 @@ class dialogboxnotification:
                 No_button.pack(side=TOP, padx=10, pady=(10))
 
         #if self.sumittext != "":
-        Label(text=self.sumittext.replace('\\n','\n'),
+        tk.Label(text=self.sumittext.replace('\\n','\n'),
                 padx=10,
                 pady=(2),
                 bg='#0067b3',
                 fg='white',
                 font=('Open Sans Soft Regular',self.sizeHeadertext, 'bold')).pack()
 
-        Label(text=self.textnotification.replace('\\n','\n'),
+        tk.Label(text=self.textnotification.replace('\\n','\n'),
               padx=10,
               pady=(2),
               bg='#0067b3',
