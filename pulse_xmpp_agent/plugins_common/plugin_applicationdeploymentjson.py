@@ -27,7 +27,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.27", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.29", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -2467,8 +2467,49 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-                
-                curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
+
+                if token is not None:
+                    headers = "X-Authorization: " + str(token)
+                else:
+                    headers = ""
+                if limit_rate_ko == 0 or limit_rate_ko == "":
+                    cmd = """curl -k -H \"%s\" %s -o \"%s\" """ % (headers, urlfile, dest)
+                else:
+                    cmd = """curl --limit-rate %s -k -H \"%s\" %s -o \"%s\" """ % (limit_rate_ko, headers, urlfile, dest)
+                obj = utils.simplecommand(cmd)
+                if obj['code'] != 0:
+                    objectxmpp.xmpplog('<span class="log_err">Transfer error %s : curl download [%s] package file: %s\n %s</span>' % (obj['code'], curlurlbase, filepackage, obj['result']),
+                                    type='deploy',
+                                    sessionname=datasend['sessionid'],
+                                    priority=-1,
+                                    action="xmpplog",
+                                    who=strjidagent,
+                                    module="Deployment | Download | Transfer",
+                                    date=None,
+                                    fromuser=datasend['data']['advanced']['login'])
+                    objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                    type='deploy',
+                                    sessionname=datasend['sessionid'],
+                                    priority=-1,
+                                    action="xmpplog",
+                                    who=strjidagent,
+                                    module="Deployment | Error | Terminate | Notify",
+                                    date=None,
+                                    fromuser=datasend['data']['name'])
+                    removeresource(datasend, objectxmpp, sessionid)
+                    signalendsessionforARS(datasend, objectxmpp, sessionid, error=True)
+                    return False
+                else:
+                    msg = "<span class='log_ok'>Transfer successful</span>"
+                    objectxmpp.xmpplog(msg,
+                                    type='deploy',
+                                    sessionname=datasend['sessionid'],
+                                    priority=-1,
+                                    action="xmpplog",
+                                    who=strjidagent,
+                                    module="Deployment | Download | Transfer",
+                                    date=None,
+                                    fromuser=datasend['data']['advanced']['login'])
                 changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
