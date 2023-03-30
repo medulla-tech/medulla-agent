@@ -671,9 +671,6 @@ class MscDatabase(DatabaseHelper):
         Returns:
             It returns the list of all the scheduled deployments on msc
         """
-        listuser = []
-        if isinstance(login, list):
-            listuser = [ '"%s"'%x.strip() for x in login if x.strip() != ""]
         #datenow = datetime.datetime.now()
         sqlselect="""
             SELECT
@@ -714,16 +711,13 @@ class MscDatabase(DatabaseHelper):
             phase.name = 'execute'
                 AND
                     phase.state = 'ready'"""
-
         if login:
-            if listuser:
-                sqlfilter = sqlfilter + """
-                AND
-                    commands.creator REGEXP %s """ % "|".join(listuser)
+            creator = "AND commands.creator"
+            if isinstance(login, list):
+                listuser = "%s REGEXP '%s' " % (creator, "|".join( [ '%s'%x.strip() for x in login if x.strip() != ""]))
             else:
-                sqlfilter = sqlfilter + """
-                AND
-                    commands.creator = '%s'""" % login
+                listuser = "%s like '%s' " %(creator, login )
+            sqlfilter = sqlfilter +' ' + listuser
 
         if filt:
             recherche="%%%%%s%%%%"%(filt)
@@ -734,25 +728,17 @@ class MscDatabase(DatabaseHelper):
             commands.creator LIKE '%s'
             OR
             commands.start_date LIKE '%s' ) """%(recherche, recherche, recherche)
-
         reqsql = sqlselect + sqlfilter
-
         sqllimit=""
-
         sqlorder=""" order by commands.start_date """
-
         if minimum and maximum:
             sqllimit = """
                 LIMIT %d
                 OFFSET %d"""%(int(maximum)-int(minimum), int(minimum))
             reqsql = reqsql + sqllimit
-
         sqlgroupby = """
             GROUP BY titledeploy"""
-
         reqsql = reqsql + sqlgroupby+ sqlorder +";"
-
-        self.logger.debug("reqsql %s"%reqsql)
         sqlselect="""
             Select COUNT(nb) AS TotalRecords from(
                 SELECT
@@ -776,7 +762,6 @@ class MscDatabase(DatabaseHelper):
             """
             #% datenow.strftime('%Y-%m-%d %H:%M:%S')
         reqsql1 = sqlselect + sqlfilter + sqllimit + sqlgroupby + ") as tmp;";
-
         result={}
         resulta = self.db.execute(reqsql)
         resultb = self.db.execute(reqsql1)
@@ -1274,7 +1259,7 @@ class MscDatabase(DatabaseHelper):
 
         return True
 
-    def extendCommand(self, cmd_id, start_date, end_date):
+    def extendCommand(self, cmd_id, start_date, end_date, deployment_intervals=None):
         """
         Custom command re-scheduling.
 
@@ -1292,6 +1277,8 @@ class MscDatabase(DatabaseHelper):
         if cmd :
             cmd.start_date = start_date
             cmd.end_date = end_date
+            if deployment_intervals is not None:
+                cmd.deployment_intervals = deployment_intervals
             cmd.sum_running = cmd.sum_failed
             cmd.sum_failed = 0
             session.add(cmd)
