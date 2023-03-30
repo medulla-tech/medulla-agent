@@ -30,13 +30,16 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="2.1.8"
+AGENT_VERSION="2.2.0"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
+TIGHTVNC_CONFFILE_FILENAME="updatetightvnc.ini"
+OPENSSH_CONFFILE_FILENAME="updateopenssh.ini"
+BACKUPCLIENT_CONFFILE_FILENAME="updatebackupclient.ini"
 PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
-PULSE_START_CONFFILE_FILENAME="start.ini"
+PULSE_START_CONFFILE_FILENAME="start_machine.ini"
 PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
 
 # Go to own folder
@@ -143,9 +146,9 @@ sed_escape() {
 update_installer_scripts() {
 	colored_echo blue "### INFO Updating installer scripts..."
     if [[ ${MINIMAL} -eq 1 ]]; then
-        GENERATED_FILE="Pulse-Agent-linux-MINIMAL-${AGENT_VERSION}"
+        GENERATED_FILE="Medulla-Agent-linux-MINIMAL-${AGENT_VERSION}"
 	else
-        GENERATED_FILE="Pulse-Agent-linux-FULL-${AGENT_VERSION}"
+        GENERATED_FILE="Medulla-Agent-linux-FULL-${AGENT_VERSION}"
 	fi
     if [[ "${INVENTORY_TAG}" == "" ]]; then
         GENERATED_FILE="${GENERATED_FILE}.sh"
@@ -173,9 +176,9 @@ update_installer_scripts() {
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then
         if [[ ${MINIMAL} -eq 1 ]]; then
-            ln -s -f Pulse-Agent-linux-MINIMAL-${AGENT_VERSION}.sh Pulse-Agent-linux-MINIMAL-latest.sh
+            ln -s -f Medulla-Agent-linux-MINIMAL-${AGENT_VERSION}.sh Medulla-Agent-linux-MINIMAL-latest.sh
         else
-            ln -s -f Pulse-Agent-linux-FULL-${AGENT_VERSION}.sh Pulse-Agent-linux-FULL-latest.sh
+            ln -s -f Medulla-Agent-linux-FULL-${AGENT_VERSION}.sh Medulla-Agent-linux-FULL-latest.sh
         fi
     fi
 	colored_echo green "### INFO Updating installer scripts... Done"
@@ -185,8 +188,8 @@ generate_agent_package() {
 	colored_echo blue "### INFO Generating agent package..."
 
 	# We copy the config files to deb bundle
-	mkdir -p deb/pulse-agent-linux/etc/pulse-xmpp-agent
-	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME $PULSE_STARTUPDATE_CONFFILE_FILENAME $PULSE_START_CONFFILE_FILENAME; do
+	mkdir -p deb/pulse-agent-linux/etc/pulse-xmpp-agent/
+	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME $PULSE_STARTUPDATE_CONFFILE_FILENAME $PULSE_START_CONFFILE_FILENAME $TIGHTVNC_CONFFILE_FILENAME $OPENSSH_CONFFILE_FILENAME $BACKUPCLIENT_CONFFILE_FILENAME; do
 		cp /var/lib/pulse2/clients/config/$config_files deb/pulse-agent-linux/etc/pulse-xmpp-agent/
 	done
 	mkdir -p deb/pulse-agent-linux/home/pulseuser/.ssh

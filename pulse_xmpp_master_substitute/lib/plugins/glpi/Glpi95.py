@@ -1,24 +1,8 @@
 # -*- coding: utf-8; -*-
-#
-# (c) 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
-# (c) 2007-2010 Mandriva, http://www.mandriva.com
-#
-# $Id$
-#
-# This file is part of Mandriva Management Console (MMC).
-#
-# MMC is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# MMC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with MMC.  If not, see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
+# SPDX-FileCopyrightText: 2007-2010 Mandriva, http://www.mandriva.com
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 """
 This module declare all the necessary stuff to connect to a glpi database in it's
@@ -3671,7 +3655,7 @@ class Glpi95(DatabaseHelper):
                         'operatingsystemservicepacks_id': ret.operatingsystemservicepacks_id,
                         'operatingsystemarchitectures_id': ret.operatingsystemarchitectures_id,
                         'license_number': ret.license_number,
-                        'license_id': ret.licenseid,
+                        'licenseid': ret.licenseid,
                         'operatingsystemkernelversions_id': ret.operatingsystemkernelversions_id}
             except Exception:
                 self.logger.error("\n%s" % (traceback.format_exc()))
@@ -3793,7 +3777,7 @@ class Glpi95(DatabaseHelper):
                                     'operatingsystemservicepacks_id',
                                     'operatingsystemarchitectures_id',
                                     'license_number',
-                                    'license_id',
+                                    'licenseid',
                                     'operatingsystemkernelversions_id']
             for addcolunm in listcolumaddforinfo                     :
                 query = query.add_column(getattr(Machine, addcolunm).label(addcolunm))

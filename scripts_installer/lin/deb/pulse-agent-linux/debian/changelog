@@ -1,8 +1,8 @@
-pulse-agent-linux (2.1.8-1) unstable; urgency=medium
+pulse-agent-linux (2.2.0-1) unstable; urgency=medium
   
- * New release 2.1.8
+ * New release 2.2.0
 
- -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Thu, 12 Aug 2021 13:54:04 +0100
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Wed, 22 Mar 2023 13:54:04 +0100
 
 pulse-agent-linux (2.1.7-1) unstable; urgency=medium
   

@@ -1,26 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-
-# file : pulse_xmpp_master_substitute/lib/grafcetdeploy.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 import os
@@ -1245,7 +1226,7 @@ class grafcet:
             self.workingstep['@resultcommand'] = traceback.format_exc()
             logger.error(str(e))
             # logger.error("\n%s"%(traceback.format_exc()))
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error extracting %s to directory %s : %s' % (self.data['name'],
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error extracting %s to directory %s' % (self.data['name'],
                                                                                              self.workingstep['step'],
                                                                                              self.workingstep['filename'],
                                                                                              self.workingstep['pathdirectorytounzip']),
@@ -1337,7 +1318,7 @@ class grafcet:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(-1, False, "end error in actionprocessscript step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionprocessscript : %s' % (self.data['name'],
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actionprocessscript step' % (self.data['name'],
                                                                                    self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
@@ -1408,7 +1389,7 @@ class grafcet:
                 return
             self.terminate(
                            -1, False, "end error in action_command_natif_shell step %s" % self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error action_command_natif_shell : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in action_command_natif_shell step' % (self.data['name'], self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -1590,7 +1571,7 @@ class grafcet:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(-1, False, "end error in actionprocessscriptfile step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionprocessscriptfile : %s' % (self.data['name'],
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actionprocessscriptfile step' % (self.data['name'],
                                                                                        self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
@@ -2068,7 +2049,7 @@ class grafcet:
             logger.error("\n%s"%(traceback.format_exc()))
             self.terminate(-1, False, "end error in actioncleaning step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actioncleaning : %s' % (self.data['name'],
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actioncleaning step' % (self.data['name'],
                                                                               self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,

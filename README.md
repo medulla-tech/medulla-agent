@@ -35,3 +35,5 @@ Thanks
 # License
 
 Pulse XMPP Agent is distributed under GPL v2. 
+
+--

@@ -1,24 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2021 siveo, http://www.siveo.net
-#
-# $Id$
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-
+# SPDX-FileCopyrightText: 2021-2023 Siveo <support@siveo.net> 
+# SPDX-License-Identifier: GPL-2.0-or-later 
 
 """
     Plugin used to check if the ARS of the Ejabberd server are running
@@ -226,10 +208,16 @@ def display_server_status(self):
     logger.info("|         EJABBERD        |S|           ARS           |S|")
     logger.info("+-------------------------+-+-------------------------+-+")
     for status_ars in self.ars_server_list_status:
-        logger.info("|%25s|%1s|%25s|%1s|" % (status_ars['server']['jid'],
-                                              status_ars['server']['presence'],
-                                              status_ars['ars']['jid'],
-                                              status_ars['ars']['presence']))
+        if status_ars['ars']['presence'] == 0 :
+            logger.warning("|%25s|%1s|%25s|%1s|" % (status_ars['server']['jid'],
+                                                status_ars['server']['presence'],
+                                                status_ars['ars']['jid'],
+                                                status_ars['ars']['presence']))
+        else:
+            logger.info("|%25s|%1s|%25s|%1s|" % (status_ars['server']['jid'],
+                                                status_ars['server']['presence'],
+                                                status_ars['ars']['jid'],
+                                                status_ars['ars']['presence']))
     logger.info("+-------------------------+-+-------------------------+-+")
 
 

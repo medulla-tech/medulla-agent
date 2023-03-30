@@ -1,9 +1,7 @@
-#coding: utf-8
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# coding: utf-8
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 """
 This plugin check regularly if packages have been modified
 """
@@ -24,7 +22,7 @@ import traceback
 logger = logging.getLogger()
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.0.005", "NAME": "scheduling_ars_synchronization", "TYPE": "all", "SCHEDULED": True}
+plugin = {"VERSION": "1.1", "NAME": "scheduling_ars_synchronization", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/1 * * * *", "nb" : -1}
 

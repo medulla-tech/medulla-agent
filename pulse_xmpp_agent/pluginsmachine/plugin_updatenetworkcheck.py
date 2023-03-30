@@ -1,24 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2020 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-# file : plugin_updatenetworkcheck.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 import os
@@ -26,7 +8,7 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-NETWORKVERSION = '2.1.8'
+NETWORKVERSION = '2.2.0'
 
 logger = logging.getLogger()
 
@@ -49,7 +31,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
-        is_ssh_started = utils.simplecommand("sc.exe query pulsenetworknotify")
+        is_ssh_started = utils.simplecommand("sc.exe query medullanetnotify")
         if is_ssh_started['code'] == 0:
             state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
             if state == "STOPPED" or state == "RUNNING":
@@ -59,7 +41,7 @@ def check_if_service_is_running():
 
 def stop_service():
     if sys.platform.startswith('win'):
-        is_ssh_started = utils.simplecommand("sc.exe query pulsenetworknotify")
+        is_ssh_started = utils.simplecommand("sc.exe query medullanetnotify")
         if is_ssh_started['code'] == 0:
             state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
             if state == "RUNNING":
@@ -73,7 +55,7 @@ def check_if_binary_ok():
         reinstall = False
 
         # We check if we have the Regedit entry
-        cmd_reg = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" /s | Find "DisplayVersion"'
+        cmd_reg = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" /s | Find "DisplayVersion"'
         result_reg = utils.simplecommand(cmd_reg)
         if result_reg['code'] == 0:
             regedit = True
@@ -95,7 +77,7 @@ def check_if_binary_ok():
             reinstall = True
 
         if reinstall:
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
                     '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
             result = utils.simplecommand(cmd)
             if result['code'] == 0:
@@ -105,7 +87,7 @@ def check_if_binary_ok():
 
 def checknetworkcheckversion():
     if sys.platform.startswith('win'):
-        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" /s | Find "DisplayVersion"'
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
             networkcheckversion = result['result'][0].strip().split()[-1]
@@ -117,19 +99,19 @@ def checknetworkcheckversion():
 
 def updatenetworkcheckversion(version):
     if sys.platform.startswith('win'):
-        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
+        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % NETWORKVERSION
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.info("we successfully updated Pulse network notify to version %s" % NETWORKVERSION)
+            logger.info("we successfully updated Medulla network notify to version %s" % NETWORKVERSION)
 
         if version == "0.1":
-            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Pulse network notify" /f'
+            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
+                    '/v "DisplayName" /t REG_SZ  /d "Medulla network notify" /f'
 	    utils.simplecommand(cmdDisplay)
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
@@ -153,7 +135,7 @@ def updatenetworkcheck(xmppobject):
             logger.error("%s" % txtmsg)
 
         # We stop the service
-        stop_command = "sc stop pulsenetworknotify"
+        stop_command = "sc stop medullanetnotify"
         stop_service = utils.simplecommand(stop_command)
         # Activation of network notify windows service
         if not os.path.isfile(os.path.join(win32_path, "pywintypes27.dll")):
@@ -167,7 +149,7 @@ def updatenetworkcheck(xmppobject):
             # Download success
             logger.info("%s" % servicetxtmsg)
             # Run installer
-            querycmd = "sc query pulsenetworknotify"
+            querycmd = "sc query medullanetnotify"
             querycmd_result = utils.simplecommand(querycmd)
             if querycmd_result['code'] != 0:
                 servicecmd = 'C:\Python27\python.exe "%s\%s" --startup=auto install' % (pulsedir_path, servicefilename)

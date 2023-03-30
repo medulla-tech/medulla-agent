@@ -1,25 +1,8 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
-# file  pluginsmastersubstitute/plugin_assessor_agent.py
+# file : /pluginsmastersubstitute/plugin_assessor_agent.py
 
 # file : /pluginsmastersubstitute/plugin_assessor_agent.py
 
@@ -381,8 +364,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         result1 = XmppMasterDatabase().IdlonglatServerRelay(data['classutil'])
                         for x in result1:
                             # pour tout les relay on clacule la distance a vol oiseau.
-                            if x[1] != "" and x[2] != "" and \
-                                x[1] != "unknown" and x[2] != "unknown":
+                            if x[1] not in ["","unknown"] and x[2] not in ["","unknown"]:
                                 try:
                                     xpoint = float(x[2])
                                     ypoint = float(x[1])
