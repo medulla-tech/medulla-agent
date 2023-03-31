@@ -18,13 +18,12 @@ else:
 import subprocess
 
 def simplecommand(cmd):
-    obj = {}
     p = subprocess.Popen(cmd,
                          shell=True,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    obj['code'] = p.wait()
+    obj = {'code': p.wait()}
     obj['result'] = result
     return obj
 
@@ -70,7 +69,7 @@ class dialogboxnotification:
         win_height = height + titlebar_height + frm_width
         x = win.winfo_screenwidth() // 2 - win_width // 2
         y = win.winfo_screenheight() // 2 - win_height // 2
-        win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+        win.geometry(f'{width}x{height}+{x}+{y}')
         win.deiconify()
 
     def ok(self):
@@ -109,10 +108,7 @@ class dialogboxnotification:
 
         if self.Ytextebutton or self.Ntextebutton:
             button_frame = tk.Frame(self.root,bg='#0067b3')
-            if self.Ytextebutton == 0 or self.Ntextebutton == 0:
-                xpadvaleur = 70
-            else:
-                xpadvaleur = 40
+            xpadvaleur = 70 if self.Ytextebutton == 0 or self.Ntextebutton == 0 else 40
             button_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
 
 
