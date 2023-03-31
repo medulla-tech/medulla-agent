@@ -84,18 +84,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             #logger.warning("time timeact %s" % timeact)
             #logger.warning("delay %s > %s"%(int(time.time()) - int(objectxmpp.compteur_de_traitement[sessionid_save][0]),params["duration"] ))
             if (timeact - int(objectxmpp.compteur_de_traitement[sessionid_save][0])) > params["duration"]:
-                msglist = objectxmpp.compteur_de_traitement[sessionid_save][1]
                 deletelist.append(sessionid_save)
-                file_plugin = os.path.join(os.path.dirname( __file__),
-                                                        "plugin_resultcleanconfaccount.py")
-                call_plugin( file_plugin,
-                                objectxmpp,
-                                "resultcleanconfaccount",
-                                sessionid_save,
-                                {"useraccount" : str(msglist['to']) },
-                                msglist,
-                                0,
-                                {})
         for t in deletelist:
             del objectxmpp.compteur_de_traitement[t]
         # ______________________________________
