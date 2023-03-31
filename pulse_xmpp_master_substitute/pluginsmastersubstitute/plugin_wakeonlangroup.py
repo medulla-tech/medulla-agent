@@ -5,6 +5,8 @@
 
 # file : pluginsmastersubstitute/plugin_wakeonlangroup.py
 
+# file : pluginsmastersubstitute/plugin_wakeonlangroup.py
+
 import json
 import sys
 from lib.plugins.xmpp import XmppMasterDatabase

@@ -12,7 +12,7 @@ NETWORKVERSION = '2.2.0'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatenetworkcheck", "TYPE": "machine"}
+plugin = {"VERSION": "1.6", "NAME": "updatenetworkcheck", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

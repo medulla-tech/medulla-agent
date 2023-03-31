@@ -17,12 +17,11 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.2", "NAME": "updatedoublerun", "TYPE": "machine"}
 
-RSYNC_VERSION = "3.1.2"
+RSYNC_VERSION = "3.1.2.1"
 
 # Comma separated list of orgs which do not need double run
 # TODO: See how to handle this on a plain text file.
 P4ONLYUCANSS = ''
-
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -57,6 +56,18 @@ def checkdoublerunversion():
             doublerunversion = '0.0'
     logger.debug("Plugin Doublerun - Currently installed version: %s" % doublerunversion)
     return doublerunversion
+
+def checkrsyncversion():
+    if sys.platform.startswith('win'):
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayVersion"'
+
+        result = utils.simplecommand(cmd)
+        if result['code'] == 0:
+            rsyncversion = result['result'][0].strip().split()[-1]
+        else:
+            rsyncversion = '0.0'
+    logger.debug("Plugin Doublerun - RSync Currently installed version: %s" % rsyncversion)
+    return rsyncversion
 
 def updatedoublerunversion(version):
     if sys.platform.startswith('win'):
@@ -155,7 +166,9 @@ def disabledoublerun(xmppobject):
         cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayName"'
         result = utils.simplecommand(cmd)
 
-        if result['code'] == 0:
+        installed_rsync = checkrsyncversion()
+
+        if installed_rsync >= RSYNC_VERSION:
             logger.debug("Plugin Doublerun - The Pulse Rsync is already installed")
         else:
             windows_tempdir = os.path.join("C:\\", "Windows", "Temp")

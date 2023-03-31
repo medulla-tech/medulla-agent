@@ -324,6 +324,7 @@ def scheduledeployrecoveryjob(self):
                 XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE")
             else:
                 XmppMasterDatabase().update_state_deploy(machine['id'], "WOL 3")
+
             for logmsg in msglog:
                 self.xmpplog(logmsg,
                              type='deploy',
