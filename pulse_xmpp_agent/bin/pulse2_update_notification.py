@@ -100,6 +100,7 @@ class dialogboxnotification:
 
         self.root.geometry("720x250+0+0")
         self.root.configure(bg='#0067b3')
+        self.root.resizable(width=False, height=False)
 
         if not self.titrebox:
             self.root.overrideredirect(True)
