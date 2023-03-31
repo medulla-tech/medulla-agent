@@ -54,7 +54,6 @@ class dialogboxnotification:
         self.titrebox=titrebox
         self.sumittext=sumittext
         self.sizeHeadertext=sizeHeadertext
-        # fen.iconbitmap("/home/laurent/Documents/icone_test_1.xpm")
 
 
     def center(self, win):
@@ -96,7 +95,7 @@ class dialogboxnotification:
         pass
 
     def showNotification(self):
-        ## Create main window
+        # Create main window
         self.root = tk.Tk()
 
         self.root.geometry("720x250+0+0")
@@ -106,25 +105,15 @@ class dialogboxnotification:
             self.root.overrideredirect(True)
         else:
             self.root.title(self.titrebox)
-            # Image_Data = 'iVBORw0KGgoAAAANSUhEUgAAAQ='
-            # self.root.iconbitmap(self.root.PhotoImage(data=Image_Data))
 
         if self.Ytextebutton or self.Ntextebutton:
-            #button_frame1 = tk.Frame(self.root)
             button_frame = tk.Frame(self.root,bg='#0067b3')
-            #button_frame.columnconfigure(10)
             if self.Ytextebutton == 0 or self.Ntextebutton == 0:
                 xpadvaleur = 70
             else:
                 xpadvaleur = 40
             button_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
-            #button_frame1.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
 
-# B1 = Tkinter.Button(top, text ="FLAT", relief=FLAT )
-# B2 = Tkinter.Button(top, text ="RAISED", relief=RAISED )
-# B3 = Tkinter.Button(top, text ="SUNKEN", relief=SUNKEN )
-# B4 = Tkinter.Button(top, text ="GROOVE", relief=GROOVE )
-# B5 = Tkinter.Button(top, text ="RIDGE", relief=RIDGE )
 
             if self.Ytextebutton:
                 Yes_button = tk.Button(button_frame,
@@ -146,8 +135,6 @@ class dialogboxnotification:
                                        activebackground="#0076d7")
 
             if self.Ntextebutton:
-                #No_button = tk.Button(button_frame, text=self.Ntextebutton,font=("Courier", self.sizetextbutton),command=self.no,
-                        #activebackground="white")
                 No_button  = tk.Button(button_frame,
                                        text=self.Ntextebutton,
                                        bg='#0067b3',
@@ -175,11 +162,10 @@ class dialogboxnotification:
                 Yes_button.grid(row=0, column=6)#, sticky=tk.W
                 No_button.grid(row=0, column=7)#, sticky=tk.W
             elif self.Ytextebutton:
-                Yes_button.pack(side=TOP, padx=10, pady=(10))
+                Yes_button.pack(side=tk.TOP, padx=10, pady=(10))
             elif self.Ntextebutton:
-                No_button.pack(side=TOP, padx=10, pady=(10))
+                No_button.pack(side=tk.TOP, padx=10, pady=(10))
 
-        #if self.sumittext != "":
         tk.Label(text=self.sumittext.replace('\\n','\n'),
                 padx=10,
                 pady=(2),
@@ -195,10 +181,9 @@ class dialogboxnotification:
               font=("Open Sans Soft Regular",self.sizenotification)).pack()
 
         self.root.update_idletasks()
-        ## Remove window decorations
-        #self.root.overrideredirect(1)
+        # Remove window decorations
         timeOut = int(self.notificationTimeout*1000) # Convert to ms from s
-        ## Run appliction
+        # Run appliction
         self.root.wm_attributes("-topmost", 1)
         self.root.after(timeOut,self.timeout)
         if self.centerfenetre:
@@ -206,12 +191,6 @@ class dialogboxnotification:
         self.root.mainloop()
 
 if __name__ == "__main__":
-    # if sys.platform.startswith('win'):
-        # re = simplecommand("query user")
-        # print(re['result'])
-        # if len(re['result']) == 1:
-            # print("NO USER")
-            # sys.exit(4)
     # Quit the process if we don't want to continue
     signal.signal(signal.SIGINT, lambda x, y: sys.exit(-1))
     optp = OptionParser()
