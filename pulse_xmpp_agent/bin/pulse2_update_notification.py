@@ -14,6 +14,7 @@ if sys.version_info[0] < 3:
 else:
     import tkinter as tk     ## Python 3.x
 
+from PIL import Image, ImageTk
 
 import subprocess
 
@@ -32,19 +33,19 @@ def simplecommand(cmd):
 class dialogboxnotification:
     def __init__(self,
                  textnotification ,
-                 Ytextebutton="",
-                 Ntextebutton="",
+                 Ybutton="",
+                 Nbutton="",
                  notificationTimeout=20,
                  centerfenetre=True,
                  sizenotification=15,
                  sizetextbutton=30,
                  titrebox="",
-                 sumittext="",
+                 submittext="",
                  sizeHeadertext=20):
         self.result = 1
         self.notificationTimeout=notificationTimeout
-        self.Ytextebutton=Ytextebutton
-        self.Ntextebutton=Ntextebutton
+        self.Ybutton=Ybutton
+        self.Nbutton=Nbutton
         self.textnotification=textnotification
         self.result=-1
         self.centerfenetre=centerfenetre
@@ -52,7 +53,7 @@ class dialogboxnotification:
         self.sizenotification=sizenotification
         self.sizetextbutton=sizetextbutton
         self.titrebox=titrebox
-        self.sumittext=sumittext
+        self.submittext=submittext
         self.sizeHeadertext=sizeHeadertext
 
 
@@ -98,33 +99,35 @@ class dialogboxnotification:
         # Create main window
         self.root = tk.Tk()
 
-        self.root.geometry("720x250+0+0")
-        self.root.configure(bg='#0067b3')
+        self.root.geometry("720x250")
+        self.root.configure(bg='#25607d')
         self.root.resizable(width=False, height=False)
+        # Disable the Close Window Control Icon
+        self.root.protocol("WM_DELETE_WINDOW", lambda: None)
+        self.root.attributes("-topmost", True)
 
         if not self.titrebox:
-            self.root.overrideredirect(True)
+            self.root.title("Medulla Update Notifications")
         else:
             self.root.title(self.titrebox)
 
-        if self.Ytextebutton or self.Ntextebutton:
-            button_frame = tk.Frame(self.root,bg='#0067b3')
-            if self.Ytextebutton == 0 or self.Ntextebutton == 0:
+        if self.Ybutton or self.Nbutton:
+            button_frame = tk.Frame(self.root,bg='#25607d')
+            if self.Ybutton == 0 or self.Nbutton == 0:
                 xpadvaleur = 70
             else:
                 xpadvaleur = 40
             button_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
 
-
-            if self.Ytextebutton:
+            if self.Ybutton:
                 Yes_button = tk.Button(button_frame,
-                                       text=self.Ytextebutton,
+                                       text=self.Ybutton,
                                        height=2,
                                        width = 15,
-                                       bg='#0067b3',
+                                       bg='#25607d',
                                        highlightthickness = 2,
                                        highlightbackground = "white",
-                                       highlightcolor= '#0067b3',
+                                       highlightcolor= '#25607d',
                                        relief = 'solid',
                                        fg='white',
                                        borderwidth = '0',
@@ -135,15 +138,15 @@ class dialogboxnotification:
                                        command=self.ok,
                                        activebackground="#0076d7")
 
-            if self.Ntextebutton:
+            if self.Nbutton:
                 No_button  = tk.Button(button_frame,
-                                       text=self.Ntextebutton,
-                                       bg='#0067b3',
+                                       text=self.Nbutton,
+                                       bg='#25607d',
                                        height=2,
                                        width = 15,
                                        highlightthickness = 2,
                                        highlightbackground = "white",
-                                       highlightcolor= '#0067b3',
+                                       highlightcolor= '#25607d',
                                        relief = 'solid',
                                        fg='white',
                                        borderwidth = '0',
@@ -153,33 +156,42 @@ class dialogboxnotification:
                                              'underline'),
                                        command=self.no,
                                        activebackground="#0076d7")
-            if self.Ytextebutton == 0 or self.Ntextebutton == 0:
+            if self.Ybutton == 0 or self.Nbutton == 0:
                 button_frame.columnconfigure(0, weight=1)
             else:
                 button_frame.columnconfigure(0, weight=6)
                 button_frame.columnconfigure(6, weight=6)
 
-            if self.Ytextebutton and self.Ntextebutton:
-                Yes_button.grid(row=0, column=6)#, sticky=tk.W
-                No_button.grid(row=0, column=7)#, sticky=tk.W
-            elif self.Ytextebutton:
+            if self.Ybutton and self.Nbutton:
+                Yes_button.grid(row=0, column=0)#, sticky=tk.W
+                No_button.grid(row=0, column=6)#, sticky=tk.W
+            elif self.Ybutton:
                 Yes_button.pack(side=tk.TOP, padx=10, pady=(10))
-            elif self.Ntextebutton:
+            elif self.Nbutton:
                 No_button.pack(side=tk.TOP, padx=10, pady=(10))
 
-        tk.Label(text=self.sumittext.replace('\\n','\n'),
+        tk.Label(text=self.submittext.replace('\\n','\n'),
                 padx=10,
                 pady=(2),
-                bg='#0067b3',
+                bg='#25607d',
                 fg='white',
                 font=('Open Sans Soft Regular',self.sizeHeadertext, 'bold')).pack()
 
         tk.Label(text=self.textnotification.replace('\\n','\n'),
               padx=10,
               pady=(2),
-              bg='#0067b3',
+              bg='#25607d',
               fg = 'white',
               font=("Open Sans Soft Regular",self.sizenotification)).pack()
+
+        # Create a photoimage object of the image in the path
+        medullaLogoLocation = Image.open("Image3.png")
+        medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
+
+        Medullalabel = tk.Label(image=medullaLogo, bg='#25607d')
+        Medullalabel.image = medullaLogo
+
+        Medullalabel.place(x=15, y=12)
 
         self.root.update_idletasks()
         # Remove window decorations
@@ -197,8 +209,8 @@ if __name__ == "__main__":
     optp = OptionParser()
     optp.add_option(
         "-Y",
-        "--Ytextebutton",
-        dest="Ytextebutton",
+        "--Ybutton",
+        dest="Ybutton",
         default="",
         help="Texte button Yes",
     )
@@ -220,8 +232,8 @@ if __name__ == "__main__":
 
     optp.add_option(
         "-N",
-        "--Ntextebutton",
-        dest="Ntextebutton",
+        "--Nbutton",
+        dest="Nbutton",
         default="",
         help="Texte button Not",
     )
@@ -276,15 +288,16 @@ if __name__ == "__main__":
     opts, args = optp.parse_args()
     if opts.textnotification=="" :
         sys.exit(-1)
+
     a=dialogboxnotification(opts.textnotification,
                             notificationTimeout=opts.notificationTimeout,
-                            Ytextebutton=opts.Ytextebutton,
-                            Ntextebutton=opts.Ntextebutton,
+                            Ybutton=opts.Ybutton,
+                            Nbutton=opts.Nbutton,
                             centerfenetre=opts.centerfenetre,
                             sizenotification=opts.sizenotification,
                             sizetextbutton=opts.sizetextbutton,
                             titrebox=opts.titrebox,
-                            sumittext=opts.Sumittext,
+                            submittext=opts.Sumittext,
                             sizeHeadertext=opts.SizeSumittext)
     a.showNotification()
     sys.exit(a.get_result())
