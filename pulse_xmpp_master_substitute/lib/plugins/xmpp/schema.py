@@ -1,23 +1,6 @@
 # -*- coding: utf-8; -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 from sqlalchemy import (
     Column,
@@ -678,6 +661,9 @@ class Uptime_machine(Base, XmppMasterDBObj):
     status = Column(Boolean, unique=False)
     updowntime = Column(Integer, nullable=False, default=0)
     date = Column(DateTime, default=datetime.datetime.now)
+    timetempunix = Column(Integer, default=None)
+    md5agentversion = Column(String(32), default=None)
+    version = Column(String(10), default=None)
 
 
 class MyTypeenum(enum.Enum):
@@ -801,6 +787,98 @@ class Mon_panels_template(Base, XmppMasterDBObj):
     status = Column(Boolean, default=True)
     comment = Column(String(1024), default="")
 
+
+class Update_data(Base):
+    # ====== Table name =========================
+    __tablename__ = "update_data"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    revisionid =  Column(String(16), nullable=False, default="")
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    company =  Column(String(36), default="")
+    product =  Column(String(512), default="")
+    productfamily =  Column(String(100), default="")
+    updateclassification =  Column(String(36), default="")
+    prerequisite =  Column(String(2048), default="")
+    title =  Column(String(500), default="")
+    description =  Column(String(2048), default="")
+    msrcseverity =  Column(String(16), default="")
+    msrcnumber =  Column(String(16), default="")
+    kb =  Column(String(16), default="")
+    languages =  Column(String(16), default="")
+    category =  Column(String(80), default="")
+    supersededby =  Column(String(2048), default="")
+    supersedes = Column(Text, default=None)
+    payloadfiles =  Column(String(1024), default="")
+    revisionnumber =  Column(String(30), default="")
+    bundledby_revision =  Column(String(30), default="")
+    isleaf =  Column(String(6), default="")
+    issoftware =  Column(String(30), default="")
+    deploymentaction =  Column(String(30), default="")
+    title_short =  Column(String(500), default="")
+
+class Up_black_list(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = "up_black_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), nullable=False)
+    userjid_regexp = Column(String(180), nullable=False)
+    enable_rule = Column(Boolean, unique=True)
+    type_rule =  Column(String(2), nullable=False, default="id")
+
+class Up_machine_windows(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_machine_windows"
+    # ====== Fields =============================
+    id_machine = Column(Integer, primary_key=True)
+    update_id = Column(String(38), primary_key=True)
+    kb = Column(String(45),  default="")
+    curent_deploy = Column(Boolean, unique=False)
+    required_deploy = Column(Boolean, unique=False)
+    start_date = Column(DateTime, default=None)
+    end_date = Column(DateTime, default=None)
+
+class Up_white_list(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_white_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    title =  Column(String(1024), default="")
+    description =  Column(String(3096), default="")
+    kb =  Column(String(16), default="")
+    title_short =  Column(String(1024), default="")
+    valided = Column(Boolean, unique=False)
+
+class Up_gray_list(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_gray_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    revisionid =  Column(String(16), nullable=False, default="")
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    title =  Column(String(1024), default="")
+    description =  Column(String(3096), default="")
+    kb =  Column(String(16), default="")
+    supersededby =  Column(String(3072), default="")
+    payloadfiles =  Column(String(2048), default="")
+    title_short =  Column(String(1024), default="")
+    valided = Column(Boolean, unique=False)
+    validity_date = Column(DateTime, default=datetime.datetime.now)
+
+class Up_action_update_packages(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'up_action_update_packages'
+    # ====== Fields =============================
+    # Here we define columns for the table organization.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    action = Column(String(1024), nullable=False, unique=True)
+    date = Column(DateTime, nullable=False, default=datetime.datetime.now)
+    in_process = Column(Boolean, unique=False, nullable=False)
+    packages = Column(String(38), nullable=False)
+    option  = Column(String(10), nullable=False)
+    pid_run = Column(Integer)
 
 """
 This code is kept here as a comment, "if" we need to use it

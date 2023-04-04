@@ -1,6 +1,9 @@
 pulse-xmpp-agent 3.0.0
 ======================
 * [FEATURE]  Python stack is now version 3.9
+* [FEATURE] Add Rescue Agent feature
+* [FEATURE] New OS Updates feature
+* [FEATURE] New Kiosk feature
 
 pulse-xmpp-agent 2.1.7
 ======================
@@ -8,6 +11,8 @@ pulse-xmpp-agent 2.1.7
 * [BUGFIX]  Fix backtrace in the substitute registration when there is more
 than on location.
 * [BUGFIX]  Fix handling some accounts creation
+* [BUGFIX]  Fix a backtrace when the Network changes and we ask for infos at
+the same moment
 
 pulse-xmpp-agent 2.1.6
 ======================

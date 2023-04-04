@@ -5,7 +5,9 @@ var/lib/pulse2/clients/config/start_machine.ini
 var/lib/pulse2/clients/config/startupdate.ini
 /var/lib/pulse2/clients/config/updatetightvnc.ini
 /var/lib/pulse2/clients/config/updateopenssh.ini
+/var/lib/pulse2/clients/config/updatebackupclient.ini
 var/lib/pulse2/clients/generate-agent-package
+var/lib/pulse2/clients/generate-kiosk-package
 var/lib/pulse2/clients/generate-pulse-agent.sh
 var/lib/pulse2/clients/lin/deb/pulse-agent-linux
 var/lib/pulse2/clients/lin/deb/pulse-agent-linux/debian
@@ -26,6 +28,7 @@ var/lib/pulse2/clients/mac/rbash
 var/lib/pulse2/clients/mac/runpulseagent
 var/lib/pulse2/clients/pulse-xmpp-agent-3.0.0.tar.gz
 var/lib/pulse2/clients/pulse-machine-plugins-3.0.0.tar.gz
+var/lib/pulse2/clients/kiosk-interface-0.3.tar.gz
 var/lib/pulse2/clients/style.css
 var/lib/pulse2/clients/win/agent-installer.nsi.in
 var/lib/pulse2/clients/win/artwork
@@ -48,3 +51,6 @@ var/lib/pulse2/clients/win/pulse-agent-task.xml
 var/lib/pulse2/clients/win/pulse-service.py
 var/lib/pulse2/clients/win/powershell-policy-remotesigned.pol
 var/lib/pulse2/xmpp_baseremoteagent
+var/lib/pulse2/clients/win/pulse2_update_notification.py
+var/lib/pulse2/clients/lin/pulse2_update_notification.py
+var/lib/pulse2/clients/mac/pulse2_update_notification.py

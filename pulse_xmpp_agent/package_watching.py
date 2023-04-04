@@ -1,29 +1,13 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
-# (c) 2018 siveo, http://www.siveo.net
-# $Id$
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2. If not, see <http://www.gnu.org/licenses/>.
-#
-# file : pulse_xmpp_agent/package_watching.py
-# """
-# This module is dedicated to analyse inventories sent by a Pulse 2 Client.
-# The original inventory is sent using one line per kind of
-# """
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+
+#"""
+#This module is dedicated to analyse inventories sent by a Pulse 2 Client.
+#The original inventory is sent using one line per kind of
+#"""
 
 # API information http://seb.dbzteam.org/pyinotify/
 from __future__ import print_function

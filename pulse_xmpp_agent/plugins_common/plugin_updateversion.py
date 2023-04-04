@@ -1,25 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-
-# file pulse_xmpp_agent/pluginsmachine/plugin_updateversion.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 import os
@@ -50,17 +31,18 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 )
                 if len(version) < 20:
                     logger.debug("Version AGENT is " + version)
-                    import winreg
-
-                    key = winreg.OpenKey(
-                        winreg.HKEY_LOCAL_MACHINE,
-                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
-                        0,
-                        winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY,
-                    )
-                    winreg.SetValueEx(key, "DisplayVersion", 0, winreg.REG_SZ, version)
-                    winreg.CloseKey(key)
-        elif sys.platform.startswith("linux"):
+                    import _winreg
+                    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Medulla Agent\\",
+                                        0 ,
+                                        _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
+                    _winreg.SetValueEx ( key,
+                                        'DisplayVersion'  ,
+                                        0,
+                                        _winreg.REG_SZ,
+                                        version)
+                    _winreg.CloseKey(key)
+        elif sys.platform.startswith('linux') :
             pass
         elif sys.platform.startswith("darwin"):
             pass

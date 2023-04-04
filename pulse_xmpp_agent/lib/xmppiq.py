@@ -1,27 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-#
-# file pulse_xmpp_agent/lib/xmppiq.py
-#
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import os
 import sys
@@ -168,18 +148,16 @@ class functionsynchroxmpp:
         if sys.platform.startswith("linux"):
             filekey = os.path.join(os.path.expanduser("~pulseuser"), ".ssh", "id_rsa")
             dd = """#!/bin/bash
-            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
-            """ % (
-                datareverse["type_reverse"],
-                datareverse["portproxy"],
-                datareverse["remoteport"],
-                filekey,
-                datareverse["ipARS"],
-                datareverse["port_ssh_ars"],
-            )
-            reversesshsh = os.path.join(
-                os.path.expanduser("~pulseuser"), "reversessh.sh"
-            )
+            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            """ % (datareverse['type_reverse'],
+                   datareverse['portproxy'],
+                   datareverse['ipAM'],
+                   datareverse['remoteport'],
+                   filekey,
+                   datareverse['ipARS'],
+                   datareverse['port_ssh_ars'])
+            reversesshsh = os.path.join(os.path.expanduser('~pulseuser'),
+                                        "reversessh.sh")
             file_put_contents(reversesshsh, dd)
             os.chmod(reversesshsh, 0o700)
             args = shlex.split(reversesshsh)
@@ -201,18 +179,14 @@ class functionsynchroxmpp:
                 os.environ["ProgramFiles"], "Pulse", "bin", "reversessh.bat"
             )
             linecmd = []
-            cmd = (
-                """\\"%s\\" -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
-                % (
-                    sshexec,
-                    datareverse["type_reverse"],
-                    datareverse["portproxy"],
-                    datareverse["remoteport"],
-                    filekey,
-                    datareverse["ipARS"],
-                    datareverse["port_ssh_ars"],
-                )
-            )
+            cmd = """\\"%s\\" -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
+                                                                                                                             datareverse['type_reverse'],
+                                                                                                                             datareverse['portproxy'],
+                                                                                                                             datareverse['ipAM'],
+                                                                                                                             datareverse['remoteport'],
+                                                                                                                             filekey,
+                                                                                                                             datareverse['ipARS'],
+                                                                                                                             datareverse['port_ssh_ars'])
             linecmd.append("""@echo off""")
             linecmd.append(
                 """for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """
@@ -234,19 +208,17 @@ class functionsynchroxmpp:
         elif sys.platform.startswith("darwin"):
             filekey = os.path.join(os.path.expanduser("~pulseuser"), ".ssh", "id_rsa")
             cmd = """#!/bin/bash
-            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
-            """ % (
-                datareverse["type_reverse"],
-                datareverse["portproxy"],
-                datareverse["remoteport"],
-                filekey,
-                datareverse["ipARS"],
-                datareverse["port_ssh_ars"],
-            )
-            reversesshsh = os.path.join(
-                os.path.expanduser("~pulseuser"), "reversessh.sh"
-            )
-            file_put_contents(reversesshsh, cmd)
+            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            """ % (datareverse['type_reverse'],
+                   datareverse['portproxy'],
+                   datareverse['ipAM'],
+                   datareverse['remoteport'],
+                   filekey,
+                   datareverse['ipARS'],
+                   datareverse['port_ssh_ars'])
+            reversesshsh = os.path.join(os.path.expanduser('~pulseuser'),
+                                        "reversessh.sh")
+            file_put_contents(reversesshsh,  cmd)
             os.chmod(reversesshsh, 0o700)
             args = shlex.split(reversesshsh)
             result = subprocess.Popen(args)
@@ -488,15 +460,8 @@ class functionsynchroxmpp:
                         netstat()
                     )
                 if info_ask == "profiluserpulse":
-                    profilname = "pulseuser"
-                    if sys.platform.startswith("win"):
-                        # check if pulse account exists
-                        try:
-                            win32net.NetUserGetInfo("", "pulseuser", 0)
-                            profilname = "pulseuser"
-                        except Exception:
-                            profilname = "pulse"
-                    result["result"]["informationresult"][info_ask] = profilname
+                    profilname = 'pulseuser'
+                    result['result']['informationresult'][info_ask] = profilname
             except Exception:
                 result["result"]["informationresult"][info_ask] = ""
         return json.dumps(result)

@@ -1,25 +1,9 @@
 # -*- coding: utf-8; -*-
-#
-# (c) 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
-# (c) 2007-2010 Mandriva, http://www.mandriva.com
-#
-# $Id$
-#
-# This file is part of Mandriva Management Console (MMC).
-#
-# MMC is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# MMC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with MMC.  If not, see <http://www.gnu.org/licenses/>.
-# file pulse_xmpp_master_substitute/lib/plugins/glpi/file __init__.py
+# SPDX-FileCopyrightText: 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
+# SPDX-FileCopyrightText: 2007-2010 Mandriva, http://www.mandriva.com
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 """
 This module declare all the necessary stuff to connect to a glpi database in it's
 version 9.2
@@ -48,6 +32,7 @@ from lib.plugins.glpi.Glpi84 import Glpi84
 from lib.plugins.glpi.Glpi92 import Glpi92
 from lib.plugins.glpi.Glpi94 import Glpi94
 from lib.plugins.glpi.Glpi95 import Glpi95
+from lib.plugins.glpi.Glpi100 import Glpi100
 
 glpi = None
 
@@ -134,6 +119,9 @@ class Glpi(object):
 
             if self._glpi_version.startswith("9.5"):
                 glpi = Glpi95()
+
+            if self._glpi_version.startswith("10.0"):
+                glpi = Glpi100()
 
             ret = glpi.activate()
             self.is_activated = glpi.is_activated

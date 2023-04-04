@@ -1,7 +1,7 @@
 # Change Log
 
 ## [v3.0.0](unreleased)
-- [FEATURE]  Python stack is now version 3.9
+- [FEATURE]  Python stack is now version 3.11
 
 
 ## [v2.1.7](https://github.com/pulse-project/pulse-xmpp-agent/tree/v2.1.7) (2021-09-21)

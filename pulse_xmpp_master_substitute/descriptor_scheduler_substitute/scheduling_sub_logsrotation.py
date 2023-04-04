@@ -1,25 +1,7 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2021 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# SPDX-FileCopyrightText: 2021-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
-# file : /descriptor_scheduler_substitute/scheduling_sub_logsrotation.py
 """
     This plugin is created to help rotating logs
 """
@@ -59,34 +41,30 @@ def schedule_main(objectxmpp):
         logger.debug("num_compteur %s" % num_compteur)
         if num_compteur == 0:
             read_config_plugin_agent(objectxmpp)
-        logger.debug("config file %s" % objectxmpp.pathfileconf)
+
         sizelogfile = 0
         if os.path.isfile(objectxmpp.config.logfile):
             sizelogfile = os.path.getsize(objectxmpp.config.logfile)
         else:
-            logger.warning("log file %s missing" % objectxmpp.config.logfile)
+            logger.warning("The log file %s is missing" % objectxmpp.config.logfile)
 
-        logger.debug(
-            "\nParameters\n\tlog file is : %s (%s bytes %s kbytes - %s Mbytes)\n"
-            "\tconfiguration file is : %s\n"
-            "\tnumber file in rotation is : %s\n"
-            "\tcompress Mode is : %s\n"
-            "\ttrigger_size is %s bytes (%s Kbytes %s Mbytes)\n"
-            "\tLevel logging %s"
-            % (
-                objectxmpp.config.logfile,
-                sizelogfile,
-                sizelogfile / 1024,
-                sizelogfile / (1024 * 1024),
-                objectxmpp.pathfileconf,
-                objectxmpp.nbrotfile,
-                objectxmpp.compress,
-                objectxmpp.trigger_size,
-                objectxmpp.trigger_size / 1024,
-                objectxmpp.trigger_size / (1024 * 1024),
-                logging.getLevelName(logger.getEffectiveLevel()),
-            )
-        )
+        if num_compteur == 0:
+            logger.debug("\nParameters\n\tlog file is : %s (%s bytes %s kbytes - %s Mbytes)\n" \
+                        "\tconfiguration file is : %s\n" \
+                        "\tnumber file in rotation is : %s\n" \
+                        "\tcompress Mode is : %s\n" \
+                        "\ttrigger_size is %s bytes (%s Kbytes %s Mbytes)\n" \
+                        "\tLevel logging %s" % (objectxmpp.config.logfile,
+                                                sizelogfile,
+                                                sizelogfile/1024,
+                                                sizelogfile/(1024*1024),
+                                                objectxmpp.pathfileconf,
+                                                objectxmpp.nbrotfile,
+                                                objectxmpp.compress,
+                                                objectxmpp.trigger_size,
+                                                objectxmpp.trigger_size/1024,
+                                                objectxmpp.trigger_size/(1024*1024),
+                                                logging.getLevelName(logger.getEffectiveLevel())))
 
         compression_mode = objectxmpp.compress  # mode in zip, gzip, bz2, No
 
@@ -237,20 +215,3 @@ def read_config_plugin_agent(objectxmpp):
         objectxmpp.trigger_size = Config.getint("rotation_file", "trigger_size")
     except BaseException:
         objectxmpp.trigger_size = 5242880
-
-    logger.info(
-        "\nParameters\n\tlog file is : %s\n"
-        "\tconfiguration file is : %s\n"
-        "\tnumber file in rotation is : %s\n"
-        "\tcompress mode is : %s\n"
-        "\ttrigger_size is %s bytes\n"
-        "\tLevel logging %s"
-        % (
-            objectxmpp.config.logfile,
-            objectxmpp.pathfileconf,
-            objectxmpp.nbrotfile,
-            objectxmpp.compress,
-            objectxmpp.trigger_size,
-            logging.getLevelName(logger.getEffectiveLevel()),
-        )
-    )

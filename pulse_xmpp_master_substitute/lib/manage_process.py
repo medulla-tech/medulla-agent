@@ -1,24 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net> 
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 from lib.utils import decode_strconsole, encode_strconsole
 import sys
@@ -178,7 +161,7 @@ class process_on_end_send_message_xmpp:
     def __init__(self, queue_out_session):
         self.processtable = []
         self.queue_out_session = queue_out_session
-        logging.info("manage process start")
+        logging.debug('manage process start')
 
     def add_processcommand(
         self, command, message, tosucces=None, toerror=None, timeout=50, step=None
@@ -367,7 +350,7 @@ class mannageprocess:
     def __init__(self, queue_out_session):
         self.processtable = []
         self.queue_out_session = queue_out_session
-        logging.info("manage process start")
+        logging.debug('manage process start')
 
     def add_processcommand(
         self,

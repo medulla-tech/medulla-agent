@@ -1,24 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2016-2021 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-# file  plugin_applicationdeploymentjson.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import base64
 import hashlib
@@ -43,9 +25,10 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
     import pwd
 elif sys.platform.startswith("win"):
     import win32net
-plugin = {"VERSION": "5.26", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all", }  # fmt: skip
 
-Globaldata = {"port_local": 22}
+plugin = {"VERSION": "5.27", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+
+Globaldata = {'port_local': 22}
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 """
@@ -155,35 +138,31 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             else:
-                # supprime cet input
-                objectxmpp.xmpplog(
-                    '<span class="log_err">Package deplayed execution error</span>',
-                    type="deploy",
-                    sessionname=sessionid,
-                    priority=-1,
-                    action="xmpplog",
-                    who=strjidagent,
-                    how="",
-                    why="",
-                    module="Deployment | Error | Notify",
-                    date=None,
-                    fromuser="AM %s" % strjidagent,
-                    touser="",
-                )
-                objectxmpp.xmpplog(
-                    "DEPLOYMENT TERMINATE",
-                    type="deploy",
-                    sessionname=sessionid,
-                    priority=-1,
-                    action="xmpplog",
-                    who=strjidagent,
-                    how="",
-                    why="",
-                    module="Deployment | Terminate | Notify",
-                    date=None,
-                    fromuser="AM %s" % strjidagent,
-                    touser="",
-                )
+                #supprime cet input
+                objectxmpp.xmpplog('<span class="log_err">Package delayed execution error</span>',
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   how="",
+                                   why="",
+                                   module="Deployment | Error | Notify",
+                                   date=None,
+                                   fromuser="AM %s" % strjidagent,
+                                   touser="")
+                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   how="",
+                                   why="",
+                                   module="Deployment | Terminate | Notify",
+                                   date=None,
+                                   fromuser="AM %s" % strjidagent,
+                                   touser="")
                 objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             return
@@ -898,11 +877,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         namefolder = None
         msgdeploy = []
 
-        if hasattr(objectxmpp.config, "cdn_enable") and bool(
-            objectxmpp.config.cdn_enable
-        ):
-            data["methodetransfert"] = "pullcurl"
-            data["descriptor"]["info"]["methodetransfert"] = "pullcurl"
+
+        if hasattr(objectxmpp.config, 'cdn_enable') and bool(objectxmpp.config.cdn_enable):
+            data['methodetransfert'] = 'pullcurl'
+            data['descriptor']['info']['methodetransfert'] = 'pullcurl'
             url = objectxmpp.config.cdn_baseurl
             if url[-1] != "/":
                 url = url + "/"
@@ -2127,41 +2105,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                 touser="",
                             )
                             obcmd = utils.simplecommandstr(cmdexec)
-                            if obcmd["code"] != 0:
-                                objectxmpp.xmpplog(
-                                    '<span class="log_err">%s transfer error : %s </span>'
-                                    % (
-                                        objectxmpp.config.pushmethod,
-                                        utils.decode_strconsole(obcmd["result"]),
-                                    ),
-                                    type="deploy",
-                                    sessionname=sessionid,
-                                    priority=-1,
-                                    action="xmpplog",
-                                    who=strjidagent,
-                                    how="",
-                                    why="",
-                                    module="Deployment | Error | Download | Transfer",
-                                    date=None,
-                                    fromuser=data_in_session["login"],
-                                    touser="",
-                                )
-                                cmdexec = cmdexec.replace("pulseuser", "pulse")
-                                objectxmpp.xmpplog(
-                                    "Command : " + cmdexec,
-                                    type="deploy",
-                                    sessionname=sessionid,
-                                    priority=-1,
-                                    action="xmpplog",
-                                    who=strjidagent,
-                                    how="",
-                                    why="",
-                                    module="Deployment | Error | Download | Transfer",
-                                    date=None,
-                                    fromuser=data_in_session["login"],
-                                    touser="",
-                                )
-                                obcmd = utils.simplecommandstr(cmdexec)
                         finally:
                             time.sleep(2)
                             removeresource(data_in_session, objectxmpp, sessionid)
@@ -3027,25 +2970,18 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
                     )
                 else:
                     limit_rate_ko = ""
-                    msg = "Downloading file : %s Package : %s" % (
-                        filepackage,
-                        datasend["data"]["name"],
-                    )
-                objectxmpp.xmpplog(
-                    msg,
-                    type="deploy",
-                    sessionname=datasend["sessionid"],
-                    priority=-1,
-                    action="xmpplog",
-                    who=strjidagent,
-                    module="Deployment | Download | Transfer",
-                    date=None,
-                    fromuser=datasend["data"]["advanced"]["login"],
-                )
-                curlgetdownloadfile(
-                    dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko
-                )
-                changown_dir_of_file(dest)  # owner pulse or pulseuser.
+                    msg = 'Downloading file : %s Package : %s' % (filepackage, datasend['data']['name'])
+                objectxmpp.xmpplog(msg,
+                                   type='deploy',
+                                   sessionname=datasend['sessionid'],
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Deployment | Download | Transfer",
+                                   date=None,
+                                   fromuser=datasend['data']['advanced']['login'])
+                curlgetdownloadfile(dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko)
+                changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
                 logger.debug(str(e))
@@ -3193,30 +3129,19 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                     )
                 else:
                     limit_rate_ko = ""
-                    msg = "Downloading file : %s Package : %s" % (
-                        filepackage,
-                        datasend["data"]["name"],
-                    )
-                objectxmpp.xmpplog(
-                    msg,
-                    type="deploy",
-                    sessionname=datasend["sessionid"],
-                    priority=-1,
-                    action="xmpplog",
-                    who=strjidagent,
-                    module="Deployment | Download | Transfer",
-                    date=None,
-                    fromuser=datasend["data"]["advanced"]["login"],
-                )
-
-                curlgetdownloadfile(
-                    dest,
-                    urlfile,
-                    insecure=True,
-                    token=token,
-                    limit_rate_ko=limit_rate_ko,
-                )
-                changown_dir_of_file(dest)  # owner pulse or pulseuser.
+                    msg = 'Downloading file : %s Package : %s' % (filepackage, datasend['data']['name'])
+                objectxmpp.xmpplog(msg,
+                                   type='deploy',
+                                   sessionname=datasend['sessionid'],
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Deployment | Download | Transfer",
+                                   date=None,
+                                   fromuser=datasend['data']['advanced']['login'])
+                
+                curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
+                changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
                 logger.error(

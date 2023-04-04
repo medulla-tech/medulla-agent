@@ -36,8 +36,8 @@ else
 fi
 
 # A few settings
-PACKAGE_NAME="Pulse Agent"
-PACKAGE_DESC="XMPP Agent for machines managed by Pulse"
+PACKAGE_NAME="Medulla Agent"
+PACKAGE_DESC="XMPP Agent for machines managed by Medulla"
 AGENT_VERSION=$(grep ^AGENT_VERSION= /var/lib/pulse2/clients/win/generate-pulse-agent-win.sh | cut -d '"' -f2)
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 PULSE_MACHINE_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
@@ -100,7 +100,7 @@ cat <<EOF > xmppdeploy.json
             },
             {
                 "typescript": "python",
-"script": "import _winreg\r\nkey = _winreg.OpenKey( _winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\\\\\\Microsoft\\\\\\\Windows\\\\\\\CurrentVersion\\\\\\\Uninstall\\\\\\\Pulse Agent\\\\\\\', 0 , _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY )\r\n_winreg.SetValueEx(key,  'DisplayVersion'  , 0, _winreg.REG_SZ, '${AGENT_VERSION}')\r\n_winreg.CloseKey(key)",
+"script": "import _winreg\r\nkey = _winreg.OpenKey( _winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\\\\\\Microsoft\\\\\\\Windows\\\\\\\CurrentVersion\\\\\\\Uninstall\\\\\\\Medulla Agent\\\\\\\', 0 , _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY )\r\n_winreg.SetValueEx(key,  'DisplayVersion'  , 0, _winreg.REG_SZ, '${AGENT_VERSION}')\r\n_winreg.CloseKey(key)",
                 "actionlabel": "020e0912",
                 "codereturn": "",
                 "step": 3,

@@ -1,24 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
-#
-# (c) 2016-2022 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 import os
@@ -52,42 +35,20 @@ from lib.configuration import (
 from lib.managesession import session
 from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
-from lib.utils import (
-    DEBUGPULSE,
-    getIpXmppInterface,
-    refreshfingerprint,
-    getRandomName,
-    load_back_to_deploy,
-    cleanbacktodeploy,
-    call_plugin,
-    call_plugin_sequentially,
-    subnetnetwork,
-    createfingerprintnetwork,
-    isWinUserAdmin,
-    isMacOsUserAdmin,
-    check_exist_ip_port,
-    ipfromdns,
-    shutdown_command,
-    reboot_command,
-    vnc_set_permission,
-    save_count_start,
-    test_kiosk_presence,
-    file_get_contents,
-    connection_established,
-    file_put_contents,
-    simplecommand,
-    testagentconf,
-    Setdirectorytempinfo,
-    setgetcountcycle,
-    setgetrestart,
-    protodef,
-    geolocalisation_agent,
-    Env,
-    serialnumbermachine,
-    os_version,
-    unregister_agent,
-    file_message_iq,
-)
+from lib.managedbkiosk import manageskioskdb
+from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
+                        getRandomName, load_back_to_deploy, cleanbacktodeploy,\
+                        call_plugin, subnetnetwork,\
+                        createfingerprintnetwork, isWinUserAdmin,\
+                        isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
+                        shutdown_command, reboot_command, vnc_set_permission,\
+                        save_count_start,unregister_agent, unregister_subscribe, test_kiosk_presence, file_get_contents,\
+                        isBase64, connection_established, file_put_contents, \
+                        simplecommand, testagentconf, \
+                        Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
+                        protodef, geolocalisation_agent, Env, \
+                        serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent, \
+                        offline_search_kb
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -97,12 +58,14 @@ from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
 from lib.httpserver import Controller
+from lib.grafcetdeploy import grafcet
 from zipfile import *
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
 from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
+from datetime import datetime
 
 import datetime
 
@@ -259,7 +222,7 @@ class MUCBot(slixmpp.ClientXMPP):
         self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp
         self.queueout = queueout
-
+        self.presencectrlsubscribe = "unavailable"
         self.concurrentquickdeployments = {}
 
         # create dir for descriptor syncthing deploy
@@ -268,7 +231,6 @@ class MUCBot(slixmpp.ClientXMPP):
         )
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs(self.dirsyncthing, 0o755)
-        logger.info("start machine1  %s Type %s" % (conf.jidagent, conf.agenttype))
         slixmpp.ClientXMPP.__init__(
             self, jid.JID(conf.jidagent), conf.passwordconnection
         )
@@ -276,7 +238,8 @@ class MUCBot(slixmpp.ClientXMPP):
         laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
-        logging.warning(
+        laps_time_send_ping_to_kiosk = 350
+        logging.debug(
             "check connexion xmpp %ss" % laps_time_check_established_connection
         )
         self.back_to_deploy = {}
@@ -284,9 +247,7 @@ class MUCBot(slixmpp.ClientXMPP):
 
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
-        logging.log(
-            DEBUGPULSE, "slixmpp log level is %s" % self.config.log_level_slixmpp
-        )
+        logger.debug("slixmpp log level is %s" % self.config.log_level_slixmpp)
         handler_slixmpp.setLevel(self.config.log_level_slixmpp)
 
         # _____________ verify network interface _____________
@@ -300,11 +261,7 @@ class MUCBot(slixmpp.ClientXMPP):
         )
         logging.debug("filename: %s" % filetempinfolibfingerprint)
         if os.path.exists(filetempinfolibfingerprint):
-            logging.debug(
-                "current fingerprint file %s"
-                % file_get_contents(filetempinfolibfingerprint)
-            )
-            # comparaison
+            logging.debug("current fingerprint file %s" % file_get_contents(filetempinfolibfingerprint))
             if netfingerprintstart != file_get_contents(filetempinfolibfingerprint):
                 logging.warning(
                     "after start : registration must update the information in the xmpp tables."
@@ -313,15 +270,14 @@ class MUCBot(slixmpp.ClientXMPP):
         # ______________________________________________________
         Env.agenttype = self.config.agenttype
         managepackage.agenttype = self.config.agenttype
-        # creation object session ##########
+        # creation object session
         self.session = session(self.config.agenttype)
-        self.boolinventory = False  # cette variable permet de faire demander 1
-        # inventaire suite a 1 changement de reseau.
-        # inventaire sera demander quand l'agent sera dans 1 mode moins transitoire.
-        # CREATE MANAGE SCHEDULER##############
-        logging.debug("### CREATION MANAGER PLUGINSCHULING ##########")
+        self.boolinventory=False # cette variable permet de faire demander 1
+                                 # inventaire suite a 1 changement de reseau.
+                                 # inventaire sera demander quand l'agent sera dans 1 mode moins transitoire.
+        # CREATE MANAGE SCHEDULER
+        logging.debug("CREATION MANAGER PLUGINSCHEDULING")
         self.manage_scheduler = manage_scheduler(self)
-        logging.debug("##############################################")
         # Definition path directory plugin
         namelibplugins = "pluginsmachine"
         if self.config.agenttype in ["relayserver"]:
@@ -334,16 +290,12 @@ class MUCBot(slixmpp.ClientXMPP):
         self.charge_apparente_cluster = {}
 
         self.laps_time_networkMonitor = self.config.detectiontime
-        logging.warning("laps time network changing %s" % self.laps_time_networkMonitor)
-        # self.quitserverkiosk = False
-        # self.quitserverpipe  = True
-        # Update agent from MAster#############################
         self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
         self.img_agent = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "img_agent"
         )
         if os.path.isdir(self.img_agent):
-            logging.warning("deleting directory %s" % self.img_agent)
+            logging.debug('deleting directory %s' % self.img_agent)
             try:
                 shutil.rmtree(self.img_agent)
             except Exception as e:
@@ -424,7 +376,21 @@ class MUCBot(slixmpp.ClientXMPP):
             self.agentupdating = True
             logging.warning("Agent installed is different from agent on master.")
         # END Update agent from Master#############################
-        if self.config.agenttype in ["relayserver"]:
+
+        if self.config.agenttype in ['machine']:
+            # on appelle cette fonction toutes les 30 seconde
+            self.schedule('reinjection_deplot_message_box',
+                          30,
+                          self.reinjection_deplot_message_box,
+                          repeat=True)
+            # on appelle cette fonction a 200 seconde apres 1 restart.
+            self.schedule('reinjection_deploy_protected',
+                          60,
+                          self.reinjection_deploy_protected,
+                          repeat=False)
+
+        # initialise charge relay server
+        if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
             self.levelcharge = {}
             self.levelcharge["machinelist"] = []
@@ -439,17 +405,18 @@ class MUCBot(slixmpp.ClientXMPP):
 
         if not testagentconf(self.config.agenttype):
             # We remove the fingerprint file
-            pathfingerprint = os.path.join(Setdirectorytempinfo(), "fingerprintconf")
-            logger.error("configuration error del figerprint %s" % pathfingerprint)
+            pathfingerprint = os.path.join( Setdirectorytempinfo(),
+                                            'fingerprintconf')
+            logger.error("configuration error del fingerprint %s" % pathfingerprint)
             if os.path.isfile(pathfingerprint):
                 os.remove(pathfingerprint)
-                logger.error("configuration error del figerprint %s" % pathfingerprint)
+                logger.error("configuration error del fingerprint %s" % pathfingerprint)
         self.agentsiveo = self.config.jidagentsiveo
 
         self.agentmaster = jid.JID("master@pulse")
         self.sub_subscribe_all = []
-        if not hasattr(self.config, "sub_subscribe"):
-            self.sub_subscribe = self.agentmaster
+        if not hasattr(self.config, 'sub_subscribe'):
+            self.sub_subscribe = jid.JID("master_subs@pulse")
         else:
             if isinstance(self.config.sub_subscribe, list):
                 self.sub_subscribe_all = [jid.JID(x) for x in self.config.sub_subscribe]
@@ -462,8 +429,8 @@ class MUCBot(slixmpp.ClientXMPP):
                 self.sub_subscribe_all = [jid.JID(self.config.sub_subscribe)]
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
-        if not hasattr(self.config, "sub_logger"):
-            self.sub_logger = self.agentmaster
+        if not hasattr(self.config, 'sub_logger'):
+            self.sub_logger = jid.JID("master_log@pulse")
         else:
             if (
                 isinstance(self.config.sub_logger, list)
@@ -474,10 +441,10 @@ class MUCBot(slixmpp.ClientXMPP):
                 self.sub_logger = jid.JID(self.config.sub_logger)
 
         if self.sub_subscribe.bare == "":
-            self.sub_subscribe = self.agentmaster
+            self.sub_subscribe = jid.JID("master_subs@pulse")
 
-        if not hasattr(self.config, "sub_inventory"):
-            self.sub_inventory = self.agentmaster
+        if not hasattr(self.config, 'sub_inventory'):
+            self.sub_inventory = jid.JID("master_inv@pulse")
         else:
             if (
                 isinstance(self.config.sub_inventory, list)
@@ -487,10 +454,10 @@ class MUCBot(slixmpp.ClientXMPP):
             else:
                 self.sub_inventory = jid.JID(self.config.sub_inventory)
         if self.sub_inventory.bare == "":
-            self.sub_inventory = self.agentmaster
+            self.sub_inventory = jid.JID("master_inv@pulse")
 
-        if not hasattr(self.config, "sub_registration"):
-            self.sub_registration = self.agentmaster
+        if not hasattr(self.config, 'sub_registration'):
+            self.sub_registration = jid.JID("master_reg@pulse")
         else:
             if (
                 isinstance(self.config.sub_registration, list)
@@ -500,10 +467,10 @@ class MUCBot(slixmpp.ClientXMPP):
             else:
                 self.sub_registration = jid.JID(self.config.sub_registration)
         if self.sub_registration.bare == "":
-            self.sub_registration = self.agentmaster
+            self.sub_registration = jid.JID("master_reg@pulse")
 
-        if not hasattr(self.config, "sub_monitoring"):
-            self.sub_monitoring = self.agentmaster
+        if not hasattr(self.config, 'sub_monitoring'):
+            self.sub_monitoring = jid.JID("master_mon@pulse")
         else:
             if (
                 isinstance(self.config.sub_monitoring, list)
@@ -513,7 +480,18 @@ class MUCBot(slixmpp.ClientXMPP):
             else:
                 self.sub_monitoring = jid.JID(self.config.sub_monitoring)
         if self.sub_monitoring.bare == "":
-            self.sub_monitoring = self.agentmaster
+            self.sub_monitoring = jid.JID("master_mon@pulse")
+
+        if not hasattr(self.config, 'sub_updates'):
+            self.sub_updates = jid.JID("master_upd@pulse")
+        else:
+            if isinstance(self.config.sub_updates, list) and\
+                len(self.config.sub_updates) > 0:
+                self.sub_updates = jid.JID(self.config.sub_updates[0])
+            else:
+                self.sub_updates = jid.JID(self.config.sub_updates)
+        if self.sub_updates.bare == "":
+            self.sub_updates = jid.JID("master_upd@pulse")
 
         if sys.platform.startswith("linux"):
             if self.config.agenttype in ["relayserver"]:
@@ -545,24 +523,35 @@ class MUCBot(slixmpp.ClientXMPP):
                 "/opt", "Pulse", "etc", "syncthing", "config.xml"
             )
             self.tmpfile = "/tmp/confsyncting.txt"
-        # TODO: Disable this try if synthing is not activated. Prevent
-        # backtraces
-        try:
-            hostnameiddevice = None
-            if self.boundjid.domain == "pulse":
-                hostnameiddevice = "pulse"
-            self.deviceid = iddevice(
-                configfile=self.fichierconfsyncthing, deviceName=hostnameiddevice
-            )
-        except Exception:
-            pass
+        # TODO: Disable this try if synthing is not activated. Prevent backtraces
+        if  os.path.isfile(self.fichierconfsyncthing) :
+            try:
+                hostnameiddevice = None
+                if self.boundjid.domain == "pulse":
+                    hostnameiddevice = "pulse"
+                self.deviceid = iddevice(configfile=self.fichierconfsyncthing, deviceName=hostnameiddevice)
+            except Exception:
+                self.deviceid=""
+                pass
+        else:
+            self.deviceid=""
 
         if self.config.agenttype in ["relayserver"]:
             # We remove the start sessions of the agent.
             # As long as the Relayserver Agent isn't started, the sesion queues
             # where the deploy has failed are not useful
             self.session.clearallfilesession()
-        self.schedule("subscription", 120, self.subscribe_initialisation, repeat=False)
+
+        if self.config.agenttype in ['machine']:
+            self.schedule('stabilized_start',
+                          120,
+                          self.stabilized_start,
+                          repeat=True)
+
+        self.schedule('subscription',
+                      1800,
+                      self.unsubscribe_agent,
+                      repeat=True)
         self.reversessh = None
         self.reversesshmanage = {}
         self.signalinfo = {}
@@ -584,6 +573,8 @@ class MUCBot(slixmpp.ClientXMPP):
             )
         self.Deploybasesched = manageschedulerdeploy()
         self.eventkiosk = manage_kiosk_message(self.queue_recv_tcp_to_xmpp, self)
+        self.infolauncherkiook =  manageskioskdb()
+        self.kiosk_presence = "False"
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(
@@ -636,7 +627,7 @@ class MUCBot(slixmpp.ClientXMPP):
         self.schedule("check reconf file", 300, self.checkreconf, repeat=True)
 
         if self.config.netchanging == 1:
-            logging.warning("Network Changing enable")
+            logging.debug("Network Changing enable")
             if self.config.sched_check_network:
                 self.schedule(
                     "check network",
@@ -645,7 +636,16 @@ class MUCBot(slixmpp.ClientXMPP):
                     repeat=True,
                 )
         else:
-            logging.warning("Network Changing disable")
+            logging.debug("Network Changing disable")
+
+        if self.config.agenttype not in ['relayserver']:
+            self.schedule('check_subscribe', 900,
+                            self.check_subscribe,
+                            repeat=True)
+            if self.config.sched_send_ping_kiosk:
+                self.schedule('send_ping', laps_time_send_ping_to_kiosk,
+                            self.send_ping_to_kiosk,
+                            repeat=True)
         if self.config.sched_update_agent:
             self.schedule(
                 "check AGENT INSTALL", 350, self.checkinstallagent, repeat=True
@@ -661,24 +661,23 @@ class MUCBot(slixmpp.ClientXMPP):
             if self.config.sched_reload_deployments:
                 self.schedule("reloaddeploy", 15, self.reloaddeploy, repeat=True)
 
-            # ######################Update remote agent########################
-            self.diragentbase = os.path.join(
-                "/", "var", "lib", "pulse2", "xmpp_baseremoteagent"
-            )
-            self.Update_Remote_Agentlist = Update_Remote_Agent(self.diragentbase, True)
-            # ######################Update remote agent########################
-
+            # Update remote agent
+            self.diragentbase = os.path.join('/',
+                                             'var',
+                                             'lib',
+                                             'pulse2',
+                                             'xmpp_baseremoteagent')
+            self.Update_Remote_Agentlist = Update_Remote_Agent(
+                self.diragentbase, True)
         # we make sure that the temp for the inventories is greater than or equal to 1 hour.
         # if the time for the inventories is 0, it is left at 0.
         # this deactive cycle inventory
         if self.config.inventory_interval != 0:
             if self.config.inventory_interval < 3600:
                 self.config.inventory_interval = 3600
-                logging.warning("chang minimun time cyclic inventory : 3600")
-                logging.warning(
-                    "we make sure that the time for "
-                    " the inventories is greater than or equal to 1 hour."
-                )
+                logging.warning("change minimun time cyclic inventory : 3600")
+                logging.warning("we make sure that the time for "\
+                    " the inventories is greater than or equal to 1 hour.")
             if self.config.sched_check_inventory:
                 self.schedule(
                     "event inventory",
@@ -687,9 +686,9 @@ class MUCBot(slixmpp.ClientXMPP):
                     repeat=True,
                 )
         else:
-            logging.warning("not enable cyclic inventory")
+            logging.debug("The cyclic inventory feature is disabled")
 
-        if self.config.agenttype not in ["relayserver"]:
+        if self.config.agenttype not in ['relayserver']:
             if self.config.sched_session_reload:
                 self.schedule("session reload", 15, self.reloadsesssion, repeat=False)
         if self.config.sched_check_events:
@@ -724,7 +723,7 @@ class MUCBot(slixmpp.ClientXMPP):
         self.add_event_handler("changed_subscription", self.changed_subscription)
 
         self.RSA = MsgsignedRSA(self.boundjid.user)
-        logger.info("VERSION AGENT IS %s" % self.version_agent())
+        logger.info("The version of the agent is %s" % self.version_agent())
 
         self.register_handler(
             CoroutineCallback(
@@ -759,13 +758,10 @@ class MUCBot(slixmpp.ClientXMPP):
         if sys.platform.startswith("win"):
             result = win32api.SetConsoleCtrlHandler(self._CtrlHandler, 1)
             if result == 0:
-                logging.log(
-                    DEBUGPULSE,
-                    "Could not SetConsoleCtrlHandler (error %r)"
-                    % win32api.GetLastError(),
-                )
+                logger.debug('Could not SetConsoleCtrlHandler (error %r)' %
+                             win32api.GetLastError())
             else:
-                logging.log(DEBUGPULSE, "Set handler for console events.")
+                logger.debug('Set handler for console events.')
                 self.is_set = True
         elif sys.platform.startswith("linux"):
             signal.signal(signal.SIGINT, self.signal_handler)
@@ -995,10 +991,9 @@ class MUCBot(slixmpp.ClientXMPP):
         on relance xmpp dans agent
         il relit la conf...
         """
-        logging.log(DEBUGPULSE, "RESTART BOOT")
         self.brestartbot = True  # boucle reinitialise.
         # setgetrestart(1)
-        logging.log(DEBUGPULSE, "restart xmpp agent %s!" % self.boundjid.user)
+        logging.log(DEBUGPULSE,"We restart the medulla agent for the machine %s" % self.boundjid.user)
         self.disconnect(wait=wait)  # on provoque 1 connection default
 
     def quit_application(self, wait=2):
@@ -1203,12 +1198,32 @@ class MUCBot(slixmpp.ClientXMPP):
             resp.send()
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.error("Could not register account: %s" % e.iq["error"]["text"])
+            logging.debug("Could not register account: %s" % e.iq["error"]["text"])
             self.disconnect(wait=10)
 
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect(wait=10)
+
+    def check_subscribe(self):
+        if self.presencectrlsubscribe != "available":
+            logger.warning("Subscription [%s] status = %s" % (self.sub_subscribe, self.presencectrlsubscribe))
+
+    def stabilized_start(self):
+        """
+            It creates a file called BOOL_FILE_CONTROL_WATCH_DOG with
+            inside the pid and a date when it has been created.
+            It is used to see if the program runs correctly.
+        """
+        directory_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                  "INFOSTMP")
+        BOOL_FILE_CONTROL_WATCH_DOG = os.path.join(directory_file,
+                                                   "BOOL_FILE_CONTROL_WATCH_DOG")
+        pidprocess="process %s :(%s)" % (os.getpid(), str(datetime.now()))
+        logger.debug("creation %s [pid %s]" % (BOOL_FILE_CONTROL_WATCH_DOG,pidprocess ))
+        file_put_contents(BOOL_FILE_CONTROL_WATCH_DOG,pidprocess)
+
+        logger.debug("creation BOOL_FILE_CONTROL_WATCH_DOG in %s" % BOOL_FILE_CONTROL_WATCH_DOG)
 
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
@@ -1238,7 +1253,112 @@ class MUCBot(slixmpp.ClientXMPP):
             dataerreur,
         )
 
-    # Syncthing functions
+    def __dirsessionreprise(self):
+        dir_reprise_session = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+                "lib",
+                "INFOSTMP",
+                "REPRISE")
+        if not os.path.exists(dir_reprise_session):
+            os.makedirs(dir_reprise_session, mode=0o007)
+        return dir_reprise_session
+
+    def __clean_message_box(self):
+        # creation repertoire si probleme
+        dir_reprise_session=self.__dirsessionreprise()
+        # lit repertoire de fichier
+        filelist = [ x for x in os.listdir(dir_reprise_session) \
+                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_messagebox')]
+        for t in filelist:
+            filenamejson = os.path.join(dir_reprise_session, t)
+            detection=t.split('@_@')
+            try:
+                with open(filenamejson, 'r') as f:
+                    data = json.load(f)
+                    # signal error timeout reluanch
+                    data['data']['repriseerror']="ABORT DEPLOYMENT SHUTDOWND [USER NO CHOISE]"
+                    grafcet(self, data)
+            except:
+                logger.error("\n%s"%(traceback.format_exc()))
+            finally:
+                os.remove(filenamejson)
+        return
+
+    def reinjection_deploy_protected(self):
+        # creation repertoire si probleme
+        dir_reprise_session = self.__dirsessionreprise()
+        timecurrent=int(time.time())
+        timecurentdatetime= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(timecurrent)))
+        # lit repertoire de fichier
+        filelist = [ x for x in os.listdir(dir_reprise_session) \
+                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_protected')]
+        for t in filelist:
+            try:
+                filenamejson = os.path.join(dir_reprise_session, t)
+                detection=t.split('@_@')
+                if len(detection) == 5 and detection[0] == "medulla_protected":
+                    with open(filenamejson, 'r') as f:
+                        data = json.load(f)
+                    datainfo=data['data']
+                    slotdep= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(datainfo['stardate'])))
+                    slotend= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(datainfo['enddate'])))
+                    if timecurrent >= int(datainfo['stardate']) and timecurrent <= int(datainfo['enddate']):
+                        # on est toujours dans le temps de deployements on relance la tache protegee apres 1 shutdown
+                        try:
+                            data['data']['repriseok']="<span class='log_warn'>Resumption deploy session id %s on"\
+                                            " step %s restart machine (timeloacal %s)in slot deploy from server[ %s -> %s ]</span>"%(detection[4] ,
+                                                                                                        detection[3],
+                                                                                                        timecurentdatetime,
+                                                                                                        slotdep,
+                                                                                                        slotend)
+                            grafcet(self, data)
+                        except:
+                            logger.error("\nResumption deploy %s"%(traceback.format_exc()))
+                    else:
+                        try:
+                            data['data']['repriseerror']="<span class='log_err'>ABORT DEPLOYMENT SHUTDOWND session id %s"\
+                                                            " step %s out slot deploy [ %s -> %s ]  (timeloacal machine %s)</span>"%(detection[4],
+                                                            detection[3],
+                                                                                                    slotdep,
+                                                                                                    slotend,
+                                                                                                    timecurentdatetime)
+                            # reinjection for terminate deploy error correctement
+                            grafcet(self, data)
+                        except:
+                            logger.error("\nABORT DEPLOYMENT SHUTDOWND %s"%(traceback.format_exc()))
+            except:
+                logger.error("reinjection deploy protected\n%s"%(traceback.format_exc()))
+            finally:
+                os.remove(filenamejson)
+        return
+
+    def reinjection_deplot_message_box(self):
+        # creation repertoire si probleme
+        dir_reprise_session = self.__dirsessionreprise()
+        timecurrent=int(time.time())
+        # lit repertoire de fichier
+        filelist = [ x for x in os.listdir(dir_reprise_session) \
+                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_messagebox')]
+        for t in filelist:
+            try:
+                filenamejson = os.path.join(dir_reprise_session, t)
+                detection=t.split('@_@')
+                if len(detection) == 5 and detection[0]=="medulla_messagebox":
+                    with open(filenamejson, 'r') as f:
+                        data = json.load(f)
+                    datainfo=data['data']
+                    slotdep= time.strftime("%D %H:%M", time.localtime(int(datainfo['stardate'])))
+                    slotend= time.strftime("%D %H:%M", time.localtime(int(datainfo['enddate'])))
+                    if timecurrent > datainfo['stardate'] and timecurrent < datainfo['enddate']:
+                        # on relance le deployement et on quitte
+                        grafcet(self, data)
+            except:
+                logger.error("reinjection deploy message box\n%s"%(traceback.format_exc()))
+            finally:
+                os.remove(filenamejson)
+        return
+    # syncthing function
     def is_exist_folder_id(self, idfolder, config):
         for folder in config["folders"]:
             if folder["id"] == idfolder:
@@ -1735,9 +1855,160 @@ class MUCBot(slixmpp.ClientXMPP):
                 )
                 return result_waitting
             except Exception as e:
-
                 ret = '{"err" : "timeout %s" }' % mtimeout
                 return ret
+
+    def send_ping_to_kiosk(self):
+        """Send a ping to the kiosk  to ask it's presence"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', 8766)
+        try:
+            sock.connect(server_address)
+            try:
+                msg = '{"action":"presence","type":"ping"}'
+                sock.sendall(msg.encode('ascii'))
+                self.kiosk_presence = "True"
+            except:
+                self.kiosk_presence = "False"
+        except:
+            self.kiosk_presence = "False"
+        finally:
+            sock.close()
+        datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+
+        datasend['data']['subaction'] = "presence"
+        datasend['data']['value'] = self.kiosk_presence
+        self.send_message_to_master(datasend)
+
+    def send_pong_to_kiosk(self):
+        """Send a pong to the kiosk  to answer to ping presence"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', 8766)
+        try:
+            sock.connect(server_address)
+            try:
+                msg = '{"action":"presence","type":"pong"}'
+                sock.sendall(msg.encode('ascii'))
+                self.kiosk_presence = "True"
+            except:
+                self.kiosk_presence = "False"
+        except:
+            self.kiosk_presence = "False"
+        finally:
+            sock.close()
+
+        datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+        datasend['data']['subaction'] = "presence"
+        datasend['data']['value'] = self.kiosk_presence
+        self.send_message_to_master(datasend)
+
+    def handle_client_connection(self, client_socket):
+        """
+        this function handles the message received from kiosk or watching syncting service
+        the function must provide a response to an acknowledgment kiosk or a result
+        Args:
+            client_socket: socket for exchanges between AM and Kiosk
+
+        Returns:
+            no return value
+        """
+        try:
+            # request the recv message
+            recv_msg_from_kiosk = client_socket.recv(4096)
+            if len(recv_msg_from_kiosk) != 0:
+                print 'Received {}'.format(recv_msg_from_kiosk)
+                datasend = {'action': "resultkiosk",
+                            "sessionid": getRandomName(6, "kioskGrub"),
+                            "ret": 0,
+                            "base64": False,
+                            'data': {}}
+                msg = str(recv_msg_from_kiosk.decode("utf-8", 'ignore'))
+                ##############
+                if isBase64(msg):
+                    msg = base64.b64decode(msg)
+                try:
+                    result = json.loads(msg)
+                except ValueError as e:
+                    logger.error('Message socket is not json correct : %s' % (str(e)))
+                    return
+                if 'uuid' in result:
+                    datasend['data']['uuid'] = result['uuid']
+                if 'utcdatetime' in result:
+                    datasend['data']['utcdatetime'] = result['utcdatetime']
+                if 'action' in result:
+                    if result['action'] == "kioskinterface":
+                        #start kiosk ask initialization
+                        datasend['data']['subaction'] =  result['subaction']
+                        datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
+                        datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'][0])
+                        datasend['data']['oumachine'] = organizationbymachine()
+                    elif result['action'] == 'kioskinterfaceInstall':
+                        datasend['data']['subaction'] =  'install'
+                    elif result['action'] == 'kioskinterfaceLaunch':
+                        datasend['data']['subaction'] =  'launch'
+                    elif result['action'] == 'kioskinterfaceDelete':
+                        datasend['data']['subaction'] =  'delete'
+                    elif result['action'] == 'kioskinterfaceUpdate':
+                        datasend['data']['subaction'] =  'update'
+                    elif result['action'] == 'presence':
+                        if result['type'] == "ping":
+                            # Send pong message
+                            self.kiosk_presence = "True"
+                            self.send_pong_to_kiosk()
+                            logging.getLogger().info("Sendback pong message to kiosk")
+                        elif result['type'] == 'pong':
+                            # Set the kiosk_presence variable to True
+                            logging.getLogger().info("Receive pong message from kiosk")
+                            self.kiosk_presence = "True"
+
+                        else:
+                            # Ignore the others messages
+                            pass
+                        datasend['data']['subaction'] = "presence"
+                        datasend['data']['value'] = self.kiosk_presence
+
+                    elif result['action'] == 'kioskLog':
+                        if 'message' in result and result['message'] != "":
+                            self.xmpplog(
+                                        result['message'],
+                                        type = 'noset',
+                                        sessionname = '',
+                                        priority = 0,
+                                        action = "xmpplog",
+                                        who = self.boundjid.bare,
+                                        how = "Planned",
+                                        why = "",
+                                        module = "Kiosk | Notify",
+                                        fromuser = "",
+                                        touser = "")
+                            if 'type' in result:
+                                if result['type'] == "info":
+                                    logging.getLogger().info(result['message'])
+                                elif result['type'] == "warning":
+                                    logging.getLogger().warning(result['message'])
+                    elif result['action'] == "notifysyncthing":
+                        datasend['action'] = "notifysyncthing"
+                        datasend['sessionid'] = getRandomName(6, "syncthing")
+                        datasend['data'] = result['data']
+                    else:
+                        #bad action
+                        logging.getLogger().warning("this action is not taken into account : %s"%result['action'])
+                        return
+                    #call plugin on master
+                    self.send_message_to_master(datasend)
+        except Exception as e:
+            logging.error("message to kiosk server : %s" % str(e))
+            logger.error("\n%s"%(traceback.format_exc()))
+        finally:
+            client_socket.close()
 
     def established_connection(self):
         """check connection xmppmaster"""
@@ -2072,73 +2343,65 @@ class MUCBot(slixmpp.ClientXMPP):
         This function is a xmpp handler used to follow the signal
         from ejabberd when the state of an affiliated agent changes.
         """
-        frommsg = jid.JID(presence["from"])
-        if frommsg.bare == self.boundjid.bare:
-            logger.debug("Message self calling not processed")
-            return
-        if frommsg.bare == self.sub_subscribe and presence["type"] == "available":
+        frommsg = jid.JID(presence['from'])
+        logger.info("**********   changed_status %s %s"%(presence['from'],presence['type'] ))
+        if frommsg.bare == self.boundjid.bare and presence['type'] == 'available':
+            logger.debug( "Machine available for registration")
             self.update_plugin()
+            logger.debug( "Machine available for registration")
+            self.subscribe_initialisation()
+        elif frommsg.bare == self.sub_subscribe:
+            if self.presencectrlsubscribe != presence['type'] and presence['type'] != 'available':
+                logger.warning( "Subscription [%s] ON to OFF" % self.sub_subscribe )
+            self.presencectrlsubscribe = presence['type']
 
     def unsubscribe_agent(self):
         try:
             for t in self.client_roster:
                 if t == self.boundjid.bare or t in [self.sub_subscribe]:
                     continue
-                logger.info("unsubcribe agent %s" % t)
-                self.send_presence(pto=t, ptype="unsubscribe")
-                self.update_roster(t, subscription="remove")
+                logger.info("Unsubscribe agent %s" % t)
+                self.send_presence ( pto = t, ptype = 'unsubscribe' )
+                self.update_roster(t, subscription='remove')
         except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
+            logger.error("\n%s"%(traceback.format_exc()))
+
+        if self.sub_subscribe not in self.client_roster:
+            self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
+            self.get_roster()
+
 
     def subscribe_initialisation(self):
+        logger.info("subscribe_initialisation agent %s" % self.sub_subscribe)
         self.unsubscribe_agent()
-        logger.info("The client roster is %s " % self.client_roster.keys())
-        logger.info("The roster is %s " % self.roster)
-        self.xmpplog(
-            "%s roster is  %s" % (self.config.agenttype, self.sub_subscribe),
-            type="info",
-            sessionname="",
-            priority=-1,
-            action="xmpplog",
-            who=self.boundjid.bare,
-            how="",
-            why="",
-            date=None,
-            fromuser=self.boundjid.bare,
-            touser="",
-        )
-
-    def get_or_create_eventloop(self):
-        try:
-            return asyncio.get_event_loop()
-        except RuntimeError as ex:
-            if "There is no current event loop in thread" in str(ex):
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                return asyncio.get_event_loop()
+        if self.sub_subscribe not in self.client_roster.keys():
+            logger.warning("Subscription [%s] is not yet in the roster %s" % (self.sub_subscribe,
+                                                               self.client_roster.keys()))
+        logger.info("%s roster is %s configured substitute is %s" % (self.config.agenttype,
+                                                               self.client_roster.keys(),
+                                                               self.sub_subscribe))
+        self.xmpplog("%s roster is %s configured substitute is %s" % (self.config.agenttype,
+                                                                self.client_roster.keys(),
+                                                                self.sub_subscribe),
+                    type='info',
+                    sessionname="",
+                    priority=-1,
+                    action="xmpplog",
+                    who=self.boundjid.bare,
+                    how="",
+                    why="",
+                    date=None ,
+                    fromuser=self.boundjid.bare,
+                    touser="")
 
     def start(self, event):
-        self.datas_send = []
-        new_list = self.sub_subscribe_all[:]
-        new_list.pop(0)
-        for t in new_list:
-            logger.info("unsubscribe  %s agent" % t)
-            self.send_presence(pto=t, ptype="unsubscribe")
-        self.send_presence()
-
-        logger.info("Subscribe %s" % self.sub_subscribe)
-        self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
-        logger.info("get_roster")
+        # send iq to subscribe
+        self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         self.get_roster()
-
         self.ipconnection = self.config.Server
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        try:
-            self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
-
-        if self.config.agenttype in ["relayserver"]:
+        self.__clean_message_box()
+        if self.config.agenttype in ['relayserver']:
             try:
                 if self.config.public_ip_relayserver != "":
                     logging.log(
@@ -2170,29 +2433,31 @@ class MUCBot(slixmpp.ClientXMPP):
                 self.send_message(mbody=json.dumps(datasend), mto=ars, mtype="chat")
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split("@")[0]
 
-        self.xmpplog(
-            "Starting %s agent -> subscription agent is %s"
-            % (self.config.agenttype, self.sub_subscribe),
-            type="info",
-            sessionname="",
-            priority=-1,
-            action="xmpplog",
-            who=self.boundjid.bare,
-            how="",
-            why="",
-            date=None,
-            fromuser=self.boundjid.bare,
-            touser="",
-        )
-        # notify master conf error in AM
-        dataerrornotify = {
-            "to": self.boundjid.bare,
-            "action": "notify",
-            "sessionid": getRandomName(6, "notify"),
-            "data": {"msg": "", "type": "error"},
-            "ret": 0,
-            "base64": False,
-        }
+        self.xmpplog("Starting %s agent -> subscription agent is %s" % (self.config.agenttype, self.sub_subscribe),
+                     type='info',
+                     sessionname="",
+                     priority=-1,
+                     action="xmpplog",
+                     who=self.boundjid.bare,
+                     how="",
+                     why="",
+                     date=None ,
+                     fromuser=self.boundjid.bare,
+                     touser="")
+        #notify master conf error in AM
+        dataerrornotify = {'to': self.boundjid.bare,
+                           'action': "notify",
+                           "sessionid": getRandomName(6, "notify"),
+                           'data': {'msg': "",
+                                    'type': 'error'
+                                   },
+                           'ret': 0,
+                           'base64': False
+                          }
+        try:
+            self.send_ping_to_kiosk()
+        except Exception:
+            pass
 
         if not os.path.isdir(self.config.defaultdir):
             dataerrornotify["data"]["msg"] = (
@@ -2280,16 +2545,13 @@ class MUCBot(slixmpp.ClientXMPP):
 
     def initialise_syncthing(self):
         try:
-            logger.info("____________________________________________")
-            logger.info("___________ INITIALISE SYNCTHING ___________")
-            logger.info("____________________________________________")
-
             self.config.syncthing_on
         except NameError:
             self.config.syncthing_on = False
 
         if self.config.syncthing_on:
-            if self.config.agenttype not in ["relayserver"]:
+            logger.info("Initialisation of syncthing in progress.")
+            if self.config.agenttype not in ['relayserver']:
                 if self.config.sched_check_syncthing_deployment:
                     self.schedule(
                         "scan_syncthing_deploy",
@@ -2310,29 +2572,34 @@ class MUCBot(slixmpp.ClientXMPP):
             self.Ctrlsyncthingprogram.restart_syncthing()
 
             try:
-                logging.debug(
-                    "initialisation syncthing file conf : %s port %s"
-                    % (self.fichierconfsyncthing, self.config.syncthing_gui_port)
-                )
-                self.syncthing = syncthing(
-                    configfile=self.fichierconfsyncthing,
-                    port=self.config.syncthing_gui_port,
-                )
+                self.syncthing = syncthing(configfile=self.fichierconfsyncthing, port=self.config.syncthing_gui_port)
                 if logger.level <= 10:
                     self.syncthing.save_conf_to_file(self.tmpfile)
                 else:
-                    try:
-                        os.remove(self.tmpfile)
-                    except OSError:
-                        pass
+                    if os.path.isfile(self.tmpfile):
+                        try:
+                            os.remove(self.tmpfile)
+                        except OSError:
+                            logging.error("We failed to remove the file %s" % self.tmpfile)
+                            pass
             except Exception as e:
-                logging.error("syncthing initialisation : %s" % str(e))
-                logger.error("\n%s" % traceback.format_exc())
+                logging.error("The initialisation of syncthing failed with the error %s: " % str(e))
+                logger.error("We hit the following backtrace: \n%s" % traceback.format_exc())
                 logger.error("Syncthing is not functionnal. Using the degraded mode")
 
-    def send_message_agent(
-        self, mto, mbody, msubject=None, mtype=None, mhtml=None, mfrom=None, mnick=None
-    ):
+            logger.info("Initialisation of syncthing finished.")
+
+        else:
+            logger.warning("Syncthing is disabled, we won't initialise it.")
+
+    def send_message_agent(self,
+                           mto,
+                           mbody,
+                           msubject=None,
+                           mtype=None,
+                           mhtml=None,
+                           mfrom=None,
+                           mnick=None):
         if mto != "console":
             self.send_message(
                 mto, json.dumps(mbody), msubject, mtype, mhtml, mfrom, mnick
@@ -2516,25 +2783,27 @@ class MUCBot(slixmpp.ClientXMPP):
         # retrieve existing sessions
         if not self.session.loadsessions():
             return
-        logging.log(DEBUGPULSE, "RELOAD SESSION DEPLOY")
+        logger.debug("RELOAD SESSION DEPLOY")
         try:
             # load back to deploy after read session
             self.back_to_deploy = load_back_to_deploy()
-            logging.log(DEBUGPULSE, "RELOAD DEPENDENCY MANAGER")
+            logger.debug("RELOAD DEPENDENCY MANAGER")
         except IOError:
             self.back_to_deploy = {}
         cleanbacktodeploy(self)
         for i in self.session.sessiondata:
-            logging.log(DEBUGPULSE, "DEPLOYMENT AFTER RESTART OU RESTART BOT")
-            msg = {"from": self.boundjid.bare, "to": self.boundjid.bare}
-            call_plugin(
-                i.datasession["action"],
-                self,
-                i.datasession["action"],
-                i.datasession["sessionid"],
-                i.datasession["data"],
-                msg,
-                {},
+            logger.debug("DEPLOYMENT AFTER RESTART OU RESTART BOT")
+            msg={
+                'from': self.boundjid.bare,
+                'to': self.boundjid.bare
+            }
+            call_plugin( i.datasession['action'],
+                        self,
+                        i.datasession['action'],
+                        i.datasession['sessionid'],
+                        i.datasession['data'],
+                        msg,
+                        {}
             )
 
     def loginfotomaster(self, msgdata):
@@ -2611,11 +2880,11 @@ class MUCBot(slixmpp.ClientXMPP):
             if os.path.isfile(namefilebool):
                 break
             time.sleep(2)
-        logging.log(
-            DEBUGPULSE, "RESTART AGENT [%s] for new configuration" % self.boundjid.user
-        )
+        logging.log(DEBUGPULSE,"A new configuration has been detected on %s. We will reconfigure it." % self.boundjid.user)
+        
         if force_full_registration:
             self.force_full_registration()
+
         if restatbot:
             self.restartBot()
 
@@ -2628,11 +2897,9 @@ class MUCBot(slixmpp.ClientXMPP):
 
     def networkMonitor(self):
         try:
-            logging.log(
-                DEBUGPULSE,
-                "network monitor time  "
-                "%ss %s!" % (self.laps_time_networkMonitor, self.boundjid.user),
-            )
+            logging.debug("network monitor time  "\
+                          "%ss %s!" % (self.laps_time_networkMonitor,
+                                       self.boundjid.user))
             md5ctl = createfingerprintnetwork()
             force_reconfiguration = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)),
@@ -2678,24 +2945,18 @@ class MUCBot(slixmpp.ClientXMPP):
                 if os.path.isfile(BOOLFILEINVENTORYONCHANGINTERFACE):
                     # if on a ce fichier alors on genere 1 nouveau inventaire
                     os.remove(BOOLFILEINVENTORYONCHANGINTERFACE)
-                    logging.log(DEBUGPULSE, "send inventory on chang network")
+                    logging.log(DEBUGPULSE, "The network changed. We will send a new inventory")
                     self.handleinventory()
         except Exception as e:
             logging.error(" %s " % (str(e)))
             logger.error("\n%s" % (traceback.format_exc()))
 
     def reinstall_agent(self):
-        file_put_contents(
-            os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"),
-            "use file boolean update. enable verify update.",
-        )
-        logger.debug(
-            "RE_INSTALL AGENT VERSION %s to %s"
-            % (
-                file_get_contents(os.path.join(self.img_agent, "agentversion")),
-                self.boundjid.bare,
-            )
-        )
+        file_put_contents(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"),
+                        "use file boolean update. enable verify update.")
+        logger.debug("We will update Medulla agent from version %s to %s" % (file_get_contents(os.path.join(self.img_agent,
+                                                                                               "agentversion")),
+                                                        self.boundjid.bare ))
         agentversion = os.path.join(self.pathagent, "agentversion")
         versiondata = (
             file_get_contents(os.path.join(self.img_agent, "agentversion"))
@@ -2706,7 +2967,8 @@ class MUCBot(slixmpp.ClientXMPP):
 
         try:
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
-        except OSError:
+        except OSError as remove_error:
+            logger.error("An error occured while trying to remove the %s file. \n We obtained the error %s" % (os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"), remove_error))
             pass
 
         replycatorcmd = "python3 %s" % (os.path.join(self.pathagent, "replicator.py"))
@@ -2744,7 +3006,6 @@ class MUCBot(slixmpp.ClientXMPP):
             logger.error("return code is : %s" % (result["code"]))
 
     def checkinstallagent(self):
-        # verify si boollean existe.
         if self.config.updating == 1:
             if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
                 if self.descriptor_master is not None:
@@ -3111,6 +3372,8 @@ AGENT %s ERROR TERMINATE""" % (
             "uuid_serial_machine": serialnumbermachine(),
             "updatingplugin": self.config.updatingplugin,
             "updatingagent": self.config.updating,
+            'uuid_serial_machine' : serialnumbermachine(),
+            "system_info" : offline_search_kb().get(),
         }
         try:
             dataobj["md5_conf_monitoring"] = ""
@@ -3145,11 +3408,11 @@ AGENT %s ERROR TERMINATE""" % (
                     dataobj["packageserver"]["public_ip"] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
+        md5agentversion = Update_Remote_Agent(self.pathagent, True ).get_fingerprint_agent_base()
+        dataobj['md5agentversion'] = md5agentversion
         if self.config.updating == 1:
-            dataobj["md5agent"] = Update_Remote_Agent(
-                self.pathagent, True
-            ).get_fingerprint_agent_base()
-        # TODO: determination lastusersession to review
+            dataobj['md5agent'] = md5agentversion
+        #todo determination lastusersession to review
         lastusersession = ""
         userlist = list({users[0] for users in psutil.users()})
         if len(userlist) > 0:
@@ -3357,6 +3620,80 @@ def tgconf(optstypemachine):
     return tg
 
 
+    #### start xmpp process
+    p = Process(target=process_xmpp_agent,
+                name="xmppagent",
+                args=(optstypemachine, optsconsoledebug,
+                                       optsdeamon,
+                                       tglevellog,
+                                       tglogfile,
+                                       queue_recv_tcp_to_xmpp,
+                                       queueout,
+                                       eventkilltcp,
+                                       eventkillpipe))
+    processes.append(p)
+    p.start()
+    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintreename")
+    file_put_contents(windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid ))
+    logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                      p.pid,
+                                                      p.name,
+                                                      p.pid))
+    p = Process(target=process_tcp_serveur,
+                name="tcp_serveur",
+                args=(  14000,
+                        optstypemachine,
+                        optsconsoledebug,
+                        optsdeamon,
+                        tglevellog,
+                        tglogfile,
+                        queue_recv_tcp_to_xmpp,
+                        queueout,
+                        eventkilltcp))
+    processes.append(p)
+    p.start()
+    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintreename")
+
+    file_put_contents_w_a(windowfilepidname,
+                          "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
+                          option="a")
+    logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                      p.pid,
+                                                      p.name,
+                                                      p.pid))
+    if sys.platform.startswith('win'):
+        logger.debug("__________ INSTALL SERVER PIPE NAMED WINDOWS __________")
+        #using event eventkillpipe for signal stop thread
+        p = Process(target=process_serverPipe,
+                    name="serveur pipe windows",
+                    args=(optstypemachine,
+                          optsconsoledebug,
+                          optsdeamon,
+                          tglevellog,
+                          tglogfile,
+                          queue_recv_tcp_to_xmpp,
+                          queueout,
+                          eventkillpipe))
+        processes.append(p)
+        p.start()
+        windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         "INFOSTMP",
+                                         "pidagentwintreename")
+
+        file_put_contents_w_a(windowfilepidname,
+                            "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
+                            option="a")
+        logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                          p.pid,
+                                                          p.name,
+                                                          p.pid))
+    # ==========================
+    # = cherrypy server config =
+    # ==========================
 def servercherrypy(
     optstypemachine,
     optsconsoledebug,
@@ -3726,7 +4063,6 @@ class process_xmpp_agent:
             setgetcountcycle()
 
             setgetrestart()
-            logging.log(DEBUGPULSE, "WHILE RESTART VARIABLE %s" % setgetrestart(-1))
             tg = tgconf(optstypemachine)
             xmpp = MUCBot(
                 tg,
@@ -3748,26 +4084,76 @@ class process_xmpp_agent:
             xmpp.register_plugin("xep_0077")  # In-band Registration
             xmpp["xep_0077"].force_registration = True
 
-            logging.log(DEBUGPULSE, "connect to %s" % ipfromdns(tg.Server))
-            logging.log(DEBUGPULSE, "connect to port %s" % tg.Port)
-            time.sleep(1)
-            if xmpp.config.agenttype in ["relayserver"]:
-                self.process_restartbot = (
-                    process_restartbot
-                ) = xmpp.Mode_Marche_Arret_loop(
-                    forever=False, timeout=2, type_machine="relayserver"
-                )
+            # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
+            if xmpp.config.agenttype in ['relayserver']:
+                attempt = True
             else:
-                self.process_restartbot = (
-                    process_restartbot
-                ) = xmpp.Mode_Marche_Arret_loop(
-                    forever=False, timeout=2, type_machine="machine"
-                )
+                attempt = False
+            logging.log(DEBUGPULSE,"connecting to %s:%s" % (ipfromdns(tg.Server), tg.Port))
+            time.sleep(5)
+            if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
+                xmpp.process(block=True)
+                logging.log(DEBUGPULSE,"connected to %s:%s" % (ipfromdns(tg.Server), tg.Port))
+                time.sleep(2)
+            else:
+                logging.log(DEBUGPULSE,"Unable to connect to %s:%s" % (ipfromdns(tg.Server), tg.Port))
+                logging.log(DEBUGPULSE,"We are now searching for an alternative server")
+                setgetrestart(0)
+                time.sleep(2)
+            if signalint:
+                logging.log(DEBUGPULSE,"CTRL-C have been called. We are closing the medulla agent.")
+                try:
+                    xmpp.eventkilltcp.set()
+                    xmpp.eventkillpipe.set()
+                except Exception:
+                    pass
+                time.sleep(1)
+                break
+            if xmpp.config.agenttype in ['relayserver']:
+                terminateserver(xmpp)
 
+            if setgetrestart(-1) == 0:
+                if os.path.isfile(conffilename("cluster")):
+                    logger.debug("We restart and use the %s file to find the alternatives" % conffilename("cluster"))
+                    xmpp.force_full_registration()
+                    setgetcountcycle(1)
+                    try:
+                        timealternatifars = random.randint(*xmpp.config.timealternatif)
+                        logging.log(DEBUGPULSE,"We are waiting %s seconds before trying again" % timealternatifars)
+                        time.sleep(timealternatifars)
+                        newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
 
-class process_agent_search:
-    def __init__(self, pid_agent, depth=3):
-        self.pid = ("%s" % pid_agent).strip()
+                        changeconnection( conffilename(xmpp.config.agenttype),
+                                        newparametersconnect[2],
+                                        newparametersconnect[1],
+                                        newparametersconnect[0],
+                                        newparametersconnect[3])
+                        if newparametersconnect[5] < setgetcountcycle(-1):
+                            # If more than one cycle, we restart the configurator.
+                            setgetcountcycle()
+                            logging.log(DEBUGPULSE,"We start the connector to find a new server")
+                            nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                            args = ['python', nameprogconnection, '-t', 'machine']
+                            subprocess.call(args)
+                            time.sleep(10)
+                    except Exception:
+                        logger.error("An error occured while searching for an alternative server")
+                        logger.error("Please check the file %s" % conffilename(xmpp.config.agenttype))
+                else:
+                    logging.error("The file %s is missing" % conffilename("cluster"))
+                    setgetcountcycle(1)
+                    if setgetcountcycle(-1) > 3:
+                        setgetcountcycle()
+                        logging.log(DEBUGPULSE,"We need to restart the configurator as the file cluster.ini is missing")
+                        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                        args = ['python', nameprogconnection, '-t', 'machine']
+                        subprocess.call(args)
+                        time.sleep(10)
+        terminateserver(xmpp)
+
+class process_agent_search():
+    def __init__(self, pid_agent, depth = 3):
+        self.pid = ("%s"%pid_agent).strip()
         # initialisation wmi
         self.wmi = win32com.client.GetObject("winmgmts:")
         self.processname = {}
@@ -3807,11 +4193,11 @@ if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
         print("Agent must be running as root")
         sys.exit(0)
-    elif sys.platform.startswith("win") and isWinUserAdmin() == 0:
-        print("Pulse agent must be running as Administrator")
+    elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
+        print "Medulla agent must be running as Administrator"
         sys.exit(0)
-    elif sys.platform.startswith("darwin") and not isMacOsUserAdmin():
-        print("Pulse agent must be running as root")
+    elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
+        print "Medulla agent must be running as root"
         sys.exit(0)
     optp = OptionParser()
     optp.add_option(

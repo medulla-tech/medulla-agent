@@ -1,25 +1,8 @@
 #!/usr/bin/python3
-# -*- coding: utf-8; -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-# file /pulse_xmpp_master_substitute/lib/configuration.py
+#!/usr/bin/env python
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 import sys
 import os
 import logging
@@ -173,6 +156,9 @@ class confParameter:
         if "pkgs" in self.plugins_list:
             self.readConfpkgs(Config)
 
+        if "admin" in self.plugins_list:
+            self.readConfadmin(Config)
+
     def _levellogdata(self, levelstring):
         strlevel = levelstring.upper()
         if strlevel in ["CRITICAL", "FATAL"]:
@@ -191,6 +177,51 @@ class confParameter:
             return 25
         else:
             return 20
+
+    def readConfadmin(self, confiobject):
+        self.admin_dbpooltimeout = 30
+        if confiobject.has_option("admindatabase", "admin_dbpooltimeout"):
+            self.admin_dbpooltimeout = confiobject.getint(
+                "admindatabase", "admin_dbpooltimeout"
+            )
+
+        self.admin_dbhost = "localhost"
+        if confiobject.has_option("admindatabase", "admin_dbhost"):
+            self.admin_dbhost = confiobject.get("admindatabase", "admin_dbhost")
+
+        self.admin_dbport = 3306
+        if confiobject.has_option("admindatabase", "admin_dbport"):
+            self.admin_dbport = confiobject.getint("admindatabase", "admin_dbport")
+
+        self.admin_dbname = "admin"
+        if confiobject.has_option("admindatabase", "admin_dbname"):
+            self.admin_dbname = confiobject.get("admindatabase", "admin_dbname")
+
+        self.admin_dbuser = "mmc"
+        if confiobject.has_option("admindatabase", "admin_dbuser"):
+            self.admin_dbuser = confiobject.get("admindatabase", "admin_dbuser")
+
+        self.admin_dbpasswd = "mmc"
+        if confiobject.has_option("admindatabase", "admin_dbpasswd"):
+            self.admin_dbpasswd = confiobject.get("admindatabase", "admin_dbpasswd")
+
+        self.admin_dbpoolrecycle = 3600
+        if confiobject.has_option("admindatabase", "admin_dbpoolrecycle"):
+            self.admin_dbpoolrecycle = confiobject.getint(
+                "admindatabase", "admin_dbpoolrecycle"
+            )
+
+        self.admin_dbpoolsize = 60
+        if confiobject.has_option("admindatabase", "admin_dbpoolsize"):
+            self.admin_dbpoolsize = confiobject.getint(
+                "admindatabase", "admin_dbpoolsize"
+            )
+
+        self.admin_dbechoquery = False
+        if confiobject.has_option("admindatabase", "admin_dbechoquery"):
+            self.admin_dbechoquery = confiobject.getboolean(
+                "admindatabase", "admin_dbechoquery"
+            )
 
     def readConfkiosk(self, confiobject):
         self.kiosk_dbpooltimeout = 30

@@ -1,24 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2020 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-# file : plugin_updatefusion.py
+# SPDX-FileCopyrightText: 2020-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 from lib import utils
@@ -31,7 +13,8 @@ import os
 FUSIONVERSION = "2.5.2"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "updatefusion", "TYPE": "machine"}  # fmt: skip
+
+plugin = {"VERSION": "1.2", "NAME": "updatefusion", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -72,7 +55,7 @@ def check_if_binary_ok():
         if os.path.isfile(fusion_bin_path):
             logger.debug("FusionInventory is correctly installed. Nothing to do")
         else:
-            logger.error("Something went wrong, we need to reinstall the component.")
+            logger.error("Something went wrong while installing FusionInventory, we need to reinstall the component.")
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\FusionInventory-Agent" '
@@ -82,7 +65,7 @@ def check_if_binary_ok():
             if result["code"] == 0:
                 logger.debug("The FusionInventory module is ready to be reinstalled.")
             else:
-                logger.debug("We failed to reinitialize the registry entry.")
+                logger.debug("We failed to reinitialize the registry entry for FusionInventory.")
 
 
 def updatefusion(xmppobject):

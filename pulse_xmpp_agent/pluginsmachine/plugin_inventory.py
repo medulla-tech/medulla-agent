@@ -1,24 +1,6 @@
 # -*- coding: utf-8 -*-
-#
-# (c) 2016 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-# file : plugin_inventory.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 from xml.etree import ElementTree
 from lib import utils
@@ -34,15 +16,18 @@ import subprocess
 import defusedxml.ElementTree as ET
 import hashlib
 
+from lib import utils
 logger = logging.getLogger()
 if sys.platform.startswith("win"):
     from lib import registerwindows
-    import winreg
+    import _winreg
+from xml.etree import ElementTree
+from sleekxmpp import jid
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.6", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.61", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -50,6 +35,19 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
+    try:
+        xmppobject.sub_inventory
+    except :
+        xmppobject.sub_inventory = jid.JID("master_inv@pulse")
+    try:
+        xmppobject.sub_updates
+    except :
+        xmppobject.sub_updates = jid.JID("master_upd@pulse")
+    try:
+        send_plugin_update_window(xmppobject)
+    except Exception as e:
+        logger.error("\n%s" % (traceback.format_exc()))
+
     boolchange = True
     namefilexml = ""
     if hasattr(xmppobject.config, "via_xmpp"):
@@ -90,6 +88,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_inventory
     except BaseException:
         xmppobject.sub_inventory = xmppobject.agentmaster
+
     resultaction = "result%s" % action
     result = {}
     result["action"] = resultaction
@@ -216,7 +215,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     )
                     raise Exception(str(e))
             else:
-                raise Exception("Inventory file does not exist")
+                logger.warning("The inventory file %s does not exits" % inventoryfile)
+                logger.warning("If the Medulla agent just started, this error is normal")
+                logger.warning("But if it starts for a while please check that FusionInventory is correctly installed and working")
         except Exception as e:
             dataerreur["data"]["msg"] = "Plugin inventory error %s : %s" % (
                 dataerreur["data"]["msg"],
@@ -848,3 +849,22 @@ def printer_string(
     if status is not None:
         xmlprinter = "%s\n<STATUS>%s</STATUS>" % (xmlprinter, status)
     return "%s\n</PRINTERS>" % (xmlprinter)
+
+
+def send_plugin_update_window(xmppobject):
+
+        sessioniddata = utils.getRandomName(6, "update_window")
+        try:
+            update_information = {
+                "action": "update_window",
+                "sessionid": sessioniddata,
+                "data": { "system_info" : utils.offline_search_kb().get()},
+                "ret": 0,
+                "base64": False,
+            }
+
+            xmppobject.send_message( mto=xmppobject.sub_updates,
+                               mbody=json.dumps(update_information),
+                               mtype="chat")
+        except Exception as e:
+            logger.error("\n%s" % (traceback.format_exc()))

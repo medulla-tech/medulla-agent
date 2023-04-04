@@ -1,26 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
-#
-# (c) 2016-2020 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-
-# file : pulse_xmpp_agent/lib/server_kiosk.py
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 import re
@@ -98,35 +79,18 @@ class process_serverPipe:
                 level=tglevellog, format=format, filename=tglogfile, filemode="a"
             )
         self.logger = logging.getLogger()
-        self.logger.debug(
-            "_____________________________________________________________"
-        )
-        self.logger.debug(
-            "________________ INITIALISATION SERVER PIPE _________________"
-        )
-        self.logger.debug(
-            "_____________________________________________________________"
-        )
+        self.logger.debug(" INITIALISATION SERVER PIPE")
 
         tg = confParameter(optstypemachine)
         self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp
         # just do one connection and terminate.
         # self.quitserverpipe = False
-        if platform.system() == "Windows":
-            self.logger.debug(
-                "________________________________________________________________"
-            )
-            self.logger.info(
-                "________ START SERVER WATCHES NETWORK INTERFACE WINDOWS ________"
-            )
-            self.logger.debug(
-                "________________________________________________________________"
-            )
-            # self.eventkillpipe = threading.Event()
+        if platform.system()=='Windows':
+            self.logger.debug("Starting the server that watches for network interface changes")
             pid = os.getpid()
             while not self.eventkillpipe.wait(1):
-                self.logger.debug("WAITING INTERFACE INFORMATION")
+                self.logger.debug ("Waiting for interface informations")
                 try:
                     self.pipe_handle = win32pipe.CreateNamedPipe(
                         r"\\.\pipe\interfacechang",
@@ -139,7 +103,7 @@ class process_serverPipe:
                         None,
                     )
                     win32pipe.ConnectNamedPipe(self.pipe_handle, None)
-                    self.logger.debug("___Waitting event network chang___ pid %s" % pid)
+                    self.logger.debug("Waiting event network change pid %s" % pid)
                     data = win32file.ReadFile(self.pipe_handle, 4096)
                 except Exception as e:
                     self.logger.error("read input from Pipenammed error %s" % str(e))
@@ -147,25 +111,15 @@ class process_serverPipe:
                     continue
                 finally:
                     self.pipe_handle.Close()
-                self.logger.debug("lecture")
                 if len(data) >= 2:
                     if data[1] == "terminate":
-                        self.logger.debug("__Terminate event network listen Server__")
+                        self.logger.debug("Terminate event network listen Server")
                     else:
                         try:
-                            self.logger.debug("_____________%s" % data[1])
-                            # result = json.loads(data[1])
-                            # self.logger.debug("_____________%s"%result)
-                            # sendinterfacedata ={'interface': True,
-                            # 'data': result }
-                            # self.logger.debug("_____________%s"%sendinterfacedata)
+                            self.logger.debug("_____________%s"%data[1])
                             self.queue_recv_tcp_to_xmpp.put(data[1])
                         except Exception as e:
-                            self.logger.warning(
-                                "read input from Pipe nammed error %s" % str(e)
-                            )
-        self.logger.info("QUIT process_serverPipe")
-
+                            self.logger.warning("read input from Pipe nammed error %s"%str(e))
 
 class process_tcp_serveur:
     def __init__(
@@ -209,15 +163,7 @@ class process_tcp_serveur:
                 level=tglevellog, format=format, filename=tglogfile, filemode="a"
             )
         self.logger = logging.getLogger()
-        self.logger.debug(
-            "____________________________________________________________"
-        )
-        self.logger.debug(
-            "_______________ INITIALISATION SERVER KIOSK ________________"
-        )
-        self.logger.debug(
-            "____________________________________________________________"
-        )
+        self.logger.debug("Initialisation of the Kiosk server")
 
         tg = confParameter(optstypemachine)
 
@@ -238,7 +184,7 @@ class process_tcp_serveur:
         server_address = ("localhost", self.port)
         for t in range(20):
             try:
-                self.logger.info("Binding to kiosk server %s" % str(server_address))
+                self.logger.debug("Binding to kiosk server %s" % str(server_address))
                 self.sock.bind(server_address)
                 break
             except Exception as e:
@@ -246,9 +192,7 @@ class process_tcp_serveur:
                 time.sleep(40)
         # Listen for incoming connections
         self.sock.listen(5)
-        self.logger.debug("_______________________________________________")
         self.logger.debug("_____________ START SERVER KIOSK ______________")
-        self.logger.debug("_______________________________________________")
         pid = os.getpid()
         while not self.eventkill.wait(1):
             self.logger.debug("The process of the KIOSK server is %s" % pid)
@@ -356,21 +300,22 @@ class manage_kiosk_message:
         self.queue_in.put(msg)
 
     def manage_event_kiosk(self):
-        self.logger.info("loop event wait start")
+        self.logger.debug('loop event wait start')
         while self.running:
             try:
                 event = self.queue_in.get(5)
-                self.logger.info("Loop event wait start")
+                self.logger.debug('Loop event wait start')
                 if event == self.key_quit:
-                    self.logger.info("Quit server manage event kiosk")
+                    self.logger.debug('Quit server manage event kiosk')
                     break
                 self.handle_client_connection(str(event))
             except Queue.Empty:
-                self.logger.debug("VIDE")
+                self.logger.debug("The loop is empty")
             except KeyboardInterrupt:
                 pass
             finally:
-                self.logger.info("loop event wait stop")
+                self.logger.debug('loop event wait stop')
+
 
     def test_type(self, value):
         if isinstance(value, (bool, int, float)):
@@ -523,58 +468,54 @@ class manage_kiosk_message:
                 self.logger.error("%s" % str(e))
                 return
             # Manage message from tcp connection
-            self.logger.debug("RECV FROM TCP/IP CLIENT")
-            if "uuid" in result:
-                datasend["data"]["uuid"] = result["uuid"]
-            if "utcdatetime" in result:
-                datasend["data"]["utcdatetime"] = result["utcdatetime"]
-            if "action" in result:
-                if result["action"] == "kioskinterface":
-                    # start kiosk ask initialization
-                    datasend["data"]["subaction"] = result["subaction"]
-                    datasend["data"]["userlist"] = list(
-                        {users[0] for users in psutil.users()}
-                    )
-                    datasend["data"]["ouuser"] = organizationbyuser(
-                        datasend["data"]["userlist"]
-                    )
-                    datasend["data"]["oumachine"] = organizationbymachine()
-                elif result["action"] == "kioskinterfaceInstall":
-                    datasend["data"]["subaction"] = "install"
-                elif result["action"] == "kioskinterfaceLaunch":
-                    datasend["data"]["subaction"] = "launch"
-                elif result["action"] == "kioskinterfaceDelete":
-                    datasend["data"]["subaction"] = "delete"
-                elif result["action"] == "kioskinterfaceUpdate":
-                    datasend["data"]["subaction"] = "update"
-                elif result["action"] == "kioskLog":
-                    if "message" in result and result["message"] != "":
-                        self.objectxmpp.xmpplog(
-                            result["message"],
-                            type="noset",
-                            sessionname="",
-                            priority=0,
-                            action="xmpplog",
-                            who=self.objectxmpp.boundjid.bare,
-                            how="Planned",
-                            why="",
-                            module="Kiosk | Notify",
-                            fromuser="",
-                            touser="",
-                        )
-                        if "type" in result:
-                            if result["type"] == "info":
-                                self.logger.getself.logger().info(result["message"])
-                            elif result["type"] == "warning":
-                                self.logger.warning(result["message"])
-                elif result["action"] == "notifysyncthing":
-                    datasend["action"] = "notifysyncthing"
-                    datasend["sessionid"] = getRandomName(6, "syncthing")
-                    datasend["data"] = result["data"]
-                elif (
-                    result["action"] == "terminalInformations"
-                    or result["action"] == "terminalAlert"
-                ):
+            self.logger.debug('RECV FROM TCP/IP CLIENT')
+            if 'uuid' in result:
+                datasend['data']['uuid'] = result['uuid']
+            if 'utcdatetime' in result:
+                datasend['data']['utcdatetime'] = result['utcdatetime']
+            if 'action' in result:
+                if result['action'] == "kioskinterface":
+                    #start kiosk ask initialization
+                    datasend['data']['subaction'] =  result['subaction']
+                    datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
+                    datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'])
+                    datasend['data']['oumachine'] = organizationbymachine()
+                elif result['action'] == 'kioskinterfaceInstall':
+                    datasend['data']['subaction'] =  'install'
+                elif result['action'] == 'kioskinterfaceLaunch':
+                    datasend['data']['subaction'] =  'launch'
+                elif result['action'] == 'kioskinterfaceDelete':
+                    datasend['data']['subaction'] =  'delete'
+                elif result['action'] == 'kioskinterfaceUpdate':
+                    datasend['data']['subaction'] =  'update'
+                elif result['action'] == 'kioskinterfaceAsk':
+                    datasend['data']['subaction'] = 'ask'
+                    datasend['data']['askuser'] = result['askuser']
+                    datasend['data']['askdate'] = result['askdate']
+                elif result['action'] == 'kioskLog':
+                    if 'message' in result and result['message'] != "":
+                        self.objectxmpp.xmpplog(result['message'],
+                                                type='noset',
+                                                sessionname='',
+                                                priority=0,
+                                                action ="xmpplog",
+                                                who=self.objectxmpp.boundjid.bare,
+                                                how="Planned",
+                                                why="",
+                                                module="Kiosk | Notify",
+                                                fromuser="",
+                                                touser="")
+                        if 'type' in result:
+                            if result['type'] == "info":
+                                self.logger.info(result['message'])
+                            elif result['type'] == "warning":
+                                self.logger.warning(result['message'])
+                elif result['action'] == "notifysyncthing":
+                    datasend['action'] = "notifysyncthing"
+                    datasend['sessionid'] = getRandomName(6, "syncthing")
+                    datasend['data'] = result['data']
+                elif result['action'] == "terminalInformations" or\
+                        result['action'] == "terminalAlert":
                     substitute_recv = self.objectxmpp.sub_monitoring
                     datasend["action"] = "vectormonitoringagent"
                     datasend["sessionid"] = getRandomName(
@@ -587,20 +528,18 @@ class manage_kiosk_message:
                     if "serial" in result:
                         result["data"]["serial"] = result["serial"]
                 else:
-                    # bad action
-                    self.logger.getLogger().warning(
-                        "this action is not taken "
-                        "into account : %s" % result["action"]
-                    )
+                    #bad action
+                    logging.getLogger().warning("this action is not taken "\
+                                                    "into account : %s" % result['action'])
                     return
                 if substitute_recv:
-                    self.logger.warning("send to %s " % substitute_recv)
-                    self.objectxmpp.send_message(
-                        mbody=json.dumps(datasend), mto=substitute_recv, mtype="chat"
-                    )
+                    logging.getLogger().warning("send to %s " % substitute_recv)
+                    self.objectxmpp.send_message(mbody=json.dumps(datasend),
+                                                 mto=substitute_recv,
+                                                 mtype='chat')
                 else:
                     # Call plugin on master
                     self.objectxmpp.send_message_to_master(datasend)
         except Exception as e:
-            self.logger.error("message to kiosk server : %s" % str(e))
-            self.logger.error("\n%s" % (traceback.format_exc()))
+            logging.getLogger().error("message to kiosk server : %s" % str(e))
+            logging.getLogger().error("\n%s" % (traceback.format_exc()))
