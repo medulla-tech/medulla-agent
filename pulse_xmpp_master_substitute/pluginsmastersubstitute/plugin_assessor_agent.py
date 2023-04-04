@@ -9,10 +9,7 @@ import json
 import os
 import logging
 import time
-from lib.utils import ipfromdns, \
-                      AESCipher, \
-                      subnetnetwork, \
-                      call_plugin
+from lib.utils import ipfromdns, AESCipher, subnetnetwork, call_plugin
 from lib.localisation import Point
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.manageADorganization import manage_fqdn_window_activedirectory
@@ -36,18 +33,19 @@ DEBUGPULSEPLUGIN = 25
 plugin = { "VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor", }  # fmt: skip
 
 
-params = {"duration" : 300 }
+params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.
 # The connection agent re-sends a configuration request after 300 seconds, thus making the previous one
 # obsolete as it will not be processed
+
 
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg["from"]))
     logger.debug("=====================================================")
-    msgq={ 'to' : str(msg['to']),'from' : str(msg['from']) }
+    msgq = {"to": str(msg["to"]), "from": str(msg["from"])}
     try:
-        timeact=int(time.time())
+        timeact = int(time.time())
         compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
         if compteurcallplugin == 0:
             objectxmpp.compteur_de_traitement = {}
@@ -56,8 +54,9 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             objectxmpp.show_queue_status = False
             objectxmpp.assessor_agent_errorconf = False
             if statfuncton:
-                objectxmpp.stat_assessor_agent = statcallplugin(objectxmpp,
-                                                                plugin['NAME'])
+                objectxmpp.stat_assessor_agent = statcallplugin(
+                    objectxmpp, plugin["NAME"]
+                )
             try:
                 read_conf_assessor(objectxmpp)
             except:
@@ -68,18 +67,23 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         # ______________________________________
         # error configuration on quitte et signale erreur au configurateur distant
         if objectxmpp.assessor_agent_errorconf:
-            logger.error("error configuration no process action %s for machine %s" % (action, msg['from']))
+            logger.error(
+                "error configuration no process action %s for machine %s"
+                % (action, msg["from"])
+            )
             sendErrorConnectionConf(objectxmpp, sessionid, msg)
             return
         # ______________________________________
         # delete compteur expire
-        deletelist=[]
+        deletelist = []
         for sessionid_save in objectxmpp.compteur_de_traitement.keys():
-            #logger.warning("time creation %s" % objectxmpp.compteur_de_traitement[sessionid_save][0])
-            #logger.warning("time maintenant %s" % int(time.time()) )
-            #logger.warning("time timeact %s" % timeact)
-            #logger.warning("delay %s > %s"%(int(time.time()) - int(objectxmpp.compteur_de_traitement[sessionid_save][0]),params["duration"] ))
-            if (timeact - int(objectxmpp.compteur_de_traitement[sessionid_save][0])) > params["duration"]:
+            # logger.warning("time creation %s" % objectxmpp.compteur_de_traitement[sessionid_save][0])
+            # logger.warning("time maintenant %s" % int(time.time()) )
+            # logger.warning("time timeact %s" % timeact)
+            # logger.warning("delay %s > %s"%(int(time.time()) - int(objectxmpp.compteur_de_traitement[sessionid_save][0]),params["duration"] ))
+            if (
+                timeact - int(objectxmpp.compteur_de_traitement[sessionid_save][0])
+            ) > params["duration"]:
                 deletelist.append(sessionid_save)
         for t in deletelist:
             del objectxmpp.compteur_de_traitement[t]
@@ -88,15 +92,27 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         # ______________________________________
         # add report dans la liste
         if len(objectxmpp.compteur_de_traitement) >= objectxmpp.simultaneous_processing:
-            objectxmpp.listconfiguration.append([int(time.time()),  {"action" : action,
-                                                 "sessionid" : sessionid,
-                                                 "data" : data,
-                                                 "msg" : msgq }])
-            #logger.warning("ADD dans listconfiguration %s %s"%(len(objectxmpp.listconfiguration), msg['from']))
+            objectxmpp.listconfiguration.append(
+                [
+                    int(time.time()),
+                    {
+                        "action": action,
+                        "sessionid": sessionid,
+                        "data": data,
+                        "msg": msgq,
+                    },
+                ]
+            )
+            # logger.warning("ADD dans listconfiguration %s %s"%(len(objectxmpp.listconfiguration), msg['from']))
 
             if bool(objectxmpp.show_queue_status):
-                logger.info("add (%s) : Pending pool counter = %s" % (msgq['from'].split("/")[1],
-                                                                    len(objectxmpp.compteur_de_traitement)))
+                logger.info(
+                    "add (%s) : Pending pool counter = %s"
+                    % (
+                        msgq["from"].split("/")[1],
+                        len(objectxmpp.compteur_de_traitement),
+                    )
+                )
             return
         # ______________________________________
 
@@ -104,51 +120,62 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         # execute configuration
         try:
             objectxmpp.compteur_de_traitement[sessionid] = [timeact, msgq]
-            #logger.info("add in compteur_de_traitement session %s %s" % ([sessionid] , objectxmpp.compteur_de_traitement[sessionid] ))
+            # logger.info("add in compteur_de_traitement session %s %s" % ([sessionid] , objectxmpp.compteur_de_traitement[sessionid] ))
             if bool(objectxmpp.show_queue_status):
-                logger.info("Pending pool counter = %s" % (len(objectxmpp.compteur_de_traitement)))
+                logger.info(
+                    "Pending pool counter = %s"
+                    % (len(objectxmpp.compteur_de_traitement))
+                )
 
-            Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
-                                                        action,
-                                                        sessionid,
-                                                        data,
-                                                        msg)
+            Algorithm_Rule_Attribution_Agent_Relay_Server(
+                objectxmpp, action, sessionid, data, msg
+            )
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         finally:
             if sessionid in objectxmpp.compteur_de_traitement:
-                #logger.info("delete in compteur_de_traitement session %s %s" % ([sessionid] , objectxmpp.compteur_de_traitement[sessionid] ))
-                #logger.info("nb compteur_de_traitement session %s" % ( len(objectxmpp.compteur_de_traitement) ))
+                # logger.info("delete in compteur_de_traitement session %s %s" % ([sessionid] , objectxmpp.compteur_de_traitement[sessionid] ))
+                # logger.info("nb compteur_de_traitement session %s" % ( len(objectxmpp.compteur_de_traitement) ))
                 del objectxmpp.compteur_de_traitement[sessionid]
         # ______________________________________
 
         # ______________________________________
         # relance ou suprime depuis la liste
-        while objectxmpp.listconfiguration and \
-            len(objectxmpp.compteur_de_traitement) < objectxmpp.simultaneous_processing:
+        while (
+            objectxmpp.listconfiguration
+            and len(objectxmpp.compteur_de_traitement)
+            < objectxmpp.simultaneous_processing
+        ):
             ## call plugin
-            report=objectxmpp.listconfiguration.pop(0)
+            report = objectxmpp.listconfiguration.pop(0)
             if len(report) == 2 and (timeact - report[0]) < params["duration"]:
-                dataerreur={ "action" : "result" + plugin['NAME'],
-                        "data" : { "msg" : "error plugin : " + plugin['NAME']},
-                        'sessionid': report[1]['sessionid'],
-                        'ret': 255,
-                        'base64': False}
+                dataerreur = {
+                    "action": "result" + plugin["NAME"],
+                    "data": {"msg": "error plugin : " + plugin["NAME"]},
+                    "sessionid": report[1]["sessionid"],
+                    "ret": 255,
+                    "base64": False,
+                }
                 if bool(objectxmpp.show_queue_status):
-                    logger.info("Re-call plugin %s" % (plugin['NAME']))
-                call_plugin( __file__,
-                                    objectxmpp,
-                                    action,
-                                    report[1]['sessionid'],
-                                    report[1]['data'],
-                                    report[1]['msg'],
-                                    0,
-                                    dataerreur)
+                    logger.info("Re-call plugin %s" % (plugin["NAME"]))
+                call_plugin(
+                    __file__,
+                    objectxmpp,
+                    action,
+                    report[1]["sessionid"],
+                    report[1]["data"],
+                    report[1]["msg"],
+                    0,
+                    dataerreur,
+                )
             else:
                 if bool(objectxmpp.show_queue_status):
-                    if "from" in report[1]['data']:
-                        mach=report[1]['data']['from'].split("/")[1]
-                        logger.info("Timeout re-calling plugin %s on machine %s" % (plugin['NAME'], mach))
+                    if "from" in report[1]["data"]:
+                        mach = report[1]["data"]["from"].split("/")[1]
+                        logger.info(
+                            "Timeout re-calling plugin %s on machine %s"
+                            % (plugin["NAME"], mach)
+                        )
         # ______________________________________
     except Exception as e:
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
@@ -1040,8 +1067,10 @@ def read_conf_assessor(objectxmpp):
     objectxmpp.simultaneous_processing = 50
     objectxmpp.assessor_agent_errorconf = False
     objectxmpp.show_queue_status = False
-    namefichierconf = plugin['NAME'] + ".ini"
-    objectxmpp.pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf)
+    namefichierconf = plugin["NAME"] + ".ini"
+    objectxmpp.pathfileconf = os.path.join(
+        objectxmpp.config.pathdirconffile, namefichierconf
+    )
     if not os.path.isfile(objectxmpp.pathfileconf):
         logger.error(
             "plugin %s\nConfiguration file  missing\n  %s"
@@ -1053,7 +1082,10 @@ def read_conf_assessor(objectxmpp):
             objectxmpp.stat_assessor_agent.display_param_config(msg="DEFAULT")
         return False
     else:
-        logger.info("Configuration file plugin %s is %s" % (plugin['NAME'],objectxmpp.pathfileconf))
+        logger.info(
+            "Configuration file plugin %s is %s"
+            % (plugin["NAME"], objectxmpp.pathfileconf)
+        )
         objectxmpp.assessor_agent_errorconf = False
         Config = configparser.ConfigParser()
         Config.read(objectxmpp.pathfileconf)
@@ -1073,7 +1105,6 @@ def read_conf_assessor(objectxmpp):
                 logger.warning("showinfomachine default value is []")
 
             if Config.has_option("parameters", "keyAES32"):
-
                 paramkeyAES32 = Config.get("parameters", "keyAES32")
                 objectxmpp.assessor_agent_keyAES32 = [
                     str(x.strip()) for x in paramkeyAES32.split(",") if x.strip() != ""
@@ -1100,12 +1131,16 @@ def read_conf_assessor(objectxmpp):
                 logger.warning("announce_server for syncthing default value is default")
 
             if Config.has_option("parameters", "simultaneous_processing"):
-                objectxmpp.simultaneous_processing= Config.getint('parameters', 'simultaneous_processing')
+                objectxmpp.simultaneous_processing = Config.getint(
+                    "parameters", "simultaneous_processing"
+                )
             else:
-                objectxmpp.simultaneous_processing= 50
+                objectxmpp.simultaneous_processing = 50
 
             if Config.has_option("parameters", "show_queue_status"):
-                objectxmpp.show_queue_status = Config.getboolean('parameters', 'show_queue_status')
+                objectxmpp.show_queue_status = Config.getboolean(
+                    "parameters", "show_queue_status"
+                )
             else:
                 objectxmpp.show_queue_status = False
 
