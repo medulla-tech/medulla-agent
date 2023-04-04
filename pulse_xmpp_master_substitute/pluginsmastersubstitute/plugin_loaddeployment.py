@@ -426,10 +426,13 @@ def scheduledeployrecoveryjob(self):
         )
         # We check which machines of machines_waiting_online are now online
         for machine in machines_waiting_online:
-            logger.info(
-                "Restarting the deploiement %s actually in  machines_waiting_online state"
-                % machine["sessionid"]
-            )
+            logger.info("Restarting the deploiement %s actually in  machines_waiting_online state" %  machine['sessionid'])
+            # ----------------- contrainte slopt partiel-----------------------
+            res = MscDatabase().test_deploy_in_partiel_slot( machine['title'])
+            if not res:
+                # machine avec contrainte slot partiel on est pas dans le slot
+                continue
+            # -----------------------------------------------------------------
             try:
                 data = json.loads(machine["result"])
                 if XmppMasterDatabase().getPresenceuuid(machine["inventoryuuid"]):
@@ -488,13 +491,29 @@ def scheduledeployrecoveryjob(self):
                             "deploysyncthing", data, sessionid=machine["sessionid"]
                         )
                     else:
-                        datasession = self.sessiondeploysubstitute.sessiongetdata(
-                            machine["sessionid"]
-                        )
-                        msglog.append(
-                            "Starting deployment on machine %s from ARS %s"
-                            % (machine["jidmachine"], machine["jid_relay"])
-                        )
+                        datasession = self.sessiondeploysubstitute.sessiongetdata(machine['sessionid'])
+                        msglog.append("Starting deployment on machine %s from ARS %s" % (machine['jidmachine'],
+                                                                                         machine['jid_relay']))
+                        # lance deployment to ars
+                        try:
+                            if 'jidmachine' in data and data['jidmachine'] != "" :
+                                result =  XmppMasterDatabase().update_jid_if_changed(data['jidmachine'] )
+                                if result:
+                                    if result[0]['jid'] != data['jidmachine']:
+                                        logging.warning("Machine JID changed since creation of deployment")
+                                        logging.warning("Machine JID %s -> %s"%(data['jidmachine'],result[0]['jid'] ))
+                                        logging.warning("Relay server JID %s -> %s"%(data['jidrelay'],result[0]['groupdeploy'] ))
+                                        msglog.append("jid machine changed : replace jid mach from %s to %s" % (data['jidmachine'], result[0]['jid']))
+                                        msglog.append("replace jid ars from %s to %s" % (data['jidrelay'], result[0]['groupdeploy'] ))
+                                        data['jidmachine'] =  result[0]['jid']
+                                        data['jidrelay'] =  result[0]['groupdeploy']
+                                        XmppMasterDatabase().replace_jid_mach_ars_in_deploy(data['jidmachine'],
+                                                                                            data['jidrelay'],
+                                                                                            data['title'])
+
+                        except Exception as e:
+                            logger.error("%s" % (traceback.format_exc()))
+                            logging.error("Error checking for JID changes")
 
                         command = {
                             "action": "applicationdeploymentjson",
@@ -1339,8 +1358,38 @@ def applicationdeploymentjson(
                         if (self.hastable[data['name']] + 10) > time:
                             del self.hastable[data['name']]
                     if not data['name'] in self.hastable:
-                        dest_not_hash = "/var/lib/pulse2/packages/sharing/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
-                        dest = "/var/lib/pulse2/packages/hash/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
+                        
+                        if ('localisation_server' in data['descriptor']['info'] and data['descriptor']['info']['localisation_server'] != ""):
+                            localisation_server = data['descriptor']['info']['localisation_server']
+                        elif ('previous_localisation_server' in data['descriptor']['info'] and data['descriptor']['info']['previous_localisation_server'] != ""):
+                            localisation_server = data['descriptor']['info']['previous_localisation_server']
+                        else:
+                            localisation_server = "global"
+
+                        dest_not_hash = "/var/lib/pulse2/packages/sharing/" + localisation_server + "/" + data['name']
+                        dest = "/var/lib/pulse2/packages/hash/" + localisation_server + "/" + data['name']
+
+                        if not os.path.exists(dest_not_hash):
+                            XmppMasterDatabase().adddeploy(idcommand,
+                                       jidmachine,
+                                       jidrelay,
+                                       name,
+                                       uuidmachine,
+                                       title,
+                                       "ABORT DESCRIPTOR INFO MISSING",
+                                       sessiondeployementless,
+                                       user=login,
+                                       login=login,
+                                       title=title,
+                                       group_uuid=GUID,
+                                       startcmd=start_date,
+                                       endcmd=end_date,
+                                       macadress=macadress,
+                                       result="",
+                                       syncthing=0)
+                            msg.append("<span class='log_err'>Destination package not find, localisation server must be missing in descriptor for %s [%s]</span>" % (name, uuidmachine))
+                            logger.error("Deployment %s on %s error : destination package not find, localisation server must be missing in descriptor " % (name, uuidmachine))
+                            return False
 
                         need_hash = False
                         counter_no_hash = 0
@@ -1368,7 +1417,7 @@ def applicationdeploymentjson(
                                 need_hash = True
 
                         if need_hash == True:
-                            generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'], self.keyAES32)
+                            generate_hash(localisation_server, data['name'], self.hashing_algo, data['packagefile'], self.keyAES32)
                         self.hastable[data['name']]= time
                 except Exception:
                     logger.error("%s" % (traceback.format_exc()))
@@ -1382,31 +1431,15 @@ def applicationdeploymentjson(
                         data["hash"]["global"] = content
                         data["hash"]["type"] = self.hashing_algo
 
-                except IOError:
-                    logger.error(
-                        "Pulse is configured to check integrity of packages but the hashes have not been generated"
-                    )
-                    msg.append(
-                        "<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>"
-                    )
+                except Exception as e:
+                    logger.error("Pulse is configured to check integrity of packages but the hashes have not been generated")
+                    logger.error(str(e))
+                    msg.append("<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>")
                     sessiondeployementless = name_random(5, "hashmissing")
                     sessionid = sessiondeployementless
                     state = "ERROR HASH MISSING"
 
             if state != 'ERROR HASH MISSING':
-                # lance deployment to ars
-                try:
-                    result =  XmppMasterDatabase().update_jid_if_changed(jidmachine )
-                    if result:
-                        if result[0]['jid'] != jidmachine:
-                            logging.warning("Machine JID changed since creation of deployment")
-                            logging.warning("Machine JID %s -> %s"%(jidmachine,result[0]['jid'] ))
-                            logging.warning("Relay server JID %s -> %s"%(jidrelay,result[0]['groupdeploy'] ))
-                            jidmachine =  result[0]['jid']
-                            jidrelay =  result[0]['groupdeploy']
-                except Exception as e:
-                    logging.error("Error checking for JID changes")
-
                 sessionid = self.send_session_command(jidrelay,
                                                         "applicationdeploymentjson",
                                                         data,

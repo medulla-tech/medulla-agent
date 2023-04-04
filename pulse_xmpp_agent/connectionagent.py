@@ -555,14 +555,6 @@ class MUCBot(ClientXMPP):
                                                          data['data'])
                             alternativeclusterconnection(conffilename("cluster"),
                                                          data['data'])
-                            confaccountclear={  "action": "resultcleanconfaccount",
-                                                "sessionid" : getRandomName(6, "delconf"),
-                                                "ret" : 0,
-                                                "base64" : False,
-                                                "data":  { 'useraccount': str(self.boundjid.user)}}
-                            self.send_message(mto =  msg['from'],
-                                              mbody = json.dumps(confaccountclear),
-                                              mtype = 'chat')
                             #go to next ARS
                             nextalternativeclusterconnection(conffilenametmp("cluster"))
 

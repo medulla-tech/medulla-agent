@@ -30,6 +30,7 @@ from lib.configuration import confParameter
 
 from lib.plugins.glpi.Glpi84 import Glpi84
 from lib.plugins.glpi.Glpi92 import Glpi92
+from lib.plugins.glpi.Glpi93 import Glpi93
 from lib.plugins.glpi.Glpi94 import Glpi94
 from lib.plugins.glpi.Glpi95 import Glpi95
 from lib.plugins.glpi.Glpi100 import Glpi100
@@ -113,6 +114,9 @@ class Glpi(object):
 
             if self._glpi_version.startswith("9.2"):
                 glpi = Glpi92()
+
+            if self._glpi_version.startswith("9.3"):
+                glpi = Glpi93()
 
             if self._glpi_version.startswith("9.4"):
                 glpi = Glpi94()

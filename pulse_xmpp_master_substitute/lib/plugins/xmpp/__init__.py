@@ -2048,23 +2048,20 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.commit()
                     session.flush()
                 else:
-                    self.checknewjid(jid)
-            except Exception as e:
+                    sql = """DELETE FROM xmppmaster.machines
+                        WHERE
+                        hostname LIKE '%s' and
+                            id < %s;
+                            """ % (hostname, new_machine.id);
+                    self.logger.debug(sql)
+                    session.execute(sql)
+                    session.commit()
+                    session.flush()
+            except Exception, e:
                 logging.getLogger().error(str(e))
                 msg = str(e)
                 return -1, msg
             return new_machine.id, msg
-
-    @DatabaseHelper._sessionm
-    def checknewjid(self, session, newjidmachine):
-        try:
-            # on appelle la procedure stocke
-            sql = """call afterinsertmachine('%s');""" % newjidmachine
-            session.execute(sql)
-            session.commit()
-            session.flush()
-        except Exception as e:
-            logging.getLogger().error("sql : %s" % traceback.format_exc())
 
     @DatabaseHelper._sessionm
     def is_jiduser_organization_ad(self, session, jiduser):
@@ -2773,6 +2770,38 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
             return False
         return []
+
+    @DatabaseHelper._sessionm
+    def replace_jid_mach_ars_in_deploy(self,
+                                       session,
+                                       jidmachine,
+                                       jidrelay,
+                                       title
+                                       ):
+        """
+            Cette fonction est utilise pour mettre a jour les jid dans deploy quand 1 machine reenregistre change de jid.
+
+            Args:
+                jidmachine : new JID
+                jidrelay : new jidrelay
+                title : title du deploy
+        """
+        try:
+            sql = """
+                    UPDATE `xmppmaster`.`deploy`
+                    SET
+                        `jidmachine` = '%s',
+                        `jid_relay` = '%s'
+                    WHERE
+                        (`title` = '%s');""" % (jidmachine,
+                                                jidrelay,
+                                                title)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception, e:
+            logging.getLogger().error(str(e))
+
 
     # =====================================================================
     # xmppmaster FUNCTIONS deploy syncthing
