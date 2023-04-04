@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
-# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
@@ -124,7 +124,7 @@ class manage_scheduler:
         if len(start) == len(end):
             # the descriptors
             mergeinfolist = list(zip(start, end))
-            for (x, y) in mergeinfolist:
+            for x, y in mergeinfolist:
                 replacedata = {}
                 # print descrip[int(x+2):int(y-1)]
                 l = descrip[int(x + 2) : int(y - 1)].split(",")

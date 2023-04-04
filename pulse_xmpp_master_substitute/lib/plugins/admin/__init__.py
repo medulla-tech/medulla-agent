@@ -128,59 +128,65 @@ class AdminDatabase(DatabaseHelper):
         self.base.prepare(self.engine_admin_base, reflect=True)
         try:
             # automap table
-            self.upd_list =self.base.classes.upd_list
-            self.upd_method=self.base.classes.upd_method
-            self.upd_msg_send=self.base.classes.upd_msg_send
-            self.upd_package=self.base.classes. upd_package
-            self.upd_package_unknown=self.base.classes.upd_package_unknown
-            self.upd_rules=self.base.classes.upd_rules
-            self.upd_list_pakage=self.base.classes.upd_list_pakage
+            self.upd_list = self.base.classes.upd_list
+            self.upd_method = self.base.classes.upd_method
+            self.upd_msg_send = self.base.classes.upd_msg_send
+            self.upd_package = self.base.classes.upd_package
+            self.upd_package_unknown = self.base.classes.upd_package_unknown
+            self.upd_rules = self.base.classes.upd_rules
+            self.upd_list_pakage = self.base.classes.upd_list_pakage
 
             self.version = Table("version", self.metadata, autoload=True)
 
             return True
-        except Exception :
+        except Exception:
             self.logger.error("\n%s" % (traceback.format_exc()))
             return False
 
     @DatabaseHelper._sessionm
     def get_upd_list(self, session):
         resultproxy = session.query(self.upd_list).all()
-        return [{column: value for column,
-                value in rowproxy.items()}
-                    for rowproxy in resultproxy]
+        return [
+            {column: value for column, value in rowproxy.items()}
+            for rowproxy in resultproxy
+        ]
 
     @DatabaseHelper._sessionm
     def get_upd_method(self, session):
         resultproxy = session.query(self.upd_method).all()
-        return [{column: value for column,
-                value in rowproxy.items()}
-                    for rowproxy in resultproxy]
+        return [
+            {column: value for column, value in rowproxy.items()}
+            for rowproxy in resultproxy
+        ]
 
     @DatabaseHelper._sessionm
     def get_upd_msg_send(self, session):
         resultproxy = session.query(self.upd_msg_send).all()
-        return [{column: value for column,
-                value in rowproxy.items()}
-                    for rowproxy in resultproxy]
+        return [
+            {column: value for column, value in rowproxy.items()}
+            for rowproxy in resultproxy
+        ]
 
     @DatabaseHelper._sessionm
     def get_upd_package(self, session):
         resultproxy = session.query(self.upd_package).all()
-        return [{column: value for column,
-                value in rowproxy.items()}
-                    for rowproxy in resultproxy]
+        return [
+            {column: value for column, value in rowproxy.items()}
+            for rowproxy in resultproxy
+        ]
 
     @DatabaseHelper._sessionm
     def get_upd_rules(self, session):
         resultproxy = session.query(self.upd_rules).all()
-        return [{column: value for column,
-                value in rowproxy.items()}
-                    for rowproxy in resultproxy]
+        return [
+            {column: value for column, value in rowproxy.items()}
+            for rowproxy in resultproxy
+        ]
 
     @DatabaseHelper._sessionm
     def get_upd_list_pakage(self, session):
         resultproxy = session.query(self.upd_list_pakage).all()
-        return [{column: value for column,
-                value in rowproxy.items()}
-                    for rowproxy in resultproxy]
+        return [
+            {column: value for column, value in rowproxy.items()}
+            for rowproxy in resultproxy
+        ]

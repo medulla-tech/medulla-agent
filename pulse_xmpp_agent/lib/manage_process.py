@@ -16,7 +16,7 @@ from threading import Timer
 logger = logging.getLogger()
 
 
-def processcommand(command , queue_out_session, messagestr, timeout):
+def processcommand(command, queue_out_session, messagestr, timeout):
     try:
         message = json.loads(messagestr)
     except BaseException:
@@ -157,7 +157,7 @@ class process_on_end_send_message_xmpp:
     def __init__(self, queue_out_session):
         self.processtable = []
         self.queue_out_session = queue_out_session
-        logging.debug('manage process start')
+        logging.debug("manage process start")
 
     def add_processcommand(
         self, command, message, tosucces=None, toerror=None, timeout=50, step=None
@@ -335,10 +335,10 @@ class process_on_end_send_message_xmpp:
 
 
 class mannageprocess:
-    def __init__(self, queue_out_session) :
+    def __init__(self, queue_out_session):
         self.processtable = []
         self.queue_out_session = queue_out_session
-        logging.debug('manage process start')
+        logging.debug("manage process start")
 
     def add_processcommand(
         self,
@@ -418,7 +418,6 @@ class mannageprocess:
                     msgout["result"]["codeerror"] = cmd.code_error
                     queue_out_session.put(msgout)
                 else:
-
                     # "10@firstlines" : "",
                     # "10@lastlines": "",
                     # "@resultcommand":""

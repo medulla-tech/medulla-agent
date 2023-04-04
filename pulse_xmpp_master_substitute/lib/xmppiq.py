@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
-# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import os
@@ -456,8 +456,8 @@ class functionsynchroxmpp:
                         netstat()
                     )
                 if info_ask == "profiluserpulse":
-                    profilname = 'pulseuser'
-                    result['result']['informationresult'][info_ask] = profilname
+                    profilname = "pulseuser"
+                    result["result"]["informationresult"][info_ask] = profilname
             except Exception:
                 result["result"]["informationresult"][info_ask] = ""
         return json.dumps(result)
@@ -619,7 +619,6 @@ class functionsynchroxmpp:
 
     @staticmethod
     def packageslist(xmppobject, data):
-
         packages_path = os.path.join("/", "var", "lib", "pulse2", "packages")
         packages_list = {"total": 0, "datas": []}
         total = 0

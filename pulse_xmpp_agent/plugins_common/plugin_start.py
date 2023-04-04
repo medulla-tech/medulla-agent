@@ -16,10 +16,10 @@ plugin = {"VERSION": "2.1", "NAME": "start", "TYPE": "all"}  # fmt: skip
 
 def read_conf_plugin_start(objectxmpp):
     objectxmpp.liststartplugin = []
-    if objectxmpp.config.agenttype in ['machine']:
-        configfilename = os.path.join(directoryconffile(),"start_machine.ini")
-    elif objectxmpp.config.agenttype in ['relayserver']:
-        configfilename = os.path.join(directoryconffile(),"start_relay.ini")
+    if objectxmpp.config.agenttype in ["machine"]:
+        configfilename = os.path.join(directoryconffile(), "start_machine.ini")
+    elif objectxmpp.config.agenttype in ["relayserver"]:
+        configfilename = os.path.join(directoryconffile(), "start_relay.ini")
     else:
         logger.error(
             "The %s agenttype is not supported in this function, it must be machine or relayserver."
@@ -79,11 +79,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         dataerreur["action"] = "result" + startupdate["action"]
         dataerreur["data"] = {"msg": "error plugin: " + startupdate["action"]}
         dataerreur["ret"] = 255
-        logger.debug("Call of %s by plugin_start differed by %s s" % (pluginstart,
-                                                                      objectxmpp.time_differed_start))
-        params ={ "descriptor" : startupdate,
-                  "errordescriptor" : dataerreur,
-                  "msg" : msg}
-        objectxmpp.paramsdict.append(params)                    
+        logger.debug(
+            "Call of %s by plugin_start differed by %s s"
+            % (pluginstart, objectxmpp.time_differed_start)
+        )
+        params = {"descriptor": startupdate, "errordescriptor": dataerreur, "msg": msg}
+        objectxmpp.paramsdict.append(params)
 
     objectxmpp.call_plugin_differed(time_differed=objectxmpp.time_differed_start)

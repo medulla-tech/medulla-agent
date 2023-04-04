@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 
-#"""
-#This module is dedicated to analyse inventories sent by a Pulse 2 Client.
-#The original inventory is sent using one line per kind of
-#"""
+# """
+# This module is dedicated to analyse inventories sent by a Pulse 2 Client.
+# The original inventory is sent using one line per kind of
+# """
 
 # API information http://seb.dbzteam.org/pyinotify/
 from __future__ import print_function

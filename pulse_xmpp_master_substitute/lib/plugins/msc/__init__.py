@@ -1,7 +1,7 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
 # SPDX-FileCopyrightText: 2007-2009 Mandriva, http://www.mandriva.com/
-# SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net> 
+# SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 """
@@ -566,7 +566,6 @@ class MscDatabase(DatabaseHelper):
         session = create_session()
         session.begin()
         try:
-
             bundle = session.query(Bundle).get(bundle_id)
             if not bundle:
                 self.logger.warning("Unable to find bundle (id=%s)" % bundle_id)
@@ -1015,13 +1014,13 @@ class MscDatabase(DatabaseHelper):
             updatemachine: Informations about the deployment (title, start_date, end_date, etc. )
         """
         with Locker("lockfile.lck", text_lock_indicator_file=textindicator):
-            #start = datetime.datetime.now()
-            #self.logger.debug("deployxmpp in %s" % start)
+            # start = datetime.datetime.now()
+            # self.logger.debug("deployxmpp in %s" % start)
             try:
                 datenow = datetime.datetime.now()
-                datestr = datenow.strftime('%Y-%m-%d %H:%M:%S')
-                hactuel = int(datenow.strftime('%H'))
-                sqlselect="""
+                datestr = datenow.strftime("%Y-%m-%d %H:%M:%S")
+                hactuel = int(datenow.strftime("%H"))
+                sqlselect = """
                 SELECT
                         `commands`.`id` AS commands_id,
                         `commands`.`title` AS commands_title,
@@ -1048,18 +1047,20 @@ class MscDatabase(DatabaseHelper):
                             AND
                         `phase`.`state` = 'ready'
                             AND
-                            '%s' BETWEEN commands.start_date AND commands.end_date group by `target`.`target_name` limit %s;""" % (datenow,
-                                                                                                                                limitnbr);
+                            '%s' BETWEEN commands.start_date AND commands.end_date group by `target`.`target_name` limit %s;""" % (
+                    datenow,
+                    limitnbr,
+                )
 
-                #session.execute("LOCK TABLES commands_on_host WRITE, commands READ , target READ, phase WRITE;")
+                # session.execute("LOCK TABLES commands_on_host WRITE, commands READ , target READ, phase WRITE;")
 
                 selectedMachines = session.execute(sqlselect)
                 nb_machine_select_for_deploy_cycle = selectedMachines.rowcount
 
                 if nb_machine_select_for_deploy_cycle == 0:
                     self.logger.debug("There is no deployment to process.")
-                    #start = datetime.datetime.now()
-                    #self.logger.debug("deployxmpp out %s" % start)
+                    # start = datetime.datetime.now()
+                    # self.logger.debug("deployxmpp out %s" % start)
                     return nb_machine_select_for_deploy_cycle, []
 
                 machine_status_update = []
@@ -1069,63 +1070,104 @@ class MscDatabase(DatabaseHelper):
                 for msc_machine_to_deploy in selectedMachines:
                     if msc_machine_to_deploy.deployment_intervals:
                         # self.pattern is reg exp compile "^([0-9]{1,2})[-;'.|@#\"]{1}[0-9]{1,2}$"
-                        tb=[re.sub("[-'*;|@#\"]{1}", "-", x) for x in msc_machine_to_deploy.deployment_intervals.split(',') if self.pattern.match(x.strip())]
+                        tb = [
+                            re.sub("[-'*;|@#\"]{1}", "-", x)
+                            for x in msc_machine_to_deploy.deployment_intervals.split(
+                                ","
+                            )
+                            if self.pattern.match(x.strip())
+                        ]
                         for c in tb:
-                            start, end = c.split('-')
+                            start, end = c.split("-")
                             if hactuel >= int(start) and hactuel <= int(end):
                                 # on a trouver 1 cas on deploy
                                 break
-                        else: # end control slot
+                        else:  # end control slot
                             # on a trouver aucun cas on ne deploy pas
-                            nb_machine_select_for_deploy_cycle=nb_machine_select_for_deploy_cycle-1
+                            nb_machine_select_for_deploy_cycle = (
+                                nb_machine_select_for_deploy_cycle - 1
+                            )
                             continue
-                    machine_status_update.append(str(msc_machine_to_deploy.commands_on_host_id))
-                    self.logger.debug("The computer %s (id: %s) is available to deployment the package %s" % (msc_machine_to_deploy.target_target_name,
-                                                                                                            msc_machine_to_deploy.target_target_uuid,
-                                                                                                            msc_machine_to_deploy.commands_package_id))
+                    machine_status_update.append(
+                        str(msc_machine_to_deploy.commands_on_host_id)
+                    )
+                    self.logger.debug(
+                        "The computer %s (id: %s) is available to deployment the package %s"
+                        % (
+                            msc_machine_to_deploy.target_target_name,
+                            msc_machine_to_deploy.target_target_uuid,
+                            msc_machine_to_deploy.commands_package_id,
+                        )
+                    )
                     title = str(msc_machine_to_deploy.commands_title)
                     if title.startswith("Convergence on"):
                         self.logger.info("title '%s'" % title)
-                        title ="%s %s" % (title, datestr)
+                        title = "%s %s" % (title, datestr)
 
-                    if not msc_machine_to_deploy.target_target_uuid in unique_deploy_on_machine:
-                        unique_deploy_on_machine.append(msc_machine_to_deploy.target_target_uuid)
-                        updatemachine.append({'name': str(msc_machine_to_deploy.target_target_name)[:-1],
-                                            'pakkageid': str(msc_machine_to_deploy.commands_package_id),
-                                            'commandid':  msc_machine_to_deploy.commands_id,
-                                            'mac': str(msc_machine_to_deploy.target_target_macaddr),
-                                            'count': 0,
-                                            'cycle': 0,
-                                            'login': str(msc_machine_to_deploy.commands_creator),
-                                            'start_date': msc_machine_to_deploy.commands_start_date,
-                                            'end_date': msc_machine_to_deploy.commands_end_date,
-                                            'title': title,
-                                            'UUID': str(msc_machine_to_deploy.target_target_uuid),
-                                            'GUID': msc_machine_to_deploy.target_id_group})
-                        self.logger.info("deploy on machine %s [%s] -> %s" % (msc_machine_to_deploy.target_target_name,
-                                                                            msc_machine_to_deploy.target_target_uuid,
-                                                                            msc_machine_to_deploy.commands_package_id))
+                    if (
+                        not msc_machine_to_deploy.target_target_uuid
+                        in unique_deploy_on_machine
+                    ):
+                        unique_deploy_on_machine.append(
+                            msc_machine_to_deploy.target_target_uuid
+                        )
+                        updatemachine.append(
+                            {
+                                "name": str(msc_machine_to_deploy.target_target_name)[
+                                    :-1
+                                ],
+                                "pakkageid": str(
+                                    msc_machine_to_deploy.commands_package_id
+                                ),
+                                "commandid": msc_machine_to_deploy.commands_id,
+                                "mac": str(msc_machine_to_deploy.target_target_macaddr),
+                                "count": 0,
+                                "cycle": 0,
+                                "login": str(msc_machine_to_deploy.commands_creator),
+                                "start_date": msc_machine_to_deploy.commands_start_date,
+                                "end_date": msc_machine_to_deploy.commands_end_date,
+                                "title": title,
+                                "UUID": str(msc_machine_to_deploy.target_target_uuid),
+                                "GUID": msc_machine_to_deploy.target_id_group,
+                            }
+                        )
+                        self.logger.info(
+                            "deploy on machine %s [%s] -> %s"
+                            % (
+                                msc_machine_to_deploy.target_target_name,
+                                msc_machine_to_deploy.target_target_uuid,
+                                msc_machine_to_deploy.commands_package_id,
+                            )
+                        )
                     else:
-                        self.logger.warn("Cancel of the deployment in process\n"\
-                                        "Deploy on machine %s [%s] -> %s" % (msc_machine_to_deploy.target_target_name,
-                                                                            msc_machine_to_deploy.target_target_uuid,
-                                                                            msc_machine_to_deploy.commands_package_id))
+                        self.logger.warn(
+                            "Cancel of the deployment in process\n"
+                            "Deploy on machine %s [%s] -> %s"
+                            % (
+                                msc_machine_to_deploy.target_target_name,
+                                msc_machine_to_deploy.target_target_uuid,
+                                msc_machine_to_deploy.commands_package_id,
+                            )
+                        )
 
                 if nb_machine_select_for_deploy_cycle == 0:
                     self.logger.debug("There is no deployment to process.")
-                    #start = datetime.datetime.now()
-                    #self.logger.debug("deployxmpp out %s" % start)
+                    # start = datetime.datetime.now()
+                    # self.logger.debug("deployxmpp out %s" % start)
                     return nb_machine_select_for_deploy_cycle, []
                 elif nb_machine_select_for_deploy_cycle == 1:
                     self.logger.debug("We will start a deployment on 1 computer")
                 else:
-                    self.logger.debug("We will start a deployment on %s computers " % nb_machine_select_for_deploy_cycle)
+                    self.logger.debug(
+                        "We will start a deployment on %s computers "
+                        % nb_machine_select_for_deploy_cycle
+                    )
 
                 # We immediatly update the status of the deployment in the msc table.
                 # It has for action to remove the lock on the table.
                 if machine_status_update:
-                    list_uuid_machine = "," . join(machine_status_update)
-                    sql ="""UPDATE `msc`.`commands_on_host`
+                    list_uuid_machine = ",".join(machine_status_update)
+                    sql = """UPDATE `msc`.`commands_on_host`
                                 SET
                                 `current_state`='done',
                                     `stage`='ended'
@@ -1134,16 +1176,18 @@ class MscDatabase(DatabaseHelper):
                                 SET
                                 `phase`.`state`='done'
                                 WHERE `phase`.`fk_commands_on_host` in(%s);
-                    """ % (list_uuid_machine,
-                        list_uuid_machine);
+                    """ % (
+                        list_uuid_machine,
+                        list_uuid_machine,
+                    )
                     ret = session.execute(sql)
                     self.logger.debug("update deployement %s" % ret.rowcount)
                 session.commit()
                 session.flush()
             except Exception:
                 self.logger.error("%s" % (traceback.format_exc()))
-        #start = datetime.datetime.now()
-        #self.logger.debug("deployxmpp out %s" % start)
+        # start = datetime.datetime.now()
+        # self.logger.debug("deployxmpp out %s" % start)
         return nb_machine_select_for_deploy_cycle, updatemachine
 
     @DatabaseHelper._sessionm
@@ -1158,25 +1202,30 @@ class MscDatabase(DatabaseHelper):
                 False la machine ne peut pas etre deploye.
         """
         datenow = datetime.datetime.now()
-        hactuel = int(datenow.strftime('%H'))
-        query = session.query(Commands.deployment_intervals).filter(Commands.title.like(title))
+        hactuel = int(datenow.strftime("%H"))
+        query = session.query(Commands.deployment_intervals).filter(
+            Commands.title.like(title)
+        )
         nb = query.count()
-        if nb == 0 :
+        if nb == 0:
             return False
         res = query.first()
         if not res:
             return False
-        if res.deployment_intervals =="":
+        if res.deployment_intervals == "":
             return True
         # analyse si deploy true or false
-        tb=[re.sub("[-'*;|@#\"]{1}", "-", x) for x in res.deployment_intervals.split(',') if self.pattern.match(x.strip())]
+        tb = [
+            re.sub("[-'*;|@#\"]{1}", "-", x)
+            for x in res.deployment_intervals.split(",")
+            if self.pattern.match(x.strip())
+        ]
         for c in tb:
-            start, end = c.split('-')
+            start, end = c.split("-")
             if hactuel >= int(start) and hactuel <= int(end):
                 # on a trouver 1 cas on deploy
                 return True
         return False
-
 
     @DatabaseHelper._sessionm
     def get_deploy_inprogress_by_team_member(
@@ -1201,25 +1250,32 @@ class MscDatabase(DatabaseHelper):
         delta = datetime.timedelta(seconds=intervalsearch)
         datereduced = datenow - delta
 
-        query = session.query(Commands.id,
-                              func.count(Commands.id).label('nb_machine'),
-                              Commands.title,
-                              Commands.creator,
-                              Commands.package_id,
-                              Commands.start_date,
-                              Commands.end_date,
-                              CommandsOnHost.id,
-                              Target.target_name,
-                              Target.target_uuid,
-                              Target.id_group,
-                              Target.target_macaddr,
-                              Commands.deployment_intervals)\
-        .join(CommandsOnHost, Commands.id == CommandsOnHost.fk_commands)\
-        .join(Target, Target.id == CommandsOnHost.fk_target)\
-        .join(CommandsOnHostPhase, CommandsOnHostPhase.fk_commands_on_host == CommandsOnHost.id)\
-        .filter(CommandsOnHostPhase.name == 'upload')\
-        .filter(CommandsOnHostPhase.state == 'ready')\
-        .filter(Commands.end_date > datereduced)
+        query = (
+            session.query(
+                Commands.id,
+                func.count(Commands.id).label("nb_machine"),
+                Commands.title,
+                Commands.creator,
+                Commands.package_id,
+                Commands.start_date,
+                Commands.end_date,
+                CommandsOnHost.id,
+                Target.target_name,
+                Target.target_uuid,
+                Target.id_group,
+                Target.target_macaddr,
+                Commands.deployment_intervals,
+            )
+            .join(CommandsOnHost, Commands.id == CommandsOnHost.fk_commands)
+            .join(Target, Target.id == CommandsOnHost.fk_target)
+            .join(
+                CommandsOnHostPhase,
+                CommandsOnHostPhase.fk_commands_on_host == CommandsOnHost.id,
+            )
+            .filter(CommandsOnHostPhase.name == "upload")
+            .filter(CommandsOnHostPhase.state == "ready")
+            .filter(Commands.end_date > datereduced)
+        )
 
         if filt:
             query = query.filter(
@@ -1244,18 +1300,22 @@ class MscDatabase(DatabaseHelper):
 
         result = {"total": nb, "elements": []}
         for element in res:
-            result['elements'].append({'cmd_id': element[0],
-                                       'nb_machines': element[1],
-                                       'package_name': element[2],
-                                       'login': element[3],
-                                       'package_uuid': element[4],
-                                       'date_start': element[5],
-                                       'date_end': element[6],
-                                       'machine_name': element[8],
-                                       'uuid_inventory': element[9],
-                                       'gid': element[10],
-                                       'mac_address': element[11],
-                                       'deployment_intervals' : element[12]})
+            result["elements"].append(
+                {
+                    "cmd_id": element[0],
+                    "nb_machines": element[1],
+                    "package_name": element[2],
+                    "login": element[3],
+                    "package_uuid": element[4],
+                    "date_start": element[5],
+                    "date_end": element[6],
+                    "machine_name": element[8],
+                    "uuid_inventory": element[9],
+                    "gid": element[10],
+                    "mac_address": element[11],
+                    "deployment_intervals": element[12],
+                }
+            )
         return result
 
     def deleteCommand(self, cmd_id):

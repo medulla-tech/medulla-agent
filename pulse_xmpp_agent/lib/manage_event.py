@@ -23,7 +23,7 @@ class manage_event:
             name=self.namethread, target=self.manage_event_command
         )
         self.threadevent.start()
-        logging.debug('manage event start')
+        logging.debug("manage event start")
 
     def show_eventloop(self):
         for i in self.event:
@@ -130,7 +130,7 @@ class manage_event:
         self.event = [x for x in self.event if x["sessionid"] != sessionid]
 
     def manage_event_command(self):
-        logging.debug('loop event wait start')
+        logging.debug("loop event wait start")
         try:
             while True:
                 try:

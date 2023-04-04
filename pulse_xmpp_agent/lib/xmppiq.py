@@ -149,15 +149,18 @@ class functionsynchroxmpp:
             filekey = os.path.join(os.path.expanduser("~pulseuser"), ".ssh", "id_rsa")
             dd = """#!/bin/bash
             /usr/bin/ssh -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
-            """ % (datareverse['type_reverse'],
-                   datareverse['portproxy'],
-                   datareverse['ipAM'],
-                   datareverse['remoteport'],
-                   filekey,
-                   datareverse['ipARS'],
-                   datareverse['port_ssh_ars'])
-            reversesshsh = os.path.join(os.path.expanduser('~pulseuser'),
-                                        "reversessh.sh")
+            """ % (
+                datareverse["type_reverse"],
+                datareverse["portproxy"],
+                datareverse["ipAM"],
+                datareverse["remoteport"],
+                filekey,
+                datareverse["ipARS"],
+                datareverse["port_ssh_ars"],
+            )
+            reversesshsh = os.path.join(
+                os.path.expanduser("~pulseuser"), "reversessh.sh"
+            )
             file_put_contents(reversesshsh, dd)
             os.chmod(reversesshsh, 0o700)
             args = shlex.split(reversesshsh)
@@ -179,14 +182,19 @@ class functionsynchroxmpp:
                 os.environ["ProgramFiles"], "Pulse", "bin", "reversessh.bat"
             )
             linecmd = []
-            cmd = """\\"%s\\" -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
-                                                                                                                             datareverse['type_reverse'],
-                                                                                                                             datareverse['portproxy'],
-                                                                                                                             datareverse['ipAM'],
-                                                                                                                             datareverse['remoteport'],
-                                                                                                                             filekey,
-                                                                                                                             datareverse['ipARS'],
-                                                                                                                             datareverse['port_ssh_ars'])
+            cmd = (
+                """\\"%s\\" -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
+                % (
+                    sshexec,
+                    datareverse["type_reverse"],
+                    datareverse["portproxy"],
+                    datareverse["ipAM"],
+                    datareverse["remoteport"],
+                    filekey,
+                    datareverse["ipARS"],
+                    datareverse["port_ssh_ars"],
+                )
+            )
             linecmd.append("""@echo off""")
             linecmd.append(
                 """for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """
@@ -209,16 +217,19 @@ class functionsynchroxmpp:
             filekey = os.path.join(os.path.expanduser("~pulseuser"), ".ssh", "id_rsa")
             cmd = """#!/bin/bash
             /usr/bin/ssh -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
-            """ % (datareverse['type_reverse'],
-                   datareverse['portproxy'],
-                   datareverse['ipAM'],
-                   datareverse['remoteport'],
-                   filekey,
-                   datareverse['ipARS'],
-                   datareverse['port_ssh_ars'])
-            reversesshsh = os.path.join(os.path.expanduser('~pulseuser'),
-                                        "reversessh.sh")
-            file_put_contents(reversesshsh,  cmd)
+            """ % (
+                datareverse["type_reverse"],
+                datareverse["portproxy"],
+                datareverse["ipAM"],
+                datareverse["remoteport"],
+                filekey,
+                datareverse["ipARS"],
+                datareverse["port_ssh_ars"],
+            )
+            reversesshsh = os.path.join(
+                os.path.expanduser("~pulseuser"), "reversessh.sh"
+            )
+            file_put_contents(reversesshsh, cmd)
             os.chmod(reversesshsh, 0o700)
             args = shlex.split(reversesshsh)
             result = subprocess.Popen(args)
@@ -460,8 +471,8 @@ class functionsynchroxmpp:
                         netstat()
                     )
                 if info_ask == "profiluserpulse":
-                    profilname = 'pulseuser'
-                    result['result']['informationresult'][info_ask] = profilname
+                    profilname = "pulseuser"
+                    result["result"]["informationresult"][info_ask] = profilname
             except Exception:
                 result["result"]["informationresult"][info_ask] = ""
         return json.dumps(result)
@@ -626,7 +637,6 @@ class functionsynchroxmpp:
 
     @staticmethod
     def packageslist(xmppobject, data):
-
         packages_path = os.path.join("/", "var", "lib", "pulse2", "packages")
         packages_list = {"total": 0, "datas": []}
         total = 0

@@ -285,12 +285,16 @@ class MUCBot(slixmpp.ClientXMPP):
             resp.send(now=True)
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            if e.iq['error']['code'] == "409":
-                logger.debug("Could not register account %s : User already exists" %\
-                        resp['register']['username'])
+            if e.iq["error"]["code"] == "409":
+                logger.debug(
+                    "Could not register account %s : User already exists"
+                    % resp["register"]["username"]
+                )
             else:
-                logger.debug("Could not register account %s : %s" %\
-                        (resp['register']['username'], e.iq['error']['text']))
+                logger.debug(
+                    "Could not register account %s : %s"
+                    % (resp["register"]["username"], e.iq["error"]["text"])
+                )
         except IqTimeout:
             logger.error("No response from server.")
             self.disconnect()

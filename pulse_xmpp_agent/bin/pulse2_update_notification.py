@@ -6,56 +6,58 @@
 import sys
 import signal
 from optparse import OptionParser
+
 if sys.version_info[0] < 3:
-    import Tkinter as tk     ## Python 2.x
+    import Tkinter as tk  ## Python 2.x
     from Tkinter import *
     import ttk
     import tkMessageBox
 else:
-    import tkinter as tk     ## Python 3.x
+    import tkinter as tk  ## Python 3.x
 
 
 import subprocess
 
+
 def simplecommand(cmd):
     obj = {}
-    p = subprocess.Popen(cmd,
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+    p = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
     result = p.stdout.readlines()
-    obj['code'] = p.wait()
-    obj['result'] = result
+    obj["code"] = p.wait()
+    obj["result"] = result
     return obj
 
 
 class dialogboxnotification:
-    def __init__(self,
-                 textnotification ,
-                 Ytextebutton="",
-                 Ntextebutton="",
-                 notificationTimeout=20,
-                 centerfenetre=True,
-                 sizenotification=15,
-                 sizetextbutton=30,
-                 titrebox="",
-                 sumittext="",
-                 sizeHeadertext=20):
+    def __init__(
+        self,
+        textnotification,
+        Ytextebutton="",
+        Ntextebutton="",
+        notificationTimeout=20,
+        centerfenetre=True,
+        sizenotification=15,
+        sizetextbutton=30,
+        titrebox="",
+        sumittext="",
+        sizeHeadertext=20,
+    ):
         self.result = 1
-        self.notificationTimeout=notificationTimeout
-        self.Ytextebutton=Ytextebutton
-        self.Ntextebutton=Ntextebutton
-        self.textnotification=textnotification
-        self.result=-1
-        self.centerfenetre=centerfenetre
-        self.root=None
-        self.sizenotification=sizenotification
-        self.sizetextbutton=sizetextbutton
-        self.titrebox=titrebox
-        self.sumittext=sumittext
-        self.sizeHeadertext=sizeHeadertext
+        self.notificationTimeout = notificationTimeout
+        self.Ytextebutton = Ytextebutton
+        self.Ntextebutton = Ntextebutton
+        self.textnotification = textnotification
+        self.result = -1
+        self.centerfenetre = centerfenetre
+        self.root = None
+        self.sizenotification = sizenotification
+        self.sizetextbutton = sizetextbutton
+        self.titrebox = titrebox
+        self.sumittext = sumittext
+        self.sizeHeadertext = sizeHeadertext
         # fen.iconbitmap("/home/laurent/Documents/icone_test_1.xpm")
-
 
     def center(self, win):
         """
@@ -71,7 +73,7 @@ class dialogboxnotification:
         win_height = height + titlebar_height + frm_width
         x = win.winfo_screenwidth() // 2 - win_width // 2
         y = win.winfo_screenheight() // 2 - win_height // 2
-        win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+        win.geometry("{}x{}+{}+{}".format(width, height, x, y))
         win.deiconify()
 
     def ok(self):
@@ -100,7 +102,7 @@ class dialogboxnotification:
         self.root = tk.Tk()
 
         self.root.geometry("720x250+0+0")
-        self.root.configure(bg='#0067b3')
+        self.root.configure(bg="#0067b3")
 
         if not self.titrebox:
             self.root.overrideredirect(TRUE)
@@ -110,61 +112,59 @@ class dialogboxnotification:
             # self.root.iconbitmap(self.root.PhotoImage(data=Image_Data))
 
         if self.Ytextebutton or self.Ntextebutton:
-            #button_frame1 = tk.Frame(self.root)
-            button_frame = tk.Frame(self.root,bg='#0067b3')
-            #button_frame.columnconfigure(10)
+            # button_frame1 = tk.Frame(self.root)
+            button_frame = tk.Frame(self.root, bg="#0067b3")
+            # button_frame.columnconfigure(10)
             if self.Ytextebutton == 0 or self.Ntextebutton == 0:
                 xpadvaleur = 70
             else:
                 xpadvaleur = 40
             button_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
-            #button_frame1.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
+            # button_frame1.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
 
-# B1 = Tkinter.Button(top, text ="FLAT", relief=FLAT )
-# B2 = Tkinter.Button(top, text ="RAISED", relief=RAISED )
-# B3 = Tkinter.Button(top, text ="SUNKEN", relief=SUNKEN )
-# B4 = Tkinter.Button(top, text ="GROOVE", relief=GROOVE )
-# B5 = Tkinter.Button(top, text ="RIDGE", relief=RIDGE )
+            # B1 = Tkinter.Button(top, text ="FLAT", relief=FLAT )
+            # B2 = Tkinter.Button(top, text ="RAISED", relief=RAISED )
+            # B3 = Tkinter.Button(top, text ="SUNKEN", relief=SUNKEN )
+            # B4 = Tkinter.Button(top, text ="GROOVE", relief=GROOVE )
+            # B5 = Tkinter.Button(top, text ="RIDGE", relief=RIDGE )
 
             if self.Ytextebutton:
-                Yes_button = tk.Button(button_frame,
-                                       text=self.Ytextebutton,
-                                       height=2,
-                                       width = 15,
-                                       bg='#0067b3',
-                                       highlightthickness = 2,
-                                       highlightbackground = "white",
-                                       highlightcolor= '#0067b3',
-                                       relief = 'solid',
-                                       fg='white',
-                                       borderwidth = '0',
-                                       font=("calibri",
-                                             self.sizetextbutton,
-                                             'bold',
-                                             'underline'),
-                                       command=self.ok,
-                                       activebackground="#0076d7")
+                Yes_button = tk.Button(
+                    button_frame,
+                    text=self.Ytextebutton,
+                    height=2,
+                    width=15,
+                    bg="#0067b3",
+                    highlightthickness=2,
+                    highlightbackground="white",
+                    highlightcolor="#0067b3",
+                    relief="solid",
+                    fg="white",
+                    borderwidth="0",
+                    font=("calibri", self.sizetextbutton, "bold", "underline"),
+                    command=self.ok,
+                    activebackground="#0076d7",
+                )
 
             if self.Ntextebutton:
-                #No_button = tk.Button(button_frame, text=self.Ntextebutton,font=("Courier", self.sizetextbutton),command=self.no,
-                        #activebackground="white")
-                No_button  = tk.Button(button_frame,
-                                       text=self.Ntextebutton,
-                                       bg='#0067b3',
-                                       height=2,
-                                       width = 15,
-                                       highlightthickness = 2,
-                                       highlightbackground = "white",
-                                       highlightcolor= '#0067b3',
-                                       relief = 'solid',
-                                       fg='white',
-                                       borderwidth = '0',
-                                       font=("calibri",
-                                             self.sizetextbutton,
-                                             'bold',
-                                             'underline'),
-                                       command=self.no,
-                                       activebackground="#0076d7")
+                # No_button = tk.Button(button_frame, text=self.Ntextebutton,font=("Courier", self.sizetextbutton),command=self.no,
+                # activebackground="white")
+                No_button = tk.Button(
+                    button_frame,
+                    text=self.Ntextebutton,
+                    bg="#0067b3",
+                    height=2,
+                    width=15,
+                    highlightthickness=2,
+                    highlightbackground="white",
+                    highlightcolor="#0067b3",
+                    relief="solid",
+                    fg="white",
+                    borderwidth="0",
+                    font=("calibri", self.sizetextbutton, "bold", "underline"),
+                    command=self.no,
+                    activebackground="#0076d7",
+                )
             if self.Ytextebutton == 0 or self.Ntextebutton == 0:
                 button_frame.columnconfigure(0, weight=1)
             else:
@@ -172,46 +172,51 @@ class dialogboxnotification:
                 button_frame.columnconfigure(6, weight=6)
 
             if self.Ytextebutton and self.Ntextebutton:
-                Yes_button.grid(row=0, column=6)#, sticky=tk.W
-                No_button.grid(row=0, column=7)#, sticky=tk.W
+                Yes_button.grid(row=0, column=6)  # , sticky=tk.W
+                No_button.grid(row=0, column=7)  # , sticky=tk.W
             elif self.Ytextebutton:
                 Yes_button.pack(side=TOP, padx=10, pady=(10))
             elif self.Ntextebutton:
                 No_button.pack(side=TOP, padx=10, pady=(10))
 
-        #if self.sumittext != "":
-        Label(text=self.sumittext.replace('\\n','\n'),
-                padx=10,
-                pady=(2),
-                bg='#0067b3',
-                fg='white',
-                font=('Open Sans Soft Regular',self.sizeHeadertext, 'bold')).pack()
+        # if self.sumittext != "":
+        Label(
+            text=self.sumittext.replace("\\n", "\n"),
+            padx=10,
+            pady=(2),
+            bg="#0067b3",
+            fg="white",
+            font=("Open Sans Soft Regular", self.sizeHeadertext, "bold"),
+        ).pack()
 
-        Label(text=self.textnotification.replace('\\n','\n'),
-              padx=10,
-              pady=(2),
-              bg='#0067b3',
-              fg = 'white',
-              font=("Open Sans Soft Regular",self.sizenotification)).pack()
+        Label(
+            text=self.textnotification.replace("\\n", "\n"),
+            padx=10,
+            pady=(2),
+            bg="#0067b3",
+            fg="white",
+            font=("Open Sans Soft Regular", self.sizenotification),
+        ).pack()
 
         self.root.update_idletasks()
         ## Remove window decorations
-        #self.root.overrideredirect(1)
-        timeOut = int(self.notificationTimeout*1000) # Convert to ms from s
+        # self.root.overrideredirect(1)
+        timeOut = int(self.notificationTimeout * 1000)  # Convert to ms from s
         ## Run appliction
         self.root.wm_attributes("-topmost", 1)
-        self.root.after(timeOut,self.timeout)
+        self.root.after(timeOut, self.timeout)
         if self.centerfenetre:
             self.center(self.root)
         self.root.mainloop()
 
+
 if __name__ == "__main__":
     # if sys.platform.startswith('win'):
-        # re = simplecommand("query user")
-        # print(re['result'])
-        # if len(re['result']) == 1:
-            # print("NO USER")
-            # sys.exit(4)
+    # re = simplecommand("query user")
+    # print(re['result'])
+    # if len(re['result']) == 1:
+    # print("NO USER")
+    # sys.exit(4)
     # Quit the process if we don't want to continue
     signal.signal(signal.SIGINT, lambda x, y: sys.exit(-1))
     optp = OptionParser()
@@ -294,17 +299,19 @@ if __name__ == "__main__":
         help="size texte notification",
     )
     opts, args = optp.parse_args()
-    if opts.textnotification=="" :
+    if opts.textnotification == "":
         sys.exit(-1)
-    a=dialogboxnotification(opts.textnotification,
-                            notificationTimeout=opts.notificationTimeout,
-                            Ytextebutton=opts.Ytextebutton,
-                            Ntextebutton=opts.Ntextebutton,
-                            centerfenetre=opts.centerfenetre,
-                            sizenotification=opts.sizenotification,
-                            sizetextbutton=opts.sizetextbutton,
-                            titrebox=opts.titrebox,
-                            sumittext=opts.Sumittext,
-                            sizeHeadertext=opts.SizeSumittext)
+    a = dialogboxnotification(
+        opts.textnotification,
+        notificationTimeout=opts.notificationTimeout,
+        Ytextebutton=opts.Ytextebutton,
+        Ntextebutton=opts.Ntextebutton,
+        centerfenetre=opts.centerfenetre,
+        sizenotification=opts.sizenotification,
+        sizetextbutton=opts.sizetextbutton,
+        titrebox=opts.titrebox,
+        sumittext=opts.Sumittext,
+        sizeHeadertext=opts.SizeSumittext,
+    )
     a.showNotification()
     sys.exit(a.get_result())

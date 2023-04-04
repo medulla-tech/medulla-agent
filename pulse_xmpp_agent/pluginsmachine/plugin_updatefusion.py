@@ -55,7 +55,9 @@ def check_if_binary_ok():
         if os.path.isfile(fusion_bin_path):
             logger.debug("FusionInventory is correctly installed. Nothing to do")
         else:
-            logger.error("Something went wrong while installing FusionInventory, we need to reinstall the component.")
+            logger.error(
+                "Something went wrong while installing FusionInventory, we need to reinstall the component."
+            )
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\FusionInventory-Agent" '
@@ -65,7 +67,9 @@ def check_if_binary_ok():
             if result["code"] == 0:
                 logger.debug("The FusionInventory module is ready to be reinstalled.")
             else:
-                logger.debug("We failed to reinitialize the registry entry for FusionInventory.")
+                logger.debug(
+                    "We failed to reinitialize the registry entry for FusionInventory."
+                )
 
 
 def updatefusion(xmppobject):

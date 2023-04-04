@@ -52,7 +52,6 @@ class Controller:
         final_list = []
         # Test if the path exists
         if os.path.exists(str_path):
-
             # Get all elements
             raw_list = os.listdir(str_path)
 

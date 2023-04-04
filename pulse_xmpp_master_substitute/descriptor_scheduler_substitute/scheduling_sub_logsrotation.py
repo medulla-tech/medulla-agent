@@ -49,22 +49,27 @@ def schedule_main(objectxmpp):
             logger.warning("The log file %s is missing" % objectxmpp.config.logfile)
 
         if num_compteur == 0:
-            logger.debug("\nParameters\n\tlog file is : %s (%s bytes %s kbytes - %s Mbytes)\n" \
-                        "\tconfiguration file is : %s\n" \
-                        "\tnumber file in rotation is : %s\n" \
-                        "\tcompress Mode is : %s\n" \
-                        "\ttrigger_size is %s bytes (%s Kbytes %s Mbytes)\n" \
-                        "\tLevel logging %s" % (objectxmpp.config.logfile,
-                                                sizelogfile,
-                                                sizelogfile/1024,
-                                                sizelogfile/(1024*1024),
-                                                objectxmpp.pathfileconf,
-                                                objectxmpp.nbrotfile,
-                                                objectxmpp.compress,
-                                                objectxmpp.trigger_size,
-                                                objectxmpp.trigger_size/1024,
-                                                objectxmpp.trigger_size/(1024*1024),
-                                                logging.getLevelName(logger.getEffectiveLevel())))
+            logger.debug(
+                "\nParameters\n\tlog file is : %s (%s bytes %s kbytes - %s Mbytes)\n"
+                "\tconfiguration file is : %s\n"
+                "\tnumber file in rotation is : %s\n"
+                "\tcompress Mode is : %s\n"
+                "\ttrigger_size is %s bytes (%s Kbytes %s Mbytes)\n"
+                "\tLevel logging %s"
+                % (
+                    objectxmpp.config.logfile,
+                    sizelogfile,
+                    sizelogfile / 1024,
+                    sizelogfile / (1024 * 1024),
+                    objectxmpp.pathfileconf,
+                    objectxmpp.nbrotfile,
+                    objectxmpp.compress,
+                    objectxmpp.trigger_size,
+                    objectxmpp.trigger_size / 1024,
+                    objectxmpp.trigger_size / (1024 * 1024),
+                    logging.getLevelName(logger.getEffectiveLevel()),
+                )
+            )
 
         compression_mode = objectxmpp.compress  # mode in zip, gzip, bz2, No
 

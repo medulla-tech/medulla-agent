@@ -1686,7 +1686,6 @@ class Glpi95(DatabaseHelper):
             and "fk_entity" in filt
             and filt["fk_entity"] != -1
         ):
-
             entitylist = self.getEntitiesParentsAsList([filt["fk_entity"]])
             session = create_session()
             entitylist.append(filt["fk_entity"])
@@ -5375,7 +5374,6 @@ class Glpi95(DatabaseHelper):
         # Adding rule criteria
 
         for i in range(len(rule_data["criteria"])):
-
             cr = RuleCriterion()
             cr.rules_id = rule.id
             cr.criteria = rule_data["criteria"][i]
@@ -5412,7 +5410,6 @@ class Glpi95(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def moveEntityRuleUp(self, session, id):
-
         rule = session.query(Rule).filter_by(id=id).one()
         # get previous rule
         previous = (
@@ -5436,7 +5433,6 @@ class Glpi95(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def moveEntityRuleDown(self, session, id):
-
         rule = session.query(Rule).filter_by(id=id).one()
         # get next rule
         next_ = (
@@ -5460,7 +5456,6 @@ class Glpi95(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def editEntityRule(self, session, id, rule_data):
-
         rule = session.query(Rule).filter_by(id=id).one()
         # Delete associated criteria and actions
         session.query(RuleCriterion).filter_by(rules_id=id).delete()
@@ -5480,7 +5475,6 @@ class Glpi95(DatabaseHelper):
         # Adding rule criteria
 
         for i in range(len(rule_data["criteria"])):
-
             cr = RuleCriterion()
             cr.rules_id = rule.id
             cr.criteria = rule_data["criteria"][i]
@@ -5516,7 +5510,6 @@ class Glpi95(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getEntityRule(self, session, id):
-
         rule = session.query(Rule).filter_by(id=id).one()
         criteria = session.query(RuleCriterion).filter_by(rules_id=id).all()
         actions = session.query(RuleAction).filter_by(rules_id=id).all()
@@ -5550,7 +5543,6 @@ class Glpi95(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def deleteEntityRule(self, session, id):
-
         # Delete rule
         session.query(Rule).filter_by(id=id).delete()
         # Delete associated criteria and actions
@@ -5583,7 +5575,6 @@ class Glpi95(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def setLocationsForUser(self, session, username, profiles):
-
         user_id = session.query(User).filter_by(name=username).one().id
         # Delete all user entity profiles
         session.query(UserProfile).filter_by(users_id=user_id).delete()

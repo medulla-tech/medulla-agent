@@ -32,17 +32,18 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 if len(version) < 20:
                     logger.debug("Version AGENT is " + version)
                     import _winreg
-                    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Medulla Agent\\",
-                                        0 ,
-                                        _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
-                    _winreg.SetValueEx ( key,
-                                        'DisplayVersion'  ,
-                                        0,
-                                        _winreg.REG_SZ,
-                                        version)
+
+                    key = _winreg.OpenKey(
+                        _winreg.HKEY_LOCAL_MACHINE,
+                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Medulla Agent\\",
+                        0,
+                        _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY,
+                    )
+                    _winreg.SetValueEx(
+                        key, "DisplayVersion", 0, _winreg.REG_SZ, version
+                    )
                     _winreg.CloseKey(key)
-        elif sys.platform.startswith('linux') :
+        elif sys.platform.startswith("linux"):
             pass
         elif sys.platform.startswith("darwin"):
             pass
