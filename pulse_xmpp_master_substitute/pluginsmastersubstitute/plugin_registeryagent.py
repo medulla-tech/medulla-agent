@@ -68,7 +68,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         msgq={ 'to' : str(msg['to']),'from' : str(msg['from']) }
         timeact=int(time.time())
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
-
+        try:
+            xmppobject.compteur_de_traitement
+        except  AttributeError:
+            compteurcallplugin = 0
         if compteurcallplugin == 0:
             xmppobject.compteur_de_traitement = {}
             xmppobject.listconfiguration = []

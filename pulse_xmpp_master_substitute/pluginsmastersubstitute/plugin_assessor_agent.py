@@ -70,6 +70,11 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     try:
         timeact=int(time.time())
         compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
+        if statfuncton:
+            try:
+                objectxmpp.stat_assessor_agent
+            except AttributeError:
+                compteurcallplugin = 0
         if compteurcallplugin == 0:
             objectxmpp.compteur_de_traitement = {}
             objectxmpp.listconfiguration = []
