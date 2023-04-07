@@ -33,7 +33,7 @@ FUSIONVERSION = '2.5.2'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatefusion", "TYPE": "machine"}
+plugin = {"VERSION": "1.3", "NAME": "updatefusion", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -41,12 +41,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
     try:
-        # Update if version is lower
-        check_if_binary_ok()
-        installed_version = checkfusionversion()
-        if StrictVersion(installed_version) < StrictVersion(FUSIONVERSION):
-            updatefusion(xmppobject)
-    except Exception:
+        if not hasattr(xmppobject.config, 'agent') or (hasattr(xmppobject.config, 'agent') and xmppobject.config.agent != 'glpiagent'):
+            # Update if version is lower
+            check_if_binary_ok()
+            installed_version = checkfusionversion()
+            if StrictVersion(installed_version) < StrictVersion(FUSIONVERSION):
+                updatefusion(xmppobject)
+    except Exception as error_plugin:
+        logger.error("An error occured. The error code is %s" % str(e))
         pass
 
 

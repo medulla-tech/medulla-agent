@@ -364,6 +364,12 @@ def scheduledeployrecoveryjob(self):
         # We check which machines of machines_waiting_online are now online
         for machine in machines_waiting_online:
             logger.info("Restarting the deploiement %s actually in  machines_waiting_online state" %  machine['sessionid'])
+            # ----------------- contrainte slopt partiel-----------------------
+            res = MscDatabase().test_deploy_in_partiel_slot( machine['title'])
+            if not res:
+                # machine avec contrainte slot partiel on est pas dans le slot
+                continue
+            # -----------------------------------------------------------------
             try:
                 data = json.loads(machine['result'])
                 if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
@@ -408,16 +414,16 @@ def scheduledeployrecoveryjob(self):
                         # lance deployment to ars
                         try:
                             if 'jidmachine' in data and data['jidmachine'] != "" :
-                                result =  XmppMasterDatabase().update_jid_if_changed(data['jidmachine'] )
-                                if result:
-                                    if result[0]['jid'] != data['jidmachine']:
+                                checkChangedJID =  XmppMasterDatabase().update_jid_if_changed(data['jidmachine'] )
+                                if checkChangedJID:
+                                    if checkChangedJID[0]['jid'] != data['jidmachine']:
                                         logging.warning("Machine JID changed since creation of deployment")
-                                        logging.warning("Machine JID %s -> %s"%(data['jidmachine'],result[0]['jid'] ))
-                                        logging.warning("Relay server JID %s -> %s"%(data['jidrelay'],result[0]['groupdeploy'] ))
-                                        msglog.append("jid machine changed : replace jid mach from %s to %s" % (data['jidmachine'], result[0]['jid']))
-                                        msglog.append("replace jid ars from %s to %s" % (data['jidrelay'], result[0]['groupdeploy'] ))
-                                        data['jidmachine'] =  result[0]['jid']
-                                        data['jidrelay'] =  result[0]['groupdeploy']
+                                        logging.warning("Machine JID %s -> %s"%(data['jidmachine'],checkChangedJID[0]['jid'] ))
+                                        logging.warning("Relay server JID %s -> %s"%(data['jidrelay'],checkChangedJID[0]['groupdeploy'] ))
+                                        msglog.append("jid machine changed : replace jid mach from %s to %s" % (data['jidmachine'], checkChangedJID[0]['jid']))
+                                        msglog.append("replace jid ars from %s to %s" % (data['jidrelay'], checkChangedJID[0]['groupdeploy'] ))
+                                        data['jidmachine'] =  checkChangedJID[0]['jid']
+                                        data['jidrelay'] =  checkChangedJID[0]['groupdeploy']
                                         XmppMasterDatabase().replace_jid_mach_ars_in_deploy(data['jidmachine'],
                                                                                             data['jidrelay'],
                                                                                             data['title'])

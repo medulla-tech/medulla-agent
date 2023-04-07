@@ -1933,6 +1933,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         except OSError:
                             logging.error("We failed to remove the file %s" % self.tmpfile)
                             pass
+
+            except KeyError as keyerror:
+                logging.error("The %s key is missing in your syncthing config file" % keyerror)
+
             except Exception as e:
                 logging.error("The initialisation of syncthing failed with the error %s: " % str(e))
                 logger.error("We hit the following backtrace: \n%s" % traceback.format_exc())

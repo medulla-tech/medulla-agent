@@ -1876,7 +1876,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 msg=str(e)
                 return -1, msg
             return new_machine.id, msg
-        
+
     @DatabaseHelper._sessionm
     def is_jiduser_organization_ad(self, session, jiduser):
         """
