@@ -697,7 +697,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 with open(filenamejson, 'r') as f:
                     data = json.load(f)
                     # signal error timeout reluanch
-                    data['data']['repriseerror']="ABORT DEPLOYMENT SHUTDOWND [USER NO CHOISE]"
+                    data['data']['repriseerror']="ABORT DEPLOYMENT SHUTDOWN [USER NO CHOICE]"
                     grafcet(self, data)
             except:
                 logger.error("\n%s"%(traceback.format_exc()))
@@ -737,7 +737,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             logger.error("\nResumption deploy %s"%(traceback.format_exc()))
                     else:
                         try:
-                            data['data']['repriseerror']="<span class='log_err'>ABORT DEPLOYMENT SHUTDOWND session id %s"\
+                            data['data']['repriseerror']="<span class='log_err'>ABORT DEPLOYMENT SHUTDOWN session id %s"\
                                                             " step %s out slot deploy [ %s -> %s ]  (timeloacal machine %s)</span>"%(detection[4],
                                                             detection[3],
                                                                                                     slotdep,
@@ -746,7 +746,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             # reinjection for terminate deploy error correctement
                             grafcet(self, data)
                         except:
-                            logger.error("\nABORT DEPLOYMENT SHUTDOWND %s"%(traceback.format_exc()))
+                            logger.error("\nABORT DEPLOYMENT SHUTDOWN %s"%(traceback.format_exc()))
             except:
                 logger.error("reinjection deploy protected\n%s"%(traceback.format_exc()))
             finally:
@@ -1915,6 +1915,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         except OSError:
                             logging.error("We failed to remove the file %s" % self.tmpfile)
                             pass
+
+            except KeyError as keyerror:
+                logging.error("The %s key is missing in your syncthing config file" % keyerror)
+
             except Exception as e:
                 logging.error("The initialisation of syncthing failed with the error %s: " % str(e))
                 logger.error("We hit the following backtrace: \n%s" % traceback.format_exc())
