@@ -13,8 +13,7 @@ if sys.version_info[0] < 3:
     import tkMessageBox
 else:
     import tkinter as tk     ## Python 3.x
-
-from PIL import Image, ImageTk
+    from PIL import Image, ImageTk
 
 import subprocess
 
@@ -184,14 +183,15 @@ class dialogboxnotification:
               fg = 'white',
               font=("Open Sans Soft Regular",self.sizenotification)).pack()
 
-        # Create a photoimage object of the image in the path
-        medullaLogoLocation = Image.open("Image3.png")
-        medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
+        if not sys.version_info[0] < 3:
+            # Create a photoimage object of the image in the path
+            medullaLogoLocation = Image.open("Image3.png")
+            medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
 
-        Medullalabel = tk.Label(image=medullaLogo, bg='#25607d')
-        Medullalabel.image = medullaLogo
+            Medullalabel = tk.Label(image=medullaLogo, bg='#25607d')
+            Medullalabel.image = medullaLogo
 
-        Medullalabel.place(x=15, y=12)
+            Medullalabel.place(x=15, y=12)
 
         self.root.update_idletasks()
         # Remove window decorations
