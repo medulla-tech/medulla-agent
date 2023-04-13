@@ -8,7 +8,17 @@ import os
 import platform
 import os.path
 import json
-from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile, simplecommand, send_data_tcp
+from utils import (
+    getMacAdressList,
+    getIPAdressList,
+    shellcommandtimeout,
+    shutdown_command,
+    reboot_command,
+    isBase64,
+    downloadfile,
+    simplecommand,
+    send_data_tcp,
+)
 from configuration import setconfigfile
 import traceback
 import logging
@@ -38,47 +48,55 @@ class grafcet:
         self.parameterdynamic = {}
         self.descriptorsection = {"action_section_install": -1}
         self.objectxmpp = objectxmpp
-        self.userconecter=None
-        self.userstatus=None
-        self.userconectdate=None
-        self.data = self.datasend['data']
-        self.sessionid = self.datasend['sessionid']
+        self.userconecter = None
+        self.userstatus = None
+        self.userconectdate = None
+        self.data = self.datasend["data"]
+        self.sessionid = self.datasend["sessionid"]
         self.__clean_protected()
-        self.sequence = self.data['descriptor']['sequence']
+        self.sequence = self.data["descriptor"]["sequence"]
         self.__initialise_user_connected__()
-        if 'advanced' in self.data and "paramdeploy" in self.data['advanced'] and isinstance(self.data['advanced']['paramdeploy'], dict):
+        if (
+            "advanced" in self.data
+            and "paramdeploy" in self.data["advanced"]
+            and isinstance(self.data["advanced"]["paramdeploy"], dict)
+        ):
             # there are  dynamic parameters.
             for k, v in list(self.data["advanced"]["paramdeploy"].items()):
                 self.parameterdynamic[k] = v
-        if 'repriseok'  in self.data and self.data['repriseok']!="" :
-            self.objectxmpp.xmpplog(self.data['repriseok'],
-                                    type='deploy',
-                                    sessionname=self.sessionid,
-                                    priority=self.data['stepcurrent'],
-                                    action="xmpplog",
-                                    who=self.objectxmpp.boundjid.bare,
-                                    how="",
-                                    why="",
-                                    module="Deployment | Error | Terminate | Notify",
-                                    date=None,
-                                    fromuser= self.userconecter,
-                                    touser="")
-        if 'repriseerror' in self.data :
-            self.objectxmpp.xmpplog(self.data['repriseerror'],
-                                    type='deploy',
-                                    sessionname=self.sessionid,
-                                    priority=self.data['stepcurrent'],
-                                    action="xmpplog",
-                                    who=self.objectxmpp.boundjid.bare,
-                                    how="",
-                                    why="",
-                                    module="Deployment | Error | Terminate | Notify",
-                                    date=None,
-                                    fromuser= self.userconecter,
-                                    touser="")
+        if "repriseok" in self.data and self.data["repriseok"] != "":
+            self.objectxmpp.xmpplog(
+                self.data["repriseok"],
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=self.data["stepcurrent"],
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why="",
+                module="Deployment | Error | Terminate | Notify",
+                date=None,
+                fromuser=self.userconecter,
+                touser="",
+            )
+        if "repriseerror" in self.data:
+            self.objectxmpp.xmpplog(
+                self.data["repriseerror"],
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=self.data["stepcurrent"],
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why="",
+                module="Deployment | Error | Terminate | Notify",
+                date=None,
+                fromuser=self.userconecter,
+                touser="",
+            )
             self.__terminate_remote_deploy()
             return
-        if 'stepcurrent' not in self.data:
+        if "stepcurrent" not in self.data:
             return
         try:
             # search section in sequence
@@ -119,11 +137,20 @@ class grafcet:
                         # Attribute section "uninstall" if exists
                         mesg_install = "Starting Uninstall section"
                         if "action_section_uninstall" in self.descriptorsection:
-                            self.__action_completed__(self.sequence[self.descriptorsection['action_section_uninstall']])
-                            self.data['stepcurrent'] = self.descriptorsection['action_section_uninstall'] + 1
-                    self.__affiche_message('[%s]-[%s]: %s' % (self.data['name'], self.data['stepcurrent'], mesg_install),
-                                        module="Deployment | Execution")
-            self.workingstep = self.sequence[self.data['stepcurrent']]
+                            self.__action_completed__(
+                                self.sequence[
+                                    self.descriptorsection["action_section_uninstall"]
+                                ]
+                            )
+                            self.data["stepcurrent"] = (
+                                self.descriptorsection["action_section_uninstall"] + 1
+                            )
+                    self.__affiche_message(
+                        "[%s]-[%s]: %s"
+                        % (self.data["name"], self.data["stepcurrent"], mesg_install),
+                        module="Deployment | Execution",
+                    )
+            self.workingstep = self.sequence[self.data["stepcurrent"]]
             self.__execstep__()  # call action workingstep
         except BaseException as e:
             logging.getLogger().error("END DEPLOY ON ERROR INITIALISATION")
@@ -141,80 +168,92 @@ class grafcet:
                     mtype="chat",
                 )
             self.objectxmpp.session.clearnoevent(self.sessionid)
-            msg_user=['<span class="log_err">Error initializing grafcet</span>', '<span class="log_err">' + str(e) + '</span>' ]
-            self.__affiche_message(msg_user,
-                                        module="Deployment | Error | Execution")
+            msg_user = [
+                '<span class="log_err">Error initializing grafcet</span>',
+                '<span class="log_err">' + str(e) + "</span>",
+            ]
+            self.__affiche_message(msg_user, module="Deployment | Error | Execution")
             self.terminate(-1, True, "end error initialisation deploy")
 
     def __terminate_remote_deploy(self):
-        self.sequence = self.data['descriptor']['sequence']
-        self.workingstep = self.sequence[self.data['stepcurrent']]
-        self.terminate(-1, False, "end error re %s" %
-                           self.workingstep['step'])
-        self.__affiche_message('[%s] - [%s]: Error relaunch'\
-                                ' of deployment after shutdown ' % (self.data['name'],
-                                self.workingstep['step']),
-                                module="Deployment | Execution | Error")
+        self.sequence = self.data["descriptor"]["sequence"]
+        self.workingstep = self.sequence[self.data["stepcurrent"]]
+        self.terminate(-1, False, "end error re %s" % self.workingstep["step"])
+        self.__affiche_message(
+            "[%s] - [%s]: Error relaunch"
+            " of deployment after shutdown "
+            % (self.data["name"], self.workingstep["step"]),
+            module="Deployment | Execution | Error",
+        )
 
     def __affiche_message(self, msg, module="Deployment | Execution | Notification"):
         if type(msg) != list:
-            msg=[msg]
+            msg = [msg]
         if msg:
             try:
-                self.workingstep['step']
-                wkset= self.workingstep['step']
+                self.workingstep["step"]
+                wkset = self.workingstep["step"]
             except:
-                wkset= -1
+                wkset = -1
             for messagetxtlog in msg:
-                self.objectxmpp.xmpplog(messagetxtlog,
-                                    type='deploy',
-                                    sessionname=self.sessionid,
-                                    priority=wkset,
-                                    action="xmpplog",
-                                    who=self.objectxmpp.boundjid.bare,
-                                    how="",
-                                    why=self.data['name'],
-                                    module="Deployment | notification | Execution",
-                                    date=None,
-                                    fromuser=self.data['login'],
-                                    touser="")
+                self.objectxmpp.xmpplog(
+                    messagetxtlog,
+                    type="deploy",
+                    sessionname=self.sessionid,
+                    priority=wkset,
+                    action="xmpplog",
+                    who=self.objectxmpp.boundjid.bare,
+                    how="",
+                    why=self.data["name"],
+                    module="Deployment | notification | Execution",
+                    date=None,
+                    fromuser=self.data["login"],
+                    touser="",
+                )
 
     def __initialise_user_connected__(self):
         """
-            cette function search si 1 utilisateur est connected.
+        cette function search si 1 utilisateur est connected.
         """
         # call function pour avoir connected user
         # implementer en 1er version uniquement pour windows
 
-        if sys.platform.startswith('win'):
+        if sys.platform.startswith("win"):
             try:
-                self.userconecter=None
-                self.userstatus=None
-                self.userconectdate=None
+                self.userconecter = None
+                self.userstatus = None
+                self.userconectdate = None
                 re = simplecommand("query user")
-                if len(re['result']) >= 2:
-                    userdata=[ x.strip("> ")  for x in re['result'][1].split(" ") if x != ""]
-                    self.userconecter=userdata[0]
-                    self.userstatus=userdata[3]
-                    self.userconectdate=userdata[5]+" "+userdata[6]
-                    msg_user = "[%s]-[%s]: Currently connected user %s status"\
-                                " [%s] from %s"% (self.data['name'],
-                                                  self.data['stepcurrent'],
-                                                  self.userconecter,
-                                                  self.userstatus,
-                                                  self.userconectdate)
-                    self.__affiche_message(msg_user,
-                                        module="Deployment | Execution")
+                if len(re["result"]) >= 2:
+                    userdata = [
+                        x.strip("> ") for x in re["result"][1].split(" ") if x != ""
+                    ]
+                    self.userconecter = userdata[0]
+                    self.userstatus = userdata[3]
+                    self.userconectdate = userdata[5] + " " + userdata[6]
+                    msg_user = (
+                        "[%s]-[%s]: Currently connected user %s status"
+                        " [%s] from %s"
+                        % (
+                            self.data["name"],
+                            self.data["stepcurrent"],
+                            self.userconecter,
+                            self.userstatus,
+                            self.userconectdate,
+                        )
+                    )
+                    self.__affiche_message(msg_user, module="Deployment | Execution")
                 else:
-                    msg_user = "[%s]-[%s]: No user connected" % (self.data['name'],
-                                                                  self.data['stepcurrent'])
-                    self.__affiche_message(msg_user,
-                                        module="Deployment | Execution")
+                    msg_user = "[%s]-[%s]: No user connected" % (
+                        self.data["name"],
+                        self.data["stepcurrent"],
+                    )
+                    self.__affiche_message(msg_user, module="Deployment | Execution")
             except:
                 logger.error("\n%s" % (traceback.format_exc()))
-                self.userconecter=None
-                self.userstatus=None
-                self.userconectdate=None
+                self.userconecter = None
+                self.userstatus = None
+                self.userconectdate = None
 
     def find_step_type(self):
         for stepseq in self.sequence:
@@ -432,9 +471,14 @@ class grafcet:
             self.terminate(
                 -1,
                 False,
-                "end error inconsistency in descriptor verify the step number [step %s not exist]" % val)
-            self.__affiche_message("[%s] : Descriptor error: Verify the step number [step %s not exist]" % (val, self.data['name']),
-                                        module="Deployment | Error | Execution")
+                "end error inconsistency in descriptor verify the step number [step %s not exist]"
+                % val,
+            )
+            self.__affiche_message(
+                "[%s] : Descriptor error: Verify the step number [step %s not exist]"
+                % (val, self.data["name"]),
+                module="Deployment | Error | Execution",
+            )
             return 5
         elif isinstance(val, str):
             if val == "next":
@@ -482,7 +526,7 @@ class grafcet:
         send msg to log sequence
         Clean client disk packages (ie clear)
         """
-        login = self.data['login']
+        login = self.data["login"]
         self.__clean_protected()
         restarmachine = False
         shutdownmachine = False
@@ -493,14 +537,23 @@ class grafcet:
             and self.datasend["data"]["advanced"]["shutdownrequired"] is True
         ):
             shutdownmachine = True
-            self.__affiche_message("Shutdown required for machine after deployment on %s" % (self.datasend['data']['name']),
-                                        module="Deployment|Terminate|Execution|Restart|Notify")
-        if not shutdownmachine and 'advanced' in self.datasend['data'] \
-            and 'rebootrequired' in self.datasend['data']['advanced'] \
-                and self.datasend['data']['advanced']['rebootrequired'] is True:
+            self.__affiche_message(
+                "Shutdown required for machine after deployment on %s"
+                % (self.datasend["data"]["name"]),
+                module="Deployment|Terminate|Execution|Restart|Notify",
+            )
+        if (
+            not shutdownmachine
+            and "advanced" in self.datasend["data"]
+            and "rebootrequired" in self.datasend["data"]["advanced"]
+            and self.datasend["data"]["advanced"]["rebootrequired"] is True
+        ):
             restarmachine = True
-            self.__affiche_message("Reboot required for machine after deploy on %s" % (self.datasend['data']['name']),
-                                        module="Deployment|Terminate|Execution|Restart|Notify")
+            self.__affiche_message(
+                "Reboot required for machine after deploy on %s"
+                % (self.datasend["data"]["name"]),
+                module="Deployment|Terminate|Execution|Restart|Notify",
+            )
         datas = {}
         datas = self.datasend
         try:
@@ -641,23 +694,25 @@ class grafcet:
             logger.error("\n%s" % (err))
         try:
             datapackage = self.datasend
-            mach = self.datasend['data']['jidmachine']
-            datapackage['data'] = {}
-            if(msgstate != ""):
-                datapackage['msgstate'] = {"msg": msgstate,
-                                            "quitonerror": quiterror}
-            datapackage['action'] = 'applicationdeploymentjson'
+            mach = self.datasend["data"]["jidmachine"]
+            datapackage["data"] = {}
+            if msgstate != "":
+                datapackage["msgstate"] = {"msg": msgstate, "quitonerror": quiterror}
+            datapackage["action"] = "applicationdeploymentjson"
 
-            #print "signal grafcet terminate%s" % datapackage
+            # print "signal grafcet terminate%s" % datapackage
 
             if shutdownmachine:
-                self.__affiche_message('DEPLOYMENT TERMINATE and shutdown machine',
-                                        module="Deployment | Terminate | Notify")
+                self.__affiche_message(
+                    "DEPLOYMENT TERMINATE and shutdown machine",
+                    module="Deployment | Terminate | Notify",
+                )
             else:
-                self.objectxmpp.send_message(mto=mach,
-                                        mbody=json.dumps(datapackage,
-                                                        encoding="utf-8"),
-                                        mtype='chat')
+                self.objectxmpp.send_message(
+                    mto=mach,
+                    mbody=json.dumps(datapackage, encoding="utf-8"),
+                    mtype="chat",
+                )
 
         except Exception as e:
             logging.getLogger().error(str(e))
@@ -845,29 +900,42 @@ class grafcet:
             return False
 
     def __alternatefolder(self):
-        if 'packageuuid' in self.workingstep:
-            self.workingstep['packageuuid'] = self.replaceTEMPLATE(
-                self.workingstep['packageuuid'])
-            directoryworking = os.path.join(managepackage.packagedir(),
-                                            self.workingstep['packageuuid'])
+        if "packageuuid" in self.workingstep:
+            self.workingstep["packageuuid"] = self.replaceTEMPLATE(
+                self.workingstep["packageuuid"]
+            )
+            directoryworking = os.path.join(
+                managepackage.packagedir(), self.workingstep["packageuuid"]
+            )
             if os.path.isdir(directoryworking):
                 os.chdir(directoryworking)
-                self.workingstep['pwd'] = os.getcwd()
-                self.__affiche_message('[%s]-[%s]: Using package folder %s' % (self.data['name'],
-                                                                                self.workingstep['step'],
-                                                                                self.workingstep['packageuuid']),
-                                        module="Deployment | Execution | Warning")
+                self.workingstep["pwd"] = os.getcwd()
+                self.__affiche_message(
+                    "[%s]-[%s]: Using package folder %s"
+                    % (
+                        self.data["name"],
+                        self.workingstep["step"],
+                        self.workingstep["packageuuid"],
+                    ),
+                    module="Deployment | Execution | Warning",
+                )
             else:
-                self.__affiche_message('[%s]-[%s]: Warning : Requested package '\
-                                        'directory missing!!!:  %s' % (self.data['name'],
-                                                                       self.workingstep['step'],
-                                                                       self.workingstep['packageuuid']),
-                                        module="Deployment | Execution | Warning")
-        self.workingstep['pwd'] = os.getcwd()
-        self.__affiche_message('[%s]-[%s]: Current directory %s' % (self.data['name'],
-                                                                     self.workingstep['step'],
-                                                                     self.workingstep['pwd']),
-                                        module="Deployment | Execution | Notification")
+                self.__affiche_message(
+                    "[%s]-[%s]: Warning : Requested package "
+                    "directory missing!!!:  %s"
+                    % (
+                        self.data["name"],
+                        self.workingstep["step"],
+                        self.workingstep["packageuuid"],
+                    ),
+                    module="Deployment | Execution | Warning",
+                )
+        self.workingstep["pwd"] = os.getcwd()
+        self.__affiche_message(
+            "[%s]-[%s]: Current directory %s"
+            % (self.data["name"], self.workingstep["step"], self.workingstep["pwd"]),
+            module="Deployment | Execution | Notification",
+        )
 
     # --------------------------------------------------#
     # DEFINITIONS OF EXISTING ACTIONS FOR A DESCRIPTOR###
@@ -890,10 +958,17 @@ class grafcet:
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_pwd_package step %s" % self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_pwd_package : %s' % (self.data['name'], self.workingstep['step'], str(e)),
-                                        module="Deployment | Execution | Error")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_pwd_package step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_pwd_package : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Execution | Error",
+            )
 
     def action_section_install(self):
         """
@@ -906,9 +981,12 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             if "section" in self.parameterdynamic:
-                strsection = str(self.parameterdynamic['section']).upper()
-                self.__affiche_message('[%s]-[%s]: End of section %s' % (self.data['name'], self.workingstep['step'], strsection),
-                                        module="Deployment | Execution")
+                strsection = str(self.parameterdynamic["section"]).upper()
+                self.__affiche_message(
+                    "[%s]-[%s]: End of section %s"
+                    % (self.data["name"], self.workingstep["step"], strsection),
+                    module="Deployment | Execution",
+                )
             # goto succes
             self.__search_Next_step_int__(
                 self.descriptorsection["actionsuccescompletedend"]
@@ -917,10 +995,17 @@ class grafcet:
             return
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_section_install step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_section_install : %s' % (self.data['name'], self.workingstep['step'], str(e)),
-                                        module="Deployment | Execution | Error")
+            self.terminate(
+                -1,
+                False,
+                "end error in action_section_install step %s"
+                % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_section_install : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Execution | Error",
+            )
 
     def action_section_uninstall(self):
         """
@@ -933,9 +1018,12 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             if "section" in self.parameterdynamic:
-                strsection = str(self.parameterdynamic['section']).upper()
-                self.__affiche_message('[%s]-[%s]: End of section %s' % (self.data['name'], self.workingstep['step'], strsection),
-                                        module="Deployment | Execution")
+                strsection = str(self.parameterdynamic["section"]).upper()
+                self.__affiche_message(
+                    "[%s]-[%s]: End of section %s"
+                    % (self.data["name"], self.workingstep["step"], strsection),
+                    module="Deployment | Execution",
+                )
             # goto succes
             self.__search_Next_step_int__(
                 self.descriptorsection["actionsuccescompletedend"]
@@ -943,11 +1031,18 @@ class grafcet:
             self.__execstep__()
             return
         except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_section_uninstall step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_section_uninstall : %s' % (self.data['name'], self.workingstep['step'], str(e)),
-                                        module="Deployment | Execution | Error")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_section_uninstall step %s"
+                % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_section_uninstall : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Execution | Error",
+            )
 
     def action_section_update(self):
         """
@@ -960,9 +1055,12 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             if "section" in self.parameterdynamic:
-                strsection = str(self.parameterdynamic['section']).upper()
-                self.__affiche_message('[%s]-[%s]: End of section %s' % (self.data['name'], self.workingstep['step'], strsection),
-                                        module="Deployment | Execution")
+                strsection = str(self.parameterdynamic["section"]).upper()
+                self.__affiche_message(
+                    "[%s]-[%s]: End of section %s"
+                    % (self.data["name"], self.workingstep["step"], strsection),
+                    module="Deployment | Execution",
+                )
             # goto succes
             self.__search_Next_step_int__(
                 self.descriptorsection["actionsuccescompletedend"]
@@ -970,11 +1068,17 @@ class grafcet:
             self.__execstep__()
             return
         except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_section_update step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_section_update : %s' % (self.data['name'], self.workingstep['step'], str(e)),
-                                        module="Deployment | Execution | Error")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_section_update step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_section_update : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Execution | Error",
+            )
 
     def action_section_launch(self):
         """
@@ -987,9 +1091,12 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             if "section" in self.parameterdynamic:
-                strsection = str(self.parameterdynamic['section']).upper()
-                self.__affiche_message('[%s]-[%s]: End of section %s' % (self.data['name'], self.workingstep['step'], strsection),
-                                        module="Deployment | Execution")
+                strsection = str(self.parameterdynamic["section"]).upper()
+                self.__affiche_message(
+                    "[%s]-[%s]: End of section %s"
+                    % (self.data["name"], self.workingstep["step"], strsection),
+                    module="Deployment | Execution",
+                )
             # goto succes
             self.__search_Next_step_int__(
                 self.descriptorsection["actionsuccescompletedend"]
@@ -997,11 +1104,17 @@ class grafcet:
             self.__execstep__()
             return
         except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_section_launch step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_section_launch : %s' % (self.data['name'], self.workingstep['step'], str(e)),
-                                        module="Deployment | Execution | Error")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_section_launch step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_section_launch : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Execution | Error",
+            )
 
     def action_comment(self):
         """
@@ -1016,22 +1129,37 @@ class grafcet:
                 return
             self.__protected()
             self.__action_completed__(self.workingstep)
-            print (self.workingstep)
-            if 'comment' in self.workingstep :
-                self.workingstep['comment'] = self.replaceTEMPLATE(self.workingstep['comment'] )
+            print(self.workingstep)
+            if "comment" in self.workingstep:
+                self.workingstep["comment"] = self.replaceTEMPLATE(
+                    self.workingstep["comment"]
+                )
             else:
-                self.workingstep['comment'] = "no comment user"
-            self.__affiche_message('[%s]-[%s]: User comment : %s' % (self.data['name'], self.workingstep['step'], self.workingstep['comment']),
-                                        module="Deployment | Execution")
+                self.workingstep["comment"] = "no comment user"
+            self.__affiche_message(
+                "[%s]-[%s]: User comment : %s"
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["comment"],
+                ),
+                module="Deployment | Execution",
+            )
 
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_comment step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_comment : %s' % (self.data['name'], self.workingstep['step'], str(e)),
-                                        module="Deployment | Execution | Error")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_comment step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_comment : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Execution | Error",
+            )
 
     def action_set_environ(self):
         """
@@ -1051,17 +1179,26 @@ class grafcet:
                         a = self.replaceTEMPLATE(z)
                         b = self.replaceTEMPLATE(self.workingstep["environ"][a])
                         os.environ[a] = b
-                        self.__affiche_message('[%s]-[%s] : Set environment parameter %s = %s' % (self.data['name'], self.workingstep['step'], a, b),
-                                        module="Deployment | Error | Execution")
+                        self.__affiche_message(
+                            "[%s]-[%s] : Set environment parameter %s = %s"
+                            % (self.data["name"], self.workingstep["step"], a, b),
+                            module="Deployment | Error | Execution",
+                        )
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logging.getLogger().error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_set_environ step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s]-[%s]: Error action_set_environ ' % (self.data['name'],self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            self.terminate(
+                -1,
+                False,
+                "end error in action_set_environ step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Error action_set_environ "
+                % (self.data["name"], self.workingstep["step"]),
+                module="Deployment | Error | Execution",
+            )
 
     def action_set_config_file(self):
         """
@@ -1089,20 +1226,41 @@ class grafcet:
                         ):
                             # traitement configuration.
                             if not setconfigfile(dataconfiguration):
-                                self.__affiche_message('[%s]-[%s] : Error setting configuration option %s' % (self.data['name'], self.workingstep['step'],self.workingstep['set']),
-                                        module="Deployment | Error | Configuration")
+                                self.__affiche_message(
+                                    "[%s]-[%s] : Error setting configuration option %s"
+                                    % (
+                                        self.data["name"],
+                                        self.workingstep["step"],
+                                        self.workingstep["set"],
+                                    ),
+                                    module="Deployment | Error | Configuration",
+                                )
                             else:
-                                self.__affiche_message('[%s]-[%s] : Set configuration option %s' % (self.data['name'], self.workingstep['step'],self.workingstep['set']),
-                                        module="Deployment | Notify | Configuration")
+                                self.__affiche_message(
+                                    "[%s]-[%s] : Set configuration option %s"
+                                    % (
+                                        self.data["name"],
+                                        self.workingstep["step"],
+                                        self.workingstep["set"],
+                                    ),
+                                    module="Deployment | Notify | Configuration",
+                                )
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logging.getLogger().error(str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_set_config_file step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s]-[%s]: Error action_set_config_file ' % (self.data['name'],self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_set_config_file step %s"
+                % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Error action_set_config_file "
+                % (self.data["name"], self.workingstep["step"]),
+                module="Deployment | Error | Execution",
+            )
 
     def action_no_operation(self):
         """
@@ -1120,11 +1278,17 @@ class grafcet:
             self.__Etape_Next_in__()
         except Exception as e:
             logging.getLogger().error(str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_no_operation step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s]-[%s]: Error action_no_operation' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_no_operation step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Error action_no_operation"
+                % (self.data["name"], self.workingstep["step"]),
+                module="Deployment | Error | Execution",
+            )
 
     def action_unzip_file(self):
         """
@@ -1152,12 +1316,13 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            self.workingstep['filename'] = self.replaceTEMPLATE(
-                self.workingstep['filename'])
-            self.workingstep['pwd'] = ""
-            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
-                os.chdir(self.datasend['data']['pathpackageonmachine'])
-                self.workingstep['pwd'] = os.getcwd()
+            self.workingstep["filename"] = self.replaceTEMPLATE(
+                self.workingstep["filename"]
+            )
+            self.workingstep["pwd"] = ""
+            if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
+                os.chdir(self.datasend["data"]["pathpackageonmachine"])
+                self.workingstep["pwd"] = os.getcwd()
             self.__protected()
             self.__alternatefolder()
             zip_ref = zipfile.ZipFile(self.workingstep["filename"], "r")
@@ -1172,13 +1337,18 @@ class grafcet:
             listname = zip_ref.namelist()
             self.__resultinfo__(self.workingstep, listname)
             zip_ref.close()
-            self.__affiche_message('[%s]-[%s]: Extracting %s to directory %s' % (self.data['name'],
-                                                                                  self.workingstep['step'],
-                                                                                  self.workingstep['filename'],
-                                                                                  self.workingstep['pathdirectorytounzip']),
-                                        module="Deployment | Error | Execution")
-            if 'goto' in self.workingstep:
-                self.__search_Next_step_int__(self.workingstep['goto'])
+            self.__affiche_message(
+                "[%s]-[%s]: Extracting %s to directory %s"
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["filename"],
+                    self.workingstep["pathdirectorytounzip"],
+                ),
+                module="Deployment | Error | Execution",
+            )
+            if "goto" in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep["goto"])
                 self.__execstep__()
                 return
 
@@ -1192,13 +1362,18 @@ class grafcet:
         except Exception as e:
             self.workingstep["@resultcommand"] = traceback.format_exc()
             logging.getLogger().error(str(e))
-            self.__affiche_message('[%s]-[%s]: Error extracting %s to directory %s' % (self.data['name'],
-                                                                                             self.workingstep['step'],
-                                                                                             self.workingstep['filename'],
-                                                                                             self.workingstep['pathdirectorytounzip']),
-                                        module="Deployment | Error | Execution")
-            if 'error' in self.workingstep:
-                self.__search_Next_step_int__(self.workingstep['error'])
+            self.__affiche_message(
+                "[%s]-[%s]: Error extracting %s to directory %s"
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["filename"],
+                    self.workingstep["pathdirectorytounzip"],
+                ),
+                module="Deployment | Error | Execution",
+            )
+            if "error" in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep["error"])
                 self.__execstep__()
             else:
                 self.__Etape_Next_in__()
@@ -1250,11 +1425,11 @@ class grafcet:
                         % self.workingstep["timeout"]
                     )
             # working Step recup from process et session
-            self.__protected(self.workingstep['timeout'])
-            self.workingstep['pwd'] = ""
-            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
-                os.chdir(self.datasend['data']['pathpackageonmachine'])
-                self.workingstep['pwd'] = os.getcwd()
+            self.__protected(self.workingstep["timeout"])
+            self.workingstep["pwd"] = ""
+            if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
+                os.chdir(self.datasend["data"]["pathpackageonmachine"])
+                self.workingstep["pwd"] = os.getcwd()
 
             self.__alternatefolder()
             self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
@@ -1275,11 +1450,17 @@ class grafcet:
         except Exception as e:
             self.steplog()
             logging.getLogger().error(str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in actionprocessscript step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s]-[%s]: Error in actionprocessscript step' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in actionprocessscript step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Error in actionprocessscript step"
+                % (self.data["name"], self.workingstep["step"]),
+                module="Deployment | Error | Execution",
+            )
 
     def action_command_natif_shell(self):
         """information
@@ -1302,9 +1483,9 @@ class grafcet:
             # self.objectxmpp.logtopulse("action_command_natif_shell")
             # todo si action deja faite return
             if "timeout" not in self.workingstep:
-                self.workingstep['timeout'] = 15
+                self.workingstep["timeout"] = 15
                 logging.getLogger().warn("timeout missing : default value 15s")
-            self.__protected(self.workingstep['timeout'])
+            self.__protected(self.workingstep["timeout"])
             re = shellcommandtimeout(
                 self.workingstep["command"], self.workingstep["timeout"]
             ).run()
@@ -1312,11 +1493,16 @@ class grafcet:
             self.workingstep["codereturn"] = re["codereturn"]
             result = [x.strip("\n") for x in re["result"] if x != ""]
             self.__resultinfo__(self.workingstep, result)
-            self.__affiche_message('[%s] - [%s]: Error code %s for command : %s ' % (self.data['name'],
-                                                                                      self.workingstep['step'],
-                                                                                      self.workingstep['codereturn'],
-                                                                                      self.workingstep['command']),
-                                        module="Deployment | Error | Execution")
+            self.__affiche_message(
+                "[%s] - [%s]: Error code %s for command : %s "
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["codereturn"],
+                    self.workingstep["command"],
+                ),
+                module="Deployment | Error | Execution",
+            )
             self.steplog()
             if self.__Go_to_by_jump_succes_and_error__(re["codereturn"]):
                 return
@@ -1353,28 +1539,32 @@ class grafcet:
 
     def __clean_protected(self):
         dir_reprise_session = os.path.join(
-            os.path.dirname(
-                os.path.realpath(__file__)),
-                "INFOSTMP",
-                "REPRISE")
-        filelistprotected = [ os.path.join(dir_reprise_session, x) for x in os.listdir(dir_reprise_session) \
-                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.endswith(self.sessionid)]
+            os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "REPRISE"
+        )
+        filelistprotected = [
+            os.path.join(dir_reprise_session, x)
+            for x in os.listdir(dir_reprise_session)
+            if os.path.isfile(os.path.join(dir_reprise_session, x))
+            and x.endswith(self.sessionid)
+        ]
         for t in filelistprotected:
             if os.path.isfile(t):
                 os.remove(t)
 
-    def __protected(self,timeout=3600):
+    def __protected(self, timeout=3600):
         self.__clean_protected()
         if int(timeout) < 3600:
-            timeout=3600
+            timeout = 3600
         if "reprise" not in self.workingstep:
-            self.workingstep['reprise'] = 0
-            self.workingstep['protected'] = int(time.time()) + int(timeout)
-            namefile="medulla_protected@_@%s@_@%s@_@%s@_@%s"%( self.workingstep['protected'] ,
-                                                                timeout,
-                                                                self.workingstep['step'],
-                                                                self.sessionid)
-            self.__sauvedatasessionrepriseinterface( namefile, self.datasend)
+            self.workingstep["reprise"] = 0
+            self.workingstep["protected"] = int(time.time()) + int(timeout)
+            namefile = "medulla_protected@_@%s@_@%s@_@%s@_@%s" % (
+                self.workingstep["protected"],
+                timeout,
+                self.workingstep["step"],
+                self.sessionid,
+            )
+            self.__sauvedatasessionrepriseinterface(namefile, self.datasend)
 
     def actionprocessscriptfile(self):
         """
@@ -1534,7 +1724,7 @@ class grafcet:
             # Create command
             if commandtype is not None:
                 command = commandtype + temp_path
-            self.__protected(self.workingstep['timeout'])
+            self.__protected(self.workingstep["timeout"])
             # working Step recup from process et session
             if command != "":
                 self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
@@ -1549,10 +1739,17 @@ class grafcet:
             self.steplog()
             logging.getLogger().error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in actionprocessscriptfile step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s]-[%s]: Error in actionprocessscriptfile step' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            self.terminate(
+                -1,
+                False,
+                "end error in actionprocessscriptfile step %s"
+                % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Error in actionprocessscriptfile step"
+                % (self.data["name"], self.workingstep["step"]),
+                module="Deployment | Error | Execution",
+            )
 
     def actionsuccescompletedend(self):
         """
@@ -1570,17 +1767,18 @@ class grafcet:
         """
         inventory = True
         self.__protected()
-        if 'inventory' in self.workingstep:
-            boolstr = str(self.workingstep['inventory'])
+        if "inventory" in self.workingstep:
+            boolstr = str(self.workingstep["inventory"])
             # status inventory "No inventory / Inventory on change / Forced inventory"
-            if boolstr.lower() in ['true',
-                                   '1',
-                                   'y',
-                                   'yes',
-                                   'ok',
-                                   'forced',
-                                   'forced inventory',
-                                   ]:
+            if boolstr.lower() in [
+                "true",
+                "1",
+                "y",
+                "yes",
+                "ok",
+                "forced",
+                "forced inventory",
+            ]:
                 inventory = True
                 self.workingstep["actioninventory"] = "forced"
 
@@ -1615,14 +1813,15 @@ class grafcet:
                 )
             elif sys.platform.startswith("darwin"):
                 inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
-            self.__affiche_message('Starting inventory',
-                                        module="Deployment | Execution | Inventory")
+            self.__affiche_message(
+                "Starting inventory", module="Deployment | Execution | Inventory"
+            )
             try:
                 self.objectxmpp.handleinventory(
                     forced=self.workingstep["actioninventory"], sessionid=self.sessionid
                 )
             except Exception as e:
-                print (str(e))
+                print(str(e))
             # Waiting active generated new inventory
             doinventory = False
             timeinventory = 0
@@ -1633,11 +1832,17 @@ class grafcet:
                     break
                 time.sleep(5)
             if doinventory:
-                self.__affiche_message('Sending new inventory from %s : (generated in %s s)' % (self.objectxmpp.boundjid.bare, timeinventory),
-                                        module="Deployment | Execution | Inventory")
+                self.__affiche_message(
+                    "Sending new inventory from %s : (generated in %s s)"
+                    % (self.objectxmpp.boundjid.bare, timeinventory),
+                    module="Deployment | Execution | Inventory",
+                )
             else:
-                self.__affiche_message('[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory execution error <span>' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Execution | Inventory | Error")
+                self.__affiche_message(
+                    '[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory execution error <span>'
+                    % (self.data["name"], self.workingstep["step"]),
+                    module="Deployment | Execution | Inventory | Error",
+                )
         clear = True
         if "clear" in self.workingstep:
             if isinstance(self.workingstep["clear"], bool):
@@ -1646,8 +1851,11 @@ class grafcet:
                 self.workingstep["clear"] = str(self.workingstep["clear"])
                 if self.workingstep["clear"] == "False":
                     clear = False
-        self.__affiche_message('[%s]-[%s] :<span class="log_ok">Deployment successful<span>' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution | Notify")
+        self.__affiche_message(
+            '[%s]-[%s] :<span class="log_ok">Deployment successful<span>'
+            % (self.data["name"], self.workingstep["step"]),
+            module="Deployment | Error | Execution | Notify",
+        )
         if self.__terminateifcompleted__(self.workingstep):
             return
         self.terminate(0, clear, "end success")
@@ -1665,11 +1873,13 @@ class grafcet:
         if clear is not defini then clear = True
         """
         clear = True
-        if 'clear' in self.workingstep and isinstance(
-                self.workingstep['clear'], bool):
-            clear = self.workingstep['clear']
-        self.__affiche_message('[%s]-[%s] :<span class="log_err"> Deployment aborted <span>' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution | Notify")
+        if "clear" in self.workingstep and isinstance(self.workingstep["clear"], bool):
+            clear = self.workingstep["clear"]
+        self.__affiche_message(
+            '[%s]-[%s] :<span class="log_err"> Deployment aborted <span>'
+            % (self.data["name"], self.workingstep["step"]),
+            module="Deployment | Error | Execution | Notify",
+        )
         if self.__terminateifcompleted__(self.workingstep):
             return
         self.terminate(-1, clear, "end error")
@@ -1790,8 +2000,11 @@ class grafcet:
         self.steplog()
         result = [x.strip("\n") for x in re["result"] if x != ""]
         logging.getLogger().debug("result action actionconfirm:")
-        self.__affiche_message('[%s]-[%s]: Dialog : Response %s' % (self.data['name'],self.workingstep['step'], result[-1]),
-                                        module="Deployment | Error | Execution")
+        self.__affiche_message(
+            "[%s]-[%s]: Dialog : Response %s"
+            % (self.data["name"], self.workingstep["step"], result[-1]),
+            module="Deployment | Error | Execution",
+        )
         if self.__Go_to_by_jump__(result[0]):
             return
         if self.__Go_to_by_jump_succes_and_error__(re["codereturn"]):
@@ -1817,24 +2030,37 @@ class grafcet:
                 self.workingstep["waiting"] = "10"
                 logging.getLogger().warning("waiting missing : default value 180s")
             # timewaiting = int(self.workingstep['waiting']) + 180
-            logging.getLogger().warn("timeout  waiting : %s" % self.workingstep['waiting'])
-            self.__affiche_message('[%s]-[%s]: Waiting %s s before resuming deployment' % (self.data['name'],
-                                                                                            self.workingstep['step'],
-                                                                                            self.workingstep['waiting']),
-                                        module="Deployment | Error | Execution")
-            time.sleep(int(self.workingstep['waiting']))
-            if 'goto' in self.workingstep:
-                self.__search_Next_step_int__(self.workingstep['goto'])
+            logging.getLogger().warn(
+                "timeout  waiting : %s" % self.workingstep["waiting"]
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Waiting %s s before resuming deployment"
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["waiting"],
+                ),
+                module="Deployment | Error | Execution",
+            )
+            time.sleep(int(self.workingstep["waiting"]))
+            if "goto" in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep["goto"])
                 self.__execstep__()
                 return True
             self.steplog()
             self.__Etape_Next_in__()
         except Exception:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in actionwaitandgoto step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s]-[%s]: Error in descriptor for action waitandgoto ' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in actionwaitandgoto step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Error in descriptor for action waitandgoto "
+                % (self.data["name"], self.workingstep["step"]),
+                module="Deployment | Error | Execution",
+            )
 
     def actionrestart(self):
         """
@@ -1867,16 +2093,22 @@ class grafcet:
             # Restart machine based on OS
             self.steplog()
 
-            if self.workingstep['targetrestart']=="AM":
-                #restart Agent Machine
-                self.__affiche_message('[%s]-[%s]: Restart machine agent' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            if self.workingstep["targetrestart"] == "AM":
+                # restart Agent Machine
+                self.__affiche_message(
+                    "[%s]-[%s]: Restart machine agent"
+                    % (self.data["name"], self.workingstep["step"]),
+                    module="Deployment | Error | Execution",
+                )
 
                 self.objectxmpp.restartBot()
             else:
-                #restart Machine
-                self.__affiche_message('[%s]-[%s]: Restart machine' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+                # restart Machine
+                self.__affiche_message(
+                    "[%s]-[%s]: Restart machine"
+                    % (self.data["name"], self.workingstep["step"]),
+                    module="Deployment | Error | Execution",
+                )
                 logging.debug("actionrestartmachine  RESTART MACHINE")
                 if sys.platform.startswith("linux"):
                     logging.debug("actionrestartmachine  shutdown machine linux")
@@ -1890,14 +2122,24 @@ class grafcet:
                 # os.system("pkill -f agentxmpp")
         except Exception as e:
             logging.getLogger().error(str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in actionrestart %s step %s" %(self.workingstep['targetrestart'], self.workingstep['step']))
-            self.__affiche_message('[%s]-[%s]: Error actionrestart : %s' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in actionrestart %s step %s"
+                % (self.workingstep["targetrestart"], self.workingstep["step"]),
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Error actionrestart : %s"
+                % (self.data["name"], self.workingstep["step"]),
+                module="Deployment | Error | Execution",
+            )
 
     def actioncleaning(self):
-        self.__affiche_message('[%s] Cleaning package' % (self.data['name']),
-                                        module="Deployment | Notification | Execution")
+        self.__affiche_message(
+            "[%s] Cleaning package" % (self.data["name"]),
+            module="Deployment | Notification | Execution",
+        )
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
@@ -1913,19 +2155,29 @@ class grafcet:
                         % self.datasend["data"]["pathpackageonmachine"]
                     )
                 else:
-                    os.system("rm -Rf %s" %
-                              self.datasend['data']['pathpackageonmachine'])
-                self.__affiche_message('[%s]-[%s]: Deleting package file from machine' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+                    os.system(
+                        "rm -Rf %s" % self.datasend["data"]["pathpackageonmachine"]
+                    )
+                self.__affiche_message(
+                    "[%s]-[%s]: Deleting package file from machine"
+                    % (self.data["name"], self.workingstep["step"]),
+                    module="Deployment | Error | Execution",
+                )
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logging.getLogger().error(str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in actioncleaning step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s]-[%s]: Error in actioncleaning step' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in actioncleaning step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s]-[%s]: Error in actioncleaning step"
+                % (self.data["name"], self.workingstep["step"]),
+                module="Deployment | Error | Execution",
+            )
 
     def getpackagemanager(self):
         """
@@ -2052,18 +2304,20 @@ class grafcet:
         except Exception as e:
             logging.getLogger().error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "Transfer error %s" %
-                           self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Transfer error' % (self.data['name'], self.workingstep['step']),
-                                    type='deploy',
-                                    sessionname=self.sessionid,
-                                    priority=self.workingstep['step'],
-                                    action="xmpplog",
-                                    who=self.objectxmpp.boundjid.bare,
-                                    why=self.data['name'],
-                                    module="Deployment | Error | Execution",
-                                    date=None,
-                                    fromuser=self.data['login'])
+            self.terminate(-1, False, "Transfer error %s" % self.workingstep["step"])
+            self.objectxmpp.xmpplog(
+                "[%s]-[%s]: Transfer error"
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=self.workingstep["step"],
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                why=self.data["name"],
+                module="Deployment | Error | Execution",
+                date=None,
+                fromuser=self.data["login"],
+            )
 
     def action_kiosknotification(self):
         """
@@ -2099,34 +2353,44 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            self.workingstep["pathpackageonmachine"] = self.datasend['data']['pathpackageonmachine']
-            self.workingstep["name"] = self.datasend['data']['name']
-            self.workingstep["path"] = self.datasend['data']['path']
+            self.workingstep["pathpackageonmachine"] = self.datasend["data"][
+                "pathpackageonmachine"
+            ]
+            self.workingstep["name"] = self.datasend["data"]["name"]
+            self.workingstep["path"] = self.datasend["data"]["path"]
             msgxmpp = {
-                'action': "action_kiosknotification",
-                'sessionid': self.sessionid,
-                'data':  self.workingstep,
-                'ret': 0,
-                'base64': False}
+                "action": "action_kiosknotification",
+                "sessionid": self.sessionid,
+                "data": self.workingstep,
+                "ret": 0,
+                "base64": False,
+            }
             send_data_tcp(json.dumps(msgxmpp))
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             traceback.print_exc(file=sys.stdout)
-            self.terminate(-1, False, "end error in action_kiosknotification step %s" %
-                        self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_kiosknotification : %s' % (self.data['name'], self.workingstep['step'], str(e)),
-                                    type='deploy',
-                                    sessionname=self.sessionid,
-                                    priority=self.workingstep['step'],
-                                    action="",
-                                    who=self.objectxmpp.boundjid.bare,
-                                    how="",
-                                    why=self.data['name'],
-                                    module="Deployment | Execution | Error",
-                                    date=None,
-                                    fromuser=self.data['login'],
-                                    touser="")
+            self.terminate(
+                -1,
+                False,
+                "end error in action_kiosknotification step %s"
+                % self.workingstep["step"],
+            )
+            self.objectxmpp.xmpplog(
+                "[%s] - [%s]: Error action_kiosknotification : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=self.workingstep["step"],
+                action="",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why=self.data["name"],
+                module="Deployment | Execution | Error",
+                date=None,
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_notification(self):
         """
@@ -2138,72 +2402,106 @@ class grafcet:
                 "action": "action_notification",
                 "message": "\ufffd\ufffde"
         """
-        if  "titlemessage" in  self.workingstep:
-            titlemessage=base64.b64decode(self.workingstep['titlemessage'])
-        if  "message" in  self.workingstep:
-            message=base64.b64decode(self.workingstep['message'])
-        if  "sizeheader" in  self.workingstep:
-            self.workingstep['sizeheader']=int(self.workingstep['sizeheader'])
-        if  "sizemessage" in  self.workingstep:
-            self.workingstep['sizemessage']=int(self.workingstep['sizemessage'])
+        if "titlemessage" in self.workingstep:
+            titlemessage = base64.b64decode(self.workingstep["titlemessage"])
+        if "message" in self.workingstep:
+            message = base64.b64decode(self.workingstep["message"])
+        if "sizeheader" in self.workingstep:
+            self.workingstep["sizeheader"] = int(self.workingstep["sizeheader"])
+        if "sizemessage" in self.workingstep:
+            self.workingstep["sizemessage"] = int(self.workingstep["sizemessage"])
         try:
-
-            msg=[]
-            command=""
-            msg.append("""[%s]-[%s]:user notification message %s"""% (self.data['name'],self.workingstep['step'],message))
-            if sys.platform.startswith('linux'):
+            msg = []
+            command = ""
+            msg.append(
+                """[%s]-[%s]:user notification message %s"""
+                % (self.data["name"], self.workingstep["step"], message)
+            )
+            if sys.platform.startswith("linux"):
                 logging.debug("machine linux")
-                msg=[]
-                msg.append("""[%s]-[%s]: linux notification not implemented yet""" % (self.data['name'],self.workingstep['step']))
-            elif sys.platform.startswith('win'):
+                msg = []
+                msg.append(
+                    """[%s]-[%s]: linux notification not implemented yet"""
+                    % (self.data["name"], self.workingstep["step"])
+                )
+            elif sys.platform.startswith("win"):
                 # self.objectxmpp.userconnected=None
                 # self.objectxmpp.statusconnected=None
                 # START query user /MIN /B
                 # command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
 
-                command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
-                """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py"""\
-                """ -M "%s"  -B"%s" -t %s -Y "%s" -S%s -s%s -c""" % (message,
-                titlemessage,
-                self.workingstep['timeout'],
-                self.workingstep['textbuttonyes'],
-                int(self.workingstep['sizeheader']),
-                int(self.workingstep['sizemessage']))
+                command = (
+                    """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """
+                    """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py"""
+                    """ -M "%s"  -B"%s" -t %s -Y "%s" -S%s -s%s -c"""
+                    % (
+                        message,
+                        titlemessage,
+                        self.workingstep["timeout"],
+                        self.workingstep["textbuttonyes"],
+                        int(self.workingstep["sizeheader"]),
+                        int(self.workingstep["sizemessage"]),
+                    )
+                )
                 logging.debug("command on windows %s" % command)
-            elif sys.platform.startswith('darwin'):
+            elif sys.platform.startswith("darwin"):
                 logging.debug("command on darwin")
-                msg=[]
-                msg.append("""[%s]-[%s]: linux notification not implemented yet""" % (self.data['name'],self.workingstep['step']))
+                msg = []
+                msg.append(
+                    """[%s]-[%s]: linux notification not implemented yet"""
+                    % (self.data["name"], self.workingstep["step"])
+                )
 
             # self.userconecter=None
             # self.userstatus=None
             # self.userconectdate=None
 
             if self.userconecter is None:
-                msg.append("""[%s]-[%s]: user session not active, the notification is not delivered. [notif : %s]""" %(self.data['name'],
-                self.workingstep['step'],
-                message))
+                msg.append(
+                    """[%s]-[%s]: user session not active, the notification is not delivered. [notif : %s]"""
+                    % (self.data["name"], self.workingstep["step"], message)
+                )
 
             if command:
                 re = shellcommandtimeout(command, 600).run()
                 self.steplog()
-                result = [x.strip('\n') for x in re['result'] if x != '']
+                result = [x.strip("\n") for x in re["result"] if x != ""]
                 logging.getLogger().debug("result action notification: %s" % re)
-                if  re['code'] == 2:
-                    msg.append("""[%s]-[%s]:<span class="log_warn">The user notification message """\
-                    """was not acknowledged within %s seconds.</span>""" % (self.data['name'],self.workingstep['step'],self.workingstep['timeout']))
-                elif re['code'] == 0:
-                    msg.append("""[%s]-[%s]:The user notification message has been acknowledged.""" % (self.data['name'],self.workingstep['step']))
+                if re["code"] == 2:
+                    msg.append(
+                        """[%s]-[%s]:<span class="log_warn">The user notification message """
+                        """was not acknowledged within %s seconds.</span>"""
+                        % (
+                            self.data["name"],
+                            self.workingstep["step"],
+                            self.workingstep["timeout"],
+                        )
+                    )
+                elif re["code"] == 0:
+                    msg.append(
+                        """[%s]-[%s]:The user notification message has been acknowledged."""
+                        % (self.data["name"], self.workingstep["step"])
+                    )
             else:
-                msg.append("""[%s]-[%s]:command notification missing.""" % (self.data['name'],self.workingstep['step']))
+                msg.append(
+                    """[%s]-[%s]:command notification missing."""
+                    % (self.data["name"], self.workingstep["step"])
+                )
             self.__affiche_message(msg, module="Deployment | Execution | Notification")
             self.__action_completed__(self.workingstep)
             self.__Etape_Next_in__()
         except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_comment step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_comment : %s' % (self.data['name'], self.workingstep['step'], str(e)), module="Deployment | Error | Notification")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_comment step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_comment : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Error | Notification",
+            )
 
     def action_question(self):
         """
@@ -2219,55 +2517,70 @@ class grafcet:
             "action": "action_question",
             "message": "rfrezfzef"
         """
-        if  "titlemessage" in  self.workingstep:
-            titlemessage=base64.b64decode(self.workingstep['titlemessage'])
-        if  "message" in  self.workingstep:
-            message=base64.b64decode(self.workingstep['message'])
-        if  "sizeheader" in  self.workingstep:
-            self.workingstep['sizeheader']=int(self.workingstep['sizeheader'])
-        if  "sizemessage" in  self.workingstep:
-            self.workingstep['sizemessage']=int(self.workingstep['sizemessage'])
+        if "titlemessage" in self.workingstep:
+            titlemessage = base64.b64decode(self.workingstep["titlemessage"])
+        if "message" in self.workingstep:
+            message = base64.b64decode(self.workingstep["message"])
+        if "sizeheader" in self.workingstep:
+            self.workingstep["sizeheader"] = int(self.workingstep["sizeheader"])
+        if "sizemessage" in self.workingstep:
+            self.workingstep["sizemessage"] = int(self.workingstep["sizemessage"])
         try:
-            msg=[]
-            command=""
-            msg.append("""[%s]-[%s]:user question message %s"""% (self.data['name'],
-                                                                  self.workingstep['step'],
-                                                                  message))
+            msg = []
+            command = ""
+            msg.append(
+                """[%s]-[%s]:user question message %s"""
+                % (self.data["name"], self.workingstep["step"], message)
+            )
             if self.userconecter is None:
-                msg.append("""[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]""" %(self.data['name'],
-                                                                                                                   self.workingstep['step'],
-                                                                                                                   message))
-            if sys.platform.startswith('linux'):
+                msg.append(
+                    """[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]"""
+                    % (self.data["name"], self.workingstep["step"], message)
+                )
+            if sys.platform.startswith("linux"):
                 logging.debug("machine linux")
-                msg=[]
-                msg.append("""[%s]-[%s]: linux notification not implemented yet""" % (self.data['name'],self.workingstep['step']))
-            elif sys.platform.startswith('win'):
-
-                command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
-                """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c""" % (message,
-                titlemessage,
-                self.workingstep['timeout'],
-                self.workingstep['textbuttonyes'],
-                self.workingstep['textbuttonno'],
-                int(self.workingstep['sizeheader']),
-                int(self.workingstep['sizemessage']))
+                msg = []
+                msg.append(
+                    """[%s]-[%s]: linux notification not implemented yet"""
+                    % (self.data["name"], self.workingstep["step"])
+                )
+            elif sys.platform.startswith("win"):
+                command = (
+                    """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """
+                    """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c"""
+                    % (
+                        message,
+                        titlemessage,
+                        self.workingstep["timeout"],
+                        self.workingstep["textbuttonyes"],
+                        self.workingstep["textbuttonno"],
+                        int(self.workingstep["sizeheader"]),
+                        int(self.workingstep["sizemessage"]),
+                    )
+                )
                 logging.debug("command on windows %s" % command)
-            elif sys.platform.startswith('darwin'):
+            elif sys.platform.startswith("darwin"):
                 logging.debug("command on darwin")
-                msg=[]
-                msg.append("""[%s]-[%s]: linux notification not implemented yet""" % (self.data['name'],self.workingstep['step']))
+                msg = []
+                msg.append(
+                    """[%s]-[%s]: linux notification not implemented yet"""
+                    % (self.data["name"], self.workingstep["step"])
+                )
 
             # self.userconecter=None
             # self.userstatus=None
             # self.userconectdate=None
             self.steplog()
             if self.userconecter is None:
-                msg.append("""[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]""" %(self.data['name'],
-                self.workingstep['step'],
-                message))
-                self.__affiche_message(msg, module="Deployment | Execution | Notification")
-                if 'gotonouser' in self.workingstep:
-                    self.__search_Next_step_int__(self.workingstep['gototimeout'])
+                msg.append(
+                    """[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]"""
+                    % (self.data["name"], self.workingstep["step"], message)
+                )
+                self.__affiche_message(
+                    msg, module="Deployment | Execution | Notification"
+                )
+                if "gotonouser" in self.workingstep:
+                    self.__search_Next_step_int__(self.workingstep["gototimeout"])
                     self.__execstep__()
                 else:
                     self.__Etape_Next_in__()
@@ -2275,77 +2588,106 @@ class grafcet:
             if command:
                 re = shellcommandtimeout(command, 600).run()
                 self.steplog()
-                result = [x.strip('\n') for x in re['result'] if x != '']
+                result = [x.strip("\n") for x in re["result"] if x != ""]
                 logging.getLogger().debug("result action notification: %s" % re)
-                if  re['code'] == 2:
+                if re["code"] == 2:
                     # timeout
-                    msg.append("""[%s]-[%s]:<span class="log_warn">The user question message """\
-                    """was not acknowledged within %s seconds.</span>""" % (self.data['name'],self.workingstep['step'],self.workingstep['timeout']))
-                    self.__affiche_message(msg, module="Deployment | Execution | Notification")
-                    if 'gototimeout' in self.workingstep:
-                        self.__search_Next_step_int__(self.workingstep['gototimeout'])
+                    msg.append(
+                        """[%s]-[%s]:<span class="log_warn">The user question message """
+                        """was not acknowledged within %s seconds.</span>"""
+                        % (
+                            self.data["name"],
+                            self.workingstep["step"],
+                            self.workingstep["timeout"],
+                        )
+                    )
+                    self.__affiche_message(
+                        msg, module="Deployment | Execution | Notification"
+                    )
+                    if "gototimeout" in self.workingstep:
+                        self.__search_Next_step_int__(self.workingstep["gototimeout"])
                         self.__execstep__()
                     else:
                         self.__Etape_Next_in__()
                     return True
 
-                elif re['code'] == 0:
-                    msg.append("""[%s]-[%s]:The user question message has been acknowledged. Positif resp""" % (self.data['name'],self.workingstep['step']))
-                    self.__affiche_message(msg, module="Deployment | Execution | Notification")
-                    if 'gotoyes' in self.workingstep:
-                        self.__search_Next_step_int__(self.workingstep['gotoyes'])
+                elif re["code"] == 0:
+                    msg.append(
+                        """[%s]-[%s]:The user question message has been acknowledged. Positif resp"""
+                        % (self.data["name"], self.workingstep["step"])
+                    )
+                    self.__affiche_message(
+                        msg, module="Deployment | Execution | Notification"
+                    )
+                    if "gotoyes" in self.workingstep:
+                        self.__search_Next_step_int__(self.workingstep["gotoyes"])
                         self.__execstep__()
                     else:
                         self.__Etape_Next_in__()
                     return True
-                elif re['code'] == 1:
-                    msg.append("""[%s]-[%s]:The user Question message has been acknowledged. Negatif resp""" % (self.data['name'],
-                    self.workingstep['step']))
-                    self.__affiche_message(msg, module="Deployment | Execution | Notification")
-                    if 'gotono' in self.workingstep:
-                        self.__search_Next_step_int__(self.workingstep['gotono'])
+                elif re["code"] == 1:
+                    msg.append(
+                        """[%s]-[%s]:The user Question message has been acknowledged. Negatif resp"""
+                        % (self.data["name"], self.workingstep["step"])
+                    )
+                    self.__affiche_message(
+                        msg, module="Deployment | Execution | Notification"
+                    )
+                    if "gotono" in self.workingstep:
+                        self.__search_Next_step_int__(self.workingstep["gotono"])
                         self.__execstep__()
                     else:
                         self.__Etape_Next_in__()
                     return True
             else:
-                msg.append("""[%s]-[%s]:command question missing.""" % (self.data['name'],self.workingstep['step']))
+                msg.append(
+                    """[%s]-[%s]:command question missing."""
+                    % (self.data["name"], self.workingstep["step"])
+                )
                 self.__Etape_Next_in__()
                 return True
             # self.__action_completed__(self.workingstep)
             # self.__Etape_Next_in__()
         except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_comment step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_comment : %s' % (self.data['name'], self.workingstep['step'], str(e)), module="Deployment | Error | Notification")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_comment step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_comment : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Error | Notification",
+            )
 
     def __Setdirectorysessionreprise(self):
         """
-            This functions a  directory if no exist
-            @returns path directory INFO Temporaly and key RSA
+        This functions a  directory if no exist
+        @returns path directory INFO Temporaly and key RSA
         """
         dir_reprise_session = os.path.join(
-            os.path.dirname(
-                os.path.realpath(__file__)),
-            "INFOSTMP", "REPRISE")
+            os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "REPRISE"
+        )
         if not os.path.exists(dir_reprise_session):
             os.makedirs(dir_reprise_session, mode=0o007)
         return dir_reprise_session
 
     def __sauvedatasessionrepriseinterface(self, name, datasession):
         """
-            INFOSTMPrepriseinterface
+        INFOSTMPrepriseinterface
 
         """
-        namesession = os.path.join(self.__Setdirectorysessionreprise(),name)
+        namesession = os.path.join(self.__Setdirectorysessionreprise(), name)
 
         try:
-            with open(namesession, 'w') as f:
+            with open(namesession, "w") as f:
                 json.dump(datasession, f, indent=4)
             return True
         except Exception as e:
-            logging.getLogger().error("We encountered an issue while creating the session %s" % namesession)
+            logging.getLogger().error(
+                "We encountered an issue while creating the session %s" % namesession
+            )
             logging.getLogger().error("The error is %s" % str(e))
             if os.path.isfile(namesession):
                 os.remove(namesession)
@@ -2375,61 +2717,76 @@ class grafcet:
                 "titlemessage": "YzJSeg=="
             }
         """
-        if  "loopnumber" in  self.workingstep:
-            self.workingstep['loopnumber']=int(self.workingstep['loopnumber'])
-        if  "timeloop" in  self.workingstep:
-            self.workingstep['timeloop']=int(self.workingstep['timeloop'])
-        if  "timeout" in  self.workingstep:
-            self.workingstep['timeout']=int(self.workingstep['timeout'])
-        if  "titlemessage" in  self.workingstep:
-            titlemessage=base64.b64decode(self.workingstep['titlemessage'])
-        if  "message" in  self.workingstep:
-            message=base64.b64decode(self.workingstep['message'])
-        if  "sizeheader" in  self.workingstep:
-            self.workingstep['sizeheader']=int(self.workingstep['sizeheader'])
-        if  "sizemessage" in  self.workingstep:
-            self.workingstep['sizemessage']=int(self.workingstep['sizemessage'])
+        if "loopnumber" in self.workingstep:
+            self.workingstep["loopnumber"] = int(self.workingstep["loopnumber"])
+        if "timeloop" in self.workingstep:
+            self.workingstep["timeloop"] = int(self.workingstep["timeloop"])
+        if "timeout" in self.workingstep:
+            self.workingstep["timeout"] = int(self.workingstep["timeout"])
+        if "titlemessage" in self.workingstep:
+            titlemessage = base64.b64decode(self.workingstep["titlemessage"])
+        if "message" in self.workingstep:
+            message = base64.b64decode(self.workingstep["message"])
+        if "sizeheader" in self.workingstep:
+            self.workingstep["sizeheader"] = int(self.workingstep["sizeheader"])
+        if "sizemessage" in self.workingstep:
+            self.workingstep["sizemessage"] = int(self.workingstep["sizemessage"])
 
-        self.__initialise_user_connected__() # le comportement peut changer si user se deconecte
+        self.__initialise_user_connected__()  # le comportement peut changer si user se deconecte
         try:
-            msg=[]
-            command=""
-            msg.append("""[%s]-[%s]:user question message %s"""% (self.data['name'],
-                                                                  self.workingstep['step'],
-                                                                  message))
+            msg = []
+            command = ""
+            msg.append(
+                """[%s]-[%s]:user question message %s"""
+                % (self.data["name"], self.workingstep["step"], message)
+            )
             if self.userconecter is None:
-                msg.append("""[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]""" %(self.data['name'],
-                                                                                                                   self.workingstep['step'],
-                                                                                                                   message))
-            if sys.platform.startswith('linux'):
+                msg.append(
+                    """[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]"""
+                    % (self.data["name"], self.workingstep["step"], message)
+                )
+            if sys.platform.startswith("linux"):
                 logging.debug("machine linux")
-                msg=[]
-                msg.append("""[%s]-[%s]: linux notification not implemented yet""" % (self.data['name'],self.workingstep['step']))
-            elif sys.platform.startswith('win'):
-
-                command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
-                """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c""" % (message,
-                titlemessage,
-                self.workingstep['timeout'],
-                self.workingstep['textbuttonyes'],
-                self.workingstep['textbuttonno'],
-                self.workingstep['sizeheader'],
-                self.workingstep['sizemessage'])
+                msg = []
+                msg.append(
+                    """[%s]-[%s]: linux notification not implemented yet"""
+                    % (self.data["name"], self.workingstep["step"])
+                )
+            elif sys.platform.startswith("win"):
+                command = (
+                    """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """
+                    """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c"""
+                    % (
+                        message,
+                        titlemessage,
+                        self.workingstep["timeout"],
+                        self.workingstep["textbuttonyes"],
+                        self.workingstep["textbuttonno"],
+                        self.workingstep["sizeheader"],
+                        self.workingstep["sizemessage"],
+                    )
+                )
 
                 logging.debug("command on windows %s" % command)
-            elif sys.platform.startswith('darwin'):
+            elif sys.platform.startswith("darwin"):
                 logging.debug("command on darwin")
-                msg=[]
-                msg.append("""[%s]-[%s]: linux notification not implemented yet""" % (self.data['name'],self.workingstep['step']))
+                msg = []
+                msg.append(
+                    """[%s]-[%s]: linux notification not implemented yet"""
+                    % (self.data["name"], self.workingstep["step"])
+                )
             self.steplog()
             if self.userconecter is None:
-                msg.append("""[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]""" %(self.data['name'],
-                self.workingstep['step'],
-                message))
-                self.__affiche_message(msg, module="Deployment | Execution | Notification")
+                msg.append(
+                    """[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]"""
+                    % (self.data["name"], self.workingstep["step"], message)
+                )
+                self.__affiche_message(
+                    msg, module="Deployment | Execution | Notification"
+                )
 
-                if 'gotonouser' in self.workingstep:
-                    self.__search_Next_step_int__(self.workingstep['gototimeout'])
+                if "gotonouser" in self.workingstep:
+                    self.__search_Next_step_int__(self.workingstep["gototimeout"])
                     self.__execstep__()
                 else:
                     self.__Etape_Next_in__()
@@ -2437,50 +2794,74 @@ class grafcet:
             if command:
                 re = shellcommandtimeout(command, 1000).run()
                 self.steplog()
-                result = [x.strip('\n') for x in re['result'] if x != '']
+                result = [x.strip("\n") for x in re["result"] if x != ""]
                 logging.getLogger().debug("result action notification: %s" % re)
-                if  re['code'] == 2:
+                if re["code"] == 2:
                     ## timeout pas de reponse utilisateur
-                    msg.append("""[%s]-[%s]:<span class="log_warn">The user question message """\
-                    """was not acknowledged within %s seconds.</span>""" % (self.data['name'],self.workingstep['step'],self.workingstep['timeout']))
-                    self.__affiche_message(msg, module="Deployment | Execution | Notification")
-                    if 'gototimeout' in self.workingstep:
-                        self.__search_Next_step_int__(self.workingstep['gototimeout'])
+                    msg.append(
+                        """[%s]-[%s]:<span class="log_warn">The user question message """
+                        """was not acknowledged within %s seconds.</span>"""
+                        % (
+                            self.data["name"],
+                            self.workingstep["step"],
+                            self.workingstep["timeout"],
+                        )
+                    )
+                    self.__affiche_message(
+                        msg, module="Deployment | Execution | Notification"
+                    )
+                    if "gototimeout" in self.workingstep:
+                        self.__search_Next_step_int__(self.workingstep["gototimeout"])
                         self.__execstep__()
                     else:
                         self.__Etape_Next_in__()
                     return True
 
-                elif re['code'] == 0:
+                elif re["code"] == 0:
                     # bouton positif
-                    msg.append("""[%s]-[%s]:The user question message has been acknowledged. Positif resp""" % (self.data['name'],self.workingstep['step']))
-                    self.__affiche_message(msg, module="Deployment | Execution | Notification")
-                    if 'gotoyes' in self.workingstep:
-                        self.__search_Next_step_int__(self.workingstep['gotoyes'])
+                    msg.append(
+                        """[%s]-[%s]:The user question message has been acknowledged. Positif resp"""
+                        % (self.data["name"], self.workingstep["step"])
+                    )
+                    self.__affiche_message(
+                        msg, module="Deployment | Execution | Notification"
+                    )
+                    if "gotoyes" in self.workingstep:
+                        self.__search_Next_step_int__(self.workingstep["gotoyes"])
                         self.__execstep__()
                     else:
                         self.__Etape_Next_in__()
                     return True
-                elif re['code'] == 1:
+                elif re["code"] == 1:
                     # bouton negatif
                     # On doit reposer la question a n + timeloop si compteur n'est pas a 0
-                    msg.append("""[%s]-[%s]:The user Question message has been acknowledged. Negatif resp""" % (self.data['name'],
-                    self.workingstep['step']))
+                    msg.append(
+                        """[%s]-[%s]:The user Question message has been acknowledged. Negatif resp"""
+                        % (self.data["name"], self.workingstep["step"])
+                    )
                     # on verify le compteur -1
-                    if 'loopnumber' not in self.workingstep:
-                        self.workingstep['loopnumber']=1
+                    if "loopnumber" not in self.workingstep:
+                        self.workingstep["loopnumber"] = 1
                     else:
-                        self.workingstep['loopnumber']=int(self.workingstep['loopnumber'])
-                    if 'timeloop' not in self.workingstep:
-                        self.workingstep['timeloop']=10
-                    self.workingstep['loopnumber'] = int(self.workingstep['loopnumber'])-1
-                    if self.workingstep['loopnumber'] <=0:
+                        self.workingstep["loopnumber"] = int(
+                            self.workingstep["loopnumber"]
+                        )
+                    if "timeloop" not in self.workingstep:
+                        self.workingstep["timeloop"] = 10
+                    self.workingstep["loopnumber"] = (
+                        int(self.workingstep["loopnumber"]) - 1
+                    )
+                    if self.workingstep["loopnumber"] <= 0:
                         # branchement gotolookterminate
-                        if 'gotolookterminate' in self.workingstep:
-                            msg.append("""[%s]-[%s]: Le compteur de demande " \
-                            "est termine sans reponse positive""" % (self.data['name'],
-                                                                      self.workingstep['step']))
-                            self.__search_Next_step_int__(self.workingstep['gotolookterminate'])
+                        if "gotolookterminate" in self.workingstep:
+                            msg.append(
+                                """[%s]-[%s]: Le compteur de demande " \
+                            "est termine sans reponse positive"""
+                                % (self.data["name"], self.workingstep["step"])
+                            )
+                            self.__search_Next_step_int__(
+                                self.workingstep["gotolookterminate"]
+                            )
                             self.__execstep__()
                     else:
                         # on attend n seconde
@@ -2490,29 +2871,51 @@ class grafcet:
                         # on sauve la session avec la convention suivante.   time de reprise en timestamp@@@_@@@sessionnumber
                         # exemple 1668091410@@@_@@@commandd04eb8ae68844bcb99
                         # rewrite session
-                        self.__search_Next_step_int__(self.workingstep['actionlabel'])
-                        msg.append("""[%s]-[%s]: Remise dans %s seconde de cette demande a l'utilisateur %s""" % (self.data['name'],
-                                self.workingstep['step'], self.workingstep['timeloop'], self.userconecter))
+                        self.__search_Next_step_int__(self.workingstep["actionlabel"])
+                        msg.append(
+                            """[%s]-[%s]: Remise dans %s seconde de cette demande a l'utilisateur %s"""
+                            % (
+                                self.data["name"],
+                                self.workingstep["step"],
+                                self.workingstep["timeloop"],
+                                self.userconecter,
+                            )
+                        )
                         self.__affiche_message(msg)
-                        msg=[]
-                        if float(self.workingstep['timeloop']) >= 10.:
-                            namefile="medulla_messagebox@_@%s@_@%s@_@%s@_@%s"%(int(time.time())+int(self.workingstep['timeloop']),
-                                                                               int(self.workingstep['timeloop']),
-                                                                               self.workingstep['actionlabel'],self.sessionid)
-                            self.__sauvedatasessionrepriseinterface( namefile, self.datasend)
+                        msg = []
+                        if float(self.workingstep["timeloop"]) >= 10.0:
+                            namefile = "medulla_messagebox@_@%s@_@%s@_@%s@_@%s" % (
+                                int(time.time()) + int(self.workingstep["timeloop"]),
+                                int(self.workingstep["timeloop"]),
+                                self.workingstep["actionlabel"],
+                                self.sessionid,
+                            )
+                            self.__sauvedatasessionrepriseinterface(
+                                namefile, self.datasend
+                            )
                         else:
-                            time.sleep(float(self.workingstep['timeloop']))
+                            time.sleep(float(self.workingstep["timeloop"]))
                             self.__execstep__()
                             self.__affiche_message(msg)
                     return True
             else:
-                msg.append("""[%s]-[%s]:command question missing.""" % (self.data['name'],self.workingstep['step']))
+                msg.append(
+                    """[%s]-[%s]:command question missing."""
+                    % (self.data["name"], self.workingstep["step"])
+                )
                 self.__Etape_Next_in__()
                 return True
             # self.__action_completed__(self.workingstep)
             # self.__Etape_Next_in__()
         except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_comment step %s" %
-                           self.workingstep['step'])
-            self.__affiche_message('[%s] - [%s]: Error action_comment : %s' % (self.data['name'], self.workingstep['step'], str(e)), module="Deployment | Error | Notification")
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(
+                -1,
+                False,
+                "end error in action_comment step %s" % self.workingstep["step"],
+            )
+            self.__affiche_message(
+                "[%s] - [%s]: Error action_comment : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                module="Deployment | Error | Notification",
+            )
