@@ -27,7 +27,7 @@ from sleekxmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.61", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.62", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -88,6 +88,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_inventory
     except BaseException:
         xmppobject.sub_inventory = xmppobject.agentmaster
+
+    agent = "fusioninventory"
+
+    if hasattr(xmppobject.config, 'agent'):
+        if xmppobject.config.agent == 'glpiagent':
+            agent = xmppobject.config.agent
 
     resultaction = "result%s" % action
     result = {}
@@ -250,13 +256,18 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             elif bitness == "64bit":
                 other_view_flag = winreg.KEY_WOW64_32KEY
             # Set the variables
-            program = os.path.join(
-                os.environ["ProgramFiles"],
-                "FusionInventory-Agent",
-                "fusioninventory-agent.bat",
-            )
-            general_options = (
-                "--config=none --scan-profiles "
+
+            if agent == 'glpiagent':
+                agent_bin = 'glpi-agent.bat'
+                agent_path = 'GLPI-Agent'
+            else:
+                agent_bin = 'fusioninventory-agent.bat'
+                agent_path = 'FusionInventory-Agent'
+
+            program = os.path.join(os.environ["ProgramFiles"],
+                                   agent_path,
+                                   agent_bin)
+            general_options = "--config=none --scan-profiles " \
                 "--backend-collect-timeout=%s" % timeoutfusion
             )
             location_option = '--local="%s"' % inventoryfile

@@ -192,6 +192,17 @@ class MUCBot(ClientXMPP):
                         pass
 
                 logger.debug("device local syncthing : [%s]" % self.deviceid)
+
+            except KeyError as keyerror:
+                logging.error("The %s key is missing in your syncthing config file" % keyerror)
+                confsyncthing = {"action": "resultconfsyncthing",
+                                "sessionid" : getRandomName(6, "confsyncthing"),
+                                "ret" : 255,
+                                "data":  { 'errorsyncthingconf': informationerror}}
+                self.send_message(mto =  self.sub_assessor,
+                                    mbody = json.dumps(confsyncthing),
+                                    mtype = 'chat')
+
             except Exception as e:
                 logger.error("The initialisation of syncthing failed. We got the error %s" % str(e))
                 informationerror = traceback.format_exc()
