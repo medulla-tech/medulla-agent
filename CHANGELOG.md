@@ -1,5 +1,22 @@
 # Change Log
 
+## [v2.1.9](https://github.com/pulse-project/pulse-xmpp-agent/tree/v2.1.9) (2023-04-14)
+- [FEATURE] Rename start.ini into start_machine.ini or start_relay.ini to handle coexistence
+- [FEATURE] Add monitoring feature to start to allow monitoring of medulla installation
+- [FEATURE] Add CDN support: Support for integrity
+- [FEATURE] Add kiosk plugin
+- [FEATURE] Add rescue agent, to help when something broken active/running agent
+- [FEATURE] Add Glpi 10.0 support
+- [FEATURE] Add GLPI-Agent support
+- [BUGFIX]  Fix GLPI 9.5 Support
+- [BUGFIX]  Fix the way we configure OpenSSH in the plugin
+- [BUGFIX]  Fix display of the Windows version in the computer page.
+- [BUGFIX]  Fix backtraces in the packagewatching
+- [BUGFIX]  Fix retrieving the SSH Key of the ARS.
+- [BUGFIX]  Fix restarting stalled deployements.
+- [BUGFIX]  Do not hide real errors into debugs but use error logger instead.
+- [BUGFIX]  Fix issue where machines are wrongly reported as offline
+
 ## [v2.1.7](https://github.com/pulse-project/pulse-xmpp-agent/tree/v2.1.7) (2021-09-21)
 - [BUGFIX]  Fix detecting IP address of the XMPP server when the agent starts.
 - [BUGFIX]  Fix backtrace in the substitute registration when there is more
