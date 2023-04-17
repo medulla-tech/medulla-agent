@@ -241,7 +241,7 @@ def updateopenssh(xmppobject, installed_version):
                 try:
                     shutil.rmtree(opensshdir_path)
                 except OSError as e:
-                    logger.debug("Deletion of the directory %s failed, with the error: %s" % (opensshdir_path, e))
+                    logger.error("Deletion of the directory %s failed, with the error: %s" % (opensshdir_path, e))
                     return
 
             current_dir = os.getcwd()
