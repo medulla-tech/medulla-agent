@@ -3,10 +3,10 @@
 # SPDX-FileCopyrightText: 2007-2010 Mandriva, http://www.mandriva.com
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
-
+# file pulse_xmpp_master_substitute/lib/plugins/glpi/Glpi95.py
 """
 This module declare all the necessary stuff to connect to a glpi database in it's
-version 9.4
+version 9.5
 """
 import logging
 import re
@@ -161,18 +161,20 @@ class Glpi95(DatabaseHelper):
     is_activated = False
 
     def activate(self):
+        self.logger = logging.getLogger()
         if self.is_activated:
             return None
-
+        logging.getLogger().debug('GLPI version')
         self.config = confParameter()
-        self.logger = logging.getLogger()
+
         self.logger.debug("Glpi activation")
+
+
         self.engine = None
         self.dbpoolrecycle = 60
         self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
-
         self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s?charset=utf8' % (self.config.glpi_dbuser,
                                                                      self.config.glpi_dbpasswd,
                                                                      self.config.glpi_dbhost,
@@ -184,21 +186,27 @@ class Glpi95(DatabaseHelper):
 
         try:
             self._glpi_version = self.engine_glpi.execute('SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
+
         except OperationalError:
             self._glpi_version = self.engine_glpi.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
 
-        if LooseVersion(self._glpi_version) >= LooseVersion("9.5") and LooseVersion(self._glpi_version) <= LooseVersion("9.5.2"):
+        if LooseVersion(self._glpi_version) >= LooseVersion("9.5") and LooseVersion(self._glpi_version) < LooseVersion("9.6"):
             logging.getLogger().debug('GLPI version %s found !' % self._glpi_version)
         else:
             logging.getLogger().debug('GLPI higher than version 9.5 was not detected')
-        self.Session = sessionmaker(bind=self.engine_glpi)
-        self.metadata = MetaData(self.engine_glpi)
-        self.initMappers()
-        self.logger.info("Glpi is in version %s" % (self.glpi_version))
-        self.metadata.create_all()
-        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.5')
-        self.is_activated = True
-        self.logger.debug("Glpi finish activation")
+            return False
+        try:
+            self.Session = sessionmaker(bind=self.engine_glpi)
+            self.metadata = MetaData(self.engine_glpi)
+            self.initMappers()
+            self.logger.info("Glpi is in version %s" % (self.glpi_version))
+            self.metadata.create_all()
+            logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.5')
+            self.is_activated = True
+            self.logger.debug("Glpi finish activation")
+            return True
+        except Exception:
+            return False
 
     @property
     def glpi_version(self):
@@ -216,7 +224,7 @@ class Glpi95(DatabaseHelper):
         """
 
         self.klass = {}
-
+        self.plugin_fusioninventory = None
         # simply declare some tables (that dont need and FK relations, or anything special to declare)
         for i in ('glpi_operatingsystemversions', 'glpi_computertypes', 'glpi_operatingsystems', 'glpi_operatingsystemservicepacks', 'glpi_operatingsystemarchitectures',
                   'glpi_domains', 'glpi_computermodels', 'glpi_networks'):
@@ -357,16 +365,16 @@ class Glpi95(DatabaseHelper):
         # glpi_plugin_fusioninventory_agents
         self.fusionagents = None
 
-        if self.fusionantivirus is not None:
+        if self.fusionantivirus is not None and self.plugin_fusioninventory is not None:
             self.logger.debug('Load glpi_plugin_fusioninventory_locks')
             self.fusionlocks = Table('glpi_plugin_fusioninventory_locks', self.metadata,
-                                     Column('items_id', Integer, ForeignKey('glpi_computers_pulse.id')),
-                                     autoload=True)
+                                    Column('items_id', Integer, ForeignKey('glpi_computers_pulse.id')),
+                                    autoload=True)
             mapper(FusionLocks, self.fusionlocks)
             self.logger.debug('Load glpi_plugin_fusioninventory_agents')
             self.fusionagents = Table('glpi_plugin_fusioninventory_agents', self.metadata,
-                                      Column('computers_id', Integer, ForeignKey('glpi_computers_pulse.id')),
-                                      autoload=True)
+                                    Column('computers_id', Integer, ForeignKey('glpi_computers_pulse.id')),
+                                    autoload=True)
             mapper(FusionAgents, self.fusionagents)
 
         # glpi_items_disks
@@ -528,24 +536,25 @@ class Glpi95(DatabaseHelper):
         self.group = Table("glpi_groups", self.metadata, autoload=True)
         mapper(Group, self.group)
 
-        # collects
-        self.collects = Table("glpi_plugin_fusioninventory_collects", self.metadata,
-                              Column('entities_id', Integer, ForeignKey('glpi_entities.id')),
-                              autoload=True)
-        mapper(Collects, self.collects)
-
-        # registries
-        self.registries = Table("glpi_plugin_fusioninventory_collects_registries", self.metadata,
-                                Column('plugin_fusioninventory_collects_id', Integer, ForeignKey('glpi_plugin_fusioninventory_collects.id')),
+        if self.plugin_fusioninventory is not None:
+            # collects
+            self.collects = Table("glpi_plugin_fusioninventory_collects", self.metadata,
+                                Column('entities_id', Integer, ForeignKey('glpi_entities.id')),
                                 autoload=True)
-        mapper(Registries, self.registries)
+            mapper(Collects, self.collects)
 
-        # registries contents
-        self.regcontents = Table("glpi_plugin_fusioninventory_collects_registries_contents", self.metadata,
-                                 Column('computers_id', Integer, ForeignKey('glpi_computers_pulse.id')),
-                                 Column('plugin_fusioninventory_collects_registries_id', Integer, ForeignKey('glpi_plugin_fusioninventory_collects_registries.id')),
-                                 autoload=True)
-        mapper(RegContents, self.regcontents)
+            registries
+            self.registries = Table("glpi_plugin_fusioninventory_collects_registries", self.metadata,
+                                    Column('plugin_fusioninventory_collects_id', Integer, ForeignKey('glpi_plugin_fusioninventory_collects.id')),
+                                    autoload=True)
+            mapper(Registries, self.registries)
+
+            # registries contents
+            self.regcontents = Table("glpi_plugin_fusioninventory_collects_registries_contents", self.metadata,
+                                    Column('computers_id', Integer, ForeignKey('glpi_computers_pulse.id')),
+                                    Column('plugin_fusioninventory_collects_registries_id', Integer, ForeignKey('glpi_plugin_fusioninventory_collects_registries.id')),
+                                    autoload=True)
+            mapper(RegContents, self.regcontents)
 
     # internal query generators
     def __filter_on(self, query):
@@ -736,11 +745,11 @@ class Glpi95(DatabaseHelper):
                    'owner_firstname' in self.config.summary or \
                    'owner_realname' in self.config.summary:
                     join_query = join_query.outerjoin(self.user, self.machine.c.users_id == self.user.c.id)
-                try:
-                    if regs[0]:
-                        join_query = join_query.outerjoin(self.regcontents)
-                except IndexError:
-                    pass
+                #try:
+                    #if regs[0]:
+                        #join_query = join_query.outerjoin(self.regcontents)
+                #except IndexError:
+                    #pass
 
             if self.fusionagents is not None:
                 join_query = join_query.outerjoin(self.fusionagents)
@@ -810,11 +819,11 @@ class Glpi95(DatabaseHelper):
                         clauses.append(self.manufacturers.c.name.like('%' + filt['hostname'] + '%'))
                     r = re.compile('reg_key_.*')
                     regs = filter(r.search, self.config.summary)
-                    try:
-                        if regs[0]:
-                            clauses.append(self.regcontents.c.value.like('%' + filt['hostname'] + '%'))
-                    except IndexError:
-                        pass
+                    #try:
+                        #if regs[0]:
+                            #clauses.append(self.regcontents.c.value.like('%' + filt['hostname'] + '%'))
+                    #except IndexError:
+                        #pass
                     # Filtering on computer list page
                     if clauses:
                         query = query.filter(or_(*clauses))
@@ -995,10 +1004,6 @@ class Glpi95(DatabaseHelper):
             return base + [self.inst_software, self.softwareversions, self.software, self.manufacturers]
         elif query[2] == 'User location':
             return base + [self.user, self.locations]
-        elif query[2] == 'Register key':
-            return base + [self.regcontents]  # self.collects, self.registries,
-        elif query[2] == 'Register key value':
-            return base + [self.regcontents, self.registries]  # self.collects, self.registries,
         elif query[2] == 'OS Version':
             return base + [self.os_version]
         elif query[2] == 'Architecture':
@@ -1143,10 +1148,6 @@ class Glpi95(DatabaseHelper):
             return [[self.software.c.name, query[3][0]], [self.softwareversions.c.name, query[3][1]]]
         elif query[2] == 'Installed software (specific vendor and version)':  # hidden internal dyngroup
             return [[self.manufacturers.c.name, query[3][0]], [self.software.c.name, query[3][1]], [self.softwareversions.c.name, query[3][2]]]
-        elif query[2] == 'Register key':
-            return [[self.registries.c.name, query[3]]]
-        elif query[2] == 'Register key value':
-            return [[self.registries.c.name, query[3][0]], [self.regcontents.c.value, query[3][1]]]
         elif query[2] == 'OS Version':
             return [[self.os_version.c.name, query[3]]]
         elif query[2] == 'Architecture':
@@ -1802,35 +1803,35 @@ class Glpi95(DatabaseHelper):
         path.append('UUID0')
         return path
 
-    def getMachineRegistryKey(self, machine, regkey):
-        """
-        Returns the registry keys and values defined on the computer.
+    #def getMachineRegistryKey(self, machine, regkey):
+        #"""
+        #Returns the registry keys and values defined on the computer.
 
-        @param machine: computer's instance
-        @type machine: Machine
+        #@param machine: computer's instance
+        #@type machine: Machine
 
-        @param regkey: registry key
-        @type regkey: str
+        #@param regkey: registry key
+        #@type regkey: str
 
-        @return: name, value
-        @rtype: tuple
-        """
+        #@return: name, value
+        #@rtype: tuple
+        #"""
 
-        ret = None
-        session = create_session()
+        #ret = None
+        #session = create_session()
 
-        query = session.query(RegContents).add_column(self.registries.c.name) \
-            .add_column(self.regcontents.c.key) \
-            .add_column(self.regcontents.c.value) \
-            .select_from(self.machine.outerjoin(self.regcontents) \
-                .outerjoin(self.registries))
-        query = query.filter(self.machine.c.id == machine.id, self.regcontents.c.key == regkey)
+        #query = session.query(RegContents).add_column(self.registries.c.name) \
+            #.add_column(self.regcontents.c.key) \
+            #.add_column(self.regcontents.c.value) \
+            #.select_from(self.machine.outerjoin(self.regcontents) \
+                #.outerjoin(self.registries))
+        #query = query.filter(self.machine.c.id == machine.id, self.regcontents.c.key == regkey)
 
-        if query.first() is not None:
-            ret = query.first().name, query.first().value
+        #if query.first() is not None:
+            #ret = query.first().name, query.first().value
 
-        session.close()
-        return ret
+        #session.close()
+        #return ret
 
     def doesUserHaveAccessToMachines(self, ctx, a_machine_uuid, all=True):
         """
@@ -2140,81 +2141,81 @@ class Glpi95(DatabaseHelper):
                     ret.append(l)
         return ret
 
-    def getLastMachineRegistryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        query = self.filterOnUUID(
-            session.query(RegContents).add_column(self.registries.c.name) \
-            .add_column(self.regcontents.c.key) \
-            .add_column(self.regcontents.c.value) \
-            .select_from(self.machine.outerjoin(self.regcontents) \
-                .outerjoin(self.registries) \
-            ), int(str(uuid).replace("UUID", "")))
+    #def getLastMachineRegistryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        #query = self.filterOnUUID(
+            #session.query(RegContents).add_column(self.registries.c.name) \
+            #.add_column(self.regcontents.c.key) \
+            #.add_column(self.regcontents.c.value) \
+            #.select_from(self.machine.outerjoin(self.regcontents) \
+                #.outerjoin(self.registries) \
+            #), int(str(uuid).replace("UUID", "")))
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for row in query:
-                if row.key is not None:
-                    l = [
-                        ['Registry key', row.name],
-                        ['Value', row.value],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for row in query:
+                #if row.key is not None:
+                    #l = [
+                        #['Registry key', row.name],
+                        #['Value', row.value],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineSoftwaresPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        hide_win_updates = False
-        if 'hide_win_updates' in options:
-            hide_win_updates = options['hide_win_updates']
+    #def getLastMachineSoftwaresPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        #hide_win_updates = False
+        #if 'hide_win_updates' in options:
+            #hide_win_updates = options['hide_win_updates']
 
-        query = self.filterOnUUID(
-            session.query(Software).add_column(self.manufacturers.c.name) \
-            .add_column(self.softwareversions.c.name).select_from(
-                self.machine.outerjoin(self.inst_software) \
-                .outerjoin(self.softwareversions) \
-                .outerjoin(self.software) \
-                .outerjoin(self.manufacturers)
-            ), uuid)
-        query = query.order_by(self.software.c.name)
+        #query = self.filterOnUUID(
+            #session.query(Software).add_column(self.manufacturers.c.name) \
+            #.add_column(self.softwareversions.c.name).select_from(
+                #self.machine.outerjoin(self.inst_software) \
+                #.outerjoin(self.softwareversions) \
+                #.outerjoin(self.software) \
+                #.outerjoin(self.manufacturers)
+            #), uuid)
+        #query = query.order_by(self.software.c.name)
 
-        if filt:
-            clauses = []
-            clauses.append(self.manufacturers.c.name.like('%'+filt+'%'))
-            clauses.append(self.softwareversions.c.name.like('%'+filt+'%'))
-            clauses.append(self.software.c.name.like('%'+filt+'%'))
-            query = query.filter(or_(*clauses))
+        #if filt:
+            #clauses = []
+            #clauses.append(self.manufacturers.c.name.like('%'+filt+'%'))
+            #clauses.append(self.softwareversions.c.name.like('%'+filt+'%'))
+            #clauses.append(self.software.c.name.like('%'+filt+'%'))
+            #query = query.filter(or_(*clauses))
 
-        if hide_win_updates:
-            query = query.filter(
-                not_(
-                    and_(
-                        self.manufacturers.c.name.contains('microsoft'),
-                        self.software.c.name.op('regexp')('KB[0-9]+(-v[0-9]+)?(v[0-9]+)?')
-                    )
-                )
-            )
+        #if hide_win_updates:
+            #query = query.filter(
+                #not_(
+                    #and_(
+                        #self.manufacturers.c.name.contains('microsoft'),
+                        #self.software.c.name.op('regexp')('KB[0-9]+(-v[0-9]+)?(v[0-9]+)?')
+                    #)
+                #)
+            #)
 
-        if min != 0:
-            query = query.offset(min)
-        if max != -1:
-            max = int(max) - int(min)
-            query = query.limit(max)
+        #if min != 0:
+            #query = query.offset(min)
+        #if max != -1:
+            #max = int(max) - int(min)
+            #query = query.limit(max)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for software, manufacturer, version in query:
-                if software is not None:
-                    l = [
-                        ['Vendor', manufacturer],
-                        ['Name', software.name],
-                        ['Version', version],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for software, manufacturer, version in query:
+                #if software is not None:
+                    #l = [
+                        #['Vendor', manufacturer],
+                        #['Name', software.name],
+                        #['Version', version],
+                    #]
+                    #ret.append(l)
+        #return ret
 
     def __getTableAndFieldFromName(self, name):
         """
@@ -2240,464 +2241,464 @@ class Glpi95(DatabaseHelper):
 
         return values[name]
 
-    def setGlpiEditableValue(self, uuid, name, value):
-        """
-        Set a new value for a Glpi field
+    #def setGlpiEditableValue(self, uuid, name, value):
+        #"""
+        #Set a new value for a Glpi field
 
-        @param uuid: machine uuid
-        @type uuid: string
+        #@param uuid: machine uuid
+        #@type uuid: string
 
-        @param name: Glpi field who will be updated
-        @param name: string
+        #@param name: Glpi field who will be updated
+        #@param name: string
 
-        @param value: The new value
-        @param value: string
-        """
+        #@param value: The new value
+        #@param value: string
+        #"""
 
-        self.logger.debug("Update an editable field")
-        self.logger.debug("%s: Set %s as new value for %s" % (uuid, value, name))
-        try:
-            session = create_session()
+        #self.logger.debug("Update an editable field")
+        #self.logger.debug("%s: Set %s as new value for %s" % (uuid, value, name))
+        #try:
+            #session = create_session()
 
-            # Get SQL field who will be updated
-            table, field = self.__getTableAndFieldFromName(name)
-            session.query(table).filter_by(id=fromUUID(uuid)).update({field: value})
+            ## Get SQL field who will be updated
+            #table, field = self.__getTableAndFieldFromName(name)
+            #session.query(table).filter_by(id=fromUUID(uuid)).update({field: value})
 
-            # Set updated field as a locked field so it won't be updated
-            # at next inventory
-            query = session.query(FusionLocks).filter(self.fusionlocks.c.items_id == fromUUID(uuid))
-            flocks = query.first()
-            if flocks is not None:
-                # Update glpi_plugin_fusioninventory_locks tablefields table
-                flocksFields = eval(flocks.tablefields)
-                if field not in flocksFields:
-                    flocksFields.append(field)
-                    query.update({'tablefields': str(flocksFields).replace("'", '"')})
-            else:
-                # Create new glpi_plugin_fusioninventory_locks entry
-                session.execute(
-                    self.fusionlocks.insert().values({
-                        'tablename': table.__tablename__,
-                        'items_id': fromUUID(uuid),
-                        'tablefields': str([field]).replace("'", '"'),
-                    })
-                )
+            ## Set updated field as a locked field so it won't be updated
+            ## at next inventory
+            #query = session.query(FusionLocks).filter(self.fusionlocks.c.items_id == fromUUID(uuid))
+            #flocks = query.first()
+            #if flocks is not None:
+                ## Update glpi_plugin_fusioninventory_locks tablefields table
+                #flocksFields = eval(flocks.tablefields)
+                #if field not in flocksFields:
+                    #flocksFields.append(field)
+                    #query.update({'tablefields': str(flocksFields).replace("'", '"')})
+            #else:
+                ## Create new glpi_plugin_fusioninventory_locks entry
+                #session.execute(
+                    #self.fusionlocks.insert().values({
+                        #'tablename': table.__tablename__,
+                        #'items_id': fromUUID(uuid),
+                        #'tablefields': str([field]).replace("'", '"'),
+                    #})
+                #)
 
-            session.close()
-            return True
-        except Exception, e:
-            self.logger.error(e)
-            return False
+            #session.close()
+            #return True
+        #except Exception, e:
+            #self.logger.error(e)
+            #return False
 
-    def getLastMachineSummaryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        query = self.filterOnUUID(
-            session.query(Machine).add_entity(Infocoms) \
-            .add_column(self.entities.c.name) \
-            .add_column(self.locations.c.name) \
-            .add_column(self.os.c.name) \
-            .add_column(self.manufacturers.c.name) \
-            .add_column(self.glpi_computertypes.c.name) \
-            .add_column(self.glpi_computermodels.c.name) \
-            .add_column(self.glpi_operatingsystemservicepacks.c.name) \
-            .add_column(self.glpi_operatingsystemversions.c.name) \
-            .add_column(self.glpi_operatingsystemarchitectures.c.name) \
-            .add_column(self.glpi_domains.c.name) \
-            .add_column(self.state.c.name) \
-            .add_column(self.fusionagents.c.last_contact) \
-            .select_from(
-                self.machine.outerjoin(self.entities) \
-                .outerjoin(self.locations) \
-                .outerjoin(self.os) \
-                .outerjoin(self.manufacturers) \
-                .outerjoin(self.infocoms) \
-                .outerjoin(self.glpi_computertypes) \
-                .outerjoin(self.glpi_computermodels) \
-                .outerjoin(self.glpi_operatingsystemservicepacks) \
-                .outerjoin(self.glpi_operatingsystemarchitectures) \
-                .outerjoin(self.state) \
-                .outerjoin(self.fusionagents) \
-                .outerjoin(self.glpi_domains)
-            ), uuid)
+    #def getLastMachineSummaryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        #query = self.filterOnUUID(
+            #session.query(Machine).add_entity(Infocoms) \
+            #.add_column(self.entities.c.name) \
+            #.add_column(self.locations.c.name) \
+            #.add_column(self.os.c.name) \
+            #.add_column(self.manufacturers.c.name) \
+            #.add_column(self.glpi_computertypes.c.name) \
+            #.add_column(self.glpi_computermodels.c.name) \
+            #.add_column(self.glpi_operatingsystemservicepacks.c.name) \
+            #.add_column(self.glpi_operatingsystemversions.c.name) \
+            #.add_column(self.glpi_operatingsystemarchitectures.c.name) \
+            #.add_column(self.glpi_domains.c.name) \
+            #.add_column(self.state.c.name) \
+            #.add_column(self.fusionagents.c.last_contact) \
+            #.select_from(
+                #self.machine.outerjoin(self.entities) \
+                #.outerjoin(self.locations) \
+                #.outerjoin(self.os) \
+                #.outerjoin(self.manufacturers) \
+                #.outerjoin(self.infocoms) \
+                #.outerjoin(self.glpi_computertypes) \
+                #.outerjoin(self.glpi_computermodels) \
+                #.outerjoin(self.glpi_operatingsystemservicepacks) \
+                #.outerjoin(self.glpi_operatingsystemarchitectures) \
+                #.outerjoin(self.state) \
+                #.outerjoin(self.fusionagents) \
+                #.outerjoin(self.glpi_domains)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for machine, infocoms, entity, location, oslocal, manufacturer, type, model, servicepack, version, architecture, domain, state, last_contact in query:
-                endDate = ''
-                if infocoms is not None:
-                    endDate = self.getWarrantyEndDate(infocoms)
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for machine, infocoms, entity, location, oslocal, manufacturer, type, model, servicepack, version, architecture, domain, state, last_contact in query:
+                #endDate = ''
+                #if infocoms is not None:
+                    #endDate = self.getWarrantyEndDate(infocoms)
 
-                modelType = []
-                if model is not None:
-                    modelType.append(model)
-                if type is not None:
-                    modelType.append(type)
+                #modelType = []
+                #if model is not None:
+                    #modelType.append(model)
+                #if type is not None:
+                    #modelType.append(type)
 
-                if len(modelType) == 0:
-                    modelType = ''
-                elif len(modelType) == 1:
-                    modelType = modelType[0]
-                elif len(modelType) == 2:
-                    modelType = " / ".join(modelType)
+                #if len(modelType) == 0:
+                    #modelType = ''
+                #elif len(modelType) == 1:
+                    #modelType = modelType[0]
+                #elif len(modelType) == 2:
+                    #modelType = " / ".join(modelType)
 
-                manufacturerWarranty = False
-                if machine.serial is not None and len(machine.serial) > 0:
-                    manufacturerWarranty = self.getManufacturerWarranty(manufacturer, machine.serial)
+                #manufacturerWarranty = False
+                #if machine.serial is not None and len(machine.serial) > 0:
+                    #manufacturerWarranty = self.getManufacturerWarranty(manufacturer, machine.serial)
 
-                if manufacturerWarranty:
-                    if manufacturerWarranty['type'] == 'get':
-                        url = manufacturerWarranty['url'] + '?' + manufacturerWarranty['params']
-                        serialNumber = '%s / <a href="%s" target="_blank">@@WARRANTY_LINK_TEXT@@</a>' % (machine.serial, url)
-                    else:
-                        url = manufacturerWarranty['url']
-                        serialNumber = '%s / <form action="%s" method="post" target="_blank" id="warrantyCheck" style="display: inline">' % (machine.serial, url)
-                        for param in manufacturerWarranty['params'].split('&'):
-                            name, value = param.split('=')
-                            serialNumber += '<input type="hidden" name="%s" value="%s" />' % (name, value)
-                        serialNumber += '<a href="#" onclick="jQuery(\'#warrantyCheck\').submit(); return false;">@@WARRANTY_LINK_TEXT@@</a></form>'
-                else:
-                    serialNumber = machine.serial
+                #if manufacturerWarranty:
+                    #if manufacturerWarranty['type'] == 'get':
+                        #url = manufacturerWarranty['url'] + '?' + manufacturerWarranty['params']
+                        #serialNumber = '%s / <a href="%s" target="_blank">@@WARRANTY_LINK_TEXT@@</a>' % (machine.serial, url)
+                    #else:
+                        #url = manufacturerWarranty['url']
+                        #serialNumber = '%s / <form action="%s" method="post" target="_blank" id="warrantyCheck" style="display: inline">' % (machine.serial, url)
+                        #for param in manufacturerWarranty['params'].split('&'):
+                            #name, value = param.split('=')
+                            #serialNumber += '<input type="hidden" name="%s" value="%s" />' % (name, value)
+                        #serialNumber += '<a href="#" onclick="jQuery(\'#warrantyCheck\').submit(); return false;">@@WARRANTY_LINK_TEXT@@</a></form>'
+                #else:
+                    #serialNumber = machine.serial
 
-                entityValue = ''
-                if entity:
-                    entityValue += entity
-                if location:
-                    entityValue += ' (%s)' % location
+                #entityValue = ''
+                #if entity:
+                    #entityValue += entity
+                #if location:
+                    #entityValue += ' (%s)' % location
 
-                owner_login, owner_firstname, owner_realname = self.getMachineOwner(machine)
+                #owner_login, owner_firstname, owner_realname = self.getMachineOwner(machine)
 
-                # Last inventory date
-                date_mod = machine.date_mod
+                ## Last inventory date
+                #date_mod = machine.date_mod
 
-                if self.fusionagents is not None and last_contact is not None:
-                    date_mod = last_contact
+                #if self.fusionagents is not None and last_contact is not None:
+                    #date_mod = last_contact
 
-                l = [
-                    ['Computer Name', ['computer_name', 'text', machine.name]],
-                    ['Description', ['description', 'text', machine.comment]],
-                    ['Entity (Location)', '%s' % entityValue],
-                    ['Domain', domain],
-                    ['Last Logged User', machine.contact],
-                    ['Owner', owner_login],
-                    ['Owner Firstname', owner_firstname],
-                    ['Owner Realname', owner_realname],
-                    ['OS', oslocal],
-                    ['Service Pack', servicepack],
-                    ['Version', version],
-                    ['Architecture', architecture],
-                    ['Windows Key', machine.license_number],
-                    ['Model / Type', modelType],
-                    ['Manufacturer', manufacturer],
-                    ['Serial Number', serialNumber],
-                    ['Inventory Number', ['inventory_number', 'text', machine.otherserial]],
-                    ['State', state],
-                    ['Warranty End Date', endDate],
-                    ['Last Inventory Date', date_mod.strftime("%Y-%m-%d %H:%M:%S")],
-                    ]
-                ret.append(l)
-        return ret
+                #l = [
+                    #['Computer Name', ['computer_name', 'text', machine.name]],
+                    #['Description', ['description', 'text', machine.comment]],
+                    #['Entity (Location)', '%s' % entityValue],
+                    #['Domain', domain],
+                    #['Last Logged User', machine.contact],
+                    #['Owner', owner_login],
+                    #['Owner Firstname', owner_firstname],
+                    #['Owner Realname', owner_realname],
+                    #['OS', oslocal],
+                    #['Service Pack', servicepack],
+                    #['Version', version],
+                    #['Architecture', architecture],
+                    #['Windows Key', machine.license_number],
+                    #['Model / Type', modelType],
+                    #['Manufacturer', manufacturer],
+                    #['Serial Number', serialNumber],
+                    #['Inventory Number', ['inventory_number', 'text', machine.otherserial]],
+                    #['State', state],
+                    #['Warranty End Date', endDate],
+                    #['Last Inventory Date', date_mod.strftime("%Y-%m-%d %H:%M:%S")],
+                    #]
+                #ret.append(l)
+        #return ret
 
-    def getLastMachineProcessorsPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        query = self.filterOnUUID(
-            session.query(ComputerProcessor).add_column(self.processor.c.designation) \
-            .select_from(
-                self.machine.outerjoin(self.computerProcessor) \
-                .outerjoin(self.processor)
-            ), uuid)
+    #def getLastMachineProcessorsPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(ComputerProcessor).add_column(self.processor.c.designation) \
+            #.select_from(
+                #self.machine.outerjoin(self.computerProcessor) \
+                #.outerjoin(self.processor)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for processor, designation in query:
-                if processor is not None:
-                    l = [
-                        ['Name', designation],
-                        ['Frequency', processor.frequency and str(processor.frequency) + ' MHz' or ''],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for processor, designation in query:
+                #if processor is not None:
+                    #l = [
+                        #['Name', designation],
+                        #['Frequency', processor.frequency and str(processor.frequency) + ' MHz' or ''],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineMemoryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        query = self.filterOnUUID(
-            session.query(ComputerMemory) \
-            .add_column(self.memoryType.c.name) \
-            .add_column(self.memory.c.frequence) \
-            .add_column(self.memory.c.designation).select_from(
-                self.machine.outerjoin(self.computerMemory) \
-                .outerjoin(self.memory) \
-                .outerjoin(self.memoryType)
-            ), uuid)
+    #def getLastMachineMemoryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(ComputerMemory) \
+            #.add_column(self.memoryType.c.name) \
+            #.add_column(self.memory.c.frequence) \
+            #.add_column(self.memory.c.designation).select_from(
+                #self.machine.outerjoin(self.computerMemory) \
+                #.outerjoin(self.memory) \
+                #.outerjoin(self.memoryType)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for memory, type, frequence, designation in query:
-                if memory is not None:
-                    l = [
-                        ['Name', designation],
-                        ['Type', type],
-                        ['Frequency', frequence],
-                        ['Size', memory.size and str(memory.size) + ' MB' or ''],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for memory, type, frequence, designation in query:
+                #if memory is not None:
+                    #l = [
+                        #['Name', designation],
+                        #['Type', type],
+                        #['Frequency', frequence],
+                        #['Size', memory.size and str(memory.size) + ' MB' or ''],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineHarddrivesPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        query = self.filterOnUUID(
-            session.query(self.klass['computers_deviceharddrives']) \
-            .add_column(self.deviceharddrives.c.designation) \
-            .select_from(
-                self.machine.outerjoin(self.computers_deviceharddrives) \
-                .outerjoin(self.deviceharddrives)
-            ), uuid)
+    #def getLastMachineHarddrivesPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(self.klass['computers_deviceharddrives']) \
+            #.add_column(self.deviceharddrives.c.designation) \
+            #.select_from(
+                #self.machine.outerjoin(self.computers_deviceharddrives) \
+                #.outerjoin(self.deviceharddrives)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for hd, designation in query:
-                if hd is not None:
-                    l = [
-                        ['Name', designation],
-                        ['Size', hd.capacity and str(hd.capacity) + ' MB' or ''],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for hd, designation in query:
+                #if hd is not None:
+                    #l = [
+                        #['Name', designation],
+                        #['Size', hd.capacity and str(hd.capacity) + ' MB' or ''],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineNetworkCardsPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        query = self.filterOnUUID(
-            session.query(self.klass['computers_devicenetworkcards']) \
-            .add_entity(self.klass['devicenetworkcards']) \
-            .select_from(
-                self.machine.outerjoin(self.computers_devicenetworkcards) \
-                .outerjoin(self.devicenetworkcards)
-            ), uuid)
+    #def getLastMachineNetworkCardsPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(self.klass['computers_devicenetworkcards']) \
+            #.add_entity(self.klass['devicenetworkcards']) \
+            #.select_from(
+                #self.machine.outerjoin(self.computers_devicenetworkcards) \
+                #.outerjoin(self.devicenetworkcards)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for mac, network in query:
-                if network is not None:
-                    l = [
-                        ['Name', network.designation],
-                        ['Bandwidth', network.bandwidth],
-                        ['MAC Address', mac.mac],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for mac, network in query:
+                #if network is not None:
+                    #l = [
+                        #['Name', network.designation],
+                        #['Bandwidth', network.bandwidth],
+                        #['MAC Address', mac.mac],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineDrivesPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        query = self.filterOnUUID(
-            session.query(self.klass['devicedrives']).select_from(
-                self.machine.outerjoin(self.computers_devicedrives) \
-                .outerjoin(self.devicedrives)
-            ), uuid)
+    #def getLastMachineDrivesPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(self.klass['devicedrives']).select_from(
+                #self.machine.outerjoin(self.computers_devicedrives) \
+                #.outerjoin(self.devicedrives)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for drive in query:
-                if drive is not None:
-                    l = [
-                        ['Name', drive.designation],
-                        ['Writer', drive.is_writer and 'Yes' or 'No'],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for drive in query:
+                #if drive is not None:
+                    #l = [
+                        #['Name', drive.designation],
+                        #['Writer', drive.is_writer and 'Yes' or 'No'],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineGraphicCardsPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        query = self.filterOnUUID(
-            session.query(self.klass['devicegraphiccards']).add_column(self.interfaceType.c.name) \
-            .select_from(
-                self.machine.outerjoin(self.computers_devicegraphiccards) \
-                .outerjoin(self.devicegraphiccards) \
-                .outerjoin(self.interfaceType, self.interfaceType.c.id == self.devicegraphiccards.c.interfacetypes_id)
-            ), uuid)
+    #def getLastMachineGraphicCardsPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(self.klass['devicegraphiccards']).add_column(self.interfaceType.c.name) \
+            #.select_from(
+                #self.machine.outerjoin(self.computers_devicegraphiccards) \
+                #.outerjoin(self.devicegraphiccards) \
+                #.outerjoin(self.interfaceType, self.interfaceType.c.id == self.devicegraphiccards.c.interfacetypes_id)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for card, interfaceType in query:
-                if card is not None:
-                    l = [
-                        ['Name', card.designation],
-                        ['Memory', card.memory_default and str(card.memory_default) + ' MB' or ''],
-                        ['Type', interfaceType],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for card, interfaceType in query:
+                #if card is not None:
+                    #l = [
+                        #['Name', card.designation],
+                        #['Memory', card.memory_default and str(card.memory_default) + ' MB' or ''],
+                        #['Type', interfaceType],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineSoundCardsPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        query = self.filterOnUUID(
-            session.query(self.klass['devicesoundcards']).select_from(
-                self.machine.outerjoin(self.computers_devicesoundcards) \
-                .outerjoin(self.devicesoundcards)
-            ), uuid)
+    #def getLastMachineSoundCardsPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(self.klass['devicesoundcards']).select_from(
+                #self.machine.outerjoin(self.computers_devicesoundcards) \
+                #.outerjoin(self.devicesoundcards)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for sound in query:
-                if sound is not None:
-                    l = [
-                        ['Name', sound.designation],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for sound in query:
+                #if sound is not None:
+                    #l = [
+                        #['Name', sound.designation],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineControllersPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        query = self.filterOnUUID(
-            session.query(self.klass['computers_devicecontrols']) \
-            .add_entity(self.klass['devicecontrols']).select_from(
-                self.machine.outerjoin(self.computers_devicecontrols) \
-                .outerjoin(self.devicecontrols)
-            ), uuid)
+    #def getLastMachineControllersPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(self.klass['computers_devicecontrols']) \
+            #.add_entity(self.klass['devicecontrols']).select_from(
+                #self.machine.outerjoin(self.computers_devicecontrols) \
+                #.outerjoin(self.devicecontrols)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for computerControls, deviceControls in query:
-                if computerControls is not None:
-                    l = [
-                        ['Name', deviceControls.designation],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for computerControls, deviceControls in query:
+                #if computerControls is not None:
+                    #l = [
+                        #['Name', deviceControls.designation],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineOthersPart(self, session, uuid, part, min=0, max=-1, filt=None, options=None, count=False):
-        # Mutable dict options used as default argument to a method or function
-        options = options or {}
-        query = self.filterOnUUID(
-            session.query(self.klass['devicepcis']).select_from(
-                self.machine.outerjoin(self.computers_devicepcis) \
-                .outerjoin(self.devicepcis)
-            ), uuid)
+    #def getLastMachineOthersPart(self, session, uuid, part, min=0, max=-1, filt=None, options=None, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        #options = options or {}
+        #query = self.filterOnUUID(
+            #session.query(self.klass['devicepcis']).select_from(
+                #self.machine.outerjoin(self.computers_devicepcis) \
+                #.outerjoin(self.devicepcis)
+            #), uuid)
 
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for pci in query:
-                if pci is not None:
-                    l = [
-                        ['Name', pci.designation],
-                        ['Comment', pci.comment],
-                    ]
-                    ret.append(l)
-        return ret
+        #if count:
+            #ret = query.count()
+        #else:
+            #ret = []
+            #for pci in query:
+                #if pci is not None:
+                    #l = [
+                        #['Name', pci.designation],
+                        #['Comment', pci.comment],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineHistoryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        # options = options or {}
-        # Set options
-        history_delta = 'All'
-        if 'history_delta' in options:
-            history_delta = options['history_delta']
+    #def getLastMachineHistoryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        ## options = options or {}
+        ## Set options
+        #history_delta = 'All'
+        #if 'history_delta' in options:
+            #history_delta = options['history_delta']
 
-        query = session.query(Logs)
-        query = query.filter(and_(
-            self.logs.c.items_id == int(uuid.replace('UUID', '')),
-            self.logs.c.itemtype == "Computer"
-        ))
+        #query = session.query(Logs)
+        #query = query.filter(and_(
+            #self.logs.c.items_id == int(uuid.replace('UUID', '')),
+            #self.logs.c.itemtype == "Computer"
+        #))
 
-        now = datetime.datetime.now()
-        if history_delta == 'today':
-            query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(1))
-        elif history_delta == 'week':
-            query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(7))
-        if history_delta == 'month':
-            query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(30))
+        #now = datetime.datetime.now()
+        #if history_delta == 'today':
+            #query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(1))
+        #elif history_delta == 'week':
+            #query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(7))
+        #if history_delta == 'month':
+            #query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(30))
 
-        if filt:
-            clauses = []
-            clauses.append(self.logs.c.date_mod.like('%'+filt+'%'))
-            clauses.append(self.logs.c.user_name.like('%'+filt+'%'))
-            clauses.append(self.logs.c.old_value.like('%'+filt+'%'))
-            clauses.append(self.logs.c.new_value.like('%'+filt+'%'))
-            clauses.append(self.logs.c.id_search_option.in_(self.getSearchOptionId(filt)))
-            clauses.append(self.logs.c.itemtype_link.in_(self.getLinkedActionKey(filt)))
-            # Treat Software case
-            if filt.lower() in 'software':
-                clauses.append(self.logs.c.linked_action.in_([4, 5]))
-            query = query.filter(or_(*clauses))
+        #if filt:
+            #clauses = []
+            #clauses.append(self.logs.c.date_mod.like('%'+filt+'%'))
+            #clauses.append(self.logs.c.user_name.like('%'+filt+'%'))
+            #clauses.append(self.logs.c.old_value.like('%'+filt+'%'))
+            #clauses.append(self.logs.c.new_value.like('%'+filt+'%'))
+            #clauses.append(self.logs.c.id_search_option.in_(self.getSearchOptionId(filt)))
+            #clauses.append(self.logs.c.itemtype_link.in_(self.getLinkedActionKey(filt)))
+            ## Treat Software case
+            #if filt.lower() in 'software':
+                #clauses.append(self.logs.c.linked_action.in_([4, 5]))
+            #query = query.filter(or_(*clauses))
 
-        if count:
-            ret = query.count()
-        else:
-            query = query.order_by(desc(self.logs.c.date_mod))
+        #if count:
+            #ret = query.count()
+        #else:
+            #query = query.order_by(desc(self.logs.c.date_mod))
 
-            if min != 0:
-                query = query.offset(min)
-            if max != -1:
-                max = int(max) - int(min)
-                query = query.limit(max)
+            #if min != 0:
+                #query = query.offset(min)
+            #if max != -1:
+                #max = int(max) - int(min)
+                #query = query.limit(max)
 
-            ret = []
-            for log in query:
-                if log is not None:
-                    update = ''
-                    if log.old_value == '' and log.new_value != '':
-                        update = '%s' % log.new_value
-                    elif log.old_value != '' and log.new_value == '':
-                        update = '%s' % log.old_value
-                    else:
-                        update = '%s --> %s' % (log.old_value, log.new_value)
+            #ret = []
+            #for log in query:
+                #if log is not None:
+                    #update = ''
+                    #if log.old_value == '' and log.new_value != '':
+                        #update = '%s' % log.new_value
+                    #elif log.old_value != '' and log.new_value == '':
+                        #update = '%s' % log.old_value
+                    #else:
+                        #update = '%s --> %s' % (log.old_value, log.new_value)
 
-                    update = '%s%s' % (self.getLinkedActionValues(log)['update'], update)
+                    #update = '%s%s' % (self.getLinkedActionValues(log)['update'], update)
 
-                    l = [
-                        ['Date', log.date_mod.strftime('%Y-%m-%d %H:%m')],
-                        ['User', log.user_name],
-                        ['Category', self.getLinkedActionValues(log)['field']],
-                        ['Action', update],
-                    ]
-                    ret.append(l)
-        return ret
+                    #l = [
+                        #['Date', log.date_mod.strftime('%Y-%m-%d %H:%m')],
+                        #['User', log.user_name],
+                        #['Category', self.getLinkedActionValues(log)['field']],
+                        #['Action', update],
+                    #]
+                    #ret.append(l)
+        #return ret
 
-    def getLastMachineInventoryPart(self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False):
-        # Mutable dict options used as default argument to a method or function
-        options = options or {}
-        session = create_session()
+    #def getLastMachineInventoryPart(self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False):
+        ## Mutable dict options used as default argument to a method or function
+        #options = options or {}
+        #session = create_session()
 
-        ret = None
-        if hasattr(self, 'getLastMachine%sPart' % part):
-            ret = getattr(self, 'getLastMachine%sPart' % part)(session, uuid, part, minbound, maxbound, filt, options, count)
+        #ret = None
+        #if hasattr(self, 'getLastMachine%sPart' % part):
+            #ret = getattr(self, 'getLastMachine%sPart' % part)(session, uuid, part, minbound, maxbound, filt, options, count)
 
-        session.close()
-        return ret
+        #session.close()
+        #return ret
 
-    def getSearchOptionValue(self, log):
-        try:
-            return self.searchOptions['en_US'][str(log.id_search_option)]
-        except:
-            if log.id_search_option != 0:
-                logging.getLogger().warn('I can\'t get a search option for id %s' % log.id_search_option)
-            return ''
+    #def getSearchOptionValue(self, log):
+        #try:
+            #return self.searchOptions['en_US'][str(log.id_search_option)]
+        #except:
+            #if log.id_search_option != 0:
+                #logging.getLogger().warn('I can\'t get a search option for id %s' % log.id_search_option)
+            #return ''
 
     def getLinkedActionValues(self, log):
         d = {
@@ -3488,20 +3489,20 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllRegistryKey(self, ctx, filt=''):
-        """
-        Returns the registry keys name.
-        @return: list Register key name
-        """
-        ret = None
-        session = create_session()
-        query = session.query(Registries.name)
-        query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.registries.c.name.like('%' + filt + '%'))
-        ret = query.all()
-        session.close()
-        return ret
+    #def getAllRegistryKey(self, ctx, filt=''):
+        #"""
+        #Returns the registry keys name.
+        #@return: list Register key name
+        #"""
+        #ret = None
+        #session = create_session()
+        #query = session.query(Registries.name)
+        #query = self.__filter_on_entity(query, ctx)
+        #if filter != '':
+            #query = query.filter(self.registries.c.name.like('%' + filt + '%'))
+        #ret = query.all()
+        #session.close()
+        #return ret
 
     def getMachineByLocation(self, ctx, filt):
         """ @return: all machines that have this contact number """
@@ -3695,8 +3696,8 @@ class Glpi95(DatabaseHelper):
             .join(Entities, Entities.id == Machine.entities_id)\
             .outerjoin(self.locations, Machine.locations_id == self.locations.c.id)\
             .outerjoin(self.manufacturers, Machine.manufacturers_id == self.manufacturers.c.id)\
-            .join(self.glpi_computermodels, Machine.computermodels_id == self.glpi_computermodels.c.id)\
-            .outerjoin(self.regcontents, Machine.id == self.regcontents.c.computers_id)
+            .join(self.glpi_computermodels, Machine.computermodels_id == self.glpi_computermodels.c.id)#\
+            #.outerjoin(self.regcontents, Machine.id == self.regcontents.c.computers_id)
         if field != "":
             query = query.join(Computersitems, Machine.id == Computersitems.computers_id)
             if field != "type":
@@ -3805,8 +3806,8 @@ class Glpi95(DatabaseHelper):
                     self.user.c.name.contains(criterion),
                     self.locations.c.name.contains(criterion),
                     self.manufacturers.c.name.contains(criterion),
-                    self.model.c.name.contains(criterion),
-                    self.regcontents.c.value.contains(criterion)
+                    self.model.c.name.contains(criterion)#,
+                    #self.regcontents.c.value.contains(criterion)
                 ))
             else:
                 if field == "peripherals":
@@ -3862,21 +3863,21 @@ class Glpi95(DatabaseHelper):
 
             for column in list_reg_columns_name:
                 result['data']['reg'][column].append(None)
-        regquery=[]
-        if list_reg_columns_name:
-            regquery = session.query(
-                self.regcontents.c.computers_id,
-                self.regcontents.c.key,
-                self.regcontents.c.value)\
-            .filter(
-                and_(
-                    self.regcontents.c.key.in_(list_reg_columns_name),
-                    self.regcontents.c.computers_id.in_(result['data']['uuid'])
-                )
-            ).all()
-        for reg in regquery:
-            index = result['data']['uuid'].index(reg[0])
-            result['data']['reg'][reg[1]][index] = reg[2]
+        #regquery=[]
+        #if list_reg_columns_name:
+            #regquery = session.query(
+                #self.regcontents.c.computers_id,
+                #self.regcontents.c.key,
+                #self.regcontents.c.value)\
+            #.filter(
+                #and_(
+                    #self.regcontents.c.key.in_(list_reg_columns_name),
+                    #self.regcontents.c.computers_id.in_(result['data']['uuid'])
+                #)
+            #).all()
+        #for reg in regquery:
+            #index = result['data']['uuid'].index(reg[0])
+            #result['data']['reg'][reg[1]][index] = reg[2]
 
         result['count'] = count
 
@@ -4616,30 +4617,30 @@ class Glpi95(DatabaseHelper):
         session.flush()
         return True
 
-    @DatabaseHelper._sessionm
-    def getRegistryCollect(self, session, full_key):
-        """
-        Get the registry id where the collect is the defined key
+    #@DatabaseHelper._sessionm
+    #def getRegistryCollect(self, session, full_key):
+        #"""
+        #Get the registry id where the collect is the defined key
 
-        @param full_key: the registry key in the form hive/path/key
-        @type full_key: str
+        #@param full_key: the registry key in the form hive/path/key
+        #@type full_key: str
 
-        @return: id of the registry collect
-        @rtype: int
-        """
+        #@return: id of the registry collect
+        #@rtype: int
+        #"""
 
-        # Split into hive / path / key
-        hive = full_key.split('\\')[0]
-        key = full_key.split('\\')[-1]
-        path = full_key.replace(hive + '\\', '').replace('\\' + key, '')
-        path = '/' + path + '/'
-        # Get registry_id
-        try:
-            registry_id = session.query(Registries).filter_by(hive=hive, path=path, key=key).first().id
-            if registry_id:
-                return registry_id
-        except:
-            return False
+        ## Split into hive / path / key
+        #hive = full_key.split('\\')[0]
+        #key = full_key.split('\\')[-1]
+        #path = full_key.replace(hive + '\\', '').replace('\\' + key, '')
+        #path = '/' + path + '/'
+        ## Get registry_id
+        #try:
+            #registry_id = session.query(Registries).filter_by(hive=hive, path=path, key=key).first().id
+            #if registry_id:
+                #return registry_id
+        #except:
+            #return False
 
     @DatabaseHelper._sessionm
     def addRegistryCollect(self, session, full_key, key_name):
@@ -4655,28 +4656,28 @@ class Glpi95(DatabaseHelper):
         @return: success of the operation
         @rtype: bool
         """
-
-        # Split into hive / path / key
-        hive = full_key.split('\\')[0]
-        key = full_key.split('\\')[-1]
-        path = full_key.replace(hive + '\\', '').replace('\\' + key, '')
-        path = '/' + path + '/'
-        # Insert in database
-        registry = Registries()
-        registry.name = key_name
-        # Get collects_id
-        try:
-            collects_id = session.query(Collects).filter_by(name='PulseRegistryCollects').first().id
-        except:
-            return False
-        registry.plugin_fusioninventory_collects_id = collects_id
-        registry.hive = hive
-        registry.path = path
-        registry.key = key
-        session.add(registry)
-        session.commit()
-        session.flush()
-        return True
+        return False
+        ## Split into hive / path / key
+        #hive = full_key.split('\\')[0]
+        #key = full_key.split('\\')[-1]
+        #path = full_key.replace(hive + '\\', '').replace('\\' + key, '')
+        #path = '/' + path + '/'
+        ## Insert in database
+        #registry = Registries()
+        #registry.name = key_name
+        ## Get collects_id
+        #try:
+            #collects_id = session.query(Collects).filter_by(name='PulseRegistryCollects').first().id
+        #except:
+            #return False
+        #registry.plugin_fusioninventory_collects_id = collects_id
+        #registry.hive = hive
+        #registry.path = path
+        #registry.key = key
+        #session.add(registry)
+        #session.commit()
+        #session.flush()
+        #return True
 
     def getAllOsVersions(self, ctx, filt=''):
         """ @return: all os versions defined in the GLPI database """
@@ -4720,25 +4721,26 @@ class Glpi95(DatabaseHelper):
         """
 
         # Check if already present
-        try:
-            contents_id = session.query(RegContents).filter_by(computers_id=computers_id, plugin_fusioninventory_collects_registries_id=registry_id, key=key).first().id
-            if contents_id:
-                # Update database
-                session.query(RegContents).filter_by(id=contents_id).update({'value': str(value)})
-                session.commit()
-                session.flush()
-                return True
-        except AttributeError:
-            # Insert in database
-            regcontents = RegContents()
-            regcontents.computers_id = int(computers_id)
-            regcontents.plugin_fusioninventory_collects_registries_id = int(registry_id)
-            regcontents.key = str(key)
-            regcontents.value = str(value)
-            session.add(regcontents)
-            session.commit()
-            session.flush()
-            return True
+        return False
+        #try:
+            #contents_id = session.query(RegContents).filter_by(computers_id=computers_id, plugin_fusioninventory_collects_registries_id=registry_id, key=key).first().id
+            #if contents_id:
+                ## Update database
+                #session.query(RegContents).filter_by(id=contents_id).update({'value': str(value)})
+                #session.commit()
+                #session.flush()
+                #return True
+        #except AttributeError:
+            ## Insert in database
+            #regcontents = RegContents()
+            #regcontents.computers_id = int(computers_id)
+            #regcontents.plugin_fusioninventory_collects_registries_id = int(registry_id)
+            #regcontents.key = str(key)
+            #regcontents.value = str(value)
+            #session.add(regcontents)
+            #session.commit()
+            #session.flush()
+            #return True
 
     @DatabaseHelper._sessionm
     def get_os_for_dashboard(self, session):

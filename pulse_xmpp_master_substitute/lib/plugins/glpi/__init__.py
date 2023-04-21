@@ -3,11 +3,12 @@
 # SPDX-FileCopyrightText: 2007-2010 Mandriva, http://www.mandriva.com
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
-
+# file pulse_xmpp_master_substitute/lib/plugins/glpi/__init__.py
 """
 This module declare all the necessary stuff to connect to a glpi database in it's
 version 9.2
 """
+
 import os
 import logging
 import re
@@ -78,7 +79,6 @@ class Glpi(object):
         self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
-
         self.logger.info("Glpi parameters connections is "\
             " user = %s,host = %s, port = %s, schema = %s,"\
             " poolrecycle = %s, poolsize = %s, pool_timeout %s" % (self.config.glpi_dbuser,
@@ -109,25 +109,30 @@ class Glpi(object):
 
             if self._glpi_version.startswith("0.84"):
                 glpi = Glpi84()
-
-            if self._glpi_version.startswith("9.2"):
+            elif LooseVersion(self._glpi_version) >= LooseVersion("9.2") and \
+                LooseVersion(self._glpi_version) < LooseVersion("9.3"):
                 glpi = Glpi92()
-
-            if self._glpi_version.startswith("9.3"):
+            elif LooseVersion(self._glpi_version) >= LooseVersion("9.3") and \
+                LooseVersion(self._glpi_version) < LooseVersion("9.4"):
                 glpi = Glpi93()
-
-            if self._glpi_version.startswith("9.4"):
+            elif LooseVersion(self._glpi_version) >= LooseVersion("9.4") and \
+                LooseVersion(self._glpi_version) < LooseVersion("9.5"):
                 glpi = Glpi94()
-
-            if self._glpi_version.startswith("9.5"):
+            elif LooseVersion(self._glpi_version) >= LooseVersion("9.5") and \
+                LooseVersion(self._glpi_version) < LooseVersion("9.6"):
                 glpi = Glpi95()
-
-            if self._glpi_version.startswith("10.0"):
+            elif LooseVersion(self._glpi_version) >= LooseVersion("10.0") and \
+                LooseVersion(self._glpi_version) < LooseVersion("11.0"):
                 glpi = Glpi100()
+            else:
+                return False
 
             ret = glpi.activate()
-            self.is_activated = glpi.is_activated
-            return True
+            if ret:
+                self.is_activated = glpi.is_activated
+                return True
+            else:
+                return False
         except Exception as e:
             self.logger.error("We failed to connect to the Glpi database.")
             self.logger.error("Please verify your configuration")
