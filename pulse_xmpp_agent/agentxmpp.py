@@ -2166,6 +2166,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         if dataobj['action'] == "restarfrommaster":
             reboot_command()
+            return
 
         if dataobj['action'] == "shutdownfrommaster":
             msg = "\"Shutdown from administrator\""
@@ -2184,6 +2185,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 askpermission = 0
 
             vnc_set_permission(askpermission)
+            return
 
         if dataobj['action'] == "installkeymaster":
             # note install publickeymaster
@@ -2193,6 +2195,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if dataobj['action'] ==  "resultmsginfoerror":
             logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
             return
+        
         try :
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
