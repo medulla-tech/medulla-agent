@@ -22,7 +22,7 @@ override_dh_auto_install:
 	dh_auto_install
 	# Move into a non python dependant folder.
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/
-	mv -f $(CURDIR)/debian/tmp/usr/lib/python${PYVER}.9/dist-packages/* $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/ 
+	mv -f $(CURDIR)/debian/tmp/usr/lib/python${PYVER}.11/dist-packages/* $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/ 
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent
 	cp -fr pulse_xmpp_agent/* $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent
 	rm -fr $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/config
