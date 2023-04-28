@@ -48,7 +48,6 @@ Requires:       python3-netifaces
 Requires:       python3-slixmpp
 Requires:       python3-croniter
 Requires:       python3-requests
-Requires:       python3-pysftp
 Requires:       python3-inotify
 Requires:       python3-dateutil
 Requires:       python3-psutil
