@@ -108,7 +108,6 @@ toml-0.10.2-py2.py3-none-any.whl \
 typing_extensions-4.3.0-py3-none-any.whl \
 urllib3-1.26.12-py2.py3-none-any.whl \
 zc.lockfile-2.0-py2.py3-none-any.whl \
-zipfile2-0.0.12-py2.py3-none-any.whl \
 "
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"

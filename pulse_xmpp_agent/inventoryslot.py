@@ -8661,15 +8661,6 @@ globaltest = """
       <VERSION>0.25-4</VERSION>
     </SOFTWARES>
     <SOFTWARES>
-      <ARCH>all</ARCH>
-      <FILESIZE>100</FILESIZE>
-      <FROM>deb</FROM>
-      <NAME>python-zipfile2</NAME>
-      <PUBLISHER>Debian</PUBLISHER>
-      <SYSTEM_CATEGORY>python</SYSTEM_CATEGORY>
-      <VERSION>0.0.6-1</VERSION>
-    </SOFTWARES>
-    <SOFTWARES>
       <ARCH>amd64</ARCH>
       <FILESIZE>359</FILESIZE>
       <FROM>deb</FROM>
