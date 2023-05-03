@@ -3095,6 +3095,7 @@ class MUCBot(slixmpp.ClientXMPP):
 
         if dataobj["action"] == "restarfrommaster":
             reboot_command()
+            return
 
         if dataobj["action"] == "shutdownfrommaster":
             msg = '"Shutdown from administrator"'
@@ -3116,6 +3117,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 askpermission = 0
 
             vnc_set_permission(askpermission)
+            return
 
         if dataobj["action"] == "installkeymaster":
             # note install publickeymaster
@@ -3130,15 +3132,12 @@ class MUCBot(slixmpp.ClientXMPP):
                 % (msg["from"].bare, dataobj["action"])
             )
             return
-        try:
-            if "action" in dataobj and dataobj["action"] != "" and "data" in dataobj:
-                if "base64" in dataobj and (
-                    (isinstance(dataobj["base64"], bool) and dataobj["base64"] is True)
-                    or (
-                        isinstance(dataobj["base64"], str)
-                        and dataobj["base64"].lower() == "true"
-                    )
-                ):
+        
+        try :
+            if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
+                if dataobj.has_key('base64') and \
+                    ((isinstance(dataobj['base64'],bool) and dataobj['base64'] is True) or
+                    (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
                     # data in base 64
                     mydata = json.loads(base64.b64decode(dataobj["data"]))
                 else:
