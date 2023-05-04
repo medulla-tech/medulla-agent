@@ -2057,7 +2057,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.execute(sql)
                     session.commit()
                     session.flush()
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
                 msg = str(e)
                 return -1, msg
@@ -2799,7 +2799,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as  e:
             logging.getLogger().error(str(e))
 
 
@@ -7632,7 +7632,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return True
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("We failed to update the md5 and the version of the running agent for %s" % hostname)
             logging.getLogger().error("we encounterd the error: %s" % str(e))
             return False

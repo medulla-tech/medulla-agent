@@ -68,7 +68,7 @@ from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
 if sys.version_info >= (3, 0, 0):
-    basestring = (str, bytes)
+    str = (str, bytes)
 
 logger = logging.getLogger()
 
@@ -133,7 +133,7 @@ class DatabaseHelper(Singleton):
             if "filters" in params and params["filters"]:
                 clauses = [
                     _entity_descriptor(query._mapper_zero(), key) == value
-                    for key, value in params["filters"].items()
+                    for key, value in list(params["filters"].items())
                 ]
                 if clauses:
                     query = query.filter(*clauses)
@@ -143,7 +143,7 @@ class DatabaseHelper(Singleton):
                     _entity_descriptor(query._mapper_zero(), key).like(
                         "%" + value + "%"
                     )
-                    for key, value in params["like_filters"].items()
+                    for key, value in list(params["like_filters"].items())
                 ]
                 if clauses:
                     query = query.filter(*clauses)
@@ -238,16 +238,14 @@ class Glpi92(DatabaseHelper):
         try:
             self._glpi_version = list(
                 self.engine_glpi.execute("SELECT version FROM glpi_configs")
-                .fetchone()
-                .values()
+                .fetchone().values()
             )[0].replace(" ", "")
         except OperationalError:
             self._glpi_version = list(
                 self.engine_glpi.execute(
                     'SELECT value FROM glpi_configs WHERE name = "version"'
                 )
-                .fetchone()
-                .values()
+                .fetchone().values()
             )[0].replace(" ", "")
 
         if LooseVersion(self._glpi_version) >= LooseVersion("9.2") and LooseVersion(
@@ -1517,7 +1515,7 @@ class Glpi92(DatabaseHelper):
                             else:
                                 ret.append(partA.like(self.encode(partB)))
                         except Exception as e:
-                            print(str(e))
+                            print((str(e)))
                             self.logger.error("\n%s" % (traceback.format_exc()))
                             ret.append(partA.like(self.encode(partB)))
             if ctx.userid != "root":
@@ -2606,7 +2604,7 @@ class Glpi92(DatabaseHelper):
 
         ids = []
         dict = self.searchOptions[lang]
-        for key, value in dict.items():
+        for key, value in list(dict.items()):
             if filter.lower() in value.lower():
                 ids.append(key)
 
@@ -2618,7 +2616,7 @@ class Glpi92(DatabaseHelper):
         """
         ids = []
         dict = self.getLinkedActions()
-        for key, value in dict.items():
+        for key, value in list(dict.items()):
             if filter.lower() in value.lower():
                 ids.append(key)
 
@@ -4636,7 +4634,7 @@ class Glpi92(DatabaseHelper):
         resultrecord = {}
         try:
             if ret:
-                for keynameresult in ret.keys():
+                for keynameresult in list(ret.keys()):
                     try:
                         if getattr(ret, keynameresult) is None:
                             resultrecord[keynameresult] = ""
@@ -4667,7 +4665,7 @@ class Glpi92(DatabaseHelper):
                                     ).strftime("%m/%d/%Y %H:%M:%S")
                                 else:
                                     strre = getattr(ret, keynameresult)
-                                    if isinstance(strre, basestring):
+                                    if isinstance(strre, str):
                                         if encode == "utf8":
                                             resultrecord[keynameresult] = str(strre)
                                         else:
@@ -6665,7 +6663,7 @@ class DBObj(object):
         if "_sa_instance_state" in d:
             del d["_sa_instance_state"]
         # Actually we don't support relations
-        for key, value in d.items():
+        for key, value in list(d.items()):
             if key and type(value) not in [type({}), type([])]:
                 setattr(self, key, value)
 

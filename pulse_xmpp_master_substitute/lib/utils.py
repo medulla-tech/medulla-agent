@@ -34,8 +34,8 @@ import requests
 from requests.exceptions import Timeout
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
-from Crypto import Random
-from Crypto.Cipher import AES
+from Cryptodome import Random
+from Cryptodome.Cipher import AES
 import tarfile
 import string
 import asyncio as aio
