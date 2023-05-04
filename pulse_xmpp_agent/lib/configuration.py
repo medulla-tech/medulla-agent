@@ -67,19 +67,20 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
     Config.read(conffile)
     domain = jid.JID(jidrelayserver).domain
     if not Config.has_option("configuration_server", "confdomain"):
-        logger.warning("The confdomain parameter is missing in the configuration_server section.")
-        logger.warning("We will force the configuration by using \"pulse\" for confdomain.")
+        logger.warning(
+            "The confdomain parameter is missing in the configuration_server section."
+        )
+        logger.warning(
+            'We will force the configuration by using "pulse" for confdomain.'
+        )
 
-        Config.set(
-            'configuration_server',
-            'confdomain',
-            "pulse")
-    Config.set('chat', 'domain', domain)
-    Config.set('connection', 'port', str(port))
-    Config.set('connection', 'server', ipfromdns(str(ipserver)))
-    Config.set('global', 'relayserver_agent', str(jidrelayserver))
-    Config.set('type', 'guacamole_baseurl', str(baseurlguacamole))
-    with open(conffile, 'w') as configfile:
+        Config.set("configuration_server", "confdomain", "pulse")
+    Config.set("chat", "domain", domain)
+    Config.set("connection", "port", str(port))
+    Config.set("connection", "server", ipfromdns(str(ipserver)))
+    Config.set("global", "relayserver_agent", str(jidrelayserver))
+    Config.set("type", "guacamole_baseurl", str(baseurlguacamole))
+    with open(conffile, "w") as configfile:
         Config.write(configfile)
 
 
@@ -309,19 +310,21 @@ class substitutelist:
             sub_monitoringlocal = Config.get("substitute", "monitoring")
             self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
 
-        if Config.has_option('substitute', 'updates'):
-            sub_updateslocal = Config.get('substitute', 'updates')
+        if Config.has_option("substitute", "updates"):
+            sub_updateslocal = Config.get("substitute", "updates")
             self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
 
     def parameterssubtitute(self):
         conflist = []
-        data={ 'subscription': self.sub_subscribe,
-               'inventory': self.sub_inventory,
-               'registration': self.sub_registration,
-               'assessor': self.sub_assessor,
-               'logger': self.sub_logger,
-               'monitoring': self.sub_monitoring,
-               'updates': self.sub_updates}
+        data = {
+            "subscription": self.sub_subscribe,
+            "inventory": self.sub_inventory,
+            "registration": self.sub_registration,
+            "assessor": self.sub_assessor,
+            "logger": self.sub_logger,
+            "monitoring": self.sub_monitoring,
+            "updates": self.sub_updates,
+        }
         for t in data:
             # if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
@@ -357,8 +360,8 @@ class confParameter:
         self.sub_subscribe = ["master_subs@pulse"]
         self.sub_registration = ["master_reg@pulse"]
         self.sub_assessor = ["master_asse@pulse"]
-        self.sub_monitoring= ["master_mon@pulse"]
-        self.sub_updates= ["master_upd@pulse"]
+        self.sub_monitoring = ["master_mon@pulse"]
+        self.sub_updates = ["master_upd@pulse"]
         self.sub_logger = ["log@pulse", "master_log@pulse"]
 
         if Config.has_option("substitute", "subscription"):
@@ -379,12 +382,12 @@ class confParameter:
             sub_monitoringlocal = Config.get("substitute", "monitoring")
             self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
 
-        if Config.has_option('substitute', 'updates'):
-            sub_updateslocal = Config.get('substitute', 'updates')
+        if Config.has_option("substitute", "updates"):
+            sub_updateslocal = Config.get("substitute", "updates")
             self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
 
-        if Config.has_option('substitute', 'assessor'):
-            sub_assessorlocal = Config.get('substitute', 'assessor')
+        if Config.has_option("substitute", "assessor"):
+            sub_assessorlocal = Config.get("substitute", "assessor")
             self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
 
         if Config.has_option("substitute", "logger"):
@@ -457,7 +460,7 @@ class confParameter:
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
-            self.moderelayserver = Config.get('type', 'moderelayserver')
+            self.moderelayserver = Config.get("type", "moderelayserver")
 
         if Config.has_option("updateagent", "updating"):
             self.updating = Config.getboolean("updateagent", "updating")
@@ -602,9 +605,7 @@ class confParameter:
                     for keyparameter, valueparameter in liststuple:
                         setattr(self, keyparameter, valueparameter)
                 else:
-                    logger.warning(
-                            "The configuration file: %s is missing" %
-                            namefile)
+                    logger.warning("The configuration file: %s is missing" % namefile)
         try:
             self.agentcommand = Config.get("global", "relayserver_agent")
         except BaseException:
@@ -735,8 +736,10 @@ class confParameter:
                     if self.timealternatif[1] > 30:
                         self.timealternatif[1] = 30
             except Exception:
-                self.timealternatif=[2,30]
-            logger.debug('[Global] Parameter "alternativetimedelta" is %s' % self.timealternatif)
+                self.timealternatif = [2, 30]
+            logger.debug(
+                '[Global] Parameter "alternativetimedelta" is %s' % self.timealternatif
+            )
 
         try:
             self.levellog = self._levellogdata(Config.get("global", "log_level"))
@@ -785,16 +788,16 @@ class confParameter:
 
         self.nbconcurrentquickdeployments = 10
         if Config.has_option("quick_deploy", "concurrentdeployments"):
-            self.nbconcurrentquickdeployments = Config.getint("quick_deploy",
-                                                    "concurrentdeployments")
+            self.nbconcurrentquickdeployments = Config.getint(
+                "quick_deploy", "concurrentdeployments"
+            )
         # we make sure that the time for the
         # inventories is greater than or equal to 1 hour.
         # if the time for the inventories is 0, it is left at 0.
         # this deactive cycle inventory
         self.inventory_interval = 0
         if Config.has_option("inventory", "inventory_interval"):
-            self.inventory_interval = Config.getint("inventory",
-                                                    "inventory_interval")
+            self.inventory_interval = Config.getint("inventory", "inventory_interval")
             if self.inventory_interval != 0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
         # DEBUG switch_scheduling
@@ -849,8 +852,9 @@ class confParameter:
             )
 
         if Config.has_option("switch_scheduling", "sched_send_ping_kiosk"):
-            self.sched_send_ping_kiosk = Config.getboolean('switch_scheduling',
-                                                        'sched_send_ping_kiosk')
+            self.sched_send_ping_kiosk = Config.getboolean(
+                "switch_scheduling", "sched_send_ping_kiosk"
+            )
 
         if Config.has_option("switch_scheduling", "sched_update_agent"):
             self.sched_update_agent = Config.getboolean(
@@ -1009,16 +1013,16 @@ class confParameter:
                 self.extensions[count] = self.extensions[count].split(",")
             count += 1
 
-        if Config.has_option('fileviewer', 'date_format'):
-            self.date_format = Config.get('fileviewer', 'date_format')
+        if Config.has_option("fileviewer", "date_format"):
+            self.date_format = Config.get("fileviewer", "date_format")
 
         self.fv_host = "127.0.0.1"
-        if Config.has_option('fileviewer', 'host'):
-            self.fv_host = Config.get('fileviewer', 'host')
+        if Config.has_option("fileviewer", "host"):
+            self.fv_host = Config.get("fileviewer", "host")
 
         self.fv_port = 52044
-        if Config.has_option('fileviewer', 'port'):
-            self.fv_port = Config.getint('fileviewer', 'port')
+        if Config.has_option("fileviewer", "port"):
+            self.fv_port = Config.getint("fileviewer", "port")
 
         if Config.has_option("fileviewer", "maxwidth"):
             self.fv_maxwidth = Config.getint("fileviewer", "maxwidth")
@@ -1033,12 +1037,11 @@ class confParameter:
         if self.fv_minwidth > self.fv_maxwidth:
             self.fv_minwidth, self.fv_maxwidth = self.fv_maxwidth, self.fv_minwidth
 
-
     def loadparametersplugins(self, namefile):
         Config = configparser.ConfigParser()
         Config.read(namefile)
-        if os.path.isfile(namefile+".local"):
-            Config.read(namefile+".local")
+        if os.path.isfile(namefile + ".local"):
+            Config.read(namefile + ".local")
         return Config.items("parameters")
 
     def _levellogdata(self, levelstring):
