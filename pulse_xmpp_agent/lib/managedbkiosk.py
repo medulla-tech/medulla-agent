@@ -10,7 +10,7 @@ import logging
 if sys.platform.startswith('darwin'):
     import plyvel
 else:
-    import bsddb
+    import bsddb3
 
 logger = logging.getLogger()
 
@@ -22,11 +22,11 @@ class manageskioskdb:
         path_bd = self.bddir()
         if path_bd is not None:
             if not os.path.exists(path_bd):
-                os.makedirs(path_bd, mode=0700)
+                os.makedirs(path_bd, mode=0o700)
             self.name_launch_cmd_db = os.path.join(path_bd, name_launch_cmd_db)
             if sys.platform.startswith('darwin'):
                 if not os.path.isdir(self.name_launch_cmd_db):
-                    os.makedirs(self.name_launch_cmd_db, mode=0700)
+                    os.makedirs(self.name_launch_cmd_db, mode=0o700)
 
     def openbase(self):
         if sys.platform.startswith('darwin'):

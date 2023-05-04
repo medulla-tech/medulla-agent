@@ -9,7 +9,7 @@
 import sys
 import urllib.request as urllib2
 from configparser import ConfigParser
-import binasci
+import binascii
 import netifaces
 import json
 import subprocess
@@ -34,8 +34,8 @@ import requests
 
 from requests.exceptions import Timeout
 
-from Crypto import Random
-from Crypto.Cipher import AES
+from Cryptodome import Random
+from Cryptodome.Cipher import AES
 import tarfile
 from functools import wraps
 import string
@@ -1756,11 +1756,6 @@ if sys.platform.startswith("win"):
             return None
 
 
-def shutdown_command(time=0, msg=''):
-    """
-        This  function allow to shutdown a machine, and if needed
-        to display a message
-
 def shutdown_command(time=0, msg=""):
     """
     This  function allow to shutdown a machine, and if needed
@@ -3342,7 +3337,7 @@ def reversessh_keys_mustexist_on_relay(username="reversessh"):
 
 def get_relayserver_pubkey(username="root"):
     """
-    returns relayserver's root public key
+    returns relayserver s root public key
     """
     public_key_path = os.path.join(
         os.path.expanduser("~%s" % username), ".ssh", "id_rsa.pub"
@@ -3352,7 +3347,7 @@ def get_relayserver_pubkey(username="root"):
 
 def get_relayserver_reversessh_idrsa(username="reversessh"):
     """
-    returns relayserver's reversessh private key
+    returns relayserver s reversessh private key
     """
     idrsa_key_path = os.path.join(
         os.path.expanduser("~%s" % username), ".ssh", "id_rsa"

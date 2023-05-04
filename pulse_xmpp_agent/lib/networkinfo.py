@@ -12,6 +12,7 @@ import re
 import socket
 import psutil
 import os
+import sys
 
 # from distutils.util import strtobool
 from lib.utils import simplecommand, powerschellscript1ps1

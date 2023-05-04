@@ -2,9 +2,9 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-from Crypto.PublicKey import RSA
-from Crypto.Signature import pss
-from Crypto.Hash import SHA256
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Signature import pss
+from Cryptodome.Hash import SHA256
 import os
 import base64
 import logging

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 import sys
 
-from configparser import ConfigParser
+import configparser
 from slixmpp import jid
 import netifaces
 import json
@@ -39,7 +39,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     confsubtitute: the substitute to add in the configuration file
 
     """
-    Config = ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(conffile)
     if not Config.has_section("substitute"):
         Config.add_section("substitute")
@@ -63,7 +63,7 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
     jidrelayserver: the new jid of the relayserver ( section global )
     baseurlguacamole: the url used for guacamole ( section type )
     """
-    Config = ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(conffile)
     domain = jid.JID(jidrelayserver).domain
     if not Config.has_option("configuration_server", "confdomain"):
@@ -126,7 +126,7 @@ def nextalternativeclusterconnectioninformation(conffile):
         logger.error("file alternatif conf missing %s" % conffile)
         return {}
 
-    Config = ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(conffile)
     alternatif_conf["nextserver"] = Config.getint("alternativelist", "nextserver")
     alternatif_conf["nbserver"] = Config.getint("alternativelist", "nbserver")
@@ -182,7 +182,7 @@ def nextalternativeclusterconnection(conffile):
     """
     if not os.path.isfile(conffile):
         return []
-    Config = ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(conffile)
     nextserver = Config.getint("alternativelist", "nextserver")
     nbserver = Config.getint("alternativelist", "nbserver")
@@ -258,7 +258,7 @@ def loadparameters(namefile, group, key):
         the Value defined by the group/key couple.
     """
 
-    Config = ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(namefile)
     value = ""
     if Config.has_option("group", "key"):
@@ -268,7 +268,7 @@ def loadparameters(namefile, group, key):
 
 class substitutelist:
     def __init__(self):
-        Config = ConfigParser()
+        Config = configparser.ConfigParser()
         namefileconfig = conffilename("machine")
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
@@ -331,7 +331,7 @@ class substitutelist:
 
 class confParameter:
     def __init__(self, typeconf="machine"):
-        Config = ConfigParser()
+        Config = configparser.ConfigParser()
         namefileconfig = conffilename(typeconf)
         if not os.path.isfile(namefileconfig):
             logger.error("The configuration file %s is missing" % namefileconfig)
@@ -1035,7 +1035,7 @@ class confParameter:
 
 
     def loadparametersplugins(self, namefile):
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(namefile)
         if os.path.isfile(namefile+".local"):
             Config.read(namefile+".local")
@@ -1218,7 +1218,7 @@ def setconfigfile(listdataconfiguration):
             and listdataconfiguration[3] != ""
             and listdataconfiguration[4] != ""
         ):
-            fileconf = ConfigParser()
+            fileconf = configparser.ConfigParser()
             fileconf.read(fileofconf)
             # test si section existe.
             if not listdataconfiguration[2] in fileconf.sections():
@@ -1236,7 +1236,7 @@ def setconfigfile(listdataconfiguration):
     elif listdataconfiguration[0].lower() == "del":
         if len(listdataconfiguration) < 4:
             return False
-        fileconf = ConfigParser()
+        fileconf = configparser.ConfigParser()
         fileconf.read(fileofconf)
         if listdataconfiguration[2] != "" and fileconf.has_section(
             listdataconfiguration[2]

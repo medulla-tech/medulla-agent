@@ -8,8 +8,8 @@ import os
 import platform
 import os.path
 import json
-from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile, simplecommand, send_data_tcp
-from configuration import setconfigfile
+from lib.utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile, simplecommand, send_data_tcp
+from lib.configuration import setconfigfile
 import traceback
 import logging
 import netifaces

@@ -48,7 +48,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
                         serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent, \
-                        offline_search_kb
+                        offline_search_kb, file_message_iq
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -803,7 +803,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 logger.warning("User already exists")
                 self.isaccount = False
                 return
-            miqkeys = iq.keys()
+            miqkeys = list(iq.keys())
             errortext = iq["error"]["text"]
             t = time.time()
             queue = ""
@@ -1924,7 +1924,7 @@ class MUCBot(slixmpp.ClientXMPP):
             # request the recv message
             recv_msg_from_kiosk = client_socket.recv(4096)
             if len(recv_msg_from_kiosk) != 0:
-                print 'Received {}'.format(recv_msg_from_kiosk)
+                print('Received {}'.format(recv_msg_from_kiosk))
                 datasend = {'action': "resultkiosk",
                             "sessionid": getRandomName(6, "kioskGrub"),
                             "ret": 0,
@@ -2374,14 +2374,14 @@ class MUCBot(slixmpp.ClientXMPP):
     def subscribe_initialisation(self):
         logger.info("subscribe_initialisation agent %s" % self.sub_subscribe)
         self.unsubscribe_agent()
-        if self.sub_subscribe not in self.client_roster.keys():
+        if self.sub_subscribe not in list(self.client_roster.keys()):
             logger.warning("Subscription [%s] is not yet in the roster %s" % (self.sub_subscribe,
-                                                               self.client_roster.keys()))
+                                                               list(self.client_roster.keys())))
         logger.info("%s roster is %s configured substitute is %s" % (self.config.agenttype,
-                                                               self.client_roster.keys(),
+                                                               list(self.client_roster.keys()),
                                                                self.sub_subscribe))
         self.xmpplog("%s roster is %s configured substitute is %s" % (self.config.agenttype,
-                                                                self.client_roster.keys(),
+                                                                list(self.client_roster.keys()),
                                                                 self.sub_subscribe),
                     type='info',
                     sessionname="",
@@ -3134,8 +3134,8 @@ class MUCBot(slixmpp.ClientXMPP):
             return
         
         try :
-            if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
-                if dataobj.has_key('base64') and \
+            if 'action' in dataobj and dataobj['action'] != "" and 'data' in dataobj:
+                if 'base64' in dataobj and \
                     ((isinstance(dataobj['base64'],bool) and dataobj['base64'] is True) or
                     (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
                     # data in base 64
@@ -3965,7 +3965,7 @@ def doTask(
                 logging.debug("Process agent list : %s" % processwin)
                 # list python process
                 lpidsearch = []
-                for k, v in dd.get_pid().iteritems():
+                for k, v in dd.get_pid().items():
                     if "python.exe" in v:
                         lpidsearch.append(int(k))
                 logging.debug("Process python list : %s" % lpidsearch)
@@ -4094,7 +4094,8 @@ class process_xmpp_agent:
                 attempt = False
             logging.log(DEBUGPULSE,"connecting to %s:%s" % (ipfromdns(tg.Server), tg.Port))
             time.sleep(5)
-            if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
+            # if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), auto_reconnect=attempt):
+            if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port)):
                 xmpp.process(block=True)
                 logging.log(DEBUGPULSE,"connected to %s:%s" % (ipfromdns(tg.Server), tg.Port))
                 time.sleep(2)
@@ -4191,16 +4192,72 @@ class process_agent_search():
         self.pidlist()
         return self.numprocess_pid()
 
+def terminateserver(xmpp):
+    #event for quit loop server tcpserver for kiosk
+    logging.log(DEBUGPULSE,"terminateserver")
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.qin.put("quit")
+    xmpp.queue_read_event_from_command.put("quit")
+
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.managerQueue.shutdown()
+    #termine server kiosk
+    xmpp.eventkiosk.quit()
+    xmpp.eventkilltcp.set()
+    xmpp.eventkillpipe.set()
+    if sys.platform.startswith('win'):
+        try:
+            # on debloque le pipe
+            fileHandle = win32file.CreateFile("\\\\.\\pipe\\interfacechang",
+                            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                            0, None,
+                            win32file.OPEN_EXISTING,
+                            0, None)
+            win32file.WriteFile(fileHandle, "terminate")
+            fileHandle.Close()
+        except Exception as e:
+            logger.error("\n%s"%(traceback.format_exc()))
+            pass
+    logging.log(DEBUGPULSE,"wait 2s end thread event loop")
+    logging.log(DEBUGPULSE,"terminate manage data sharing")
+    time.sleep(2)
+    logging.log(DEBUGPULSE,"terminate scheduler")
+    xmpp.scheduler.cancel()
+    logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
+    logging.log(DEBUGPULSE,"QUIT")
+    logging.log(DEBUGPULSE,"bye bye Agent")
+    if sys.platform.startswith('win'):
+        windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintree")
+        with open(windowfilepid) as json_data:
+            data_dict = json.load(json_data)
+        pythonmainproces = ""
+
+        for pidprocess in data_dict:
+            if "pythonmainproces" in data_dict[pidprocess]:
+                pythonmainproces = pidprocess
+        if pythonmainproces != "":
+            logging.log(DEBUGPULSE, "TERMINE process pid %s" % pythonmainproces )
+            pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "INFOSTMP",
+                                   "pidagent")
+            aa = file_get_contents(pidfile).strip()
+            logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa )
+            cmd="TASKKILL /F /PID %s /T" % pythonmainproces
+            # logging.log(DEBUGPULSE, "cmd %s" % cmd)
+            os.system(cmd)
+    os._exit(0)
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
         print("Agent must be running as root")
         sys.exit(0)
     elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
-        print "Medulla agent must be running as Administrator"
+        print("Medulla agent must be running as Administrator")
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        print "Medulla agent must be running as root"
+        print("Medulla agent must be running as root")
         sys.exit(0)
     optp = OptionParser()
     optp.add_option(
