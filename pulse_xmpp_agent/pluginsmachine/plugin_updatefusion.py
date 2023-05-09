@@ -29,11 +29,11 @@ import platform
 import tempfile
 import os
 
-FUSIONVERSION = '2.5.2'
+FUSIONVERSION = '2.6'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updatefusion", "TYPE": "machine"}
+plugin = {"VERSION": "1.4", "NAME": "updatefusion", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
