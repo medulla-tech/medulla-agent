@@ -267,7 +267,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             program = os.path.join(os.environ["ProgramFiles"],
                                    agent_path,
                                    agent_bin)
-            general_options = "--config=none --scan-profiles " \
+            general_options = ("--config=none --scan-profiles " \
                 "--backend-collect-timeout=%s" % timeoutfusion
             )
             location_option = '--local="%s"' % inventoryfile
