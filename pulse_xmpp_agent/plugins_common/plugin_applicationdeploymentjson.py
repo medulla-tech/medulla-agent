@@ -3051,7 +3051,7 @@ def check_hash(objectxmpp, data):
 def recuperefilecdn(datasend, objectxmpp, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
-        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
+        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0o777)
     
     uuidpackage = datasend['data']['path'].split('/')[-1]
     curlurlbase = datasend['data']['descriptor']['info']['hash_info']['url']
