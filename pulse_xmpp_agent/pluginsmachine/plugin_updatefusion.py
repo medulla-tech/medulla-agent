@@ -15,7 +15,7 @@ FUSIONVERSION = '2.6'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatefusion", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "updatefusion", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -30,7 +30,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if StrictVersion(installed_version) < StrictVersion(FUSIONVERSION):
                 updatefusion(xmppobject)
     except Exception as error_plugin:
-        logger.error("An error occured. The error code is %s" % str(e))
+        logger.error("An error occured. The error code is %s" % str(error_plugin))
         pass
 
 
