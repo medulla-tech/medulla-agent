@@ -84,7 +84,7 @@ def updatenotificationversion(version):
         if version == "0.1":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '\
                     '/v "DisplayName" /t REG_SZ  /d "Pulse notification" /f'
-	    utils.simplecommand(cmdDisplay)
+            utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '\
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
