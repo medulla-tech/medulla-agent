@@ -8,7 +8,8 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-NOTIFICATIONVERSION = '2.2.0'
+
+NOTIFICATIONVERSION = "2.2.0"
 
 logger = logging.getLogger()
 
@@ -17,7 +18,7 @@ plugin = {"VERSION": "1.0", "NAME": "updatenotification", "TYPE": "machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
     try:
         check_if_binary_ok()
@@ -29,8 +30,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     except Exception:
         pass
 
+
 def check_if_binary_ok():
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         regedit = False
         binary = False
         reinstall = False
@@ -38,69 +40,86 @@ def check_if_binary_ok():
         # We check if we have the Regedit entry
         cmd_reg = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" /s | Find "DisplayVersion"'
         result_reg = utils.simplecommand(cmd_reg)
-        if result_reg['code'] == 0:
+        if result_reg["code"] == 0:
             regedit = True
 
         # We check if the binary is available
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
-        filename = 'pulse2_update_notification.py'
+        filename = "pulse2_update_notification.py"
 
-        if os.path.isfile(os.path.join(pulsedir_path, filename)): 
+        if os.path.isfile(os.path.join(pulsedir_path, filename)):
             binary = True
 
-        if regedit is False or binary is False: 
+        if regedit is False or binary is False:
             reinstall = True
 
         if reinstall:
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '\
-                    '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+            cmd = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '
+                '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+            )
             result = utils.simplecommand(cmd)
-            if result['code'] == 0:
-                logger.debug("The Pulse Notification module is ready to be reinstalled.")
+            if result["code"] == 0:
+                logger.debug(
+                    "The Pulse Notification module is ready to be reinstalled."
+                )
             else:
                 logger.debug("We failed to reinitialize the registry entry.")
 
+
 def notificationversion():
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
-        if result['code'] == 0:
-            notificationversion = result['result'][0].strip().split()[-1]
+        if result["code"] == 0:
+            notificationversion = result["result"][0].strip().split()[-1]
         else:
             # Not installed. We will force installation by returning
             # version 0.1
-            notificationversion = '0.1'
+            notificationversion = "0.1"
     return notificationversion
 
+
 def updatenotificationversion(version):
-    if sys.platform.startswith('win'):
-        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '\
-                '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % NOTIFICATIONVERSION
+    if sys.platform.startswith("win"):
+        cmd = (
+            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '
+            '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % NOTIFICATIONVERSION
+        )
 
         result = utils.simplecommand(cmd)
-        if result['code'] == 0:
-            logger.info("we successfully updated Pulse notification to version %s" % NOTIFICATIONVERSION)
+        if result["code"] == 0:
+            logger.info(
+                "we successfully updated Pulse notification to version %s"
+                % NOTIFICATIONVERSION
+            )
 
         if version == "0.1":
-            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Pulse notification" /f'
+            cmdDisplay = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '
+                '/v "DisplayName" /t REG_SZ  /d "Pulse notification" /f'
+            )
             utils.simplecommand(cmdDisplay)
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            cmd = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            )
 
             utils.simplecommand(cmd)
 
+
 def updatenotification(xmppobject):
     logger.info("Updating Pulse Notification to version %s" % NOTIFICATIONVERSION)
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 
-        filename = 'pulse2_update_notification.py'
-        dl_url = 'http://%s/downloads/win/%s' % (
-            xmppobject.config.Server, filename)
+        filename = "pulse2_update_notification.py"
+        dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url, os.path.join(pulsedir_path, filename)).downloadurl()
+        result, txtmsg = utils.downloadfile(
+            dl_url, os.path.join(pulsedir_path, filename)
+        ).downloadurl()
         if result:
             logger.debug("%s" % txtmsg)
         else:

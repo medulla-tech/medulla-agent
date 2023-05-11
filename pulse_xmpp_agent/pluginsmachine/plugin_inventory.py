@@ -17,6 +17,7 @@ import defusedxml.ElementTree as ET
 import hashlib
 
 from lib import utils
+
 logger = logging.getLogger()
 if sys.platform.startswith("win"):
     from lib import registerwindows
@@ -37,11 +38,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     strjidagent = str(xmppobject.boundjid.bare)
     try:
         xmppobject.sub_inventory
-    except :
+    except:
         xmppobject.sub_inventory = jid.JID("master_inv@pulse")
     try:
         xmppobject.sub_updates
-    except :
+    except:
         xmppobject.sub_updates = jid.JID("master_upd@pulse")
     try:
         send_plugin_update_window(xmppobject)
@@ -91,8 +92,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
     agent = "fusioninventory"
 
-    if hasattr(xmppobject.config, 'agent'):
-        if xmppobject.config.agent == 'glpiagent':
+    if hasattr(xmppobject.config, "agent"):
+        if xmppobject.config.agent == "glpiagent":
             agent = xmppobject.config.agent
 
     resultaction = "result%s" % action
@@ -222,8 +223,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     raise Exception(str(e))
             else:
                 logger.warning("The inventory file %s does not exits" % inventoryfile)
-                logger.warning("If the Medulla agent just started, this error is normal")
-                logger.warning("But if it starts for a while please check that FusionInventory is correctly installed and working")
+                logger.warning(
+                    "If the Medulla agent just started, this error is normal"
+                )
+                logger.warning(
+                    "But if it starts for a while please check that FusionInventory is correctly installed and working"
+                )
         except Exception as e:
             dataerreur["data"]["msg"] = "Plugin inventory error %s : %s" % (
                 dataerreur["data"]["msg"],
@@ -257,17 +262,16 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 other_view_flag = winreg.KEY_WOW64_32KEY
             # Set the variables
 
-            if agent == 'glpiagent':
-                agent_bin = 'glpi-agent.bat'
-                agent_path = 'GLPI-Agent'
+            if agent == "glpiagent":
+                agent_bin = "glpi-agent.bat"
+                agent_path = "GLPI-Agent"
             else:
-                agent_bin = 'fusioninventory-agent.bat'
-                agent_path = 'FusionInventory-Agent'
+                agent_bin = "fusioninventory-agent.bat"
+                agent_path = "FusionInventory-Agent"
 
-            program = os.path.join(os.environ["ProgramFiles"],
-                                   agent_path,
-                                   agent_bin)
-            general_options = ("--config=none --scan-profiles " \
+            program = os.path.join(os.environ["ProgramFiles"], agent_path, agent_bin)
+            general_options = (
+                "--config=none --scan-profiles "
                 "--backend-collect-timeout=%s" % timeoutfusion
             )
             location_option = '--local="%s"' % inventoryfile
@@ -301,7 +305,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         )
 
             for nbcmd in range(3):
-
                 try:
                     if os.path.exists(namefilexml):
                         cmd = """\"%s\" %s %s """ """--additional-content=%s """ % (
@@ -863,19 +866,20 @@ def printer_string(
 
 
 def send_plugin_update_window(xmppobject):
+    sessioniddata = utils.getRandomName(6, "update_window")
+    try:
+        update_information = {
+            "action": "update_window",
+            "sessionid": sessioniddata,
+            "data": {"system_info": utils.offline_search_kb().get()},
+            "ret": 0,
+            "base64": False,
+        }
 
-        sessioniddata = utils.getRandomName(6, "update_window")
-        try:
-            update_information = {
-                "action": "update_window",
-                "sessionid": sessioniddata,
-                "data": { "system_info" : utils.offline_search_kb().get()},
-                "ret": 0,
-                "base64": False,
-            }
-
-            xmppobject.send_message( mto=xmppobject.sub_updates,
-                               mbody=json.dumps(update_information),
-                               mtype="chat")
-        except Exception as e:
-            logger.error("\n%s" % (traceback.format_exc()))
+        xmppobject.send_message(
+            mto=xmppobject.sub_updates,
+            mbody=json.dumps(update_information),
+            mtype="chat",
+        )
+    except Exception as e:
+        logger.error("\n%s" % (traceback.format_exc()))
