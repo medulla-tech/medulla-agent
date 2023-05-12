@@ -783,18 +783,44 @@ def refreshfingerprint():
         fp)
     return fp
 
-def simplecommandstr(cmd, emptyline=True):
-    obj = {}
-    p = subprocess.Popen(cmd,
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+def simplecommandstr(cmd):
+    obj = {"code": -1, "result": ""}
+    if isinstance(cmd, bytes):
+        cmd = decode_strconsole(cmd)
+    p = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
+    obj["code"] = p.wait()
     result = p.stdout.readlines()
-    obj['code'] = p.wait()
-    if not emptyline:
-        result=[x for x in result if x.strip()!="" ]
-    obj['result'] = "\n".join(result)
+    if sys.version_info[0] == 3:
+        result = [decode_strconsole(x) for x in result]
+    else:
+        result = [x for x in result]
+    obj["result"] = "".join(result)
     return obj
+
+def decode_strconsole(x):
+    """
+    Decode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The decoded `x` string
+    """
+
+    if sys.platform.startswith("linux"):
+        return x.decode("utf-8", "ignore")
+
+    if sys.platform.startswith("win"):
+        return x.decode("cp850", "ignore")
+
+    if sys.platform.startswith("darwin"):
+        return x.decode("utf-8", "ignore")
+
+    return x
 
 def simplecommand(cmd,  emptyline=True):
     obj = {}
