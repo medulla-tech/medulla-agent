@@ -697,6 +697,11 @@ def call_plugin(name, *args, **kwargs):
                 nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
                 logger.debug("Loading plugin %s" % args[1])
 
+                if not os.path.exists("%s.py" % nameplugin):
+                    logging.getLogger().error(
+                "The file plugin %s does not exit" % args[1])
+                    return
+
                 loop = aio.new_event_loop()
                 count = 0
                 try:
