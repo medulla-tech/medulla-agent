@@ -4,9 +4,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
-if sys.version_info[0] != 2:
-    sys.setdefaultencoding('utf8')
-
 import logging
 import platform
 import traceback
