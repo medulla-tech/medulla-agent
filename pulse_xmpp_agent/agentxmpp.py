@@ -2404,9 +2404,6 @@ class MUCBot(slixmpp.ClientXMPP):
     async def start(self, event):
         # send iq to subscribe
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
-        self.get_roster()
-        self.ipconnection = self.config.Server
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         self.__clean_message_box()
         if self.config.agenttype in ['relayserver']:
             try:
@@ -3281,6 +3278,7 @@ class MUCBot(slixmpp.ClientXMPP):
         er.messagejson["privatekeyname"] = self.RSA.get_name_key()[1]
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         for t in er.messagejson["listipinfo"]:
             # search network info used for xmpp
             if t["ipaddress"] == self.config.ipxmpp:
