@@ -348,9 +348,9 @@ def install_key(name_or_filepublickey, keybase64, typekey):
     try:
         if not keybase64:
             logger.error("[install_key] verifymsg keybase64  =(%s)" % keybase64)
-        keybase64 = install_key.tobytes(keybase64)
+        keybase64 = tobytes(keybase64)
 
-        name_or_filepublickey = install_key.tostr(name_or_filepublickey)
+        name_or_filepublickey = tostr(name_or_filepublickey)
         if name_or_filepublickey:
             dirname = os.path.dirname(name_or_filepublickey)
             if dirname:
