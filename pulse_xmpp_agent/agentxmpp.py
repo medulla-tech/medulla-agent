@@ -370,15 +370,19 @@ class MUCBot(slixmpp.ClientXMPP):
             else:
                 logger.error("The copy has failed")
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
+
         if self.config.updating != 1:
-            logging.warning("remote updating disable")
+            logging.warning("remote updating disabled")
+
+        if self.config.updatingplugins != 1:
+            logging.warning("remote plugins updating disabled")
+
         if (
             self.descriptorimage.get_fingerprint_agent_base()
             != self.Update_Remote_Agentlist.get_fingerprint_agent_base()
         ):
             self.agentupdating = True
             logging.warning("Agent installed is different from agent on master.")
-        # END Update agent from Master#############################
 
         if self.config.agenttype in ['machine']:
             # on appelle cette fonction toutes les 30 seconde

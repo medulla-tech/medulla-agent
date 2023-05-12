@@ -459,6 +459,11 @@ class confParameter:
         if Config.has_option("type", "moderelayserver"):
             self.moderelayserver = Config.get('type', 'moderelayserver')
 
+        if Config.has_option("updateagent", "updatingplugins"):
+            self.updatingplugins = Config.getboolean("updateagent", "updatingplugins")
+        else:
+            self.updatingplugins = 1
+
         if Config.has_option("updateagent", "updating"):
             self.updating = Config.getboolean("updateagent", "updating")
         else:
