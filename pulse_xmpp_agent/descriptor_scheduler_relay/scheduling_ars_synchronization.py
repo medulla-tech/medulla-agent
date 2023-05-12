@@ -36,9 +36,9 @@ def schedule_main(xmppobject):
     logger.info("=================================================\n")
     if xmppobject.config.agenttype in ["relayserver"]:
         try:
+            pkgsdata = pkgsbase(xmppobject)
             if xmppobject.num_call_scheduling_ars_synchronization == 0:
                 __read_conf_scheduling_ars_synchronization(xmppobject, pkgsdata)
-            pkgsdata = pkgsbase(xmppobject)
 
             lien_obj = lncreate(
                 xmppobject.config.list_folder_sources,
