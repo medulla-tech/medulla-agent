@@ -245,6 +245,9 @@ class MUCBot(slixmpp.ClientXMPP):
         self.back_to_deploy = {}
         self.config = conf
 
+        self.ipconnection = self.config.Server
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
         logger.debug("slixmpp log level is %s" % self.config.log_level_slixmpp)
