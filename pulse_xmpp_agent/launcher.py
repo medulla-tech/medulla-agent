@@ -19,6 +19,7 @@ from datetime import datetime
 import psutil
 
 import signal
+import configparser
 
 if sys.platform.startswith('win'):
     import win32con
@@ -981,7 +982,7 @@ def conffilename(agenttype):
 def testagentconf(typeconf):
     if typeconf == "relayserver":
         return True
-    Config = ConfigParser()
+    Config = configparser.ConfigParser()
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
     if Config.has_option("type", "guacamole_baseurl")\
@@ -1006,7 +1007,7 @@ def isTemplateConfFile(typeconf):
     """
     if typeconf == "relayserver":
         return True
-    Config = ConfigParser()
+    Config = configparser.ConfigParser()
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
     if Config.has_option("configuration_server", "confserver")\
