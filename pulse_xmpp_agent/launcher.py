@@ -18,14 +18,11 @@ import shutil
 from datetime import datetime
 import psutil
 
-import urllib2
 import signal
 
 if sys.platform.startswith('win'):
     import win32con
     import win32api
-
-from ConfigParser import ConfigParser
 
 logger = logging.getLogger()
 
@@ -819,7 +816,7 @@ def file_get_contents(filename,
                       offset=-1,
                       maxlen=-1):
     if filename.find('://') > 0:
-        ret = urllib2.urlopen(filename).read()
+        ret = urllib.request.urlopen(filename).read()
         if offset > 0:
             ret = ret[offset:]
         if maxlen > 0:
