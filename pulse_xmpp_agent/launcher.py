@@ -913,14 +913,14 @@ def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
         obj = simplecommandstr("ipconfig")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        md5network = hashlib.md5(obj['result'].encode('utf-8')).hexdigest()
     elif sys.platform.startswith('linux'):
         # voir pour remplacer par  ip address | grep inet | grep -v inet6
         obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        md5network = hashlib.md5(obj['result'].encode('utf-8')).hexdigest()
     elif sys.platform.startswith('darwin'):
         obj = simplecommandstr("ipconfig")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        md5network = hashlib.md5(obj['result'].encode('utf-8')).hexdigest()
     return md5network
 
 def networkinfoexist():
