@@ -2338,7 +2338,7 @@ class MUCBot(slixmpp.ClientXMPP):
         )
         self.get_roster()
 
-    def changed_status(self, presence):
+    async def changed_status(self, presence):
         """
         This function is a xmpp handler used to follow the signal
         from ejabberd when the state of an affiliated agent changes.
@@ -2394,7 +2394,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     fromuser=self.boundjid.bare,
                     touser="")
 
-    def start(self, event):
+    async def start(self, event):
         # send iq to subscribe
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         self.get_roster()
