@@ -10,7 +10,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.utils import file_put_contents, \
                       call_plugin
 import re
-import ConfigParser
+import configparser
 
 # this import will be used later
 # import types
@@ -228,7 +228,7 @@ def read_conf_log_agent(xmppobject):
         logger.warning("create default conf file %s" % pathfileconf)
         file_put_contents(pathfileconf, "[parameters]\nsimultaneous_processing = 50\n")
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(pathfileconf)
         logger.debug("Config file %s for plugin %s" % (pathfileconf,
                                                     plugin["NAME"]))
