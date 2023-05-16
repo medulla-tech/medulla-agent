@@ -187,7 +187,7 @@ class MUCBot(slixmpp.ClientXMPP):
         a savoir apres "CONNECTION FAILED"
         il faut reinitialiser address et port de connection.
         """
-        self.connect(address=self.address)
+        self.connect(address=self.address, force_starttls=None)
         self.process(forever=forever, timeout=timeout)
 
     def Mode_Marche_Arret_nb_reconnect(self, nb_reconnect):
