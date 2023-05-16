@@ -48,7 +48,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
                         serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent, \
-                        offline_search_kb, file_message_iq
+                        offline_search_kb, file_message_iq, call_plugin_sequentially
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -3378,9 +3378,7 @@ AGENT %s ERROR TERMINATE""" % (
             "countstart": save_count_start(),
             "keysyncthing": self.deviceid,
             "uuid_serial_machine": serialnumbermachine(),
-            "updatingplugin": self.config.updatingplugin,
             "updatingagent": self.config.updating,
-            'uuid_serial_machine' : serialnumbermachine(),
             "system_info" : offline_search_kb().get(),
         }
         try:
@@ -4091,24 +4089,20 @@ class process_xmpp_agent:
             )
             xmpp.register_plugin("xep_0077")  # In-band Registration
             xmpp["xep_0077"].force_registration = True
+            time.sleep(0.2)
+            if xmpp.config.agenttype in ["relayserver"]:
+                self.process_restartbot = (
+                    process_restartbot
+                ) = xmpp.Mode_Marche_Arret_loop(
+                    forever=False, timeout=2, type_machine="relayserver"
+                )
+            else:
+                self.process_restartbot = (
+                    process_restartbot
+                ) = xmpp.Mode_Marche_Arret_loop(
+                    forever=False, timeout=2, type_machine="machine"
+                )
 
-            # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-            if xmpp.config.agenttype in ['relayserver']:
-                attempt = True
-            else:
-                attempt = False
-            logging.log(DEBUGPULSE,"connecting to %s:%s" % (ipfromdns(tg.Server), tg.Port))
-            time.sleep(5)
-            # if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), auto_reconnect=attempt):
-            if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port)):
-                xmpp.process(block=True)
-                logging.log(DEBUGPULSE,"connected to %s:%s" % (ipfromdns(tg.Server), tg.Port))
-                time.sleep(2)
-            else:
-                logging.log(DEBUGPULSE,"Unable to connect to %s:%s" % (ipfromdns(tg.Server), tg.Port))
-                logging.log(DEBUGPULSE,"We are now searching for an alternative server")
-                setgetrestart(0)
-                time.sleep(2)
             if signalint:
                 logging.log(DEBUGPULSE,"CTRL-C have been called. We are closing the medulla agent.")
                 try:
@@ -4227,7 +4221,7 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"terminate manage data sharing")
     time.sleep(2)
     logging.log(DEBUGPULSE,"terminate scheduler")
-    xmpp.scheduler.cancel()
+    #xmpp.scheduler.cancel()
     logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
     logging.log(DEBUGPULSE,"QUIT")
     logging.log(DEBUGPULSE,"bye bye Agent")
