@@ -45,6 +45,9 @@ Unicode True
 !define CHERRYPY_NAME "@@CHERRYPY_NAME@@"
 !define CHERRYPY_VERSION "@@CHERRYPY_VERSION@@"
 !define PRODUCT_CHERRYPY_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${CHERRYPY_NAME}"
+!define CACERT_NAME "@@CACERT_NAME@@"
+!define CACERT_VERSION "@@CACERT_VERSION@@"
+!define PRODUCT_CACERT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${CACERT_NAME}"
 !define NETWORK_NAME "@@NETWORK_NAME@@"
 !define NETWORK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETWORK_NAME}"
 !define OPENSSH_NAME "@@OPENSSH_NAME@@"
@@ -57,6 +60,7 @@ Unicode True
 !define FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${FILETREE_NAME}"
 !define PAEXEC_NAME "@@PAEXEC_NAME@@"
 !define PAEXEC_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PAEXEC_NAME}"
+!define CACERTIFICATE "@@CACERTIFICATE@@"
 SetCompressor lzma
 
 ; Modern UI installer stuff
@@ -332,6 +336,38 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
+  ; Install of CA Certificate
+  ClearErrors
+  SetOutPath "$INSTDIR\tmp"
+  File "${CACERTIFICATE}"
+  StrCpy $0 `certutil -addstore root "$INSTDIR\tmp\${CACERTIFICATE}"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+    SectionIn RO
+  WriteUninstaller $INSTDIR\uninstall.exe
+  ; Add ourselves to Add/remove programs
+  ${If} ${RunningX64}
+      SetRegView 64
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "DisplayName" "${CACERT_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "DisplayVersion" "${CACERT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  ${Else}
+      SetRegView 32
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "DisplayName" "${CACERT_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "DisplayVersion" "${CACERT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  ${EndIf}
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error installing CA Certificate. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 138
+    Quit
+  ${EndIf}
+
   ; Create log folder to hold agent logs
   CreateDirectory $INSTDIR\var\log
 
@@ -486,6 +522,7 @@ Section "Uninstall"
   DeleteRegKey HKLM "${NETWORK_UNINST_KEY}"
   DeleteRegKey HKLM "${OPENSSH_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_CHERRYPY_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_CACERT_UNINST_KEY}"
   DeleteRegKey HKLM "${RDP_UNINST_KEY}"
   DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
