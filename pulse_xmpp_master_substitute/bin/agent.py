@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
-# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
-# SPDX-License-Identifier: GPL-2.0-or-later 
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 from slixmpp import jid
 import sys
@@ -453,20 +453,22 @@ class MUCBot(slixmpp.ClientXMPP):
             who = self.boundjid.bare
         if touser == "":
             touser = self.boundjid.bare
-        if 'xmpp' in self.config.plugins_list:
-            if sessionname.startswith('update'):
-                type="update"
-            XmppMasterDatabase().setlogxmpp(text,
-                                            type=type,
-                                            sessionname=sessionname,
-                                            priority=priority,
-                                            who=who,
-                                            how=how,
-                                            why=why,
-                                            module=module,
-                                            action='',
-                                            touser=touser,
-                                            fromuser= fromuser)
+        if "xmpp" in self.config.plugins_list:
+            if sessionname.startswith("update"):
+                type = "update"
+            XmppMasterDatabase().setlogxmpp(
+                text,
+                type=type,
+                sessionname=sessionname,
+                priority=priority,
+                who=who,
+                how=how,
+                why=why,
+                module=module,
+                action="",
+                touser=touser,
+                fromuser=fromuser,
+            )
         else:
             msgbody = {"action": "xmpplog", "sessionid": sessionname}
             msgbody["data"] = {
