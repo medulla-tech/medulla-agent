@@ -253,10 +253,7 @@ class base_folder:
             d = os.path.join(dst, item)
             if os.path.isdir(s):
                 self.copytree1(s, d, symlinks, ignore)
-            elif (
-                    not os.path.exists(d)
-                    or os.stat(s).st_mtime - os.stat(d).st_mtime > 1
-                ):
+            elif not os.path.exists(d) or os.stat(s).st_mtime - os.stat(d).st_mtime > 1:
                 shutil.copy2(s, d)
 
     def copytree(self, src, dst, symlinks=False, ignore=None):
@@ -1090,7 +1087,9 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
             )
             os.system(f"{pythonexec} {agentfunction}{modeagent} -t {typeagent}")
         else:
-            logger.debug(f"launcher for python {agentfunction}{modeagent} -t {typeagent}")
+            logger.debug(
+                f"launcher for python {agentfunction}{modeagent} -t {typeagent}"
+            )
             os.system(f"python {agentfunction}{modeagent} -t {typeagent}")
         logger.debug(
             "Refreshing fingerprint of configuration agent after its reconfiguration"

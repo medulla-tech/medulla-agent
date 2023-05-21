@@ -103,8 +103,12 @@ def alternativeclusterconnection(conffile, data):
             for arsdataconection in data:
                 configfile.write(f"[{str(arsdataconection[2])}]{os.linesep}")
                 configfile.write(f"port = {str(arsdataconection[1])}{os.linesep}")
-                configfile.write(f"server = {ipfromdns(str(arsdataconection[0]))}{os.linesep}")
-                configfile.write(f"guacamole_baseurl = {str(arsdataconection[3])}{os.linesep}")
+                configfile.write(
+                    f"server = {ipfromdns(str(arsdataconection[0]))}{os.linesep}"
+                )
+                configfile.write(
+                    f"guacamole_baseurl = {str(arsdataconection[3])}{os.linesep}"
+                )
         elif os.path.isfile(conffile):
             os.unlink(conffile)
 
@@ -122,9 +126,7 @@ def nextalternativeclusterconnectioninformation(conffile):
 
     Config = configparser.ConfigParser()
     Config.read(conffile)
-    alternatif_conf = {
-        "nextserver": Config.getint("alternativelist", "nextserver")
-    }
+    alternatif_conf = {"nextserver": Config.getint("alternativelist", "nextserver")}
     alternatif_conf["nbserver"] = Config.getint("alternativelist", "nbserver")
     alternatif_conf["listars"] = [
         x.strip()
@@ -151,7 +153,9 @@ def nextalternativeclusterconnectioninformation(conffile):
             and Config.has_option(ars, "server")
             and Config.has_option(ars, "guacamole_baseurl")
         ):
-            logger.error(f"format alternatif file {conffile} : section {ars} farmat error")
+            logger.error(
+                f"format alternatif file {conffile} : section {ars} farmat error"
+            )
             return {}
         else:
             alternatif_conf[ars] = {}

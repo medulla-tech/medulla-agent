@@ -97,12 +97,16 @@ def processstepcommand(command, queue_out_session, messagestr, timeout, step):
                 elif t.endswith("lastlines"):
                     nb = t.split("@")
                     nb1 = -int(nb[0])
-                    logging.getLogger().debug(f"=======lastlines============{nb1}========")
+                    logging.getLogger().debug(
+                        f"=======lastlines============{nb1}========"
+                    )
                     workingstep[t] = os.linesep.join(result)
                 elif t.endswith("firstlines"):
                     nb = t.split("@")
                     nb1 = int(nb[0])
-                    logging.getLogger().debug(f"=======firstlines============{nb1}=======")
+                    logging.getLogger().debug(
+                        f"=======firstlines============{nb1}======="
+                    )
                     workingstep[t] = os.linesep.join(result)
             if "goto" in workingstep:
                 message["data"]["stepcurrent"] = workingstep["goto"]
@@ -213,13 +217,17 @@ class process_on_end_send_message_xmpp:
                     elif t.endswith("lastlines"):
                         nb = t.split("@")
                         nb1 = -int(nb[0])
-                        logging.getLogger().debug(f"=======lastlines============{nb1}========")
+                        logging.getLogger().debug(
+                            f"=======lastlines============{nb1}========"
+                        )
                         tab = result[nb1:]
                         workingstep[t] = os.linesep.join(tab)
                     elif t.endswith("firstlines"):
                         nb = t.split("@")
                         nb1 = int(nb[0])
-                        logging.getLogger().debug(f"=======firstlines============{nb1}=======")
+                        logging.getLogger().debug(
+                            f"=======firstlines============{nb1}======="
+                        )
                         tab = result[:nb1]
                         workingstep[t] = os.linesep.join(tab)
                 if "goto" in workingstep:
@@ -231,7 +239,9 @@ class process_on_end_send_message_xmpp:
                 else:
                     message["data"]["stepcurrent"] = message["data"]["stepcurrent"] + 1
 
-                logging.getLogger().debug(f'Next Step : {message["data"]["stepcurrent"]}')
+                logging.getLogger().debug(
+                    f'Next Step : {message["data"]["stepcurrent"]}'
+                )
                 msgoutsucces = {"eventMessageraw": message}
 
                 msgoutsucces["eventMessageraw"]["data"]["codeerror"] = cmd.code_error

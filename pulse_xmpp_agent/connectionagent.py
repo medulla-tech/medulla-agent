@@ -121,9 +121,9 @@ class MUCBot(ClientXMPP):
         if not hasattr(self.config, "sub_assessor"):
             self.sub_assessor = self.agentmaster
         elif (
-                isinstance(self.config.sub_assessor, list)
-                and len(self.config.sub_assessor) > 0
-            ):
+            isinstance(self.config.sub_assessor, list)
+            and len(self.config.sub_assessor) > 0
+        ):
             self.sub_assessor = jid.JID(self.config.sub_assessor[0])
         else:
             self.sub_assessor = jid.JID(self.config.sub_assessor)
@@ -207,7 +207,9 @@ class MUCBot(ClientXMPP):
                 logger.debug(f"device local syncthing : [{self.deviceid}]")
 
             except KeyError as keyerror:
-                logging.error(f"The {keyerror} key is missing in your syncthing config file")
+                logging.error(
+                    f"The {keyerror} key is missing in your syncthing config file"
+                )
                 confsyncthing = {
                     "action": "resultconfsyncthing",
                     "sessionid": getRandomName(6, "confsyncthing"),
@@ -303,9 +305,8 @@ class MUCBot(ClientXMPP):
         if not hasattr(self.config, "sub_logger"):
             self.sub_logger = self.agentmaster
         elif (
-                isinstance(self.config.sub_logger, list)
-                and len(self.config.sub_logger) > 0
-            ):
+            isinstance(self.config.sub_logger, list) and len(self.config.sub_logger) > 0
+        ):
             self.sub_logger = jid.JID(self.config.sub_logger[0])
         else:
             self.sub_logger = jid.JID(self.config.sub_logger)

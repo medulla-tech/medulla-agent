@@ -282,9 +282,9 @@ class networkagentinfo:
                     partinfo = {
                         "dhcpserver": "",
                         "dhcp": "False",
-                        "macaddress": netifaces.ifaddresses(i)[netifaces.AF_LINK][
-                            0
-                        ]["addr"],
+                        "macaddress": netifaces.ifaddresses(i)[netifaces.AF_LINK][0][
+                            "addr"
+                        ],
                     }
                     for line in result:
                         line = line.rstrip("\n")

@@ -91,7 +91,7 @@ def schedule_main(objectxmpp):
                         f"{objectxmpp.config.logfile}.1.zip",
                         zipfile.ZIP_DEFLATED,
                     )
-                            # shutil.copyfile(objectxmpp.config.logfile, objectxmpp.config.logfile + '.1')
+                    # shutil.copyfile(objectxmpp.config.logfile, objectxmpp.config.logfile + '.1')
             except BaseException:
                 pass
         elif objectxmpp.compress in ["gzip", "gz"]:  # decompress to stdout zcat
@@ -99,7 +99,10 @@ def schedule_main(objectxmpp):
                 logger.debug(
                     f"copy file log {objectxmpp.config.logfile} to {objectxmpp.config.logfile}.1.gz"
                 )
-                with (open(objectxmpp.config.logfile, "rb") as f_in, gzip.open(f"{objectxmpp.config.logfile}.1.gz", "wb") as f_out):
+                with (
+                    open(objectxmpp.config.logfile, "rb") as f_in,
+                    gzip.open(f"{objectxmpp.config.logfile}.1.gz", "wb") as f_out,
+                ):
                     shutil.copyfileobj(f_in, f_out)
             except BaseException:
                 pass
@@ -108,7 +111,10 @@ def schedule_main(objectxmpp):
                 logger.debug(
                     f"copy file log {objectxmpp.config.logfile} to {objectxmpp.config.logfile}.1.bz2"
                 )
-                with (open(objectxmpp.config.logfile, "rb") as f_in, open(f"{objectxmpp.config.logfile}.1.bz2", "wb") as f_out):
+                with (
+                    open(objectxmpp.config.logfile, "rb") as f_in,
+                    open(f"{objectxmpp.config.logfile}.1.bz2", "wb") as f_out,
+                ):
                     f_out.write(bz2.compress(f_in.read(), 9))
             except BaseException:
                 pass
@@ -117,7 +123,9 @@ def schedule_main(objectxmpp):
                 logger.debug(
                     f"copy file log {objectxmpp.config.logfile} to {objectxmpp.config.logfile}.1"
                 )
-                shutil.copyfile(objectxmpp.config.logfile, f"{objectxmpp.config.logfile}.1")
+                shutil.copyfile(
+                    objectxmpp.config.logfile, f"{objectxmpp.config.logfile}.1"
+                )
             except BaseException:
                 pass
         open(objectxmpp.config.logfile, "w").close()  # Truncate the log file

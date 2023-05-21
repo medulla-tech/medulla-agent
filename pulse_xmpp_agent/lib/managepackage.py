@@ -131,7 +131,9 @@ class managepackage:
     def getdescriptorpackagename(packagename):
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error(f'The {os.path.join(package, "xmppdeploy.json")} file is missing')
+                logger.error(
+                    f'The {os.path.join(package, "xmppdeploy.json")} file is missing'
+                )
                 return None
 
             try:
@@ -171,7 +173,9 @@ class managepackage:
         """
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error(f'The {os.path.join(package, "xmppdeploy.json")} file is missing')
+                logger.error(
+                    f'The {os.path.join(package, "xmppdeploy.json")} file is missing'
+                )
                 return None
 
             try:
@@ -209,7 +213,9 @@ class managepackage:
         """
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error(f'The {os.path.join(package, "xmppdeploy.json")} file is missing')
+                logger.error(
+                    f'The {os.path.join(package, "xmppdeploy.json")} file is missing'
+                )
                 return None
 
             try:
@@ -247,7 +253,9 @@ class managepackage:
         """
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error(f'The {os.path.join(package, "xmppdeploy.json")} file is missing')
+                logger.error(
+                    f'The {os.path.join(package, "xmppdeploy.json")} file is missing'
+                )
                 return None
 
             try:
@@ -275,7 +283,9 @@ class managepackage:
         """
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error(f'The {os.path.join(package, "xmppdeploy.json")} file is missing')
+                logger.error(
+                    f'The {os.path.join(package, "xmppdeploy.json")} file is missing'
+                )
                 return None
 
             if not os.path.isfile(os.path.join(package, "conf.json")):

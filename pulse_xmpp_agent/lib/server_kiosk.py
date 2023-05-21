@@ -115,7 +115,9 @@ class process_serverPipe:
                             self.logger.debug(f"_____________{data[1]}")
                             self.queue_recv_tcp_to_xmpp.put(data[1])
                         except Exception as e:
-                            self.logger.warning(f"read input from Pipe nammed error {str(e)}")
+                            self.logger.warning(
+                                f"read input from Pipe nammed error {str(e)}"
+                            )
 
 
 class process_tcp_serveur:
@@ -458,7 +460,9 @@ class manage_kiosk_message:
                 if result["action"] == "kioskinterface":
                     # start kiosk ask initialization
                     datasend["data"]["subaction"] = result["subaction"]
-                    datasend["data"]["userlist"] = list({users[0] for users in psutil.users()})
+                    datasend["data"]["userlist"] = list(
+                        {users[0] for users in psutil.users()}
+                    )
                     datasend["data"]["ouuser"] = organizationbyuser(
                         datasend["data"]["userlist"]
                     )
