@@ -257,7 +257,9 @@ class networkagentinfo:
             try:
                 if_mac = addrs[netifaces.AF_LINK][0]["addr"]
                 if_ip = addrs[netifaces.AF_INET][0]["addr"]
-            except BaseException:  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
+            except (
+                BaseException
+            ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
                 if_mac = if_ip = None
             if if_ip == ip:
                 return if_mac
@@ -317,7 +319,9 @@ class networkagentinfo:
                             self.messagejson["listipinfo"].append(partinfo)
                     except BaseException:
                         pass
-            except BaseException:  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
+            except (
+                BaseException
+            ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
                 pass
         return self.messagejson
 
@@ -550,7 +554,9 @@ def isInterfaceToMacadress(interface, mac):
     addrs = netifaces.ifaddresses(interface)
     try:
         if_mac = addrs[netifaces.AF_LINK][0]["addr"]
-    except BaseException:  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
+    except (
+        BaseException
+    ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
         return False
     if if_mac == mac:
         return True
@@ -561,7 +567,9 @@ def isInterfaceToIpadress(interface, ip):
     addrs = netifaces.ifaddresses(interface)
     try:
         if_ip = addrs[netifaces.AF_INET][0]["addr"]
-    except BaseException:  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
+    except (
+        BaseException
+    ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
         return False
     if if_ip == ip:
         return True

@@ -7,8 +7,10 @@ import json
 import os
 import logging
 from lib.utils import ipfromdns, AESCipher, subnetnetwork
+
 try:
     from lib.localisation import Point
+
     errorlocalisation = False
 except ModuleNotFoundError:
     errorlocalisation = True
@@ -22,6 +24,7 @@ import netaddr
 
 try:
     from lib.stat import statcallplugin
+
     statfuncton = True
 except BaseException:
     statfuncton = False
@@ -33,7 +36,7 @@ DEBUGPULSEPLUGIN = 25
 # kb for window
 # connectionconf et le nom du plugin appeler.
 
-plugin = {"VERSION": "1.0","NAME": "updatemachinesystem","TYPE": "substitute","FEATURE":"update_remote_machine",}# fmt: skip
+plugin = {"VERSION": "1.0","NAME": "updatemachinesystem","TYPE": "substitute","FEATURE":"update_remote_machine",}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
@@ -56,9 +59,11 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         logger.error("\n%s" % (traceback.format_exc()))
 
 
-
 def msg_log(msg_header, hostname, user, result, objectxmpp, data):
-    if data["machine"].split(".")[0] in objectxmpp.updatemachinesystem_agent_showinfomachine:
+    if (
+        data["machine"].split(".")[0]
+        in objectxmpp.updatemachinesystem_agent_showinfomachine
+    ):
         logger.info(
             "%s Rule selects "
             "the relay server for machine "
@@ -82,7 +87,7 @@ def read_conf_updatemachinesystem(objectxmpp):
             % (plugin["NAME"], objectxmpp.pathfileconf)
         )
         # creation fichier de configuration empty
-        open(objectxmpp.pathfileconf, 'a').close()
+        open(objectxmpp.pathfileconf, "a").close()
         message_config(plugin["NAME"], objectxmpp.pathfileconf)
         if statfuncton:
             objectxmpp.stat_updatemachinesystem.display_param_config(msg="DEFAULT")
@@ -100,10 +105,8 @@ def read_conf_updatemachinesystem(objectxmpp):
 
 
 def message_config(nameplugin, pathfileconf):
-    msg = (
-        """=========configuration updatemachinesystem plugin master==========="
+    msg = """=========configuration updatemachinesystem plugin master==========="
         check MASTER updatemachinesystem plugin config file
         The following parameters must be defined:
        """
-    )
     logger.error("%s" % msg)

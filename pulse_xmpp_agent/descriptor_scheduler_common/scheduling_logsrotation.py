@@ -169,4 +169,3 @@ def read_config_plugin_agent(objectxmpp):
         objectxmpp.trigger_size = Config.getint("rotation_file", "trigger_size")
     except BaseException:
         objectxmpp.trigger_size = 1048576
-

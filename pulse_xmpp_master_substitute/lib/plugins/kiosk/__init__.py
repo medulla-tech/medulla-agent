@@ -1,6 +1,6 @@
 # -*- coding: utf-8; -*-
-# SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net> 
-# SPDX-License-Identifier: GPL-2.0-or-later 
+# SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 """
 kiosk database handler
@@ -324,7 +324,6 @@ class KioskDatabase(DatabaseHelper):
         if len(packages) > 0:
             for status in list(packages.keys()):
                 for uuid in packages[status]:
-
                     # get the package id and link it with the profile
                     result = session.query(Packages.id).filter(
                         Packages.package_uuid == uuid
@@ -610,7 +609,6 @@ class KioskDatabase(DatabaseHelper):
         if len(packages) > 0:
             for status in list(packages.keys()):
                 for uuid in packages[status]:
-
                     # get the package id and link it with the profile
                     result = session.query(Packages.id).filter(
                         Packages.package_uuid == uuid

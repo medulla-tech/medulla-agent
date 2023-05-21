@@ -20,7 +20,7 @@ class manage_infoconsole:
             name=self.namethread, target=self.loopinfoconsol
         )
         self.threadevent.start()
-        logging.debug('manage event start')
+        logging.debug("manage event start")
 
     def loopinfoconsol(self):
         while True:

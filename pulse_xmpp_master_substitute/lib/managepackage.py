@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
@@ -71,7 +71,9 @@ class managepackage:
     def getdescriptorpackagename(packagename):
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
             try:
                 outputJSONFile = managepackage.loadjsonfile(
@@ -110,7 +112,9 @@ class managepackage:
         """
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
             try:
                 outputJSONFile = managepackage.loadjsonfile(
@@ -147,7 +151,9 @@ class managepackage:
         """
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
             try:
                 outputJSONFile = managepackage.loadjsonfile(
@@ -184,7 +190,9 @@ class managepackage:
         """
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
             try:
                 outputJSONFile = managepackage.loadjsonfile(
@@ -211,7 +219,9 @@ class managepackage:
         """
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
             try:
                 outputJSONFile = managepackage.loadjsonfile(
@@ -240,7 +250,7 @@ class managepackage:
         )
         if os.path.isfile(pathpackage):
             outputJSONFile = managepackage.loadjsonfile(pathpackage)
-            return outputJSONFile['info']['name']
+            return outputJSONFile["info"]["name"]
         else:
             logger.error("The %s file is missing" % pathpackage)
         return None

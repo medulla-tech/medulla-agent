@@ -26,9 +26,14 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {"VERSION": "5.30", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {
+    "VERSION": "5.30",
+    "NAME": "applicationdeploymentjson",
+    "VERSIONAGENT": "2.0.0",
+    "TYPE": "all",
+}
 
-Globaldata = {'port_local': 22}
+Globaldata = {"port_local": 22}
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 """
@@ -103,7 +108,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     initialisesequence(datasend, objectxmpp, sessionid)
                     return
             elif data["actionscheduler"] == "pause":
-
                 return
             elif data["actionscheduler"] == "abandonmentdeploy":
                 objectxmpp.xmpplog(
@@ -138,31 +142,35 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             else:
-                #supprime cet input
-                objectxmpp.xmpplog('<span class="log_err">Package delayed execution error</span>',
-                                   type='deploy',
-                                   sessionname=sessionid,
-                                   priority=-1,
-                                   action="xmpplog",
-                                   who=strjidagent,
-                                   how="",
-                                   why="",
-                                   module="Deployment | Error | Notify",
-                                   date=None,
-                                   fromuser="AM %s" % strjidagent,
-                                   touser="")
-                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
-                                   type='deploy',
-                                   sessionname=sessionid,
-                                   priority=-1,
-                                   action="xmpplog",
-                                   who=strjidagent,
-                                   how="",
-                                   why="",
-                                   module="Deployment | Terminate | Notify",
-                                   date=None,
-                                   fromuser="AM %s" % strjidagent,
-                                   touser="")
+                # supprime cet input
+                objectxmpp.xmpplog(
+                    '<span class="log_err">Package delayed execution error</span>',
+                    type="deploy",
+                    sessionname=sessionid,
+                    priority=-1,
+                    action="xmpplog",
+                    who=strjidagent,
+                    how="",
+                    why="",
+                    module="Deployment | Error | Notify",
+                    date=None,
+                    fromuser="AM %s" % strjidagent,
+                    touser="",
+                )
+                objectxmpp.xmpplog(
+                    "DEPLOYMENT TERMINATE",
+                    type="deploy",
+                    sessionname=sessionid,
+                    priority=-1,
+                    action="xmpplog",
+                    who=strjidagent,
+                    how="",
+                    why="",
+                    module="Deployment | Terminate | Notify",
+                    date=None,
+                    fromuser="AM %s" % strjidagent,
+                    touser="",
+                )
                 objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             return
@@ -731,17 +739,26 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 managepackage.managepackage.packagedir(), data["path"].split("/")[-1]
             )
             # le transfert pull direct ou pullcurl doit etre traite ici
-            if data['transfert'] and \
-                data['methodetransfert'] in ["pullcurl", "pulldirect"]:
-                #pull method download file
-                if data['methodetransfert'] in ["pullcurl"]:
-                    if ('hash_info' in data['descriptor']['info'] and data['descriptor']['info']['hash_info']['url'] != ""):
-                        logger.info("----------------------------------------------------")
-                        logger.info("---------------Download file with CDN---------------")
-                        logger.info("----------------------------------------------------")
-                        recupfile = recuperefilecdn(datasend,
-                                                    objectxmpp,
-                                                    sessionid)
+            if data["transfert"] and data["methodetransfert"] in [
+                "pullcurl",
+                "pulldirect",
+            ]:
+                # pull method download file
+                if data["methodetransfert"] in ["pullcurl"]:
+                    if (
+                        "hash_info" in data["descriptor"]["info"]
+                        and data["descriptor"]["info"]["hash_info"]["url"] != ""
+                    ):
+                        logger.info(
+                            "----------------------------------------------------"
+                        )
+                        logger.info(
+                            "---------------Download file with CDN---------------"
+                        )
+                        logger.info(
+                            "----------------------------------------------------"
+                        )
+                        recupfile = recuperefilecdn(datasend, objectxmpp, sessionid)
                     else:
                         recupfile = recuperefile(
                             datasend,
@@ -871,31 +888,34 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         namefolder = None
         msgdeploy = []
 
-
-        if hasattr(objectxmpp.config, 'cdn_enable') and bool(objectxmpp.config.cdn_enable):
-            data['methodetransfert'] = 'pullcurl'
-            data['descriptor']['info']['methodetransfert'] = 'pullcurl'
+        if hasattr(objectxmpp.config, "cdn_enable") and bool(
+            objectxmpp.config.cdn_enable
+        ):
+            data["methodetransfert"] = "pullcurl"
+            data["descriptor"]["info"]["methodetransfert"] = "pullcurl"
             url = objectxmpp.config.cdn_baseurl
             if url[-1] != "/":
                 url = url + "/"
 
             token = objectxmpp.config.cdn_token
-            data['descriptor']['info']['hash_info'] = {}
-            data['descriptor']['info']['hash_info']['url'] = url
-            data['descriptor']['info']['hash_info']['token'] = token
-            
-            objectxmpp.xmpplog('Transfer Method is %s' % data['methodetransfert'],
-                                       type='deploy',
-                                       sessionname=sessionid,
-                                       priority=-1,
-                                       action="xmpplog",
-                                       who=strjidagent,
-                                       how="",
-                                       why="",
-                                       module="Deployment | Transfer | Notify",
-                                       date=None,
-                                       fromuser=data['login'],
-                                       touser="")
+            data["descriptor"]["info"]["hash_info"] = {}
+            data["descriptor"]["info"]["hash_info"]["url"] = url
+            data["descriptor"]["info"]["hash_info"]["token"] = token
+
+            objectxmpp.xmpplog(
+                "Transfer Method is %s" % data["methodetransfert"],
+                type="deploy",
+                sessionname=sessionid,
+                priority=-1,
+                action="xmpplog",
+                who=strjidagent,
+                how="",
+                why="",
+                module="Deployment | Transfer | Notify",
+                date=None,
+                fromuser=data["login"],
+                touser="",
+            )
 
         if "descriptor" in data and "advanced" not in data:
             logger.debug("DEPLOYMENT ABORTED: ADVANCED DESCRIPTOR MISSING")
@@ -2452,7 +2472,6 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
 
 
 def cleandescriptor(datasend):
-
     if sys.platform.startswith("linux"):
         try:
             del datasend["descriptor"]["win"]
@@ -2960,17 +2979,24 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
                     )
                 else:
                     limit_rate_ko = ""
-                    msg = 'Downloading file : %s Package : %s' % (filepackage, datasend['data']['name'])
-                objectxmpp.xmpplog(msg,
-                                   type='deploy',
-                                   sessionname=datasend['sessionid'],
-                                   priority=-1,
-                                   action="xmpplog",
-                                   who=strjidagent,
-                                   module="Deployment | Download | Transfer",
-                                   date=None,
-                                   fromuser=datasend['data']['advanced']['login'])
-                curlgetdownloadfile(dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko)
+                    msg = "Downloading file : %s Package : %s" % (
+                        filepackage,
+                        datasend["data"]["name"],
+                    )
+                objectxmpp.xmpplog(
+                    msg,
+                    type="deploy",
+                    sessionname=datasend["sessionid"],
+                    priority=-1,
+                    action="xmpplog",
+                    who=strjidagent,
+                    module="Deployment | Download | Transfer",
+                    date=None,
+                    fromuser=datasend["data"]["advanced"]["login"],
+                )
+                curlgetdownloadfile(
+                    dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko
+                )
                 changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
@@ -3007,8 +3033,10 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 
 
 def check_hash(objectxmpp, data):
-    hash_type = data['hash']['type']
-    dest = os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", data['name'])
+    hash_type = data["hash"]["type"]
+    dest = os.path.join(
+        os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", data["name"]
+    )
     dest += "\\"
     concat_hash = ""
 
@@ -3022,7 +3050,7 @@ def check_hash(objectxmpp, data):
     except:
         logger.error("Wrong hash type")
 
-    for file_package in sorted(data['packagefile']):
+    for file_package in sorted(data["packagefile"]):
         with open(os.path.join(dest, file_package), "rb") as _file:
             try:
                 file_hash = hashlib.new(hash_type)
@@ -3050,34 +3078,68 @@ def check_hash(objectxmpp, data):
 
 def recuperefilecdn(datasend, objectxmpp, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
-    if not os.path.isdir(datasend['data']['pathpackageonmachine']):
-        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0o777)
-    
-    uuidpackage = datasend['data']['path'].split('/')[-1]
-    curlurlbase = datasend['data']['descriptor']['info']['hash_info']['url']
-    takeresource(datasend, objectxmpp, sessionid)
-    objectxmpp.xmpplog("Package server is %s" % curlurlbase,
-                       type='deploy',
-                       sessionname=datasend['sessionid'],
-                       priority=-1,
-                       action="xmpplog",
-                       who=strjidagent,
-                       module="Deployment | Download | Transfer",
-                       date=None,
-                       fromuser=datasend['data']['advanced']['login'])
+    if not os.path.isdir(datasend["data"]["pathpackageonmachine"]):
+        os.makedirs(datasend["data"]["pathpackageonmachine"], mode=0o777)
 
-    for filepackage in datasend['data']['packagefile']:
-        if datasend['data']['methodetransfert'] == "pullcurl":
-            dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
-            
-            if ('localisation_server' in datasend['data']['descriptor']['info'] and datasend['data']['descriptor']['info']['localisation_server'] != ""):
-                urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['localisation_server']) + "/" + str(datasend['data']['name']) + "/" + str(filepackage)
-            elif ('previous_localisation_server' in datasend['data']['descriptor']['info'] and datasend['data']['descriptor']['info']['previous_localisation_server'] != ""):
-                urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['previous_localisation_server']) + "/" + str(datasend['data']['name']) + "/" + str(filepackage)
-                
+    uuidpackage = datasend["data"]["path"].split("/")[-1]
+    curlurlbase = datasend["data"]["descriptor"]["info"]["hash_info"]["url"]
+    takeresource(datasend, objectxmpp, sessionid)
+    objectxmpp.xmpplog(
+        "Package server is %s" % curlurlbase,
+        type="deploy",
+        sessionname=datasend["sessionid"],
+        priority=-1,
+        action="xmpplog",
+        who=strjidagent,
+        module="Deployment | Download | Transfer",
+        date=None,
+        fromuser=datasend["data"]["advanced"]["login"],
+    )
+
+    for filepackage in datasend["data"]["packagefile"]:
+        if datasend["data"]["methodetransfert"] == "pullcurl":
+            dest = os.path.join(datasend["data"]["pathpackageonmachine"], filepackage)
+
+            if (
+                "localisation_server" in datasend["data"]["descriptor"]["info"]
+                and datasend["data"]["descriptor"]["info"]["localisation_server"] != ""
+            ):
+                urlfile = (
+                    str(curlurlbase)
+                    + str(datasend["data"]["descriptor"]["info"]["localisation_server"])
+                    + "/"
+                    + str(datasend["data"]["name"])
+                    + "/"
+                    + str(filepackage)
+                )
+            elif (
+                "previous_localisation_server" in datasend["data"]["descriptor"]["info"]
+                and datasend["data"]["descriptor"]["info"][
+                    "previous_localisation_server"
+                ]
+                != ""
+            ):
+                urlfile = (
+                    str(curlurlbase)
+                    + str(
+                        datasend["data"]["descriptor"]["info"][
+                            "previous_localisation_server"
+                        ]
+                    )
+                    + "/"
+                    + str(datasend["data"]["name"])
+                    + "/"
+                    + str(filepackage)
+                )
+
             urlobject = urlparse(urlfile)
-            urlfile = urlobject.scheme + '://' + urllib.quote(urlobject.netloc) + urllib.quote(urlobject.path)
-            token = datasend['data']['descriptor']['info']['hash_info']['token']
+            urlfile = (
+                urlobject.scheme
+                + "://"
+                + urllib.quote(urlobject.netloc)
+                + urllib.quote(urlobject.path)
+            )
+            token = datasend["data"]["descriptor"]["info"]["hash_info"]["token"]
             logger.info("###################################################")
             logger.info("URL for downloading package using curl : " + urlfile)
             logger.info("###################################################")
@@ -3101,59 +3163,80 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                     )
                 else:
                     limit_rate_ko = ""
-                    msg = 'Downloading file : %s Package : %s' % (filepackage, datasend['data']['name'])
-                objectxmpp.xmpplog(msg,
-                                   type='deploy',
-                                   sessionname=datasend['sessionid'],
-                                   priority=-1,
-                                   action="xmpplog",
-                                   who=strjidagent,
-                                   module="Deployment | Download | Transfer",
-                                   date=None,
-                                   fromuser=datasend['data']['advanced']['login'])
+                    msg = "Downloading file : %s Package : %s" % (
+                        filepackage,
+                        datasend["data"]["name"],
+                    )
+                objectxmpp.xmpplog(
+                    msg,
+                    type="deploy",
+                    sessionname=datasend["sessionid"],
+                    priority=-1,
+                    action="xmpplog",
+                    who=strjidagent,
+                    module="Deployment | Download | Transfer",
+                    date=None,
+                    fromuser=datasend["data"]["advanced"]["login"],
+                )
 
                 if token is not None:
                     headers = "X-Authorization: " + str(token)
                 else:
                     headers = ""
                 if limit_rate_ko == 0 or limit_rate_ko == "":
-                    cmd = """curl -k -H \"%s\" %s -o \"%s\" """ % (headers, urlfile, dest)
+                    cmd = """curl -k -H \"%s\" %s -o \"%s\" """ % (
+                        headers,
+                        urlfile,
+                        dest,
+                    )
                 else:
-                    cmd = """curl --limit-rate %s -k -H \"%s\" %s -o \"%s\" """ % (limit_rate_ko, headers, urlfile, dest)
+                    cmd = """curl --limit-rate %s -k -H \"%s\" %s -o \"%s\" """ % (
+                        limit_rate_ko,
+                        headers,
+                        urlfile,
+                        dest,
+                    )
                 obj = utils.simplecommand(cmd)
-                if obj['code'] != 0:
-                    objectxmpp.xmpplog('<span class="log_err">Transfer error %s : curl download [%s] package file: %s\n %s</span>' % (obj['code'], curlurlbase, filepackage, obj['result']),
-                                    type='deploy',
-                                    sessionname=datasend['sessionid'],
-                                    priority=-1,
-                                    action="xmpplog",
-                                    who=strjidagent,
-                                    module="Deployment | Download | Transfer",
-                                    date=None,
-                                    fromuser=datasend['data']['advanced']['login'])
-                    objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
-                                    type='deploy',
-                                    sessionname=datasend['sessionid'],
-                                    priority=-1,
-                                    action="xmpplog",
-                                    who=strjidagent,
-                                    module="Deployment | Error | Terminate | Notify",
-                                    date=None,
-                                    fromuser=datasend['data']['name'])
+                if obj["code"] != 0:
+                    objectxmpp.xmpplog(
+                        '<span class="log_err">Transfer error %s : curl download [%s] package file: %s\n %s</span>'
+                        % (obj["code"], curlurlbase, filepackage, obj["result"]),
+                        type="deploy",
+                        sessionname=datasend["sessionid"],
+                        priority=-1,
+                        action="xmpplog",
+                        who=strjidagent,
+                        module="Deployment | Download | Transfer",
+                        date=None,
+                        fromuser=datasend["data"]["advanced"]["login"],
+                    )
+                    objectxmpp.xmpplog(
+                        "DEPLOYMENT TERMINATE",
+                        type="deploy",
+                        sessionname=datasend["sessionid"],
+                        priority=-1,
+                        action="xmpplog",
+                        who=strjidagent,
+                        module="Deployment | Error | Terminate | Notify",
+                        date=None,
+                        fromuser=datasend["data"]["name"],
+                    )
                     removeresource(datasend, objectxmpp, sessionid)
                     signalendsessionforARS(datasend, objectxmpp, sessionid, error=True)
                     return False
                 else:
                     msg = "<span class='log_ok'>Transfer successful</span>"
-                    objectxmpp.xmpplog(msg,
-                                    type='deploy',
-                                    sessionname=datasend['sessionid'],
-                                    priority=-1,
-                                    action="xmpplog",
-                                    who=strjidagent,
-                                    module="Deployment | Download | Transfer",
-                                    date=None,
-                                    fromuser=datasend['data']['advanced']['login'])
+                    objectxmpp.xmpplog(
+                        msg,
+                        type="deploy",
+                        sessionname=datasend["sessionid"],
+                        priority=-1,
+                        action="xmpplog",
+                        who=strjidagent,
+                        module="Deployment | Download | Transfer",
+                        date=None,
+                        fromuser=datasend["data"]["advanced"]["login"],
+                    )
                 changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)

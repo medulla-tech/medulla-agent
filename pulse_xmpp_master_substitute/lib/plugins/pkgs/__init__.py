@@ -589,7 +589,6 @@ class PkgsDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def get_package_summary(self, session, package_id):
-
         path = os.path.join("/", "var", "lib", "pulse2", "packages", package_id)
         size = 0
         files = []
@@ -901,7 +900,6 @@ class PkgsDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def nb_package_in_sharing(self, session, share_id=None):
-
         sql = """SELECT
                     COUNT(*)
                 FROM
@@ -915,7 +913,9 @@ class PkgsDatabase(DatabaseHelper):
                     FROM
                         pkgs.packages
                     WHERE
-                        packages.pkgs_share_id = %s;"""%(share_id)
+                        packages.pkgs_share_id = %s;""" % (
+                share_id
+            )
 
         result = session.execute(sql)
         session.commit()

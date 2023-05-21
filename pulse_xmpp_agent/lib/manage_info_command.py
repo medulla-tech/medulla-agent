@@ -20,10 +20,10 @@ class manage_infoconsole:
             name=self.namethread, target=self.loopinfoconsol
         )
         self.threadevent.start()
-        logging.debug('manage event start')
+        logging.debug("manage event start")
 
     def loopinfoconsol(self):
-        logging.debug('loopinfoconsol')
+        logging.debug("loopinfoconsol")
         while True:
             try:
                 event = self.queueinfo.get(60)

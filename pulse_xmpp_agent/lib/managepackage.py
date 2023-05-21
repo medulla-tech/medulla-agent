@@ -131,9 +131,10 @@ class managepackage:
     @staticmethod
     def getdescriptorpackagename(packagename):
         for package in managepackage.listpackages():
-
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
 
             try:
@@ -172,9 +173,10 @@ class managepackage:
             It returns the version of the package
         """
         for package in managepackage.listpackages():
-
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
 
             try:
@@ -211,9 +213,10 @@ class managepackage:
             It returns the name of the package
         """
         for package in managepackage.listpackages():
-
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
 
             try:
@@ -250,9 +253,10 @@ class managepackage:
                 the package is not found.
         """
         for package in managepackage.listpackages():
-
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
 
             try:
@@ -279,13 +283,17 @@ class managepackage:
                 any error or if the package is not found.
         """
         for package in managepackage.listpackages():
-
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error("The %s file is missing" % os.path.join(package, "xmppdeploy.json"))
+                logger.error(
+                    "The %s file is missing" % os.path.join(package, "xmppdeploy.json")
+                )
                 return None
 
             if not os.path.isfile(os.path.join(package, "conf.json")):
-                logger.error("The file %s is missing. It cannot work witout it." % os.path.join(package, "conf.json"))
+                logger.error(
+                    "The file %s is missing. It cannot work witout it."
+                    % os.path.join(package, "conf.json")
+                )
                 return None
 
             try:
@@ -315,7 +323,7 @@ class managepackage:
         )
         if os.path.isfile(pathpackage):
             outputJSONFile = managepackage.loadjsonfile(pathpackage)
-            return outputJSONFile['info']['name']
+            return outputJSONFile["info"]["name"]
         else:
             logger.error("The file %s is missing" % pathpackage)
         return None

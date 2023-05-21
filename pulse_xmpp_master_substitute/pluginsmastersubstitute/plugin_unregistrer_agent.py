@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
-# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net> 
-# SPDX-License-Identifier: GPL-2.0-or-later 
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 import logging
 import traceback
@@ -12,7 +12,12 @@ from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.0", "NAME": "unregistrer_agent", "TYPE" : "substitute", "FEATURE": "subscribe"}
+plugin = {
+    "VERSION": "1.0",
+    "NAME": "unregistrer_agent",
+    "TYPE": "substitute",
+    "FEATURE": "subscribe",
+}
 
 
 """
@@ -22,30 +27,49 @@ When a client connects to a new ARS, this has for consequence a change of ejabbe
 The old ejabberd account needs to be removed from the roster.
 """
 
+
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
-    logger.debug("-----------------------------------------------------------------------------------------")
+    logger.debug(
+        "-----------------------------------------------------------------------------------------"
+    )
     logger.debug(plugin)
-    logger.debug("-----------------------------------------------------------------------------------------")
+    logger.debug(
+        "-----------------------------------------------------------------------------------------"
+    )
 
-    if "user" in data and "domain" in data and "resource" in data and \
-        data['user'].strip() != "" and  data['domain'].strip() != "" and  data['resource'].strip() != "":
+    if (
+        "user" in data
+        and "domain" in data
+        and "resource" in data
+        and data["user"].strip() != ""
+        and data["domain"].strip() != ""
+        and data["resource"].strip() != ""
+    ):
         try:
-            relayservercompte = XmppMasterDatabase().getRelayServerfromjiddomain(data['domain'])
-            msg = {"action": "unregistrer_agent",
-                   "sessionid": sessionid,
-                   "data": data,
-                   "base64": False,
-                   "ret": 0
-                  }
+            relayservercompte = XmppMasterDatabase().getRelayServerfromjiddomain(
+                data["domain"]
+            )
+            msg = {
+                "action": "unregistrer_agent",
+                "sessionid": sessionid,
+                "data": data,
+                "base64": False,
+                "ret": 0,
+            }
             if relayservercompte:
-                xmppobject.send_message(mto=relayservercompte['jid'],
-                                        mbody=json.dumps(msg),
-                                        mtype='chat')
+                xmppobject.send_message(
+                    mto=relayservercompte["jid"], mbody=json.dumps(msg), mtype="chat"
+                )
             else:
-                logger.error("No relay server found for the domain: %s" % data['domain'])
+                logger.error(
+                    "No relay server found for the domain: %s" % data["domain"]
+                )
 
-        except Exception, e:
-            logger.error("An error occured when trying to unregister old JID. We got the error: %s" % str(e))
+        except Exception as e:
+            logger.error(
+                "An error occured when trying to unregister old JID. We got the error: %s"
+                % str(e)
+            )
             logger.error("We hit the backtrace: \n%s" % traceback.format_exc())
     else:
         logger.error("The JID is incorrect")

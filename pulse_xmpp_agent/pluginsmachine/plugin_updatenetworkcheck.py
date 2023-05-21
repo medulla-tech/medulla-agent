@@ -31,10 +31,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 
 def check_if_service_is_running():
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         is_ssh_started = utils.simplecommand("sc.exe query medullanetnotify")
-        if is_ssh_started['code'] == 0:
-            state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
+        if is_ssh_started["code"] == 0:
+            state = [
+                x.strip() for x in is_ssh_started["result"][3].split(" ") if x != ""
+            ][3]
             if state == "STOPPED" or state == "RUNNING":
                 logger.debug("The Pulse Network Notify plugin is installed.")
                 return True
@@ -42,10 +44,12 @@ def check_if_service_is_running():
 
 
 def stop_service():
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         is_ssh_started = utils.simplecommand("sc.exe query medullanetnotify")
-        if is_ssh_started['code'] == 0:
-            state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
+        if is_ssh_started["code"] == 0:
+            state = [
+                x.strip() for x in is_ssh_started["result"][3].split(" ") if x != ""
+            ][3]
             if state == "RUNNING":
                 utils.simplecommand("sc.exe stop sshdaemon")
 
@@ -84,8 +88,10 @@ def check_if_binary_ok():
             reinstall = True
 
         if reinstall:
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
-                    '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+            cmd = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
+                '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+            )
             result = utils.simplecommand(cmd)
             if result["code"] == 0:
                 logger.debug(
@@ -96,7 +102,7 @@ def check_if_binary_ok():
 
 
 def checknetworkcheckversion():
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
@@ -109,21 +115,30 @@ def checknetworkcheckversion():
 
 
 def updatenetworkcheckversion(version):
-    if sys.platform.startswith('win'):
-        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
-                '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % NETWORKVERSION
+    if sys.platform.startswith("win"):
+        cmd = (
+            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
+            '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % NETWORKVERSION
+        )
 
         result = utils.simplecommand(cmd)
-        if result['code'] == 0:
-            logger.info("we successfully updated Medulla network notify to version %s" % NETWORKVERSION)
+        if result["code"] == 0:
+            logger.info(
+                "we successfully updated Medulla network notify to version %s"
+                % NETWORKVERSION
+            )
 
         if version == "0.1":
-            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Medulla network notify" /f'
+            cmdDisplay = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
+                '/v "DisplayName" /t REG_SZ  /d "Medulla network notify" /f'
+            )
             utils.simplecommand(cmdDisplay)
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            cmd = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            )
 
             utils.simplecommand(cmd)
 
@@ -140,7 +155,9 @@ def updatenetworkcheck(xmppobject):
             "pywin32_system32",
             "pywintypes27.dll",
         )
-        win32_path = os.path.join("c:\\", "Program Files", "Python39", "Lib", "site-packages", "win32")
+        win32_path = os.path.join(
+            "c:\\", "Program Files", "Python39", "Lib", "site-packages", "win32"
+        )
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 
         filename = "networkevents.py"
@@ -192,15 +209,21 @@ def updatenetworkcheck(xmppobject):
                         % (servicefilename, servicecmd_result["result"])
                     )
 
-            update_command = 'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" update' % (
-                pulsedir_path,
-                servicefilename,
+            update_command = (
+                'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" update'
+                % (
+                    pulsedir_path,
+                    servicefilename,
+                )
             )
             utils.simplecommand(update_command)
 
-            restart_command = 'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" restart' % (
-                pulsedir_path,
-                servicefilename,
+            restart_command = (
+                'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" restart'
+                % (
+                    pulsedir_path,
+                    servicefilename,
+                )
             )
             utils.simplecommand(restart_command)
         else:
