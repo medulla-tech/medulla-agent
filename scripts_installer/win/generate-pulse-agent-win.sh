@@ -110,7 +110,7 @@ urllib3-1.26.12-py2.py3-none-any.whl \
 zc.lockfile-2.0-py2.py3-none-any.whl \
 "
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
-RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
+RSYNC_DL_FILENAME="cwrsync_6.2.8_x64_free.zip"
 RSYNC_FILENAME="rsync.zip"
 OPENSSH_NAME="Pulse SSH"
 OPENSSH_VERSION="8.9"
