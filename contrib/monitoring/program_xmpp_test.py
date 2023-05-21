@@ -22,11 +22,11 @@ ERROR_TEST = "ERROR_MESSAGE_XMPP"  # To be analysed submon side
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, datetime):
-            encoded_object = obj.isoformat()
-        else:
-            encoded_object = json.JSONEncoder.default(self, obj)
-        return encoded_object
+        return (
+            obj.isoformat()
+            if isinstance(obj, datetime)
+            else json.JSONEncoder.default(self, obj)
+        )
 
 
 def action(struct):
@@ -66,9 +66,9 @@ def action(struct):
             logger.error("action missing")
             raise
         result = json.dumps(send_message, indent=4, cls=DateTimeEncoder)
-        logger.debug("struct %s" % result)
+        logger.debug(f"struct {result}")
     except:
-        result = "%s" % (traceback.format_exc())
+        result = f"{traceback.format_exc()}"
         result = ERROR_TEST
     # le str json et copier dansle fichier result
     with open(struct["namefileout"], "ab") as out:

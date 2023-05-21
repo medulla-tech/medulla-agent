@@ -66,13 +66,8 @@ class process_serverPipe:
         format = "%(asctime)s - %(levelname)s -(SP) %(message)s"
         # more information log
         # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
-        if not optsdeamon:
-            if optsconsoledebug:
-                logging.basicConfig(level=logging.DEBUG, format=format)
-            else:
-                logging.basicConfig(
-                    level=tglevellog, format=format, filename=tglogfile, filemode="a"
-                )
+        if not optsdeamon and optsconsoledebug:
+            logging.basicConfig(level=logging.DEBUG, format=format)
         else:
             logging.basicConfig(
                 level=tglevellog, format=format, filename=tglogfile, filemode="a"
@@ -104,11 +99,11 @@ class process_serverPipe:
                         None,
                     )
                     win32pipe.ConnectNamedPipe(self.pipe_handle, None)
-                    self.logger.debug("Waiting event network change pid %s" % pid)
+                    self.logger.debug(f"Waiting event network change pid {pid}")
                     data = win32file.ReadFile(self.pipe_handle, 4096)
                 except Exception as e:
-                    self.logger.error("read input from Pipenammed error %s" % str(e))
-                    self.logger.warning("pid server pipe process is %s" % pid)
+                    self.logger.error(f"read input from Pipenammed error {str(e)}")
+                    self.logger.warning(f"pid server pipe process is {pid}")
                     continue
                 finally:
                     self.pipe_handle.Close()
@@ -117,12 +112,10 @@ class process_serverPipe:
                         self.logger.debug("Terminate event network listen Server")
                     else:
                         try:
-                            self.logger.debug("_____________%s" % data[1])
+                            self.logger.debug(f"_____________{data[1]}")
                             self.queue_recv_tcp_to_xmpp.put(data[1])
                         except Exception as e:
-                            self.logger.warning(
-                                "read input from Pipe nammed error %s" % str(e)
-                            )
+                            self.logger.warning(f"read input from Pipe nammed error {str(e)}")
 
 
 class process_tcp_serveur:
@@ -154,13 +147,8 @@ class process_tcp_serveur:
         format = "%(asctime)s - %(levelname)s -(SK) %(message)s"
         # more information log
         # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
-        if not optsdeamon:
-            if optsconsoledebug:
-                logging.basicConfig(level=logging.DEBUG, format=format)
-            else:
-                logging.basicConfig(
-                    level=tglevellog, format=format, filename=tglogfile, filemode="a"
-                )
+        if not optsdeamon and optsconsoledebug:
+            logging.basicConfig(level=logging.DEBUG, format=format)
         else:
             logging.basicConfig(
                 level=tglevellog, format=format, filename=tglogfile, filemode="a"
@@ -185,24 +173,24 @@ class process_tcp_serveur:
         self.tglogfile = tglogfile
         # Bind the socket to the port
         server_address = ("localhost", self.port)
-        for t in range(20):
+        for _ in range(20):
             try:
-                self.logger.debug("Binding to kiosk server %s" % str(server_address))
+                self.logger.debug(f"Binding to kiosk server {server_address}")
                 self.sock.bind(server_address)
                 break
             except Exception as e:
-                self.logger.error("bind adress %s" % str(e))
+                self.logger.error(f"bind adress {str(e)}")
                 time.sleep(40)
         # Listen for incoming connections
         self.sock.listen(5)
         self.logger.debug("_____________ START SERVER KIOSK ______________")
         pid = os.getpid()
         while not self.eventkill.wait(1):
-            self.logger.debug("The process of the KIOSK server is %s" % pid)
+            self.logger.debug(f"The process of the KIOSK server is {pid}")
             try:
                 rr, rw, err = select.select([self.sock], [], [self.sock], 7)
             except Exception as e:
-                self.logger.error("kiosk server : %s" % str(e))
+                self.logger.error(f"kiosk server : {str(e)}")
                 # self.sock.shutdown(2)    # 0 = done receiving, 1 = done
                 # sending, 2 = both
                 self.sock.close()
@@ -223,7 +211,7 @@ class process_tcp_serveur:
                         target=self.handle_client_connection, args=(clientsocket,)
                     ).start()
                 else:
-                    self.logger.info("Connection refused from : %s" % client_address)
+                    self.logger.info(f"Connection refused from : {client_address}")
                     clientsocket.close()
             if self.sock in err:
                 self.sock.close()
@@ -250,7 +238,7 @@ class process_tcp_serveur:
                 msg = str(recv_msg_from_kiosk.decode("utf-8", "ignore"))
                 self.queue_recv_tcp_to_xmpp.put(msg)
         except Exception as e:
-            self.logger.error("message to kiosk server : %s" % str(e))
+            self.logger.error(f"message to kiosk server : {str(e)}")
             self.logger.error("\n%s" % (traceback.format_exc()))
         finally:
             client_socket.close()
@@ -322,41 +310,36 @@ class manage_kiosk_message:
     def test_type(self, value):
         if isinstance(value, (bool, int, float)):
             return value
-        else:
+        try:
+            return int(value)
+        except BaseException:
             try:
-                return int(value)
+                return float(value)
             except BaseException:
-                try:
-                    return float(value)
-                except BaseException:
-                    _value = value.lstrip(" ").strip(" ").lower().capitalize()
-                    if _value == "True":
-                        return True
-                    elif _value == "False":
-                        return False
-                    else:
-                        return value
+                _value = value.lstrip(" ").strip(" ").lower().capitalize()
+                if _value == "False":
+                    return False
+                elif _value == "True":
+                    return True
+                else:
+                    return value
 
     def runjson(self, jsonf, level=0):
         if isinstance(jsonf, dict):
-            msg = "%sdict" % (level * "  ")
-            tmp = {}
-            for element in jsonf:
-                tmp[element] = self.runjson(jsonf[element], level=level + 1)
-            return tmp
+            msg = f'{level * "  "}dict'
+            return {
+                element: self.runjson(jsonf[element], level=level + 1)
+                for element in jsonf
+            }
         elif isinstance(jsonf, list):
-            tmp = []
-            for element in jsonf:
-                tmp.append(self.runjson(element, level=level + 1))
-            return tmp
+            return [self.runjson(element, level=level + 1) for element in jsonf]
         else:
-            tmp = self.test_type(jsonf)
-            return tmp
+            return self.test_type(jsonf)
 
     def handle_client_connection(self, recv_msg_from_kiosk):
         substitute_recv = ""
         try:
-            self.logger.info("Received {}".format(recv_msg_from_kiosk))
+            self.logger.info(f"Received {recv_msg_from_kiosk}")
             datasend = {
                 "action": "resultkiosk",
                 "sessionid": getRandomName(6, "kioskGrub"),
@@ -375,7 +358,7 @@ class manage_kiosk_message:
                     "__Event network or kiosk %s" % json.dumps(result, indent=4)
                 )
             except ValueError as e:
-                self.logger.error("Message socket is not json correct : %s" % (str(e)))
+                self.logger.error(f"Message socket is not json correct : {str(e)}")
                 return
             try:
                 if "interface" in result:
@@ -413,8 +396,7 @@ class manage_kiosk_message:
                         )
                     if self.objectxmpp.config.ipxmpp in result["removedinterface"]:
                         self.logger.info(
-                            "The IP address used to contact the XMPP Server is: %s"
-                            % self.objectxmpp.config.ipxmpp
+                            f"The IP address used to contact the XMPP Server is: {self.objectxmpp.config.ipxmpp}"
                         )
                         self.logger.info(
                             "__DETECT SUPP INTERFACE USED FOR CONNECTION AGENT MACHINE TO EJABBERD__"
@@ -448,26 +430,23 @@ class manage_kiosk_message:
                                     "Agent reconfiguration needed to resume the service."
                                 )
                                 self.objectxmpp.networkMonitor()
-                                pass
+                    elif len(result["interface"]) < 2:
+                        # il y a seulement l'interface 127.0.0.1
+                        # dans ce cas on refait la total.
+                        self.logger.warning(
+                            "The new uniq network interface. "
+                            "Agent reconfiguration needed to resume the service."
+                        )
+                        self.objectxmpp.networkMonitor()
                     else:
-                        # detection si 1 seule interface presente or 127.0.0.1
-                        if len(result["interface"]) < 2:
-                            # il y a seulement l'interface 127.0.0.1
-                            # dans ce cas on refait la total.
-                            self.logger.warning(
-                                "The new uniq network interface. "
-                                "Agent reconfiguration needed to resume the service."
-                            )
-                            self.objectxmpp.networkMonitor()
-                        else:
-                            self.logger.warning(
-                                "The new network interface is directly usable. Nothing to do"
-                            )
-                            self.objectxmpp.md5reseau = refreshfingerprint()
-                            self.objectxmpp.update_plugin()
+                        self.logger.warning(
+                            "The new network interface is directly usable. Nothing to do"
+                        )
+                        self.objectxmpp.md5reseau = refreshfingerprint()
+                        self.objectxmpp.update_plugin()
                     return
             except Exception as e:
-                self.logger.error("%s" % str(e))
+                self.logger.error(f"{str(e)}")
                 return
             # Manage message from tcp connection
             self.logger.debug("RECV FROM TCP/IP CLIENT")
@@ -479,9 +458,7 @@ class manage_kiosk_message:
                 if result["action"] == "kioskinterface":
                     # start kiosk ask initialization
                     datasend["data"]["subaction"] = result["subaction"]
-                    datasend["data"]["userlist"] = list(
-                        set([users[0] for users in psutil.users()])
-                    )
+                    datasend["data"]["userlist"] = list({users[0] for users in psutil.users()})
                     datasend["data"]["ouuser"] = organizationbyuser(
                         datasend["data"]["userlist"]
                     )
@@ -522,10 +499,7 @@ class manage_kiosk_message:
                     datasend["action"] = "notifysyncthing"
                     datasend["sessionid"] = getRandomName(6, "syncthing")
                     datasend["data"] = result["data"]
-                elif (
-                    result["action"] == "terminalInformations"
-                    or result["action"] == "terminalAlert"
-                ):
+                elif result["action"] in ["terminalInformations", "terminalAlert"]:
                     substitute_recv = self.objectxmpp.sub_monitoring
                     datasend["action"] = "vectormonitoringagent"
                     datasend["sessionid"] = getRandomName(
@@ -545,7 +519,7 @@ class manage_kiosk_message:
                     )
                     return
                 if substitute_recv:
-                    logging.getLogger().warning("send to %s " % substitute_recv)
+                    logging.getLogger().warning(f"send to {substitute_recv} ")
                     self.objectxmpp.send_message(
                         mbody=json.dumps(datasend), mto=substitute_recv, mtype="chat"
                     )
@@ -553,5 +527,5 @@ class manage_kiosk_message:
                     # Call plugin on master
                     self.objectxmpp.send_message_to_master(datasend)
         except Exception as e:
-            logging.getLogger().error("message to kiosk server : %s" % str(e))
+            logging.getLogger().error(f"message to kiosk server : {str(e)}")
             logging.getLogger().error("\n%s" % (traceback.format_exc()))

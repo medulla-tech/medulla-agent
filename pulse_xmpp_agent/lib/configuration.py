@@ -46,7 +46,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     for t in confsubtitute["conflist"]:
         uniq_list = uniq(confsubtitute[t])
         Config.set("substitute", t, ",".join(uniq_list))
-        logger.info("application substitut %s for %s" % (uniq_list[0], t))
+        logger.info(f"application substitut {uniq_list[0]} for {t}")
     logger.debug("writing parameters of the substitutes")
     with open(conffile, "w") as configfile:
         Config.write(configfile)
@@ -91,28 +91,22 @@ def alternativeclusterconnection(conffile, data):
         conffile: the configuration file in which we add the alternative cluster
         data: the informations about the cluster
     """
-    logger.debug("We write the file %s to handle alternative connections" % conffile)
+    logger.debug(f"We write the file {conffile} to handle alternative connections")
     with open(conffile, "w") as configfile:
         if len(data) != 0:
             listalternative = [str(x[2]) for x in data]
             nb_alternativeserver = len(listalternative)
-            configfile.write("[alternativelist]" + os.linesep)
-            configfile.write("listars = %s%s" % (",".join(listalternative), os.linesep))
-            configfile.write("nbserver = %s%s" % (nb_alternativeserver, os.linesep))
-            configfile.write("nextserver = 1%s" % os.linesep)
+            configfile.write(f"[alternativelist]{os.linesep}")
+            configfile.write(f'listars = {",".join(listalternative)}{os.linesep}')
+            configfile.write(f"nbserver = {nb_alternativeserver}{os.linesep}")
+            configfile.write(f"nextserver = 1{os.linesep}")
             for arsdataconection in data:
-                configfile.write("[%s]%s" % (str(arsdataconection[2]), os.linesep))
-                configfile.write("port = %s%s" % (str(arsdataconection[1]), os.linesep))
-                configfile.write(
-                    "server = %s%s"
-                    % (ipfromdns(str(str(arsdataconection[0]))), os.linesep)
-                )
-                configfile.write(
-                    "guacamole_baseurl = %s%s" % (str(arsdataconection[3]), os.linesep)
-                )
-        else:
-            if os.path.isfile(conffile):
-                os.unlink(conffile)
+                configfile.write(f"[{str(arsdataconection[2])}]{os.linesep}")
+                configfile.write(f"port = {str(arsdataconection[1])}{os.linesep}")
+                configfile.write(f"server = {ipfromdns(str(arsdataconection[0]))}{os.linesep}")
+                configfile.write(f"guacamole_baseurl = {str(arsdataconection[3])}{os.linesep}")
+        elif os.path.isfile(conffile):
+            os.unlink(conffile)
 
 
 def nextalternativeclusterconnectioninformation(conffile):
@@ -122,14 +116,15 @@ def nextalternativeclusterconnectioninformation(conffile):
     Args:
         conffile: the configuration file to modify
     """
-    alternatif_conf = {}
     if not os.path.isfile(conffile):
-        logger.error("file alternatif conf missing %s" % conffile)
+        logger.error(f"file alternatif conf missing {conffile}")
         return {}
 
     Config = configparser.ConfigParser()
     Config.read(conffile)
-    alternatif_conf["nextserver"] = Config.getint("alternativelist", "nextserver")
+    alternatif_conf = {
+        "nextserver": Config.getint("alternativelist", "nextserver")
+    }
     alternatif_conf["nbserver"] = Config.getint("alternativelist", "nbserver")
     alternatif_conf["listars"] = [
         x.strip()
@@ -138,9 +133,7 @@ def nextalternativeclusterconnectioninformation(conffile):
     ]
 
     if len(alternatif_conf["listars"]) != alternatif_conf["nbserver"]:
-        logger.error(
-            "format alternatif file %s : count list ars != nbserver" % conffile
-        )
+        logger.error(f"format alternatif file {conffile} : count list ars != nbserver")
         return {}
 
     if alternatif_conf["nextserver"] > alternatif_conf["nbserver"]:
@@ -149,9 +142,7 @@ def nextalternativeclusterconnectioninformation(conffile):
     # charge les informations server
     for ars in alternatif_conf["listars"]:
         if not Config.has_section(ars):
-            logger.error(
-                "format alternatif file %s : section %s missing" % (conffile, ars)
-            )
+            logger.error(f"format alternatif file {conffile} : section {ars} missing")
             return {}
 
     for ars in alternatif_conf["listars"]:
@@ -160,9 +151,7 @@ def nextalternativeclusterconnectioninformation(conffile):
             and Config.has_option(ars, "server")
             and Config.has_option(ars, "guacamole_baseurl")
         ):
-            logger.error(
-                "format alternatif file %s : section %s farmat error" % (conffile, ars)
-            )
+            logger.error(f"format alternatif file {conffile} : section {ars} farmat error")
             return {}
         else:
             alternatif_conf[ars] = {}
@@ -190,7 +179,7 @@ def nextalternativeclusterconnection(conffile):
     listalternative = Config.get("alternativelist", "listars").split(",")
 
     serverjid = listalternative[nextserver - 1]
-    logger.info("serverjid %s" % serverjid)
+    logger.info(f"serverjid {serverjid}")
     port = Config.get(serverjid, "port")
     server = Config.get(serverjid, "server")
     guacamole_baseurl = Config.get(serverjid, "guacamole_baseurl")
@@ -201,7 +190,7 @@ def nextalternativeclusterconnection(conffile):
     nextserver = nextserver + 1
     if nextserver > nbserver:
         nextserver = 1
-    logger.info("next index alternatif server %s" % nextserver)
+    logger.info(f"next index alternatif server {nextserver}")
     Config.set("alternativelist", "nextserver", str(nextserver))
 
     # Writing our configuration file to 'example.cfg'
@@ -261,10 +250,7 @@ def loadparameters(namefile, group, key):
 
     Config = configparser.ConfigParser()
     Config.read(namefile)
-    value = ""
-    if Config.has_option("group", "key"):
-        value = Config.get("group", "key")
-    return value
+    return Config.get("group", "key") if Config.has_option("group", "key") else ""
 
 
 class substitutelist:
@@ -272,8 +258,8 @@ class substitutelist:
         Config = configparser.ConfigParser()
         namefileconfig = conffilename("machine")
         Config.read(namefileconfig)
-        if os.path.exists(namefileconfig + ".local"):
-            Config.read(namefileconfig + ".local")
+        if os.path.exists(f"{namefileconfig}.local"):
+            Config.read(f"{namefileconfig}.local")
         #################substitute####################
 
         self.sub_inventory = ["master_inv@pulse"]
@@ -315,7 +301,6 @@ class substitutelist:
             self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
 
     def parameterssubtitute(self):
-        conflist = []
         data = {
             "subscription": self.sub_subscribe,
             "inventory": self.sub_inventory,
@@ -325,9 +310,7 @@ class substitutelist:
             "monitoring": self.sub_monitoring,
             "updates": self.sub_updates,
         }
-        for t in data:
-            # if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
-            conflist.append(t)
+        conflist = list(data)
         data["conflist"] = conflist
         return data
 
