@@ -375,7 +375,9 @@ class syncthingapi:
 
             for typename in type:
                 if typename not in tabeventtype:
-                    logger.warning(f"event type {typename} no exist; Event struct missing")
+                    logger.warning(
+                        f"event type {typename} no exist; Event struct missing"
+                    )
 
             kk = Diff(tablekey, datasection)
             for e in re:
@@ -1492,5 +1494,3 @@ class syncthingprogram(Program):
 
     def statussyncthing(self):
         pass
-
-

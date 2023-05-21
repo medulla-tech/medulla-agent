@@ -55,7 +55,7 @@ class resource_plugin:
         nameplugin_or_handler,
         typeaction="call_plugin",
         *args,
-        **kwargs
+        **kwargs,
     ):
         logger.debug(f"Creation resource name {nameresource} de type {typeaction}")
         self.resource[nameresource] = {

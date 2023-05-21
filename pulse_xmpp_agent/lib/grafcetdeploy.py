@@ -491,7 +491,9 @@ class grafcet:
                 for step_in_sequence in self.sequence:
                     if step_in_sequence["actionlabel"] == val:
                         self.data["stepcurrent"] = int(step_in_sequence["step"])
-                        logging.getLogger().debug(f'goto step {self.data["stepcurrent"]}')
+                        logging.getLogger().debug(
+                            f'goto step {self.data["stepcurrent"]}'
+                        )
                         self.workingstep = self.sequence[self.data["stepcurrent"]]
                         return 0
                 valstep = valstep + 1
@@ -605,7 +607,9 @@ class grafcet:
             os.chdir(managepackage.packagedir())
             if clear:
                 if sys.platform.startswith("win"):
-                    os.system(f'rmdir /s /q "{self.datasend["data"]["pathpackageonmachine"]}"')
+                    os.system(
+                        f'rmdir /s /q "{self.datasend["data"]["pathpackageonmachine"]}"'
+                    )
                 else:
                     os.system(f'rm -Rf {self.datasend["data"]["pathpackageonmachine"]}')
             datas = self.datasend
@@ -1362,13 +1366,13 @@ class grafcet:
                 self.workingstep["timeout"],
                 self.workingstep["step"],
             )
-                # if not comdbool:
-                # self.objectxmpp.logtopulse('[%s]: Error descriptor actionprocessscript %s'%(self.workingstep['step'],
-                # self.workingstep['pwd']),
-                # type='deploy',
-                # sessionname = self.sessionid ,
-                # priority =self.workingstep['step'],
-                # who=self.objectxmpp.boundjid.bare)
+            # if not comdbool:
+            # self.objectxmpp.logtopulse('[%s]: Error descriptor actionprocessscript %s'%(self.workingstep['step'],
+            # self.workingstep['pwd']),
+            # type='deploy',
+            # sessionname = self.sessionid ,
+            # priority =self.workingstep['step'],
+            # who=self.objectxmpp.boundjid.bare)
         except Exception as e:
             self.steplog()
             logging.getLogger().error(str(e))

@@ -55,7 +55,9 @@ class reverse_port_ssh:
             if len(res["result"]) == 1:
                 self.stop_reverse(res["result"][0].strip(" \n\r\t"))
             try:
-                logger.debug(f'rm {os.path.join(self.directoryreverseport, f"{number_port}")}')
+                logger.debug(
+                    f'rm {os.path.join(self.directoryreverseport, f"{number_port}")}'
+                )
                 os.remove(os.path.join(self.directoryreverseport, f"{number_port}"))
             except Exception:
                 pass
