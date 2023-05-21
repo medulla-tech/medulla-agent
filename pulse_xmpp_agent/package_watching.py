@@ -58,13 +58,12 @@ class configerror(Exception):
 def conf_information(conffile):
     Config = configparser.ConfigParser()
     Config.read(conffile)
-    Config.read(conffile + ".local")
-    configdata = {}
-    # [network_agent]\nip_ars=???\nport_ars=
-    if Config.has_option("network_agent", "ip_ars"):
-        configdata["ip_ars"] = Config.get("network_agent", "ip_ars")
-    else:
-        configdata["ip_ars"] = "localhost"
+    Config.read(f"{conffile}.local")
+    configdata = {
+        "ip_ars": Config.get("network_agent", "ip_ars")
+        if Config.has_option("network_agent", "ip_ars")
+        else "localhost"
+    }
     if Config.has_option("network_agent", "ip_ars"):
         configdata["port_ars"] = Config.getint("network_agent", "port_ars")
     else:
@@ -146,7 +145,7 @@ def conf_information(conffile):
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
-    for t in range(nb):
+    for _ in range(nb):
         d = d + a[random.randint(0, 35)]
     return d
 
@@ -176,15 +175,7 @@ def rsync_to_cdn(conf):
         remotefolder = conf["rsynctocdn_ssh_destpath"] + os.sep
     else:
         remotefolder = conf["rsynctocdn_ssh_destpath"]
-    rsync_cmd = 'rsync %s -e "ssh -i %s %s" %s %s@%s:%s' % (
-        conf["rsynctocdn_rsync_options"],
-        conf["rsynctocdn_ssh_privkey_path"],
-        conf["rsynctocdn_ssh_options"],
-        localfolder,
-        conf["rsynctocdn_ssh_remoteuser"],
-        conf["rsynctocdn_ssh_servername"],
-        remotefolder,
-    )
+    rsync_cmd = f'rsync {conf["rsynctocdn_rsync_options"]} -e "ssh -i {conf["rsynctocdn_ssh_privkey_path"]} {conf["rsynctocdn_ssh_options"]}" {localfolder} {conf["rsynctocdn_ssh_remoteuser"]}@{conf["rsynctocdn_ssh_servername"]}:{remotefolder}'
     objcmd = simplecommandstr(rsync_cmd)
     if objcmd["code"] != 0:
         logging.getLogger().error(
@@ -193,10 +184,7 @@ def rsync_to_cdn(conf):
 
 
 def pathlist(watch):
-    pathlistrep = []
-    for z in watch:
-        pathlistrep.append(watch[z].path)
-    return pathlistrep
+    return [watch[z].path for z in watch]
 
 
 def listdirfile(rootdir):
@@ -237,40 +225,37 @@ class MyEventHandler(pyinotify.ProcessEvent):
 
     def process_IN_MOVED_TO(self, event):
         if event.dir:
-            pass
-        else:
-            if self.config["notifyars_enable"]:
-                difffile = []
-                datasend = self.msg_structure()
-                difffile.append(os.path.dirname(event.pathname))
-                datasend["data"] = {
-                    "MotifyFile": event.pathname,
-                    "notifydir": difffile,
-                    "packageid": os.path.basename(os.path.dirname(event.pathname)),
-                }
-                datasendstr = json.dumps(datasend, indent=4)
-                logging.getLogger().debug("Msg : %s" % datasendstr)
-                send_agent_data(datasendstr, self.config)
-                # send_agent_data("Copie de fichier :", self.config)
-            if self.config["rsynctocdn_enable"]:
-                # Run rsync command
-                rsync_to_cdn(self.config)
+            return
+        if self.config["notifyars_enable"]:
+            datasend = self.msg_structure()
+            difffile = [os.path.dirname(event.pathname)]
+            datasend["data"] = {
+                "MotifyFile": event.pathname,
+                "notifydir": difffile,
+                "packageid": os.path.basename(os.path.dirname(event.pathname)),
+            }
+            datasendstr = json.dumps(datasend, indent=4)
+            logging.getLogger().debug(f"Msg : {datasendstr}")
+            send_agent_data(datasendstr, self.config)
+                    # send_agent_data("Copie de fichier :", self.config)
+        if self.config["rsynctocdn_enable"]:
+            # Run rsync command
+            rsync_to_cdn(self.config)
 
     def process_IN_MODIFY(self, event):
         if self.config["notifyars_enable"]:
             namefile = str(os.path.basename(event.pathname))
             if namefile.startswith(".syncthing"):
                 return
-            difffile = []
             datasend = self.msg_structure()
-            difffile.append(os.path.dirname(event.pathname))
+            difffile = [os.path.dirname(event.pathname)]
             datasend["data"] = {
                 "difffile": event.pathname,
                 "notifydir": difffile,
                 "packageid": os.path.basename(os.path.dirname(event.pathname)),
             }
             datasendstr = json.dumps(datasend, indent=4)
-            logging.getLogger().debug("Msg : %s" % datasendstr)
+            logging.getLogger().debug(f"Msg : {datasendstr}")
             send_agent_data(datasendstr, self.config)
         if self.config["rsynctocdn_enable"]:
             # Run rsync command
@@ -278,26 +263,17 @@ class MyEventHandler(pyinotify.ProcessEvent):
 
     def process_IN_DELETE(self, event):
         if self.config["notifyars_enable"]:
-            disupp = []
             datasend = self.msg_structure()
-            if event.dir:
-                disupp.append(os.path.dirname(event.pathname))
-                datasend["data"] = {
-                    "suppdir": event.pathname,
-                    "notifydir": disupp,
-                    "packageid": os.path.basename(event.pathname),
-                }
-                datasendstr = json.dumps(datasend, indent=4)
-            else:
+            if not event.dir:
                 return
-                disupp.append(os.path.dirname(event.pathname))
-                datasend["data"] = {
-                    "suppfile": event.pathname,
-                    "notifydir": disupp,
-                    "packageid": os.path.basename(os.path.dirname(event.pathname)),
-                }
-                datasendstr = json.dumps(datasend, indent=4)
-            logging.getLogger().debug("Msg : %s" % datasendstr)
+            disupp = [os.path.dirname(event.pathname)]
+            datasend["data"] = {
+                "suppdir": event.pathname,
+                "notifydir": disupp,
+                "packageid": os.path.basename(event.pathname),
+            }
+            datasendstr = json.dumps(datasend, indent=4)
+            logging.getLogger().debug(f"Msg : {datasendstr}")
             send_agent_data(datasendstr, self.config)
         if self.config["rsynctocdn_enable"]:
             # Run rsync command
@@ -305,17 +281,16 @@ class MyEventHandler(pyinotify.ProcessEvent):
 
     def process_IN_CREATE(self, event):
         if self.config["notifyars_enable"]:
-            directory_added = []
             datasend = self.msg_structure()
             if event.dir:
-                directory_added.append(os.path.dirname(event.pathname))
+                directory_added = [os.path.dirname(event.pathname)]
                 datasend["data"] = {
                     "adddir": event.pathname,
                     "notifydir": directory_added,
                     "packageid": os.path.basename(event.pathname),
                 }
                 datasendstr = json.dumps(datasend, indent=4)
-                logging.getLogger().debug("Msg : %s" % datasendstr)
+                logging.getLogger().debug(f"Msg : {datasendstr}")
                 send_agent_data(datasendstr, self.config)
         if self.config["rsynctocdn_enable"]:
             # Run rsync command
@@ -430,7 +405,7 @@ if __name__ == "__main__":
         )
         logging.getLogger().info(conf)
         pidrun = os.getpid()
-        os.system("echo " + str(pidrun) + " > " + pidfile)
+        os.system(f"echo {str(pidrun)} > {pidfile}")
         print("If in debug mode, you can stop the program by ussing CTRL+Z then one of")
         print("the following commands")
         print("kill -9 $(cat %s)" % pidfile)

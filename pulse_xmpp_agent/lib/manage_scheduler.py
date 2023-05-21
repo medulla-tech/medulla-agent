@@ -91,15 +91,13 @@ class manage_scheduler:
         # creation repertoire si non exist
         if not os.path.exists(self.directoryschedule):
             logging.getLogger().debug(
-                "create directory scheduler %s" % self.directoryschedule
+                f"create directory scheduler {self.directoryschedule}"
             )
             os.makedirs(self.directoryschedule, 0o700)
         namefile = os.path.join(self.directoryschedule, "__init__.py")
         if not os.path.exists(namefile):
-            fichier = open(namefile, "w")
-            fichier.write("###WARNING : never delete this file")
-            fichier.close()
-
+            with open(namefile, "w") as fichier:
+                fichier.write("###WARNING : never delete this file")
         for x in os.listdir(self.directoryschedule):
             if x.endswith(".pyc") or not x.startswith("scheduling"):
                 continue
@@ -121,19 +119,18 @@ class manage_scheduler:
                         ):
                             # recupere crontab si existe.
                             namefilecrontabpresistence = os.path.join(
-                                self.directoryschedule, "%s.crontab" % i["nameplugin"]
+                                self.directoryschedule,
+                                f'{i["nameplugin"]}.crontab',
                             )
                             if not os.path.exists(namefilecrontabpresistence):
                                 fichier = open(namefilecrontabpresistence, "w")
                                 fichier.write(i["schedule"])
-                                fichier.close()
                             else:
                                 fichier = open(namefilecrontabpresistence, "r")
                                 datascheduler["schedule"] = fichier.read()
-                                fichier.close()
+                            fichier.close()
                 logging.getLogger().debug(
-                    "load format crontab : %s for plugin scheduled %s"
-                    % (datascheduler["schedule"], datascheduler["nameplugin"])
+                    f'load format crontab : {datascheduler["schedule"]} for plugin scheduled {datascheduler["nameplugin"]}'
                 )
                 self.add_event(name, datascheduler)
             except Exception as e:
@@ -168,10 +165,7 @@ class manage_scheduler:
         tabcron = datascheduler["schedule"]
         cron = croniter.croniter(tabcron, self.now)
         nextd = cron.get_next(datetime)
-        if "nb" in datascheduler:
-            nbcount = datascheduler["nb"]
-        else:
-            nbcount = -1
+        nbcount = datascheduler["nb"] if "nb" in datascheduler else -1
         obj = {
             "name": name,
             "exectime": time.mktime(nextd.timetuple()),
@@ -192,7 +186,7 @@ class manage_scheduler:
                 t["count"] = t["count"] + 1
                 if "nbcount" in t and t["nbcount"] != -1 and t["count"] > t["nbcount"]:
                     deleted.append(t)
-                    logging.getLogger().debug("terminate plugin %s" % t)
+                    logging.getLogger().debug(f"terminate plugin {t}")
                     continue
                 cron = croniter.croniter(t["tabcron"], now)
                 nextd = cron.get_next(datetime)
@@ -204,33 +198,30 @@ class manage_scheduler:
     def call_scheduling_main(self, name, *args, **kwargs):
         if self.objectxmpp.config.scheduling_plugin_action:
             if name not in self.objectxmpp.config.excludedscheduledplugins:
-                logging.getLogger().debug(
-                    "execution of the plugin scheduling_%s" % name
-                )
+                logging.getLogger().debug(f"execution of the plugin scheduling_{name}")
                 try:
-                    count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
+                    count = getattr(self.objectxmpp, f"num_call_scheduling_{name}")
                     count = count + 1
                 except AttributeError:
                     count = 0
-                logging.getLogger().debug("num_call_scheduling_%s  %s" % (name, count))
-                setattr(self.objectxmpp, "num_call_scheduling_%s" % name, count)
-                mod = __import__("scheduling_%s" % name)
+                logging.getLogger().debug(f"num_call_scheduling_{name}  {count}")
+                setattr(self.objectxmpp, f"num_call_scheduling_{name}", count)
+                mod = __import__(f"scheduling_{name}")
                 mod.schedule_main(*args, **kwargs)
             else:
                 logging.getLogger().debug(
-                    "The plugin %s is not allowed to run as it has been excluded" % name
+                    f"The plugin {name} is not allowed to run as it has been excluded"
                 )
         else:
             logging.getLogger().debug(
-                "the parameter scheduling_plugin_action does not allow the call of the plugin %s"
-                % name
+                f"the parameter scheduling_plugin_action does not allow the call of the plugin {name}"
             )
 
     def call_scheduling_mainspe(self, name, *args, **kwargs):
-        mod = __import__("scheduling_%s" % name)
+        mod = __import__(f"scheduling_{name}")
 
         return mod.schedule_main
 
     def litschedule(self, name):
-        mod = __import__("scheduling_%s" % name)
+        mod = __import__(f"scheduling_{name}")
         return mod.SCHEDULE

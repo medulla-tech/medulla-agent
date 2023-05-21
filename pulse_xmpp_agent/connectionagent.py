@@ -83,10 +83,10 @@ class MUCBot(ClientXMPP):
         resourcejid[0] = conf.confdomain
         newjidconf[0] = getRandomName(10, "conf")
         self.HostNameSystem = platform.node().split(".")[0]
-        conf.jidagent = newjidconf[0] + "@" + resourcejid[0] + "/" + self.HostNameSystem
+        conf.jidagent = f"{newjidconf[0]}@{resourcejid[0]}/{self.HostNameSystem}"
         self.agentmaster = jid.JID("master@pulse")
         self.session = ""
-        logger.info("start machine %s Type %s" % (conf.jidagent, conf.agenttype))
+        logger.info(f"start machine {conf.jidagent} Type {conf.agenttype}")
 
         ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
@@ -120,14 +120,13 @@ class MUCBot(ClientXMPP):
 
         if not hasattr(self.config, "sub_assessor"):
             self.sub_assessor = self.agentmaster
-        else:
-            if (
+        elif (
                 isinstance(self.config.sub_assessor, list)
                 and len(self.config.sub_assessor) > 0
             ):
-                self.sub_assessor = jid.JID(self.config.sub_assessor[0])
-            else:
-                self.sub_assessor = jid.JID(self.config.sub_assessor)
+            self.sub_assessor = jid.JID(self.config.sub_assessor[0])
+        else:
+            self.sub_assessor = jid.JID(self.config.sub_assessor)
         if self.sub_assessor.bare == "":
             self.sub_assessor = self.agentmaster
         self.add_event_handler("session_start", self.start)
@@ -205,12 +204,10 @@ class MUCBot(ClientXMPP):
                     except Exception:
                         pass
 
-                logger.debug("device local syncthing : [%s]" % self.deviceid)
+                logger.debug(f"device local syncthing : [{self.deviceid}]")
 
             except KeyError as keyerror:
-                logging.error(
-                    "The %s key is missing in your syncthing config file" % keyerror
-                )
+                logging.error(f"The {keyerror} key is missing in your syncthing config file")
                 confsyncthing = {
                     "action": "resultconfsyncthing",
                     "sessionid": getRandomName(6, "confsyncthing"),
@@ -223,8 +220,7 @@ class MUCBot(ClientXMPP):
 
             except Exception as e:
                 logger.error(
-                    "The initialisation of syncthing failed. We got the error %s"
-                    % str(e)
+                    f"The initialisation of syncthing failed. We got the error {str(e)}"
                 )
                 informationerror = traceback.format_exc()
                 logger.error("\n%s" % informationerror)
@@ -242,8 +238,7 @@ class MUCBot(ClientXMPP):
     def stream_error1(self, mesg):
         if mesg.get_text() == "User removed":
             logger.info(
-                "compte %s removed by assessor %s"
-                % (self.boundjid.bare, self.sub_assessor)
+                f"compte {self.boundjid.bare} removed by assessor {self.sub_assessor}"
             )
             self.disconnect(wait=5)
 
@@ -253,8 +248,7 @@ class MUCBot(ClientXMPP):
         self.get_roster()
 
         self.xmpplog(
-            "Starting configurator on machine %s. Assessor : %s"
-            % (self.config.jidagent, self.sub_assessor),
+            f"Starting configurator on machine {self.config.jidagent}. Assessor : {self.sub_assessor}",
             type="conf",
             priority=-1,
             action="xmpplog",
@@ -290,7 +284,6 @@ class MUCBot(ClientXMPP):
             who = self.boundjid.bare
         if touser == "":
             touser = self.boundjid.bare
-        msgbody = {}
         data = {
             "log": "xmpplog",
             "text": text,
@@ -306,19 +299,16 @@ class MUCBot(ClientXMPP):
             "fromuser": fromuser,
             "touser": touser,
         }
-        msgbody["data"] = data
-        msgbody["action"] = "xmpplog"
-        msgbody["sessionid"] = sessionname
+        msgbody = {"data": data, "action": "xmpplog", "sessionid": sessionname}
         if not hasattr(self.config, "sub_logger"):
             self.sub_logger = self.agentmaster
-        else:
-            if (
+        elif (
                 isinstance(self.config.sub_logger, list)
                 and len(self.config.sub_logger) > 0
             ):
-                self.sub_logger = jid.JID(self.config.sub_logger[0])
-            else:
-                self.sub_logger = jid.JID(self.config.sub_logger)
+            self.sub_logger = jid.JID(self.config.sub_logger[0])
+        else:
+            self.sub_logger = jid.JID(self.config.sub_logger)
         self.send_message(mto=self.sub_logger, mbody=json.dumps(msgbody), mtype="chat")
 
     def adddevicesyncthing(self, keydevicesyncthing, namerelay, address=["dynamic"]):
@@ -329,8 +319,7 @@ class MUCBot(ClientXMPP):
             resource = namerelay
         if not self.is_exist_device_in_config(keydevicesyncthing):
             logger.debug(
-                "add device syncthing name : %s key: %s"
-                % (namerelay, keydevicesyncthing)
+                f"add device syncthing name : {namerelay} key: {keydevicesyncthing}"
             )
             dsyncthing_tmp = self.syncthing.create_template_struct_device(
                 resource,
@@ -359,10 +348,10 @@ class MUCBot(ClientXMPP):
                 )
 
     def is_exist_device_in_config(self, keydevicesyncthing):
-        for device in self.syncthing.devices:
-            if device["deviceID"] == keydevicesyncthing:
-                return True
-        return False
+        return any(
+            device["deviceID"] == keydevicesyncthing
+            for device in self.syncthing.devices
+        )
 
     def is_format_key_device(self, keydevicesyncthing):
         if len(str(keydevicesyncthing)) != 63:
@@ -372,11 +361,10 @@ class MUCBot(ClientXMPP):
             logger.error("group key diff of 8")
             return False
         for z in listtest:
-            index = 1
             if len(z) != 7:
                 logger.error("size group key diff of 7")
                 return False
-            index += 1
+            index = 1 + 1
         return True
 
     async def message(self, msg):

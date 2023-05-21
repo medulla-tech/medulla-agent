@@ -210,8 +210,8 @@ def cleanbacktodeploy(objectxmpp):
     ]
     for session in delsession:
         del objectxmpp.back_to_deploy[session]
-    if len(delsession) != 0:
-        logging.log(DEBUGPULSE, "Clear dependency : %s" % delsession)
+    if delsession:
+        logging.log(DEBUGPULSE, f"Clear dependency : {delsession}")
         save_back_to_deploy(objectxmpp.back_to_deploy)
 
 
@@ -223,9 +223,7 @@ def networkinfoexist():
         it returns True if the file exists. False otherwise
     """
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
-    if os.path.exists(filenetworkinfo):
-        return True
-    return False
+    return bool(os.path.exists(filenetworkinfo))
 
 
 def save_count_start():
@@ -235,11 +233,7 @@ def save_count_start():
         return 1
     countstart = file_get_contents(filecount)
     try:
-        if countstart != "":
-            countstart = int(countstart.strip())
-            countstart += 1
-        else:
-            countstart = 1
+        countstart = int(countstart.strip()) + 1 if countstart != "" else 1
     except ValueError:
         countstart = 1
     file_put_contents(filecount, str(countstart))
@@ -328,18 +322,18 @@ def testagentconf(typeconf):
     Config = ConfigParser()
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
-    if (
-        Config.has_option("type", "guacamole_baseurl")
-        and Config.has_option("connection", "port")
-        and Config.has_option("connection", "server")
-        and Config.has_option("global", "relayserver_agent")
-        and Config.get("type", "guacamole_baseurl") != ""
-        and Config.get("connection", "port") != ""
-        and Config.get("connection", "server") != ""
-        and Config.get("global", "relayserver_agent") != ""
-    ):
-        return True
-    return False
+    return bool(
+        (
+            Config.has_option("type", "guacamole_baseurl")
+            and Config.has_option("connection", "port")
+            and Config.has_option("connection", "server")
+            and Config.has_option("global", "relayserver_agent")
+            and Config.get("type", "guacamole_baseurl") != ""
+            and Config.get("connection", "port") != ""
+            and Config.get("connection", "server") != ""
+            and Config.get("global", "relayserver_agent") != ""
+        )
+    )
 
 
 def isTemplateConfFile(typeconf):
@@ -356,15 +350,15 @@ def isTemplateConfFile(typeconf):
     Config = ConfigParser.ConfigParser()
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
-    if (
-        Config.has_option("configuration_server", "confserver")
-        and Config.has_option("configuration_server", "confport")
-        and Config.has_option("configuration_server", "confpassword")
-        and Config.has_option("configuration_server", "confdomain")
-        and Config.get("configuration_server", "keyAES32") != ""
-    ):
-        return True
-    return False
+    return bool(
+        (
+            Config.has_option("configuration_server", "confserver")
+            and Config.has_option("configuration_server", "confport")
+            and Config.has_option("configuration_server", "confpassword")
+            and Config.has_option("configuration_server", "confdomain")
+            and Config.get("configuration_server", "keyAES32") != ""
+        )
+    )
 
 
 def createfingerprintnetwork():
@@ -406,9 +400,7 @@ def createfingerprintconf(typeconf):
 
 def confinfoexist():
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), "fingerprintconf")
-    if os.path.exists(filenetworkinfo):
-        return True
-    return False
+    return bool(os.path.exists(filenetworkinfo))
 
 
 def confchanged(typeconf):
@@ -454,15 +446,14 @@ def networkchanged():
         True if we consider that the network changed
         False if we consider that the network has not changed
     """
-    if networkinfoexist():
-        fingerprintnetwork = file_get_contents(
-            os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
-        )
-        newfingerprint = createfingerprintnetwork()
-        if fingerprintnetwork == newfingerprint:
-            return False
-    else:
+    if not networkinfoexist():
         return True
+    fingerprintnetwork = file_get_contents(
+        os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
+    )
+    newfingerprint = createfingerprintnetwork()
+    if fingerprintnetwork == newfingerprint:
+        return False
 
 
 def refreshfingerprint():
@@ -489,8 +480,7 @@ def file_get_contents(
         try:
             if offset > 0:
                 fp.seek(offset)
-            ret = fp.read(maxlen)
-            return ret
+            return fp.read(maxlen)
         finally:
             fp.close()
 
@@ -500,8 +490,7 @@ def file_get_binarycontents(filename, offset=-1, maxlen=-1):
     try:
         if offset > 0:
             fp.seek(offset)
-        ret = fp.read(maxlen)
-        return ret
+        return fp.read(maxlen)
     finally:
         fp.close()
 
@@ -509,25 +498,23 @@ def file_get_binarycontents(filename, offset=-1, maxlen=-1):
 def file_put_contents(filename, data):
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
-    f = open(filename, "w")
-    f.write(data)
-    f.close()
+    with open(filename, "w") as f:
+        f.write(data)
 
 
 def file_put_contents_w_a(filename, data, option="w"):
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
-    if option == "a" or option == "w":
-        f = open(filename, option)
-        f.write(data)
-        f.close()
+    if option in ["a", "w"]:
+        with open(filename, option) as f:
+            f.write(data)
 
 
 def save_obj(obj, name):
     """
     funct save serialised object
     """
-    with open(name + ".pkl", "wb") as f:
+    with open(f"{name}.pkl", "wb") as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 
@@ -535,7 +522,7 @@ def load_obj(name):
     """
     function load serialized object
     """
-    with open(name + ".pkl", "rb") as f:
+    with open(f"{name}.pkl", "rb") as f:
         return pickle.load(f)
 
 
@@ -585,7 +572,7 @@ class StreamToLogger(object):
 
 
 def get_connection_name_from_guid(iface_guids):
-    iface_names = ["(unknown)" for i in range(len(iface_guids))]
+    iface_names = ["(unknown)" for _ in range(len(iface_guids))]
     reg = wr.ConnectRegistry(None, wr.HKEY_LOCAL_MACHINE)
     reg_key = wr.OpenKey(
         reg,
@@ -615,24 +602,19 @@ def isWinUserAdmin():
         # Check for root on Posix
         return os.getuid() == 0
     else:
-        raise RuntimeError(
-            "Unsupported operating system for this module: %s" % (os.name,)
-        )
+        raise RuntimeError(f"Unsupported operating system for this module: {os.name}")
 
 
 def isMacOsUserAdmin():
     # pour linux "cat /etc/shadow")
     obj = simplecommand("cat /etc/master.passwd")
-    if int(obj["code"]) == 0:
-        return True
-    else:
-        return False
+    return int(obj["code"]) == 0
 
 
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
-    for t in range(nb):
+    for _ in range(nb):
         d = d + a[random.randint(0, 35)]
     return d
 
@@ -653,7 +635,7 @@ def loadModule(filename):
         searchPath, file = os.path.split(filename)
         if searchPath not in sys.path:
             sys.path.append(searchPath)
-            sys.path.append(os.path.normpath(searchPath + "/../"))
+            sys.path.append(os.path.normpath(f"{searchPath}/../"))
         moduleName, ext = os.path.splitext(file)
         fp, pathName, description = imp.find_module(
             moduleName,
@@ -667,7 +649,7 @@ def loadModule(filename):
             if fp:
                 fp.close()
     except:
-        logging.getLogger().error(("%s" % (traceback.format_exc())))
+        logging.getLogger().error(f"{traceback.format_exc()}")
     return module
 
 
@@ -676,26 +658,26 @@ def call_plugin_separate(name, *args, **kwargs):
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
-                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
                 # add compteur appel plugins
                 loop = aio.get_event_loop()
                 count = 0
                 try:
-                    count = getattr(args[0], "num_call%s" % args[1])
-                    setattr(args[0], "num_call%s" % args[1], count + 1)
+                    count = getattr(args[0], f"num_call{args[1]}")
+                    setattr(args[0], f"num_call{args[1]}", count + 1)
                 except AttributeError:
                     count = 0
-                    setattr(args[0], "num_call%s" % args[1], count)
+                    setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(name)
                 loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
             else:
-                logging.getLogger().debug("The plugin %s is excluded" % args[1])
+                logging.getLogger().debug(f"The plugin {args[1]} is excluded")
         else:
             logging.getLogger().debug(
-                "The plugin %s is not allowed due to plugin_action parameter" % args[1]
+                f"The plugin {args[1]} is not allowed due to plugin_action parameter"
             )
     except:
-        logging.getLogger().error(("%s" % (traceback.format_exc())))
+        logging.getLogger().error(f"{traceback.format_exc()}")
 
 
 def call_plugin(name, *args, **kwargs):
@@ -703,36 +685,34 @@ def call_plugin(name, *args, **kwargs):
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
-                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-                logger.debug("Loading plugin %s" % args[1])
+                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
+                logger.debug(f"Loading plugin {args[1]}")
 
-                if not os.path.exists("%s.py" % nameplugin):
-                    logging.getLogger().error(
-                        "The file plugin %s does not exit" % args[1]
-                    )
+                if not os.path.exists(f"{nameplugin}.py"):
+                    logging.getLogger().error(f"The file plugin {args[1]} does not exit")
                     return
 
                 loop = aio.new_event_loop()
                 count = 0
                 try:
-                    count = getattr(args[0], "num_call%s" % args[1])
-                    setattr(args[0], "num_call%s" % args[1], count + 1)
+                    count = getattr(args[0], f"num_call{args[1]}")
+                    setattr(args[0], f"num_call{args[1]}", count + 1)
                 except AttributeError:
                     count = 0
-                    setattr(args[0], "num_call%s" % args[1], count)
+                    setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
                 # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
                 result = loop.run_in_executor(
                     None, pluginaction.action, *args, **kwargs
                 )
             else:
-                logging.getLogger().debug("The plugin %s is excluded" % args[1])
+                logging.getLogger().debug(f"The plugin {args[1]} is excluded")
         else:
             logging.getLogger().debug(
-                "The plugin %s is not allowed due to plugin_action parameter" % args[1]
+                f"The plugin {args[1]} is not allowed due to plugin_action parameter"
             )
     except:
-        logging.getLogger().error(("%s" % (traceback.format_exc())))
+        logging.getLogger().error(f"{traceback.format_exc()}")
 
 
 def call_plugin_sequentially(name, *args, **kwargs):
@@ -740,30 +720,30 @@ def call_plugin_sequentially(name, *args, **kwargs):
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
-                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
                 # add compteur appel plugins
                 count = 0
                 try:
-                    count = getattr(args[0], "num_call%s" % args[1])
-                    setattr(args[0], "num_call%s" % args[1], count + 1)
+                    count = getattr(args[0], f"num_call{args[1]}")
+                    setattr(args[0], f"num_call{args[1]}", count + 1)
                 except AttributeError:
                     count = 0
-                    setattr(args[0], "num_call%s" % args[1], count)
+                    setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
                 pluginaction.action(*args, **kwargs)
             else:
-                logging.getLogger().debug("The plugin %s is excluded" % args[1])
+                logging.getLogger().debug(f"The plugin {args[1]} is excluded")
         else:
             logging.getLogger().debug(
-                "The plugin %s is not allowed due to plugin_action parameter" % args[1]
+                f"The plugin {args[1]} is not allowed due to plugin_action parameter"
             )
     except:
-        logging.getLogger().error(("%s" % (traceback.format_exc())))
+        logging.getLogger().error(f"{traceback.format_exc()}")
 
 
 def getshortenedmacaddress():
     listmacadress = {}
-    for nbsearchmac in range(20):
+    for _ in range(20):
         for i in netifaces.interfaces():
             addrs = netifaces.ifaddresses(i)
             try:
@@ -774,7 +754,7 @@ def getshortenedmacaddress():
                     listmacadress[address] = if_mac
             except BaseException:
                 pass
-        if len(listmacadress) > 0:
+        if listmacadress:
             break
         else:
             time.sleep(1)
@@ -799,9 +779,11 @@ def getIPAdressList():
     ip_list = []
     for interface in netifaces.interfaces():
         try:
-            for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
-                if link["addr"] != "127.0.0.1":
-                    ip_list.append(link["addr"])
+            ip_list.extend(
+                link["addr"]
+                for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]
+                if link["addr"] != "127.0.0.1"
+            )
         except BaseException:
             pass
     return ip_list
@@ -943,89 +925,80 @@ def typelinux():
         "cat /proc/1/comm", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     result = p.stdout.readlines()
-    system = result[0].rstrip("\n")
-    return system
+    return result[0].rstrip("\n")
 
 
 def isprogramme(name):
-    obj = {}
     p = subprocess.Popen(
-        "which %s" % (name),
+        f"which {name}",
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
     result = p.stdout.readlines()
-    obj["code"] = p.wait()
+    obj = {"code": p.wait()}
     if sys.version_info[0] == 3:
         result = [binascii.b2a_qp(x) for x in result]
     obj["result"] = result
-    if obj["result"] != "":
-        return True
-    else:
-        return False
+    return obj["result"] != ""
 
 
 def simplecommand(cmd, strimresult=False):
-    obj = {"code": -1, "result": ""}
     if isinstance(cmd, bytes):
         cmd = decode_strconsole(cmd)
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     result = p.stdout.readlines()
-    obj["code"] = p.wait()
+    obj = {"result": "", "code": p.wait()}
     if sys.version_info[0] == 3:
-        if strimresult:
-            obj["result"] = [decode_strconsole(x).strip() for x in result]
-        else:
-            obj["result"] = [decode_strconsole(x) for x in result]
+        obj["result"] = (
+            [decode_strconsole(x).strip() for x in result]
+            if strimresult
+            else [decode_strconsole(x) for x in result]
+        )
+    elif strimresult:
+        obj["result"] = [x.strip() for x in result]
     else:
-        if strimresult:
-            obj["result"] = [x.strip() for x in result]
-        else:
-            obj["result"] = [x for x in result]
+        obj["result"] = list(result)
     return obj
 
 
 def simplecommandstr(cmd):
-    obj = {"code": -1, "result": ""}
     if isinstance(cmd, bytes):
         cmd = decode_strconsole(cmd)
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
-    obj["code"] = p.wait()
+    obj = {"result": "", "code": p.wait()}
     result = p.stdout.readlines()
     if sys.version_info[0] == 3:
         result = [decode_strconsole(x) for x in result]
     else:
-        result = [x for x in result]
+        result = list(result)
     obj["result"] = "".join(result)
     return obj
 
 
 def windowspath(namescript):
-    if sys.platform.startswith("win"):
-        return '"' + namescript + '"'
-    else:
-        return namescript
+    return f'"{namescript}"' if sys.platform.startswith("win") else namescript
 
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
-    print("powershell -ExecutionPolicy Bypass -File  %s" % namescript)
-    obj = simplecommandstr(
-        encode_strconsole("powershell -ExecutionPolicy Bypass -File %s" % namescript)
+    print(f"powershell -ExecutionPolicy Bypass -File  {namescript}")
+    return simplecommandstr(
+        encode_strconsole(
+            f"powershell -ExecutionPolicy Bypass -File {namescript}"
+        )
     )
-    return obj
 
 
 def powerschellscript1ps1(namescript):
     namescript = windowspath(namescript)
     obj = {"code": -1, "result": ""}
     try:
-        obj = simplecommand("powershell -ExecutionPolicy Bypass -File %s" % namescript)
+        obj = simplecommand(f"powershell -ExecutionPolicy Bypass -File {namescript}")
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
     return obj
@@ -1070,7 +1043,7 @@ class shellcommandtimeout(object):
         thread.join(self.obj["timeout"])
         if thread.is_alive():
             print("Terminating process")
-            print("timeout %s" % self.obj["timeout"])
+            print(f'timeout {self.obj["timeout"]}')
             self.process.terminate()
             thread.join()
         self.obj["codereturn"] = self.process.returncode
@@ -1090,15 +1063,14 @@ def servicelinuxinit(name, action):
     Returns:
         The return code of the command
     """
-    obj = {}
     p = subprocess.Popen(
-        "/etc/init.d/%s %s" % (name, action),
+        f"/etc/init.d/{name} {action}",
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
     result = p.stdout.readlines()
-    obj["code"] = p.wait()
+    obj = {"code": p.wait()}
     obj["result"] = result
     return obj
 
@@ -1130,7 +1102,7 @@ def service(name, action):
         system = result[0].rstrip("\n")
         if system == "init":
             p = subprocess.Popen(
-                "/etc/init.d/%s %s" % (name, action),
+                f"/etc/init.d/{name} {action}",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -1140,7 +1112,7 @@ def service(name, action):
             obj["result"] = result
         elif system == "systemd":
             p = subprocess.Popen(
-                "systemctl %s %s" % (action, name),
+                f"systemctl {action} {name}",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -1152,15 +1124,12 @@ def service(name, action):
         pythoncom.CoInitialize()
         try:
             wmi_obj = wmi.WMI()
-            wmi_sql = "select * from Win32_Service Where Name ='%s'" % name
+            wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
             wmi_out = wmi_obj.query(wmi_sql)
         finally:
             pythoncom.CoUninitialize()
         for dev in wmi_out:
             print(dev.Caption)
-        pass
-    elif sys.platform.startswith("darwin"):
-        pass
     return obj
 
 
@@ -1199,7 +1168,7 @@ def windowsservice(name, action):
     pythoncom.CoInitialize()
     try:
         wmi_obj = wmi.WMI()
-        wmi_sql = "select * from Win32_Service Where Name ='%s'" % name
+        wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
         print(wmi_sql)
         wmi_out = wmi_obj.query(wmi_sql)
     finally:
@@ -1215,8 +1184,6 @@ def windowsservice(name, action):
         elif action.lower() == "restart":
             dev.StopService()
             dev.StartService()
-        else:
-            pass
 
 
 def methodservice():
@@ -1233,16 +1200,14 @@ def methodservice():
 
 
 def file_get_content(path):
-    inputFile = open(path, "r")  # Open test.txt file in read mode
-    content = inputFile.read()
-    inputFile.close()
+    with open(path, "r") as inputFile:
+        content = inputFile.read()
     return content
 
 
 def file_put_content(filename, contents, mode="w"):
-    fh = open(filename, mode)
-    fh.write(contents)
-    fh.close()
+    with open(filename, mode) as fh:
+        fh.write(contents)
 
 
 # windows
@@ -1259,7 +1224,7 @@ def file_put_content(filename, contents, mode="w"):
 
 def pluginprocess(func):
     def wrapper(objetxmpp, action, sessionid, data, message, dataerreur):
-        resultaction = "result%s" % action
+        resultaction = f"result{action}"
         result = {}
         result["action"] = resultaction
         result["ret"] = 0
@@ -1267,7 +1232,7 @@ def pluginprocess(func):
         result["base64"] = False
         result["data"] = {}
         dataerreur["action"] = resultaction
-        dataerreur["data"]["msg"] = "ERROR : %s" % action
+        dataerreur["data"]["msg"] = f"ERROR : {action}"
         dataerreur["sessionid"] = sessionid
         try:
             response = func(
@@ -1301,7 +1266,7 @@ def pulgindeploy(func):
         result["base64"] = False
         result["data"] = {}
         dataerreur["action"] = resultaction
-        dataerreur["data"]["msg"] = "ERROR : %s" % action
+        dataerreur["data"]["msg"] = f"ERROR : {action}"
         dataerreur["sessionid"] = sessionid
         try:
             response = func(
@@ -1336,7 +1301,7 @@ def pulgindeploy1(func):
         result["base64"] = False
         result["data"] = {}
         dataerreur["action"] = action
-        dataerreur["data"]["msg"] = "ERROR : %s" % action
+        dataerreur["data"]["msg"] = f"ERROR : {action}"
         dataerreur["sessionid"] = sessionid
         try:
             response = func(
@@ -1347,13 +1312,13 @@ def pulgindeploy1(func):
                 result["data"]["end"] = False
 
             print("----------------------------------------------------------------")
-            print("sent message to %s " % message["from"])
+            print(f'sent message to {message["from"]} ')
             if "Devent" in data:
-                print("Devent : %s" % data["Devent"])
+                print(f'Devent : {data["Devent"]}')
             if "Dtypequery" in data:
-                print("Dtypequery : %s" % data["Dtypequery"])
+                print(f'Dtypequery : {data["Dtypequery"]}')
             if "Deventindex" in data:
-                print("Deventindex : %s" % data["Deventindex"])
+                print(f'Deventindex : {data["Deventindex"]}')
 
             if not result["data"]["end"]:
                 print("Envoi Message")
@@ -1403,53 +1368,47 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     )
     if sys.platform.startswith("linux"):
         obj = simplecommand(
-            "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"
-            % (Port, xmpp_server_ipaddress)
+            f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
         )
         if obj["code"] != 0:
-            logging.getLogger().error("error command netstat : %s" % obj["result"])
+            logging.getLogger().error(f'error command netstat : {obj["result"]}')
             logging.getLogger().error("error install package net-tools")
         if len(obj["result"]) != 0:
             for i in range(len(obj["result"])):
                 obj["result"][i] = obj["result"][i].rstrip("\n")
             a = "\n".join(obj["result"])
-            b = [x for x in a.split(" ") if x != ""]
-            if len(b) != 0:
+            if b := [x for x in a.split(" ") if x != ""]:
                 resultip = b[3].split(":")[0]
     elif sys.platform.startswith("win"):
         obj = simplecommand(
-            'netstat -an | findstr %s | findstr "ESTABLISHED SYN_SENT SYN_RECV"' % Port
+            f'netstat -an | findstr {Port} | findstr "ESTABLISHED SYN_SENT SYN_RECV"'
         )
         if len(obj["result"]) != 0:
             for i in range(len(obj["result"])):
                 obj["result"][i] = obj["result"][i].rstrip("\n")
             a = "\n".join(obj["result"])
-            b = [x for x in a.split(" ") if x != ""]
-            if len(b) != 0:
+            if b := [x for x in a.split(" ") if x != ""]:
                 resultip = b[1].split(":")[0]
     elif sys.platform.startswith("darwin"):
         obj = simplecommand(
-            "netstat -an |grep %s |grep %s| grep ESTABLISHED"
-            % (Port, xmpp_server_ipaddress)
+            f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED"
         )
         if len(obj["result"]) != 0:
             for i in range(len(obj["result"])):
                 obj["result"][i] = obj["result"][i].rstrip("\n")
             a = "\n".join(obj["result"])
-            b = [x for x in a.split(" ") if x != ""]
-            if len(b) != 0:
+            if b := [x for x in a.split(" ") if x != ""]:
                 resultip = b[3][: b[3].rfind(".")]
     else:
-        obj = simplecommand("netstat -a | grep %s | grep ESTABLISHED" % Port)
+        obj = simplecommand(f"netstat -a | grep {Port} | grep ESTABLISHED")
         if len(obj["result"]) != 0:
             for i in range(len(obj["result"])):
                 obj["result"][i] = obj["result"][i].rstrip("\n")
             a = "\n".join(obj["result"])
-            b = [x for x in a.split(" ") if x != ""]
-            if len(b) != 0:
+            if b := [x for x in a.split(" ") if x != ""]:
                 resultip = b[1].split(":")[0]
     logger.debug(
-        "The agent is connected to the Ejabberd server with the IP: %s" % resultip
+        f"The agent is connected to the Ejabberd server with the IP: {resultip}"
     )
     return resultip
 
@@ -1470,7 +1429,7 @@ def decimaltoIpV4(ipdecimal):
     b = (a - int(a)) * 256
     c = (b - int(b)) * 256
     d = (c - int(c)) * 256
-    return "%s.%s.%s.%s" % (int(a), int(b), int(c), int(d))
+    return f"{int(a)}.{int(b)}.{int(c)}.{int(d)}"
 
 
 def subnetnetwork(adressmachine, mask):
@@ -1484,29 +1443,20 @@ def searchippublic(site=1):
         try:
             page = urllib.urlopen("http://ifconfig.co/json").read()
             objip = json.loads(page)
-            if is_valid_ipv4(objip["ip"]):
-                return objip["ip"]
-            else:
-                return searchippublic(2)
+            return objip["ip"] if is_valid_ipv4(objip["ip"]) else searchippublic(2)
         except BaseException:
             return searchippublic(2)
     elif site == 2:
         try:
             page = urllib.urlopen("http://www.monip.org/").read()
             ip = page.split("IP : ")[1].split("<br>")[0]
-            if is_valid_ipv4(ip):
-                return ip
-            else:
-                return searchippublic(3)
+            return ip if is_valid_ipv4(ip) else searchippublic(3)
         except Exception:
             return searchippublic(3)
     elif site == 3:
         try:
             ip = urllib.urlopen("http://ip.42.pl/raw").read()
-            if is_valid_ipv4(ip):
-                return ip
-            else:
-                return searchippublic(4)
+            return ip if is_valid_ipv4(ip) else searchippublic(4)
         except Exception:
             searchippublic(4)
     elif site == 4:
@@ -1528,9 +1478,7 @@ def find_ip():
             pass
         finally:
             s.close()
-    if len(candidates) >= 1:
-        return candidates[0]
-    return None
+    return candidates[0] if candidates else None
 
 
 # decorateur pour simplifier les plugins
@@ -1590,7 +1538,7 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
 def merge_dicts(*dict_args):
     result = {}
     for dictionary in dict_args:
-        result.update(dictionary)
+        result |= dictionary
     return result
 
 
@@ -1606,9 +1554,7 @@ class protodef:
         self.boolchangerproto, self.proto = self.protochanged()
 
     def protoinfoexist(self):
-        if os.path.exists(self.fileprotoinfo):
-            return True
-        return False
+        return bool(os.path.exists(self.fileprotoinfo))
 
     def protochanged(self):
         if self.protoinfoexist():
@@ -1687,9 +1633,10 @@ class protodef:
                         except Exception:
                             ip = cux.laddr.ip
                             port = cux.laddr.port
-                        if cux.status == psutil.CONN_LISTEN and (
-                            ip == "0.0.0.0" or ip == "::"
-                        ):
+                        if cux.status == psutil.CONN_LISTEN and ip in [
+                            "0.0.0.0",
+                            "::",
+                        ]:
                             protport["rdp"] = port
 
         elif sys.platform.startswith("darwin"):
@@ -1722,8 +1669,7 @@ def ipfromdns(name_domaine_or_ip):
             return socket.gethostbyname(name_domaine_or_ip)
         except socket.gaierror:
             logger.error(
-                "The hostname %s is invalid or temporarily unresolved"
-                % name_domaine_or_ip
+                f"The hostname {name_domaine_or_ip} is invalid or temporarily unresolved"
             )
             return ""
         except Exception:
@@ -1754,7 +1700,7 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return True
     except socket.gaierror:
         logger.error(
-            "The hostname %s is invalid or temporarily unresolved" % name_domaine_or_ip
+            f"The hostname {name_domaine_or_ip} is invalid or temporarily unresolved"
         )
         return False
     except Exception:
@@ -1795,26 +1741,26 @@ def shutdown_command(time=0, msg=""):
     """
     if msg != "":
         msg = msg.strip('" ')
-        msg = '"%s"' % msg
+        msg = f'"{msg}"'
     if sys.platform.startswith("linux"):
         if int(time) == 0 or msg == "":
             cmd = "shutdown now"
         else:
-            cmd = "shutdown -P -f -t %s %s" % (time, msg)
+            cmd = f"shutdown -P -f -t {time} {msg}"
         logging.debug(cmd)
         os.system(cmd)
     elif sys.platform.startswith("win"):
         if int(time) == 0 or msg == "":
             cmd = "shutdown /p"
         else:
-            cmd = "shutdown /s /t %s /c %s" % (time, msg)
+            cmd = f"shutdown /s /t {time} /c {msg}"
         logging.debug(cmd)
         os.system(cmd)
     elif sys.platform.startswith("darwin"):
         if int(time) == 0 or msg == "":
             cmd = "shutdown -h now"
         else:
-            cmd = 'shutdown -h +%s "%s"' % (time, msg)
+            cmd = f'shutdown -h +{time} "{msg}"'
         logging.debug(cmd)
         os.system(cmd)
     return
@@ -1830,16 +1776,14 @@ def vnc_set_permission(askpermission=1):
 
     """
     if sys.platform.startswith("linux"):
-        pass
-    elif sys.platform.startswith("win"):
+        return
+    if sys.platform.startswith("win"):
         if askpermission == 0:
             cmd = 'reg add "HKLM\\SOFTWARE\\TightVNC\\Server" /f /v QueryAcceptOnTimeout /t REG_DWORD /d 1 && reg add "HKLM\\SOFTWARE\\TightVNC\\Server" /f /v QueryTimeout /t REG_DWORD /d 1 && net stop tvnserver && net start tvnserver'
         else:
             cmd = 'reg add "HKLM\\SOFTWARE\\TightVNC\\Server" /f /v QueryAcceptOnTimeout /t REG_DWORD /d 0 && reg add "HKLM\\SOFTWARE\\TightVNC\\Server" /f /v QueryTimeout /t REG_DWORD /d 20 && net stop tvnserver && net start tvnserver'
         logging.debug(cmd)
         os.system(cmd)
-    elif sys.platform.startswith("darwin"):
-        pass
 
 
 def reboot_command():
@@ -1881,10 +1825,7 @@ def decode_strconsole(x):
     if sys.platform.startswith("win"):
         return x.decode("cp850", "ignore")
 
-    if sys.platform.startswith("darwin"):
-        return x.decode("utf-8", "ignore")
-
-    return x
+    return x.decode("utf-8", "ignore") if sys.platform.startswith("darwin") else x
 
 
 def encode_strconsole(x):
@@ -1905,10 +1846,7 @@ def encode_strconsole(x):
     if sys.platform.startswith("win"):
         return x.encode("cp850")
 
-    if sys.platform.startswith("darwin"):
-        return x.encode("utf-8")
-
-    return x
+    return x.encode("utf-8") if sys.platform.startswith("darwin") else x
 
 
 def savejsonfile(filename, data, indent=4):
@@ -1923,15 +1861,14 @@ def loadjsonfile(filename):
         try:
             return json.loads(decode_strconsole(dd))
         except Exception as e:
-            logger.error("filename %s error decodage [%s]" % (filename, str(e)))
+            logger.error(f"filename {filename} error decodage [{str(e)}]")
     return None
 
 
 def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), "loginuser")
     if name is None:
-        userlist = list({users[0] for users in psutil.users()})
-        if len(userlist) > 0:
+        if userlist := list({users[0] for users in psutil.users()}):
             name = userlist[0]
     else:
         name = "system"
@@ -1949,7 +1886,7 @@ def save_user_current(name=None):
         datauseruser[name] = 1
 
     datauseruser["suite"].insert(0, name)
-    datauseruser["suite"] = datauseruser["suite"][0:15]
+    datauseruser["suite"] = datauseruser["suite"][:15]
 
     element = set(datauseruser["suite"])
     max = 0
@@ -2063,14 +2000,14 @@ def keypub():
 def deletekey(file, key, back=True):
     if os.path.isfile(file):
         if back:
-            simplecommand("sed -i.bak '/%s/d' %s" % (key, file))
+            simplecommand(f"sed -i.bak '/{key}/d' {file}")
         else:
-            simplecommand("sed -i '/%s/d' %s" % (key, file))
+            simplecommand(f"sed -i '/{key}/d' {file}")
 
 
 def installkey(file, key, back=True):
     deletekey(file, key, back=back)
-    simplecommand('echo "%s" >> %s' % (key, file))
+    simplecommand(f'echo "{key}" >> {file}')
 
 
 def connection_established(Port):
@@ -2079,17 +2016,16 @@ def connection_established(Port):
     """
     if sys.platform.startswith("linux"):
         obj = simplecommandstr(
-            "netstat -an |grep %s | grep ESTABLISHED | grep -v tcp6" % (Port)
+            f"netstat -an |grep {Port} | grep ESTABLISHED | grep -v tcp6"
         )
     elif sys.platform.startswith("win"):
-        obj = simplecommandstr("netstat -an | findstr %s | findstr ESTABLISHED" % Port)
+        obj = simplecommandstr(f"netstat -an | findstr {Port} | findstr ESTABLISHED")
     elif sys.platform.startswith("darwin"):
-        obj = simplecommandstr("netstat -an |grep %s | grep ESTABLISHED" % (Port))
+        obj = simplecommandstr(f"netstat -an |grep {Port} | grep ESTABLISHED")
     if "ESTABLISHED" in obj["result"]:
         return True
-    else:
-        logger.warning("connection xmpp low")
-        return False
+    logger.warning("connection xmpp low")
+    return False
 
 
 def showlinelog(nbline=200, logfile=None):
@@ -2115,7 +2051,7 @@ def showlinelog(nbline=200, logfile=None):
         if logfile is None:
             na = os.path.join("/", "var", "log", "pulse", "xmpp-agent-machine.log")
         if os.path.isfile(na):
-            obj = simplecommandstr("cat %s | tail -n %s" % (na, nbline))
+            obj = simplecommandstr(f"cat {na} | tail -n {nbline}")
     return obj["result"]
 
 
@@ -2193,10 +2129,7 @@ class Program:
 
 class AESCipher:
     def __init__(self, key, BS=32):
-        if isinstance(key, str):
-            self.key = key.encode("utf-8")
-        else:
-            self.key = key  # self.key is bytes
+        self.key = key.encode("utf-8") if isinstance(key, str) else key
         self.BS = BS
 
     def _bchr(self, s):
@@ -2233,7 +2166,7 @@ class AESCipher:
         return self.decrypt_base64_str(enc).encode("utf-8")
 
     def _unpad(self, s):
-        dtrdata = s[: -ord(s[len(s) - 1 :])]
+        dtrdata = s[:-ord(s[-1:])]
         return dtrdata.decode("utf-8")
 
 
@@ -2255,7 +2188,7 @@ def setgetcountcycle(data=None):
     elif data == -1:
         return countcyclealternatif
     elif data >= 0:
-        countcyclealternatif = countcyclealternatif + data
+        countcyclealternatif += data
         file_put_contents(chemin, str(countcyclealternatif))
         return countcyclealternatif
 
@@ -2269,14 +2202,11 @@ def setgetrestart(data=None):
     except Exception:
         restart = 0
         data = None
-    if data is None:
+    if data is None or data != -1 and data == 0:
         file_put_contents(chemin, "0")
         return 0
     elif data == -1:
         return restart
-    elif data == 0:
-        file_put_contents(chemin, "0")
-        return 0
     elif data == 1:
         file_put_contents(chemin, "1")
         return 1
@@ -2284,7 +2214,7 @@ def setgetrestart(data=None):
 
 def detectantivirus():
     def SECURITY_PROVIDER(keyobject, data):
-        str = data[0:2]
+        str = data[:2]
         if str == "00":
             return "NONE"
         elif str == "01":
@@ -2405,7 +2335,7 @@ def information_machine():
     def WMIDateStringToDate(dtmDate):
         strDateTime = ""
         if dtmDate[4] == 0:
-            strDateTime = dtmDate[5] + "/"
+            strDateTime = f"{dtmDate[5]}/"
         else:
             strDateTime = dtmDate[4] + dtmDate[5] + "/"
         if dtmDate[6] == 0:
@@ -2597,15 +2527,11 @@ def sshdup():
         # verify sshd up
         cmd = "ps aux | grep sshd | grep -v grep | grep -v pts"
         result = simplecommand(cmd)
-        if result["code"] == 0:
-            return True
-        return False
+        return result["code"] == 0
     elif sys.platform.startswith("darwin"):
         cmd = "launchctl list com.openssh.sshd"
         result = simplecommand(cmd)
-        if result["code"] == 0:
-            return True
-        return False
+        return result["code"] == 0
     elif sys.platform.startswith("win"):
         cmd = "TASKLIST | FINDSTR sshd"
         result = simplecommand(cmd)
@@ -2632,7 +2558,7 @@ def restartsshd():
             if len(result["result"]) > 0:
                 try:
                     nameservice = result["result"][0].split()[1]
-                    cmd = 'sc start "%s"' % nameservice
+                    cmd = f'sc start "{nameservice}"'
                     result = simplecommand(cmd)
                 except Exception:
                     pass
@@ -2644,11 +2570,11 @@ def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
     compresstype "gz" or "bz2"
     """
     try:
-        with tarfile.open(output_file_gz_bz2, "w:%s" % compresstype) as tar:
+        with tarfile.open(output_file_gz_bz2, f"w:{compresstype}") as tar:
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
     except Exception as e:
-        logger.error("Error creating tar.%s archive : %s" % (compresstype, str(e)))
+        logger.error(f"Error creating tar.{compresstype} archive : {str(e)}")
         return False
 
 
@@ -2661,14 +2587,11 @@ def extract_file(imput_file__gz_bz2, to_directory=".", compresstype="gz"):
     absolutepath = os.path.abspath(imput_file__gz_bz2)
     try:
         os.chdir(to_directory)
-        with tarfile.open(absolutepath, "r:%s" % compresstype) as tar:
+        with tarfile.open(absolutepath, f"r:{compresstype}") as tar:
             tar.extractall()
         return True
-    except OSError as e:
-        logger.error("Error extracting tar.%s : %s" % (str(e), compresstype))
-        return False
     except Exception as e:
-        logger.error("Error extracting tar.%s : %s" % (str(e), compresstype))
+        logger.error(f"Error extracting tar.{str(e)} : {compresstype}")
         return False
     finally:
         os.chdir(cwd)
@@ -2682,8 +2605,7 @@ def find_files(directory, pattern):
     for root, dirs, files in os.walk(directory):
         for basename in files:
             if fnmatch.fnmatch(basename, pattern):
-                filename = str(os.path.join(root, basename))
-                yield filename
+                yield str(os.path.join(root, basename))
 
 
 def listfile(directory, abspath=True):
@@ -2716,9 +2638,7 @@ def _path_packagequickaction():
         try:
             os.makedirs(pathqd)
         except OSError as e:
-            logger.error(
-                "Error creating folder for quick deployment packages : %s" % (str(e))
-            )
+            logger.error(f"Error creating folder for quick deployment packages : {str(e)}")
     return pathqd
 
 
@@ -2726,47 +2646,40 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
     try:
         namepackage = os.path.basename(folder)
         pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
-        pathxmpppackage = "%s.xmpp" % pathaqpackage
+        pathxmpppackage = f"{pathaqpackage}.xmpp"
 
         # if dependency in package do not generate the qpackage
         with open(os.path.join(folder, "xmppdeploy.json")) as json_data:
             data_dict = json.load(json_data)
         if len(data_dict["info"]["Dependency"]) > 0:
             logger.debug(
-                "Package %s has dependencies. Quick deployment package not generated."
-                % (pathxmpppackage)
+                f"Package {pathxmpppackage} has dependencies. Quick deployment package not generated."
             )
-            logger.debug(
-                "Deleting quick deployment package if found %s" % (pathxmpppackage)
-            )
+            logger.debug(f"Deleting quick deployment package if found {pathxmpppackage}")
             try:
                 if "qpackages" in pathaqpackage:
-                    simplecommand("rm %s.*" % pathaqpackage)
+                    simplecommand(f"rm {pathaqpackage}.*")
             except Exception:
                 pass
             return 3
 
         if (
             os.path.exists(pathxmpppackage)
-            and int((time.time() - os.stat(pathxmpppackage).st_mtime)) / 60 < 10
+            and int((time.time() - os.stat(pathxmpppackage).st_mtime)) < 600
         ):
-            logger.debug(
-                "No need to generate quick deployment package %s" % (pathxmpppackage)
-            )
-            simplecommand("touch -c %s" % pathxmpppackage)
+            logger.debug(f"No need to generate quick deployment package {pathxmpppackage}")
+            simplecommand(f"touch -c {pathxmpppackage}")
             return 2
         else:
-            logger.debug(
-                "Deleting quick deployment package if found %s" % (pathxmpppackage)
-            )
+            logger.debug(f"Deleting quick deployment package if found {pathxmpppackage}")
             try:
                 if "qpackages" in pathaqpackage:
-                    simplecommand("rm %s.*" % pathaqpackage)
+                    simplecommand(f"rm {pathaqpackage}.*")
             except Exception:
                 pass
         logger.debug("Checking if quick deployment package needs to be generated")
 
-        result = simplecommand("du -b %s" % folder)
+        result = simplecommand(f"du -b {folder}")
         taillebytefolder = int(result["result"][0].split()[0])
         if taillebytefolder > max_size_stanza_xmpp:
             logger.debug(
@@ -2774,38 +2687,34 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
                 " greater than defined max_size_stanza_xmpp %s"
                 % (taillebytefolder, max_size_stanza_xmpp)
             )
-            logger.debug(
-                "Deleting quick deployment package if found %s" % (pathxmpppackage)
-            )
+            logger.debug(f"Deleting quick deployment package if found {pathxmpppackage}")
             try:
                 if "qpackages" in pathaqpackage:
-                    simplecommand("rm %s.*" % pathaqpackage)
+                    simplecommand(f"rm {pathaqpackage}.*")
             except Exception:
                 pass
             return 6
-            # creation d'un targetos
-        logger.debug(
-            "Preparing quick deployment package for package %s" % (namepackage)
-        )
+                    # creation d'un targetos
+        logger.debug(f"Preparing quick deployment package for package {namepackage}")
         calculemd5 = md5folder(pathaqpackage)
 
-        if os.path.exists("%s.md5" % pathaqpackage):
-            content = file_get_contents("%s.md5" % pathaqpackage)
+        if os.path.exists(f"{pathaqpackage}.md5"):
+            content = file_get_contents(f"{pathaqpackage}.md5")
             if content == calculemd5:
                 # pas de modifications du package
                 logger.debug("Quick deployment package found")
                 # creation only si if fille missing
                 create_msg_xmpp_quick_deploy(folder, create=False)
                 return 1
-        file_put_contents("%s.md5" % pathaqpackage, calculemd5)
+        file_put_contents(f"{pathaqpackage}.md5", calculemd5)
         create_msg_xmpp_quick_deploy(folder, create=True)
         return 0
     except Exception:
-        logger.error("Error generating quick deployment package : %s" % folder)
-        logger.error("%s" % (traceback.format_exc()))
+        logger.error(f"Error generating quick deployment package : {folder}")
+        logger.error(f"{traceback.format_exc()}")
         try:
             if "qpackages" in pathaqpackage:
-                simplecommand("rm %s.*" % pathaqpackage)
+                simplecommand(f"rm {pathaqpackage}.*")
         except Exception:
             pass
         return 100
@@ -2815,7 +2724,7 @@ def get_message_xmpp_quick_deploy(folder, sessionid):
     # read le fichier
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
-    with open("%s.xmpp" % pathaqpackage, "r") as f:
+    with open(f"{pathaqpackage}.xmpp", "r") as f:
         data = f.read()
     return data.replace("@-TEMPLSESSQUICKDEPLOY@", sessionid, 1)
 
@@ -2824,7 +2733,7 @@ def get_template_message_xmpp_quick_deploy(folder):
     # read le fichier
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
-    with open("%s.xmpp" % pathaqpackage, "r") as f:
+    with open(f"{pathaqpackage}.xmpp", "r") as f:
         data = f.read()
     return data
 
@@ -2838,10 +2747,10 @@ def create_msg_xmpp_quick_deploy(folder, create=False):
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
     # create compress file folder
-    if not os.path.exists("%s.xmpp" % pathaqpackage) or create:
-        logger.debug("Creating compressed archive %s.gz" % pathaqpackage)
-        make_tarfile("%s.gz" % pathaqpackage, folder, compresstype="gz")
-        with open("%s.gz" % pathaqpackage, "rb") as f:
+    if not os.path.exists(f"{pathaqpackage}.xmpp") or create:
+        logger.debug(f"Creating compressed archive {pathaqpackage}.gz")
+        make_tarfile(f"{pathaqpackage}.gz", folder, compresstype="gz")
+        with open(f"{pathaqpackage}.gz", "rb") as f:
             dataraw = base64.b64encode(f.read())
         msgxmpptemplate = """{"sessionid": "@-TEMPLSESSQUICKDEPLOY@",
                               "action": "qdeploy",
@@ -2853,16 +2762,16 @@ def create_msg_xmpp_quick_deploy(folder, create=False):
             dataraw,
         )
         try:
-            logger.debug("Writing new quick deployment pakage %s.xmpp" % pathaqpackage)
-            with open("%s.xmpp" % pathaqpackage, "w") as f:
+            logger.debug(f"Writing new quick deployment pakage {pathaqpackage}.xmpp")
+            with open(f"{pathaqpackage}.xmpp", "w") as f:
                 f.write(msgxmpptemplate)
             # The compressed file is useless
-            if os.path.exists("%s.gz" % pathaqpackage):
-                os.remove("%s.gz" % pathaqpackage)
+            if os.path.exists(f"{pathaqpackage}.gz"):
+                os.remove(f"{pathaqpackage}.gz")
         except Exception:
-            logger.error("%s" % (traceback.format_exc()))
+            logger.error(f"{traceback.format_exc()}")
     else:
-        logger.debug("Quick deployment package %s.xmpp found" % pathaqpackage)
+        logger.debug(f"Quick deployment package {pathaqpackage}.xmpp found")
 
 
 def pulseuser_useraccount_mustexist(username="pulseuser"):

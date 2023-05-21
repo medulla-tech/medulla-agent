@@ -60,44 +60,37 @@ class xmppbrowsing:
 
     def strjsontree(self):
         try:
-            if sys.platform.startswith("win"):
-                cont = file_get_content(
-                    os.path.join(
-                        os.environ["ProgramFiles"], "Pulse", "tmp", "treejson.json"
-                    )
-                )
-                l = decode_strconsole(cont)
-                return l
-            else:
+            if not sys.platform.startswith("win"):
                 return {}
+            cont = file_get_content(
+                os.path.join(
+                    os.environ["ProgramFiles"], "Pulse", "tmp", "treejson.json"
+                )
+            )
+            return decode_strconsole(cont)
         except Exception as e:
             logger.error(traceback.format_exc())
-            logger.error("strjsontree %s" % str(e))
+            logger.error(f"strjsontree {str(e)}")
         return {}
 
     def createjsontree(self):
         logging.getLogger().debug("Creation hierarchi file")
         if sys.platform.startswith("win"):
-            cmd = "%s %s %s" % (
-                self.programmetreejson,
-                self.rootfilesystem,
-                self.jsonfile,
-            )
+            cmd = f"{self.programmetreejson} {self.rootfilesystem} {self.jsonfile}"
         else:
             cmd = "%s -r '%s' -o \"%s\"" % (
                 self.programmetreejson,
                 self.rootfilesystem,
                 self.jsonfile,
             )
-        msg = "Generation tree.json command : [%s] " % cmd
-        logging.getLogger().debug("%s : " % cmd)
+        msg = f"Generation tree.json command : [{cmd}] "
+        logging.getLogger().debug(f"{cmd} : ")
         obj = simplecommand(cmd)
         if obj["code"] != 0:
             logger.error(obj["result"])
             if self.objectxmpp is not None:
                 self.objectxmpp.xmpplog(
-                    "Error generating tree for machine %s [command :%s]"
-                    % (self.objectxmpp.boundjid.bare, cmd),
+                    f"Error generating tree for machine {self.objectxmpp.boundjid.bare} [command :{cmd}]",
                     type="noset",
                     sessionname="",
                     priority=0,
@@ -112,8 +105,7 @@ class xmppbrowsing:
             return
         if self.objectxmpp is not None:
             self.objectxmpp.xmpplog(
-                "Generating tree for machine %s [command :%s]"
-                % (self.objectxmpp.boundjid.bare, cmd),
+                f"Generating tree for machine {self.objectxmpp.boundjid.bare} [command :{cmd}]",
                 type="noset",
                 sessionname="",
                 priority=0,
@@ -134,7 +126,7 @@ class xmppbrowsing:
         i = int(math.floor(math.log(size_bytes, 1024)))
         p = math.pow(1024, i)
         s = round(size_bytes / p, 2)
-        return "%s %s" % (s, size_name[i])
+        return f"{s} {size_name[i]}"
 
     def _listdirfile(self, path):
         filesinfolder = []
@@ -157,7 +149,7 @@ class xmppbrowsing:
             "---------------------------------------------------------"
         )
         logging.getLogger().debug(
-            "search files and folders list for %s : " % path_abs_current
+            f"search files and folders list for {path_abs_current} : "
         )
         logging.getLogger().debug(
             "---------------------------------------------------------"
@@ -184,8 +176,7 @@ class xmppbrowsing:
             path_abs_current = "/".join(dd)
             self.hierarchystring = ""
             self.initialisation = 0
-            if path_abs_current.startswith("/"):
-                path_abs_current = path_abs_current[1:]
+            path_abs_current = path_abs_current.removeprefix("/")
             pathabs = os.path.join(self.rootfilesystem, path_abs_current)
             pathabs = pathabs.replace("C:", "c:")
         try:
@@ -195,10 +186,11 @@ class xmppbrowsing:
         except Exception:
             list_files_current_dirs = []
             list_files_current_files = []
-        display_only_folder_no_nexclude = []
-        for k in list_files_current_dirs:
-            if not (os.path.join(pathabs, k) in self.excludelist):
-                display_only_folder_no_nexclude.append(k)
+        display_only_folder_no_nexclude = [
+            k
+            for k in list_files_current_dirs
+            if os.path.join(pathabs, k) not in self.excludelist
+        ]
         self.dirinfos = {
             "path_abs_current": pathabs,
             "list_dirs_current": display_only_folder_no_nexclude,

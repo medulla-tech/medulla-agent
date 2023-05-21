@@ -20,8 +20,8 @@ logger = logging.getLogger()
 
 class manageschedulerdeploy:
     def __init__(self, namebase="BDtimedeploy"):
-        name_basecmd = namebase + "cmddb"
-        name_basesession = namebase + "sessiondb"
+        name_basecmd = f"{namebase}cmddb"
+        name_basesession = f"{namebase}sessiondb"
         self.openbool = False
         path_bd = self.bddir()
         if path_bd is not None:
@@ -30,10 +30,8 @@ class manageschedulerdeploy:
             self.name_basesession = os.path.join(path_bd, name_basesession)
             self.name_basecmd = os.path.join(path_bd, name_basecmd)
             # on del base if name prefix underscore
-            self.name_basesessioncorrup = os.path.join(
-                path_bd, "__db.%s" % name_basesession
-            )
-            self.name_basecmdcorrup = os.path.join(path_bd, "__db.%s" % name_basecmd)
+            self.name_basesessioncorrup = os.path.join(path_bd, f"__db.{name_basesession}")
+            self.name_basecmdcorrup = os.path.join(path_bd, f"__db.{name_basecmd}")
             if os.path.exists(self.name_basesessioncorrup):
                 # os.remove(self.name_basesessioncorrup)
                 logger.warning(
@@ -63,8 +61,7 @@ class manageschedulerdeploy:
                 )
             except Exception:
                 logger.error(
-                    "An error occured while opening the database: %s"
-                    % self.name_basesession
+                    f"An error occured while opening the database: {self.name_basesession}"
                 )
                 os.remove(self.name_basesession)
                 self.dbsessionscheduler = plyvel.DB(
@@ -76,8 +73,7 @@ class manageschedulerdeploy:
                 )
             except Exception:
                 logger.error(
-                    "An error occured while opening the database: %s"
-                    % self.name_basecmd
+                    f"An error occured while opening the database: {self.name_basecmd}"
                 )
                 os.remove(self.name_basecmd)
                 self.dbcmdscheduler = plyvel.DB(
@@ -88,8 +84,7 @@ class manageschedulerdeploy:
                 self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
             except bsddb.db.DBInvalidArgError:
                 logger.error(
-                    "An error occured while opening the bsddb database: %s"
-                    % self.name_basecmd
+                    f"An error occured while opening the bsddb database: {self.name_basecmd}"
                 )
                 os.remove(self.name_basecmd)
                 self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
@@ -104,8 +99,7 @@ class manageschedulerdeploy:
                 self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
             except bsddb.db.DBInvalidArgError:
                 logger.error(
-                    "An error occured while opening the bsddb database: %s"
-                    % self.name_basesession
+                    f"An error occured while opening the bsddb database: {self.name_basesession}"
                 )
                 os.remove(self.name_basesession)
                 self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
@@ -158,9 +152,8 @@ class manageschedulerdeploy:
                 data = self.dbsessionscheduler.get(bytearray(sessionid))
                 if data is None:
                     data = ""
-            else:
-                if str(sessionid) in self.dbsessionscheduler:
-                    data = self.dbsessionscheduler[sessionid]
+            elif sessionid in self.dbsessionscheduler:
+                data = self.dbsessionscheduler[sessionid]
             self.closebase()
         except Exception as exception_error:
             logger.error(
@@ -178,10 +171,9 @@ class manageschedulerdeploy:
             self.openbase()
             if sys.platform.startswith("darwin"):
                 data = self.dbsessionscheduler.delete(bytearray(sessionid))
-            else:
-                if sessionid in self.dbsessionscheduler:
-                    del self.dbsessionscheduler[sessionid]
-                    self.dbsessionscheduler.sync()
+            elif sessionid in self.dbsessionscheduler:
+                del self.dbsessionscheduler[sessionid]
+                self.dbsessionscheduler.sync()
             self.closebase()
         except Exception as exception_error:
             logger.error(

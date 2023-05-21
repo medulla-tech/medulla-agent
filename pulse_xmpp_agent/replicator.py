@@ -51,14 +51,11 @@ def copytree2(src, dst, symlinks=False):
                 os.symlink(linkto, dstname)
             elif os.path.isdir(srcname):
                 copytree2(srcname, dstname, symlinks)
-            else:
-                if not srcname.endswith(".pyc"):
-                    shutil.copy2(srcname, dstname)
-            # XXX What about devices, sockets etc.?
+            elif not srcname.endswith(".pyc"):
+                shutil.copy2(srcname, dstname)
+                    # XXX What about devices, sockets etc.?
         except (IOError, os.error) as why:
             errors.append((srcname, dstname, str(why)))
-        # catch the Error from the recursive copytree so that we can
-        # continue with other files
         except Exception as err:
             errors.extend(err.args[0])
     try:
@@ -70,9 +67,7 @@ def copytree2(src, dst, symlinks=False):
         errors.extend((src, dst, str(why)))
     # if errors:
     # raise shutil.Error(errors)
-    if errors:
-        return False
-    return True
+    return not errors
 
 
 def search_action_on_agent_cp_and_del(fromimg, frommachine):
@@ -82,7 +77,6 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
     list files to supp in mach
     """
     replace_file_mach_by_file_img = []
-    file_missing_in_mach = []
     file_supp_in_mach = []
     # il y aura 1 ou plusieurs fichier a supprimer dans l'agent.
     # search fiichier devenu inutile
@@ -95,10 +89,11 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
                 replace_file_mach_by_file_img.append(namefichier)
         else:
             file_supp_in_mach.append(namefichier)
-    for namefichier in fromimg:
-        # search fichier missing dans mach
-        if namefichier not in frommachine:
-            file_missing_in_mach.append(namefichier)
+    file_missing_in_mach = [
+        namefichier
+        for namefichier in fromimg
+        if namefichier not in frommachine
+    ]
     # les fichiers manquant dans machine sont aussi des fichier a rajouter.
     fichier_to_copie = list(replace_file_mach_by_file_img)
     fichier_to_copie.extend(file_missing_in_mach)
@@ -136,8 +131,7 @@ def file_get_contents(filename, use_include_path=0, context=None, offset=-1, max
         try:
             if offset > 0:
                 fp.seek(offset)
-            ret = fp.read(maxlen)
-            return ret
+            return fp.read(maxlen)
         finally:
             fp.close()
 
@@ -147,8 +141,7 @@ def file_get_binarycontents(filename, offset=-1, maxlen=-1):
     try:
         if offset > 0:
             fp.seek(offset)
-        ret = fp.read(maxlen)
-        return ret
+        return fp.read(maxlen)
     finally:
         fp.close()
 
@@ -182,7 +175,7 @@ class Update_Remote_Agent:
             if not os.path.exists(path_dir_remoteagent):
                 os.makedirs(path_dir_remoteagent)
                 logging.getLogger().debug(
-                    "Creating folder for remote base agent : %s" % dir_agent_base
+                    f"Creating folder for remote base agent : {dir_agent_base}"
                 )
         if os.path.exists(os.path.join(dir_agent_base, "agentversion")):
             self.load_list_md5_agentbase()
@@ -197,7 +190,6 @@ class Update_Remote_Agent:
         return self.directory["fingerprint"]
 
     def load_list_md5_agentbase(self):
-        listmd5 = []
         self.directory = {
             "program_agent": {},
             "version": "",
@@ -215,7 +207,7 @@ class Update_Remote_Agent:
         self.directory["version_agent"] = hashlib.md5(
             self.directory["version"]
         ).hexdigest()
-        listmd5.append(self.directory["version_agent"])
+        listmd5 = [self.directory["version_agent"]]
         list_script_python_for_update = [
             "agentxmpp.py",
             "launcher.py",
@@ -293,17 +285,13 @@ def module_needed(agent_image, verbose=False):
     ]
     for filename in list_script_python_for_update:
         try:
-            importlib.import_module("img_agent.%s" % filename[:-3])
+            importlib.import_module(f"img_agent.{filename[:-3]}")
         except Exception as e:
             if verbose:
                 print(
-                    (
-                        'Some python modules needed for running "%s" are missing. We will not switch to new agent'
-                        % (filename)
-                    )
+                    f'Some python modules needed for running "{filename}" are missing. We will not switch to new agent'
                 )
                 error = True
-            pass
     if boolfichier:
         try:
             os.remove(initfile)
@@ -318,14 +306,11 @@ def module_needed(agent_image, verbose=False):
         if x.endswith(".py")
     ]:
         try:
-            importlib.import_module("img_agent.lib.%s" % filename)
+            importlib.import_module(f"img_agent.lib.{filename}")
         except ImportError:
             if verbose:
                 print(
-                    (
-                        "Some python modules needed for running lib/%s are missing. We will not switch to new agent"
-                        % (filename)
-                    )
+                    f"Some python modules needed for running lib/{filename} are missing. We will not switch to new agent"
                 )
             return False
     return True
@@ -432,17 +417,17 @@ if __name__ == "__main__":
                 diff2 = [os.path.join(pathagent, dirname, x) for x in diff]
                 supp2 = [os.path.join(pathagent, dirname, x) for x in supp]
                 if options.verbose or options.info:
-                    if len(supp2) > 0 or len(diff2) > 0:
+                    if supp2 or diff2:
                         print(
                             "_______________________________________________________________________________________________"
                         )
-                        print("Action for %s" % directory_agent)
-                        if len(diff2) > 0:
-                            print("Replace or add agent files")
-                            print(json.dumps(diff2, indent=4, sort_keys=True))
-                        if len(supp2) > 0:
-                            print("Unused agent file")
-                            print(json.dumps(supp2, indent=4, sort_keys=True))
+                        print(f"Action for {directory_agent}")
+                    if diff2:
+                        print("Replace or add agent files")
+                        print(json.dumps(diff2, indent=4, sort_keys=True))
+                    if supp2:
+                        print("Unused agent file")
+                        print(json.dumps(supp2, indent=4, sort_keys=True))
                 if not options.info:
                     for delfile in supp2:
                         os.remove(delfile)

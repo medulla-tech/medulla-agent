@@ -150,9 +150,9 @@ mon_machine_id = @mon_machine_id@
 mon_machine_machines_id = @mon_machine_machines_id@ -->
 """
     if dictresult["agenttype"] == "relayserver":
-        Tmach = "RELAY SERVER (%s)" % dictresult["platform"]
+        Tmach = f'RELAY SERVER ({dictresult["platform"]})'
     else:
-        Tmach = "MACHINE (%s)" % dictresult["platform"]
+        Tmach = f'MACHINE ({dictresult["platform"]})'
     templateevent += """
 <table>
   <!-- <caption>Device information</caption> -->
@@ -335,7 +335,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 </body>
 </html>"""
     for t in dictresult:
-        search = "@%s@" % t
+        search = f"@{t}@"
         templateevent = templateevent.replace(search, str(dictresult[t]))
     return templateevent
 
@@ -365,7 +365,7 @@ class message_email_smtp_ssl:
         self.porthost = porthost
         self.compte_email = compte_email
         self.email_password = email_password
-        self.fromaddr = "Alert <%s>" % compte_email
+        self.fromaddr = f"Alert <{compte_email}>"
         self.subject_email = "Event report"
         self.namefile = None
 
@@ -388,7 +388,7 @@ class message_email_smtp_ssl:
         self.msg_html_text = minetype_html_text
 
     def connectsend(self):
-        if self.msg_plain_text or self.msg_plain_text:
+        if self.msg_plain_text:
             try:
                 self.server = (
                     smtplib.SMTP_SSL()
@@ -410,44 +410,41 @@ class message_email_smtp_ssl:
         return False
 
     def send_mail(self):
-        if self.connectsend():
-            msg = MIMEMultipart("alternative")
-            msg["From"] = self.fromaddr
-            msg["To"] = ",".join(self.to_addrs_array)
-            msg["Subject"] = self.subject_email
-            msg["Date"] = formatdate(localtime=True)
-            # Record the MIME types of both parts - text/plain and text/html.
-            if self.msg_plain_text:
-                part1 = MIMEText(self.msg_plain_text, "plain")
-                msg.attach(part1)
-            if self.msg_html_text:
-                part2 = MIMEText(self.msg_html_text, "html")
-                msg.attach(part2)
-            if self.namefile:
-                if os.path.isfile(self.namefile):
-                    suffixe = self.namefile.split(".")
-                    if len(suffixe) > 1:
-                        suffixe = suffixe[-1]
-                    else:
-                        suffixe = "dat"
-                    fp = open(self.namefile, "rb")
+        if not self.connectsend():
+            return
+        msg = MIMEMultipart("alternative")
+        msg["From"] = self.fromaddr
+        msg["To"] = ",".join(self.to_addrs_array)
+        msg["Subject"] = self.subject_email
+        msg["Date"] = formatdate(localtime=True)
+        # Record the MIME types of both parts - text/plain and text/html.
+        if self.msg_plain_text:
+            part1 = MIMEText(self.msg_plain_text, "plain")
+            msg.attach(part1)
+        if self.msg_html_text:
+            part2 = MIMEText(self.msg_html_text, "html")
+            msg.attach(part2)
+        if self.namefile:
+            if os.path.isfile(self.namefile):
+                suffixe = self.namefile.split(".")
+                suffixe = suffixe[-1] if len(suffixe) > 1 else "dat"
+                with open(self.namefile, "rb") as fp:
                     att = email.mime.application.MIMEApplication(
                         fp.read(), _subtype=suffixe
                     )
-                    fp.close()
-                    att.add_header(
-                        "Content-Disposition",
-                        "attachment",
-                        filename=os.path.basename(self.namefile),
-                    )
-                    msg.attach(att)
-            try:
-                self.server.sendmail(
-                    self.fromaddr, self.to_addrs_array, msg.as_string()
+                att.add_header(
+                    "Content-Disposition",
+                    "attachment",
+                    filename=os.path.basename(self.namefile),
                 )
-            except smtplib.SMTPException as e:
-                print(e)
-            self.server.quit()
+                msg.attach(att)
+        try:
+            self.server.sendmail(
+                self.fromaddr, self.to_addrs_array, msg.as_string()
+            )
+        except smtplib.SMTPException as e:
+            print(e)
+        self.server.quit()
 
 
 class message_email_smtp_ssl_tls:
@@ -456,7 +453,7 @@ class message_email_smtp_ssl_tls:
         self.porthost = porthost
         self.compte_email = compte_email
         self.email_password = email_password
-        self.fromaddr = "Alert <%s>" % compte_email
+        self.fromaddr = f"Alert <{compte_email}>"
         self.subject_email = "Event report"
         self.namefile = None
 
@@ -476,14 +473,14 @@ class message_email_smtp_ssl_tls:
         self.msg_html_text = minetype_html_text
 
     def connectsend(self):
-        if self.msg_plain_text or self.msg_plain_text:
+        if self.msg_plain_text:
             try:
                 self.server = smtplib.SMTP()  # With TLS, we use SMTP()
                 print(self.serverhost)
                 print(self.porthost)
                 connect_to_server = self.server.connect(self.serverhost, self.porthost)
                 print(connect_to_server)
-                logger.debug("connect_to_server %s" % connect_to_server)
+                logger.debug(f"connect_to_server {connect_to_server}")
 
                 hello_from_server = self.server.ehlo()
                 print(hello_from_server)
@@ -499,44 +496,41 @@ class message_email_smtp_ssl_tls:
         return False
 
     def send_mail(self):
-        if self.connectsend():
-            msg = MIMEMultipart("alternative")
-            msg["From"] = self.fromaddr
-            msg["To"] = ",".join(self.to_addrs_array)
-            msg["Subject"] = self.subject_email
-            msg["Date"] = formatdate(localtime=True)
-            # Record the MIME types of both parts - text/plain and text/html.
-            if self.msg_plain_text:
-                part1 = MIMEText(self.msg_plain_text, "plain")
-                msg.attach(part1)
-            if self.msg_html_text:
-                part2 = MIMEText(self.msg_html_text, "html")
-                msg.attach(part2)
-            if self.namefile:
-                if os.path.isfile(self.namefile):
-                    suffixe = self.namefile.split(".")
-                    if len(suffixe) > 1:
-                        suffixe = suffixe[-1]
-                    else:
-                        suffixe = "dat"
-                    fp = open(self.namefile, "rb")
+        if not self.connectsend():
+            return
+        msg = MIMEMultipart("alternative")
+        msg["From"] = self.fromaddr
+        msg["To"] = ",".join(self.to_addrs_array)
+        msg["Subject"] = self.subject_email
+        msg["Date"] = formatdate(localtime=True)
+        # Record the MIME types of both parts - text/plain and text/html.
+        if self.msg_plain_text:
+            part1 = MIMEText(self.msg_plain_text, "plain")
+            msg.attach(part1)
+        if self.msg_html_text:
+            part2 = MIMEText(self.msg_html_text, "html")
+            msg.attach(part2)
+        if self.namefile:
+            if os.path.isfile(self.namefile):
+                suffixe = self.namefile.split(".")
+                suffixe = suffixe[-1] if len(suffixe) > 1 else "dat"
+                with open(self.namefile, "rb") as fp:
                     att = email.mime.application.MIMEApplication(
                         fp.read(), _subtype=suffixe
                     )
-                    fp.close()
-                    att.add_header(
-                        "Content-Disposition",
-                        "attachment",
-                        filename=os.path.basename(self.namefile),
-                    )
-                    msg.attach(att)
-            try:
-                self.server.sendmail(
-                    self.fromaddr, self.to_addrs_array, msg.as_string()
+                att.add_header(
+                    "Content-Disposition",
+                    "attachment",
+                    filename=os.path.basename(self.namefile),
                 )
-            except smtplib.SMTPException as e:
-                print(e)
-            self.server.quit()
+                msg.attach(att)
+        try:
+            self.server.sendmail(
+                self.fromaddr, self.to_addrs_array, msg.as_string()
+            )
+        except smtplib.SMTPException as e:
+            print(e)
+        self.server.quit()
 
 
 def main():

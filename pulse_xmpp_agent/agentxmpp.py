@@ -172,7 +172,7 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
         file_names = os.listdir(dir_name)
         result = []
         result1 = []
-        prefix = "{}".format(base_name)
+        prefix = f"{base_name}"
         for file_name in file_names:
             if file_name.startswith(prefix) and not file_name.endswith(".zip"):
                 f = os.path.join(dir_name, file_name)
@@ -194,7 +194,7 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
             dfn = self.get_files_by_date()
         except Exception:
             return
-        dfn_zipped = "{}.zip".format(dfn)
+        dfn_zipped = f"{dfn}.zip"
         if os.path.exists(dfn_zipped):
             os.remove(dfn_zipped)
         with zipfile.ZipFile(dfn_zipped, "w") as f:
@@ -218,12 +218,11 @@ class DateTimebytesEncoderjson(json.JSONEncoder):
 
     def default(self, obj):
         if isinstance(obj, datetime):
-            encoded_object = obj.isoformat()
+            return obj.isoformat()
         elif isinstance(obj, bytes):
-            encoded_object = obj.decode("utf-8")
+            return obj.decode("utf-8")
         else:
-            encoded_object = json.JSONEncoder.default(self, obj)
-        return encoded_object
+            return json.JSONEncoder.default(self, obj)
 
 
 class MUCBot(slixmpp.ClientXMPP):

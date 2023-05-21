@@ -20,12 +20,11 @@ import subprocess
 
 
 def simplecommand(cmd):
-    obj = {}
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     result = p.stdout.readlines()
-    obj["code"] = p.wait()
+    obj = {"code": p.wait()}
     obj["result"] = result
     return obj
 
@@ -72,7 +71,7 @@ class dialogboxnotification:
         win_height = height + titlebar_height + frm_width
         x = win.winfo_screenwidth() // 2 - win_width // 2
         y = win.winfo_screenheight() // 2 - win_height // 2
-        win.geometry("{}x{}+{}+{}".format(width, height, x, y))
+        win.geometry(f"{width}x{height}+{x}+{y}")
         win.deiconify()
 
     def ok(self):
@@ -114,10 +113,7 @@ class dialogboxnotification:
 
         if self.Ybutton or self.Nbutton:
             button_frame = tk.Frame(self.root, bg="#25607d")
-            if self.Ybutton == 0 or self.Nbutton == 0:
-                xpadvaleur = 70
-            else:
-                xpadvaleur = 40
+            xpadvaleur = 70 if self.Ybutton == 0 or self.Nbutton == 0 else 40
             button_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
 
             if self.Ybutton:
@@ -187,7 +183,7 @@ class dialogboxnotification:
             font=("Open Sans Soft Regular", self.sizenotification),
         ).pack()
 
-        if not sys.version_info[0] < 3:
+        if sys.version_info[0] >= 3:
             # Create a photoimage object of the image in the path
             medullaLogoLocation = Image.open("Image3.png")
             medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)

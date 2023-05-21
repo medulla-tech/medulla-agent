@@ -58,18 +58,17 @@ class global_data_process:
 
         This is a Linux and Darwin only function.
         """
-        listpid = []
         if self.ProcessObj is not None and self.PIDagent != 0:
             parent = psutil.Process(self.PIDagent)
             children = parent.children(recursive=True)
-            for child in children:
-                listpid.append(child.pid)
+            listpid = [child.pid for child in children]
             self.pid_children.extend(listpid)
             self.pid_children = list(set(self.pid_children))
-        list_defunct = []
-        for pid_child in self.pid_children:
-            if not psutil.pid_exists(pid_child):
-                list_defunct.append(pid_child)
+        list_defunct = [
+            pid_child
+            for pid_child in self.pid_children
+            if not psutil.pid_exists(pid_child)
+        ]
         for pid_defunct in list_defunct:
             try:
                 self.pid_children.remove(pid_defunct)
@@ -86,9 +85,7 @@ class global_data_process:
                        False otherwise.
         """
         for pid_child in self.pid_children:
-            if psutil.pid_exists(pid_child):
-                return True
-            return False
+            return bool(psutil.pid_exists(pid_child))
 
     def is_alive(self):
         """
@@ -102,12 +99,11 @@ class global_data_process:
             if self.ProcessObj.poll() is None:
                 # The process is still running.
                 return True
-            else:
-                self.stop_process_agent()
-                self.ProcessObj.wait()
-                self.PIDagent = 0
-                self.ProcessObj = None
-                self.pid_child = []
+            self.stop_process_agent()
+            self.ProcessObj.wait()
+            self.PIDagent = 0
+            self.ProcessObj = None
+            self.pid_child = []
         return False
 
     def stop_process_agent(self, is_parent=True):
@@ -123,7 +119,7 @@ class global_data_process:
                 gone, still_alive = psutil.wait_procs(children, timeout=5)
                 if is_parent:
                     try:
-                        logger.debug("kill parent process %s" % parent.pid)
+                        logger.debug(f"kill parent process {parent.pid}")
                         parent.kill()
                         parent.wait(5)
                     except:
@@ -157,7 +153,7 @@ class global_data_process:
     def display_Process(self):
         try:
             if self.ProcessObj is not None:
-                strpid = "PID agent %s" % (self.PIDagent)
+                strpid = f"PID agent {self.PIDagent}"
                 logger.debug(strpid)
                 logstring = "\\_ -Launcher\n    \\_ -%s" % self.PIDagent
                 for childpid in self.pid_child:
@@ -193,13 +189,11 @@ class global_data_process:
                 self.stop_process_agent()
                 return True
             logger.debug("SIGNAL EVENT INCONUE")
-        else:
-            pass
         return False
 
     def signal_handler(self, signal_in, frame):
         if signal_in in [signal.SIGINT, signal.SIGQUIT, signal.SIGQUIT]:
-            logger.debug("SIGNAL EVENT %s" % signal_in)
+            logger.debug(f"SIGNAL EVENT {signal_in}")
             self.terminate_process = True
             self.stop_process_agent()
 
@@ -237,16 +231,14 @@ class base_folder:
         Return:
             It returns True if it exists. False otherwise.
         """
-        if not os.path.isdir(self.path_rescue):
-            return False
-        return True
+        return bool(os.path.isdir(self.path_rescue))
 
     def _clean_rescue_agent(self):
         """
         It removes the rescue agent from the filesystem.
         """
         if self._exist_rescue():
-            logger.debug("We are removing the rescue agent from %s" % self.path_rescue)
+            logger.debug(f"We are removing the rescue agent from {self.path_rescue}")
             shutil.rmtree(self.path_rescue)
 
     def copytree1(self, src, dst, symlinks=False, ignore=None):
@@ -261,19 +253,18 @@ class base_folder:
             d = os.path.join(dst, item)
             if os.path.isdir(s):
                 self.copytree1(s, d, symlinks, ignore)
-            else:
-                if (
+            elif (
                     not os.path.exists(d)
                     or os.stat(s).st_mtime - os.stat(d).st_mtime > 1
                 ):
-                    shutil.copy2(s, d)
+                shutil.copy2(s, d)
 
     def copytree(self, src, dst, symlinks=False, ignore=None):
         """
         See shutil.copytree documentation:
         https://docs.python.org/2/library/shutil.html#shutil.copytree
         """
-        logger.debug("copytree %s " % src)
+        logger.debug(f"copytree {src} ")
         for item in os.listdir(src):
             s = os.path.join(src, item)
             d = os.path.join(dst, item)
@@ -293,9 +284,9 @@ class base_folder:
             dst: The destination where we copy.
         """
         if os.path.isfile(dest):
-            logger.debug("remove %s" % (dest))
+            logger.debug(f"remove {dest}")
             os.remove(dest)
-        logger.debug("reinstall %s %s" % (src, dest))
+        logger.debug(f"reinstall {src} {dest}")
         shutil.copy2(src, dest)
 
     def clean_agent_src(self):
@@ -425,13 +416,13 @@ class create_rescue_agent:
         logger.debug("We are copying the file agentversion")
         src = os.path.join(self.info.path_agent, "agentversion")
         dest = os.path.join(self.info.path_rescue, "agentversion")
-        logger.debug("copy %s into %s" % (src, dest))
+        logger.debug(f"copy {src} into {dest}")
         shutil.copy2(src, dest)
 
         logger.debug("We are copying the file JIDSUFFIXE")
         src = os.path.join(self.info.path_agent, "lib", "INFOSTMP", "JIDSUFFIXE")
         dest = os.path.join(self.info.path_rescue, "JIDSUFFIXE", "JIDSUFFIXE")
-        logger.debug("copy %s into %s" % (src, dest))
+        logger.debug(f"copy {src} into {dest}")
         shutil.copy2(src, dest)
 
         logger.debug("We are copying the python files")
@@ -439,39 +430,37 @@ class create_rescue_agent:
             for files in self.info.files_agent[keysfile]:
                 src = os.path.join(self.info.path_agent, keysfile, files)
                 dest = os.path.join(self.info.path_rescue, keysfile, files)
-                logger.debug("copy %s into %s" % (src, dest))
+                logger.debug(f"copy {src} into {dest}")
                 shutil.copy2(src, dest)
 
         logger.debug("We are copying the major python scripts")
         for files in self.info.list_script_python_for_update:
             src = os.path.join(self.info.path_agent, files)
             dest = os.path.join(self.info.path_rescue, files)
-            logger.debug("copy %s into %s" % (src, dest))
+            logger.debug(f"copy {src} into {dest}")
             shutil.copy2(src, dest)
 
         logger.debug("We are copying the other python scripts")
         for files in self.info.files_agent_script:
             src = os.path.join(self.info.path_agent, "script", files)
             dest = os.path.join(self.info.path_rescue, "script", files)
-            logger.debug("copy %s into %s" % (src, dest))
+            logger.debug(f"copy {src} into {dest}")
             shutil.copy2(src, dest)
 
         logger.debug("We are copying the configuration files")
         for files in self.info.list_config_file_ini:
             src = os.path.join(self.info.path_files_configuration, files)
             dest = os.path.join(self.info.path_rescue, "etc", files)
-            logger.debug("copy %s into %s" % (src, dest))
+            logger.debug(f"copy {src} into {dest}")
             try:
                 shutil.copy2(src, dest)
             except:
                 if not install:
-                    logger.error("rescue save error copy %s %s" % (src, dest))
-                pass
-
+                    logger.error(f"rescue save error copy {src} {dest}")
         logger.debug("rescue fileviewer resource")
         src = os.path.join(self.info.path_agent, "lib", "ressources", "fileviewer")
         dest = os.path.join(self.info.path_rescue, "fileviewer")
-        logger.debug("copy %s into %s" % (src, dest))
+        logger.debug(f"copy {src} into {dest}")
         self.info.copytree(src, dest)
 
 
@@ -487,43 +476,43 @@ class install_rescue_image:
         logger.debug("We are reinstalling the file agentversion")
         dest = os.path.join(self.info.path_agent, "agentversion")
         src = os.path.join(self.info.path_rescue, "agentversion")
-        logger.debug("reinstalling %s into %s" % (src, dest))
+        logger.debug(f"reinstalling {src} into {dest}")
         self.info.remove_and_copy(src, dest)
 
         logger.debug("We are copying the file JIDSUFFIXE")
         dest = os.path.join(self.info.path_agent, "lib", "INFOSTMP", "JIDSUFFIXE")
         src = os.path.join(self.info.path_rescue, "JIDSUFFIXE", "JIDSUFFIXE")
-        logger.debug("reinstalling %s into %s" % (src, dest))
+        logger.debug(f"reinstalling {src} into {dest}")
         self.info.remove_and_copy(src, dest)
 
         logger.debug("We are reintalling the python files")
         for keysfile in self.info.files_agent:
-            logger.debug("***************** %s ***************" % (keysfile))
+            logger.debug(f"***************** {keysfile} ***************")
             for files in self.info.files_agent[keysfile]:
                 dest = os.path.join(self.info.path_agent, keysfile, files)
                 src = os.path.join(self.info.path_rescue, keysfile, files)
-                logger.debug("reinstall %s into %s" % (src, dest))
+                logger.debug(f"reinstall {src} into {dest}")
                 self.info.remove_and_copy(src, dest)
 
         logger.debug("We are reintalling the python files")
         for files in self.info.list_script_python_for_update:
             dest = os.path.join(self.info.path_agent, files)
             src = os.path.join(self.info.path_rescue, files)
-            logger.debug("reinstall %s %s" % (src, dest))
+            logger.debug(f"reinstall {src} {dest}")
             self.info.remove_and_copy(src, dest)
 
         logger.debug("We are reintalling the other python scripts")
         for files in self.info.files_agent_script:
             dest = os.path.join(self.info.path_agent, "script", files)
             src = os.path.join(self.info.path_rescue, "script", files)
-            logger.debug("reinstall %s %s" % (src, dest))
+            logger.debug(f"reinstall {src} {dest}")
             self.info.remove_and_copy(src, dest)
 
         logger.debug("We are reintalling the configuration files")
         for files in self.info.list_config_file_ini:
             dest = os.path.join(directoryconffile(), files)
             src = os.path.join(self.info.path_rescue, "etc", files)
-            logger.debug("reinstall %s %s" % (src, dest))
+            logger.debug(f"reinstall {src} {dest}")
             try:
                 self.info.remove_and_copy(src, dest)
             except:
@@ -531,7 +520,7 @@ class install_rescue_image:
         logger.debug("We are reinstalling the fileviewer resources")
         dest = os.path.join(self.info.path_agent, "lib", "ressources", "fileviewer")
         src = os.path.join(self.info.path_rescue, "fileviewer")
-        logger.debug("reinstall %s %s" % (src, dest))
+        logger.debug(f"reinstall {src} {dest}")
         shutil.rmtree(dest)
         self.info.copytree1(src, dest)
 
@@ -571,7 +560,7 @@ class Update_Remote_Agent:
             if not os.path.exists(path_dir_remoteagent):
                 os.makedirs(path_dir_remoteagent)
                 logging.getLogger().debug(
-                    "Creating folder for remote base agent : %s" % dir_agent_base
+                    f"Creating folder for remote base agent : {dir_agent_base}"
                 )
         if os.path.exists(os.path.join(dir_agent_base, "agentversion")):
             self.load_list_md5_agentbase()
@@ -615,7 +604,6 @@ class Update_Remote_Agent:
         It calculates the fingerprints of the agent too.
         It is stoted in a structure with the values.
         """
-        listmd5 = []  # accumule les md5 de tout les fichier de l'agent
         # fingerprint de l'agent et le md5 de cette list ordonne au format string json
         self.directory = {
             "program_agent": {},
@@ -634,7 +622,7 @@ class Update_Remote_Agent:
         self.directory["version_agent"] = hashlib.md5(
             self.directory["version"]
         ).hexdigest()
-        listmd5.append(self.directory["version_agent"])
+        listmd5 = [self.directory["version_agent"]]
         list_script_python_for_update = [
             "agentxmpp.py",
             "launcher.py",
@@ -681,8 +669,8 @@ def agentinfoversion(xmppobject):
         (like testmodule , pathagent, agentdescriptor, pathimg,
           imgdescriptor, actiontxt, conf and plugins)
     """
-    cmd = "python %s -i -v" % (os.path.join(xmppobject.pathagent, "replicator.py"))
-    logger.debug("cmd : %s" % (cmd))
+    cmd = f'python {os.path.join(xmppobject.pathagent, "replicator.py")} -i -v'
+    logger.debug(f"cmd : {cmd}")
     result = simplecommand(cmd)
     resultobj = {}
     rr = [x.rstrip() for x in result["result"]]
@@ -709,7 +697,7 @@ def agentinfoversion(xmppobject):
             boottrap = boottrap + 1
             continue
 
-        if not val[boottrap] in resultobj:
+        if val[boottrap] not in resultobj:
             resultobj[val[boottrap]] = []
         resultobj[val[boottrap]].append(t.strip())
 
@@ -731,8 +719,7 @@ def agentinfoversion(xmppobject):
         "conf": xmppobject.config.updating,
         "plugins": xmppobject.dataplugininstall,
     }
-    l = json.dumps(res, indent=4)
-    return l
+    return json.dumps(res, indent=4)
 
 
 def add_coloring_to_emit_windows(fn):
@@ -849,10 +836,7 @@ def directoryconffile():
         fileconf = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc")
     elif sys.platform.startswith("darwin"):
         fileconf = os.path.join("/opt", "Pulse", "etc")
-    if os.path.isdir(fileconf):
-        return fileconf
-    else:
-        return None
+    return fileconf if os.path.isdir(fileconf) else None
 
 
 def refreshfingerprint():
@@ -862,18 +846,17 @@ def refreshfingerprint():
 
 
 def simplecommandstr(cmd):
-    obj = {"code": -1, "result": ""}
     if isinstance(cmd, bytes):
         cmd = decode_strconsole(cmd)
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
-    obj["code"] = p.wait()
+    obj = {"result": "", "code": p.wait()}
     result = p.stdout.readlines()
     if sys.version_info[0] == 3:
         result = [decode_strconsole(x) for x in result]
     else:
-        result = [x for x in result]
+        result = list(result)
     obj["result"] = "".join(result)
     return obj
 
@@ -896,19 +879,15 @@ def decode_strconsole(x):
     if sys.platform.startswith("win"):
         return x.decode("cp850", "ignore")
 
-    if sys.platform.startswith("darwin"):
-        return x.decode("utf-8", "ignore")
-
-    return x
+    return x.decode("utf-8", "ignore") if sys.platform.startswith("darwin") else x
 
 
 def simplecommand(cmd, emptyline=True):
-    obj = {}
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     result = p.stdout.readlines()
-    obj["code"] = p.wait()
+    obj = {"code": p.wait()}
     if emptyline:
         obj["result"] = [x.strip("\n") for x in result if x.strip() != ""]
     else:
@@ -929,8 +908,7 @@ def file_get_contents(filename, use_include_path=0, context=None, offset=-1, max
         try:
             if offset > 0:
                 fp.seek(offset)
-            ret = fp.read(maxlen)
-            return ret
+            return fp.read(maxlen)
         finally:
             fp.close()
 
@@ -943,9 +921,7 @@ def refreshfingerprintconf(typeconf):
 
 def confinfoexist():
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), "fingerprintconf")
-    if os.path.exists(filenetworkinfo):
-        return True
-    return False
+    return bool(os.path.exists(filenetworkinfo))
 
 
 def confchanged(typeconf):
@@ -967,9 +943,8 @@ def createfingerprintconf(typeconf):
 def file_put_contents(filename, data):
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
-    f = open(filename, "w")
-    f.write(data)
-    f.close()
+    with open(filename, "w") as f:
+        f.write(data)
 
 
 def Setdirectorytempinfo():
@@ -1009,21 +984,18 @@ def networkinfoexist():
         it returns True if the file exists. False otherwise
     """
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
-    if os.path.exists(filenetworkinfo):
-        return True
-    return False
+    return bool(os.path.exists(filenetworkinfo))
 
 
 def networkchanged():
-    if networkinfoexist():
-        fingerprintnetwork = file_get_contents(
-            os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
-        )
-        newfingerprint = createfingerprintnetwork()
-        if fingerprintnetwork == newfingerprint:
-            return False
-    else:
+    if not networkinfoexist():
         return True
+    fingerprintnetwork = file_get_contents(
+        os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
+    )
+    newfingerprint = createfingerprintnetwork()
+    if fingerprintnetwork == newfingerprint:
+        return False
 
 
 def conffilename(agenttype):
@@ -1052,10 +1024,7 @@ def conffilename(agenttype):
     if conffilenameparameter == "cluster.ini":
         return fileconf
 
-    if os.path.isfile(fileconf):
-        return fileconf
-    else:
-        return conffilenameparameter
+    return fileconf if os.path.isfile(fileconf) else conffilenameparameter
 
 
 def testagentconf(typeconf):
@@ -1064,18 +1033,18 @@ def testagentconf(typeconf):
     Config = configparser.ConfigParser()
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
-    if (
-        Config.has_option("type", "guacamole_baseurl")
-        and Config.has_option("connection", "port")
-        and Config.has_option("connection", "server")
-        and Config.has_option("global", "relayserver_agent")
-        and Config.get("type", "guacamole_baseurl") != ""
-        and Config.get("connection", "port") != ""
-        and Config.get("connection", "server") != ""
-        and Config.get("global", "relayserver_agent") != ""
-    ):
-        return True
-    return False
+    return bool(
+        (
+            Config.has_option("type", "guacamole_baseurl")
+            and Config.has_option("connection", "port")
+            and Config.has_option("connection", "server")
+            and Config.has_option("global", "relayserver_agent")
+            and Config.get("type", "guacamole_baseurl") != ""
+            and Config.get("connection", "port") != ""
+            and Config.get("connection", "server") != ""
+            and Config.get("global", "relayserver_agent") != ""
+        )
+    )
 
 
 def isTemplateConfFile(typeconf):
@@ -1092,15 +1061,15 @@ def isTemplateConfFile(typeconf):
     Config = configparser.ConfigParser()
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
-    if (
-        Config.has_option("configuration_server", "confserver")
-        and Config.has_option("configuration_server", "confport")
-        and Config.has_option("configuration_server", "confpassword")
-        and Config.has_option("configuration_server", "confdomain")
-        and Config.get("configuration_server", "keyAES32") != ""
-    ):
-        return True
-    return False
+    return bool(
+        (
+            Config.has_option("configuration_server", "confserver")
+            and Config.has_option("configuration_server", "confport")
+            and Config.has_option("configuration_server", "confpassword")
+            and Config.has_option("configuration_server", "confdomain")
+            and Config.get("configuration_server", "keyAES32") != ""
+        )
+    )
 
 
 def start_agent(pathagent, agent="connection", console=False, typeagent="machine"):
@@ -1111,23 +1080,18 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
         agentfunction = os.path.join(pathagent, "agentxmpp.py")
 
     modeagent = " -c " if console else ""
-    logger.debug("AGENT %s" % agent)
+    logger.debug(f"AGENT {agent}")
     if agent == "connection":
         logger.debug("Starting configuration agent")
 
         if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
             logger.debug(
-                "launcher for os system  %s %s%s -t %s"
-                % (pythonexec, agentfunction, modeagent, typeagent)
+                f"launcher for os system  {pythonexec} {agentfunction}{modeagent} -t {typeagent}"
             )
-            os.system(
-                "%s %s%s -t %s" % (pythonexec, agentfunction, modeagent, typeagent)
-            )
+            os.system(f"{pythonexec} {agentfunction}{modeagent} -t {typeagent}")
         else:
-            logger.debug(
-                "launcher for python %s%s -t %s" % (agentfunction, modeagent, typeagent)
-            )
-            os.system("python %s%s -t %s" % (agentfunction, modeagent, typeagent))
+            logger.debug(f"launcher for python {agentfunction}{modeagent} -t {typeagent}")
+            os.system(f"python {agentfunction}{modeagent} -t {typeagent}")
         logger.debug(
             "Refreshing fingerprint of configuration agent after its reconfiguration"
         )
