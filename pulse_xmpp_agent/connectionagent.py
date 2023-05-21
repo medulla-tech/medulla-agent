@@ -22,6 +22,7 @@ import time
 import json
 import re
 import traceback
+import base64
 
 from lib.networkinfo import (
     networkagentinfo,
@@ -43,7 +44,8 @@ from lib.utils import DEBUGPULSE, getIpXmppInterface,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
                       getRandomName, AESCipher, refreshfingerprintconf, \
                         geolocalisation_agent, \
-                        serialnumbermachine, offline_search_kb
+                        serialnumbermachine, offline_search_kb, \
+                        base64strencode
 
 from optparse import OptionParser
 
@@ -125,6 +127,8 @@ class MUCBot(ClientXMPP):
         self.add_event_handler("connecting", self.handle_connecting)
         self.add_event_handler("connection_failed", self.handle_connection_failed)
         self.add_event_handler("disconnected", self.handle_disconnected)
+        self.add_event_handler("connected", self.handle_connected)
+
         # _______________________ Getion connection agent _____________________
 
         self.add_event_handler("stream_error", self.stream_error1)
@@ -669,7 +673,8 @@ class MUCBot(ClientXMPP):
                 "who": "%s/%s" % (self.config.jidchatroomcommand, self.config.NickName),
                 "machine": self.config.NickName,
                 "platform": platform.platform(),
-                "completedatamachine": base64strencode(json.dumps(er.messagejson)),
+                "completedatamachine": base64.b64encode(
+                json.dumps(er.messagejson).encode("utf-8")).decode("utf-8"),
                 "plugin": {},
                 "portxmpp": self.config.Port,
                 "serverxmpp": self.config.Server,
@@ -720,7 +725,7 @@ class MUCBot(ClientXMPP):
     # ----------------------- Getion connection agent -----------------------
     # -----------------------------------------------------------------------
 
-    def Mode_Marche_Arret_loop(self, nb_reconnect=None, forever=False, timeout=10):
+    def Mode_Marche_Arret_loop(self, nb_reconnect=None, forever=False, timeout=None):
         """
         Connect to the XMPP server and start processing XMPP stanzas.
         """
@@ -728,13 +733,8 @@ class MUCBot(ClientXMPP):
             self.startdata = nb_reconnect
         else:
             self.startdata = 1
-        while self.startdata > 0:
-            print("connection")
-            print("__________________________")
-            print(self.startdata)
-            print("__________________________")
             self.disconnect(wait=1)
-            self.Mode_Marche_Arret_connect(forever=False, timeout=10)
+            self.Mode_Marche_Arret_connect(forever=False, timeout=timeout)
             if nb_reconnect:
                 self.startdata = self.startdata - 1
 
@@ -764,7 +764,7 @@ class MUCBot(ClientXMPP):
         self.address = (self.IP_or_FQDN_connect, self.Port_connect)
         if IP_or_FQDN_connect or Port_connect:
             print("reinitialisation address %s" % self.address)
-        self.connect(address=self.address)
+        self.connect(address=self.address, force_starttls = None)
         self.process(forever=forever, timeout=timeout)
 
     def Mode_Marche_Arret_init_adress_connect(
@@ -786,7 +786,6 @@ class MUCBot(ClientXMPP):
         a savoir apres "CONNECTION FAILED"
         il faut reinitialiser adress et port de connection.
         """
-        # self.Mode_Marche_Arret_init_adress_connect("jfk.siveo.net", 5222)
         print("\nCONNECTION FAILED %s" % self.connect_loop_wait)
         self.connect_loop_wait = 5
         self.disconnect(wait=5)
@@ -795,6 +794,16 @@ class MUCBot(ClientXMPP):
         logger.debug(
             "We got disconnected. We will reconnect in %s seconds"
             % self.get_connect_loop_wait()
+        )
+
+    def handle_connected(self, data):
+
+        """
+        success connecting agentconnect(
+        """
+        logger.debug(
+            "Configurator connected with jid name %s on (%s:%s)"
+            %  (self.config.jidagent, self.config.confserver, self.config.confport)
         )
 
     def register(self, iq):
@@ -904,6 +913,14 @@ class MUCBot(ClientXMPP):
     # ---------------------- END analyse strophe xmpp -----------------------
     # -----------------------------------------------------------------------
 
+    def get_connect_loop_wait(self):
+        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
+        # cf commit d3063a0368503
+        try:
+            self._connect_loop_wait
+            return self._connect_loop_wait
+        except AttributeError:
+            return self.connect_loop_wait
 
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
@@ -983,6 +1000,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
     if not optsdeamon:
         if optsconsoledebug:
+
             logging.basicConfig(level=logging.DEBUG, format=format)
         else:
             logging.basicConfig(
@@ -1046,25 +1064,54 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         )
         xmpp.register_plugin("xep_0077")  # In-band Registration
         xmpp["xep_0077"].force_registration = True
+
+
+
         # Connect to the XMPP server and start processing XMPP
-        if xmpp.connect(address=(ipfromdns(tg.confserver),tg.confport)):
-            t = Timer(300, xmpp.terminate)
-            t.start()
-            xmpp.process(block=True)
-            t.cancel()
-            logging.log(DEBUGPULSE,"bye bye connecteur")
-            namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        "BOOLCONNECTOR")
-            fichier= open(namefilebool,"w")
-            fichier.close()
-        else:
-            logging.log(DEBUGPULSE,"Unable to connect to %s" % tg.confserver)
+        logger.debug("CONNECT %s %s" % (ipfromdns(tg.confserver), tg.confport))
+        logger.debug("jid %s" % tg.jidagent)
+        xmpp.Mode_Marche_Arret_init_adress_connect(
+            ipfromdns(tg.confserver), int(tg.confport)
+        )
+        t = Timer(300, xmpp.Mode_Marche_Arret_terminate)
+        t.start()
+        xmpp.Mode_Marche_Arret_loop(nb_reconnect=1)
+        t.cancel()
+        xmpp.loop.stop()
+        logger.debug("bye bye connecteur")
+        namefilebool = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR"
+        )
+        fichier = open(namefilebool, "w")
+        fichier.close()
     else:
         logging.log(
             DEBUGPULSE,
             "Warning: A relay server holds a Static "
             "configuration. Do not run configurator agent on relay servers.",
         )
+
+
+
+        ## Connect to the XMPP server and start processing XMPP
+        #if xmpp.connect(address=(ipfromdns(tg.confserver),tg.confport)):
+            #t = Timer(300, xmpp.terminate)
+            #t.start()
+            #xmpp.process(block=True)
+            #t.cancel()
+            #logging.log(DEBUGPULSE,"bye bye connecteur")
+            #namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        #"BOOLCONNECTOR")
+            #fichier= open(namefilebool,"w")
+            #fichier.close()
+        #else:
+            #logging.log(DEBUGPULSE,"Unable to connect to %s" % tg.confserver)
+    #else:
+        #logging.log(
+            #DEBUGPULSE,
+            #"Warning: A relay server holds a Static "
+            #"configuration. Do not run configurator agent on relay servers.",
+        #)
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
@@ -1103,6 +1150,7 @@ if __name__ == '__main__':
     )
 
     opts, args = optp.parse_args()
+    print(opts.typemachine)
     tg = confParameter(opts.typemachine)
     if not opts.deamon:
         doTask(

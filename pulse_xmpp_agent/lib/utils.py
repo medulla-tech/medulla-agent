@@ -3383,7 +3383,6 @@ class geolocalisation_agent:
             if x.strip() != ""
         ]
         self.localisation = None
-
         self.getgeolocalisation()
         if self.localisation is None:
             self.localisation = self.getdatafilegeolocalisation()
@@ -3509,7 +3508,13 @@ class geolocalisation_agent:
     def call_simple_page(url):
         try:
             r = requests.get(url)
-            return r.json()
+            if ( r.status_code > 299):
+                logger.warning("url localisation %s code error is "%(url, r.status_code ))
+                return None
+            result= r.json()
+            if "longitude" not in result:
+                return None
+            return result
         except BaseException:
             return None
 

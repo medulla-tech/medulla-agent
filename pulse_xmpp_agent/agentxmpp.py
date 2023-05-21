@@ -1127,7 +1127,7 @@ class MUCBot(slixmpp.ClientXMPP):
         """
         ctrlC = False
         try:
-            self.connect(address=self.address)
+            self.connect(address=self.address, force_starttls=None)
             self.process(forever=False)
             ctrlC = False
         except RuntimeError as error:
@@ -3626,77 +3626,6 @@ def tgconf(optstypemachine):
     return tg
 
 
-    #### start xmpp process
-    p = Process(target=process_xmpp_agent,
-                name="xmppagent",
-                args=(optstypemachine, optsconsoledebug,
-                                       optsdeamon,
-                                       tglevellog,
-                                       tglogfile,
-                                       queue_recv_tcp_to_xmpp,
-                                       queueout,
-                                       eventkilltcp,
-                                       eventkillpipe))
-    processes.append(p)
-    p.start()
-    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                     "INFOSTMP",
-                                     "pidagentwintreename")
-    file_put_contents(windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid ))
-    logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
-                                                      p.pid,
-                                                      p.name,
-                                                      p.pid))
-    p = Process(target=process_tcp_serveur,
-                name="tcp_serveur",
-                args=(  14000,
-                        optstypemachine,
-                        optsconsoledebug,
-                        optsdeamon,
-                        tglevellog,
-                        tglogfile,
-                        queue_recv_tcp_to_xmpp,
-                        queueout,
-                        eventkilltcp))
-    processes.append(p)
-    p.start()
-    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                     "INFOSTMP",
-                                     "pidagentwintreename")
-
-    file_put_contents_w_a(windowfilepidname,
-                          "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
-                          option="a")
-    logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
-                                                      p.pid,
-                                                      p.name,
-                                                      p.pid))
-    if sys.platform.startswith('win'):
-        logger.debug("__________ INSTALL SERVER PIPE NAMED WINDOWS __________")
-        #using event eventkillpipe for signal stop thread
-        p = Process(target=process_serverPipe,
-                    name="serveur pipe windows",
-                    args=(optstypemachine,
-                          optsconsoledebug,
-                          optsdeamon,
-                          tglevellog,
-                          tglogfile,
-                          queue_recv_tcp_to_xmpp,
-                          queueout,
-                          eventkillpipe))
-        processes.append(p)
-        p.start()
-        windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                         "INFOSTMP",
-                                         "pidagentwintreename")
-
-        file_put_contents_w_a(windowfilepidname,
-                            "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
-                            option="a")
-        logger.debug("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
-                                                          p.pid,
-                                                          p.name,
-                                                          p.pid))
     # ==========================
     # = cherrypy server config =
     # ==========================
@@ -3806,6 +3735,8 @@ def doTask(
     tglogfile,
 ):
     processes = []
+    listpid=[]
+    listpid.append(os.getpid())
     queue_recv_tcp_to_xmpp = Queue()
     queueout = Queue()
     # event inter process
@@ -3888,6 +3819,7 @@ def doTask(
         ),
     )
     processes.append(p)
+    listpid.append(p.pid)
     p.start()
     windowfilepidname = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintreename"
@@ -4102,56 +4034,7 @@ class process_xmpp_agent:
                 ) = xmpp.Mode_Marche_Arret_loop(
                     forever=False, timeout=2, type_machine="machine"
                 )
-
-            if signalint:
-                logging.log(DEBUGPULSE,"CTRL-C have been called. We are closing the medulla agent.")
-                try:
-                    xmpp.eventkilltcp.set()
-                    xmpp.eventkillpipe.set()
-                except Exception:
-                    pass
-                time.sleep(1)
-                break
-            if xmpp.config.agenttype in ['relayserver']:
-                terminateserver(xmpp)
-
-            if setgetrestart(-1) == 0:
-                if os.path.isfile(conffilename("cluster")):
-                    logger.debug("We restart and use the %s file to find the alternatives" % conffilename("cluster"))
-                    xmpp.force_full_registration()
-                    setgetcountcycle(1)
-                    try:
-                        timealternatifars = random.randint(*xmpp.config.timealternatif)
-                        logging.log(DEBUGPULSE,"We are waiting %s seconds before trying again" % timealternatifars)
-                        time.sleep(timealternatifars)
-                        newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
-
-                        changeconnection( conffilename(xmpp.config.agenttype),
-                                        newparametersconnect[2],
-                                        newparametersconnect[1],
-                                        newparametersconnect[0],
-                                        newparametersconnect[3])
-                        if newparametersconnect[5] < setgetcountcycle(-1):
-                            # If more than one cycle, we restart the configurator.
-                            setgetcountcycle()
-                            logging.log(DEBUGPULSE,"We start the connector to find a new server")
-                            nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
-                            args = ['python', nameprogconnection, '-t', 'machine']
-                            subprocess.call(args)
-                            time.sleep(10)
-                    except Exception:
-                        logger.error("An error occured while searching for an alternative server")
-                        logger.error("Please check the file %s" % conffilename(xmpp.config.agenttype))
-                else:
-                    logging.error("The file %s is missing" % conffilename("cluster"))
-                    setgetcountcycle(1)
-                    if setgetcountcycle(-1) > 3:
-                        setgetcountcycle()
-                        logging.log(DEBUGPULSE,"We need to restart the configurator as the file cluster.ini is missing")
-                        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
-                        args = ['python', nameprogconnection, '-t', 'machine']
-                        subprocess.call(args)
-                        time.sleep(10)
+            self.logger.debug("TERMINATE")
         terminateserver(xmpp)
 
 class process_agent_search():
