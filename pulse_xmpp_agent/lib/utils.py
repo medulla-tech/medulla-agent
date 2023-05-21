@@ -689,7 +689,9 @@ def call_plugin(name, *args, **kwargs):
                 logger.debug(f"Loading plugin {args[1]}")
 
                 if not os.path.exists(f"{nameplugin}.py"):
-                    logging.getLogger().error(f"The file plugin {args[1]} does not exit")
+                    logging.getLogger().error(
+                        f"The file plugin {args[1]} does not exit"
+                    )
                     return
 
                 loop = aio.new_event_loop()
@@ -988,9 +990,7 @@ def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
     print(f"powershell -ExecutionPolicy Bypass -File  {namescript}")
     return simplecommandstr(
-        encode_strconsole(
-            f"powershell -ExecutionPolicy Bypass -File {namescript}"
-        )
+        encode_strconsole(f"powershell -ExecutionPolicy Bypass -File {namescript}")
     )
 
 
@@ -2166,7 +2166,7 @@ class AESCipher:
         return self.decrypt_base64_str(enc).encode("utf-8")
 
     def _unpad(self, s):
-        dtrdata = s[:-ord(s[-1:])]
+        dtrdata = s[: -ord(s[-1:])]
         return dtrdata.decode("utf-8")
 
 
@@ -2638,7 +2638,9 @@ def _path_packagequickaction():
         try:
             os.makedirs(pathqd)
         except OSError as e:
-            logger.error(f"Error creating folder for quick deployment packages : {str(e)}")
+            logger.error(
+                f"Error creating folder for quick deployment packages : {str(e)}"
+            )
     return pathqd
 
 
@@ -2655,7 +2657,9 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
             logger.debug(
                 f"Package {pathxmpppackage} has dependencies. Quick deployment package not generated."
             )
-            logger.debug(f"Deleting quick deployment package if found {pathxmpppackage}")
+            logger.debug(
+                f"Deleting quick deployment package if found {pathxmpppackage}"
+            )
             try:
                 if "qpackages" in pathaqpackage:
                     simplecommand(f"rm {pathaqpackage}.*")
@@ -2667,11 +2671,15 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
             os.path.exists(pathxmpppackage)
             and int((time.time() - os.stat(pathxmpppackage).st_mtime)) < 600
         ):
-            logger.debug(f"No need to generate quick deployment package {pathxmpppackage}")
+            logger.debug(
+                f"No need to generate quick deployment package {pathxmpppackage}"
+            )
             simplecommand(f"touch -c {pathxmpppackage}")
             return 2
         else:
-            logger.debug(f"Deleting quick deployment package if found {pathxmpppackage}")
+            logger.debug(
+                f"Deleting quick deployment package if found {pathxmpppackage}"
+            )
             try:
                 if "qpackages" in pathaqpackage:
                     simplecommand(f"rm {pathaqpackage}.*")
@@ -2687,14 +2695,16 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
                 " greater than defined max_size_stanza_xmpp %s"
                 % (taillebytefolder, max_size_stanza_xmpp)
             )
-            logger.debug(f"Deleting quick deployment package if found {pathxmpppackage}")
+            logger.debug(
+                f"Deleting quick deployment package if found {pathxmpppackage}"
+            )
             try:
                 if "qpackages" in pathaqpackage:
                     simplecommand(f"rm {pathaqpackage}.*")
             except Exception:
                 pass
             return 6
-                    # creation d'un targetos
+            # creation d'un targetos
         logger.debug(f"Preparing quick deployment package for package {namepackage}")
         calculemd5 = md5folder(pathaqpackage)
 

@@ -53,7 +53,7 @@ def copytree2(src, dst, symlinks=False):
                 copytree2(srcname, dstname, symlinks)
             elif not srcname.endswith(".pyc"):
                 shutil.copy2(srcname, dstname)
-                    # XXX What about devices, sockets etc.?
+                # XXX What about devices, sockets etc.?
         except (IOError, os.error) as why:
             errors.append((srcname, dstname, str(why)))
         except Exception as err:
@@ -90,9 +90,7 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
         else:
             file_supp_in_mach.append(namefichier)
     file_missing_in_mach = [
-        namefichier
-        for namefichier in fromimg
-        if namefichier not in frommachine
+        namefichier for namefichier in fromimg if namefichier not in frommachine
     ]
     # les fichiers manquant dans machine sont aussi des fichier a rajouter.
     fichier_to_copie = list(replace_file_mach_by_file_img)

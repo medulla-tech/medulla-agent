@@ -86,9 +86,7 @@ def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
     print(f"powershell -ExecutionPolicy Bypass -File  {namescript}")
     return simplecommandstr(
-        encode_strconsole(
-            f"powershell -ExecutionPolicy Bypass -File {namescript}"
-        )
+        encode_strconsole(f"powershell -ExecutionPolicy Bypass -File {namescript}")
     )
 
 
