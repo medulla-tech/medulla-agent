@@ -30,7 +30,9 @@ class manageschedulerdeploy:
             self.name_basesession = os.path.join(path_bd, name_basesession)
             self.name_basecmd = os.path.join(path_bd, name_basecmd)
             # on del base if name prefix underscore
-            self.name_basesessioncorrup = os.path.join(path_bd, f"__db.{name_basesession}")
+            self.name_basesessioncorrup = os.path.join(
+                path_bd, f"__db.{name_basesession}"
+            )
             self.name_basecmdcorrup = os.path.join(path_bd, f"__db.{name_basecmd}")
             if os.path.exists(self.name_basesessioncorrup):
                 # os.remove(self.name_basesessioncorrup)

@@ -439,9 +439,7 @@ class message_email_smtp_ssl:
                 )
                 msg.attach(att)
         try:
-            self.server.sendmail(
-                self.fromaddr, self.to_addrs_array, msg.as_string()
-            )
+            self.server.sendmail(self.fromaddr, self.to_addrs_array, msg.as_string())
         except smtplib.SMTPException as e:
             print(e)
         self.server.quit()
@@ -525,9 +523,7 @@ class message_email_smtp_ssl_tls:
                 )
                 msg.attach(att)
         try:
-            self.server.sendmail(
-                self.fromaddr, self.to_addrs_array, msg.as_string()
-            )
+            self.server.sendmail(self.fromaddr, self.to_addrs_array, msg.as_string())
         except smtplib.SMTPException as e:
             print(e)
         self.server.quit()

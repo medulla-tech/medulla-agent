@@ -189,13 +189,17 @@ class manage_event:
                                             )
                                         )
                                         if "command" in i:
-                                            log_class = "log_ok" if i["codereturn"] == 0 else "log_err"
+                                            log_class = (
+                                                "log_ok"
+                                                if i["codereturn"] == 0
+                                                else "log_err"
+                                            )
                                             self.objectxmpp.xmpplog(
                                                 f'[{event["eventMessageraw"]["data"]["name"]}]-[{i["step"]}]:<span class="{log_class}"> [Process command] errorcode {i["codereturn"]} forcommand : {i["command"][:20]} <span>',
                                                 type="deploy",
-                                                sessionname=event[
-                                                    "eventMessageraw"
-                                                ]["sessionid"],
+                                                sessionname=event["eventMessageraw"][
+                                                    "sessionid"
+                                                ],
                                                 priority=i["step"],
                                                 action="xmpplog",
                                                 who=self.objectxmpp.boundjid.bare,
@@ -212,9 +216,9 @@ class manage_event:
                                             self.objectxmpp.xmpplog(
                                                 f'[{i["step"]}]: {i["action"]} ',
                                                 type="deploy",
-                                                sessionname=event[
-                                                    "eventMessageraw"
-                                                ]["sessionid"],
+                                                sessionname=event["eventMessageraw"][
+                                                    "sessionid"
+                                                ],
                                                 priority=i["step"],
                                                 action="xmpplog",
                                                 who=self.objectxmpp.boundjid.bare,
