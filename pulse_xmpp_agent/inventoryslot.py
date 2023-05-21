@@ -9876,8 +9876,7 @@ def file_get_contents(filename, use_include_path=0, context=None, offset=-1, max
         try:
             if offset > 0:
                 fp.seek(offset)
-            ret = fp.read(maxlen)
-            return ret
+            return fp.read(maxlen)
         finally:
             fp.close()
 
@@ -9887,26 +9886,23 @@ def file_get_binarycontents(filename, offset=-1, maxlen=-1):
     try:
         if offset > 0:
             fp.seek(offset)
-        ret = fp.read(maxlen)
-        return ret
+        return fp.read(maxlen)
     finally:
         fp.close()
 
 
 def file_put_contents_w_a(filename, data, option="w"):
-    if option == "a" or option == "w":
-        f = open(filename, option)
-        f.write(data)
-        f.close()
+    if option in ["a", "w"]:
+        with open(filename, option) as f:
+            f.write(data)
 
 
 def file_put_contents(filename, data):
     """
     write content "data" to file "filename"
     """
-    f = open(filename, "w")
-    f.write(data)
-    f.close()
+    with open(filename, "w") as f:
+        f.write(data)
 
 
 def add_coloring_to_emit_windows(fn):
@@ -10034,7 +10030,7 @@ class configuration:
         self.Agentname = "injectinventory"
         self.Domain = "pulse"
         self.log_level = "INFO"
-        self.Jid = "%s@%s" % (self.Agentname, self.Domain)
+        self.Jid = f"{self.Agentname}@{self.Domain}"
         self.Url = "http://localhost:9999/"
         Config = configparser.ConfigParser()
         if fileconf is None:
@@ -10046,8 +10042,8 @@ class configuration:
 
         elif os.path.exists(fileconf):
             Config.read(fileconf)
-            if os.path.exists(fileconf + ".local"):
-                Config.read(fileconf + ".local")
+            if os.path.exists(f"{fileconf}.local"):
+                Config.read(f"{fileconf}.local")
             self._config = True
         else:
             print("error no file configuration")
@@ -10097,25 +10093,24 @@ class configuration:
     def getRandomName(self, nb, pref=""):
         a = "abcdefghijklnmopqrstuvwxyz"
         d = pref
-        for t in range(nb):
+        for _ in range(nb):
             d = d + a[random.randint(0, 25)]
         return d
 
     def getRandomNameID(self, nb, pref=""):
         a = "0123456789"
         d = pref
-        for t in range(nb):
+        for _ in range(nb):
             d = d + a[random.randint(0, 9)]
         return d
 
     def get_local_ip_adresses(self):
-        ip_addresses = list()
+        ip_addresses = []
         interfaces = netifaces.interfaces()
         for i in interfaces:
             if i == "lo":
                 continue
-            iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
-            if iface:
+            if iface := netifaces.ifaddresses(i).get(netifaces.AF_INET):
                 for j in iface:
                     addr = j["addr"]
                     if addr != "127.0.0.1":
@@ -10132,7 +10127,7 @@ class configuration:
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
-    for t in range(nb):
+    for _ in range(nb):
         d = d + a[random.randint(0, 35)]
     return d
 
@@ -10166,7 +10161,7 @@ class action(Thread):
             response = urllib.request.urlopen(request)
         except Exception as exc:
             logger.warning("Unable to send inventory to GLPI")
-            logger.warning("Response was: %s" % str(exc))
+            logger.warning(f"Response was: {str(exc)}")
         nbthread -= 1
 
 
@@ -10189,14 +10184,12 @@ class actiontest(Thread):
             d = nbthread
             nbthread += 1
             d += 1
-            if maxthread < d:
-                maxthread = d
-
+            maxthread = max(maxthread, d)
             request = urllib.request.Request(self.url, globaltest, self.HEADER)
             response = urllib.request.urlopen(request)
         except Exception as exc:
             logger.warning("Unable to send inventory to GLPI")
-            logger.warning("Response was: %s" % str(exc))
+            logger.warning(f"Response was: {str(exc)}")
         end = time.time()
         nbthread -= 1
         print(
@@ -10209,7 +10202,7 @@ class inventoryinject:
     def __init__(self, conf):
         self.conf = conf
         if conf.testmode:
-            logger.warning("time interval is %s" % self.conf.nbmessagebyseconde)
+            logger.warning(f"time interval is {self.conf.nbmessagebyseconde}")
         self.dirinventory = os.path.join(
             "/",
             "usr",
@@ -10229,13 +10222,8 @@ class inventoryinject:
             "User-Agent": "Proxy:FusionInventory/Pulse2/GLPI",
             "Content-Type": "application/x-compress",
         }
-        if self.conf.Url is not None:
-            self.url = self.conf.Url
-        else:
-            self.url = "http://localhost:9999/"
-
+        self.url = "http://localhost:9999/" if self.conf.Url is None else self.conf.Url
         signal.signal(signal.SIGINT, self.signal_handler)
-        pass
 
     def signal_handler(self, signal, frame):
         self.stop = True
@@ -10335,19 +10323,19 @@ def doTask(opts, conf):
     # start programme
     if conf.testmode:
         startprog = time.time()
-        print("nb injection %s" % conf.Numbercycles)
-        print("START %s" % startprog)
+        print(f"nb injection {conf.Numbercycles}")
+        print(f"START {startprog}")
         print("--------------------------")
     prog = inventoryinject(conf)
     prog.execprog()
     if conf.testmode:
         print("--------------------------")
         end = time.time()
-        print("STOP %s" % end)
+        print(f"STOP {end}")
         duration = end - startprog
-        print("Duration %s" % (duration))
-        print("real nb/s %s" % (duration / conf.Numbercycles))
-        print("interval is %s" % prog.conf.nbmessagebyseconde)
+        print(f"Duration {duration}")
+        print(f"real nb/s {duration / conf.Numbercycles}")
+        print(f"interval is {prog.conf.nbmessagebyseconde}")
 
 
 if __name__ == "__main__":
@@ -10445,9 +10433,6 @@ if __name__ == "__main__":
 
     # Setup the command line arguments.
     conf = configuration()
-    if conf._config:
-        pass
-
     if opts.url is not None:
         conf.Url = opts.url
 
@@ -10468,11 +10453,7 @@ if __name__ == "__main__":
     else:
         conf.Nbmessage = None
 
-    if opts.intertime is not None:
-        conf.Intertime = float(opts.intertime)
-    else:
-        conf.Intertime = None
-
+    conf.Intertime = float(opts.intertime) if opts.intertime is not None else None
     if opts.numbercycles is not None:
         conf.Numbercycles = int(opts.numbercycles)
     else:

@@ -140,8 +140,8 @@ class manage_event:
                         break
                     if "eventMessageraw" in event:
                         message = event["eventMessageraw"]
-                        recipientsucces = message["data"]["tosucces"]
                         recipienterror = message["data"]["toerror"]
+                        recipientsucces = message["data"]["tosucces"]
                         del message["data"]["tosucces"]
                         del message["data"]["toerror"]
                         codeerror = int(message["data"]["codeerror"])
@@ -189,28 +189,13 @@ class manage_event:
                                             )
                                         )
                                         if "command" in i:
-                                            if i["codereturn"] == 0:
-                                                log_class = "log_ok"
-                                            else:
-                                                log_class = "log_err"
-
+                                            log_class = "log_ok" if i["codereturn"] == 0 else "log_err"
                                             self.objectxmpp.xmpplog(
-                                                '[%s]-[%s]:<span class="%s"> '
-                                                "[Process command] errorcode %s for"
-                                                "command : %s <span>"
-                                                % (
-                                                    event["eventMessageraw"]["data"][
-                                                        "name"
-                                                    ],
-                                                    i["step"],
-                                                    log_class,
-                                                    i["codereturn"],
-                                                    i["command"][:20],
-                                                ),
+                                                f'[{event["eventMessageraw"]["data"]["name"]}]-[{i["step"]}]:<span class="{log_class}"> [Process command] errorcode {i["codereturn"]} forcommand : {i["command"][:20]} <span>',
                                                 type="deploy",
-                                                sessionname=event["eventMessageraw"][
-                                                    "sessionid"
-                                                ],
+                                                sessionname=event[
+                                                    "eventMessageraw"
+                                                ]["sessionid"],
                                                 priority=i["step"],
                                                 action="xmpplog",
                                                 who=self.objectxmpp.boundjid.bare,
@@ -225,11 +210,11 @@ class manage_event:
                                             )
                                         else:
                                             self.objectxmpp.xmpplog(
-                                                "[%s]: %s " % (i["step"], i["action"]),
+                                                f'[{i["step"]}]: {i["action"]} ',
                                                 type="deploy",
-                                                sessionname=event["eventMessageraw"][
-                                                    "sessionid"
-                                                ],
+                                                sessionname=event[
+                                                    "eventMessageraw"
+                                                ]["sessionid"],
                                                 priority=i["step"],
                                                 action="xmpplog",
                                                 who=self.objectxmpp.boundjid.bare,

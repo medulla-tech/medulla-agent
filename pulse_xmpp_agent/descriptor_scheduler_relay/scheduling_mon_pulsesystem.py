@@ -52,11 +52,11 @@ class DateTimeEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):
-        if isinstance(obj, datetime):
-            encoded_object = obj.isoformat()
-        else:
-            encoded_object = json.JSONEncoder.default(self, obj)
-        return encoded_object
+        return (
+            obj.isoformat()
+            if isinstance(obj, datetime)
+            else json.JSONEncoder.default(self, obj)
+        )
 
 
 def schedule_main(xmppobject):

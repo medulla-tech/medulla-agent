@@ -122,8 +122,8 @@ class configuration:
         if Config.has_option("chat", "domain"):
             self.Chatadress = Config.get("chat", "domain")
 
-        self.Jid = "log@%s/log" % self.Chatadress
-        self.master = "master@%s/MASTER" % self.Chatadress
+        self.Jid = f"log@{self.Chatadress}/log"
+        self.master = f"master@{self.Chatadress}/MASTER"
         # database
         if Config.has_option("database", "dbport"):
             self.dbport = Config.get("database", "dbport")
@@ -169,37 +169,36 @@ class configuration:
             self.log_level = Config.get("global", "log_level")
 
         # global
-        if self.log_level == "INFO":
-            self.debug = logging.INFO
-        elif self.log_level == "DEBUG":
+        if self.log_level == "DEBUG":
             self.debug = logging.DEBUG
         elif self.log_level == "ERROR":
             self.debug = logging.ERROR
+        elif self.log_level == "INFO":
+            self.debug = logging.INFO
         else:
             self.debug = 5
 
     def getRandomName(self, nb, pref=""):
         a = "abcdefghijklnmopqrstuvwxyz"
         d = pref
-        for t in range(nb):
+        for _ in range(nb):
             d = d + a[random.randint(0, 25)]
         return d
 
     def getRandomNameID(self, nb, pref=""):
         a = "0123456789"
         d = pref
-        for t in range(nb):
+        for _ in range(nb):
             d = d + a[random.randint(0, 9)]
         return d
 
     def get_local_ip_adresses(self):
-        ip_addresses = list()
+        ip_addresses = []
         interfaces = netifaces.interfaces()
         for i in interfaces:
             if i == "lo":
                 continue
-            iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
-            if iface:
+            if iface := netifaces.ifaddresses(i).get(netifaces.AF_INET):
                 for j in iface:
                     addr = j["addr"]
                     if addr != "127.0.0.1":
@@ -216,7 +215,7 @@ class configuration:
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
-    for t in range(nb):
+    for _ in range(nb):
         d = d + a[random.randint(0, 35)]
     return d
 
@@ -245,14 +244,7 @@ class MUCBot(slixmpp.ClientXMPP):
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
         self.engine = create_engine(
-            "%s://%s:%s@%s/%s"
-            % (
-                self.config.dbdriver,
-                self.config.dbuser,
-                self.config.dbpasswd,
-                self.config.dbhost,
-                self.config.dbname,
-            ),
+            f"{self.config.dbdriver}://{self.config.dbuser}:{self.config.dbpasswd}@{self.config.dbhost}/{self.config.dbname}",
             pool_recycle=self.config.dbpoolrecycle,
             pool_size=self.config.dbpoolsize,
             pool_timeout=self.config.dbpooltimeout,
@@ -270,7 +262,7 @@ class MUCBot(slixmpp.ClientXMPP):
             for t in self.get_log_status():
                 t["compile_re"] = re.compile(t["regexplog"])
                 self.reglestatus.append(t)
-            logger.debug("regle status initialise%s" % self.reglestatus)
+            logger.debug(f"regle status initialise{self.reglestatus}")
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -283,17 +275,15 @@ class MUCBot(slixmpp.ClientXMPP):
 
         try:
             resp.send(now=True)
-            logging.info("Account created for %s!" % self.boundjid)
+            logging.info(f"Account created for {self.boundjid}!")
         except IqError as e:
             if e.iq["error"]["code"] == "409":
                 logger.debug(
-                    "Could not register account %s : User already exists"
-                    % resp["register"]["username"]
+                    f'Could not register account {resp["register"]["username"]} : User already exists'
                 )
             else:
                 logger.debug(
-                    "Could not register account %s : %s"
-                    % (resp["register"]["username"], e.iq["error"]["text"])
+                    f'Could not register account {resp["register"]["username"]} : {e.iq["error"]["text"]}'
                 )
         except IqTimeout:
             logger.error("No response from server.")
@@ -324,10 +314,10 @@ class MUCBot(slixmpp.ClientXMPP):
             ret = session.query(Def_remote_deploy_status).all()
             session.commit()
             session.flush()
-            if ret is None:
-                resultat = []
-            else:
-                resultat = [
+            return (
+                []
+                if ret is None
+                else [
                     {
                         "index": id,
                         "id": regle.id,
@@ -336,7 +326,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     }
                     for id, regle in enumerate(ret)
                 ]
-            return resultat
+            )
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             return resultat
@@ -355,10 +345,9 @@ class MUCBot(slixmpp.ClientXMPP):
             pass
         # DEPLOYMENT START
         try:
-            deploysession = (
+            if deploysession := (
                 session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
-            )
-            if deploysession:
+            ):
                 if (
                     deploysession.result is None
                     or ("wol" in jsonresult and jsonresult["wol"] == 1)
@@ -418,7 +407,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 text = dataobj["text"]
             else:
                 logger.error("Cannot record this log. The content is badly formatted.")
-                logger.error("%s" % dataobj)
+                logger.error(f"{dataobj}")
                 return
             type = dataobj["type"] if "type" in dataobj else ""
             sessionname = dataobj["session"] if "session" in dataobj else ""
@@ -444,7 +433,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 touser=touser,
             )
         except Exception as e:
-            logger.error("format log Message  %s %s" % (dataobj, str(e)))
+            logger.error(f"format log Message  {dataobj} {str(e)}")
             logger.error("\n%s" % (traceback.format_exc()))
 
     def registerlogxmpp(
@@ -504,11 +493,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     who=dataobj["who"],
                 )
             elif "action" in dataobj:
-                if (
-                    "action" in dataobj
-                    and "data" in dataobj
-                    and "action" not in dataobj["data"]
-                ):
+                if "data" in dataobj and "action" not in dataobj["data"]:
                     dataobj["data"]["action"] = dataobj["action"]
                     dataobj["data"]["ret"] = dataobj["ret"]
                     dataobj["data"]["sessionid"] = dataobj["sessionid"]
@@ -528,15 +513,14 @@ class MUCBot(slixmpp.ClientXMPP):
                                 json.dumps(dataobj["data"], indent=4, sort_keys=True),
                             )
         except Exception as e:
-            logger.error("obj Message deploy error  %s %s" % (dataobj, str(e)))
+            logger.error(f"obj Message deploy error  {dataobj} {str(e)}")
             logger.error("\n%s" % (traceback.format_exc()))
 
     def searchstatus(self, chaine):
         for t in self.reglestatus:
             if t["compile_re"].match(chaine):
                 logger.debug(
-                    'la chaine "%s"  matche pour [%s] et renvoi le status suivant "%s"'
-                    % (chaine, t["regexplog"], t["status"])
+                    f'la chaine "{chaine}"  matche pour [{t["regexplog"]}] et renvoi le status suivant "{t["status"]}"'
                 )
                 return {"status": t["status"], "logmessage": chaine}
         return {"status": "", "logmessage": chaine}
@@ -558,8 +542,7 @@ class MUCBot(slixmpp.ClientXMPP):
                         re_status["status"], dataobj["data"]["sessionid"]
                     )
                     logger.debug(
-                        "apply status %s for sessionid %s"
-                        % (re_status["status"], dataobj["data"]["sessionid"])
+                        f'apply status {re_status["status"]} for sessionid {dataobj["data"]["sessionid"]}'
                     )
             if "sessionid" in dataobj:
                 dataobj["session"] = dataobj["sessionid"]
@@ -567,7 +550,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 if "sessionid" in dataobj["data"]:
                     dataobj["data"]["session"] = dataobj["sessionid"]
         except Exception as e:
-            logger.error("bad struct Message %s %s " % (msg["from"], str(e)))
+            logger.error(f'bad struct Message {msg["from"]} {str(e)} ')
             logger.error("\n%s" % (traceback.format_exc()))
             return
         try:
@@ -577,10 +560,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     if dataobj["data"]["action"] == "resultapplicationdeploymentjson":
                         self.xmpplogdeploy(dataobj)
                         return
-                    elif (
-                        dataobj["data"]["action"] == ""
-                        or dataobj["data"]["action"] == "xmpplog"
-                    ):
+                    elif dataobj["data"]["action"] in ["", "xmpplog"]:
                         self.createlog(dataobj["data"])
                         return
             if "log" in dataobj:
@@ -588,13 +568,11 @@ class MUCBot(slixmpp.ClientXMPP):
                     self.createlog(dataobj)
                 else:
                     # other typê message
-                    logging.debug("Verify format log message %s" % str(dataobj))
-                    pass
-            else:
-                if dataobj["action"] == "resultapplicationdeploymentjson":
-                    self.xmpplogdeploy(dataobj)
+                    logging.debug(f"Verify format log message {str(dataobj)}")
+            elif dataobj["action"] == "resultapplicationdeploymentjson":
+                self.xmpplogdeploy(dataobj)
         except Exception as e:
-            logger.error("log  from %s error: %s " % (msg["from"], str(e)))
+            logger.error(f'log  from {msg["from"]} error: {str(e)} ')
             logger.error("\n%s" % (traceback.format_exc()))
             return
 
@@ -707,9 +685,7 @@ if __name__ == "__main__":
 
     opts, args = optp.parse_args()
 
-    configfile = ""
-    if opts.configfile:
-        configfile = opts.configfile
+    configfile = opts.configfile if opts.configfile else ""
     if opts.version is True:
         print(VERSIONLOG)
         sys.exit(0)

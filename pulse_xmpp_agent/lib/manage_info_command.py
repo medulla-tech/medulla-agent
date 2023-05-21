@@ -31,5 +31,5 @@ class manage_infoconsole:
                     break
                 self.objectxmpp.gestioneventconsole(event, self.queueinfoout)
             except Exception as e:
-                logging.error("error in manage infoconsole %s" % str(e))
+                logging.error(f"error in manage infoconsole {str(e)}")
         logging.error("quit infocommand")

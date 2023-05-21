@@ -75,19 +75,13 @@ class constantregisterwindows:
         Returns:
         True if the key exist, False otherwise
         """
-        if key in self.keysregister:
-            return True
-        return False
+        return key in self.keysregister
 
     def is_exist_type(self, registrytype):
-        if type in self.typeregister:
-            return True
-        return False
+        return type in self.typeregister
 
     def descriptionkey(self, key):
-        if self.regkey_exists(key):
-            return self.keysregister[key]
-        return ""
+        return self.keysregister[key] if self.regkey_exists(key) else ""
 
     def descriptiontype(self, registertype):
         if self.is_exist_type(registertype):
@@ -172,16 +166,12 @@ class RegisterWindows:
     def __init__(self):
         pass
 
-    def readkey(completestrkey):
+    def readkey(self):
         reg_constants = constantregisterwindows()
         try:
-            hive = completestrkey.split("\\")[0].strip('"')
-            sub_key = completestrkey.split("\\")[-1].strip('"')
-            path = (
-                completestrkey.replace(hive + "\\", "")
-                .replace("\\" + sub_key, "")
-                .strip('"')
-            )
+            hive = self.split("\\")[0].strip('"')
+            sub_key = self.split("\\")[-1].strip('"')
+            path = self.replace(hive + "\\", "").replace("\\" + sub_key, "").strip('"')
             key = winreg.OpenKey(
                 reg_constants.getkey(hive),
                 path,
@@ -194,11 +184,11 @@ class RegisterWindows:
             logging.getLogger().error(str(e))
             return ""
 
-    def readkeyKeyPathVariable(strkey, strpath, strnamevariable):
+    def readkeyKeyPathVariable(self, strpath, strnamevariable):
         reg_constants = constantregisterwindows()
         try:
             key = winreg.OpenKey(
-                reg_constants.getkey(strkey),
+                reg_constants.getkey(self),
                 strpath,
                 0,
                 winreg.KEY_READ | reg_constants.getother_view_flag(),

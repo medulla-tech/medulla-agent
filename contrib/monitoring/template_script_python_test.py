@@ -48,7 +48,7 @@ class Mysqlbase:
         except MySQLdb.Error as e:
             self.boolconnectionbase = False
             self.dbconnectionMysql = None
-            print("We failed to connect to the database and got the error %s" % str(e))
+            print(f"We failed to connect to the database and got the error {str(e)}")
             print("\n%s" % (traceback.format_exc()))
             return self.dbconnectionMysql
         except Exception as e:
@@ -77,19 +77,16 @@ class Mysqlbase:
                     print(query)
                     cursor.execute(query)
                     results = cursor.fetchall()
-                    resultproxy = []
                     columnNames = [column[0] for column in cursor.description]
-                    for record in results:
-                        resultproxy.append(dict(zip(columnNames, record)))
-                    return resultproxy
+                    return [dict(zip(columnNames, record)) for record in results]
                 except MySQLdb.Error as e:
-                    print("Error: unable to fecth data %s" % str(e))
+                    print(f"Error: unable to fecth data {str(e)}")
                     print("\n%s" % (traceback.format_exc()))
                     return results
                 finally:
                     cursor.close()
         except Exception as e:
-            print("Error: unable to connection %s" % str(e))
+            print(f"Error: unable to connection {str(e)}")
             print("\n%s" % (traceback.format_exc()))
             return results
         return results
@@ -107,20 +104,17 @@ class Mysqlbase:
                     print(query)
                     results = cursor.execute(query)
                     self.dbconnectionMysql.commit()
-                    resultproxy = []
                     columnNames = [column[0] for column in cursor.description]
-                    for record in results:
-                        resultproxy.append(dict(zip(columnNames, record)))
-                    return resultproxy
+                    return [dict(zip(columnNames, record)) for record in results]
                 except MySQLdb.Error as e:
                     self.dbconnectionMysql.rollback()
-                    print("Error: unable to commit data %s" % str(e))
+                    print(f"Error: unable to commit data {str(e)}")
                     print("\n%s" % (traceback.format_exc()))
                     return results
                 finally:
                     cursor.close()
         except Exception as e:
-            print("Error: unable to connect: %s" % str(e))
+            print(f"Error: unable to connect: {str(e)}")
             print("\n%s" % (traceback.format_exc()))
             return results
         return results

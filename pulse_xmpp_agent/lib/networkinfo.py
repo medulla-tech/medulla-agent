@@ -40,7 +40,7 @@ class networkagentinfo:
             param1 = list(map(self.reduction_mac, param))
             for d in self.messagejson["listipinfo"]:
                 e = [s for s in param1 if d["macaddress"] == s]
-                if len(e) != 0:
+                if e:
                     dd.append(d)
             self.messagejson["listipinfo"] = dd
 
@@ -52,18 +52,18 @@ class networkagentinfo:
         return mac
 
     def getuser(self):
-        userlist = list({users[0] for users in psutil.users()})
-        return userlist
+        return list({users[0] for users in psutil.users()})
 
     def networkobjet(self, sessionid, action):
-        self.messagejson = {}
-        self.messagejson["action"] = action
-        self.messagejson["sessionid"] = sessionid
-        self.messagejson["listdns"] = []
-        self.messagejson["listipinfo"] = []
-        self.messagejson["dhcp"] = "False"
-        self.messagejson["dnshostname"] = ""
-        self.messagejson["msg"] = platform.system()
+        self.messagejson = {
+            "action": action,
+            "sessionid": sessionid,
+            "listdns": [],
+            "listipinfo": [],
+            "dhcp": "False",
+            "dnshostname": "",
+            "msg": platform.system(),
+        }
         try:
             self.messagejson["users"] = self.getuser()
         except BaseException:
@@ -80,10 +80,7 @@ class networkagentinfo:
                 result = [x.decode("utf-8") for x in p.stdout.readlines()]
             else:
                 result = p.stdout.readlines()
-            if len(result) > 0:
-                self.messagejson["dhcp"] = "True"
-            else:
-                self.messagejson["dhcp"] = "False"
+            self.messagejson["dhcp"] = "True" if len(result) > 0 else "False"
             self.messagejson["listdns"] = self.listdnslinux()
             self.messagejson["listipinfo"] = self.getLocalIipAddress()
             self.messagejson["dnshostname"] = platform.node()
@@ -123,11 +120,9 @@ class networkagentinfo:
             wmi_sql = "select * from Win32_NetworkAdapterConfiguration"
             wmi_out = wmi_obj.query(wmi_sql)
             for dev in wmi_out:
-                objnet = {}
                 if dev.MACAddress is None:
                     continue
-                objnet["macaddress"] = dev.MACAddress
-                objnet["Description"] = dev.Description
+                objnet = {"macaddress": dev.MACAddress, "Description": dev.Description}
                 try:
                     objnet["ipaddress"] = dev.IPAddress[0]
                 except BaseException:
@@ -161,7 +156,7 @@ class networkagentinfo:
         elif sys.platform.startswith("darwin"):
             return self.MacOsNetworkInfo()
         else:
-            self.messagejson["msg"] = "system %s : not managed yet" % sys.platform
+            self.messagejson["msg"] = f"system {sys.platform} : not managed yet"
             return self.messagejson
 
     def isIPValid(self, ipaddress):
@@ -214,9 +209,9 @@ class networkagentinfo:
                 result = [x.decode("utf-8").rstrip("\n") for x in arrayresult]
             else:
                 result = [x.rstrip("\n") for x in arrayresult]
-            for i in range(len(result)):
+            for item in result:
                 # result[i] = result[i].rstrip('\n')
-                d = result[i].split("@")
+                d = item.split("@")
                 obj1[d[0]] = d[1]
         elif system == "systemd":
             p = subprocess.Popen(
@@ -276,7 +271,7 @@ class networkagentinfo:
                 # if_mac = addrs[netifaces.AF_LINK][0]['addr']
                 # if_ip = addrs[netifaces.AF_INET][0]['addr']
                 p = subprocess.Popen(
-                    "ipconfig getpacket %s" % i,
+                    f"ipconfig getpacket {i}",
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -284,12 +279,13 @@ class networkagentinfo:
                 result = p.stdout.readlines()
                 code_result = p.wait()
                 if code_result == 0:
-                    partinfo = {}
-                    partinfo["dhcpserver"] = ""
-                    partinfo["dhcp"] = "False"
-                    partinfo["macaddress"] = netifaces.ifaddresses(i)[
-                        netifaces.AF_LINK
-                    ][0]["addr"]
+                    partinfo = {
+                        "dhcpserver": "",
+                        "dhcp": "False",
+                        "macaddress": netifaces.ifaddresses(i)[netifaces.AF_LINK][
+                            0
+                        ]["addr"],
+                    }
                     for line in result:
                         line = line.rstrip("\n")
                         colonne = line.split("=")
@@ -339,25 +335,19 @@ class networkagentinfo:
         for i in interfaces:
             if i == "lo":
                 continue
-            iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
-            if iface:
+            if iface := netifaces.ifaddresses(i).get(netifaces.AF_INET):
                 for j in iface:
                     if (
                         j["addr"] != "127.0.0.1"
                         and self.MacAdressToIp(j["addr"]) is not None
                     ):
-                        obj = {}
-                        obj["ipaddress"] = j["addr"]
-                        obj["mask"] = j["netmask"]
+                        obj = {"ipaddress": j["addr"], "mask": j["netmask"]}
                         try:
                             obj["broadcast"] = j["broadcast"]
                         except BaseException:
                             obj["broadcast"] = "0.0.0.0"
                         try:
-                            if str(i) in defaultgateway:
-                                obj["gateway"] = defaultgateway[str(i)]
-                            else:
-                                obj["gateway"] = "0.0.0.0"
+                            obj["gateway"] = defaultgateway.get(str(i), "0.0.0.0")
                         except Exception:
                             obj["gateway"] = "0.0.0.0"
 
@@ -384,13 +374,11 @@ class networkagentinfo:
             stderr=subprocess.STDOUT,
         )
         result = p.stdout.readlines()
-        if sys.version_info[0] == 3:
-            dns = [x.decode("utf-8").strip() for x in result]
-        else:
-            dns = [x.strip() for x in result]
-        # for i in result:
-        # dns.append(i.rstrip('\n'))
-        return dns
+        return (
+            [x.decode("utf-8").strip() for x in result]
+            if sys.version_info[0] == 3
+            else [x.strip() for x in result]
+        )
 
 
 def powershellfqdnwindowscommand():
@@ -406,19 +394,14 @@ def powershellfqdnwindowscommand():
             shell=True,
         )
         output = output.decode("cp850")
-        outou = []
         lou = [x.replace("OU=", "") for x in output.split(",") if "OU=" in x]
-        for y in lou:
-            if not re.findall("[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\\(\\)]", y):
-                outou.append(y)
-        if len(outou) != 0:
-            outou.reverse()
-            result = "@@".join(outou)
-            return result
-        else:
+        outou = [y for y in lou if not re.findall("[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\\(\\)]", y)]
+        if not outou:
             return ""
+        outou.reverse()
+        return "@@".join(outou)
     except subprocess.CalledProcessError as e:
-        logger.error("subproces powershellfqdnwindowscommand.output = " + e.output)
+        logger.error(f"subproces powershellfqdnwindowscommand.output = {e.output}")
     return ""
 
 
@@ -427,26 +410,20 @@ def powershellfqdnwindowscommandbyuser(user):
         output = subprocess.check_output(
             [
                 "powershell.exe",
-                """([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""
-                % user,
+                f"""([adsisearcher]"(&(objectClass=user)(samaccountname={user}))").findone().path""",
             ],
             shell=True,
         )
         output = output.decode("cp850")
-        outou = []
         lou = [x.replace("OU=", "") for x in output.split(",") if "OU=" in x]
-        for y in lou:
-            if not re.findall("[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\\(\\)]", y):
-                outou.append(y)
-        if len(outou) != 0:
-            outou.reverse()
-            result = "@@".join(outou)
-            return result
-        else:
+        outou = [y for y in lou if not re.findall("[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\\(\\)]", y)]
+        if not outou:
             return ""
+        outou.reverse()
+        return "@@".join(outou)
     except subprocess.CalledProcessError as e:
         logger.error(
-            "subproces powershellfqdnwindowscommandbyuser.output = " + e.output
+            f"subproces powershellfqdnwindowscommandbyuser.output = {e.output}"
         )
     return ""
 
@@ -473,10 +450,8 @@ def powershellgetlastuser():
                 namelist = []
                 if len(line) > 2:
                     for t in line[2:]:
-                        res = t.split("\\")[1]
-                        if res:
-                            final = res.split(" ")[:-1]
-                            if final:
+                        if res := t.split("\\")[1]:
+                            if final := res.split(" ")[:-1]:
                                 namelist.append(" ".join(final))
                 return ",".join(namelist)
         except IndexError:
@@ -497,7 +472,7 @@ def isMachineInDomain():
         )
         return output.strip() == "true"
     except subprocess.CalledProcessError as e:
-        logger.error("subproces isMachineInDomain.output = " + e.output)
+        logger.error(f"subproces isMachineInDomain.output = {e.output}")
     return False
 
 
@@ -510,10 +485,8 @@ def organizationbymachine():
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         return ""
     elif sys.platform.startswith("win"):
-        indomain = isMachineInDomain()
-        if indomain:
-            fqdnwindows = powershellfqdnwindowscommand()
-            return fqdnwindows
+        if indomain := isMachineInDomain():
+            return powershellfqdnwindowscommand()
         else:
             return ""
     else:
@@ -529,10 +502,8 @@ def organizationbyuser(user):
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         return ""
     elif sys.platform.startswith("win"):
-        indomain = isMachineInDomain()
-        if indomain:
-            fqdnwindows = powershellfqdnwindowscommandbyuser(user)
-            return fqdnwindows
+        if indomain := isMachineInDomain():
+            return powershellfqdnwindowscommandbyuser(user)
         else:
             return ""
     else:
@@ -540,10 +511,14 @@ def organizationbyuser(user):
 
 
 def interfacename(mac):
-    for interface in netifaces.interfaces():
-        if isInterfaceToMacadress(interface, mac):
-            return interface
-    return ""
+    return next(
+        (
+            interface
+            for interface in netifaces.interfaces()
+            if isInterfaceToMacadress(interface, mac)
+        ),
+        "",
+    )
 
 
 def lit_networkconf():
@@ -558,9 +533,7 @@ def isInterfaceToMacadress(interface, mac):
         BaseException
     ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
         return False
-    if if_mac == mac:
-        return True
-    return False
+    return if_mac == mac
 
 
 def isInterfaceToIpadress(interface, ip):
@@ -571,16 +544,13 @@ def isInterfaceToIpadress(interface, ip):
         BaseException
     ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
         return False
-    if if_ip == ip:
-        return True
-    return False
+    return if_ip == ip
 
 
 def rewriteInterfaceTypeRedhad(configfile, data, interface):
     tab = []
-    inputFile = open(configfile, "rb")
-    filecontent = inputFile.read()
-    inputFile.close()
+    with open(configfile, "rb") as inputFile:
+        filecontent = inputFile.read()
     tab = filecontent.split("\n")
     ll = [
         x
@@ -597,13 +567,12 @@ def rewriteInterfaceTypeRedhad(configfile, data, interface):
             ll.insert(1, "BOOTPROTO=dhcp")
         else:
             ll.insert(1, "BOOTPROTO=static")
-            ll.append("IPADDR=%s" % data["ipaddress"])
-            ll.append("NETMASK=%s" % data["mask"])
-            ll.append("GATEWAY=%s" % data["gateway"])
+            ll.append(f'IPADDR={data["ipaddress"]}')
+            ll.append(f'NETMASK={data["mask"]}')
+            ll.append(f'GATEWAY={data["gateway"]}')
         strr = "\n".join(ll)
-        inputFile = open(configfile, "wb")
-        inputFile.write(strr)
-        inputFile.close()
+        with open(configfile, "wb") as inputFile:
+            inputFile.write(strr)
     except BaseException:
         return False
     return True
@@ -613,12 +582,10 @@ def rewriteInterfaceTypeDebian(data, interface):
     tab = []
     z = []
     try:
-        inputFile = open("/etc/network/interfaces", "rb")
-        filecontent = inputFile.read()
-        inputFile.close()
-        inputFile = open("/etc/network/interfacesold", "wb")
-        inputFile.write(filecontent)
-        inputFile.close()
+        with open("/etc/network/interfaces", "rb") as inputFile:
+            filecontent = inputFile.read()
+        with open("/etc/network/interfacesold", "wb") as inputFile:
+            inputFile.write(filecontent)
         b = filecontent.split("\n")
         ll = [
             x.strip()
@@ -630,25 +597,25 @@ def rewriteInterfaceTypeDebian(data, interface):
         ]
         string = "\n".join(ll)
         ll = [x.strip() for x in string.split("iface") if x != ""]
-        for t in ll:
-            if t.split(" ")[0] != interface:
-                z.append(t)
+        z.extend(t for t in ll if t.split(" ")[0] != interface)
         if data["dhcp"] is True:
-            tab.append("\nauto %s\n" % interface)
-            tab.append("iface %s inet dhcp\n" % interface)
+            tab.extend(("\nauto %s\n" % interface, "iface %s inet dhcp\n" % interface))
         else:
-            tab.append("auto %s\n" % interface)
-            tab.append("iface %s inet static\n" % interface)
-            tab.append("\taddress %s\n" % data["ipaddress"])
-            tab.append("\tnetmask %s\n" % data["mask"])
-            tab.append("\tgateway %s\n" % data["gateway"])
+            tab.extend(
+                (
+                    "auto %s\n" % interface,
+                    "iface %s inet static\n" % interface,
+                    "\taddress %s\n" % data["ipaddress"],
+                    "\tnetmask %s\n" % data["mask"],
+                    "\tgateway %s\n" % data["gateway"],
+                )
+            )
         val1 = "".join(tab)
         for t in z:
             val = "\nauto %s\niface " % t.split(" ")[0]
             val = "%s %s\n" % (val, t)
-        inputFile = open("/etc/network/interfaces", "wb")
-        inputFile.write("%s\n%s" % (val, val1))
-        inputFile.close()
+        with open("/etc/network/interfaces", "wb") as inputFile:
+            inputFile.write("%s\n%s" % (val, val1))
         return True
     except BaseException:
         return False
@@ -684,10 +651,7 @@ def typelinuxfamily():
         "xandros",
     ]
     val = platform.platform().lower()
-    for t in debiandist:
-        if t in val:
-            return "debian"
-    return "redhat"
+    return next(("debian" for t in debiandist if t in val), "redhat")
 
 
 def getsystemressource():
@@ -695,8 +659,7 @@ def getsystemressource():
         "cat /proc/1/comm", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     result = p.stdout.readlines()
-    system = result[0].rstrip("\n")
-    return system
+    return result[0].rstrip("\n")
 
 
 def getWindowsNameInterfaceForMacadress(macadress):
