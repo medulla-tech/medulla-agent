@@ -97,7 +97,9 @@ def conf_ars_deploy(
         if listresult:
             device = listresult[0].getparent()
             for t in listresult:
-                device.remove(t)
+                if deviceName != "pulse":
+                    # TODO: Check if the removal is needed for secondary ARS
+                    device.remove(t)
             adresstcp = f"tcp://{adressurl}:{port}"
             device.append(etree.XML("<address>dynamic</address>"))
             device.append(etree.XML(f"<address>{adresstcp}</address>"))
