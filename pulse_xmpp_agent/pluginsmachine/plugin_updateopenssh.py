@@ -28,11 +28,11 @@ import platform
 import tempfile
 import shutil
 from lib import utils
-OPENSSHVERSION = '7.7'
+OPENSSHVERSION = '9.2'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.74", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.8", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
