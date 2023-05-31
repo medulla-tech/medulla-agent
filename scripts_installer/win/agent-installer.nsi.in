@@ -33,8 +33,6 @@ RequestExecutionLevel admin
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 !define AGENT_DEPS_NAME "${PRODUCT_NAME} dependencies"
 !define PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_DEPS_NAME}"
-!define USERDIR "c:\Users"
-!define PROGRAMDATA "C:\ProgramData"
 
 ; Variables replaced by the script calling the nsi
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
