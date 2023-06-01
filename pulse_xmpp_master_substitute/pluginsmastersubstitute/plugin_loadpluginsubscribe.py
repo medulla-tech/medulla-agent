@@ -6,6 +6,7 @@ import json
 import logging
 from lib.utils import name_random
 import traceback
+import slixmpp
 from slixmpp import jid
 import types
 from lib.plugins.xmpp import XmppMasterDatabase
@@ -13,6 +14,7 @@ import os
 import time
 from lib.utils import file_put_contents, simplecommandstr
 import configparser
+import asyncio
 
 try:
     from lib.stat import statcallplugin
@@ -147,8 +149,12 @@ def read_conf_load_plugin_subscribe(objectxmpp):
             return False
     return True
 
-
-def changed_status(self, presence):
+async def changed_status(self, presence):
+    if presence["from"].bare != self.boundjid.bare:
+        logger.debug(
+                    "********* changed_status %s %s"
+                    % (presence["from"], presence["type"])
+                )
     if statfuncton:
         self.stat_subcription_agent.statutility()
     frommsg = jid.JID(presence["from"])
