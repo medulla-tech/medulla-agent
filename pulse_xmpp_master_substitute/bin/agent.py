@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 
-
 from slixmpp import ClientXMPP
 from slixmpp import jid
 from slixmpp.xmlstream import handler, matcher
@@ -418,7 +417,7 @@ class MUCBot(slixmpp.ClientXMPP):
             "base64": False,
             "data": {"machine": self.boundjid.jid, "event": "CTRL_C_EVENT"},
         }
-        if  self.agentmaster != self.boundjid.bare:
+        if self.agentmaster != self.boundjid.bare:
             self.send_message_to_master(msgevt)
         self.shutdown = True
         logging.log(DEBUGPULSE, "shutdown xmpp agent %s!" % self.boundjid.user)
@@ -963,7 +962,7 @@ class MUCBot(slixmpp.ClientXMPP):
         elif iq["type"] == "result":
             logger.debug(
                 "we got an iq with result type. The id of this iq is: %s" % iq["id"]
-                )
+            )
             t = time.time()
             queue = ""
             liststop = []
