@@ -24,13 +24,14 @@ from pprint import pprint
 import hashlib
 import base64
 import pickle
-from lib.agentconffile import conffilename
+from agentconffile import conffilename
 import socket
 import psutil
 import time
 from datetime import datetime
 import imp
 import requests
+import zlib
 
 from requests.exceptions import Timeout
 
@@ -41,6 +42,18 @@ from functools import wraps
 import string
 import platform
 import asyncio as aio
+
+from json2xml import json2xml
+import xmltodict
+import yaml
+import inspect
+
+from json2xml import json2xml
+import xmltodict
+import yaml
+import xml.etree.ElementTree as ET
+from collections import OrderedDict
+import collections
 
 logger = logging.getLogger()
 
@@ -4507,3 +4520,573 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
             "download_file_windows_update function download_file_windows_update linux only"
         )
     return False
+
+
+
+# decorateur mesure temps d'une fonction
+def measure_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"Temps d'exécution de {func.__name__}: {execution_time} secondes")
+        return result
+    return wrapper
+
+def log_params(func):
+    def wrapper(*args, **kwargs):
+        print(f"Paramètres positionnels : {args}")
+        print(f"Paramètres nommés : {kwargs}")
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
+
+def log_details(func):
+    def wrapper(*args, **kwargs):
+        frame = inspect.currentframe().f_back
+        filename = frame.f_code.co_filename
+        line_number = frame.f_lineno
+        function_name = func.__name__
+        print(f"Nom de la fonction : {function_name}")
+        print(f"Fichier : {filename}, ligne : {line_number}")
+        print(f"Paramètres positionnels : {args}")
+        print(f"Paramètres nommés : {kwargs}")
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
+
+
+def log_details_debug_info(func):
+    def wrapper(*args, **kwargs):
+        frame = inspect.currentframe().f_back
+        filename = frame.f_code.co_filename
+        line_number = frame.f_lineno
+        function_name = func.__name__
+        # Configuration du logger
+        logger = logging.getLogger(function_name)
+        logger.setLevel(logging.INFO)
+        # Configuration du format de log
+        log_format = f"{function_name} - Ligne {line_number} - %(message)s"
+        formatter = logging.Formatter(log_format)
+        # Configuration du handler de log vers la console
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+        # Log des paramètres passés à la fonction
+        logger.info(f"Paramètres positionnels : {args}")
+        logger.info(f"Paramètres nommés : {kwargs}")
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
+
+def generate_log_line(message):
+    frame = inspect.currentframe().f_back
+    file_name = inspect.getframeinfo(frame).filename
+    line_number = frame.f_lineno
+    log_line = f"[{file_name}:{line_number}] - {message}"
+    return log_line
+
+def display_message(message):
+    frame = inspect.currentframe().f_back
+    file_name = inspect.getframeinfo(frame).filename
+    line_number = frame.f_lineno
+    logger = logging.getLogger(file_name)
+    logger.setLevel(logging.INFO)
+    # Configuration du handler de stream (affichage console)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.INFO)
+    logger.addHandler(stream_handler)
+    log_line = generate_log_line(message)
+    logger.info(log_line)
+
+
+class convert:
+    """
+        Cette class presente des methodes pour convertir simplement des objects.
+        elle expose les fonction suivante
+            convert_dict_to_yaml(input_dict)
+            convert_yaml_to_dict(yaml_data)
+            yaml_string_to_dict(yaml_string)
+            check_yaml_conformance(yaml_data)
+            compare_yaml(yaml_string1, yaml_string2)
+            convert_dict_to_json(input_dict_json, indent=None, sort_keys=False)
+            check_json_conformance(json_data)
+            convert_json_to_dict(json_str)
+            xml_to_dict(xml_string)
+            compare_xml(xml_file1, xml_file2)
+            convert_xml_to_dict(xml_str)
+            convert_json_to_xml(input_json)
+            convert_xml_to_json(input_xml)
+            convert_dict_to_xml(data_dict)
+            convert_bytes_datetime_to_string(data)
+            compare_dicts(dict1, dict2)
+            compare_json(json1, json2)
+            convert_to_bytes(input_data)
+            compress_and_encode(string)
+            decompress_and_encode(string)
+            convert_datetime_to_string(input_date)
+            encode_to_string_base64(input_data)
+            decode_base64_to_string_(input_data)
+            check_base64_encoding(input_string)
+            taille_string_in_base64(string)
+            string_to_int(s)
+            int_to_string(n)
+            string_to_float(s)
+            float_to_string(f)
+            list_to_string(lst, separator=', ')
+            string_to_list(s, separator=', ')
+            list_to_set(lst)
+            set_to_list(s)
+            dict_to_list(d)
+            list_to_dict(lst)
+            char_to_ascii(c)
+            ascii_to_char(n)
+            convert_rows_to_columns(data)
+            convert_columns_to_rows(data)
+            convert_to_ordered_dict(dictionary)
+            generate_random_text(num_words)
+            capitalize_words(text)
+    """
+    # YAML
+    @staticmethod
+    def convert_dict_to_yaml(input_dict):
+        """
+            la fonction suivante Python convertit 1 dict python en json.
+        """
+        if isinstance(input_dict, dict):
+            return yaml.dump(convert.convert_bytes_datetime_to_string(input_dict))
+        else:
+            raise TypeError("L'entrée doit être de type dict.")
+
+    @staticmethod
+    def convert_yaml_to_dict(yaml_data):
+        try:
+            return yaml.safe_load(yaml_data)
+        except yaml.YAMLError as e:
+            print("Error parsing YAML:", e)
+            return None
+
+    @staticmethod
+    def yaml_string_to_dict(yaml_string):
+        try:
+            yaml_data = yaml.safe_load(yaml_string)
+            return yaml_data
+        except yaml.YAMLError as e:
+            raise ValueError("Erreur lors de la conversion de la chaîne YAML en dictionnaire.")
+
+    @staticmethod
+    def check_yaml_conformance(yaml_data):
+        try:
+            # Chargement du YAML pour vérifier la conformité
+            yaml.safe_load(yaml_data)
+            return True
+        except yaml.YAMLError:
+            return False
+
+    @staticmethod
+    def compare_yaml(yaml_string1, yaml_string2):
+        """
+        Dans cette fonction compare_yaml, nous appelons la fonction yaml_string_to_dict pour convertir chaque chaîne YAML en dictionnaire.
+        Si une exception ValueError est levée lors de la conversion, nous affichons l'erreur et retournons False.
+        nous utilisons la fonction compare_dicts pour comparer les dictionnaires obtenus.
+        Si les dictionnaires sont égaux, la fonction compare_yaml retourne True, sinon elle retourne False.
+        """
+        try:
+            dict1 = convert.yaml_string_to_dict(yaml_string1)
+            dict2 = convert.yaml_string_to_dict(yaml_string2)
+            return convert.compare_dicts(dict1, dict2)
+        except ValueError as e:
+            print(f"Erreur: {str(e)}")
+            return False
+
+    # JSON
+    @staticmethod
+    def convert_dict_to_json(input_dict_json, indent=None, sort_keys=False):
+        """
+            la fonction suivante Python convertit 1 dict python en json.
+        """
+        if isinstance(input_dict_json, dict):
+            return json.dumps(convert.convert_bytes_datetime_to_string(input_dict_json),indent=indent)
+        else:
+            raise TypeError("L'entrée doit être de type dict.")
+
+    @staticmethod
+    def check_json_conformance(json_data):
+        try:
+            json.loads(json_data)
+            return True
+        except json.JSONDecodeError:
+            return False
+
+    @staticmethod
+    def convert_json_to_dict(json_str):
+        return json.loads(json_str)
+
+    @staticmethod
+    def xml_to_dict(xml_string):
+
+        def xml_element_to_dict(element):
+            if len(element) == 0:
+                return element.text
+            result = {}
+            for child in element:
+                child_dict = xml_element_to_dict(child)
+                if child.tag in result:
+                    if not isinstance(result[child.tag], list):
+                        result[child.tag] = [result[child.tag]]
+                    result[child.tag].append(child_dict)
+                else:
+                    result[child.tag] = child_dict
+            return result
+        try:
+            #tree = ET.parse(xml_file)
+            tree = ET.ElementTree(ET.fromstring(xml_string))
+            root = tree.getroot()
+            return xml_element_to_dict(root)
+        except ET.ParseError:
+            raise ValueError("Erreur lors de la conversion XML en dictionnaire.")
+
+    @staticmethod
+    def compare_xml(xml_file1, xml_file2):
+        try:
+            dict1 = convert.xml_to_dict(xml_file1)
+            dict2 = convert.xml_to_dict(xml_file2)
+            return convert.compare_dicts(dict1, dict2)
+        except ValueError as e:
+            print(f"Erreur: {str(e)}")
+            return False
+
+    @staticmethod
+    def convert_xml_to_dict(xml_str):
+        return xmltodict.parse(xml_str)
+
+    @staticmethod
+    def convert_json_to_xml(input_json):
+        return json2xml.Json2xml(input_json).to_xml()
+
+    # xml
+    @staticmethod
+    def convert_xml_to_json(input_xml):
+        return json.dumps(xmltodict.parse(input_xml), indent=4)
+
+    @staticmethod
+    def convert_dict_to_xml(data_dict):
+        xml_str = xmltodict.unparse({"root": data_dict}, pretty=True)
+        return xml_str
+
+
+    @staticmethod
+    def convert_bytes_datetime_to_string(data):
+        """
+            la fonction suivante Python parcourt récursivement un dictionnaire,
+            convertit les types bytes en str,
+            les objets datetime en chaînes de caractères au format "année-mois-jour heure:minute:seconde"
+            si les clés sont de type bytes elles sont convertit en str :
+            encodage ('utf-8') est utilise pour le decode des bytes.
+            Si 1 chaine est utilisée pour definir FALSE ou True alors c'est convertit en boolean True/false
+            Si 1 valeur est None, elle est convertit a ""
+
+            renvoi le dictionnaire convertit
+        """
+        if isinstance(data, dict):
+            return {convert.convert_bytes_datetime_to_string(key): convert.convert_bytes_datetime_to_string(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [convert.convert_bytes_datetime_to_string(item) for item in data]
+        elif isinstance(data, bytes):
+            return data.decode('utf-8')
+        elif isinstance(data, datetime):
+            return data.strftime('%Y-%m-%d %H:%M:%S')
+        elif data is None:
+            return ""
+        elif isinstance(data, str) and data.lower() == "false":
+            return False
+        elif isinstance(data, str) and data.lower() == "true":
+            return True
+        else:
+            return data
+
+    @staticmethod
+    def compare_dicts(dict1, dict2):
+        """
+            Dans cette fonction, nous commençons par comparer les ensembles des clés des deux dictionnaires (dict1.keys() et dict2.keys()). Si les ensembles des clés sont différents, nous retournons False immédiatement car les dictionnaires ne peuvent pas être égaux.
+
+            Ensuite, nous itérons sur les clés du premier dictionnaire (dict1.keys()) et comparons les valeurs correspondantes dans les deux dictionnaires (value1 et value2).
+
+            Si une valeur est un autre dictionnaire, nous effectuons un appel récursif à la fonction compare_dicts pour comparer les sous-dictionnaires. Si le résultat de l'appel récursif est False, nous retournons False immédiatement.
+
+            Si les valeurs ne sont pas égales et ne sont pas des dictionnaires, nous retournons également False.
+
+            Si toutes les clés et les valeurs correspondent dans les deux dictionnaires, nous retournons True à la fin de la fonction.
+        """
+        if dict1.keys() != dict2.keys():
+            return False
+
+        for key in dict1.keys():
+            value1 = dict1[key]
+            value2 = dict2[key]
+
+            if isinstance(value1, dict) and isinstance(value2, dict):
+                # Si la valeur est un dictionnaire, appel récursif
+                if not convert.compare_dicts(value1, value2):
+                    return False
+            elif value1 != value2:
+                # Si les valeurs ne sont pas égales, retourne False
+                return False
+        return True
+
+
+    @staticmethod
+    def compare_json(json1, json2):
+        try:
+            dict1 = json.loads(json1)
+            dict2 = json.loads(json2)
+        except json.JSONDecodeError:
+            raise ValueError("Erreur lors de la conversion JSON en dictionnaire.")
+        return convert.compare_dicts(dict1, dict2)
+
+    @staticmethod
+    def convert_to_bytes(input_data):
+        if isinstance(input_data, bytes):
+            return input_data
+        elif isinstance(input_data, str):
+            return input_data.encode('utf-8')
+        else:
+            raise TypeError("L'entrée doit être de type bytes ou string.")
+
+    # COMPRESS
+    @staticmethod
+    def compress_and_encode(string):
+        # Convert string to bytes
+        data = convert.convert_to_bytes(string)
+        # Compress the data using zlib
+        compressed_data = zlib.compress(data, 9)
+        # Encode the compressed data in base64
+        encoded_data = base64.b64encode(compressed_data)
+        return encoded_data.decode('utf-8')
+
+    @staticmethod
+    def decompress_and_encode(string):
+        # Convert string to bytes
+        data = convert.convert_to_bytes(string)
+        decoded_data = base64.b64decode(data)
+        # Decompress the data using zlib
+        decompressed_data = zlib.decompress(decoded_data)
+        # Encode the decompressed data in base64
+        return decompressed_data.decode('utf-8')
+
+    # datetime
+    @staticmethod
+    def convert_datetime_to_string (input_date: datetime):
+        if isinstance(input_date, datetime):
+            return input_date.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            raise TypeError("L'entrée doit être de type datetime.")
+
+    # base64
+    @staticmethod
+    def encode_to_string_base64(input_data):
+        if isinstance(input_data, str):
+            input_data_bytes = input_data.encode('utf-8')
+        elif isinstance(input_data, bytes):
+            input_data_bytes = input_data
+        else:
+            raise TypeError("L'entrée doit être une chaîne ou un objet bytes.")
+        encoded_bytes = base64.b64encode(input_data_bytes)
+        encoded_string = encoded_bytes.decode('utf-8')
+        return encoded_string
+
+
+    @staticmethod
+    def decode_base64_to_string_(input_data):
+        try:
+            decoded_bytes = base64.b64decode(input_data)
+            decoded_string = decoded_bytes.decode('utf-8')
+            return decoded_string
+        except base64.binascii.Error:
+            raise ValueError("L'entrée n'est pas encodée en base64 valide.")
+
+    @staticmethod
+    def check_base64_encoding(input_string):
+        try:
+            # Décode la chaîne en base64 et vérifie si cela génère une erreur
+            base64.b64decode(input_string)
+            return True
+        except base64.binascii.Error:
+            return False
+
+    @staticmethod
+    def taille_string_in_base64(string):
+        """
+        renvoie la taille que prend 1 string en encode en base64.
+        """
+        taille=(len(string))
+        return  (taille + 2 - ((taille + 2) % 3)) * 4 / 3
+
+    @staticmethod
+    def string_to_int(s):
+        """
+        Conversion de chaînes en entiers
+        """
+        try:
+            return int(s)
+        except ValueError:
+            return None
+
+   @staticmethod
+    def int_to_string(n):
+        """
+        Conversion d'entiers en chaînes
+        """
+        return str(n)
+
+
+    @staticmethod
+    def string_to_float(s):
+        """
+        Conversion de chaînes en nombres à virgule flottante
+        """
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def float_to_string(f):
+        """
+        Conversion de nombres à virgule flottante en chaînes
+        """
+        return str(f)
+
+    @staticmethod
+    def list_to_string(lst, separator=', '):
+        """
+        Conversion d'une liste de chaînes en une seule chaîne avec un séparateur
+        """
+        return separator.join(lst)
+
+
+    @staticmethod
+    def string_to_list(s, separator=', '):
+        """
+        Conversion d'une chaîne en une liste en utilisant un séparateur
+        """
+        return s.split(separator)
+
+
+    @staticmethod
+    def list_to_set(lst):
+        """
+        Conversion d'une liste en un ensemble (élimine les doublons)
+        """
+        return set(lst)
+
+    @staticmethod
+    def set_to_list(s):
+        """
+        Conversion d'un ensemble en une liste en conservant l'ordre
+        """
+        return [item for item in s]
+
+    @staticmethod
+    def dict_to_list(d):
+        """
+        Conversion d'un dictionnaire en une liste de tuples clé-valeur
+        """
+        return list(d.items())
+
+    @staticmethod
+    def list_to_dict(lst):
+        """
+        Conversion d'une liste de tuples clé-valeur en un dictionnaire
+        """
+        return dict(lst)
+
+    @staticmethod
+    def char_to_ascii(c):
+        """
+        Conversion de caractères en code ASCII
+        """
+        return ord(c)
+
+    @staticmethod
+    def ascii_to_char(n):
+        """
+        Conversion de code ASCII en caractère :
+        """
+        return chr(n)
+
+    @staticmethod
+    def convert_rows_to_columns(data):
+        """
+            cette fonction fait la convertion depuis 1 list de dict representant des lignes
+            en
+            1 list de colonne
+
+            data = [{"id": 1, "name": "dede", "age": 30},
+                    {"id": 2, "name": "dada", "age": 25}]
+            to
+            [{'age': [30, 25]}, {'name': ['dede', 'dada']}, {'id': [1, 2]}]
+        """
+        # Obtenez les noms de colonnes
+        column_names = set()
+        for row in data:
+            column_names.update(row.keys())
+        # Créez un dictionnaire vide pour chaque colonne
+        columns = {name: [] for name in column_names}
+        # Remplissez les colonnes avec les valeurs correspondantes
+        for row in data:
+            for column, value in row.items():
+                columns[column].append(value)
+        # Convertissez les dictionnaires de colonnes en une liste de colonnes
+        columns_list = [{name: values} for name, values in columns.items()]
+        return columns_list
+
+    @staticmethod
+    def convert_columns_to_rows(data):
+        """
+        Cette fonction fait l'inverse de la conversion réalisée par la fonction convert_rows_to_columns.
+
+        data = [{'age': [30, 25]}, {'name': ['dede', 'dada']}, {'id': [1, 2]}]
+        to
+        [{"id": 1, "name": "dede", "age": 30},
+        {"id": 2, "name": "dada", "age": 25}]
+        """
+        # Obtenez tous les noms de colonnes
+        rows=[]
+        s= [ list(x.keys())[0] for x in data]
+        nbligne = len(data[0][s[0]])
+        for t in range(nbligne):
+            result={}
+            for z in range(len(s)):
+                result[s[z]] = data[z][s[z]][t]
+            rows.append(result)
+        return rows
+
+    @staticmethod
+    def convert_to_ordered_dict(dictionary):
+        ordered_dict = OrderedDict()
+        for key, value in dictionary.items():
+            ordered_dict[key] = value
+        return ordered_dict
+
+
+    @staticmethod
+    def generate_random_text(num_words):
+        words = []
+        for _ in range(num_words):
+            word = ''.join(random.choice(string.ascii_letters) for _ in range(random.randint(3, 8)))
+            words.append(word)
+        return ' '.join(words)
+
+    @staticmethod
+    def capitalize_words(text):
+        """
+        renvoi la chaine avec chaque mot commencant par une majuscule et les autres lettres sont en minuscules
+        """
+        words = text.split()
+        capitalized_words = [word.capitalize() for word in words]
+        capitalized_text = ' '.join(capitalized_words)
+        return capitalized_text
+
