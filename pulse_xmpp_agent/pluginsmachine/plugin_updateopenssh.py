@@ -12,10 +12,11 @@ import tempfile
 import shutil
 from lib import utils
 
-OPENSSHVERSION = "8.9"
+OPENSSHVERSION = "9.2"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.0", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
+
+plugin = {"VERSION": "1.8", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

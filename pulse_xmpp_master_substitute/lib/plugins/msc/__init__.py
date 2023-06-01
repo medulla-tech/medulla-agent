@@ -1047,6 +1047,7 @@ class MscDatabase(DatabaseHelper):
                                     AND NOW() BETWEEN commands.start_date AND commands.end_date
                                     AND commands.deployment_intervals = ''
                             GROUP BY `target`.`target_name`
+                            ORDER BY RAND()
                             LIMIT %s )
                             UNION
                             (SELECT

@@ -1977,8 +1977,10 @@ def keypub():
     elif sys.platform.startswith("win"):
         try:
             win32net.NetUserGetInfo("", "pulseuser", 0)
-            pathkey = os.path.join("c:\\Users\\pulseuser", ".ssh")
-        except BaseException:
+            pathkey = os.path.join(
+                os.environ["HOMEDRIVE"], "/", "Users", "pulseuser", ".ssh"
+            )
+        except:
             pathkey = os.path.join(os.environ["ProgramFiles"], "pulse", ".ssh")
         if not os.path.isfile(os.path.join(pathkey, "id_rsa")):
             obj = simplecommand(
@@ -2880,7 +2882,9 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             if result["code"] != 0:
                 msg = "Error hiding %s account: %s" % (username, result)
                 return False, msg
-            user_home = os.path.join("c:\\", "Users", username)
+            user_home = os.path.normpath(
+                os.path.join(os.environ["HOMEDRIVE"], "/", "Users", username)
+            )
             hide_from_explorer = simplecommand(
                 encode_strconsole("attrib +h %s" % user_home)
             )
@@ -2929,7 +2933,13 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL("userenv.dll")
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath("C:/Users/%s" % username).strip().lower()
+        defined_profilepath = (
+            os.path.normpath(
+                os.path.join(os.environ["HOMEDRIVE"], "/", "Users", username)
+            )
+            .strip()
+            .lower()
+        )
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
@@ -3041,17 +3051,21 @@ def delete_profile(username="pulseuser"):
     if sys.platform.startswith("win"):
         # Delete profile folder in C:\Users if any
         try:
-            for name in os.listdir("C:/Users/"):
+            for name in os.listdir(os.path.join(os.environ["HOMEDRIVE"], "/", "Users")):
                 if name.startswith(username):
-                    delete_folder_cmd = 'rd /s /q "C:\\Users\\%s" ' % name
+                    delete_folder_cmd = 'rd /s /q "%s" ' % os.path.join(
+                        os.environ["HOMEDRIVE"], "/", "Users", name
+                    )
                     result = simplecommand(encode_strconsole(delete_folder_cmd))
                     if result["code"] == 0:
                         logger.debug(
-                            "Deleted %s folder" % os.path.join("C:/Users/", name)
+                            "Deleted %s folder"
+                            % os.path.join(os.environ["HOMEDRIVE"], "/", "Users", name)
                         )
                     else:
                         logger.error(
-                            "Error deleting %s folder" % os.path.join("C:/Users/", name)
+                            "Error deleting %s folder"
+                            % os.path.join(os.environ["HOMEDRIVE"], "/", "Users", name)
                         )
         except Exception as e:
             pass
@@ -3073,7 +3087,9 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     Used on client machine for connecting to relay server
     """
     if sys.platform.startswith("win"):
-        id_rsa_path = os.path.join("C:\\Users", username, ".ssh", "id_rsa")
+        id_rsa_path = os.path.join(
+            os.environ["HOMEDRIVE"], "/", "Users", username, ".ssh", "id_rsa"
+        )
     else:
         id_rsa_path = os.path.join(
             os.path.expanduser("~%s" % username), ".ssh", "id_rsa"
@@ -3187,7 +3203,7 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     """
     if sys.platform.startswith("win"):
         authorized_keys_path = os.path.join(
-            "C:\\Users", username, ".ssh", "authorized_keys"
+            os.environ["HOMEDRIVE"], "/", "Users", username, ".ssh", "authorized_keys"
         )
     else:
         authorized_keys_path = os.path.join(

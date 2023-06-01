@@ -283,14 +283,18 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 try:
                     win32net.NetUserGetInfo("", "pulseuser", 0)
                     filekey = os.path.join(
-                        "C:\\", "Users", "pulseuser", ".ssh", "id_rsa"
+                        os.environ["HOMEDRIVE"],
+                        "/",
+                        "Users",
+                        "pulseuser",
+                        ".ssh",
+                        "id_rsa",
                     )
-                except BaseException:
+                except:
                     filekey = os.path.join(
                         os.environ["ProgramFiles"], "pulse", ".ssh", "id_rsa"
                     )
-                # Define the permissions depending on the user running the
-                # agent (admin or system)
+                # Define the permissions depending on the user running the agent (admin or system)
                 utils.apply_perms_sshkey(filekey, private=True)
 
                 sshexec = os.path.join(os.environ["ProgramFiles"], "OpenSSH", "ssh.exe")
