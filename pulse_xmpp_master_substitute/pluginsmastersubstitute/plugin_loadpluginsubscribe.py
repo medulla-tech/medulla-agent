@@ -149,12 +149,12 @@ def read_conf_load_plugin_subscribe(objectxmpp):
             return False
     return True
 
+
 async def changed_status(self, presence):
     if presence["from"].bare != self.boundjid.bare:
         logger.debug(
-                    "********* changed_status %s %s"
-                    % (presence["from"], presence["type"])
-                )
+            "********* changed_status %s %s" % (presence["from"], presence["type"])
+        )
     if statfuncton:
         self.stat_subcription_agent.statutility()
     frommsg = jid.JID(presence["from"])
