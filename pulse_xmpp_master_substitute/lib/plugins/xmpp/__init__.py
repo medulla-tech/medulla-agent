@@ -8066,9 +8066,7 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         if not result:
             return False
-        resultmon_machine = [
-                rowproxy._asdict() for rowproxy in result
-        ]
+        resultmon_machine = [rowproxy._asdict() for rowproxy in result]
         resultmon_machine = resultmon_machine[0]
 
         if "mon_machine_statusmsg" in resultmon_machine and isinstance(
@@ -8162,9 +8160,7 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         if not result:
             return {}
-        resultproxy = [
-            rowproxy._asdict() for rowproxy in result
-        ]
+        resultproxy = [rowproxy._asdict() for rowproxy in result]
         resultproxy = resultproxy[0]
         resultproxy["mon_param0"] = ""
         resultproxy["mon_subject"] = ""
@@ -10626,10 +10622,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             resultproxy = session.execute(sql)
             session.commit()
             session.flush()
-            return [
-                rowproxy._asdict()
-                for rowproxy in resultproxy
-            ]
+            return [rowproxy._asdict() for rowproxy in resultproxy]
         except Exception:
             logging.getLogger().error(
                 "sql get_all_update_in_gray_list : %s" % traceback.format_exc()
@@ -10686,10 +10679,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             resultproxy = session.execute(sql)
             session.commit()
             session.flush()
-            return [
-                rowproxy._asdict()
-                for rowproxy in resultproxy
-            ]
+            return [rowproxy._asdict() for rowproxy in resultproxy]
         except Exception:
             logging.getLogger().error(
                 "sql delete_in_gray_list : %s" % traceback.format_exc()
@@ -10714,7 +10704,4 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
-        return [
-            rowproxy._asdict()
-            for rowproxy in resultproxy
-        ]
+        return [rowproxy._asdict() for rowproxy in resultproxy]
