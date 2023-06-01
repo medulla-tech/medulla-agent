@@ -4022,15 +4022,15 @@ class XmppMasterDatabase(DatabaseHelper):
             new_network = Network()
             if broadcast is None or broadcast == "None":
                 broadcast = ""
-            if isinstance(mask, (str, unicode)):
+            if isinstance(mask, str):
                 mask = mask.strip()
-            if isinstance(ipaddress, (str, unicode)):
+            if isinstance(ipaddress, str):
                 ipaddress = ipaddress.strip()
-            if isinstance(broadcast, (str, unicode)):
+            if isinstance(broadcast, str):
                 broadcast = broadcast.strip()
-            if isinstance(macaddress, (str, unicode)):
+            if isinstance(macaddress, str):
                 macaddress = macaddress.strip()
-            if isinstance(gateway, (str, unicode)):
+            if isinstance(gateway, str):
                 gateway = gateway.strip()
             new_network.macaddress = macaddress
             new_network.ipaddress = ipaddress
@@ -4049,6 +4049,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
         except Exception as e:
+            logging.getLogger().error("\n%s" % (traceback.format_exc()))
             logging.getLogger().error("add Presence Network : %s " % str(e))
 
     @DatabaseHelper._sessionm
@@ -8066,7 +8067,7 @@ class XmppMasterDatabase(DatabaseHelper):
         if not result:
             return False
         resultmon_machine = [
-            {column: value for column, value in rowproxy.items()} for rowproxy in result
+                rowproxy._asdict() for rowproxy in result
         ]
         resultmon_machine = resultmon_machine[0]
 
@@ -8162,7 +8163,7 @@ class XmppMasterDatabase(DatabaseHelper):
         if not result:
             return {}
         resultproxy = [
-            {column: value for column, value in rowproxy.items()} for rowproxy in result
+            rowproxy._asdict() for rowproxy in result
         ]
         resultproxy = resultproxy[0]
         resultproxy["mon_param0"] = ""
@@ -10626,7 +10627,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.commit()
             session.flush()
             return [
-                {column: value for column, value in rowproxy.items()}
+                rowproxy._asdict()
                 for rowproxy in resultproxy
             ]
         except Exception:
@@ -10686,7 +10687,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.commit()
             session.flush()
             return [
-                {column: value for column, value in rowproxy.items()}
+                rowproxy._asdict()
                 for rowproxy in resultproxy
             ]
         except Exception:
@@ -10714,6 +10715,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
     # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [
-            {column: value for column, value in rowproxy.items()}
+            rowproxy._asdict()
             for rowproxy in resultproxy
         ]
