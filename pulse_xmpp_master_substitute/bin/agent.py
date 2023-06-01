@@ -3,7 +3,20 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+
+
+from slixmpp import ClientXMPP
 from slixmpp import jid
+from slixmpp.xmlstream import handler, matcher
+from slixmpp.exceptions import IqError, IqTimeout
+from slixmpp.xmlstream.stanzabase import ET
+from slixmpp.xmlstream.handler import CoroutineCallback
+from slixmpp.xmlstream.handler import Callback
+from slixmpp.xmlstream.matcher.xpath import MatchXPath
+from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
+from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
+import slixmpp
+import asyncio
 import sys
 import os
 from os import listdir
@@ -12,9 +25,6 @@ import logging
 import base64
 import json
 import time
-import slixmpp
-from slixmpp.exceptions import IqError, IqTimeout
-from slixmpp.xmlstream.stanzabase import ET
 import posix_ipc
 
 from lib.configuration import confParameter
@@ -32,8 +42,6 @@ from lib.plugins.glpi import Glpi
 from lib.manage_scheduler import manage_scheduler
 import asyncio
 import random
-from slixmpp.xmlstream.handler import CoroutineCallback
-from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
 from lib import manageRSAsigned
 import datetime
 
@@ -63,24 +71,18 @@ class MUCBot(slixmpp.ClientXMPP):
                 "pluginsmastersubstitute",
             )
         )
+        self.logger = logging.getLogger()
         signal.signal(signal.SIGINT, self.signal_handler)
         self.config = confParameter(conf_file)
 
-        ### update level log for slixmpp
-        handler_slixmpp = logging.getLogger("slixmpp")
-        logging.log(
-            DEBUGPULSE, "slixmpp log level is %s" % self.config.log_level_slixmpp
-        )
-        handler_slixmpp.setLevel(self.config.log_level_slixmpp)
-
-        logging.log(
-            DEBUGPULSE, "Starting Master sub (%s)" % (self.config.jidmastersubstitute)
-        )
         slixmpp.ClientXMPP.__init__(
             self,
             jid.JID(self.config.jidmastersubstitute),
             self.config.passwordconnection,
         )
+
+        handler_slixmpp = logging.getLogger("slixmpp")
+        handler_slixmpp.setLevel(logging.DEBUG)
 
         msgkey = manageRSAsigned.MsgsignedRSA(self.boundjid.user)
 
@@ -115,6 +117,12 @@ class MUCBot(slixmpp.ClientXMPP):
                 StanzaPath("/iq@type=error"),
                 self._handle_custom_iq_error,
             )
+        )
+
+        handler_slixmpp = logging.getLogger("slixmpp")
+        handler_slixmpp.setLevel(logging.DEBUG)
+        logging.log(
+            DEBUGPULSE, "Starting Master sub (%s)" % (self.config.jidmastersubstitute)
         )
 
         base_message_queue_posix().clean_file_all_message(prefixe=self.boundjid.user)
@@ -410,7 +418,8 @@ class MUCBot(slixmpp.ClientXMPP):
             "base64": False,
             "data": {"machine": self.boundjid.jid, "event": "CTRL_C_EVENT"},
         }
-        self.send_message_to_master(msgevt)
+        if  self.agentmaster != self.boundjid.bare:
+            self.send_message_to_master(msgevt)
         self.shutdown = True
         logging.log(DEBUGPULSE, "shutdown xmpp agent %s!" % self.boundjid.user)
         self.Mode_Marche_Arret_stop_agent(time_stop=1)
@@ -866,24 +875,29 @@ class MUCBot(slixmpp.ClientXMPP):
 
     async def _handle_custom_iq_error(self, iq):
         if iq["type"] == "error":
+            errortext = iq["error"]["text"]
+            if "User already exists" in errortext:
+                # This is not an IQ error
+                logger.warning("User already exists")
+                self.isaccount = False
+                return
+
             miqkeys = iq.keys()
-            logger.debug("ERROR ERROR TYPE %s" % iq["id"])
-            logger.debug("ERROR ERROR TYPE %s" % miqkeys)
             errortext = iq["error"]["text"]
             t = time.time()
             queue = ""
             liststop = []
-            delqueue = []
+            deleted_queue = []
 
             logger.debug("time ref %s" % t)
             try:
                 for ta in self.datas_send:
-                    logger.debug("On Traite %s" % ta["name_iq_queue"])
-                    logger.debug("time fin %s " % (ta["time"]))
-                    logger.debug("time now %s " % (t))
-                    logger.debug("sessioniq %s" % ta["sesssioniq"])
                     if ta["time"] < t:
-                        logger.debug("timeout queu %s" % ta["name_iq_queue"])
+                        logger.debug(
+                            "The queue %s timed out, we remove it."
+                            % ta["name_iq_queue"]
+                        )
+                        deleted_queue.append(ta["name_iq_queue"])
                         delqueue.append(ta["name_iq_queue"])
                         continue
                     if ta["sesssioniq"] == iq["id"]:
@@ -891,10 +905,10 @@ class MUCBot(slixmpp.ClientXMPP):
                         logger.debug("TRAITEMENT RESULT IN %s" % ta["name_iq_queue"])
                     liststop.append(ta)
                 self.datas_send = liststop
-                logger.debug("list de queue pendante a supprimer %s" % delqueue)
-                # dellete les queues terminees
+                logger.debug("The pending lists to remove %s" % deleted_queue)
+                # delete les queues terminees
                 # on supprime les ancienne liste.
-                for ta in delqueue:
+                for ta in deleted_queue:
                     try:
                         logger.debug("delete queue %s" % ta["name_iq_queue"])
                         posix_ipc.unlink_message_queue(ta["name_iq_queue"])
@@ -929,7 +943,6 @@ class MUCBot(slixmpp.ClientXMPP):
                     logger.error("\n%s" % (traceback.format_exc()))
                     return
                 ret = '{"err" : "%s"}' % errortext
-                logger.error("RET ERROR ERROR CREATE QUEUE POSIX %s" % ret)
                 quposix.send(ret, 2)
             except AttributeError:
                 pass
@@ -948,32 +961,26 @@ class MUCBot(slixmpp.ClientXMPP):
             logger.debug("ERROR ERROR TYPE %s" % iq["id"])
 
         elif iq["type"] == "result":
-            logger.debug("process IQ result id %s" % iq["id"])
-            logger.debug("IQ EXIST %s" % iq["id"])
+            logger.debug(
+                "we got an iq with result type. The id of this iq is: %s" % iq["id"]
+                )
             t = time.time()
             queue = ""
             liststop = []
-            delqueue = []
+            deleted_queue = []
 
-            logger.debug("time ref %s" % t)
             for ta in self.datas_send:
-                logger.debug("On Traite %s" % ta["name_iq_queue"])
-                logger.debug("time fin %s " % (ta["time"]))
-                logger.debug("time now %s " % (t))
-                logger.debug("sessioniq %s" % ta["sesssioniq"])
                 if ta["time"] < t:
-                    logger.debug("timeout queu %s" % ta["name_iq_queue"])
-                    delqueue.append(ta["name_iq_queue"])
+                    deleted_queue.append(ta["name_iq_queue"])
                     continue
                 if ta["sesssioniq"] == iq["id"]:
                     queue = ta["name_iq_queue"]
-                    logger.debug("TRAITEMENT RESULT IN %s" % ta["name_iq_queue"])
                 liststop.append(ta)
             self.datas_send = liststop
-            logger.debug("list de queue pendante a supprimer %s" % delqueue)
-            # dellete les queues terminees
+            logger.debug("The pending lists to remove %s" % deleted_queue)
+            # delete les queues terminees
             # on supprime les ancienne liste.
-            for ta in delqueue:
+            for ta in deleted_queue:
                 try:
                     logger.debug("delete queue %s" % ta["name_iq_queue"])
                     posix_ipc.unlink_message_queue(ta["name_iq_queue"])
