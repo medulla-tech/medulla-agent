@@ -1951,7 +1951,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath(os.path.join(os.environ["HOMEDRIVE"], '/', 'Users', username)).strip()
+        defined_profilepath = os.path.normpath('C:/Users/%s' % username).strip()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip()
         if not profile_location or profile_location != defined_profilepath:
@@ -2041,14 +2041,14 @@ def delete_profile(username='pulseuser'):
     if sys.platform.startswith('win'):
         # Delete profile folder in C:\Users if any
         try:
-            for name in os.listdir(os.path.join(os.environ["HOMEDRIVE"], '/', 'Users')):
+            for name in os.listdir('C:/Users/'):
                 if name.startswith(username):
-                    delete_folder_cmd = 'rd /s /q "%s" ' % os.path.join(os.environ["HOMEDRIVE"], '/', 'Users', name)
+                    delete_folder_cmd = 'rd /s /q "C:\Users\%s" ' % name
                     result = simplecommand(encode_strconsole(delete_folder_cmd))
                     if result['code'] == 0:
-                        logger.debug('Deleted %s folder' % os.path.join(os.environ["HOMEDRIVE"], '/', 'Users', name))
+                        logger.debug('Deleted %s folder' % os.path.join('C:/Users/', name))
                     else:
-                        logger.error('Error deleting %s folder' % os.path.join(os.environ["HOMEDRIVE"], '/', 'Users', name))
+                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
         except Exception as e:
             pass
         # Delete profile
@@ -2066,7 +2066,7 @@ def create_idrsa_on_client(username='pulseuser', key=''):
     Used on client machine for connecting to relay server
     """
     if sys.platform.startswith('win'):
-        id_rsa_path = os.path.join(os.environ["HOMEDRIVE"], '/', 'Users', username, '.ssh', 'id_rsa')
+        id_rsa_path = os.path.join('C:\Users', username, '.ssh', 'id_rsa')
     else:
         id_rsa_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
     delete_keyfile_cmd = 'del /f /q "%s" ' % id_rsa_path
@@ -2164,7 +2164,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
         message sent telling if the key have been well copied or not.
     """
     if sys.platform.startswith('win'):
-        authorized_keys_path = os.path.join(os.environ["HOMEDRIVE"], '/', 'Users', username, '.ssh', 'authorized_keys')
+        authorized_keys_path = os.path.join('C:\Users', username, '.ssh', 'authorized_keys')
     else:
         authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
     if not os.path.isfile(authorized_keys_path):
