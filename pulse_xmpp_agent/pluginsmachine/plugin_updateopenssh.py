@@ -67,7 +67,7 @@ def check_if_binary_ok():
         if os.path.isfile(sshdaemon_bin_path):
             logger.debug("OpenSSH is correctly installed. Nothing to do")
         else:
-            logger.error("Something went wrong while installing OpenSSH, we need to reinstall the component.")
+            logger.info("OpenSSH is not present, we need to install the component.")
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
