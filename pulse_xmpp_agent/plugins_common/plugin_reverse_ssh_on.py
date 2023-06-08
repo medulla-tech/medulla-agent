@@ -283,12 +283,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 try:
                     win32net.NetUserGetInfo("", "pulseuser", 0)
                     filekey = os.path.join(
-                        os.environ["HOMEDRIVE"],
-                        "/",
-                        "Users",
-                        "pulseuser",
-                        ".ssh",
-                        "id_rsa",
+                        "C:\\", "Users", "pulseuser", ".ssh", "id_rsa"
                     )
                 except:
                     filekey = os.path.join(

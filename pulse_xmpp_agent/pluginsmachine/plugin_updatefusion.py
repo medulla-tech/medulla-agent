@@ -60,8 +60,8 @@ def check_if_binary_ok():
         if os.path.isfile(fusion_bin_path):
             logger.debug("FusionInventory is correctly installed. Nothing to do")
         else:
-            logger.error(
-                "Something went wrong while installing FusionInventory, we need to reinstall the component."
+            logger.info(
+                "FusionInventory is not present, we need to install the component."
             )
 
             cmd = (

@@ -278,7 +278,7 @@ prepare_mandatory_includes() {
 	# rsync
 	if [ -e ${DOWNLOADS_DIR}/${RSYNC_DL_FILENAME} ]; then
 		pushd ${DOWNLOADS_DIR}
-		unzip -q ${RSYNC_DL_FILENAME}
+		unzip -o -q ${RSYNC_DL_FILENAME}
 		mkdir rsync
 		rm -f rsync.zip
 		FOLDERNAME="${RSYNC_DL_FILENAME%.*}"

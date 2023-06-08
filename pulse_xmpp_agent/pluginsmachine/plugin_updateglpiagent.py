@@ -55,9 +55,7 @@ def check_if_binary_ok():
         if os.path.isfile(glpiAgent_bin_path):
             logger.debug("Glpi-Agent is correctly installed. Nothing to do")
         else:
-            logger.error(
-                "Something went wrong while installing GLPI-Agent, we need to reinstall the component."
-            )
+            logger.info("Glpi-Agent is not present, we need to install the component.")
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{E1BE6C18-6BF4-1014-844A-F1F114E3EA24}" '

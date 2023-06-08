@@ -1976,10 +1976,8 @@ def keypub():
         return file_get_contents("/root/.ssh/id_rsa.pub")
     elif sys.platform.startswith("win"):
         try:
-            win32net.NetUserGetInfo("", "pulseuser", 0)
-            pathkey = os.path.join(
-                os.environ["HOMEDRIVE"], "/", "Users", "pulseuser", ".ssh"
-            )
+            win32net.NetUserGetInfo('', 'pulseuser', 0)
+            pathkey = os.path.join("c:\Users\pulseuser", ".ssh")
         except:
             pathkey = os.path.join(os.environ["ProgramFiles"], "pulse", ".ssh")
         if not os.path.isfile(os.path.join(pathkey, "id_rsa")):
@@ -2882,14 +2880,10 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             if result["code"] != 0:
                 msg = "Error hiding %s account: %s" % (username, result)
                 return False, msg
-            user_home = os.path.normpath(
-                os.path.join(os.environ["HOMEDRIVE"], "/", "Users", username)
-            )
-            hide_from_explorer = simplecommand(
-                encode_strconsole("attrib +h %s" % user_home)
-            )
-            if hide_from_explorer["code"] != 0:
-                msg = "Error hiding %s account: %s" % (username, hide_from_explorer)
+            user_home = os.path.join("c:\\", "Users", username)
+            hide_from_explorer = simplecommand(encode_strconsole('attrib +h %s' % user_home))
+            if hide_from_explorer['code'] != 0:
+                msg = 'Error hiding %s account: %s' % (username, hide_from_explorer)
                 return False, msg
         return True, msg
     else:
@@ -2933,13 +2927,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL("userenv.dll")
         # Define profile path that is needed
-        defined_profilepath = (
-            os.path.normpath(
-                os.path.join(os.environ["HOMEDRIVE"], "/", "Users", username)
-            )
-            .strip()
-            .lower()
-        )
+        defined_profilepath = os.path.normpath('C:/Users/%s' % username).strip().lower()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
@@ -3051,22 +3039,14 @@ def delete_profile(username="pulseuser"):
     if sys.platform.startswith("win"):
         # Delete profile folder in C:\Users if any
         try:
-            for name in os.listdir(os.path.join(os.environ["HOMEDRIVE"], "/", "Users")):
+            for name in os.listdir('C:/Users/'):
                 if name.startswith(username):
-                    delete_folder_cmd = 'rd /s /q "%s" ' % os.path.join(
-                        os.environ["HOMEDRIVE"], "/", "Users", name
-                    )
+                    delete_folder_cmd = 'rd /s /q "C:\Users\%s" ' % name
                     result = simplecommand(encode_strconsole(delete_folder_cmd))
-                    if result["code"] == 0:
-                        logger.debug(
-                            "Deleted %s folder"
-                            % os.path.join(os.environ["HOMEDRIVE"], "/", "Users", name)
-                        )
+                    if result['code'] == 0:
+                        logger.debug('Deleted %s folder' % os.path.join('C:/Users/', name))
                     else:
-                        logger.error(
-                            "Error deleting %s folder"
-                            % os.path.join(os.environ["HOMEDRIVE"], "/", "Users", name)
-                        )
+                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
         except Exception as e:
             pass
         # Delete profile
@@ -3086,10 +3066,8 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     """
     Used on client machine for connecting to relay server
     """
-    if sys.platform.startswith("win"):
-        id_rsa_path = os.path.join(
-            os.environ["HOMEDRIVE"], "/", "Users", username, ".ssh", "id_rsa"
-        )
+    if sys.platform.startswith('win'):
+        id_rsa_path = os.path.join('C:\Users', username, '.ssh', 'id_rsa')
     else:
         id_rsa_path = os.path.join(
             os.path.expanduser("~%s" % username), ".ssh", "id_rsa"
@@ -3201,10 +3179,8 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     Returns:
         message sent telling if the key have been well copied or not.
     """
-    if sys.platform.startswith("win"):
-        authorized_keys_path = os.path.join(
-            os.environ["HOMEDRIVE"], "/", "Users", username, ".ssh", "authorized_keys"
-        )
+    if sys.platform.startswith('win'):
+        authorized_keys_path = os.path.join('C:\Users', username, '.ssh', 'authorized_keys')
     else:
         authorized_keys_path = os.path.join(
             os.path.expanduser("~%s" % username), ".ssh", "authorized_keys"

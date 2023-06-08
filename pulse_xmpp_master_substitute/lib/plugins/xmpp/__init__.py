@@ -713,10 +713,10 @@ class XmppMasterDatabase(DatabaseHelper):
             connection.close()
         results = "%s" % results[0]
         if int(results) != 0:
-            self.logger.info(
+            self.logger.debug(
                 "call procedure stockee mmc_restart_blocked_deployments(%s)" % nb_reload
             )
-            self.logger.info("restart %s deployements" % results)
+            self.logger.info("Restarting %s deployments" % results)
         return results
 
     @DatabaseHelper._sessionm
