@@ -222,6 +222,7 @@ def disabledoublerun(xmppobject):
                 logger.info("Plugin Doublerun - Siveo Rsync %s enabled" % RSYNC_VERSION)
             else:
                 logger.error("Plugin Doublerun - Failed to download rsync - Check ARS web server or missing rsync file: %s" % rsync_dl_url)
+                logger.error("We obtained the error: \n %s" % rsync_txtmsg)
                 return False
 
 class PluginError(Exception):

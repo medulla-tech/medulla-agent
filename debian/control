@@ -17,7 +17,7 @@ X-Python-Version: >= 2.7
 Package: pulse-xmpp-agent-relay
 Architecture: all
 Provides: ${python:Provides}
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-mysqldb-dbg, python-croniter, python-psutil, python-crypto, python-lxml, python-requests, python-sftp, python-pyinotify, python-wakeonlan, python-cherrypy3, net-tools, jq
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-croniter, python-psutil, python-crypto, python-lxml, python-requests, python-sftp, python-pyinotify, python-wakeonlan, python-cherrypy3, net-tools, jq, python-mysqldb
 Description: Pulse xmpp agent
 Breaks: pulse-agent-installers  (<< 1.9.1), pulseagent-plugins-relay (<< 2.0.5), pulse-xmpp-agent (<< 2.0.5)
 Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay , pulse-xmpp-agent

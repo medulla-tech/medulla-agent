@@ -343,7 +343,7 @@ def scheduledeployrecoveryjob(self):
         machines_waiting_online = XmppMasterDatabase().search_machines_from_state("WAITING MACHINE ONLINE")
         # We check which machines of machines_waiting_online are now online
         for machine in machines_waiting_online:
-            logger.info("Restarting the deploiement %s actually in  machines_waiting_online state" %  machine['sessionid'])
+            logger.debug("Restarting the deployment %s currently in machines_waiting_online state" % machine["sessionid"])
             # ----------------- contrainte slopt partiel-----------------------
             res = MscDatabase().test_deploy_in_partiel_slot( machine['title'])
             if not res:
