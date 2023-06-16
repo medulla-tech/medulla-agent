@@ -24,7 +24,7 @@ from sleekxmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.62", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.63", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
