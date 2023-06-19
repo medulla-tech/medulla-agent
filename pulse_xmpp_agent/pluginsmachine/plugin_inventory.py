@@ -23,7 +23,7 @@ if sys.platform.startswith("win"):
     from lib import registerwindows
     import _winreg
 from xml.etree import ElementTree
-from sleekxmpp import jid
+from slixmpp import jid
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
