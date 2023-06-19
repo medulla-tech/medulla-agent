@@ -1809,26 +1809,28 @@ def isBase64(s):
     return False
 
 
-def decode_strconsole(x):
+def decode_strconsole(string_bytes):
     """
     Decode strings into the format used on the OS.
     Supported OS are: linux, windows and darwin
 
     Args:
-        x: the string we want to encode
+        string_bytes : the stringin bytes type we want to decode
 
     Returns:
         The decoded `x` string
     """
 
-    if sys.platform.startswith("linux"):
-        return x.decode("utf-8", "ignore")
+    if isinstance(string_bytes, bytes):
+        if sys.platform.startswith("linux"):
+            return string_bytes.decode("utf-8", "ignore")
 
-    if sys.platform.startswith("win"):
-        return x.decode("cp850", "ignore")
+        if sys.platform.startswith("win"):
+            return string_bytes.decode("cp850", "ignore")
 
-    return x.decode("utf-8", "ignore") if sys.platform.startswith("darwin") else x
-
+        if sys.platform.startswith("darwin"):
+            return string_bytes.decode("utf-8", "ignore")
+    return string_bytes
 
 def encode_strconsole(x):
     """
@@ -1836,20 +1838,22 @@ def encode_strconsole(x):
     Supported OS are: linux, windows and darwin
 
     Args:
-        x: the string we want to encode
-
+        string_str : the string type str we want to encode
     Returns:
-        The encoded `x` string
+        The encoded `string_str` string type bytes
     """
 
-    if sys.platform.startswith("linux"):
-        return x.encode("utf-8")
+    if isinstance(string_str, str):
+        if sys.platform.startswith("linux"):
+            return string_str.encode("utf-8")
 
-    if sys.platform.startswith("win"):
-        return x.encode("cp850")
+        if sys.platform.startswith("win"):
+            return string_str.encode("cp850")
 
-    return x.encode("utf-8") if sys.platform.startswith("darwin") else x
+        if sys.platform.startswith("darwin"):
+            return string_str.encode("utf-8")
 
+    return string_str
 
 def savejsonfile(filename, data, indent=4):
     with open(filename, "w") as outfile:
