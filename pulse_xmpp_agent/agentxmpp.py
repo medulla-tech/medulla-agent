@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+import socket
 import sys
 import os
 import logging
@@ -55,7 +56,6 @@ from lib.utils import (
     reboot_command,
     vnc_set_permission,
     save_count_start,
-    unregister_agent,
     unregister_subscribe,
     test_kiosk_presence,
     file_get_contents,
@@ -94,7 +94,6 @@ from multiprocessing import Queue, Process, Event
 from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
-from datetime import datetime
 
 import datetime
 
@@ -1266,7 +1265,7 @@ class MUCBot(slixmpp.ClientXMPP):
         BOOL_FILE_CONTROL_WATCH_DOG = os.path.join(
             directory_file, "BOOL_FILE_CONTROL_WATCH_DOG"
         )
-        pidprocess = "process %s :(%s)" % (os.getpid(), str(datetime.now()))
+        pidprocess = "process %s :(%s)" % (os.getpid(), str(datetime.datetime.now()) 
         logger.debug("creation %s [pid %s]" % (BOOL_FILE_CONTROL_WATCH_DOG, pidprocess))
         file_put_contents(BOOL_FILE_CONTROL_WATCH_DOG, pidprocess)
 
@@ -2398,54 +2397,55 @@ class MUCBot(slixmpp.ClientXMPP):
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
 
-    def presence_subscribe(self, presence):
+    async def presence_subscribe(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.info(
+            logger.debug(
                 "********** presence_subscribe %s %s"
                 % (presence["from"], presence["type"])
             )
 
-    def presence_subscribed(self, presence):
+    async def presence_subscribed(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.info(
+            logger.debug(
                 "********** presence_subscribed %s %s"
                 % (presence["from"], presence["type"])
             )
 
-    def changed_subscription(self, presence):
+    async def changed_subscription(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.info(
+            logger.debug(
                 "********** changed_subscription %s %s"
                 % (presence["from"], presence["type"])
             )
 
-    def presence_unavailable(self, presence):
+    async def presence_unavailable(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.info(
+            logger.debug(
                 "********** presence_unavailable %s %s"
                 % (presence["from"], presence["type"])
             )
 
-    def presence_available(self, presence):
+    async def presence_available(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.info(
+            logger.debug(
                 "********** presence_available %s %s"
                 % (presence["from"], presence["type"])
             )
-            self.unsubscribe_agent()
+            await self.unsubscribe_agent()
 
-    def presence_unsubscribe(self, presence):
-        logger.info(
-            "**********   presence_unsubscribe %s %s"
-            % (presence["from"], presence["type"])
-        )
+    async def presence_unsubscribe(self, presence):
+        if presence["from"].bare != self.boundjid.bare:
+            logger.debug(
+                "**********   presence_unsubscribe %s %s"
+                % (presence["from"], presence["type"])
+            )
 
-    def presence_unsubscribed(self, presence):
-        logger.info(
+    async def presence_unsubscribed(self, presence):
+        logger.debug(
             "**********   presence_unsubscribed %s %s"
             % (presence["from"], presence["type"])
         )
-        self.get_roster()
+        await self.get_roster()
 
     async def changed_status(self, presence):
         """
@@ -2453,14 +2453,14 @@ class MUCBot(slixmpp.ClientXMPP):
         from ejabberd when the state of an affiliated agent changes.
         """
         frommsg = jid.JID(presence["from"])
-        logger.info(
+        logger.debug(
             "**********   changed_status %s %s" % (presence["from"], presence["type"])
         )
         if frommsg.bare == self.boundjid.bare and presence["type"] == "available":
             logger.debug("Machine available for registration")
             self.update_plugin()
             logger.debug("Machine available for registration")
-            self.subscribe_initialisation()
+            await self.subscribe_initialisation()
         elif frommsg.bare == self.sub_subscribe:
             if (
                 self.presencectrlsubscribe != presence["type"]
@@ -2469,14 +2469,14 @@ class MUCBot(slixmpp.ClientXMPP):
                 logger.warning("Subscription [%s] ON to OFF" % self.sub_subscribe)
             self.presencectrlsubscribe = presence["type"]
 
-    def unsubscribe_agent(self):
+    async def unsubscribe_agent(self):
         try:
             for t in self.client_roster:
                 if t == self.boundjid.bare or t in [self.sub_subscribe]:
                     continue
                 logger.info("Unsubscribe agent %s" % t)
                 self.send_presence(pto=t, ptype="unsubscribe")
-                self.update_roster(t, subscription="remove")
+                await self.update_roster(t, subscription="remove")
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -2484,9 +2484,9 @@ class MUCBot(slixmpp.ClientXMPP):
             self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
             self.get_roster()
 
-    def subscribe_initialisation(self):
+    async def subscribe_initialisation(self):
         logger.info("subscribe_initialisation agent %s" % self.sub_subscribe)
-        self.unsubscribe_agent()
+        await self.unsubscribe_agent()
         if self.sub_subscribe not in list(self.client_roster.keys()):
             logger.warning(
                 "Subscription [%s] is not yet in the roster %s"
@@ -2520,10 +2520,12 @@ class MUCBot(slixmpp.ClientXMPP):
         )
 
     async def start(self, event):
+        self.send_presence()
         self.config.ipxmpp = getIpXmppInterface(
             self.config.confserver, self.config.confport
         )
         # send iq to subscribe
+        await self.get_roster()
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         self.__clean_message_box()
         if self.config.agenttype in ["relayserver"]:
