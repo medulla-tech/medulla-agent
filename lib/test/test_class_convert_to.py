@@ -10,8 +10,9 @@ pip install json2xml
 pip install xmltodict
 pip install pyyaml
 """
+import os
 import sys
-sys.path.append('..')
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 import unittest
 from datetime import datetime
 import json
