@@ -273,7 +273,6 @@ class MUCBot(slixmpp.ClientXMPP):
         self.config = conf
 
         self.ipconnection = self.config.Server
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
@@ -2521,6 +2520,9 @@ class MUCBot(slixmpp.ClientXMPP):
         )
 
     async def start(self, event):
+        self.config.ipxmpp = getIpXmppInterface(
+            self.config.confserver, self.config.confport
+        )
         # send iq to subscribe
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         self.__clean_message_box()

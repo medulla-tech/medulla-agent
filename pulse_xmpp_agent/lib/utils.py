@@ -1370,11 +1370,10 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
         "Searching with which IP the agent is connected to the Ejabberd server"
     )
     if sys.platform.startswith("linux"):
-        obj = simplecommand(
-            f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
-        )
+        cmd = "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, xmpp_server_ipaddress)
+        obj = simplecommand(cmd)
         if obj["code"] != 0:
-            logging.getLogger().error(f'error command netstat : {obj["result"]}')
+            logging.getLogger().error("error command netstat : %s %s" % (cmd, obj["result"]))
             logging.getLogger().error("error install package net-tools")
         if len(obj["result"]) != 0:
             for i in range(len(obj["result"])):
