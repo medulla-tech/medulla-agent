@@ -2628,6 +2628,7 @@ class MUCBot(slixmpp.ClientXMPP):
             msg,
             dataerreur,
         )
+        self.update_plugin()
 
     def call_plugin_differed(self, time_differed=5):
         try:
@@ -2854,17 +2855,21 @@ class MUCBot(slixmpp.ClientXMPP):
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
-        dataobj = self.seachInfoMachine()
-        logging.log(
-            DEBUGPULSE,
-            "SEND REGISTRATION XMPP to %s \n%s"
-            % (self.sub_registration, json.dumps(dataobj, indent=4)),
-        )
+        try:
+            dataobj = self.seachInfoMachine()
+            logging.log(
+                DEBUGPULSE,
+                "SEND REGISTRATION XMPP to %s \n%s"
+                % (self.sub_registration, json.dumps(dataobj, indent=4)),
+            )
 
-        setgetcountcycle()
-        self.send_message(
-            mto=self.sub_registration, mbody=json.dumps(dataobj), mtype="chat"
-        )
+            setgetcountcycle()
+            self.send_message(
+                mto=self.sub_registration, mbody=json.dumps(dataobj), mtype="chat"
+            )
+        except Exception as e:
+            logging.error(" %s " % (str(e)))
+            logger.error("\n%s" % (traceback.format_exc()))
 
     def call_asynchrome_function_plugin(
         self, nameplugin, differed=0, data=None, sessionid=None
