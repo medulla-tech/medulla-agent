@@ -21,6 +21,7 @@ import hashlib
 from lib.manageresourceplugin import resource_plugin
 import imp
 import cherrypy
+from cherrypy.process.plugins import PIDFile
 from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
@@ -3787,10 +3788,15 @@ def servercherrypy(
 ):
     config = confParameter(optstypemachine)
     if config.agenttype in ["machine"]:
-        port = 52044
         root_path = os.path.dirname(os.path.realpath(__file__))
         server_path = os.path.join(root_path, "lib")
         server_ressources_path = os.path.join(root_path, "lib", "ressources")
+        path_pid_file_cheerypy = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "INFOSTMP",  "server_http_agent_medulla.pid"
+            )
+        # We remove the previous pid file if it exists
+        if os.path.exists(path_pid_file_cheerypy):
+            os.remove(path_pid_file_cheerypy)
 
         Controller.config = config
         # Generate cherrypy server conf
@@ -3802,7 +3808,9 @@ def servercherrypy(
             },
             "/": {
                 # 'tools.staticdir.on': True,
-                "tools.staticdir.dir": server_path
+                "tools.staticdir.dir": server_path,
+                "log.access_file": tglogfile,
+                "log.error_file": tglogfile,
             },
             # Sharing css ...
             "/css": {
@@ -3870,9 +3878,12 @@ def servercherrypy(
         # server1.ssl_private_key = '/home/ubuntu/my_cert.key'
         # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
 
-        server1.subscribe()
-        cherrypy.engine.start()
-
+        enginepid = cherrypy.engine
+        PIDFile(enginepid,path_pid_file_cheerypy).subscribe()
+        enginepid.start()
+        if os.path.exists(path_pid_file_cheerypy):
+            return int(file_get_contents(path_pid_file_cheerypy).strip())
+        return None
 
 def doTask(
     optstypemachine,
@@ -3982,7 +3993,7 @@ def doTask(
     # ==========================
     # = cherrypy server config =
     # ==========================
-    servercherrypy(
+    pidcherry = servercherrypy(
         optstypemachine,
         optsconsoledebug,
         optsdeamon,
@@ -3990,6 +4001,11 @@ def doTask(
         tglevellog,
         tglogfile,
     )
+
+    if pidcherry is not None:
+        listpid.append(pidcherry)
+        logger.info(" pid agent machine %s" % listpid)
+
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         # completing process
         try:
