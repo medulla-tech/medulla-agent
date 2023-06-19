@@ -645,6 +645,9 @@ def loadModule(filename):
         )
         try:
             module = imp.load_module(moduleName, fp, pathName, description)
+        except:
+            logging.getLogger().error(("%s" % (traceback.format_exc())))
+
         finally:
             if fp:
                 fp.close()
