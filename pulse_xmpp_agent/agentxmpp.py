@@ -3792,8 +3792,10 @@ def servercherrypy(
         server_path = os.path.join(root_path, "lib")
         server_ressources_path = os.path.join(root_path, "lib", "ressources")
         path_pid_file_cheerypy = os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "INFOSTMP",  "server_http_agent_medulla.pid"
-            )
+            os.path.dirname(os.path.realpath(__file__)),
+            "INFOSTMP",
+            "server_http_agent_medulla.pid",
+        )
         # We remove the previous pid file if it exists
         if os.path.exists(path_pid_file_cheerypy):
             os.remove(path_pid_file_cheerypy)
@@ -3879,11 +3881,12 @@ def servercherrypy(
         # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
 
         enginepid = cherrypy.engine
-        PIDFile(enginepid,path_pid_file_cheerypy).subscribe()
+        PIDFile(enginepid, path_pid_file_cheerypy).subscribe()
         enginepid.start()
         if os.path.exists(path_pid_file_cheerypy):
             return int(file_get_contents(path_pid_file_cheerypy).strip())
         return None
+
 
 def doTask(
     optstypemachine,
