@@ -531,7 +531,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
     xmppobject.config.mysql_enable = True
     xmppobject.config.pulse_relay_enable = True
     xmppobject.config.pulse_main_enable = True
-    xmppobject.config.services_list = ['ejabberd', 'syncthing', 'apache', 'tomcat', 'ssh', 'openldap', 'mysql', 'mmc-agent', 'pulse-xmpp-agent-relay', 'pulse-package-watching', 'pulse2-inventory-server', 'pulse2-package-server', 'pulse-xmpp-master-substitute-inventory', 'pulse-xmpp-master-substitute-registration', 'pulse-xmpp-master-substitute-logger', 'pulse-xmpp-master-substitute-monitoring', 'pulse-xmpp-master-substitute-assessor', 'pulse-xmpp-master-substitute-reconfigurator', 'pulse-xmpp-master-substitute-deployment', 'pulse-xmpp-master-substitute-subscription']
+    xmppobject.config.services_list = ['ejabberd', 'syncthing', 'apache', 'tomcat', 'ssh', 'openldap', 'mysql', 'mmc-agent', 'pulse-xmpp-agent-relay', 'pulse-package-watching', 'pulse2-inventory-server', 'pulse2-package-server', 'pulse-xmpp-master-substitute-inventory', 'pulse-xmpp-master-substitute-registration', 'pulse-xmpp-master-substitute-logger', 'pulse-xmpp-master-substitute-monitoring', 'pulse-xmpp-master-substitute-assessor', 'pulse-xmpp-master-substitute-reconfigurator', 'pulse-xmpp-master-substitute-deployment', 'pulse-xmpp-master-substitute-subscription', 'pulse-xmpp-master-substitute-updates']
     xmppobject.config.openfiles_check = ['ejabberd', 'mysql']
     xmppobject.config.ports_list = ['ejabberd_c2s', 'ejabberd_s2s', 'syncthing', 'syncthing_web', 'syncthing_discosrv', 'apache', 'apache_ssl', 'tomcat', 'ssh', 'mysql', 'mmc_agent', 'pulse2_inventory_server', 'pulse2_package_server']
     xmppobject.config.port_ejabberd_c2s = 5222
@@ -549,7 +549,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
     xmppobject.config.port_pulse2_package_server = 9990
     xmppobject.config.resources_filesystems_list = ['root', 'var', 'tmp']
     xmppobject.config.xmpp_domain = 'pulse'
-    xmppobject.config.offline_count_list = ['rs', 'master', 'master_reg', 'master_subs', 'master_inv', 'master_asse', 'master_depl', 'master_mon']
+    xmppobject.config.offline_count_list = ['rs', 'master', 'master_reg', 'master_subs', 'master_inv', 'master_asse', 'master_depl', 'master_mon', 'master_upd']
     xmppobject.config.roster_size_list = ['master', 'master_subs']
     xmppobject.config.shares_list = ['global', 'local', 'baseremoteagent', 'downloads', 'bootmenus']
     xmppobject.config.local_share_cmd = 'hostname -s | cut -c1-6'
