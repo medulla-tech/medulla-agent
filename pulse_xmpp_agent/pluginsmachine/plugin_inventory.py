@@ -156,12 +156,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         location_option,
                         namefilexml,
                     )
-                    logger.debug("Command: %s" % cmd)
                 else:
                     cmd = "fusioninventory-agent %s %s" % (
                         general_options,
                         location_option,
                     )
+                logger.debug("Command: %s" % cmd)
                 msg.append(cmd)
                 obj = utils.simplecommand(cmd)
                 msg.append("Result return code %s: %s" % (obj["code"], obj["result"]))
