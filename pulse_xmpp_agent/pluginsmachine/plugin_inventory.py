@@ -40,6 +40,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_updates
     except :
         xmppobject.sub_updates = jid.JID("master_upd@pulse")
+    try:
+        send_plugin_update_window(xmppobject)
+    except Exception as e:
+        logger.error("\n%s" % (traceback.format_exc()))
 
     boolchange = True
     namefilexml = ""
@@ -697,3 +701,22 @@ def printer_string(terminal,
     if status is not None:
         xmlprinter = "%s\n<STATUS>%s</STATUS>" % (xmlprinter, status)
     return "%s\n</PRINTERS>" % (xmlprinter)
+
+
+def send_plugin_update_window(xmppobject):
+
+        sessioniddata = utils.getRandomName(6, "update_window")
+        try:
+            update_information = {
+                "action": "update_window",
+                "sessionid": sessioniddata,
+                "data": { "system_info" : utils.offline_search_kb().get()},
+                "ret": 0,
+                "base64": False,
+            }
+
+            xmppobject.send_message( mto=xmppobject.sub_updates,
+                               mbody=json.dumps(update_information),
+                               mtype="chat")
+        except Exception as e:
+            logger.error("\n%s" % (traceback.format_exc()))
