@@ -45,6 +45,11 @@ case "$1" in
             systemctl restart pulse-xmpp-master-substitute-monitoring
             echo "..done"
         fi
+        if systemctl -q is-enabled pulse-xmpp-master-substitute-updates ; then
+            echo -n "Restarting pulse-xmpp-master-substitute-updates service..."
+            systemctl restart pulse-xmpp-master-substitute-updates
+            echo "..done"
+        fi
         ;;
 esac
 
