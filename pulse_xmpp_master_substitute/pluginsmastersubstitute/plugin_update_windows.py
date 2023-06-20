@@ -108,7 +108,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     #logger.info("filtersql %s" % filtersql)
 
 
-    if not xmppobject.exclud_history_list:
+    if not xmppobject.exclude_history_list:
         logger.debug("Verify avec kb historique")
         kblistexclde = []
         history_list_kb = XmppMasterDatabase().history_list_kb(data['system_info']['history_package_uuid'])
@@ -204,7 +204,7 @@ def list_produis_on(xmppobject, data, list_produits):
 
 
 def read_conf_remote_update_windows(xmppobject):
-    xmppobject.exclud_history_list = True
+    xmppobject.exclude_history_list = True
     try:
         logger.debug("Initializing plugin :% s " % plugin["NAME"])
         namefichierconf = plugin["NAME"] + ".ini"
@@ -215,7 +215,7 @@ def read_conf_remote_update_windows(xmppobject):
                 "Plugin %s\nConfiguration file :"
                 "\n\t%s missing"
                 "\neg conf:\n[parameters]"
-                "\nexclud_history_list= True\n"% (plugin["NAME"], pathfileconf)
+                "\exclude_history_list= True\n"% (plugin["NAME"], pathfileconf)
             )
             xmppobject.pluginlistregistered = []
             xmppobject.pluginlistunregistered = []
@@ -227,9 +227,9 @@ def read_conf_remote_update_windows(xmppobject):
                 Config.read(pathfileconf + ".local")
                 logger.debug("read file %s.local" % pathfileconf)
 
-            if Config.has_option("parameters", "exclud_history_list"):
-                xmppobject.exclud_history_list = Config.getboolean('parameters', 'exclud_history_list')
+            if Config.has_option("parameters", "exclude_history_list"):
+                xmppobject.exclude_history_list = Config.getboolean('parameters', 'exclude_history_list')
             else:
-                xmppobject.exclud_history_list = true
+                xmppobject.exclude_history_list = true
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
