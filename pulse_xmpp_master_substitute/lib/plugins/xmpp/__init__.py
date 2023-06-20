@@ -9064,44 +9064,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
             creation 1 update pour 1 machine
         """
-
-        try:
-            new_Up_machine_windows = Up_machine_windows()
-            new_Up_machine_windows.id_machine = id_machine
-            new_Up_machine_windows.update_id = update_id
-            new_Up_machine_windows.kb = kb
-            session.add(new_Up_machine_windows)
-            session.commit()
-            session.flush()
-            return self.__Up_machine_windows(new_Up_machine_windows)
-        except IntegrityError as e:
-            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
-        except Exception as e:
-            self.logger.info("Except setUp_machine_windows : %s" % str(e))
-            self.logger.error("\n%s" % (traceback.format_exc()))
-        return None
-
-    @DatabaseHelper._sessionm
-    def del_all_Up_machine_windows(self,
-                            session,
-                            id_machine):
-        """
-            del tout les updates de la machines
-        """
-        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
-        session.commit()
-        session.flush()
-
-
-    @DatabaseHelper._sessionm
-    def setUp_machine_windows(self,
-                            session,
-                            id_machine,
-                            update_id,
-                            kb=""):
-        """
-            creation 1 update pour 1 machine
-        """
         try:
             new_Up_machine_windows = Up_machine_windows()
             new_Up_machine_windows.id_machine = id_machine
@@ -9167,7 +9129,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             results = None
             cursor = connection.cursor()
             cursor.callproc( "up_search_kb_update",
-                            [str(tableproduct), str(str_kb_list).strip('"() ')] )
+                            [str(tableproduct['name_procedure']), str(str_kb_list).strip('"() ')] )
             results = list(cursor.fetchall())
             for lineresult in results:
                 dictline={}
@@ -9176,7 +9138,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     if isinstance(lr, datetime):
                         lr=lr.isoformat()
                     dictline[value] = lr
-                    dictline['tableproduct'] = tableproduct
+                    dictline['tableproduct'] = tableproduct['name_procedure']
                 result.append(dictline)
             cursor.close()
             connection.commit()
