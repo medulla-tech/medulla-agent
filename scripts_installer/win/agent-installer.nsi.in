@@ -214,7 +214,7 @@ Section "Python" sec_py
     StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813233} /qn /norestart`
     ${LogString} "Running $0"
     nsExec::ExecToLog $0
-    ${LogString} "Uninstalling 64bit python 3.9 if found..."
+    ${LogString} "Uninstalling 64bit python 3.11 if found..."
     StrCpy $0 `msiexec /x {34795B45-E434-46E9-8FAD-C1E77BFAEFDC} /qn /norestart`
     ${LogString} "Running $0"
     nsExec::ExecToLog $0
