@@ -4,6 +4,7 @@
 
 from xml.etree import ElementTree
 from lib import utils
+from lib.utils import convert
 import os
 import sys
 import platform
@@ -13,10 +14,10 @@ import traceback
 import json
 import logging
 import subprocess
-import defusedxml.ElementTree as ET
-import hashlib
+import lxml.etree as ET
+from xml.etree import ElementTree
 
-from lib import utils
+import hashlib
 
 logger = logging.getLogger()
 if sys.platform.startswith("win"):
@@ -183,9 +184,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if os.path.exists(inventoryfile):
                 try:
                     result["data"]["inventory"], boolchange = compact_xml(inventoryfile)
-                    result["data"]["inventory"] = base64.b64encode(
-                        zlib.compress(result["data"]["inventory"], 9)
-                    )
+                    result["data"]["inventory"] = convert.compress_and_encode(result["data"]["inventory"])
                     if boolchange is False:
                         xmppobject.xmpplog(
                             "no significant change in inventory.",
@@ -457,9 +456,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         result["data"]["inventory"], boolchange = compact_xml(
                             inventoryfile, graine=graine
                         )
-                        result["data"]["inventory"] = base64.b64encode(
-                            zlib.compress(result["data"]["inventory"], 9)
-                        )
+                        result["data"]["inventory"] = convert.compress_and_encode(result["data"]["inventory"])
+
                         if boolchange is False:
                             xmppobject.xmpplog(
                                 "no significant change in inventory.",
@@ -556,8 +554,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if os.path.exists(inventoryfile):
                 try:
                     result["data"]["inventory"], boolchange = compact_xml(inventoryfile)
-                    result["data"]["inventory"] = base64.b64encode(
-                        zlib.compress(result["data"]["inventory"], 9)
+                    result["data"]["inventory"] = convert.compress_and_encode(result["data"]["inventory"])
                     )
                     if boolchange is False:
                         xmppobject.xmpplog(
@@ -624,6 +621,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     if result["base64"] is True:
         result["data"] = base64.b64encode(json.dumps(result["data"]))
     if data["forced"] == "forced" or boolchange:
+        logger.debug("inventory is injected to :  %s" % xmppobject.sub_inventory)
         xmppobject.send_message(
             mto=xmppobject.sub_inventory, mbody=json.dumps(result), mtype="chat"
         )
@@ -671,10 +669,15 @@ def Setdirectorytempinfo():
 def compact_xml(inputfile, graine=""):
     """prepare xml a envoyer et genere 1 finger print"""
     parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
+
+    if isinstance(inputfile, str):
+        inputfile =  inputfile.encode(encoding = 'UTF-8')
+
     xmlTree = ET.parse(inputfile, parser=parser)
-    strinventorysave = '<?xml version="1.0" encoding="UTF-8" ?>' + ET.tostring(
+    contentfile=ET.tostring(
         xmlTree, pretty_print=False
-    )
+    ).decode('utf-8')
+    strinventorysave = '<?xml version="1.0" encoding="UTF-8" ?>' + contentfile
     utils.file_put_contents_w_a(inputfile, strinventorysave)
     # fingerprint
     listxpath = [
@@ -700,14 +703,17 @@ def compact_xml(inputfile, graine=""):
         p = xmlTree.xpath(searchtag)
         for t in p:
             t.getparent().remove(t)
-    strinventory = ET.tostring(xmlTree, pretty_print=True)
+    strinventory = ET.tostring(xmlTree, pretty_print=True).decode('utf-8')
     # -----debug file compare------
     # namefilecompare = "%s.xml1" % inputfile
     # if os.path.exists(namefilecompare):
     # os.rename(namefilecompare, "%s.back" % namefilecompare)
     # utils.file_put_contents_w_a(namefilecompare, strinventory)
     # -----end debug file compare------
-    fingerprintinventory = hashlib.md5(strinventory + graine).hexdigest()
+    if not isinstance(graine, str):
+        graine =  graine.encode(encoding = 'UTF-8')
+    strbytes = strinventory + graine
+    fingerprintinventory = hashlib.md5(strbytes.encode('utf-8')).hexdigest()
     # on recupere ancienne fingerprint
     manefilefingerprintinventory = os.path.join(
         Setdirectorytempinfo(), "fingerprintinventory"
