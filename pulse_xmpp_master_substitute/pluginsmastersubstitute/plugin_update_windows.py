@@ -24,7 +24,7 @@ import netaddr
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.55", "NAME": "update_window", "TYPE": "substitute"}
+plugin = {"VERSION": "1.55", "NAME": "update_windows", "TYPE": "substitute"}
 
 # function comment for next feature
 # this functions will be used later
@@ -46,7 +46,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.registeryagent_showinfomachine
             except:
                 xmppobject.registeryagent_showinfomachine=[]
-            read_conf_remote_update_window(xmppobject)
+            read_conf_remote_update_windows(xmppobject)
             logger.debug(
                 "Including debug information for list jid %s"
                 % (xmppobject.registeryagent_showinfomachine)
@@ -203,7 +203,7 @@ def list_produis_on(xmppobject, data, list_produits):
     return prds
 
 
-def read_conf_remote_update_window(xmppobject):
+def read_conf_remote_update_windows(xmppobject):
     xmppobject.exclud_history_list = True
     try:
         logger.debug("Initializing plugin :% s " % plugin["NAME"])
