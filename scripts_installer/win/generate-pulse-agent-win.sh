@@ -81,7 +81,7 @@ six-1.16.0-py2.py3-none-any.whl \
 aiodns-3.0.0-py3-none-any.whl \
 jaraco.collections-4.1.0-py3-none-any.whl \
 pycares-4.3.0-cp311-cp311-win_amd64.whl \
-slixmpp-1.8.3.tar.gz \
+slixmpp-1.8.4.tar.gz \
 autocommand-2.2.2-py3-none-any.whl \
 jaraco.context-4.3.0-py3-none-any.whl \
 pycparser-2.21-py2.py3-none-any.whl \
