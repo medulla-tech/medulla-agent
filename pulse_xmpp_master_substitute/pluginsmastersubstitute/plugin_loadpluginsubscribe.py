@@ -147,9 +147,9 @@ def changed_status(self, presence):
         if presence['type'] == 'unavailable':
             if lastevent and lastevent[0]['status'] == 1:
                 try:
-                    updowntime=time.time() - lastevent[0]['time']
+                    updowntime = time.time() - lastevent[0]['time']
                 except:
-                    updowntime=time.time()
+                    updowntime = time.time()
                 XmppMasterDatabase().setUptime_machine(hostname,
                                                     spresence,
                                                     status=0,
@@ -257,7 +257,7 @@ def changed_status(self, presence):
             if lastevent:
                 if lastevent[0]['status'] == 0:
                     try:
-                        updowntime=time.time() - lastevent[0]['time']
+                        updowntime = time.time() - lastevent[0]['time']
                     except:
                         updowntime = time.time()
 
