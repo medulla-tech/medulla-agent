@@ -212,7 +212,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
     except Exception:
         host = msg['from']
 
-    logger.debug("We configure the machine agent for the machine: %s" % host)
+    logger.info("Configuring machine %s" % host)
     if data['machine'].split(".")[0] in objectxmpp.assessor_agent_showinfomachine:
         showinfomachine = True
         logger.info("showinfomachine is enabled for the machine %s" % (host))
