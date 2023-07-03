@@ -2122,7 +2122,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
-    def wolbroadcastadressmacadress(self, session, listmacadress):
+    def wolbroadcastadressmacadress(self, session, listmacaddress):
         """
             We monitor the mac addresses to check.
 
@@ -2139,8 +2139,13 @@ class XmppMasterDatabase(DatabaseHelper):
                 filter(
                     and_(Network.broadcast != "",
                          Network.broadcast.isnot(None),
-                         Network.mac.in_(listmacadress))
+                         Network.mac.in_(listmacaddress))
                        ).all()
+
+        if not bool(result):
+            logger.error("An error occured while checking the broadcast address.")
+            logger.error("Please check that the broadcast information exists for the following mac addresses: %s" % listmacaddress)
+
         for t in result:
             if t.broadcast not in grp_wol_broadcast_adress:
                 grp_wol_broadcast_adress[t.broadcast]=[]
