@@ -6138,13 +6138,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoloadbalancerforcluster(self, session):
         sql = """
-            SELECT
-                COUNT(*) AS nb, `machines`.`groupdeploy`
+            SELECT 
+                COUNT(*) - 1 AS nb, `machines`.`groupdeploy`
             FROM
                 xmppmaster.machines
-            WHERE
-                agenttype = 'machine'
             GROUP BY `machines`.`groupdeploy`
+            HAVING nb != 0
+                AND COALESCE(`machines`.`groupdeploy`, '') <> ''
             ORDER BY nb DESC;"""
         result = session.execute(sql)
         session.commit()
@@ -6210,67 +6210,64 @@ class XmppMasterDatabase(DatabaseHelper):
                 arsname: The ars where the machine is connected to.
             Returns:
         """
-        excluded_account = 'master@pulse'
-        incrementeiscount = []
+        incrementeiscount=[]
         try:
-            excluded_account = 'master@pulse'
+            try:
+                sql = """SELECT
+                            `substituteconf`.`id` AS `id`,
+                            `substituteconf`.`jidsubtitute` AS `jidsubtitute`,
+                            `substituteconf`.`type` AS `type`,
+                            SUM(`substituteconf`.`countsub`) AS `totsub`
+                        FROM
+                            `substituteconf`
+                        WHERE
+                            `substituteconf`.`jidsubtitute` IN (SELECT DISTINCT
+                                    `substituteconf`.`jidsubtitute`
+                                FROM
+                                    `substituteconf`
+                                WHERE
+                                    `substituteconf`.`relayserver_id` IN (SELECT
+                                            id
+                                        FROM
+                                            xmppmaster.relayserver
+                                        WHERE
+                                            jid LIKE ('%s')))
+                        GROUP BY `substituteconf`.`jidsubtitute` , type
+                        ORDER BY type , totsub;""" % (arsname)
+                resultproxy = session.execute(sql)
+                session.commit()
+                session.flush()
+                #ret = self._return_dict_from_dataset_mysql(resultproxy)
+                for listconfsubstituteitem in listconfsubstitute["conflist"]:
+                    # reinitialise les lists
+                    listconfsubstitute[listconfsubstituteitem]= []
+                for x in resultproxy:
+                    if str(x[2]).startswith("master@pulse"): continue
+                    if x[2] not in listconfsubstitute:
+                        listconfsubstitute["conflist"].append(x[2])
+                        listconfsubstitute[x[2]]=[]
+                    listconfsubstitute[x[2]].append(x[1])
+                    incrementeiscount.append(x[0])
+                self.logger.debug("listconfsubstitute %s" %listconfsubstitute)
+                self.logger.debug("incrementeiscount %s" %incrementeiscount)
+            except Exception as e:
+                self.logger.error("An error occured while fetching the ordered list of subsitutes.")
+                self.logger.error("We hit the backtrace: \n%s" % (traceback.format_exc()))
 
-            incrementeiscount = []
-            for substituteinfo in listconfsubstitute['conflist']:
-                try:
-                    sql = """SELECT
-                                substituteconf.id AS id,
-                                substituteconf.jidsubtitute AS jidsubtitute,
-                                substituteconf.countsub AS countsub,
-                                substituteconf.type AS type,
-                                relayserver.jid AS namerelayser,
-                                SUM(substituteconf.countsub) AS totsub
-                            FROM
-                                substituteconf
-                                    JOIN
-                                relayserver ON substituteconf.relayserver_id = relayserver.id
-                            WHERE
-                                substituteconf.jidsubtitute NOT LIKE '%s'
-                                    AND substituteconf.type LIKE '%s'
-                                    AND (substituteconf.jidsubtitute IN (SELECT
-                                        substituteconf.jidsubtitute
-                                    FROM
-                                        substituteconf
-                                    WHERE
-                                        substituteconf.relayserver_id = (SELECT
-                                                id
-                                            FROM
-                                                relayserver
-                                            WHERE
-                                                relayserver.jid LIKE '%s')))
-                            GROUP BY substituteconf.jidsubtitute
-                            ORDER BY totsub;
-                            ;""" % (excluded_account, substituteinfo, arsname)
-                    resultproxy = session.execute(sql)
-                    listcommand = []
-                    infsub = [{"id": x[0], "sub": x[1] , "totalcount": int(x[5])} for x in resultproxy]
-                    self.logger.debug("%s -> %s" % (substituteinfo ,infsub))
-                    if infsub:
-                        incrementeiscount.append(str(infsub[0]['id']))
-                    for t in infsub:
-                        listcommand.append(t['sub'])
-                    listcommand.append(excluded_account)
-                    listconfsubstitute[substituteinfo] = listcommand
-                except Exception as e:
-                    self.logger.error("An error occured while fetching the ordered list of subsitutes.")
-                    self.logger.error("We hit the backtrace: \n%s" % (traceback.format_exc()))
-
-            if len(incrementeiscount) != 0:
+            if incrementeiscount:
                 sql = """UPDATE `xmppmaster`.`substituteconf`
                     SET
                         `countsub` = `countsub` + '1'
                     WHERE
-                        `id` IN (%s);""" % ','.join([x for x in incrementeiscount])
+                        `id` IN (%s);""" % ",".join(
+                    [str(x) for x in incrementeiscount]
+                )
                 result = session.execute(sql)
                 session.commit()
-        except Exception, e:
+                session.flush()
+        except Exception as e:
             logging.getLogger().error("substituteinfo : %s" % str(e))
-        logging.getLogger().debug("substitute list : %s"  % listconfsubstitute)
+            logging.getLogger().debug("substitute list : %s" % listconfsubstitute)
         return listconfsubstitute
 
     @DatabaseHelper._sessionm
