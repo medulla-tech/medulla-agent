@@ -9089,7 +9089,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
             del tout les updates de la machines
         """
-        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        session.query(Up_machine_windows).filter(and_(Up_machine_windows.id_machine == id_machine, or_(Up_machine_windows.end_date == None, Up_machine_windows.end_date < datetime.now()))).delete()
         session.commit()
         session.flush()
 
