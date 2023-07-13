@@ -313,5 +313,3 @@ check_arguments ${CONFIG_OPTIONS} ${GENERATION_OPTIONS} $@ # First load previous
 compute_settings
 update_config_file
 update_generation_options_file
-
-generate_agent_win
