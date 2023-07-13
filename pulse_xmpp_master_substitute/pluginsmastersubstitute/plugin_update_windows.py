@@ -46,7 +46,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             try:
                 xmppobject.registeryagent_showinfomachine
             except:
-                xmppobject.registeryagent_showinfomachine=[]
+                xmppobject.registeryagent_showinfomachine = []
             read_conf_remote_update_windows(xmppobject)
             logger.debug(
                 "Including debug information for list jid %s"
@@ -260,7 +260,7 @@ def read_conf_remote_update_windows(xmppobject):
                 "Plugin %s\nConfiguration file :"
                 "\n\t%s missing"
                 "\neg conf:\n[parameters]"
-                "\exclude_history_list= True\n"% (plugin["NAME"], pathfileconf)
+                "\exclude_history_list= True\n" % (plugin["NAME"], pathfileconf)
             )
             xmppobject.pluginlistregistered = []
             xmppobject.pluginlistunregistered = []
