@@ -36,22 +36,25 @@ import sys
 import traceback
 import json
 import logging
-from lib.utils import (name_random ,
-                       getRandomName,
-                       call_plugin,
-                       call_plugin_separate,
-                       simplecommand,
-                       convert,
-                       MotDePasse,
+from lib.utils import (
+    name_random,
+    getRandomName,
+    call_plugin,
+    call_plugin_separate,
+    simplecommand,
+    convert,
+    MotDePasse,
 )
 from lib.iq_custom import iq_custom_xep
 import datetime
 import time
+
 # this import will be used later
 import types
 import netaddr
 import configparser
 import re
+
 # 3rd party modules
 import gzip
 import threading
@@ -66,8 +69,9 @@ import datetime
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "__server_mmc_master", "TYPE": "code"} # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "__server_mmc_master", "TYPE": "code"}  # fmt: skip
 name_queue = ["/mysend", "/myrep"]
+
 
 class DateTimebytesEncoderjson(json.JSONEncoder):
     """
@@ -90,74 +94,110 @@ def action(xmppobject, action):
         logger.debug("call plugin code %s " % (plugin))
         logger.debug("=====================================================")
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
-        #loop = asyncio.new_event_loop()
-        #asyncio.set_event_loop(loop)
+        # loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(loop)
 
-        #loop = asyncio.new_event_loop()
+        # loop = asyncio.new_event_loop()
         if compteurcallplugin == 0:
             try:
                 logger.debug("=====================================================")
                 logger.debug("================ INITIALIZATION =====================")
                 logger.debug("=====================================================")
                 ## cette variale permet
-                #running=name_random(5, pref="running")
-                #setattr(xmppobject, running, True )
-                #logger.debug(" La variable %s est utiliser pour controler l'arret du serveur." % running)
-                #logger.debug("running %s" % running)
+                # running=name_random(5, pref="running")
+                # setattr(xmppobject, running, True )
+                # logger.debug(" La variable %s est utiliser pour controler l'arret du serveur." % running)
+                # logger.debug("running %s" % running)
                 xmppobject.running_mmc = True
-                connexions_simultane=10
+                connexions_simultane = 10
                 read_conf__server_mmc_master(xmppobject)
-                xmppobject.sockets_mmc=[]
+                xmppobject.sockets_mmc = []
                 # Timeout en secondes
                 timeout = 2
                 try:
                     # Création du socket TCP/IP avec IPv4
-                    server_socket_ipv4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    server_socket_ipv4 = socket.socket(
+                        socket.AF_INET, socket.SOCK_STREAM
+                    )
                     # Activation de l'option pour réutiliser l'adresse
-                    server_socket_ipv4.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    server_socket_ipv4.setsockopt(
+                        socket.SOL_SOCKET, socket.SO_REUSEADDR, 1
+                    )
                     # ecoute sur toutes les interfae ipv4
-                    server_socket_ipv4.bind((xmppobject.server_mmc_master_server_host_ipv4,
-                                            xmppobject.server_mmc_master_server_port_ipv4))
+                    server_socket_ipv4.bind(
+                        (
+                            xmppobject.server_mmc_master_server_host_ipv4,
+                            xmppobject.server_mmc_master_server_port_ipv4,
+                        )
+                    )
                     # connexions simultane 10
                     server_socket_ipv4.listen(connexions_simultane)
 
                     xmppobject.sockets_mmc.append(server_socket_ipv4)
-                    logger.debug(f"Serveur démarré sur {xmppobject.server_mmc_master_server_host_ipv4}:"\
-                        "{xmppobject.server_mmc_master_server_port_ipv4}")
+                    logger.debug(
+                        f"Serveur démarré sur {xmppobject.server_mmc_master_server_host_ipv4}:"
+                        "{xmppobject.server_mmc_master_server_port_ipv4}"
+                    )
                 except Exception as e:
-                    logger.error("create socket ipv4\nWe obtained the backtrace %s" % traceback.format_exc())
-                    logger.error("le serveur master n est pas "\
-                        "fonctionel en ipv4 sur "\
-                            "interface %s et le port %s" %(xmppobject.server_mmc_master_server_host_ipv4,
-                                                           xmppobject.server_mmc_master_server_port_ipv4))
+                    logger.error(
+                        "create socket ipv4\nWe obtained the backtrace %s"
+                        % traceback.format_exc()
+                    )
+                    logger.error(
+                        "le serveur master n est pas "
+                        "fonctionel en ipv4 sur "
+                        "interface %s et le port %s"
+                        % (
+                            xmppobject.server_mmc_master_server_host_ipv4,
+                            xmppobject.server_mmc_master_server_port_ipv4,
+                        )
+                    )
                 try:
                     # Création du socket TCP/IP avec IPv6
-                    server_socket_ipv6 = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+                    server_socket_ipv6 = socket.socket(
+                        socket.AF_INET6, socket.SOCK_STREAM
+                    )
                     # Activation de l'option pour réutiliser l'adresse
-                    server_socket_ipv6.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    server_socket_ipv6.setsockopt(
+                        socket.SOL_SOCKET, socket.SO_REUSEADDR, 1
+                    )
                     # ecoute sur toutes les interfae ipv6
-                    server_socket_ipv6.bind((xmppobject.server_mmc_master_server_host_ipv6,
-                                            xmppobject.server_mmc_master_server_port_ipv6))
+                    server_socket_ipv6.bind(
+                        (
+                            xmppobject.server_mmc_master_server_host_ipv6,
+                            xmppobject.server_mmc_master_server_port_ipv6,
+                        )
+                    )
                     # connexions simultane 10
                     server_socket_ipv6.listen(connexions_simultane)
 
                     xmppobject.sockets_mmc.append(server_socket_ipv6)
                 except Exception as e:
-                    logger.error("create socket ipv6\nWe obtained the backtrace %s" % traceback.format_exc())
-                    logger.error("le serveur master n est pas "\
-                        "fonctionel en ipv6 sur "\
-                            "interface %s et le port %s" %(xmppobject.server_mmc_master_server_host_ipv6,
-                                                           xmppobject.server_mmc_master_server_port_ipv6))
+                    logger.error(
+                        "create socket ipv6\nWe obtained the backtrace %s"
+                        % traceback.format_exc()
+                    )
+                    logger.error(
+                        "le serveur master n est pas "
+                        "fonctionel en ipv6 sur "
+                        "interface %s et le port %s"
+                        % (
+                            xmppobject.server_mmc_master_server_host_ipv6,
+                            xmppobject.server_mmc_master_server_port_ipv6,
+                        )
+                    )
 
                 ### Liste des sockets à surveiller
                 xmppobject.sockets_mmc = [server_socket_ipv4, server_socket_ipv6]
 
                 # Boucle principale
                 while xmppobject.running_mmc:
-                    if xmppobject.shutdown: #information CTRL + C
+                    if xmppobject.shutdown:  # information CTRL + C
                         break
                     # Utilisation de select pour surveiller la liste des sockets en attente de connexion
-                    readable, _, _ = select.select(xmppobject.sockets_mmc, [], [], timeout)
+                    readable, _, _ = select.select(
+                        xmppobject.sockets_mmc, [], [], timeout
+                    )
 
                     # Parcourir les sockets prêts à être lus
                     for sock in readable:
@@ -165,92 +205,113 @@ def action(xmppobject, action):
                             # Nouvelle connexion IPv4
                             connection, address = server_socket_ipv4.accept()
                             # Démarrer un thread pour traiter la connexion IPv4 en SSL
-                            connection_threadip4 = threading.Thread(target=xmppobject.process_connection_ssl,
-                                                                 args=(connection,))
+                            connection_threadip4 = threading.Thread(
+                                target=xmppobject.process_connection_ssl,
+                                args=(connection,),
+                            )
 
                             connection_threadip4.start()
                         elif sock == server_socket_ipv6:
                             # Nouvelle connexion IPv6
                             connection, address = server_socket_ipv6.accept()
                             # Démarrer un thread pour traiter la connexion IPv6 en SSL
-                            connection_threadip6 = threading.Thread(target=xmppobject.process_connection_ssl,
-                                                                 args=(connection,))
+                            connection_threadip6 = threading.Thread(
+                                target=xmppobject.process_connection_ssl,
+                                args=(connection,),
+                            )
                             connection_threadip6.start()
 
             finally:
                 # Fermeture du socket lorsque la boucle se termine
-                #xmppobject.stop_server()
+                # xmppobject.stop_server()
                 server_socket_ipv6.close()
                 server_socket_ipv4.close()
     except Exception as e:
         pass
-        #logger.error("Plugin loadarscheck, we encountered the error %s" % str(e))
-        #logger.error("We obtained the backtrace %s" % traceback.format_exc())
-
+        # logger.error("Plugin loadarscheck, we encountered the error %s" % str(e))
+        # logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
 ## Fonction pour traiter la connexion en SSL dans un thread séparé
 def process_connection_ssl(self, connection):
     """
-        Cette fonction permet de traiter les connexions ipv4/ipv6 au serveur
-        si 1 tocken est definie celui ci est placer en tete de trame.
+    Cette fonction permet de traiter les connexions ipv4/ipv6 au serveur
+    si 1 tocken est definie celui ci est placer en tete de trame.
     """
     try:
         # il faut 1 boucle d'execution async dans ce thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         logger.debug("JFKJFK REV MESSAGE")
-        #iq = self.Iq()
-        #iq['type'] = 'get'
-        #iq['to'] = "master_asse@pulse/115042525291666541091346"
-        #iq['from'] = self.boundjid.bare
-        #iq['id'] = 'get_roster'
+        # iq = self.Iq()
+        # iq['type'] = 'get'
+        # iq['to'] = "master_asse@pulse/115042525291666541091346"
+        # iq['from'] = self.boundjid.bare
+        # iq['id'] = 'get_roster'
 
-        #iq.send(callback=on_response, timeout=10)
-        #res = self.get_ars_key()
-        #self.dede("master_asse@pulse/115042525291666541091346", "", 15)
+        # iq.send(callback=on_response, timeout=10)
+        # res = self.get_ars_key()
+        # self.dede("master_asse@pulse/115042525291666541091346", "", 15)
 
-        #logger.warning("recu iq %s" %res)
-        #logger.warning("type recu iq %s" %type(res))
+        # logger.warning("recu iq %s" %res)
+        # logger.warning("type recu iq %s" %type(res))
 
-        if self.server_mmc_master_active_filter and self.server_mmc_master_allowed_list_ips:
+        if (
+            self.server_mmc_master_active_filter
+            and self.server_mmc_master_allowed_list_ips
+        ):
             # Obtenir l'adresse distante (raddr)
             raddr = list(connection.getpeername())
             remote_adesse = raddr[0]
             remote_port = raddr[1]
-            logger.debug("remote_adesse %s"% remote_adesse)
-            logger.debug("self.server_mmc_master_allowed_list_ips %s"% self.server_mmc_master_allowed_list_ips)
+            logger.debug("remote_adesse %s" % remote_adesse)
+            logger.debug(
+                "self.server_mmc_master_allowed_list_ips %s"
+                % self.server_mmc_master_allowed_list_ips
+            )
             addrtest = ipaddress.ip_address(remote_adesse)
             for cidr in self.server_mmc_master_allowed_list_ips:
                 if addrtest in ipaddress.ip_network(cidr):
-                    logger.debug("clint address %s(%s) est permit par le CIDR %s"% (remote_adesse,remote_port, cidr))
+                    logger.debug(
+                        "clint address %s(%s) est permit par le CIDR %s"
+                        % (remote_adesse, remote_port, cidr)
+                    )
                     break
             else:
-                logger.warning("nous acceptons pas le client venant de  %s(%s)"% (remote_adesse,remote_port))
+                logger.warning(
+                    "nous acceptons pas le client venant de  %s(%s)"
+                    % (remote_adesse, remote_port)
+                )
                 logger.warning("ALLOWED_IPS n'a pas CIDR incluent ip du client")
                 return
         try:
             # Création du contexte SSL
             ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-            ssl_context.load_cert_chain(certfile=self.server_mmc_master_certfile,
-                                        keyfile=self.server_mmc_master_keyfile)
+            ssl_context.load_cert_chain(
+                certfile=self.server_mmc_master_certfile,
+                keyfile=self.server_mmc_master_keyfile,
+            )
             # Wrapping du socket en SSL
             ssl_connection = ssl_context.wrap_socket(connection, server_side=True)
             # Traitement de la connexion SSL
             try:
-                data = convert.decompress_data_to_bytes( ssl_connection.recv(2097152))
+                data = convert.decompress_data_to_bytes(ssl_connection.recv(2097152))
             except Exception as e:
                 logger.error("erreur traitement message recu")
                 raise
             if self.server_mmc_master_allowed_token:
-                tockentrame = data[:len(self.server_mmc_master_allowed_token)]
+                tockentrame = data[: len(self.server_mmc_master_allowed_token)]
                 logger.debug(tockentrame)
                 logger.debug(self.server_mmc_master_allowed_token)
-                if tockentrame == convert.convert_to_bytes(self.server_mmc_master_allowed_token):
+                if tockentrame == convert.convert_to_bytes(
+                    self.server_mmc_master_allowed_token
+                ):
                     logger.debug("tocken correct")
-                    data=data[len(self.server_mmc_master_allowed_token):]
+                    data = data[len(self.server_mmc_master_allowed_token) :]
                 else:
-                    logger.error("Ce message n'est pas traite acces interdit verifie tocken")
+                    logger.error(
+                        "Ce message n'est pas traite acces interdit verifie tocken"
+                    )
                     return
             datatest = convert.is_base64(data)
             # decode si data est en base64
@@ -280,17 +341,17 @@ def process_connection_ssl(self, connection):
             if isinstance(data, (str, bytes)):
                 logger.debug("master n'a pas recu 1 message")
                 # call fonction de traitement des message de type sting
-                self.mast_serv_recv_string( message_string = data)
+                self.mast_serv_recv_string(message_string=data)
             elif isinstance(data, (dict)):
                 logger.debug("traitement Message")
                 # call fonction de traitement des message de type dict
-                self.mast_serv_recv_dict(ssl_connect = ssl_connection, message_dict = data)
+                self.mast_serv_recv_dict(ssl_connect=ssl_connection, message_dict=data)
                 logger.debug("traitement Message")
             else:
                 logger.warning("msg de type %s non traite" % type(data))
         except ssl.SSLError as e:
             logger.debug("======== process_connection_ssl fin  ========")
-            logger.debug("process_connection_ssl fin SSL : %s"% e )
+            logger.debug("process_connection_ssl fin SSL : %s" % e)
         except Exception as e:
             logger.debug("error the backtrace %s" % traceback.format_exc())
         finally:
@@ -300,39 +361,38 @@ def process_connection_ssl(self, connection):
             logger.debug("======== process_connection_ssl finally  ========")
     finally:
         # Close the event loop
-        logger.debug("======== close boucle asyncprocess_connection_ssl finally  ========")
+        logger.debug(
+            "======== close boucle asyncprocess_connection_ssl finally  ========"
+        )
         loop.close()
+
 
 def mast_serv_recv_string(self, *args, **kwargs):
     logger.debug("reception message de type chaine")
-    logger.debug("nombre args %s" %  len(args))
-    logger.debug("nombre kwargs %s" %  len(kwargs))
-
-def mast_serv_recv_dict(self,
-                        ssl_connect = None,
-                        message_dict = None, tocken=""):
+    logger.debug("nombre args %s" % len(args))
+    logger.debug("nombre kwargs %s" % len(kwargs))
 
 
+def mast_serv_recv_dict(self, ssl_connect=None, message_dict=None, tocken=""):
     loop = asyncio.get_event_loop()
     # Do something with the event loop
     logger.debug("reception message de type dict sur serveur mmc")
     try:
-        typemsg = message_dict['metadatas']['type']
-        to = message_dict['metadatas']['to']
-        timeout = int(message_dict['metadatas']['timeout'])
+        typemsg = message_dict["metadatas"]["type"]
+        to = message_dict["metadatas"]["to"]
+        timeout = int(message_dict["metadatas"]["timeout"])
         self.fin = False
-    except  Exception as e:
+    except Exception as e:
         logger.error("meta parametre missing")
         return
     # on supprime les metas parametres
-    del message_dict['metadatas']
-    logger.debug("typemsg %s" %typemsg)
-    logger.debug("to %s" %to)
-    logger.debug("timeout %s" %timeout)
-
+    del message_dict["metadatas"]
+    logger.debug("typemsg %s" % typemsg)
+    logger.debug("to %s" % to)
+    logger.debug("timeout %s" % timeout)
 
     if typemsg == "plugin":
-        if message_dict['action'] == "list_mmc_module":
+        if message_dict["action"] == "list_mmc_module":
             logger.debug("INITIALISATION LIST MODULE MMC %s" % message_dict["data"])
             # la list des module est initialiser directement sans appel de plugin
             self.list_mmc = message_dict["data"]
@@ -340,21 +400,25 @@ def mast_serv_recv_dict(self,
             # par exemple 1 substitut koisk devrait etre au courant si moduke actif.
             if "xmppmaster" not in self.list_mmc:
                 logger.error("Le module xmppmaster n'est pas actif.")
-            message_dict["data"] = { "result": "information list module actif passe" }
-            message_dict["action"]="result_"+ message_dict["action"]
+            message_dict["data"] = {"result": "information list module actif passe"}
+            message_dict["action"] = "result_" + message_dict["action"]
             self.retour_result(ssl_connect, message_dict)
             return
         # call plugin interne
         dataerreur = {
-                "action": "result" + message_dict['action'],
-                "data": {"msg": "error plugin : " + message_dict['action']},
-                "sessionid":  message_dict['sessionid'],
-                "ret": 255,
-                "base64": False,
-            }
+            "action": "result" + message_dict["action"],
+            "data": {"msg": "error plugin : " + message_dict["action"]},
+            "sessionid": message_dict["sessionid"],
+            "ret": 255,
+            "base64": False,
+        }
         module = "%s/plugin_%s.py" % (self.modulepath, message_dict["action"])
-        msg = {"from" : "master@pulse/MASTER",  "to": "master@pulse/MASTER", "type": "chat"}
-        #if 'ret' not in message_dict:
+        msg = {
+            "from": "master@pulse/MASTER",
+            "to": "master@pulse/MASTER",
+            "type": "chat",
+        }
+        # if 'ret' not in message_dict:
         call_plugin(
             module,
             self,
@@ -368,32 +432,30 @@ def mast_serv_recv_dict(self,
 
     elif typemsg == "msg":
         # send message jid
-        self.send_message(mbody=json.dumps(message_dict),
-                          mto=to,
-                          mtype="chat")
+        self.send_message(mbody=json.dumps(message_dict), mto=to, mtype="chat")
     elif typemsg == "iq":
         logger.debug("#############################################################")
         logger.debug("####################### traitement IQ #######################")
         logger.debug("#############################################################")
-        #result=self.iqsendpulse(to, message_dict, timeout = 30)
-        iqc = iq_custom_xep(self,to, message_dict, timeout = 30 , sessionid=None)
-        result= iqc.iq_send()
-        #logger.debug("le resultat is %s" % result)
+        # result=self.iqsendpulse(to, message_dict, timeout = 30)
+        iqc = iq_custom_xep(self, to, message_dict, timeout=30, sessionid=None)
+        result = iqc.iq_send()
+        # logger.debug("le resultat is %s" % result)
         self.retour_result(ssl_connect, result)
 
     else:
         logger.error("meta parametre missing")
 
 
-def retour_result(self, socket_reponse, reponse ):
+def retour_result(self, socket_reponse, reponse):
     # on s assure que le dict soit serialisable
     reponse = convert.convert_bytes_datetime_to_string(reponse)
-    if isinstance( reponse, (dict)) :
+    if isinstance(reponse, (dict)):
         reponse = convert.convert_dict_to_json(reponse)
     try:
         if self.server_mmc_master_allowed_token:
             reponse = self.server_mmc_master_allowed_token + str(reponse)
-        a=convert.compress_data_to_bytes(reponse)
+        a = convert.compress_data_to_bytes(reponse)
         socket_reponse.sendall(a)
     except Exception as e:
         logger.error("ompossible de renvoyer 1 reponse")
@@ -402,35 +464,43 @@ def retour_result(self, socket_reponse, reponse ):
 def read_conf__server_mmc_master(xmppobject):
     # creation fonction stop_server
     xmppobject.stop_server_mmc = types.MethodType(stop_server_mmc, xmppobject)
-    xmppobject.mast_serv_recv_string = types.MethodType(mast_serv_recv_string, xmppobject)
+    xmppobject.mast_serv_recv_string = types.MethodType(
+        mast_serv_recv_string, xmppobject
+    )
     xmppobject.mast_serv_recv_dict = types.MethodType(mast_serv_recv_dict, xmppobject)
     xmppobject.retour_result = types.MethodType(retour_result, xmppobject)
 
     logger.debug("creation fonction process_connection_ssl")
-    xmppobject.process_connection_ssl = types.MethodType(process_connection_ssl, xmppobject)
+    xmppobject.process_connection_ssl = types.MethodType(
+        process_connection_ssl, xmppobject
+    )
 
     logger.debug("Initializing plugin :% s " % plugin["NAME"])
     conffile_name = plugin["NAME"] + ".ini"
     try:
         conffile_path = os.path.join(xmppobject.config.pathdirconffile, conffile_name)
         logger.info("file config : %s" % conffile_path)
-        xmppobject.master_conf=Configuration(xmppobject, conffile_path)
+        xmppobject.master_conf = Configuration(xmppobject, conffile_path)
     except Exception as e:
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
-    logger.debug("===============FICHIER DE CONF EST %s ====================" % conffile_path)
+    logger.debug(
+        "===============FICHIER DE CONF EST %s ====================" % conffile_path
+    )
 
 
 # Fonction pour arrêter le serveur
 def stop_server_mmc(self):
     for sockserv in self.sockets_mmc:
         sockserv.close()
-    self.sockets_mmc=[]
+    self.sockets_mmc = []
     self.running_mmc = False
+
 
 # Fonction de compression gzip
 def compress_data(data):
     return gzip.compress(data)
+
 
 # Fonction de décompression gzip
 def decompress_data(data):
@@ -438,22 +508,27 @@ def decompress_data(data):
 
 
 class Configuration:
-
     def __init__(self, xmppobject, config_file):
-        port_default_serveur= 57040
-        taille_mac_message= 2097152  # bytes
+        port_default_serveur = 57040
+        taille_mac_message = 2097152  # bytes
         self.xmppobject = xmppobject
         xmppobject.server_mmc_master_certfile = "/var/lib/pulse2/masterkey/cert.pem"
         xmppobject.server_mmc_master_keyfile = "/var/lib/pulse2/masterkey/key.pem"
         xmppobject.server_mmc_master_server_host_ipv6 = "::"
         xmppobject.server_mmc_master_server_host_ipv4 = "0.0.0.0"
         xmppobject.server_mmc_master_server_port_ipv4 = port_default_serveur
-        xmppobject.server_mmc_master_server_port_ipv6 = port_default_serveur+1
+        xmppobject.server_mmc_master_server_port_ipv6 = port_default_serveur + 1
         xmppobject.server_mmc_master_active_filter = True
         xmppobject.server_mmc_master_allowed_ips = "127.0.0.1/32, ::1/128"
-        xmppobject.server_mmc_master_allowed_list_ips = [ x.strip() for x in xmppobject.server_mmc_master_allowed_ips.split(",") if x.strip() != "" ]
+        xmppobject.server_mmc_master_allowed_list_ips = [
+            x.strip()
+            for x in xmppobject.server_mmc_master_allowed_ips.split(",")
+            if x.strip() != ""
+        ]
         xmppobject.server_mmc_master_allowed_token = MotDePasse(32, 60).mot_de_passe
-        xmppobject.server_mmc_master_size_allowed_token = len(xmppobject.server_mmc_master_allowed_token)
+        xmppobject.server_mmc_master_size_allowed_token = len(
+            xmppobject.server_mmc_master_allowed_token
+        )
         xmppobject.server_mmc_master_max_message_size = taille_mac_message
         xmppobject.server_mmc_master_compress = True
 
@@ -461,74 +536,160 @@ class Configuration:
             self.config = configparser.ConfigParser()
             self.config.read(config_file)
             # SSL parameters
-            xmppobject.server_mmc_master_certfile = self.config.get('ssl', 'CERTFILE', fallback="/var/lib/pulse2/masterkey/cert.pem")
-            xmppobject.server_mmc_master_keyfile = self.config.get('ssl', 'KEYFILE', fallback="/var/lib/pulse2/masterkey/key.pem")
+            xmppobject.server_mmc_master_certfile = self.config.get(
+                "ssl", "CERTFILE", fallback="/var/lib/pulse2/masterkey/cert.pem"
+            )
+            xmppobject.server_mmc_master_keyfile = self.config.get(
+                "ssl", "KEYFILE", fallback="/var/lib/pulse2/masterkey/key.pem"
+            )
             # Server parameters
-            xmppobject.server_mmc_master_server_host_ipv6= self.config.get('server', 'SERVER_HOST_IPV6', fallback="::")
-            xmppobject.server_mmc_master_server_host_ipv4 = self.config.get('server', 'SERVER_HOST_IPV4', fallback="0,0,0,0")
-            xmppobject.server_mmc_master_server_port_ipv4 = self.config.getint('server', 'SERVER_PORT_IPV4', fallback=port_default_serveur)
-            xmppobject.server_mmc_master_server_port_ipv6 = self.config.getint('server', 'SERVER_PORT_IPV6', fallback=port_default_serveur+1)
+            xmppobject.server_mmc_master_server_host_ipv6 = self.config.get(
+                "server", "SERVER_HOST_IPV6", fallback="::"
+            )
+            xmppobject.server_mmc_master_server_host_ipv4 = self.config.get(
+                "server", "SERVER_HOST_IPV4", fallback="0,0,0,0"
+            )
+            xmppobject.server_mmc_master_server_port_ipv4 = self.config.getint(
+                "server", "SERVER_PORT_IPV4", fallback=port_default_serveur
+            )
+            xmppobject.server_mmc_master_server_port_ipv6 = self.config.getint(
+                "server", "SERVER_PORT_IPV6", fallback=port_default_serveur + 1
+            )
             # Filtered addresses parameters
-            xmppobject.server_mmc_master_active_filter = self.config.getboolean('filter', 'ACTIVEFILTRE', fallback=True)
-            xmppobject.server_mmc_master_allowed_ips = self.config.get('filter', 'ALLOWED_IPS',fallback= "127.0.0.1/32,::1/128")
-            xmppobject.server_mmc_master_allowed_list_ips = [x.strip() for x in xmppobject.server_mmc_master_allowed_ips.split(",") if x.strip() != ""]
-            xmppobject.server_mmc_master_allowed_token = self.config.get('filter', 'ALLOWED_TOKEN',fallback= "")
-            xmppobject.server_mmc_master_size_allowed_token =  len(xmppobject.server_mmc_master_allowed_token)
+            xmppobject.server_mmc_master_active_filter = self.config.getboolean(
+                "filter", "ACTIVEFILTRE", fallback=True
+            )
+            xmppobject.server_mmc_master_allowed_ips = self.config.get(
+                "filter", "ALLOWED_IPS", fallback="127.0.0.1/32,::1/128"
+            )
+            xmppobject.server_mmc_master_allowed_list_ips = [
+                x.strip()
+                for x in xmppobject.server_mmc_master_allowed_ips.split(",")
+                if x.strip() != ""
+            ]
+            xmppobject.server_mmc_master_allowed_token = self.config.get(
+                "filter", "ALLOWED_TOKEN", fallback=""
+            )
+            xmppobject.server_mmc_master_size_allowed_token = len(
+                xmppobject.server_mmc_master_allowed_token
+            )
             # Message parameters
-            xmppobject.server_mmc_master_max_message_size = self.config.getint('message', 'MAX_MESSAGE_SIZE', fallback= taille_mac_message)
-            xmppobject.server_mmc_master_compress = self.config.getboolean('message', 'COMPRESS', fallback=True)
+            xmppobject.server_mmc_master_max_message_size = self.config.getint(
+                "message", "MAX_MESSAGE_SIZE", fallback=taille_mac_message
+            )
+            xmppobject.server_mmc_master_compress = self.config.getboolean(
+                "message", "COMPRESS", fallback=True
+            )
         else:
             # creation du fichier de configuration
-            self.writte_conf( xmppobject, config_file )
-        self.creation_or_validite_key_certificat(xmppobject, 1000, os.path.dirname(xmppobject.server_mmc_master_certfile))
-        logger.info("Parameter default %s" % json.dumps(self.get_parameters(), indent=4))
+            self.writte_conf(xmppobject, config_file)
+        self.creation_or_validite_key_certificat(
+            xmppobject, 1000, os.path.dirname(xmppobject.server_mmc_master_certfile)
+        )
+        logger.info(
+            "Parameter default %s" % json.dumps(self.get_parameters(), indent=4)
+        )
 
-    def writte_conf(self, xmppobject, config_file ):
-        logger.warning("génération d'un file de configuration %s par default" % config_file)
+    def writte_conf(self, xmppobject, config_file):
+        logger.warning(
+            "génération d'un file de configuration %s par default" % config_file
+        )
         # creation du fichier de configuration
         with open(config_file, "w") as f:
-            f.write("# file conf generation automatique" + (os.linesep)*2)
+            f.write("# file conf generation automatique" + (os.linesep) * 2)
             f.write("[ssl]" + os.linesep)
-            #f.write("UTILISER_SSL_OU_NON=%s" % xmppobject.server_mmc_master_use_ssl + os.linesep)
+            # f.write("UTILISER_SSL_OU_NON=%s" % xmppobject.server_mmc_master_use_ssl + os.linesep)
             f.write("KEYFILE=%s" % xmppobject.server_mmc_master_keyfile + os.linesep)
-            f.write("CERTFILE=%s" % xmppobject.server_mmc_master_certfile + (os.linesep)*2)
+            f.write(
+                "CERTFILE=%s" % xmppobject.server_mmc_master_certfile + (os.linesep) * 2
+            )
             f.write("[server]" + os.linesep)
-            f.write("SERVER_HOST_IPV6=%s" % xmppobject.server_mmc_master_server_host_ipv6 + os.linesep)
-            f.write("SERVER_HOST_IPV4=%s" % xmppobject.server_mmc_master_server_host_ipv4 + os.linesep)
-            f.write("SERVER_PORT_IPV4=%s" % xmppobject.server_mmc_master_server_port_ipv4 +  (os.linesep)*1)
-            f.write("SERVER_PORT_IPV6=%s" % xmppobject.server_mmc_master_server_port_ipv6 +  (os.linesep)*2)
+            f.write(
+                "SERVER_HOST_IPV6=%s" % xmppobject.server_mmc_master_server_host_ipv6
+                + os.linesep
+            )
+            f.write(
+                "SERVER_HOST_IPV4=%s" % xmppobject.server_mmc_master_server_host_ipv4
+                + os.linesep
+            )
+            f.write(
+                "SERVER_PORT_IPV4=%s" % xmppobject.server_mmc_master_server_port_ipv4
+                + (os.linesep) * 1
+            )
+            f.write(
+                "SERVER_PORT_IPV6=%s" % xmppobject.server_mmc_master_server_port_ipv6
+                + (os.linesep) * 2
+            )
             f.write("[filter]" + os.linesep)
-            f.write("ACTIVEFILTRE=%s" % xmppobject.server_mmc_master_active_filter + os.linesep)
-            f.write("# ACTIVEFILTRE = True  on filtre les ip des clients. le parametre est ALLOWED_IPS" + os.linesep)
-            f.write("ALLOWED_IPS=%s" % xmppobject.server_mmc_master_allowed_ips + os.linesep)
-            f.write("# ALLOWED_IPS = list des CIDR permettant de controler que ip de la machine client est permise." + os.linesep)
-            f.write("# ALLOWED_IPS = ""  permet la connexion a tout les clients." + os.linesep)
-            f.write("# ALLOWED_IPS = 127.0.0.1/32, ::1/128, localhost permet la connexion a tout les clients local." + os.linesep)
-            f.write("# ALLOWED_IPS = '2001:db8::/96' permet par exemple '2001:0db8:0000:0000:0000:0000:0000:0001" + os.linesep)
-            f.write("ALLOWED_TOKEN=%s" % xmppobject.server_mmc_master_allowed_token + os.linesep)
+            f.write(
+                "ACTIVEFILTRE=%s" % xmppobject.server_mmc_master_active_filter
+                + os.linesep
+            )
+            f.write(
+                "# ACTIVEFILTRE = True  on filtre les ip des clients. le parametre est ALLOWED_IPS"
+                + os.linesep
+            )
+            f.write(
+                "ALLOWED_IPS=%s" % xmppobject.server_mmc_master_allowed_ips + os.linesep
+            )
+            f.write(
+                "# ALLOWED_IPS = list des CIDR permettant de controler que ip de la machine client est permise."
+                + os.linesep
+            )
+            f.write(
+                "# ALLOWED_IPS = "
+                "  permet la connexion a tout les clients." + os.linesep
+            )
+            f.write(
+                "# ALLOWED_IPS = 127.0.0.1/32, ::1/128, localhost permet la connexion a tout les clients local."
+                + os.linesep
+            )
+            f.write(
+                "# ALLOWED_IPS = '2001:db8::/96' permet par exemple '2001:0db8:0000:0000:0000:0000:0000:0001"
+                + os.linesep
+            )
+            f.write(
+                "ALLOWED_TOKEN=%s" % xmppobject.server_mmc_master_allowed_token
+                + os.linesep
+            )
             f.write("[message]" + os.linesep)
-            f.write("MAX_MESSAGE_SIZE=%s" % xmppobject.server_mmc_master_max_message_size + os.linesep)
-            f.write("COMPRESS=%s" % xmppobject.server_mmc_master_compress +  (os.linesep)*2)
+            f.write(
+                "MAX_MESSAGE_SIZE=%s" % xmppobject.server_mmc_master_max_message_size
+                + os.linesep
+            )
+            f.write(
+                "COMPRESS=%s" % xmppobject.server_mmc_master_compress + (os.linesep) * 2
+            )
 
     def get_parameters(self):
         parameters = {
-            'server_mmc_master_certfile': self.xmppobject.server_mmc_master_certfile if hasattr(self.xmppobject, 'server_mmc_master_certfile') else None,
-            'server_mmc_master_keyfile': self.xmppobject.server_mmc_master_keyfile if hasattr(self.xmppobject, 'server_mmc_master_keyfile') else None,
-            'server_mmc_master_server_host_ipv6': self.xmppobject.server_mmc_master_server_host_ipv6,
-            'server_mmc_master_server_host_ipv4': self.xmppobject.server_mmc_master_server_host_ipv4,
-            'server_mmc_master_server_port_ipv4': self.xmppobject.server_mmc_master_server_port_ipv4,
-            'server_mmc_master_server_port_ipv6': self.xmppobject.server_mmc_master_server_port_ipv6,
-            'server_mmc_master_active_filter': self.xmppobject.server_mmc_master_active_filter,
-            'server_mmc_master_allowed_ips': self.xmppobject.server_mmc_master_allowed_ips if hasattr(self.xmppobject, 'server_mmc_master_allowed_ips') else "",
-            'server_mmc_master_allowed_token': self.xmppobject.server_mmc_master_allowed_token if hasattr(self.xmppobject, 'server_mmc_master_allowed_token') else "",
-            'server_mmc_master_max_message_size': self.xmppobject.server_mmc_master_max_message_size,
-            'server_mmc_master_compress': self.xmppobject.server_mmc_master_compress,
+            "server_mmc_master_certfile": self.xmppobject.server_mmc_master_certfile
+            if hasattr(self.xmppobject, "server_mmc_master_certfile")
+            else None,
+            "server_mmc_master_keyfile": self.xmppobject.server_mmc_master_keyfile
+            if hasattr(self.xmppobject, "server_mmc_master_keyfile")
+            else None,
+            "server_mmc_master_server_host_ipv6": self.xmppobject.server_mmc_master_server_host_ipv6,
+            "server_mmc_master_server_host_ipv4": self.xmppobject.server_mmc_master_server_host_ipv4,
+            "server_mmc_master_server_port_ipv4": self.xmppobject.server_mmc_master_server_port_ipv4,
+            "server_mmc_master_server_port_ipv6": self.xmppobject.server_mmc_master_server_port_ipv6,
+            "server_mmc_master_active_filter": self.xmppobject.server_mmc_master_active_filter,
+            "server_mmc_master_allowed_ips": self.xmppobject.server_mmc_master_allowed_ips
+            if hasattr(self.xmppobject, "server_mmc_master_allowed_ips")
+            else "",
+            "server_mmc_master_allowed_token": self.xmppobject.server_mmc_master_allowed_token
+            if hasattr(self.xmppobject, "server_mmc_master_allowed_token")
+            else "",
+            "server_mmc_master_max_message_size": self.xmppobject.server_mmc_master_max_message_size,
+            "server_mmc_master_compress": self.xmppobject.server_mmc_master_compress,
         }
         return parameters
 
-    def creation_or_validite_key_certificat(self, xmppobject, path_file_cert_pam="/var/lib/pulse2/masterkey",valid_days = 365 ):
-        #logger.info("ecriture de /tmp/script_key.sh")
-        script="""#!/bin/bash
+    def creation_or_validite_key_certificat(
+        self, xmppobject, path_file_cert_pam="/var/lib/pulse2/masterkey", valid_days=365
+    ):
+        # logger.info("ecriture de /tmp/script_key.sh")
+        script = """#!/bin/bash
         create_certificate() {
             valid_days=$1
             directory=$2
@@ -603,7 +764,10 @@ class Configuration:
         common_name="serveur_master_xmpp"
         #fonction pour vérifier le certificat
         check_certificate "$valid_days" "$directory" "$organization" "$country" "$common_name"
-""" % ( path_file_cert_pam, valid_days)
+""" % (
+            path_file_cert_pam,
+            valid_days,
+        )
         with open("/tmp/script_key.sh", "w") as f:
             f.write(script + os.linesep)
 
@@ -620,25 +784,29 @@ class Configuration:
 def read_conf__server_mmc_master(xmppobject):
     logger.debug("creation fonction stop_server")
     xmppobject.stop_server_mmc = types.MethodType(stop_server_mmc, xmppobject)
-    xmppobject.mast_serv_recv_string = types.MethodType(mast_serv_recv_string, xmppobject)
+    xmppobject.mast_serv_recv_string = types.MethodType(
+        mast_serv_recv_string, xmppobject
+    )
     xmppobject.mast_serv_recv_dict = types.MethodType(mast_serv_recv_dict, xmppobject)
     xmppobject.retour_result = types.MethodType(retour_result, xmppobject)
-    #xmppobject.send_iq_synchrone = types.MethodType(send_iq_synchrone, xmppobject)
-    #xmppobject.on_response1 = types.MethodType(on_response1, xmppobject)
-    #xmppobject.on_timeout1 = types.MethodType(on_timeout1, xmppobject)
+    # xmppobject.send_iq_synchrone = types.MethodType(send_iq_synchrone, xmppobject)
+    # xmppobject.on_response1 = types.MethodType(on_response1, xmppobject)
+    # xmppobject.on_timeout1 = types.MethodType(on_timeout1, xmppobject)
 
     logger.debug("creation fonction process_connection_ssl")
-    xmppobject.process_connection_ssl = types.MethodType(process_connection_ssl, xmppobject)
+    xmppobject.process_connection_ssl = types.MethodType(
+        process_connection_ssl, xmppobject
+    )
 
     logger.debug("Initializing plugin :% s " % plugin["NAME"])
     conffile_name = plugin["NAME"] + ".ini"
     try:
         conffile_path = os.path.join(xmppobject.config.pathdirconffile, conffile_name)
         logger.info("file config : %s" % conffile_path)
-        xmppobject.master_conf=Configuration(xmppobject, conffile_path)
+        xmppobject.master_conf = Configuration(xmppobject, conffile_path)
     except Exception as e:
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
-    logger.debug("===============FICHIER DE CONF EST %s ====================" % conffile_path)
-
-
+    logger.debug(
+        "===============FICHIER DE CONF EST %s ====================" % conffile_path
+    )

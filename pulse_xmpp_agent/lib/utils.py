@@ -4934,7 +4934,7 @@ class convert:
         except ValueError:
             return None
 
-   @staticmethod
+    @staticmethod
     def int_to_string(n):
         """
         Conversion d'entiers en chaînes

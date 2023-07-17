@@ -1265,8 +1265,7 @@ class MUCBot(slixmpp.ClientXMPP):
         BOOL_FILE_CONTROL_WATCH_DOG = os.path.join(
             directory_file, "BOOL_FILE_CONTROL_WATCH_DOG"
         )
-        pidprocess = "process %s :(%s)" % (os.getpid(), str(datetime.datetime.now()) 
-        logger.debug("creation %s [pid %s]" % (BOOL_FILE_CONTROL_WATCH_DOG, pidprocess))
+        pidprocess = "process %s :(%s)" % (os.getpid(), str(datetime.datetime.now()))
         file_put_contents(BOOL_FILE_CONTROL_WATCH_DOG, pidprocess)
 
         logger.debug(

@@ -5,7 +5,7 @@ import ssl
 import threading
 
 # Configuration du serveur
-HOST = 'localhost'
+HOST = "localhost"
 PORT = 5822
 
 CERTFILE = "/var/lib/pulse2/masterkey/cert.pem"
@@ -32,6 +32,7 @@ def handle_connection(conn):
     except ssl.SSLError as e:
         print("Erreur SSL :", e)
 
+
 # Fonction principale
 def main():
     # Création du socket TCP/IP
@@ -55,6 +56,7 @@ def main():
     # Fermeture du socket principal
     sock.close()
 
+
 # Lancement du serveur
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

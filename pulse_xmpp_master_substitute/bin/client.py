@@ -3,9 +3,10 @@ import socket
 import ssl
 
 # Configuration du serveur
-SERVER_HOST = 'localhost'
+SERVER_HOST = "localhost"
 SERVER_PORT = 5822
-TOKEN = 'mon_token_securise'
+TOKEN = "mon_token_securise"
+
 
 # Fonction principale du client
 def main():
@@ -35,6 +36,7 @@ def main():
     # Fermeture du socket principal
     sock.close()
 
+
 # Lancement du client
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
