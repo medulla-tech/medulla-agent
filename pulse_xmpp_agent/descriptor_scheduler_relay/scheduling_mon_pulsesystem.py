@@ -804,7 +804,6 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
         "pulse-xmpp-master-substitute-reconfigurator",
         "pulse-xmpp-master-substitute-deployment",
         "pulse-xmpp-master-substitute-subscription",
-        "pulse-xmpp-master-substitute-updates",
     ]
     xmppobject.config.openfiles_check = ["ejabberd", "mysql"]
     xmppobject.config.ports_list = [
@@ -846,7 +845,6 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
         "master_asse",
         "master_depl",
         "master_mon",
-        "master_upd",
     ]
     xmppobject.config.roster_size_list = ["master", "master_subs"]
     xmppobject.config.shares_list = [

@@ -31,8 +31,8 @@ import time
 from datetime import datetime
 import imp
 import requests
-import zlib
-
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from requests.exceptions import Timeout
 
 from Cryptodome import Random
@@ -41,19 +41,6 @@ import tarfile
 from functools import wraps
 import string
 import platform
-import asyncio as aio
-
-from json2xml import json2xml
-import xmltodict
-import yaml
-import inspect
-
-from json2xml import json2xml
-import xmltodict
-import yaml
-import xml.etree.ElementTree as ET
-from collections import OrderedDict
-import collections
 
 logger = logging.getLogger()
 
@@ -83,6 +70,9 @@ if sys.platform.startswith("linux"):
 if sys.platform.startswith("darwin"):
     import pwd
     import grp
+
+
+import inspect
 
 
 class Env(object):
@@ -650,17 +640,21 @@ def loadModule(filename):
             sys.path.append(searchPath)
             sys.path.append(os.path.normpath(f"{searchPath}/../"))
         moduleName, ext = os.path.splitext(file)
-        fp, pathName, description = imp.find_module(
-            moduleName,
-            [
-                searchPath,
-            ],
-        )
+
+        try:
+            fp, pathName, description = imp.find_module(
+                moduleName,
+                [
+                    searchPath,
+                ],
+            )
+
+        except Exception:
+            logger.error("We hit a backtrace when searching for Modules")
+            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+            return None
         try:
             module = imp.load_module(moduleName, fp, pathName, description)
-        except:
-            logging.getLogger().error(("%s" % (traceback.format_exc())))
-
         finally:
             if fp:
                 fp.close()
@@ -676,7 +670,7 @@ def call_plugin_separate(name, *args, **kwargs):
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
                 # add compteur appel plugins
-                loop = aio.get_event_loop()
+                loop = asyncio.get_event_loop()
                 count = 0
                 try:
                     count = getattr(args[0], f"num_call{args[1]}")
@@ -696,6 +690,60 @@ def call_plugin_separate(name, *args, **kwargs):
         logging.getLogger().error(f"{traceback.format_exc()}")
 
 
+class FunctionThread(threading.Thread):
+    def __init__(self, function, *args, **kwargs):
+        threading.Thread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.timeout = 900  # 15 minutes
+
+    def run(self):
+        # Exécution de la fonction dans le thread
+        self.result = self.function(*self.args, **self.kwargs)
+
+    def start(self):
+        threading.Thread.start(self)
+        self.join(self.timeout)  # Attendre jusqu'à la fin du thread ou le timeout
+        if self.is_alive():
+            # Si le thread n'est pas terminé dans le délai imparti, on le termine de force
+            self._stop()
+            raise TimeoutError("Le thread a dépassé le temps d'exécution maximal.")
+        else:
+            return self.result
+
+
+def call_mon_plugin(name, *args, **kwargs):
+    try:
+        nameplugin = name
+        if args[0].config.plugin_action:
+            if args[1] not in args[0].config.excludedplugins:
+                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+                logger.debug("Loading plugin %s" % args[1])
+
+                loop = asyncio.new_event_loop()
+                count = 0
+                try:
+                    count = getattr(args[0], "num_call%s" % args[1])
+                    setattr(args[0], "num_call%s" % args[1], count + 1)
+                except AttributeError:
+                    count = 0
+                    setattr(args[0], "num_call%s" % args[1], count)
+                pluginaction = loadModule(nameplugin)
+                # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
+                executor = ThreadPoolExecutor()
+                thread = FunctionThread(pluginaction.action, *args, **kwargs)
+                result = loop.run_in_executor(executor, thread.start)
+            else:
+                logging.getLogger().debug("The plugin %s is excluded" % args[1])
+        else:
+            logging.getLogger().debug(
+                "The plugin %s is not allowed due to plugin_action parameter" % args[1]
+            )
+    except:
+        logging.getLogger().error(("%s" % (traceback.format_exc())))
+
+
 def call_plugin(name, *args, **kwargs):
     try:
         nameplugin = name
@@ -710,7 +758,7 @@ def call_plugin(name, *args, **kwargs):
                     )
                     return
 
-                loop = aio.new_event_loop()
+                loop = asyncio.new_event_loop()
                 count = 0
                 try:
                     count = getattr(args[0], f"num_call{args[1]}")
@@ -718,6 +766,7 @@ def call_plugin(name, *args, **kwargs):
                 except AttributeError:
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
+
                 pluginaction = loadModule(nameplugin)
                 # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
                 result = loop.run_in_executor(
@@ -1383,10 +1432,11 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
         "Searching with which IP the agent is connected to the Ejabberd server"
     )
     if sys.platform.startswith("linux"):
-        cmd = "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, xmpp_server_ipaddress)
-        obj = simplecommand(cmd)
+        obj = simplecommand(
+            f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
+        )
         if obj["code"] != 0:
-            logging.getLogger().error("error command netstat : %s %s" % (cmd, obj["result"]))
+            logging.getLogger().error(f'error command netstat : {obj["result"]}')
             logging.getLogger().error("error install package net-tools")
         if len(obj["result"]) != 0:
             for i in range(len(obj["result"])):
@@ -1822,28 +1872,26 @@ def isBase64(s):
     return False
 
 
-def decode_strconsole(string_bytes):
+def decode_strconsole(x):
     """
     Decode strings into the format used on the OS.
     Supported OS are: linux, windows and darwin
 
     Args:
-        string_bytes : the stringin bytes type we want to decode
+        x: the string we want to encode
 
     Returns:
         The decoded `x` string
     """
 
-    if isinstance(string_bytes, bytes):
-        if sys.platform.startswith("linux"):
-            return string_bytes.decode("utf-8", "ignore")
+    if sys.platform.startswith("linux"):
+        return x.decode("utf-8", "ignore")
 
-        if sys.platform.startswith("win"):
-            return string_bytes.decode("cp850", "ignore")
+    if sys.platform.startswith("win"):
+        return x.decode("cp850", "ignore")
 
-        if sys.platform.startswith("darwin"):
-            return string_bytes.decode("utf-8", "ignore")
-    return string_bytes
+    return x.decode("utf-8", "ignore") if sys.platform.startswith("darwin") else x
+
 
 def encode_strconsole(x):
     """
@@ -1851,22 +1899,20 @@ def encode_strconsole(x):
     Supported OS are: linux, windows and darwin
 
     Args:
-        string_str : the string type str we want to encode
+        x: the string we want to encode
+
     Returns:
-        The encoded `string_str` string type bytes
+        The encoded `x` string
     """
 
-    if isinstance(string_str, str):
-        if sys.platform.startswith("linux"):
-            return string_str.encode("utf-8")
+    if sys.platform.startswith("linux"):
+        return x.encode("utf-8")
 
-        if sys.platform.startswith("win"):
-            return string_str.encode("cp850")
+    if sys.platform.startswith("win"):
+        return x.encode("cp850")
 
-        if sys.platform.startswith("darwin"):
-            return string_str.encode("utf-8")
+    return x.encode("utf-8") if sys.platform.startswith("darwin") else x
 
-    return string_str
 
 def savejsonfile(filename, data, indent=4):
     with open(filename, "w") as outfile:
@@ -1995,9 +2041,9 @@ def keypub():
         return file_get_contents("/root/.ssh/id_rsa.pub")
     elif sys.platform.startswith("win"):
         try:
-            win32net.NetUserGetInfo('', 'pulseuser', 0)
-            pathkey = os.path.join("c:\Users\pulseuser", ".ssh")
-        except:
+            win32net.NetUserGetInfo("", "pulseuser", 0)
+            pathkey = os.path.join("c:\\Users\\pulseuser", ".ssh")
+        except BaseException:
             pathkey = os.path.join(os.environ["ProgramFiles"], "pulse", ".ssh")
         if not os.path.isfile(os.path.join(pathkey, "id_rsa")):
             obj = simplecommand(
@@ -2900,9 +2946,11 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
                 msg = "Error hiding %s account: %s" % (username, result)
                 return False, msg
             user_home = os.path.join("c:\\", "Users", username)
-            hide_from_explorer = simplecommand(encode_strconsole('attrib +h %s' % user_home))
-            if hide_from_explorer['code'] != 0:
-                msg = 'Error hiding %s account: %s' % (username, hide_from_explorer)
+            hide_from_explorer = simplecommand(
+                encode_strconsole("attrib +h %s" % user_home)
+            )
+            if hide_from_explorer["code"] != 0:
+                msg = "Error hiding %s account: %s" % (username, hide_from_explorer)
                 return False, msg
         return True, msg
     else:
@@ -2946,7 +2994,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL("userenv.dll")
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath('C:/Users/%s' % username).strip().lower()
+        defined_profilepath = os.path.normpath("C:/Users/%s" % username).strip().lower()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
@@ -3058,14 +3106,18 @@ def delete_profile(username="pulseuser"):
     if sys.platform.startswith("win"):
         # Delete profile folder in C:\Users if any
         try:
-            for name in os.listdir('C:/Users/'):
+            for name in os.listdir("C:/Users/"):
                 if name.startswith(username):
-                    delete_folder_cmd = 'rd /s /q "C:\Users\%s" ' % name
+                    delete_folder_cmd = 'rd /s /q "C:\\Users\\%s" ' % name
                     result = simplecommand(encode_strconsole(delete_folder_cmd))
-                    if result['code'] == 0:
-                        logger.debug('Deleted %s folder' % os.path.join('C:/Users/', name))
+                    if result["code"] == 0:
+                        logger.debug(
+                            "Deleted %s folder" % os.path.join("C:/Users/", name)
+                        )
                     else:
-                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
+                        logger.error(
+                            "Error deleting %s folder" % os.path.join("C:/Users/", name)
+                        )
         except Exception as e:
             pass
         # Delete profile
@@ -3085,8 +3137,8 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     """
     Used on client machine for connecting to relay server
     """
-    if sys.platform.startswith('win'):
-        id_rsa_path = os.path.join('C:\Users', username, '.ssh', 'id_rsa')
+    if sys.platform.startswith("win"):
+        id_rsa_path = os.path.join("C:\\Users", username, ".ssh", "id_rsa")
     else:
         id_rsa_path = os.path.join(
             os.path.expanduser("~%s" % username), ".ssh", "id_rsa"
@@ -3198,8 +3250,10 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     Returns:
         message sent telling if the key have been well copied or not.
     """
-    if sys.platform.startswith('win'):
-        authorized_keys_path = os.path.join('C:\Users', username, '.ssh', 'authorized_keys')
+    if sys.platform.startswith("win"):
+        authorized_keys_path = os.path.join(
+            "C:\\Users", username, ".ssh", "authorized_keys"
+        )
     else:
         authorized_keys_path = os.path.join(
             os.path.expanduser("~%s" % username), ".ssh", "authorized_keys"
@@ -4522,7 +4576,6 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
     return False
 
 
-
 # decorateur mesure temps d'une fonction
 def measure_time(func):
     def wrapper(*args, **kwargs):
@@ -4532,7 +4585,9 @@ def measure_time(func):
         execution_time = end_time - start_time
         print(f"Temps d'exécution de {func.__name__}: {execution_time} secondes")
         return result
+
     return wrapper
+
 
 def log_params(func):
     def wrapper(*args, **kwargs):
@@ -4540,7 +4595,9 @@ def log_params(func):
         print(f"Paramètres nommés : {kwargs}")
         result = func(*args, **kwargs)
         return result
+
     return wrapper
+
 
 def log_details(func):
     def wrapper(*args, **kwargs):
@@ -4554,6 +4611,7 @@ def log_details(func):
         print(f"Paramètres nommés : {kwargs}")
         result = func(*args, **kwargs)
         return result
+
     return wrapper
 
 
@@ -4579,7 +4637,9 @@ def log_details_debug_info(func):
         logger.info(f"Paramètres nommés : {kwargs}")
         result = func(*args, **kwargs)
         return result
+
     return wrapper
+
 
 def generate_log_line(message):
     frame = inspect.currentframe().f_back
@@ -4587,6 +4647,7 @@ def generate_log_line(message):
     line_number = frame.f_lineno
     log_line = f"[{file_name}:{line_number}] - {message}"
     return log_line
+
 
 def display_message(message):
     frame = inspect.currentframe().f_back
@@ -4602,58 +4663,141 @@ def display_message(message):
     logger.info(log_line)
 
 
+def generer_mot_de_passe(taille):
+    """
+    Cette fonction permet de generer 1 mot de passe aléatoire
+    le parametre taille precise le nombre de caractere du mot de passe
+    renvoi le mot de passe
+
+    eg : mot_de_passe = generer_mot_de_passe(32)
+    """
+    caracteres = string.ascii_letters + string.digits + string.punctuation
+    mot_de_passe = "".join(random.choice(caracteres) for _ in range(taille))
+    return mot_de_passe
+
+
+class MotDePasse:
+    def __init__(
+        self,
+        taille,
+        temps_validation=60,
+        caracteres_interdits=""""()[],%:|`.{}'><\\/^""",
+    ):
+        self.taille = taille
+        self.caracteres_interdits = [x for x in caracteres_interdits]
+        self.temps_validation = temps_validation
+        self.mot_de_passe = self.generer_mot_de_passe()
+        self.date_expiration = self.calculer_date_expiration()
+
+    def generer_mot_de_passe(self):
+        caracteres = string.ascii_letters + string.digits + string.punctuation
+        for caractere_interdit in self.caracteres_interdits:
+            caracteres = caracteres.replace(caractere_interdit, "")
+        mot_de_passe = "".join(random.choice(caracteres) for _ in range(self.taille))
+        return mot_de_passe
+
+    def calculer_date_expiration(self):
+        return datetime.now() + timedelta(seconds=self.temps_validation)
+
+    def verifier_validite(self):
+        temps_restant = (self.date_expiration - datetime.now()).total_seconds()
+        return temps_restant
+
+    def est_valide(self):
+        return datetime.now() < self.date_expiration
+
+    # def generer_qr_code(self, nom_fichier):
+    # qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    # qr.add_data(self.mot_de_passe)
+    # qr.make(fit=True)
+    # qr_img = qr.make_image(fill="black", back_color="white")
+    # qr_img.save(nom_fichier)
+    # print(f"QR code généré et sauvegardé dans {nom_fichier}.")
+
+
+class DateTimebytesEncoderjson(json.JSONEncoder):
+    """
+    Used to handle datetime in json files.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            encoded_object = obj.isoformat()
+        elif isinstance(obj, bytes):
+            encoded_object = obj.decode("utf-8")
+        else:
+            encoded_object = json.JSONEncoder.default(self, obj)
+        return encoded_object
+
+
+def name_random(nb, pref=""):
+    a = "abcdefghijklnmopqrstuvwxyz0123456789"
+    d = pref
+    for t in range(nb):
+        d = d + a[random.randint(0, 35)]
+    return d
+
+
 class convert:
     """
-        Cette class presente des methodes pour convertir simplement des objects.
-        elle expose les fonction suivante
-            convert_dict_to_yaml(input_dict)
-            convert_yaml_to_dict(yaml_data)
-            yaml_string_to_dict(yaml_string)
-            check_yaml_conformance(yaml_data)
-            compare_yaml(yaml_string1, yaml_string2)
-            convert_dict_to_json(input_dict_json, indent=None, sort_keys=False)
-            check_json_conformance(json_data)
-            convert_json_to_dict(json_str)
-            xml_to_dict(xml_string)
-            compare_xml(xml_file1, xml_file2)
-            convert_xml_to_dict(xml_str)
-            convert_json_to_xml(input_json)
-            convert_xml_to_json(input_xml)
-            convert_dict_to_xml(data_dict)
-            convert_bytes_datetime_to_string(data)
-            compare_dicts(dict1, dict2)
-            compare_json(json1, json2)
-            convert_to_bytes(input_data)
-            compress_and_encode(string)
-            decompress_and_encode(string)
-            convert_datetime_to_string(input_date)
-            encode_to_string_base64(input_data)
-            decode_base64_to_string_(input_data)
-            check_base64_encoding(input_string)
-            taille_string_in_base64(string)
-            string_to_int(s)
-            int_to_string(n)
-            string_to_float(s)
-            float_to_string(f)
-            list_to_string(lst, separator=', ')
-            string_to_list(s, separator=', ')
-            list_to_set(lst)
-            set_to_list(s)
-            dict_to_list(d)
-            list_to_dict(lst)
-            char_to_ascii(c)
-            ascii_to_char(n)
-            convert_rows_to_columns(data)
-            convert_columns_to_rows(data)
-            convert_to_ordered_dict(dictionary)
-            generate_random_text(num_words)
-            capitalize_words(text)
+    les packages suivant son obligatoire.
+    python3-xmltodict python3-dicttoxml python3-yaml json2xml
+    pip3 install dict2xml
+    Cette class presente des methodes pour convertir simplement des objects.
+    elle expose les fonction suivante
+        convert_dict_to_yaml(input_dict)
+        convert_yaml_to_dict(yaml_data)
+        yaml_string_to_dict(yaml_string)
+        check_yaml_conformance(yaml_data)
+        compare_yaml(yaml_string1, yaml_string2)
+        convert_dict_to_json(input_dict_json, indent=None, sort_keys=False)
+        check_json_conformance(json_data)
+        convert_json_to_dict(json_str)
+        xml_to_dict(xml_string)
+        compare_xml(xml_file1, xml_file2)
+        convert_xml_to_dict(xml_str)
+        convert_json_to_xml(input_json)
+        convert_xml_to_json(input_xml)
+        convert_dict_to_xml(data_dict)
+        convert_bytes_datetime_to_string(data)
+        compare_dicts(dict1, dict2)
+        compare_json(json1, json2)
+        convert_to_bytes(input_data)
+        compress_and_encode(string)
+        decompress_and_encode(string)
+        convert_datetime_to_string(input_date)
+        encode_to_string_base64(input_data)
+        decode_base64_to_string_(input_data)
+        check_base64_encoding(input_string)
+        taille_string_in_base64(string)
+        string_to_int(s)
+        int_to_string(n)
+        string_to_float(s)
+        float_to_string(f)
+        list_to_string(lst, separator=', ')
+        string_to_list(s, separator=', ')
+        list_to_set(lst)
+        set_to_list(s)
+        dict_to_list(d)
+        list_to_dict(lst)
+        char_to_ascii(c)
+        ascii_to_char(n)
+        convert_rows_to_columns(data)
+        convert_columns_to_rows(data)
+        convert_to_ordered_dict(dictionary)
+        generate_random_text(num_words)
+        capitalize_words(text)
+        compress_data_to_bytes(data)
+        decompress_data_to_bytes(data_bytes_compress
+        compress_dict_to_dictbytes(dict_data)
+        decompress_dictbytes_to_dict(data_bytes_compress)
     """
+
     # YAML
     @staticmethod
     def convert_dict_to_yaml(input_dict):
         """
-            la fonction suivante Python convertit 1 dict python en json.
+        la fonction suivante Python convertit 1 dict python en json.
         """
         if isinstance(input_dict, dict):
             return yaml.dump(convert.convert_bytes_datetime_to_string(input_dict))
@@ -4661,26 +4805,31 @@ class convert:
             raise TypeError("L'entrée doit être de type dict.")
 
     @staticmethod
-    def convert_yaml_to_dict(yaml_data):
-        try:
-            return yaml.safe_load(yaml_data)
-        except yaml.YAMLError as e:
-            print("Error parsing YAML:", e)
-            return None
+    def convert_yaml_to_dict(yaml_string):
+        return convert.yaml_string_to_dict(yaml_string)
 
     @staticmethod
     def yaml_string_to_dict(yaml_string):
         try:
-            yaml_data = yaml.safe_load(yaml_string)
-            return yaml_data
+            yaml_data = yaml.safe_load(
+                convert.convert_bytes_datetime_to_string(yaml_string)
+            )
+            if isinstance(yaml_data, (dict, list)):
+                return yaml_data
+            else:
+                raise yaml.YAMLError(
+                    "Erreur lors de la conversion de la chaîne YAML en dictionnaire."
+                )
         except yaml.YAMLError as e:
-            raise ValueError("Erreur lors de la conversion de la chaîne YAML en dictionnaire.")
+            raise ValueError(
+                "Erreur lors de la conversion de la chaîne YAML en dictionnaire."
+            )
 
     @staticmethod
     def check_yaml_conformance(yaml_data):
         try:
             # Chargement du YAML pour vérifier la conformité
-            yaml.safe_load(yaml_data)
+            yaml.safe_load(convert.convert_bytes_datetime_to_string(yaml_data))
             return True
         except yaml.YAMLError:
             return False
@@ -4705,10 +4854,12 @@ class convert:
     @staticmethod
     def convert_dict_to_json(input_dict_json, indent=None, sort_keys=False):
         """
-            la fonction suivante Python convertit 1 dict python en json.
+        la fonction suivante Python convertit 1 dict python en json.
         """
         if isinstance(input_dict_json, dict):
-            return json.dumps(convert.convert_bytes_datetime_to_string(input_dict_json),indent=indent)
+            return json.dumps(
+                convert.convert_bytes_datetime_to_string(input_dict_json), indent=indent
+            )
         else:
             raise TypeError("L'entrée doit être de type dict.")
 
@@ -4722,11 +4873,32 @@ class convert:
 
     @staticmethod
     def convert_json_to_dict(json_str):
-        return json.loads(json_str)
+        logger.debug(
+            "AAAAAAAA convert_json_to_dict **json_str***** data %s" % type(json_str)
+        )
+        if isinstance(json_str, (dict)):
+            return json_str
+
+        logger.debug(
+            "AAAAAAAA convert_json_to_dict **************** data %s" % type(json_str)
+        )
+        stringdata = convert.convert_bytes_datetime_to_string(json_str)
+        logger.debug(
+            "AAAAAAAA convert_json_to_dict ****stringdata***** data %s"
+            % type(stringdata)
+        )
+        if isinstance(stringdata, (str)):
+            try:
+                return json.loads(stringdata)
+            except json.decoder.JSONDecodeError as e:
+                raise
+            except Exception as e:
+                # Code de gestion d'autres types d'exceptions
+                logger.error("convert_json_to_dict %s" % (e))
+                raise
 
     @staticmethod
     def xml_to_dict(xml_string):
-
         def xml_element_to_dict(element):
             if len(element) == 0:
                 return element.text
@@ -4740,9 +4912,11 @@ class convert:
                 else:
                     result[child.tag] = child_dict
             return result
+
         try:
-            #tree = ET.parse(xml_file)
-            tree = ET.ElementTree(ET.fromstring(xml_string))
+            tree = ET.ElementTree(
+                ET.fromstring(convert.convert_bytes_datetime_to_string(xml_string))
+            )
             root = tree.getroot()
             return xml_element_to_dict(root)
         except ET.ParseError:
@@ -4759,12 +4933,41 @@ class convert:
             return False
 
     @staticmethod
-    def convert_xml_to_dict(xml_str):
-        return xmltodict.parse(xml_str)
+    def convert_xml_to_dict(xml_string):
+        def _element_to_dict(element):
+            result = {}
+            for child in element:
+                if child.tag not in result:
+                    result[child.tag] = []
+                result[child.tag].append(_element_to_dict(child))
+            if not result:
+                return element.text
+            return result
+
+        root = ET.fromstring(convert.convert_bytes_datetime_to_string(xml_string))
+        return _element_to_dict(root)
 
     @staticmethod
-    def convert_json_to_xml(input_json):
-        return json2xml.Json2xml(input_json).to_xml()
+    def convert_json_to_xml(json_data, root_name="root"):
+        def _convert(element, parent):
+            if isinstance(element, dict):
+                for key, value in element.items():
+                    if isinstance(value, (dict, list)):
+                        sub_element = ET.SubElement(parent, key)
+                        _convert(value, sub_element)
+                    else:
+                        child = ET.SubElement(parent, key)
+                        child.text = str(value)
+            elif isinstance(element, list):
+                for item in element:
+                    sub_element = ET.SubElement(parent, parent.tag[:-1])
+                    _convert(item, sub_element)
+
+        root = ET.Element(root_name)
+        _convert(json.loads(json_data), root)
+
+        xml_data = ET.tostring(root, encoding="unicode", method="xml")
+        return xml_data
 
     # xml
     @staticmethod
@@ -4776,49 +4979,67 @@ class convert:
         xml_str = xmltodict.unparse({"root": data_dict}, pretty=True)
         return xml_str
 
-
     @staticmethod
     def convert_bytes_datetime_to_string(data):
         """
-            la fonction suivante Python parcourt récursivement un dictionnaire,
-            convertit les types bytes en str,
-            les objets datetime en chaînes de caractères au format "année-mois-jour heure:minute:seconde"
-            si les clés sont de type bytes elles sont convertit en str :
-            encodage ('utf-8') est utilise pour le decode des bytes.
-            Si 1 chaine est utilisée pour definir FALSE ou True alors c'est convertit en boolean True/false
-            Si 1 valeur est None, elle est convertit a ""
-
-            renvoi le dictionnaire convertit
+        la fonction suivante Python parcourt récursivement un dictionnaire,
+        convertit les types bytes en str,
+        les objets datetime en chaînes de caractères au format "année-mois-jour heure:minute:seconde"
+        si les clés sont de type bytes elles sont convertit en str :
+        encodage ('utf-8') est utilise pour le decode des bytes.
+        Si 1 chaine est utilisée pour definir FALSE ou True alors c'est convertit en boolean True/false
+        Si 1 valeur est None, elle est convertit a ""
+        Si key ou valeur ne peut pas etre convertit en str alors 1 exception est leve
+        renvoi le dictionnaire serializable
         """
-        if isinstance(data, dict):
-            return {convert.convert_bytes_datetime_to_string(key): convert.convert_bytes_datetime_to_string(value) for key, value in data.items()}
+        if isinstance(data, (str)):
+            compa = data.lower
+            if compa == "true":
+                return True
+            elif compa == "false":
+                return False
+            elif compa == "none":
+                return ""
+            return data
+        if isinstance(data, (int, float, bool)):
+            return data
+        elif isinstance(data, dict):
+            return {
+                convert.convert_bytes_datetime_to_string(
+                    key
+                ): convert.convert_bytes_datetime_to_string(value)
+                for key, value in data.items()
+            }
         elif isinstance(data, list):
             return [convert.convert_bytes_datetime_to_string(item) for item in data]
         elif isinstance(data, bytes):
-            return data.decode('utf-8')
+            return data.decode("utf-8")
         elif isinstance(data, datetime):
-            return data.strftime('%Y-%m-%d %H:%M:%S')
+            returndata.strftime("%Y-%m-%d %H:%M:%S")
         elif data is None:
             return ""
-        elif isinstance(data, str) and data.lower() == "false":
-            return False
-        elif isinstance(data, str) and data.lower() == "true":
-            return True
         else:
-            return data
+            try:
+                str(data)
+                return data
+            except Exception as e:
+                raise ValueError(
+                    "Type %s impossible de convertir en string " % type(data)
+                )
+        return data
 
     @staticmethod
     def compare_dicts(dict1, dict2):
         """
-            Dans cette fonction, nous commençons par comparer les ensembles des clés des deux dictionnaires (dict1.keys() et dict2.keys()). Si les ensembles des clés sont différents, nous retournons False immédiatement car les dictionnaires ne peuvent pas être égaux.
+        Dans cette fonction, nous commençons par comparer les ensembles des clés des deux dictionnaires (dict1.keys() et dict2.keys()). Si les ensembles des clés sont différents, nous retournons False immédiatement car les dictionnaires ne peuvent pas être égaux.
 
-            Ensuite, nous itérons sur les clés du premier dictionnaire (dict1.keys()) et comparons les valeurs correspondantes dans les deux dictionnaires (value1 et value2).
+        Ensuite, nous itérons sur les clés du premier dictionnaire (dict1.keys()) et comparons les valeurs correspondantes dans les deux dictionnaires (value1 et value2).
 
-            Si une valeur est un autre dictionnaire, nous effectuons un appel récursif à la fonction compare_dicts pour comparer les sous-dictionnaires. Si le résultat de l'appel récursif est False, nous retournons False immédiatement.
+        Si une valeur est un autre dictionnaire, nous effectuons un appel récursif à la fonction compare_dicts pour comparer les sous-dictionnaires. Si le résultat de l'appel récursif est False, nous retournons False immédiatement.
 
-            Si les valeurs ne sont pas égales et ne sont pas des dictionnaires, nous retournons également False.
+        Si les valeurs ne sont pas égales et ne sont pas des dictionnaires, nous retournons également False.
 
-            Si toutes les clés et les valeurs correspondent dans les deux dictionnaires, nous retournons True à la fin de la fonction.
+        Si toutes les clés et les valeurs correspondent dans les deux dictionnaires, nous retournons True à la fin de la fonction.
         """
         if dict1.keys() != dict2.keys():
             return False
@@ -4836,7 +5057,6 @@ class convert:
                 return False
         return True
 
-
     @staticmethod
     def compare_json(json1, json2):
         try:
@@ -4851,7 +5071,7 @@ class convert:
         if isinstance(input_data, bytes):
             return input_data
         elif isinstance(input_data, str):
-            return input_data.encode('utf-8')
+            return input_data.encode("utf-8")
         else:
             raise TypeError("L'entrée doit être de type bytes ou string.")
 
@@ -4864,7 +5084,7 @@ class convert:
         compressed_data = zlib.compress(data, 9)
         # Encode the compressed data in base64
         encoded_data = base64.b64encode(compressed_data)
-        return encoded_data.decode('utf-8')
+        return encoded_data.decode("utf-8")
 
     @staticmethod
     def decompress_and_encode(string):
@@ -4874,13 +5094,13 @@ class convert:
         # Decompress the data using zlib
         decompressed_data = zlib.decompress(decoded_data)
         # Encode the decompressed data in base64
-        return decompressed_data.decode('utf-8')
+        return decompressed_data.decode("utf-8")
 
     # datetime
     @staticmethod
-    def convert_datetime_to_string (input_date: datetime):
+    def convert_datetime_to_string(input_date: datetime):
         if isinstance(input_date, datetime):
-            return input_date.strftime('%Y-%m-%d %H:%M:%S')
+            return input_date.strftime("%Y-%m-%d %H:%M:%S")
         else:
             raise TypeError("L'entrée doit être de type datetime.")
 
@@ -4888,21 +5108,20 @@ class convert:
     @staticmethod
     def encode_to_string_base64(input_data):
         if isinstance(input_data, str):
-            input_data_bytes = input_data.encode('utf-8')
+            input_data_bytes = input_data.encode("utf-8")
         elif isinstance(input_data, bytes):
             input_data_bytes = input_data
         else:
             raise TypeError("L'entrée doit être une chaîne ou un objet bytes.")
         encoded_bytes = base64.b64encode(input_data_bytes)
-        encoded_string = encoded_bytes.decode('utf-8')
+        encoded_string = encoded_bytes.decode("utf-8")
         return encoded_string
-
 
     @staticmethod
     def decode_base64_to_string_(input_data):
         try:
             decoded_bytes = base64.b64decode(input_data)
-            decoded_string = decoded_bytes.decode('utf-8')
+            decoded_string = decoded_bytes.decode("utf-8")
             return decoded_string
         except base64.binascii.Error:
             raise ValueError("L'entrée n'est pas encodée en base64 valide.")
@@ -4921,8 +5140,8 @@ class convert:
         """
         renvoie la taille que prend 1 string en encode en base64.
         """
-        taille=(len(string))
-        return  (taille + 2 - ((taille + 2) % 3)) * 4 / 3
+        taille = len(string)
+        return (taille + 2 - ((taille + 2) % 3)) * 4 / 3
 
     @staticmethod
     def string_to_int(s):
@@ -4940,7 +5159,6 @@ class convert:
         Conversion d'entiers en chaînes
         """
         return str(n)
-
 
     @staticmethod
     def string_to_float(s):
@@ -4960,20 +5178,18 @@ class convert:
         return str(f)
 
     @staticmethod
-    def list_to_string(lst, separator=', '):
+    def list_to_string(lst, separator=", "):
         """
         Conversion d'une liste de chaînes en une seule chaîne avec un séparateur
         """
         return separator.join(lst)
 
-
     @staticmethod
-    def string_to_list(s, separator=', '):
+    def string_to_list(s, separator=", "):
         """
         Conversion d'une chaîne en une liste en utilisant un séparateur
         """
         return s.split(separator)
-
 
     @staticmethod
     def list_to_set(lst):
@@ -5020,14 +5236,14 @@ class convert:
     @staticmethod
     def convert_rows_to_columns(data):
         """
-            cette fonction fait la convertion depuis 1 list de dict representant des lignes
-            en
-            1 list de colonne
+        cette fonction fait la convertion depuis 1 list de dict representant des lignes
+        en
+        1 list de colonne
 
-            data = [{"id": 1, "name": "dede", "age": 30},
-                    {"id": 2, "name": "dada", "age": 25}]
-            to
-            [{'age': [30, 25]}, {'name': ['dede', 'dada']}, {'id': [1, 2]}]
+        data = [{"id": 1, "name": "dede", "age": 30},
+                {"id": 2, "name": "dada", "age": 25}]
+        to
+        [{'age': [30, 25]}, {'name': ['dede', 'dada']}, {'id': [1, 2]}]
         """
         # Obtenez les noms de colonnes
         column_names = set()
@@ -5054,11 +5270,11 @@ class convert:
         {"id": 2, "name": "dada", "age": 25}]
         """
         # Obtenez tous les noms de colonnes
-        rows=[]
-        s= [ list(x.keys())[0] for x in data]
+        rows = []
+        s = [list(x.keys())[0] for x in data]
         nbligne = len(data[0][s[0]])
         for t in range(nbligne):
-            result={}
+            result = {}
             for z in range(len(s)):
                 result[s[z]] = data[z][s[z]][t]
             rows.append(result)
@@ -5071,14 +5287,15 @@ class convert:
             ordered_dict[key] = value
         return ordered_dict
 
-
     @staticmethod
     def generate_random_text(num_words):
         words = []
         for _ in range(num_words):
-            word = ''.join(random.choice(string.ascii_letters) for _ in range(random.randint(3, 8)))
+            word = "".join(
+                random.choice(string.ascii_letters) for _ in range(random.randint(3, 8))
+            )
             words.append(word)
-        return ' '.join(words)
+        return " ".join(words)
 
     @staticmethod
     def capitalize_words(text):
@@ -5087,6 +5304,68 @@ class convert:
         """
         words = text.split()
         capitalized_words = [word.capitalize() for word in words]
-        capitalized_text = ' '.join(capitalized_words)
+        capitalized_text = " ".join(capitalized_words)
         return capitalized_text
 
+    # Fonction de compression gzip
+    @staticmethod
+    def compress_data_to_bytes(data_string_or_bytes):
+        return gzip.compress(convert.convert_to_bytes(data_string_or_bytes))
+
+    # Fonction de décompression gzip
+    @staticmethod
+    def decompress_data_to_bytes(data_bytes_compress):
+        return convert.convert_to_bytes(gzip.decompress(data_bytes_compress))
+
+    @staticmethod
+    def serialized_dict_to_compressdictbytes(dict_data):
+        json_bytes = json.dumps(
+            dict_data, indent=4, cls=DateTimebytesEncoderjson
+        ).encode("utf-8")
+        return convert.compress_data_to_bytes(json_bytes)
+
+    @staticmethod
+    def unserialized_compressdictbytes_to_dict(serialized_dict_bytes_compress):
+        json_bytes = gzip.decompress(
+            convert.convert_to_bytes(serialized_dict_bytes_compress)
+        )
+        return json.loads(json_bytes)
+
+    @staticmethod
+    def is_multiple_of(s, multiple=4):
+        return len(s) % multiple == 0
+
+    @staticmethod
+    def is_base64(s):
+        if not convert.is_multiple_of(s, multiple=4):
+            return False
+        decoded = None
+        try:
+            # Tente de décoder la chaîne en base64
+            decoded = base64.b64decode(s)
+            # Vérifie si la chaîne d'origine est égale à la chaîne encodée puis décodée
+            if base64.b64encode(decoded) == s.encode():
+                return decoded
+            else:
+                return False
+        except:
+            return False
+
+    @staticmethod
+    def header_body(xml_string):
+        """
+        on supprime l'entete xml
+        """
+        body = header = ""
+        index = xml_string.find("?>")
+        if index != -1:
+            # Supprimer l'en-tête XML
+            body = xml_string[index + 2 :]
+            header = xml_string[: index + 2]
+        return header, body
+
+    @staticmethod
+    def format_xml(xml_string):
+        dom = xml.dom.minidom.parseString(xml_string)
+        formatted_xml = dom.toprettyxml(indent="  ")
+        return formatted_xml

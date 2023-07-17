@@ -2,8 +2,8 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
-
 import socket
+
 import sys
 import os
 import logging
@@ -22,7 +22,6 @@ import hashlib
 from lib.manageresourceplugin import resource_plugin
 import imp
 import cherrypy
-from cherrypy.process.plugins import PIDFile
 from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
@@ -38,6 +37,8 @@ from lib.managesession import session
 from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.managedbkiosk import manageskioskdb
+
+from lib.iq_custom import iq_custom_xep, iq_value
 from lib.utils import (
     DEBUGPULSE,
     getIpXmppInterface,
@@ -46,6 +47,7 @@ from lib.utils import (
     load_back_to_deploy,
     cleanbacktodeploy,
     call_plugin,
+    call_mon_plugin,
     subnetnetwork,
     createfingerprintnetwork,
     isWinUserAdmin,
@@ -56,6 +58,7 @@ from lib.utils import (
     reboot_command,
     vnc_set_permission,
     save_count_start,
+    unregister_agent,
     unregister_subscribe,
     test_kiosk_presence,
     file_get_contents,
@@ -77,6 +80,8 @@ from lib.utils import (
     offline_search_kb,
     file_message_iq,
     call_plugin_sequentially,
+    convert,
+    DateTimebytesEncoderjson,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -94,36 +99,30 @@ from multiprocessing import Queue, Process, Event
 from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
+from datetime import datetime
 
 import datetime
 
 import zipfile
 
-if sys.version_info[0] == 3:
-    from slixmpp import ClientXMPP
-    from slixmpp import jid
-    from slixmpp.xmlstream import handler, matcher
-    from slixmpp.exceptions import IqError, IqTimeout
-    from slixmpp.xmlstream.stanzabase import ET
-    from slixmpp.xmlstream.handler import CoroutineCallback
-    from slixmpp.xmlstream.handler import Callback
-    from slixmpp.xmlstream.matcher.xpath import MatchXPath
-    from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
-    from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
-    import slixmpp
-    import asyncio
 
-    raw_input = input
-else:
-    import sleekxmpp
-    from sleekxmpp.xmlstream import handler, matcher
-    from sleekxmpp.exceptions import IqError, IqTimeout
-    from sleekxmpp.xmlstream.stanzabase import ET
-    from sleekxmpp import jid
-    from sleekxmpp import ClientXMPP
-
-    sys.setdefaultencoding("utf8")
-    imp.reload(sys)
+from slixmpp import ClientXMPP
+from slixmpp import jid
+from slixmpp.xmlstream import handler, matcher
+from slixmpp.exceptions import IqError, IqTimeout
+from slixmpp.xmlstream.stanzabase import ET
+from slixmpp.xmlstream.handler import CoroutineCallback
+from slixmpp.xmlstream.handler import Callback
+from slixmpp.xmlstream.matcher.xpath import MatchXPath
+from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
+from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
+from slixmpp.xmlstream.matcher.many import MatchMany
+from slixmpp.xmlstream.matcher.idsender import MatchIDSender
+from slixmpp.xmlstream.matcher.id import MatcherId
+from slixmpp.xmlstream.matcher.base import MatcherBase
+import slixmpp
+import asyncio
+from slixmpp.xmlstream.handler import Callback, CoroutineCallback
 
 if sys.platform.startswith("win"):
     import win32api
@@ -226,6 +225,10 @@ class DateTimebytesEncoderjson(json.JSONEncoder):
 
 
 class MUCBot(slixmpp.ClientXMPP):
+    """
+    bot xmpp
+    """
+
     def __init__(
         self,
         conf,
@@ -238,6 +241,7 @@ class MUCBot(slixmpp.ClientXMPP):
         logging.log(
             DEBUGPULSE, "start machine  %s Type %s" % (conf.jidagent, conf.agenttype)
         )
+
         self.iq_msg = file_message_iq(dev_mod=True)
         self.pidprogrammprincipal = pidprogrammprincipal
 
@@ -272,6 +276,7 @@ class MUCBot(slixmpp.ClientXMPP):
         self.config = conf
 
         self.ipconnection = self.config.Server
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
@@ -761,21 +766,6 @@ class MUCBot(slixmpp.ClientXMPP):
         self.RSA = MsgsignedRSA(self.boundjid.user)
         logger.info("The version of the agent is %s" % self.version_agent())
 
-        self.register_handler(
-            CoroutineCallback(
-                "CustomXEP_Handle2",
-                StanzaPath("/iq@type=result"),
-                self._handle_custom_iq,
-            )
-        )
-        self.register_handler(
-            CoroutineCallback(
-                "CustomXEP_Handle",
-                StanzaPath("/iq@type=error"),
-                self._handle_custom_iq_error,
-            )
-        )
-
         if self.config.agenttype in ["relayserver"]:
             from lib.manage_info_command import manage_infoconsole
 
@@ -821,7 +811,122 @@ class MUCBot(slixmpp.ClientXMPP):
             )
             self.alternatifconnection = {}  # alternative connection for machine
 
+        self.register_handler(
+            Callback(
+                "Handle_custom_xep",
+                MatchXPath("{%s}iq/{custom_xep}query" % (self.default_ns)),
+                self._custom_xep_iq,
+            )
+        )
+
+        self.register_handler(
+            CoroutineCallback(
+                "iq_error_Handle",
+                StanzaPath("/iq@type=error"),
+                self._iq_error_Handle,
+            )
+        )
+
+    def iqsendpulse(self, to, datain, timeout=900, sessionid=None):
+        """
+        attention cette appelle ne peut ce faire que dans 1 plugin appeller par call_plugin
+        pour la gestion des iq dans la boucle asyncio principal,
+        utiliser la fonction slixmpp
+        """
+        thread = Myiq(self, to, datain, timeout=timeout, sessionid=None)
+        result = thread.iqsend()
+        return result
+
+    async def _iq_error_Handle(self, iq):
+        if iq["type"] == "error":
+            errortext = iq["error"]["text"]
+            if "User already exists" in errortext:
+                # ce n'est pas 1 erreur iq
+                logger.warning("User already exists")
+                return
+            ret = '{"err" : "%s"}' % errortext
+            logger.error("IQ error : %s" % ret)
+
+    def _custom_xep_get(self, iq):
+        def reply_result(iq, result_str_base64):
+            # warning encodage et decodage base64 se fait sur du bytes.
+            # ici convertit en str pour etre inclut au message.
+            logger.debug("reply iq")
+            iq["type"] = "result"
+            iq["to"] = iq["from"]
+            iq["from"] = self.boundjid.bare
+            for childresult in iq.xml:
+                if childresult.tag.endswith("query"):
+                    for z in childresult:
+                        # composition message
+                        z.tag = "{%s}data" % result
+                        # reply.reply(clear=False)
+                iq.send()
+
+        def reply_error(iq, str_message_erreur):
+            # warning encodage et decodage base64 se fait sur du bytes.
+            # ici convertit en str pour etre inclut au message.
+            logger.debug("reply error")
+            iq["type"] = "error"
+            iq["to"] = iq["from"]
+            iq["from"] = self.boundjid.bare
+            iq["error"]["text"] = str_message_erreur
+            messageerror = """{ "error" : "%s" }""" % str_message_erreur
+            for childresult in iq.xml:
+                if childresult.tag.endswith("query"):
+                    for z in childresult:
+                        # composition message
+                        z.tag = "{%s}data" % messageerror
+                        # reply.reply(clear=False)
+                iq.send()
+
+        logger.debug("traitement de iq get custom_xep")
+        for child in iq.xml:
+            if child.tag.endswith("query"):
+                # select data element query
+                for z in child:
+                    # recuperation (bytes data) encode en base64
+                    data = z.tag[1:-5]
+                    try:
+                        data = base64.b64decode(data)
+                    except Exception as e:
+                        logger.error("_custom_xep_get :decodage erreur : %s" % str(e))
+                        logger.error("\n%s" % (traceback.format_exc()))
+                        logger.error("xml recv : %s " % str(e))
+                        return
+                    try:
+                        # traitement de la function
+                        # result json str
+                        logger.debug(" traitement iq get [session %s]" % iq["id"])
+                        result = dispach_iq_command(self, data)
+                        try:
+                            result = convert.encode_to_string_base64(result)
+                            reply_result(iq, result)
+                        except Exception as e:
+                            logger.error(
+                                "_custom_xep_get : encode base64 : %s" % str(e)
+                            )
+                            logger.error("\n%s" % (traceback.format_exc()))
+                            reply_error(iq, str(e))
+                            return ""
+                    except Exception as e:
+                        logger.error("_custom_xep_get : error command : %s" % str(e))
+                        logger.error("\n%s" % (traceback.format_exc()))
+                        self.reply_error(iq, str(e))
+                        return
+
     def terminateprogram(self):
+        """
+        End the program according to.
+        If the platform is Windows the agent is necessarily of type machine only, the function uses the 'TASKKILL' command to forcefully terminate the process if it remains blocked.
+            sets the specified process id (self.pidprogrammprincipal).
+        If the platform is not Windows, the function constructs a command to find and kill the process based on the
+        machine or relayserver configuration agent type.
+
+        the function constructs a command to find and kill a process with 'machine' or 'agentxmpp' in its name.
+        Feedback:
+            None
+        """
         if sys.platform.startswith("win"):
             cmd = "TASKKILL /F /PID %s /T" % self.pidprogrammprincipal
             # logging.log(DEBUGPULSE, "cmd %s" % cmd)
@@ -833,151 +938,117 @@ class MUCBot(slixmpp.ClientXMPP):
                 cmd = "ps -ef | grep 'machine' | grep 'agentxmpp' | grep -v grep | awk '{print $2}' | xargs -r kill -9"
             os.system(cmd)
 
-    async def _handle_custom_iq_error(self, iq):
-        if iq["type"] == "error":
-            errortext = iq["error"]["text"]
-            if "User already exists" in errortext:
-                # ce n'est pas 1 erreur iq
-                logger.warning("User already exists")
-                self.isaccount = False
-                return
-            miqkeys = list(iq.keys())
-            errortext = iq["error"]["text"]
-            t = time.time()
-            queue = ""
-            liststop = []
-            deleted_queue = []
+    def _custom_xep_iq(self, iq):
+        """
+        Handle a custom XEP IQ message recu.
+        Traitement de la reception iq xmlns espace de nom custom_xep
+        filtre xml : MatchXPath('{%s}iq/{custom_xep}query' % (self.default_ns)),
+        exclusion des iq venant de l'agent directement.
+        If the IQ message is a "get" type, the function logs a debug message and calls the _custom_xep_get
+        function to process the IQ.
 
-            try:
-                for ta in self.datas_send:
-                    logger.debug("We treat %s" % ta["name_iq_queue"])
-                    logger.debug("Time of the end %s " % (ta["time"]))
-                    logger.debug("Time now %s " % (t))
-                    logger.debug("The sessioniq is: %s" % ta["sesssioniq"])
+        Parameters:
+            self (object): The instance of the class containing the function.
+            iq (Stanza): The IQ message to be handled.
 
-                    if ta["time"] < t:
-                        logger.debug(
-                            "The queue %s timed out, we remove it."
-                            % ta["name_iq_queue"]
-                        )
-                        deleted_queue.append(ta["name_iq_queue"])
-                        continue
-                    if ta["sesssioniq"] == iq["id"]:
-                        queue = ta["name_iq_queue"]
-                    liststop.append(ta)
-                self.datas_send = liststop
-                logger.debug("The pending lists to remove %s" % deleted_queue)
-                # We delete the ended queues
-                # We remove the old lists
-                for ta in deleted_queue:
-                    try:
-                        logger.debug("delete queue %s" % ta["name_iq_queue"])
-                        posix_ipc.unlink_message_queue(ta["name_iq_queue"])
-                    except:
-                        pass
-                if not queue:
-                    logger.debug("There is no queue left. We quit")
-                    return
-                try:
-                    quposix = posix_ipc.MessageQueue(
-                        queue, posix_ipc.O_CREX, max_message_size=2097152
-                    )
-                except posix_ipc.ExistentialError as existant_error:
-                    logger.debug(
-                        "An error occured while trying to open the %s queue" % queue
-                    )
-
-                    quposix = posix_ipc.MessageQueue(queue)
-                except OSError as error_creating_queue_oserror:
-                    logger.error(
-                        "An error occured while trying to create the Posix Queue"
-                    )
-                    logger.error(
-                        "We obtained the error: \n %s" % error_creating_queue_oserror
-                    )
-
-                    logger.error(
-                        "To fix this, please modify/etc/security/limits.conf and /etc/sysctl.conf"
-                    )
-                    logger.error(
-                        "The system limits might have been reached for posix queues. Please review them"
-                    )
-                    return
-                except Exception as error_exception:
-                    logger.error(
-                        "An error occured while trying to create the Posix Queue."
-                    )
-                    logger.error("We obtained the error: \n %s" % error_exception)
-
-                    logger.error("We hit the backtrace \n%s" % (traceback.format_exc()))
-                    return
-                ret = '{"err" : "%s"}' % errortext
-                logger.error(
-                    "The IQ error when trying to create the Posix queue is: %s" % ret
-                )
-
-                logger.error("")
-
-                quposix.send(ret, 2)
-            except AttributeError as error_attribute:
-                logger.error(
-                    "An error occured while trying to create the Posix Queue because of AttributeError."
-                )
-                logger.error("We obtained the error: \n %s" % error_attribute)
-                pass
-
-    async def _handle_custom_iq(self, iq):
-        if iq["query"] != "custom_xep":
+        Returns:
+            None
+        """
+        # master@pulse/MASTER dev-deb12-2.zb0@pulse
+        if str(iq["from"]) == self.boundjid.bare or iq["query"] != "custom_xep":
+            logger.debug("PAs de traitement de cet handler")
             return
+        # traitement de iq
         if iq["type"] == "get":
-            pass
-        elif iq["type"] == "set":
-            pass
-        elif iq["type"] == "error":
-            logger.error(
-                "we got an iq with error type. The id of this iq is: %s" % iq["id"]
-            )
-        elif iq["type"] == "result":
-            logger.debug(
-                "we got an iq with result type. The id of this iq is: %s" % iq["id"]
-            )
-            t = time.time()
-            queue = ""
-            liststop = []
-            deleted_queue = []
-            for child in iq.xml:
-                if child.tag.endswith("query"):
-                    for z in child:
-                        if z.tag.endswith("data"):
-                            ret = base64.b64decode(bytes(z.tag[1:-5], "utf-8"))
-                            self.iq_msg.set_iq_result(
-                                iq["id"], json.loads(ret.decode("utf-8"))
+            logger.debug("GET Traitement iq custom siveo")
+            self._custom_xep_get(iq)
+
+    def _custom_xep_get(self, iq):
+        """
+        Processes a "get" request of a custom IQ message (custom XEP).
+
+           This function handles custom IQ messages of type "get" by extracting the data from the message.
+           It calls the appropriate processing function (dispach_iq_command) after formatting the request to obtain the result.
+           Note: dispach_iq_command only handles a predefined set of permitted commands.
+
+           The result is then encoded in base64 and returned.
+
+           If an error occurs during data retrieval or processing, an "error" response is sent with the appropriate error message.
+
+           Parameters:
+           self (object): The instance of the class containing the function.
+           iq (Stanza): The IQ message to be processed.
+
+           Returns:
+           None
+        """
+
+        def reply_result(iq, result_str_base64):
+            # warning encodage et decodage base64 se fait sur du bytes.
+            # ici convertit en str pour etre inclut au message.
+            logger.debug("reply iq")
+            iq["type"] = "result"
+            iq["to"] = iq["from"]
+            iq["from"] = self.boundjid.bare
+            for childresult in iq.xml:
+                if childresult.tag.endswith("query"):
+                    for z in childresult:
+                        # composition message
+                        z.tag = "{%s}data" % result
+                        # reply.reply(clear=False)
+                iq.send()
+
+        def reply_error(iq, str_message_erreur):
+            # warning encodage et decodage base64 se fait sur du bytes.
+            # ici convertit en str pour etre inclut au message.
+            logger.debug("reply error")
+            iq["type"] = "error"
+            iq["to"] = iq["from"]
+            iq["from"] = self.boundjid.bare
+            iq["error"]["text"] = str_message_erreur
+            messageerror = """{ "error" : "%s" }""" % str_message_erreur
+            for childresult in iq.xml:
+                if childresult.tag.endswith("query"):
+                    for z in childresult:
+                        # composition message
+                        z.tag = "{%s}data" % messageerror
+                        # reply.reply(clear=False)
+                iq.send()
+
+        logger.debug("processing of iq get custom xep")
+        for child in iq.xml:
+            if child.tag.endswith("query"):
+                # select data element query
+                for z in child:
+                    # recuperation (bytes data) encode en base64
+                    data = z.tag[1:-5]
+                    try:
+                        data = base64.b64decode(data)
+                    except Exception as e:
+                        logger.error("_custom_xep_get : decoding error : %s" % str(e))
+                        logger.error("\n%s" % (traceback.format_exc()))
+                        logger.error("xml recv : %s " % str(e))
+                        return
+                    try:
+                        # traitement de la function
+                        # result json str
+                        logger.debug("iq get treatment [session %s]" % iq["id"])
+                        result = dispach_iq_command(self, data)
+                        try:
+                            result = convert.encode_to_string_base64(result)
+                            reply_result(iq, result)
+                        except Exception as e:
+                            logger.error(
+                                "_custom_xep_get : encode base64 : %s" % str(e)
                             )
-                            logger.debug(
-                                "The result with the id %s has been injected in the message queue to be processed."
-                                % iq["id"]
-                            )
-                            return ret
-                            try:
-                                strdatajson = base64.b64decode(
-                                    bytes(z.tag[1:-5], "utf-8")
-                                )
-                                data = json.loads(strdatajson.decode("utf-8"))
-                                self.iq_msg.set_iq_result(iq["id"], data["result"])
-                                return data["result"]
-                            except Exception as e:
-                                logging.error("_handle_custom_iq : %s" % str(e))
-                                logger.error("\n%s" % (traceback.format_exc()))
-                                ret = '{"err" : "%s"}' % str(e).replace('"', "'")
-                                self.iq_msg.set_iq_result(ret, ret)
-                                return ret
-                            ret = "{}"
-                            self.iq_msg.set_iq_result(iq["id"], ret)
-                            return ret
-        else:
-            ret = "{}"
-            return ret
-            pass
+                            logger.error("\n%s" % (traceback.format_exc()))
+                            reply_error(iq, str(e))
+                            return ""
+                    except Exception as e:
+                        logger.error("_custom_xep_get : error command : %s" % str(e))
+                        logger.error("\n%s" % (traceback.format_exc()))
+                        self.reply_error(iq, str(e))
+                        return
 
     def Mode_Marche_Arret_complet_arret_program(self, pidprogrammprincipal):
         if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
@@ -1038,6 +1109,20 @@ class MUCBot(slixmpp.ClientXMPP):
         self.disconnect(wait=wait)  # on provoque 1 connection default
 
     def quit_application(self, wait=2):
+        """
+        Quit the application gracefully.
+
+        This function logs a debug message indicating the intention to quit the application.
+        It sets the restart flag to 0, indicating that the application should not restart.
+        Then, it disconnects from the server, allowing for a graceful shutdown.
+
+        Parameters:
+            self (object): The instance of the class containing the function.
+            wait (int): The number of seconds to wait before disconnecting (default: 2).
+
+        Returns:
+            None
+        """
         logging.log(DEBUGPULSE, "Quit Application")
         setgetrestart(0)
         self.disconnect(wait=wait)
@@ -1265,7 +1350,8 @@ class MUCBot(slixmpp.ClientXMPP):
         BOOL_FILE_CONTROL_WATCH_DOG = os.path.join(
             directory_file, "BOOL_FILE_CONTROL_WATCH_DOG"
         )
-        pidprocess = "process %s :(%s)" % (os.getpid(), str(datetime.datetime.now()))
+        pidprocess = "process %s :(%s)" % (os.getpid(), str(datetime.now()))
+        logger.debug("creation %s [pid %s]" % (BOOL_FILE_CONTROL_WATCH_DOG, pidprocess))
         file_put_contents(BOOL_FILE_CONTROL_WATCH_DOG, pidprocess)
 
         logger.debug(
@@ -1273,6 +1359,11 @@ class MUCBot(slixmpp.ClientXMPP):
         )
 
     def QDeployfile(self):
+        """
+        Cette fonction déploie un fichier.
+
+        :return: None
+        """
         sessioniddata = getRandomName(6, "Qdeployfile")
         dataerreur = {
             "action": "resultqdeploy",
@@ -1574,11 +1665,9 @@ class MUCBot(slixmpp.ClientXMPP):
             # config = self.syncthing.get_config() # content all config
         if "remoteIgnoredDevices" in config:
             config["remoteIgnoredDevices"] = []
-
-        # pas de pathfolder definie. warning.
-        defaultFolderPath = config["options"]["defaultFolderPath"]
-
         if "defaultFolderPath" in config["options"]:
+            # pas de pathfolder definie. warning.
+            defaultFolderPath = config["options"]["defaultFolderPath"]
             for de in config["devices"]:
                 if "pendingFolders" in de and len(de["pendingFolders"]) > 0:
                     # add folder
@@ -1893,63 +1982,6 @@ class MUCBot(slixmpp.ClientXMPP):
         else:
             self.versionagent = 0.0
         return self.versionagent
-
-    def iqsendpulse(self, destinataire, msg, mtimeout):
-        def close_posix_queue(name):
-            # conserver result et supprimer datafile['name_iq_queue'].
-            logger.debug("close queue msg %s" % (name))
-            try:
-                posix_ipc.unlink_message_queue(name)
-            except:
-                pass
-
-        if isinstance(msg, (bytes)):
-            msg = msg.decode("utf-8")
-        if isinstance(msg, (dict, list)):
-            msg = json.dumps(msg, cls=DateTimebytesEncoderjson)
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        tempo = time.time()
-        datafile = {"sesssioniq": "", "time": tempo + mtimeout + 1, "name_iq_queue": ""}
-        try:
-            data = base64.b64encode(bytes(msg, "utf-8")).decode("utf8")
-        except Exception as e:
-            logging.error("iqsendpulse : encode base64 : %s" % str(e))
-            return '{"err" : "%s"}' % str(e).replace('"', "'")
-        try:
-            iq = self.make_iq_get(queryxmlns="custom_xep", ito=destinataire)
-            datafile["sesssioniq"] = iq["id"]
-            datafile["name_iq_queue"] = "/" + iq["id"]
-            itemXML = ET.Element("{%s}data" % data)
-            for child in iq.xml:
-                if child.tag.endswith("query"):
-                    child.append(itemXML)
-            self.datas_send.append(datafile)
-            result = iq.send(timeout=mtimeout)
-        except IqError as e:
-            err_resp = e.iq
-            logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
-            logger.error("\n%s" % (traceback.format_exc()))
-            ret = '{"err" : "%s"}' % str(err_resp).replace('"', "'")
-            return ret
-        # creation ou ouverture queu datafile['name_iq_queue']
-        logger.debug(
-            "***  send_iq_message_resquest create queue %s" % datafile["name_iq_queue"]
-        )
-        if sys.platform.startswith("win"):
-            pass
-        else:
-            try:
-                logger.debug("call iq_msg.get_iq_result(%s)" % datafile["sesssioniq"])
-                msginfo = "IQ TO %s\n%s" % (destinataire, msg)
-                result_waitting = self.iq_msg.get_iq_result(
-                    datafile["sesssioniq"], strmsg=msginfo
-                )
-                return result_waitting
-            except Exception as e:
-                ret = '{"err" : "timeout %s" }' % mtimeout
-                return ret
 
     def send_ping_to_kiosk(self):
         """Send a ping to the kiosk  to ask it's presence"""
@@ -2396,55 +2428,54 @@ class MUCBot(slixmpp.ClientXMPP):
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
 
-    async def presence_subscribe(self, presence):
+    def presence_subscribe(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.debug(
+            logger.info(
                 "********** presence_subscribe %s %s"
                 % (presence["from"], presence["type"])
             )
 
-    async def presence_subscribed(self, presence):
+    def presence_subscribed(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.debug(
+            logger.info(
                 "********** presence_subscribed %s %s"
                 % (presence["from"], presence["type"])
             )
 
-    async def changed_subscription(self, presence):
+    def changed_subscription(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.debug(
+            logger.info(
                 "********** changed_subscription %s %s"
                 % (presence["from"], presence["type"])
             )
 
-    async def presence_unavailable(self, presence):
+    def presence_unavailable(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.debug(
+            logger.info(
                 "********** presence_unavailable %s %s"
                 % (presence["from"], presence["type"])
             )
 
-    async def presence_available(self, presence):
+    def presence_available(self, presence):
         if presence["from"].bare != self.boundjid.bare:
-            logger.debug(
+            logger.info(
                 "********** presence_available %s %s"
                 % (presence["from"], presence["type"])
             )
-            await self.unsubscribe_agent()
+            self.unsubscribe_agent()
 
-    async def presence_unsubscribe(self, presence):
-        if presence["from"].bare != self.boundjid.bare:
-            logger.debug(
-                "**********   presence_unsubscribe %s %s"
-                % (presence["from"], presence["type"])
-            )
+    def presence_unsubscribe(self, presence):
+        logger.info(
+            "**********   presence_unsubscribe %s %s"
+            % (presence["from"], presence["type"])
+        )
 
-    async def presence_unsubscribed(self, presence):
-        logger.debug(
+    def presence_unsubscribed(self, presence):
+        logger.info(
             "**********   presence_unsubscribed %s %s"
             % (presence["from"], presence["type"])
         )
-        await self.get_roster()
+        self.get_roster()
 
     async def changed_status(self, presence):
         """
@@ -2452,14 +2483,14 @@ class MUCBot(slixmpp.ClientXMPP):
         from ejabberd when the state of an affiliated agent changes.
         """
         frommsg = jid.JID(presence["from"])
-        logger.debug(
+        logger.info(
             "**********   changed_status %s %s" % (presence["from"], presence["type"])
         )
         if frommsg.bare == self.boundjid.bare and presence["type"] == "available":
             logger.debug("Machine available for registration")
             self.update_plugin()
             logger.debug("Machine available for registration")
-            await self.subscribe_initialisation()
+            self.subscribe_initialisation()
         elif frommsg.bare == self.sub_subscribe:
             if (
                 self.presencectrlsubscribe != presence["type"]
@@ -2468,14 +2499,14 @@ class MUCBot(slixmpp.ClientXMPP):
                 logger.warning("Subscription [%s] ON to OFF" % self.sub_subscribe)
             self.presencectrlsubscribe = presence["type"]
 
-    async def unsubscribe_agent(self):
+    def unsubscribe_agent(self):
         try:
             for t in self.client_roster:
                 if t == self.boundjid.bare or t in [self.sub_subscribe]:
                     continue
                 logger.info("Unsubscribe agent %s" % t)
                 self.send_presence(pto=t, ptype="unsubscribe")
-                await self.update_roster(t, subscription="remove")
+                self.update_roster(t, subscription="remove")
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -2483,9 +2514,9 @@ class MUCBot(slixmpp.ClientXMPP):
             self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
             self.get_roster()
 
-    async def subscribe_initialisation(self):
+    def subscribe_initialisation(self):
         logger.info("subscribe_initialisation agent %s" % self.sub_subscribe)
-        await self.unsubscribe_agent()
+        self.unsubscribe_agent()
         if self.sub_subscribe not in list(self.client_roster.keys()):
             logger.warning(
                 "Subscription [%s] is not yet in the roster %s"
@@ -2519,12 +2550,7 @@ class MUCBot(slixmpp.ClientXMPP):
         )
 
     async def start(self, event):
-        self.send_presence()
-        self.config.ipxmpp = getIpXmppInterface(
-            self.config.confserver, self.config.confport
-        )
         # send iq to subscribe
-        await self.get_roster()
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         self.__clean_message_box()
         if self.config.agenttype in ["relayserver"]:
@@ -2631,7 +2657,6 @@ class MUCBot(slixmpp.ClientXMPP):
             msg,
             dataerreur,
         )
-        self.update_plugin()
 
     def call_plugin_differed(self, time_differed=5):
         try:
@@ -2858,21 +2883,17 @@ class MUCBot(slixmpp.ClientXMPP):
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
-        try:
-            dataobj = self.seachInfoMachine()
-            logging.log(
-                DEBUGPULSE,
-                "SEND REGISTRATION XMPP to %s \n%s"
-                % (self.sub_registration, json.dumps(dataobj, indent=4)),
-            )
+        dataobj = self.seachInfoMachine()
+        logging.log(
+            DEBUGPULSE,
+            "SEND REGISTRATION XMPP to %s \n%s"
+            % (self.sub_registration, json.dumps(dataobj, indent=4)),
+        )
 
-            setgetcountcycle()
-            self.send_message(
-                mto=self.sub_registration, mbody=json.dumps(dataobj), mtype="chat"
-            )
-        except Exception as e:
-            logging.error(" %s " % (str(e)))
-            logger.error("\n%s" % (traceback.format_exc()))
+        setgetcountcycle()
+        self.send_message(
+            mto=self.sub_registration, mbody=json.dumps(dataobj), mtype="chat"
+        )
 
     def call_asynchrome_function_plugin(
         self, nameplugin, differed=0, data=None, sessionid=None
@@ -3363,6 +3384,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     logging.info(
                         "call plugin %s from %s" % (dataobj["action"], msg["from"].user)
                     )
+
                     call_plugin(
                         dataobj["action"],
                         self,
@@ -3796,17 +3818,10 @@ def servercherrypy(
 ):
     config = confParameter(optstypemachine)
     if config.agenttype in ["machine"]:
+        port = 52044
         root_path = os.path.dirname(os.path.realpath(__file__))
         server_path = os.path.join(root_path, "lib")
         server_ressources_path = os.path.join(root_path, "lib", "ressources")
-        path_pid_file_cheerypy = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "INFOSTMP",
-            "server_http_agent_medulla.pid",
-        )
-        # We remove the previous pid file if it exists
-        if os.path.exists(path_pid_file_cheerypy):
-            os.remove(path_pid_file_cheerypy)
 
         Controller.config = config
         # Generate cherrypy server conf
@@ -3818,9 +3833,7 @@ def servercherrypy(
             },
             "/": {
                 # 'tools.staticdir.on': True,
-                "tools.staticdir.dir": server_path,
-                "log.access_file": tglogfile,
-                "log.error_file": tglogfile,
+                "tools.staticdir.dir": server_path
             },
             # Sharing css ...
             "/css": {
@@ -3888,12 +3901,8 @@ def servercherrypy(
         # server1.ssl_private_key = '/home/ubuntu/my_cert.key'
         # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
 
-        enginepid = cherrypy.engine
-        PIDFile(enginepid, path_pid_file_cheerypy).subscribe()
-        enginepid.start()
-        if os.path.exists(path_pid_file_cheerypy):
-            return int(file_get_contents(path_pid_file_cheerypy).strip())
-        return None
+        server1.subscribe()
+        cherrypy.engine.start()
 
 
 def doTask(
@@ -4004,7 +4013,7 @@ def doTask(
     # ==========================
     # = cherrypy server config =
     # ==========================
-    pidcherry = servercherrypy(
+    servercherrypy(
         optstypemachine,
         optsconsoledebug,
         optsdeamon,
@@ -4012,11 +4021,6 @@ def doTask(
         tglevellog,
         tglogfile,
     )
-
-    if pidcherry is not None:
-        listpid.append(pidcherry)
-        logger.info(" pid agent machine %s" % listpid)
-
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         # completing process
         try:
