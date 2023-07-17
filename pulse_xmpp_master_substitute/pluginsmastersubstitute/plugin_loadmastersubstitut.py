@@ -33,9 +33,11 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
 from lib.utils import getRandomName, call_plugin, call_plugin_separate, simplecommand
+
 # os.makedirs(base_file, exist_ok=True)
 
 import configparser
+
 # , call_pluginseparatedthred
 import re
 from distutils.version import LooseVersion
@@ -48,6 +50,7 @@ import types
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "loadmastersubstitut", "TYPE": "substitute"}
+
 
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
     try:
@@ -66,22 +69,25 @@ def action(xmppobject, action, sessionid, data, msg, dataerreur):
         )
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
+
 def read_conf_loadmastersubstitut(xmppobject):
     logger.debug("Initializing plugin :% s " % plugin["NAME"])
     conffile_name = plugin["NAME"] + ".ini"
 
     try:
         conffile_path = os.path.join(xmppobject.config.pathdirconffile, conffile_name)
-        #logger.info("file config : %s" % conffile_path)
-        #xmppobject.master_conf=Configuration(xmppobject, conffile_path)
+        # logger.info("file config : %s" % conffile_path)
+        # xmppobject.master_conf=Configuration(xmppobject, conffile_path)
     except Exception as e:
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
-    xmppobject.loadmastersubstitut_code = types.MethodType(loadmastersubstitut_code, xmppobject)
+    xmppobject.loadmastersubstitut_code = types.MethodType(
+        loadmastersubstitut_code, xmppobject
+    )
     module = "%s/plugin_%s.py" % (xmppobject.modulepath, "__server_mmc_master")
     logger.debug("module :% s " % module)
     call_plugin(module, xmppobject, "__server_mmc_master")
 
+
 def loadmastersubstitut_code(self):
     # TODO: IMPLEMENT ME
     logger.debug("IMPLEMENT ME")
-

@@ -39,18 +39,20 @@ plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"}  #
 
 
 class InventoryFix:
-    def __init__(self, xmlfixplugindir, inventory_xml, xmldumpactive= False , verbose = False):
+    def __init__(
+        self, xmlfixplugindir, inventory_xml, xmldumpactive=False, verbose=False
+    ):
         self._inventory_content = inventory_xml
         logger.debug("Initialize the inventory fixer")
 
-        self.xmldumpactive=xmldumpactive
-        self.xmlfixplugindir=os.path.abspath(xmlfixplugindir)
-        self.xmldumpdir=os.path.join(self.xmlfixplugindir, "xmldumpdir")
-        self.verbose=verbose
+        self.xmldumpactive = xmldumpactive
+        self.xmlfixplugindir = os.path.abspath(xmlfixplugindir)
+        self.xmldumpdir = os.path.join(self.xmlfixplugindir, "xmldumpdir")
+        self.verbose = verbose
         if not os.path.exists(self.xmlfixplugindir):
             os.makedirs(self.xmlfixplugindir)
-        if not os.path.exists( self.xmldumpdir):
-            os.makedirs( self.xmldumpdir)
+        if not os.path.exists(self.xmldumpdir):
+            os.makedirs(self.xmldumpdir)
         self.fixers = []
         self.namefix = []
         self._check_in()
@@ -68,10 +70,12 @@ class InventoryFix:
                     mod_name = filename
                     py_mod = fnc = None
                     try:
-                        spec = importlib.util.spec_from_file_location(mod_name, pathname)
+                        spec = importlib.util.spec_from_file_location(
+                            mod_name, pathname
+                        )
                         py_mod = importlib.util.module_from_spec(spec)
                         spec.loader.exec_module(py_mod)
-                        #py_mod = imp.load_source(mod_name, pathname)
+                        # py_mod = imp.load_source(mod_name, pathname)
                     except ImportError:
                         logger.warning("Cannot load fixing script '%s'" % filename)
                         continue
@@ -105,9 +109,8 @@ class InventoryFix:
             f.write(convert.convert_bytes_datetime_to_string(self._inventory_content))
             f.close()
 
-
-        for index,fnc in enumerate(self.fixers):
-        #for fnc in self.fixers:
+        for index, fnc in enumerate(self.fixers):
+            # for fnc in self.fixers:
             try:
                 if self.verbose:
                     logger.debug("Exec fix plugin %s %s" % (index, fnc.__module__))
@@ -132,9 +135,9 @@ class InventoryFix:
         return self._inventory_content
 
 
-def send_content( url, content, verbose=False, user_agent="siveo-injector"):
+def send_content(url, content, verbose=False, user_agent="siveo-injector"):
     """
-        send inventaire to plugin fusion inventory
+    send inventaire to plugin fusion inventory
 
     """
     headers = {
@@ -148,30 +151,33 @@ def send_content( url, content, verbose=False, user_agent="siveo-injector"):
     compressed_content = convert.convert_to_bytes(content)
     Content_Type = ["Application/x-compress"]
     try:
-        compressed_content = gzip.compress(convert.convert_to_bytes(content),compresslevel=9)
+        compressed_content = gzip.compress(
+            convert.convert_to_bytes(content), compresslevel=9
+        )
         Content_Type = ["Application/x-gzip"]
     except:
         logger.error("erreur compression de content")
         compressed_content = convert.convert_to_bytes(content)
-    reponsequery=""
-    reponsecode=400
+    reponsequery = ""
+    reponsecode = 400
     for mine in Content_Type:
         headers["Content-Type"] = mine
         if verbose:
             logger.info("headers is : %s" % headers)
         response = requests.post(url, headers=headers, data=compressed_content)
         reponsecode = response.status_code
-        reponsequery=gzip.decompress(response.content)
+        reponsequery = gzip.decompress(response.content)
 
         if response.status_code == 200:
             if verbose:
                 logger.info("OK")
-                logger.info(response.headers['Content-Type'])
+                logger.info(response.headers["Content-Type"])
                 logger.info(reponsequery)
         else:
             logger.error(response.status_code)
             logger.error(reponsequery)
-    return reponsecode,reponsequery
+    return reponsecode, reponsequery
+
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     try:
@@ -181,54 +187,79 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.info(
             "Received inventory from %s in inventory substitute agent" % (msg["from"])
         )
-        content = convert.convert_bytes_datetime_to_string(zlib.decompress(base64.b64decode(data["inventory"])))
+        content = convert.convert_bytes_datetime_to_string(
+            zlib.decompress(base64.b64decode(data["inventory"]))
+        )
         if xmppobject.config.inventory_enable_forward:
-            list_url_to_forward=[ x.strip() for x in  xmppobject.config.url_to_forward.split(',') ]
+            list_url_to_forward = [
+                x.strip() for x in xmppobject.config.url_to_forward.split(",")
+            ]
             QUERY = "FAILS"
-            DEVICEID=""
+            DEVICEID = ""
             try:
                 QUERY = re.search(r"<QUERY>([\w-]+)</QUERY>", content).group(1)
             except AttributeError as e:
-                logger.warn(
-                    "Could not get any QUERY section in inventory"
-                )
+                logger.warn("Could not get any QUERY section in inventory")
                 QUERY = "FAILS"
             try:
                 DEVICEID = re.search(r"<DEVICEID>([\w-]+)</DEVICEID>", content).group(1)
             except AttributeError as e:
-                logger.warn(
-                    "Could not get any DEVICEID section in inventory"
-                )
+                logger.warn("Could not get any DEVICEID section in inventory")
                 DEVICEID = ""
             if xmppobject.config.inventory_verbose:
-                logger.info ("################################################################")
-                logger.info ("####################### DETAIL INVENTORY #######################")
-                logger.info ("################################################################")
-                logger.info ("inventory QUERY %s : " % QUERY)
-                logger.info ("inventory DEVICEID %s : " % DEVICEID)
-                logger.info ("################################################################")
-                logger.info ("%s\n...\n...\n%s" %(content[:150], content[-150:]))
-                logger.info ("######################## INVENTORY FIX #########################")
-                logger.info ("Execution des fonctions 'def xml_fix(contenu_xml_inventory)' in tout les fichiers .py du repertoire : %s " %xmppobject.config.xmlfixplugindir)
-                logger.info ("les fonctions xml_fix(contenu_xml_inventory) de chaque fichiers doivent renvoyés 1 xml conforme en string")
-                logger.info ("################################################################")
+                logger.info(
+                    "################################################################"
+                )
+                logger.info(
+                    "####################### DETAIL INVENTORY #######################"
+                )
+                logger.info(
+                    "################################################################"
+                )
+                logger.info("inventory QUERY %s : " % QUERY)
+                logger.info("inventory DEVICEID %s : " % DEVICEID)
+                logger.info(
+                    "################################################################"
+                )
+                logger.info("%s\n...\n...\n%s" % (content[:150], content[-150:]))
+                logger.info(
+                    "######################## INVENTORY FIX #########################"
+                )
+                logger.info(
+                    "Execution des fonctions 'def xml_fix(contenu_xml_inventory)' in tout les fichiers .py du repertoire : %s "
+                    % xmppobject.config.xmlfixplugindir
+                )
+                logger.info(
+                    "les fonctions xml_fix(contenu_xml_inventory) de chaque fichiers doivent renvoyés 1 xml conforme en string"
+                )
+                logger.info(
+                    "################################################################"
+                )
             # on modifie le xml suivant les fix pluging contenu dans xmppobject.config.xmlfixplugindir
-            invfix = InventoryFix(xmppobject.config.xmlfixplugindir,
-                                content,
-                                xmldumpactive = xmppobject.config.xmldumpactive,
-                                verbose = xmppobject.config.inventory_verbose)
+            invfix = InventoryFix(
+                xmppobject.config.xmlfixplugindir,
+                content,
+                xmldumpactive=xmppobject.config.xmldumpactive,
+                verbose=xmppobject.config.inventory_verbose,
+            )
             content = invfix.get()
             if xmppobject.config.inventory_verbose:
-                logger.info ("################################################################")
-                logger.info (content[:150])
+                logger.info(
+                    "################################################################"
+                )
+                logger.info(content[:150])
                 # fix contenue xml pour qu'il soit conforme OCS comme fusioninventory
-                logger.info ("################################################################")
+                logger.info(
+                    "################################################################"
+                )
             for url in list_url_to_forward:
-                codeerror , reponse = send_content( url,
-                             content,
-                             verbose=xmppobject.config.inventory_verbose,
-                             user_agent=xmppobject.config.user_agent)
-        inventory=content
+                codeerror, reponse = send_content(
+                    url,
+                    content,
+                    verbose=xmppobject.config.inventory_verbose,
+                    user_agent=xmppobject.config.user_agent,
+                )
+        inventory = content
         machine = XmppMasterDatabase().getMachinefromjid(msg["from"])
         if not machine:
             logger.error("machine missing in table %s" % (msg["from"]))
