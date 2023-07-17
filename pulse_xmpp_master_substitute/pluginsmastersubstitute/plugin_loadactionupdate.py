@@ -140,7 +140,7 @@ def Action_update(self):
         if resultbase:
             self.msg_debug_local("Action update list action package %s " % resultbase)
             for t in resultbase:
-                cmd = "/usr/sbin/medulla-launcher.sh %s" % str(t['action'])
+                cmd = "/usr/sbin/medulla_mysql_exec_update.sh %s" % str(t['action'])
                 self.msg_debug_local("call launcher : %s" % cmd)
                 rr = simplecommand(cmd)
                 if rr['code'] == 0:
