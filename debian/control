@@ -22,7 +22,7 @@ Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay , pulse-xm
 
 Package: pulse-xmpp-master-substitute
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, jq
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, jq, python3-xmltodict
 Description: Pulse master agent substitute
 
 Package: pulse-xmppmaster-agentplugins

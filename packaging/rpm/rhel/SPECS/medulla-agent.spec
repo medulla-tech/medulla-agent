@@ -181,7 +181,7 @@ fi
 %package -n     pulse-xmpp-master-substitute
 Summary:        Pulse 2 common files
 Group:          System/Servers
-Requires:       python-enum34
+Requires:       python3-xmltodict
 Requires:       jq
 BuildArch:      noarch
 
