@@ -24,7 +24,7 @@ import netaddr
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.55", "NAME": "update_windows", "TYPE": "substitute"}
+plugin = {"VERSION": "2.0", "NAME": "update_windows", "TYPE": "substitute"}
 
 # function comment for next feature
 # this functions will be used later
@@ -54,7 +54,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             )
 
             xmppobject.list_produits = []
-            init_list_produits = XmppMasterDatabase().list_produits()
+            xmppobject.list_produits = XmppMasterDatabase().list_produits()
             # return
             # function comment for next feature
             # this functions will be used later
@@ -88,25 +88,32 @@ def exclude_update_in_select(msg, exclude_update, list_update):
         ):
             # exclution suivant les regles definie
             logger.debug(
-                "exclude %s, %s,%s,%s"
+                "Excluding %s, %s, %s, %s"
                 % (msg["from"], upd["kb"], upd["updateid"], upd["title"])
             )
             continue
         else:
             logger.debug(
-                "add update %s %s,%s,%s"
+                "Adding update %s, %s, %s, %s"
                 % (msg["from"], upd["kb"], upd["updateid"], upd["title"])
             )
             res.append(
-                {"kb": upd["kb"], "updateid": upd["updateid"], "title": upd["title"]}
+                {
+                    "kb": upd["kb"],
+                    "updateid": upd["updateid"],
+                    "title": upd["title"],
+                    "tableproduct": upd["tableproduct"],
+                }
             )
     return res
 
 
 def traitement_update(xmppobject, action, sessionid, data, msg, ret):
-    logger.debug("TRAITEMENT UPDATE from %s " % msg["from"])
+    logger.debug("PROCESSING UPDATES FOR %s " % msg["from"])
     logger.debug(json.dumps(data, indent=4))
-    logger.debug("xmppobject.list_produits  %s" % xmppobject.list_produits)
+    logger.debug(
+        "Enabled products (xmppobject.list_produits):  %s" % xmppobject.list_produits
+    )
     # suivant type de windows exclude list produit
     list_table_product_select = list_produis_on(
         xmppobject, data, xmppobject.list_produits
@@ -114,7 +121,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
 
     machine = XmppMasterDatabase().getId_UuidFromJid(msg["from"])
     if not machine:
-        logger.warning("machine %s not yet registered" % msg["from"])
+        logger.warning("Machine %s is not yet registered" % msg["from"])
         return
     # filtersql = "%%%s Version %s for %s%%" %(data['system_info']['platform_info']['type'],
     # data['system_info']['infobuild']['DisplayVersion'],
@@ -122,7 +129,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     # logger.info("filtersql %s" % filtersql)
 
     if not xmppobject.exclude_history_list:
-        logger.debug("Verify avec kb historique")
+        logger.debug("Checking against KB history list")
         kblistexclde = []
         history_list_kb = XmppMasterDatabase().history_list_kb(
             data["system_info"]["history_package_uuid"]
@@ -135,18 +142,20 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         kblistexclde.extend(kb_installed)
         lkbe = '"%s"' % ",".join(kblistexclde)
         data["system_info"]["kb_list"] = lkbe
-    logger.debug("kb list installed %s" % data["system_info"]["kb_list"])
+    logger.debug("Installed KB list: %s" % data["system_info"]["kb_list"])
     list_update = exclude_update = res_update = []
     exclude_update = XmppMasterDatabase().test_black_list(msg["from"])
-    logger.debug("EXCLUDE update windows for %s  %s" % (msg["from"], exclude_update))
+    logger.debug("Excluding updates for %s: %s" % (msg["from"], exclude_update))
     for t in list_table_product_select:
         if t == "up_packages_Win_Malicious_X64":
             # le traitement de cette mise a jour est dependante de la version revoyer par la machine du logiciel.
             # le kb n'est pas modifier.
             continue
         list_update = []
-        logger.debug("produit search  %s" % t)
-        logger.debug("produit search  %s" % data["system_info"]["kb_list"])
+        logger.debug(
+            "Looking for product %s (%s)"
+            % (t["name_procedure"], data["system_info"]["kb_list"])
+        )
 
         list_update = XmppMasterDatabase().search_update_by_products(
             tableproduct=t, str_kb_list=data["system_info"]["kb_list"]
@@ -195,7 +204,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
 
     for t in res_update:
         logger.info(
-            "update title   : %s %s %s"
+            "Enabling update %s: %s - %s"
             % (
                 t["updateid"],
                 t["title"],
@@ -207,7 +216,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         )
         # on add ou update le kb dans la gray list
         XmppMasterDatabase().setUp_machine_windows_gray_list(
-            t["updateid"], t["product_table"]
+            t["updateid"], t["tableproduct"]
         )
 
 

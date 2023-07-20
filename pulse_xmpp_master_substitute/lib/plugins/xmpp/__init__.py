@@ -2423,7 +2423,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
-    def wolbroadcastadressmacadress(self, session, listmacadress):
+    def wolbroadcastadressmacadress(self, session, listmacaddress):
         """
         We monitor the mac addresses to check.
 
@@ -2442,11 +2442,19 @@ class XmppMasterDatabase(DatabaseHelper):
                 and_(
                     Network.broadcast != "",
                     Network.broadcast.isnot(None),
-                    Network.mac.in_(listmacadress),
+                    Network.mac.in_(listmacaddress),
                 )
             )
             .all()
         )
+
+        if not bool(result):
+            logger.error("An error occured while checking the broadcast address.")
+            logger.error(
+                "Please check that the broadcast information exists for the following mac addresses: %s"
+                % listmacaddress
+            )
+
         for t in result:
             if t.broadcast not in grp_wol_broadcast_adress:
                 grp_wol_broadcast_adress[t.broadcast] = []
@@ -3789,9 +3797,12 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getlinelogssession(self, session, sessionnamexmpp):
+        log_type = "deploy"
+        if re.search("update", sessionnamexmpp) is not None:
+            log_type = "update"
         log = (
             session.query(Logs)
-            .filter(and_(Logs.sessionname == sessionnamexmpp, Logs.type == "deploy"))
+            .filter(and_(Logs.sessionname == sessionnamexmpp, Logs.type == log_type))
             .order_by(Logs.id)
         )
         log = log.all()
@@ -7045,13 +7056,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoloadbalancerforcluster(self, session):
         sql = """
-            SELECT
-                COUNT(*) AS nb, `machines`.`groupdeploy`
+            SELECT 
+                COUNT(*) - 1 AS nb, `machines`.`groupdeploy`
             FROM
                 xmppmaster.machines
-            WHERE
-                agenttype = 'machine'
             GROUP BY `machines`.`groupdeploy`
+            HAVING nb != 0
+                AND COALESCE(`machines`.`groupdeploy`, '') <> ''
             ORDER BY nb DESC;"""
         result = session.execute(sql)
         session.commit()
@@ -7119,81 +7130,71 @@ class XmppMasterDatabase(DatabaseHelper):
             arsname: The ars where the machine is connected to.
         Returns:
         """
-        excluded_account = "master@pulse"
         incrementeiscount = []
         try:
-            excluded_account = "master@pulse"
+            try:
+                sql = """SELECT
+                            `substituteconf`.`id` AS `id`,
+                            `substituteconf`.`jidsubtitute` AS `jidsubtitute`,
+                            `substituteconf`.`type` AS `type`,
+                            SUM(`substituteconf`.`countsub`) AS `totsub`
+                        FROM
+                            `substituteconf`
+                        WHERE
+                            `substituteconf`.`jidsubtitute` IN (SELECT DISTINCT
+                                    `substituteconf`.`jidsubtitute`
+                                FROM
+                                    `substituteconf`
+                                WHERE
+                                    `substituteconf`.`relayserver_id` IN (SELECT
+                                            id
+                                        FROM
+                                            xmppmaster.relayserver
+                                        WHERE
+                                            jid LIKE ('%s')))
+                        GROUP BY `substituteconf`.`jidsubtitute` , type
+                        ORDER BY type , totsub;""" % (
+                    arsname
+                )
+                resultproxy = session.execute(sql)
+                session.commit()
+                session.flush()
+                # ret = self._return_dict_from_dataset_mysql(resultproxy)
+                for listconfsubstituteitem in listconfsubstitute["conflist"]:
+                    # reinitialise les lists
+                    listconfsubstitute[listconfsubstituteitem] = []
+                for x in resultproxy:
+                    if str(x[2]).startswith("master@pulse"):
+                        continue
+                    if x[2] not in listconfsubstitute:
+                        listconfsubstitute["conflist"].append(x[2])
+                        listconfsubstitute[x[2]] = []
+                    listconfsubstitute[x[2]].append(x[1])
+                    incrementeiscount.append(x[0])
+                self.logger.debug("listconfsubstitute %s" % listconfsubstitute)
+                self.logger.debug("incrementeiscount %s" % incrementeiscount)
+            except Exception as e:
+                self.logger.error(
+                    "An error occured while fetching the ordered list of subsitutes."
+                )
+                self.logger.error(
+                    "We hit the backtrace: \n%s" % (traceback.format_exc())
+                )
 
-            incrementeiscount = []
-            for substituteinfo in listconfsubstitute["conflist"]:
-                try:
-                    sql = """SELECT
-                                substituteconf.id AS id,
-                                substituteconf.jidsubtitute AS jidsubtitute,
-                                substituteconf.countsub AS countsub,
-                                substituteconf.type AS type,
-                                relayserver.jid AS namerelayser,
-                                SUM(substituteconf.countsub) AS totsub
-                            FROM
-                                substituteconf
-                                    JOIN
-                                relayserver ON substituteconf.relayserver_id = relayserver.id
-                            WHERE
-                                substituteconf.jidsubtitute NOT LIKE '%s'
-                                    AND substituteconf.type LIKE '%s'
-                                    AND (substituteconf.jidsubtitute IN (SELECT
-                                        substituteconf.jidsubtitute
-                                    FROM
-                                        substituteconf
-                                    WHERE
-                                        substituteconf.relayserver_id = (SELECT
-                                                id
-                                            FROM
-                                                relayserver
-                                            WHERE
-                                                relayserver.jid LIKE '%s')))
-                            GROUP BY substituteconf.jidsubtitute
-                            ORDER BY totsub;
-                            ;""" % (
-                        excluded_account,
-                        substituteinfo,
-                        arsname,
-                    )
-                    resultproxy = session.execute(sql)
-                    listcommand = []
-                    infsub = [
-                        {"id": x[0], "sub": x[1], "totalcount": int(x[5])}
-                        for x in resultproxy
-                    ]
-                    self.logger.debug("%s -> %s" % (substituteinfo, infsub))
-                    if infsub:
-                        incrementeiscount.append(str(infsub[0]["id"]))
-                    for t in infsub:
-                        listcommand.append(t["sub"])
-                    listcommand.append(excluded_account)
-                    listconfsubstitute[substituteinfo] = listcommand
-                except Exception as e:
-                    self.logger.error(
-                        "An error occured while fetching the ordered list of subsitutes."
-                    )
-                    self.logger.error(
-                        "We hit the backtrace: \n%s" % (traceback.format_exc())
-                    )
-
-            if len(incrementeiscount) != 0:
+            if incrementeiscount:
                 sql = """UPDATE `xmppmaster`.`substituteconf`
                     SET
                         `countsub` = `countsub` + '1'
                     WHERE
                         `id` IN (%s);""" % ",".join(
-                    [x for x in incrementeiscount]
+                    [str(x) for x in incrementeiscount]
                 )
                 result = session.execute(sql)
                 session.commit()
                 session.flush()
         except Exception as e:
             logging.getLogger().error("substituteinfo : %s" % str(e))
-        logging.getLogger().debug("substitute list : %s" % listconfsubstitute)
+            logging.getLogger().debug("substitute list : %s" % listconfsubstitute)
         return listconfsubstitute
 
     @DatabaseHelper._sessionm
@@ -10325,7 +10326,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
         creation 1 update pour 1 machine
         """
-
         try:
             new_Up_machine_windows = Up_machine_windows()
             new_Up_machine_windows.id_machine = id_machine
@@ -10348,39 +10348,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         del tout les updates de la machines
         """
         session.query(Up_machine_windows).filter(
-            Up_machine_windows.id_machine == id_machine
-        ).delete()
-        session.commit()
-        session.flush()
-
-    @DatabaseHelper._sessionm
-    def setUp_machine_windows(self, session, id_machine, update_id, kb=""):
-        """
-        creation 1 update pour 1 machine
-        """
-        try:
-            new_Up_machine_windows = Up_machine_windows()
-            new_Up_machine_windows.id_machine = id_machine
-            new_Up_machine_windows.update_id = update_id
-            new_Up_machine_windows.kb = kb
-            session.add(new_Up_machine_windows)
-            session.commit()
-            session.flush()
-            return self.__Up_machine_windows(new_Up_machine_windows)
-        except IntegrityError as e:
-            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
-        except Exception as e:
-            self.logger.info("Except setUp_machine_windows : %s" % str(e))
-            self.logger.error("\n%s" % (traceback.format_exc()))
-        return None
-
-    @DatabaseHelper._sessionm
-    def del_all_Up_machine_windows(self, session, id_machine):
-        """
-        del tout les updates de la machines
-        """
-        session.query(Up_machine_windows).filter(
-            Up_machine_windows.id_machine == id_machine
+            and_(
+                Up_machine_windows.id_machine == id_machine,
+                or_(
+                    Up_machine_windows.end_date == None,
+                    Up_machine_windows.end_date < datetime.now(),
+                ),
+            )
         ).delete()
         session.commit()
         session.flush()
@@ -10422,7 +10396,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             cursor = connection.cursor()
             cursor.callproc(
                 "up_search_kb_update",
-                [str(tableproduct), str(str_kb_list).strip('"() ')],
+                [str(tableproduct["name_procedure"]), str(str_kb_list).strip('"() ')],
             )
             results = list(cursor.fetchall())
             for lineresult in results:
@@ -10432,7 +10406,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     if isinstance(lr, datetime):
                         lr = lr.isoformat()
                     dictline[value] = lr
-                    dictline["tableproduct"] = tableproduct
+                    dictline["tableproduct"] = tableproduct["name_procedure"]
                 result.append(dictline)
             cursor.close()
             connection.commit()
