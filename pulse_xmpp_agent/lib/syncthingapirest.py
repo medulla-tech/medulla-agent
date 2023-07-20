@@ -43,7 +43,7 @@ from configparser import ConfigParser
 logger = logging.getLogger()
 
 
-def read_serverannonce(
+def read_announceserver(
     configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml",
 ):
     tree = etree.parse(configfile)
@@ -79,7 +79,7 @@ def conf_ars_deploy(
     if deviceName != "":
         logger.info(f"xml conf : {configfile} device  {deviceName}")
 
-    root, adressurl = read_serverannonce(configfile)
+    root, adressurl = read_announceserver(configfile)
     if adressurl != "":
         pathxmldevice = f".//device[@name ='{deviceName}']"
         listresult = root.xpath(pathxmldevice)
