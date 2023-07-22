@@ -202,7 +202,7 @@ Section "Python" sec_py
   ${LogString} $0
 
   ; Install pip
-  StrCpy $0 `$PROGRAMFILES64\Python39\python.exe -m ensurepip --upgrade`
+  StrCpy $0 `$PROGRAMFILES64\Python311\python.exe -m ensurepip --upgrade`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -225,9 +225,9 @@ Section "Python" sec_py
     nsExec::ExecToLog $0
     StrCpy $0 `taskkill /F /IM syncthing*`
     nsExec::ExecToLog $0
-    StrCpy $0 `attrib -r -s -h -a "$PROGRAMFILES64\Python39"`
+    StrCpy $0 `attrib -r -s -h -a "$PROGRAMFILES64\Python311"`
     nsExec::ExecToLog $0
-    StrCpy $0 `rd /s /q "$PROGRAMFILES64\Python39"`
+    StrCpy $0 `rd /s /q "$PROGRAMFILES64\Python311"`
     nsExec::ExecToLog $0
     ${LogString} `Return code 0: $0`
     Goto InstallPython
@@ -290,7 +290,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Install of Medulla agent
-  StrCpy $0 `$PROGRAMFILES64\Python39\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
+  StrCpy $0 `$PROGRAMFILES64\Python311\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -361,8 +361,8 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndSwitch}
   ${LogString} $0
 
-  CopyFiles /SILENT "$PROGRAMFILES64\Python39\Lib\site-packages\pywin32_system32\pywintypes27.dll" "$PROGRAMFILES64\Python39\Lib\site-packages\win32\"
-  StrCpy $0 `$PROGRAMFILES64\Python39\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
+  CopyFiles /SILENT "$PROGRAMFILES64\Python311\Lib\site-packages\pywin32_system32\pywintypes27.dll" "$PROGRAMFILES64\Python311\Lib\site-packages\win32\"
+  StrCpy $0 `$PROGRAMFILES64\Python311\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -381,7 +381,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create bin folder
   CreateDirectory $INSTDIR\bin
 
-  StrCpy $0 `$PROGRAMFILES64\Python39\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
+  StrCpy $0 `$PROGRAMFILES64\Python311\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -395,7 +395,7 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
-  StrCpy $0 `$PROGRAMFILES64\Python39\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
+  StrCpy $0 `$PROGRAMFILES64\Python311\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
