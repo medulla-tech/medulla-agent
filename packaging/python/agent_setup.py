@@ -37,7 +37,6 @@ setup(
     ],
     install_requires=[
         "netifaces >= 0.11.0",
-        "configparser >= 5.3.0",
         "slixmpp >= 1.8.2",
         "pycurl >= 7.45.1",
         "lxml >= 4.9.1",
