@@ -50,7 +50,7 @@ PY_MODULES_64_FILENAMES="CherryPy-18.8.0-py2.py3-none-any.whl \
 cheroot-9.0.0-py2.py3-none-any.whl \
 packaging-23.1-py3-none-any.whl \
 python_dateutil-2.8.2-py2.py3-none-any.whl \
-PyNaCl-1.5.0.tar.gz \
+PyNaCl-1.5.0-cp36-abi3-win_amd64.whl \
 comtypes-1.1.14-py2.py3-none-any.whl \
 paramiko-3.1.0-py3-none-any.whl \
 pytz-2023.3-py2.py3-none-any.whl \
@@ -59,7 +59,7 @@ croniter-1.3.14-py2.py3-none-any.whl \
 pathlib-1.0.1-py3-none-any.whl \
 pywin32-306-cp311-cp311-win_amd64.whl \
 PyQt6_Qt6-6.5.0-py3-none-win_amd64.whl \
-cryptography-40.0.2.tar.gz \
+cryptography-41.0.2-cp37-abi3-win_amd64.whl \
 ply-3.11-py2.py3-none-any.whl \
 repoze.lru-0.7-py3-none-any.whl \
 PyQt6_sip-13.5.1-cp311-cp311-win_amd64.whl \
@@ -68,7 +68,7 @@ portend-3.1.0-py3-none-any.whl \
 requests-2.28.2-py3-none-any.whl \
 Routes-2.5.1-py2.py3-none-any.whl \
 idna-3.4-py3-none-any.whl \
-psutil-5.9.5.tar.gz \
+psutil-5.9.5-cp36-abi3-win_amd64.whl \
 simplejson-3.19.1-py3-none-any.whl \
 WMI-1.5.1-py2.py3-none-any.whl \
 inflect-6.0.4-py3-none-any.whl \
@@ -86,13 +86,13 @@ autocommand-2.2.2-py3-none-any.whl \
 jaraco.context-4.3.0-py3-none-any.whl \
 pycparser-2.21-py2.py3-none-any.whl \
 syncthing2-2.4.4-py3-none-any.whl \
-bcrypt-4.0.1.tar.gz \
+bcrypt-4.0.1-cp36-abi3-win_amd64.whl \
 jaraco.functools-3.6.0-py3-none-any.whl \
-pycryptodome-3.17.tar.gz \
+pycryptodome-3.18.0-cp35-abi3-win_amd64.whl \
 tempora-5.2.2-py3-none-any.whl \
 certifi-2022.12.7-py3-none-any.whl \
 jaraco.text-3.11.1-py3-none-any.whl \
-pycurl-7.45.2.tar.gz \
+pycurl-7.45.1-cp311-cp311-win_amd64.wh \
 toml-0.10.2-py2.py3-none-any.whl \
 cffi-1.15.1-cp311-cp311-win_amd64.whl \
 lxml-4.9.2-cp311-cp311-win_amd64.whl \
@@ -104,7 +104,6 @@ pyparsing-3.0.9-py3-none-any.whl \
 urllib3-1.26.15-py2.py3-none-any.whl \
 charset_normalizer-3.1.0-cp311-cp311-win_amd64.whl \
 netifaces-0.11.0.tar.gz \
-pysftp-0.2.9.tar.gz \
 zc.lockfile-3.0.post1-py3-none-any.whl \
 "
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
