@@ -5,7 +5,6 @@
 import sys
 from lib import utils
 from distutils.version import StrictVersion
-import pycurl
 import logging
 import platform
 import tempfile
