@@ -35,8 +35,12 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from requests.exceptions import Timeout
 
-from Cryptodome import Random
-from Cryptodome.Cipher import AES
+try:
+    from Cryptodome import Random
+    from Cryptodome.Cipher import AES
+except:
+    from Crypto import Random
+    from Crypto.Cipher import AES
 import tarfile
 from functools import wraps
 import string
