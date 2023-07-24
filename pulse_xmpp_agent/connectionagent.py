@@ -1127,8 +1127,8 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         xmpp["xep_0077"].force_registration = True
 
         # Connect to the XMPP server and start processing XMPP
-        logger.debug("CONNECT %s %s" % (ipfromdns(tg.confserver), tg.confport))
-        logger.debug("jid %s" % tg.jidagent)
+        logger.debug("Connecting to %s:%s" % (ipfromdns(tg.confserver), tg.confport))
+        logger.debug("The jid for the configuration is : %s" % tg.jidagent)
         xmpp.Mode_Marche_Arret_init_adress_connect(
             ipfromdns(tg.confserver), int(tg.confport)
         )
