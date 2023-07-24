@@ -92,7 +92,7 @@ pycryptodome-3.18.0-cp35-abi3-win_amd64.whl \
 tempora-5.2.2-py3-none-any.whl \
 certifi-2022.12.7-py3-none-any.whl \
 jaraco.text-3.11.1-py3-none-any.whl \
-pycurl-7.45.1-cp311-cp311-win_amd64.wh \
+pycurl-7.45.1-cp311-cp311-win_amd64.whl \
 toml-0.10.2-py2.py3-none-any.whl \
 cffi-1.15.1-cp311-cp311-win_amd64.whl \
 lxml-4.9.2-cp311-cp311-win_amd64.whl \
