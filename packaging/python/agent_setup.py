@@ -43,7 +43,6 @@ setup(
         "pycryptodome >= 3.15.0",
         "croniter >= 1.3.5",
         "psutil >= 5.9.1",
-        "pysftp >= 0.2.9",
         "cherrypy >= 18.8.0",
         "requests >= 2.28.1",
     ]
