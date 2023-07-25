@@ -1875,6 +1875,7 @@ def isBase64(s):
         pass
     return False
 
+
 def decode_strconsole(string_bytes):
     """
     Decode strings into the format used on the OS.
