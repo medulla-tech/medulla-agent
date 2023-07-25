@@ -4417,18 +4417,16 @@ class offline_search_kb:
             if int(result["code"]) == 0:
                 # analyse result
                 line = [
-                    x.decode("ascii", "ignore").encode("utf-8").strip()
+                    decode_strconsole(x.strip())
                     for x in result["result"]
                     if x.strip().startswith(informationlist)
                 ]
                 for t in line:
                     lcmd = [x for x in t.split(" ") if x != ""]
                     if len(lcmd) >= 3:
-                        result_cmd[lcmd[0]] = lcmd[2]
-            else:
-                logging.getLogger().error(
-                    'search REG QUERY "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"'
-                )
+                        keystring = " ".join(lcmd[2:])
+                        result_cmd[lcmd[0]] = keystring
+
             # search code langue
             try:
                 result_cmd["Locale"] = {
@@ -4441,15 +4439,17 @@ class offline_search_kb:
                 result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
                     langs = [
-                        x.decode("ascii", "ignore").encode("utf-8").strip()
+                        self.ascii_to_utf8(x).strip()
+                        for x in result["result"]
+                        if x.strip() != ""
+                    ]
+                    langs = [
+                        self.ascii_to_utf8(x).strip()
                         for x in result["result"]
                         if x.strip() != ""
                     ][-1:]
-                    langs = [
-                        x.decode("ascii", "ignore").encode("utf-8").strip()
-                        for x in langs[0].split("  ")
-                        if x != ""
-                    ]
+
+                    langs = [x.strip() for x in langs[0].split("  ") if x != ""]
                     if len(langs) >= 3:
                         result_cmd["Locale"]["LCID"] = langs[0]
                         result_cmd["Locale"]["Name"] = langs[1]
@@ -4480,6 +4480,24 @@ class offline_search_kb:
                 logging.getLogger().error(("%s" % (traceback.format_exc())))
         return result_cmd
 
+    def bytes_to_string(self, x):
+        if isinstance(x, str):
+            return x
+        else:
+            return x.decode("utf-8")
+
+    def string_to_bytes(self, x):
+        if isinstance(x, bytes):
+            return x
+        else:
+            return x.encode("utf-8")
+
+    def ascii_to_utf8(self, x):
+        if isinstance(x, bytes):
+            return x.decode("utf-8")
+        else:
+            return x.encode("ascii", "ignore").decode("utf-8")
+
     def platform_info(self):
         res = {
             "machine": platform.machine(),
@@ -4495,9 +4513,7 @@ class offline_search_kb:
             cmd = """systeminfo.exe /FO csv /NH"""
             result = simplecommand(cmd)
             if int(result["code"]) == 0:
-                result["result"][0] = (
-                    result["result"][0].decode("ascii", "ignore").encode("utf-8")
-                )
+                result["result"][0] = self.ascii_to_utf8(result["result"][0])
                 line = [x.strip('" ') for x in result["result"][0].split('","')]
                 informationlist = {
                     "node": str(line[0]),
