@@ -50,7 +50,7 @@ class manageschedulerdeploy:
                     os.makedirs(self.name_basesession, mode=0o700)
                 if not os.path.isdir(self.name_basecmd):
                     os.makedirs(self.name_basecmd, mode=0o700)
-                    
+
     def bddir(self):
         """
         This function is used to provide the sql file used.
@@ -70,23 +70,27 @@ class manageschedulerdeploy:
 
     def openbase(self):
         """
-        This function is used to open and give acces to the 
+        This function is used to open and give acces to the
         database.
         If the database does not exist it will create it.
-        And if we fail to read the database, we delete it 
+        And if we fail to read the database, we delete it
         and recreate a new one.
         """
         try:
-            self.dbsessionscheduler = lmdb.open(self.name_basesession, map_size=10485760)
+            self.dbsessionscheduler = lmdb.open(
+                self.name_basesession, map_size=10485760
+            )
             self.dblaunchcmd = self.dbsessionscheduler.begin(write=True)
         except Exception:
             logger.error(
                 f"An error occured while opening the database: {self.name_basesession}"
             )
             os.remove(self.name_basesession)
-            self.dbsessionscheduler = lmdb.open(self.name_basesession, map_size=10485760)
+            self.dbsessionscheduler = lmdb.open(
+                self.name_basesession, map_size=10485760
+            )
             self.dblaunchcmd = self.dbsessionscheduler.begin(write=True)
-        
+
         try:
             self.dbcmdscheduler = lmdb.open(self.name_basesession, map_size=10485760)
             self.dblaunchcmd = self.dbcmdscheduler.begin(write=True)
@@ -97,8 +101,7 @@ class manageschedulerdeploy:
             os.remove(self.name_basecmd)
             self.dbcmdscheduler = lmdb.open(self.name_basesession, map_size=10485760)
             self.dblaunchcmd = self.dbcmdscheduler.begin(write=True)
-            
-        
+
     def closebase(self):
         """
         This function is used to correctly close the database.
