@@ -9378,6 +9378,66 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             logging.getLogger().error("sql delete_in_gray_and_white_list : %s" % traceback.format_exc())
         return False
 
+    @DatabaseHelper._sessionm
+    def pending_up_machine_windows_white(self, session):
+        query = session.query(Up_machine_windows, Up_white_list, Machines)\
+            .filter(and_(
+                or_(Up_machine_windows.curent_deploy == None, Up_machine_windows.curent_deploy == 0),
+                or_(Up_machine_windows.required_deploy == None, Up_machine_windows.required_deploy == 0)))\
+            .join(Up_white_list, Up_machine_windows.update_id == Up_white_list.updateid)\
+            .join(Machines, Up_machine_windows.id_machine == Machines.id).all()
+
+        result = []
+        start_date = datetime.now()
+        end_date = start_date + timedelta(days=7)
+
+        exclude_name_package = ["sharing", ".stfolder", ".stignore" ]
+
+        for element, white, machine in query:
+            deployName = "%s -@upd@- %s"%(white.title,start_date)
+            element.required_deploy = 1
+            element.start_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
+            element.end_date = datetime.strftime(end_date, "%Y-%m-%d %H:%M:%S")
+
+            folderpackage = os.path.join("/", "var","lib", "pulse2", "packages", element.update_id)
+            files = []
+
+            if os.path.isdir(folderpackage):
+                for root, dir, file in os.walk(folderpackage):
+                    if root != folderpackage:
+                        continue
+                    for _file in file:
+                        if _file not in exclude_name_package:
+                            files.append({"path" : os.path.basename(os.path.dirname(root)),
+                                    "name" : _file,
+                                    "id" : str(uuid.uuid4()),
+                                    "size" : str(os.path.getsize(os.path.join(root, _file))) })
+            else:
+                files = []
+
+            files_str = "\n".join([file['id']+'##'+file['path']+'/'+file['name'] for file in files])
+            result.append({
+                "id_machine":element.id_machine,
+                "update_id": element.update_id,
+                "kb": element.kb,
+                "curent_deploy": element.curent_deploy,
+                "required_deploy" : element.required_deploy,
+                "start_date" : element.start_date,
+                "end_date" : element.end_date,
+                "intervals" : element.intervals,
+                "title": deployName,
+                "jidmachine": machine.jid,
+                "groupdeploy": machine.groupdeploy,
+                "uuidmachine": machine.uuid_inventorymachine,
+                "hostname": machine.hostname,
+                "files_str": files_str
+            })
+
+        session.commit()
+        session.flush()
+
+        return result
+
 # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [{column: value for column, value in rowproxy.items()}
