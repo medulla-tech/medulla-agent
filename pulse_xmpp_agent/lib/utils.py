@@ -34,6 +34,7 @@ import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from requests.exceptions import Timeout
+import zlib
 
 try:
     from Cryptodome import Random
