@@ -9,11 +9,7 @@ import os
 import logging
 from lib.utils import Env
 
-if sys.platform.startswith("darwin"):
-    import plyvel
-else:
-    import bsddb3 as bsddb
-
+import lmdb
 
 logger = logging.getLogger()
 
@@ -54,69 +50,13 @@ class manageschedulerdeploy:
                     os.makedirs(self.name_basesession, mode=0o700)
                 if not os.path.isdir(self.name_basecmd):
                     os.makedirs(self.name_basecmd, mode=0o700)
-
-    def openbase(self):
-        if sys.platform.startswith("darwin"):
-            try:
-                self.dbsessionscheduler = plyvel.DB(
-                    self.name_basesession, create_if_missing=True
-                )
-            except Exception:
-                logger.error(
-                    f"An error occured while opening the database: {self.name_basesession}"
-                )
-                os.remove(self.name_basesession)
-                self.dbsessionscheduler = plyvel.DB(
-                    self.name_basesession, create_if_missing=True
-                )
-            try:
-                self.dbcmdscheduler = plyvel.DB(
-                    self.name_basecmd, create_if_missing=True
-                )
-            except Exception:
-                logger.error(
-                    f"An error occured while opening the database: {self.name_basecmd}"
-                )
-                os.remove(self.name_basecmd)
-                self.dbcmdscheduler = plyvel.DB(
-                    self.name_basecmd, create_if_missing=True
-                )
-        else:
-            try:
-                self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
-            except bsddb.db.DBInvalidArgError:
-                logger.error(
-                    f"An error occured while opening the bsddb database: {self.name_basecmd}"
-                )
-                os.remove(self.name_basecmd)
-                self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
-            except Exception as error:
-                logger.error(
-                    "Opening the bsddb database failed with the error \n %s" % error
-                )
-                os.remove(self.name_basecmd)
-                self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
-
-            try:
-                self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
-            except bsddb.db.DBInvalidArgError:
-                logger.error(
-                    f"An error occured while opening the bsddb database: {self.name_basesession}"
-                )
-                os.remove(self.name_basesession)
-                self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
-            except Exception as error:
-                logger.error(
-                    "Opening the bsddb database failed with the error \n %s" % error
-                )
-                os.remove(self.name_basecmd)
-                self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
-
-    def closebase(self):
-        self.dbcmdscheduler.close()
-        self.dbsessionscheduler.close()
-
+                    
     def bddir(self):
+        """
+        This function is used to provide the sql file used.
+        Returns:
+            It returns the path + name of the sql file.
+        """
         if sys.platform.startswith("linux"):
             return os.path.join(Env.user_dir(), "BDDeploy")
         elif sys.platform.startswith("win"):
@@ -128,15 +68,49 @@ class manageschedulerdeploy:
         else:
             return None
 
+    def openbase(self):
+        """
+        This function is used to open and give acces to the 
+        database.
+        If the database does not exist it will create it.
+        And if we fail to read the database, we delete it 
+        and recreate a new one.
+        """
+        try:
+            self.dbsessionscheduler = lmdb.open(self.name_basesession, map_size=10485760)
+            self.dblaunchcmd = self.dbsessionscheduler.begin(write=True)
+        except Exception:
+            logger.error(
+                f"An error occured while opening the database: {self.name_basesession}"
+            )
+            os.remove(self.name_basesession)
+            self.dbsessionscheduler = lmdb.open(self.name_basesession, map_size=10485760)
+            self.dblaunchcmd = self.dbsessionscheduler.begin(write=True)
+        
+        try:
+            self.dbcmdscheduler = lmdb.open(self.name_basesession, map_size=10485760)
+            self.dblaunchcmd = self.dbcmdscheduler.begin(write=True)
+        except Exception:
+            logger.error(
+                f"An error occured while opening the database: {self.name_basecmd}"
+            )
+            os.remove(self.name_basecmd)
+            self.dbcmdscheduler = lmdb.open(self.name_basesession, map_size=10485760)
+            self.dblaunchcmd = self.dbcmdscheduler.begin(write=True)
+            
+        
+    def closebase(self):
+        """
+        This function is used to correctly close the database.
+        """
+        self.dbcmdscheduler.close()
+        self.dbsessionscheduler.close()
+
     def set_sesionscheduler(self, sessionid, objsession):
         sessionid = str(sessionid)
         try:
             self.openbase()
-            if sys.platform.startswith("darwin"):
-                self.dbsessionscheduler.put(bytearray(sessionid), bytearray(objsession))
-            else:
-                self.dbsessionscheduler[sessionid] = objsession
-                self.dbsessionscheduler.sync()
+            self.dbsessionscheduler.put(bytearray(sessionid), bytearray(objsession))
         except Exception as exception_error:
             logger.error(
                 "In the function set_sesionscheduler the plugin %s failed with the error: \n %s"
@@ -150,13 +124,9 @@ class manageschedulerdeploy:
         data = ""
         try:
             self.openbase()
-            if sys.platform.startswith("darwin"):
-                data = self.dbsessionscheduler.get(bytearray(sessionid))
-                if data is None:
-                    data = ""
-            elif sessionid in self.dbsessionscheduler:
-                data = self.dbsessionscheduler[sessionid]
-            self.closebase()
+            data = self.dbsessionscheduler.get(bytearray(sessionid))
+            if data is None:
+                data = ""
         except Exception as exception_error:
             logger.error(
                 "In the function get_sesionscheduler the plugin %s failed with the error: \n %s"

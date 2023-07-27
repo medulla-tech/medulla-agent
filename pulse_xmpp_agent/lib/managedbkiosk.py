@@ -8,10 +8,7 @@ import os
 import json
 import logging
 
-if sys.platform.startswith("darwin"):
-    import plyvel
-else:
-    import bsddb3
+import lmdb
 
 logger = logging.getLogger()
 
@@ -30,15 +27,11 @@ class manageskioskdb:
                     os.makedirs(self.name_launch_cmd_db, mode=0o700)
 
     def openbase(self):
-        if sys.platform.startswith("darwin"):
-            self.dblaunchcmd = plyvel.DB(
-                self.name_launch_cmd_db, create_if_missing=True
-            )
-        else:
-            self.dblaunchcmd = bsddb.btopen(self.name_launch_cmd_db, "c")
+        env = lmdb.open(self.name_launch_cmd_db, map_size=10485760)
+        self.dblaunchcmd = env.begin(write=True)
 
     def closebase(self):
-        self.dblaunchcmd.close()
+        env.close()
 
     def bddir(self):
         if sys.platform.startswith("linux"):
@@ -57,61 +50,40 @@ class manageskioskdb:
     def set_cmd_launch(self, idpackage, str_cmd_launch):
         idpackage = str(idpackage)
         self.openbase()
-        if sys.platform.startswith("darwin"):
-            self.dblaunchcmd.put(bytearray(idpackage), bytearray(str_cmd_launch))
-        else:
-            self.dblaunchcmd[idpackage] = str_cmd_launch
-            self.dblaunchcmd.sync()
-        self.closebase()
+        self.dblaunchcmd.put(bytearray(idpackage), bytearray(str_cmd_launch))
+        self.commit()
 
     def get_cmd_launch(self, idpackage):
         idpackage = str(idpackage)
         data = ""
         self.openbase()
-        if sys.platform.startswith("darwin"):
-            data = self.dblaunchcmd.get(bytearray(idpackage))
-            if data is None:
-                data = ""
-        elif self.dblaunchcmd.has_key(idpackage):
-            data = self.dblaunchcmd[idpackage]
+        data = self.dblaunchcmd.get(bytearray(idpackage))
+        if data is None:
+            data = ""
         self.closebase()
         return str(data)
 
     def del_cmd_launch(self, idpackage):
         idpackage = str(idpackage)
         self.openbase()
-        if sys.platform.startswith("darwin"):
-            data = self.dblaunchcmd.delete(bytearray(idpackage))
-        elif self.dblaunchcmd.has_key(idpackage):
-            del self.dblaunchcmd[idpackage]
-            self.dblaunchcmd.sync()
+        data = self.dblaunchcmd.delete(bytearray(idpackage))
         self.closebase()
 
     def get_all_obj_launch(self):
         self.openbase()
         result = {}
-        if sys.platform.startswith("darwin"):
-            for k, v in self.dblaunchcmd:
-                result[str(k)] = str(v)
-        else:
-            for k, v in self.dblaunchcmd.iteritems():
-                result[str(k)] = str(v)
+        for k, v in self.dblaunchcmd:
+            result[str(k)] = str(v)
         self.closebase()
         return result
 
     def get_all_cmd_launch(self):
         self.openbase()
         result = {}
-        if sys.platform.startswith("darwin"):
-            for k, v in self.dblaunchcmd:
-                if str(k) == "str_json_name_id_package":
-                    continue
-                result[str(k)] = str(v)
-        else:
-            for k, v in self.dblaunchcmd.iteritems():
-                if str(k) == "str_json_name_id_package":
-                    continue
-                result[str(k)] = str(v)
+        for k, v in self.dblaunchcmd:
+            if str(k) == "str_json_name_id_package":
+                continue
+            result[str(k)] = str(v)
         self.closebase()
         return result
 
