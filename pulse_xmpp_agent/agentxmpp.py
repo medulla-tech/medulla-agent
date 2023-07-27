@@ -38,7 +38,7 @@ from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.managedbkiosk import manageskioskdb
 
-from lib.iq_custom import iq_custom_xep, iq_value
+from lib.iq_custom import iq_custom_xep, iq_value, Myiq
 from lib.utils import (
     DEBUGPULSE,
     getIpXmppInterface,

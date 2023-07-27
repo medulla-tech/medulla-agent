@@ -22,7 +22,7 @@ import hashlib
 logger = logging.getLogger()
 if sys.platform.startswith("win"):
     from lib import registerwindows
-    import _winreg
+    import winreg
 from xml.etree import ElementTree
 from slixmpp import jid
 
