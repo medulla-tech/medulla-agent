@@ -71,19 +71,17 @@ class manageskioskdb:
 
     def get_all_obj_launch(self):
         self.openbase()
-        result = {}
-        for k, v in self.dblaunchcmd:
-            result[str(k)] = str(v)
+        result = {str(k): str(v) for k, v in self.dblaunchcmd}
         self.closebase()
         return result
 
     def get_all_cmd_launch(self):
         self.openbase()
-        result = {}
-        for k, v in self.dblaunchcmd:
-            if str(k) == "str_json_name_id_package":
-                continue
-            result[str(k)] = str(v)
+        result = {
+            str(k): str(v)
+            for k, v in self.dblaunchcmd
+            if str(k) != "str_json_name_id_package"
+        }
         self.closebase()
         return result
 
