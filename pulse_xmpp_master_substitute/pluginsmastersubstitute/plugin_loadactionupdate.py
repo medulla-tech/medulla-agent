@@ -15,6 +15,7 @@ import types
 from lib.configuration import confParameter
 from datetime import datetime, timedelta
 from lib.plugins.xmpp import XmppMasterDatabase
+from lib.plugins.msc import MscDatabase
 import traceback
 from lib.utils import file_put_contents, simplecommandstr, simplecommand
 logger = logging.getLogger()
@@ -41,6 +42,62 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
         # schedule appel de cette fonction cette fonctions
         objectxmpp.schedule('Action_update', objectxmpp.time_scrutation, objectxmpp.Action_update, repeat=True)
         objectxmpp.Action_update()
+        objectxmpp.schedule('Action_luncher_deploy', objectxmpp.time_scan_current_deploy_update_on,
+                            objectxmpp.create_deploy_for_up_machine_windows, repeat=True)
+
+def create_deploy_for_up_machine_windows(objectxmpp):
+    try:
+        need_to_add = XmppMasterDatabase().pending_up_machine_windows_white()
+        for update in need_to_add:
+            intervals = update['intervals'] if update['intervals'] is not None else ""
+            command = MscDatabase().createcommanddirectxmpp(update['update_id'],
+                '',
+                "",#section
+                update['files_str'],
+                'enable',
+                'disable',
+                update['start_date'],
+                update['end_date'],
+                "root",
+                "root",
+                update['title'],
+                0,
+                28,
+                0,
+                intervals,
+                None,
+                None,
+                None,
+                'none',
+                'active',
+                '1',
+                cmd_type=0)
+            try:
+                target = MscDatabase().xmpp_create_Target(update['uuidmachine'], update['hostname'])
+            except Exception as e:
+                logger.error("Unable to create Msc Target for update %s"%update['update_id'])
+
+            MscDatabase().xmpp_create_CommandsOnHost(command.id,
+                target['id'],
+                update['hostname'],
+                command.end_date,
+                command.start_date)
+            XmppMasterDatabase().addlogincommand(
+                "root",
+                command.id,
+                "",
+                "",
+                "",
+                "",
+                "",
+                0,
+                0,
+                0,
+                0,
+                {})
+            logger.info("Update %s will be deployed on %s between %s and %s %s"%(update['update_id'], update['title'], update['start_date'], update['end_date'], intervals))
+    except Exception as e:
+        logger.error(e)
 
 def read_conf_loadactionupdate(objectxmpp):
     """
