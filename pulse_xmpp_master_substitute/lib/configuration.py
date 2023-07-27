@@ -377,6 +377,80 @@ class confParameter:
         if confiobject.has_option("glpi", "inventory_server_url"):
             self.inventory_url = confiobject.get("glpi", "inventory_server_url")
 
+        self.url_to_forward = "http://localhost/glpi/plugins/fusioninventory/front/plugin_fusioninventory.communication.php"
+        if confiobject.has_option("glpi", "url_to_forward"):
+            self.url_to_forward = confiobject.get("glpi", "url_to_forward")
+
+        self.inventory_verbose = False
+        if confiobject.has_option("glpi", "inventory_verbose"):
+            self.inventory_verbose = confiobject.getboolean("glpi", "inventory_verbose")
+
+        self.user_agent = "siveo-injector"
+        if confiobject.has_option("glpi", "user_agent"):
+            self.user_agent = confiobject.get("glpi", "user_agent")
+
+        self.xmlfixplugindir = "/var/lib/pulse2/xml_fix"
+        if confiobject.has_option("glpi", "xml_fix"):
+            self.xmlfixplugindir = confiobject.get("glpi", "xml_fix")
+
+        self.xmldumpactive=False
+        if confiobject.has_option("glpi", "xmldumpactive"):
+            self.xmldumpactive = confiobject.getboolean("glpi", "xmldumpactive")
+
+        self.inventory_enablessl = False
+        if confiobject.has_option("glpi", "enablessl"):
+            self.inventory_enablessl = confiobject.getboolean("glpi", "enablessl")
+
+        self.inventory_verifypeer = False
+        if confiobject.has_option("glpi", "verifypeer"):
+            self.inventory_verifypeer = confiobject.getboolean("glpi", "verifypeer")
+
+        self.inventory_cacert =  "/etc/mmc/pulse2/inventory-server/keys/cacert.pem"
+        if confiobject.has_option("glpi", "inventory_cacert"):
+            self.inventory_cacert = confiobject.get("glpi", "inventory_cacert")
+
+        self.inventory_localcert = "/etc/mmc/pulse2/inventory-server/keys/privkey.pem"
+        if confiobject.has_option("glpi", "inventory_localcert"):
+            self.inventory_localcert = confiobject.get("glpi", "inventory_localcert")
+
+        self.inventory_enable_forward = True
+        if confiobject.has_option("glpi", "enable_forward"):
+            self.inventory_enable_forward = confiobject.getboolean("glpi", "enable_forward")
+
+        self.inventory_enable_forward_ocsserver = False
+        if confiobject.has_option("glpi", "enable_forward_ocsserver"):
+            self.inventory_enable_forward_ocsserver = confiobject.getboolean("glpi", "enable_forward_ocsserver")
+
+        self.inventory_periodicity = 24
+        if confiobject.has_option("glpi", "inventory_periodicity"):
+            self.inventory_periodicity = confiobject.getint("glpi", "inventory_periodicity")
+
+        # existe dans inventory serveur association entity
+        # This section is used for entity association
+        # [RulesMatching]
+        # Matching = RegistryInfos/PdVid
+        # Matching2 = Network/SubnetMask
+        # Matching3 = Hardware/RegisteredName
+        # Matching4 = Network/NetworkType
+        # Matching5 = Software/ProductName,Network/MACAddress,Network/CardType,Network/DNS
+        # Matching8 = Hardware/OperatingSystem
+        # Matching9 = Hardware/ProcessorType
+        # Matching10 = Hardware/Workgroup
+        # Matching11 = RegistryInfos/PdDid
+        # Matching13 = RegistryInfos/SRAMid
+        # Matching14 = RegistryInfos/terminalType
+        # Matching15 = RegistryInfos/secondaryVid
+        # Matching16 = RegistryInfos/primaryVid
+        # Matching17 = RegistryInfos/Serveur
+
+        if confiobject.has_section("RulesMatching"):
+            self.rules_matching = self.cp.items("RulesMatching")
+            self.listType = ["Network/IP"]
+            for ttt in self.rules_matching:
+                key, value = ttt
+                listmalist = value.split(",")
+                self.listType.extend(listmalist)
+
         # Configuration sql
         # configuration glpi
         self.glpi_dbpooltimeout = 30
