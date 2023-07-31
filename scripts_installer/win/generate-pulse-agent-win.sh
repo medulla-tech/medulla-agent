@@ -106,7 +106,7 @@ charset_normalizer-3.1.0-cp311-cp311-win_amd64.whl \
 netifaces-0.11.0.tar.gz \
 zc.lockfile-3.0.post1-py3-none-any.whl \
 pypiwin32-223-py3-none-any.whl \
-PyYAML-6.0.1-cp311-cp311-win_amd64.wh \
+PyYAML-6.0.1-cp311-cp311-win_amd64.whl \
 "
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwrsync_6.2.8_x64_free.zip"
