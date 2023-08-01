@@ -30,10 +30,10 @@ GLOBALPARAM={"duration" : 30 , "debuglocal" : False}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug(f"call {plugin} from {msg['from']}")
     logger.debug("=====================================================")
 
-    compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+    compteurcallplugin = getattr(objectxmpp, f"num_call{action}")
     if compteurcallplugin == 0:
         read_conf_loadactionupdate(objectxmpp)
         # install code dynamique : fonction Action_update ci dessous
@@ -75,7 +75,7 @@ def create_deploy_for_up_machine_windows(objectxmpp):
             try:
                 target = MscDatabase().xmpp_create_Target(update['uuidmachine'], update['hostname'])
             except Exception as e:
-                logger.error("Unable to create Msc Target for update %s"%update['update_id'])
+                logger.error(f"Unable to create Msc Target for update {update['update_id']}")
 
             MscDatabase().xmpp_create_CommandsOnHost(command.id,
                 target['id'],
@@ -95,7 +95,9 @@ def create_deploy_for_up_machine_windows(objectxmpp):
                 0,
                 0,
                 {})
-            logger.info("Update %s will be deployed on %s between %s and %s %s"%(update['update_id'], update['title'], update['start_date'], update['end_date'], intervals))
+            logger.info(
+                f"Update {update['update_id']} will be deployed on {update['title']} between {update['start_date']} and {update['end_date']} {intervals}"
+            )
     except Exception as e:
         logger.error(e)
 
@@ -113,12 +115,14 @@ def read_conf_loadactionupdate(objectxmpp):
             "\neg conf:\n[parameters]\ntime_scrutation = %s\n" \
                 "\ndebuglocal=%s" %(plugin['NAME'], pathconffile, GLOBALPARAM["duration"], GLOBALPARAM["debuglocal"]))
         create_default_config(objectxmpp)
-        logger.warning("default value for time_scrutation is %s secondes" % objectxmpp.time_scrutation)
+        logger.warning(
+            f"default value for time_scrutation is {objectxmpp.time_scrutation} secondes"
+        )
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathconffile)
-        if os.path.exists(pathconffile + ".local"):
-            Config.read(pathconffile + ".local")
+        if os.path.exists(f"{pathconffile}.local"):
+            Config.read(f"{pathconffile}.local")
         if Config.has_option("parameters", "time_scrutation"):
             objectxmpp.time_scrutation = Config.getint('parameters', 'time_scrutation')
         else:
@@ -129,10 +133,10 @@ def read_conf_loadactionupdate(objectxmpp):
         else:
             # default values parameters
             objectxmpp.debuglocal = GLOBALPARAM["debuglocal"]
-        logger.info("%s"%vars(Config)['_sections'])
+        logger.info(f"{vars(Config)['_sections']}")
         # file_get_contents
-        logger.info("debuglocal  %s   " % objectxmpp.debuglocal )
-        logger.info("time_scrutation  %s   " % objectxmpp.time_scrutation )
+        logger.info(f"debuglocal  {objectxmpp.debuglocal}   ")
+        logger.info(f"time_scrutation  {objectxmpp.time_scrutation}   ")
 
 def read_debug_conf(objectxmpp):
     """
@@ -145,8 +149,8 @@ def read_debug_conf(objectxmpp):
     if os.path.isfile(pathconffile):
         Config = ConfigParser.ConfigParser()
         Config.read(pathconffile)
-        if os.path.exists(pathconffile + ".local"):
-            Config.read(pathconffile + ".local")
+        if os.path.exists(f"{pathconffile}.local"):
+            Config.read(f"{pathconffile}.local")
         if Config.has_option("parameters", "debuglocal"):
             objectxmpp.debuglocal = Config.getboolean('parameters', 'debuglocal')
 
@@ -156,7 +160,7 @@ def create_default_config(objectxmpp):
     nameconffile = plugin['NAME'] + ".ini"
     pathconffile = os.path.join( objectxmpp.config.pathdirconffile, nameconffile )
     if not os.path.isfile(pathconffile):
-        logger.warning("Creation default config file %s" % pathconffile)
+        logger.warning(f"Creation default config file {pathconffile}")
         Config = ConfigParser.ConfigParser()
         Config.add_section('parameters')
         Config.set('parameters', 'time_scrutation', GLOBALPARAM["duration"])
@@ -169,7 +173,7 @@ def msg_debug_local(self, msg):
         if self.debuglocal:
             logger.info(msg)
     except Exception as e:
-        logger.error("error localdebug %s" % str(e))
+        logger.error(f"error localdebug {str(e)}")
 
 def Action_update(self):
     """
@@ -178,37 +182,39 @@ def Action_update(self):
     try:
         read_debug_conf(self)
         self.msg_debug_local("===================Action_update=====================")
-        pidlist = XmppMasterDatabase().get_pid_list_all_Up_action_update_packages()
-        if pidlist:
-            self.msg_debug_local("Action update pid en cour %s" % pidlist)
+        if (
+            pidlist := XmppMasterDatabase().get_pid_list_all_Up_action_update_packages()
+        ):
+            self.msg_debug_local(f"Action update pid en cour {pidlist}")
             # pid python or bash
             cmd=r"""ps -U root -e | grep python | awk '{print $1}'"""
-            self.msg_debug_local("commande list pid possible %s" % cmd)
+            self.msg_debug_local(f"commande list pid possible {cmd}")
             rr = simplecommand(cmd)
 
             if rr['code'] == 0:
                 list_pid_bash = [ x.strip() for x in rr['result']]
-                self.msg_debug_local("Action update   pid en cour %s" % list_pid_bash)
+                self.msg_debug_local(f"Action update   pid en cour {list_pid_bash}")
             pid_finish = [int(x['id']) for x in  pidlist if x['pid_run'] not in list_pid_bash]
-            self.msg_debug_local("Action update test list pid finish %s" % pid_finish)
+            self.msg_debug_local(f"Action update test list pid finish {pid_finish}")
             XmppMasterDatabase().del_Up_action_update_packages_id(pid_finish)
         resultbase = []
-        resultbase = XmppMasterDatabase().get_all_Up_action_update_packages()
-        if resultbase:
-            self.msg_debug_local("Action update list action package %s " % resultbase)
+        if (
+            resultbase := XmppMasterDatabase().get_all_Up_action_update_packages()
+        ):
+            self.msg_debug_local(f"Action update list action package {resultbase} ")
             for t in resultbase:
-                cmd = "/usr/sbin/medulla_mysql_exec_update.sh %s" % str(t['action'])
-                self.msg_debug_local("call launcher : %s" % cmd)
+                cmd = f"/usr/sbin/medulla_mysql_exec_update.sh {str(t['action'])}"
+                self.msg_debug_local(f"call launcher : {cmd}")
                 rr = simplecommand(cmd)
                 if rr['code'] == 0:
                     for ligneresult in rr['result']:
                         if ligneresult.startswith('pid : '):
                             pid_run = int(ligneresult.split(" ")[2].strip())
-                            self.msg_debug_local("pid programme launcher : %s" % pid_run)
+                            self.msg_debug_local(f"pid programme launcher : {pid_run}")
                             # on met a jour le pid
                             XmppMasterDatabase().update_pid_all_Up_action_update_packages(int(t['id']),
                                                                                           pid_run)
         self.msg_debug_local("===================Action_update=====================")
     except Exception as e:
-        logger.error("Plugin %s, we encountered the error %s" % ( plugin['NAME'], str(e)))
-        logger.error("We obtained the backtrace %s" % traceback.format_exc())
+        logger.error(f"Plugin {plugin['NAME']}, we encountered the error {str(e)}")
+        logger.error(f"We obtained the backtrace {traceback.format_exc()}")
