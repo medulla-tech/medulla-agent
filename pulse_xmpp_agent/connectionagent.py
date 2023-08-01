@@ -721,9 +721,9 @@ class MUCBot(ClientXMPP):
         else:
             self.startdata = 1
             self.disconnect(wait=1)
-            self.Mode_Marche_Arret_connect(forever=False, timeout=timeout)
-            if nb_reconnect:
-                self.startdata = self.startdata - 1
+        self.Mode_Marche_Arret_connect(forever=False, timeout=timeout)
+        if nb_reconnect:
+            self.startdata = self.startdata - 1
 
     def Mode_Marche_Arret_nb_reconnect(self, nb_reconnect):
         self.startdata = nb_reconnect
