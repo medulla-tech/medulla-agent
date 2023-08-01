@@ -1068,14 +1068,31 @@ def isTemplateConfFile(typeconf):
         )
     )
 
+def programfilepath(pathwindows):
+    if sys.platform.startswith("win"):
+        pathwindows = os.path.normpath(pathwindows)
+        disk_path = pathwindows.split(":")
+        if len(disk_path) < 2:
+            return pathwindows
+        disk = disk_path.pop(0)+":"+"\\\\"
+        pathdir = "".join(disk_path)
+        t = [ x.strip('" ') for x in pathdir.split("\\") if x.strip('" ') != "" ]
+        result=[]
+        for x in t:
+            if " " in x:
+                result.append('"'+x+'"')
+            else:
+                result.append(x)
+        return disk + "\\\\".join(result)
+    return pathwindows
 
 def start_agent(pathagent, agent="connection", console=False, typeagent="machine"):
-    pythonexec = psutil.Process().exe()
+    pythonexec =  programfilepath(psutil.Process().exe())
     agentfunction = os.path.join(pathagent, "connectionagent.py")
 
     if agent != "connection":
         agentfunction = os.path.join(pathagent, "agentxmpp.py")
-
+    agentfunction = programfilepath(agentfunction)
     modeagent = " -c " if console else ""
     logger.debug(f"AGENT {agent}")
     if agent == "connection":
@@ -1088,9 +1105,9 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
             os.system(f"{pythonexec} {agentfunction}{modeagent} -t {typeagent}")
         else:
             logger.debug(
-                f"launcher for python {agentfunction}{modeagent} -t {typeagent}"
+                f"launcher for os windows system {pythonexec}  {agentfunction}{modeagent} -t {typeagent}"
             )
-            os.system(f"python {agentfunction}{modeagent} -t {typeagent}")
+            os.system(f"{pythonexec} {agentfunction}{modeagent} -t {typeagent}")
         logger.debug(
             "Refreshing fingerprint of configuration agent after its reconfiguration"
         )
