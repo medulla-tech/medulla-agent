@@ -1069,6 +1069,33 @@ def isTemplateConfFile(typeconf):
     )
 
 def programfilepath(pathwindows):
+    """
+    Normalise le chemin de fichier `pathwindows` pour le système d'exploitation Windows.
+
+    Arguments:
+        pathwindows (str): Le chemin de fichier à normaliser.
+
+    Returns:
+        str: Le chemin de fichier normalisé pour Windows.
+
+    Remarque:
+        La fonction prend un chemin de fichier `pathwindows` en entrée et le normalise pour
+        le système d'exploitation Windows en remplaçant les barres obliques inverses par des
+        doubles barres obliques et en encadrant les noms de répertoires contenant des espaces par des guillemets.
+
+        Cette normalisation est particulièrement utile lorsque vous devez manipuler des chemins de fichiers avec
+        des espaces dans les noms de répertoires sur Windows.
+
+    Exemple:
+        >>> programfilepath("C:/chemin avec des espaces/fichier.txt")
+        'C:\\chemin avec des espaces\\fichier.txt'
+        >>> programfilepath("C:/chemin/sans/espaces/fichier.txt")
+        'C:\\chemin\\sans\\espaces\\fichier.txt'
+        >>> programfilepath("D:/répertoire avec espace/")
+        'D:\\répertoire avec espace'
+        >>> programfilepath("D:/répertoire_sans_espaces/")
+        'D:\\répertoire_sans_espaces'
+    """
     if sys.platform.startswith("win"):
         pathwindows = os.path.normpath(pathwindows)
         disk_path = pathwindows.split(":")
