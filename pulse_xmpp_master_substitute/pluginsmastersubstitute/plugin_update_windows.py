@@ -163,7 +163,8 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         logger.info("Enabling update %s: %s - %s" %(t['updateid'], t['title'], t['kb'], ))
         XmppMasterDatabase().setUp_machine_windows(machine['id'],
                                                     t['updateid'],
-                                                    kb=t['kb'])
+                                                    kb=t['kb'],
+                                                    deployment_intervals=xmppobject.deployment_intervals)
         # on add ou update le kb dans la gray list
         XmppMasterDatabase().setUp_machine_windows_gray_list(t['updateid'], t['tableproduct'])
 
@@ -229,6 +230,10 @@ def read_conf_remote_update_windows(xmppobject):
             if Config.has_option("parameters", "exclude_history_list"):
                 xmppobject.exclude_history_list = Config.getboolean('parameters', 'exclude_history_list')
             else:
-                xmppobject.exclude_history_list = true
+                xmppobject.exclude_history_list = True
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
+
+    xmppobject.deployment_intervals = ""
+    if Config.has_option("parameters", "deployment_intervals"):
+        xmppobject.deployment_intervals = Config.get('parameters', 'deployment_intervals')
