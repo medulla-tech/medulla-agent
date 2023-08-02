@@ -2999,16 +2999,13 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         else:
             logging.getLogger().debug("There is not .bak entry, we have nothing to do")
 
-        # Initialise userenv.dll
         userenvdll = ctypes.WinDLL("userenv.dll")
         # Define profile path that is needed
         defined_profilepath = os.path.normpath("C:/Users/%s" % username).strip().lower()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
-            # Delete all profiles if found
             delete_profile(username)
-            # Create the profile
             ptr_profilepath = ctypes.create_unicode_buffer(260)
             userenvdll.CreateProfile(
                 LPCWSTR(usersid), LPCWSTR(username), ptr_profilepath, 240
@@ -3029,7 +3026,6 @@ def pulseuser_profile_mustexist(username="pulseuser"):
                 )
                 return False, msg
         else:
-            # Profile found
             msg = "%s profile already exists at %s. Nothing to do." % (
                 username,
                 profile_location,
@@ -3109,36 +3105,45 @@ def get_user_sid(username="pulseuser"):
     except Exception as e:
         return False
 
-
 def delete_profile(username="pulseuser"):
-    if sys.platform.startswith("win"):
-        # Delete profile folder in C:\Users if any
-        try:
-            for name in os.listdir("C:/Users/"):
-                if name.startswith(username):
-                    delete_folder_cmd = 'rd /s /q "C:\\Users\\%s" ' % name
-                    result = simplecommand(encode_strconsole(delete_folder_cmd))
-                    if result["code"] == 0:
-                        logger.debug(
-                            "Deleted %s folder" % os.path.join("C:/Users/", name)
-                        )
-                    else:
-                        logger.error(
-                            "Error deleting %s folder" % os.path.join("C:/Users/", name)
-                        )
-        except Exception as e:
-            pass
-        # Delete profile
-        userenvdll = ctypes.WinDLL("userenv.dll")
-        usersid = get_user_sid(username)
-        delete_profile_result = userenvdll.DeleteProfileA(LPCSTR(usersid))
-        if delete_profile_result == 0:
-            logger.debug("%s profile deleted." % username)
-        else:
-            logger.error(
-                "Error deleting %s profile: %s" % (username, delete_profile_result)
-            )
-    return True
+    """
+    Supprime le profil utilisateur spécifié en utilisant WMI (Windows Management Instrumentation).
+
+        Args:
+            - username : str. Nom de l'utilisateur dont le profil doit être supprimé.
+
+        Remarques :
+            - Cette fonction utilise WMI pour se connecter et rechercher le profil de l'utilisateur spécifié par le nom "username".
+            - Si le profil de l'utilisateur est trouvé, il sera supprimé.
+            - Assurez-vous d'exécuter le script en tant qu'administrateur pour avoir les droits nécessaires pour supprimer un profil
+                utilisateur.
+            - Cette opération est irréversible et toutes les données associées au profil seront perdues.
+
+        Exceptions:
+            - wmi.x_wmi : Une exception WMI peut être levée en cas d'erreur WMI lors de la suppression du profil.
+            - Exception : D'autres exceptions inattendues peuvent être levées en cas d'erreurs inattendues.
+
+        Returns:
+            Aucun retour. Si le profil de l'utilisateur est trouvé et supprimé avec succès, la fonction se termine sans retour. Si le
+            profil n'est pas trouvé, aucune action n'est effectuée.
+    """
+    try:
+        pythoncom.CoInitialize()
+        c = wmi.WMI()
+
+        user_profiles = c.Win32_UserProfile(Name=username)
+        if len(user_profiles) == 0:
+            logging.getLogger().error(f"Le profil de l'utilisateur {username} n'a pas été trouvé.")
+            return
+
+        user_profiles[0].Delete_()
+        logging.getLogger().info(f"Le profil de l'utilisateur {username} a été supprimé avec succès.")
+
+    except wmi.x_wmi as e:
+        logging.getLogger().error("Erreur WMI lors de la suppression du profil : {str(e)}")
+    except Exception as e:
+        logging.getLogger().error("Une erreur inattendue s'est produite : {str(e)}")
+
 
 
 def create_idrsa_on_client(username="pulseuser", key=""):
