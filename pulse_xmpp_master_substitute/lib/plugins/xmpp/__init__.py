@@ -2161,7 +2161,30 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def checkstatusdeploy(self, session, idcommand):
         """
-        this function is used to determine the state of the deployment when the deployemnet is scheduled and scheduler
+        Détermine l'état du déploiement lorsque le déploiement est planifié et le planificateur est actif.
+
+        Paramètres :
+            - session : Session SQLAlchemy. Une session SQLAlchemy préexistante pour la base de données.
+            - idcommand : str. ID de la commande de déploiement pour laquelle on souhaite déterminer l'état.
+
+        Remarques :
+            - Cette fonction est utilisée pour déterminer l'état du déploiement lorsque le déploiement est planifié et que le
+            planificateur est actif.
+            - La fonction vérifie si le déploiement est dans la plage de temps prévue par la colonne "startcmd" et "endcmd" du modèle
+            "Deploy". Si le déploiement n'est pas dans cette plage de temps, la fonction met à jour l'état des sessions de déploiement
+            associées avec "ERROR UNKNOWN ERROR" et renvoie 'abandonmentdeploy'.
+            - Ensuite, la fonction vérifie si le déploiement est conditionné par la colonne "start_exec_on_time" ou
+            "start_exec_on_nb_deploy" du modèle "Has_login_command". Si c'est le cas, elle compare la date et l'heure actuelles avec
+            la valeur de "start_exec_on_time" et le nombre de déploiements "start_exec_on_nb_deploy" pour déterminer si le déploiement
+            peut s'exécuter (renvoie 'run') ou s'il doit être mis en pause (renvoie 'pause').
+            - Si le déploiement ne répond à aucune des conditions ci-dessus, la fonction renvoie 'pause'.
+
+        Retour :
+            - 'abandonmentdeploy' : Le déploiement est hors de la plage de temps prévue ou la commande de déploiement associée a été
+            supprimée de la base de données. L'état des sessions de déploiement est mis à jour avec "ERROR UNKNOWN ERROR".
+            - 'run' : Le déploiement est conditionné par une heure de début ou un nombre de déploiements spécifié, et les conditions sont
+            remplies pour exécuter le déploiement.
+            - 'pause' : Le déploiement ne répond à aucune des conditions ci-dessus. Il doit être mis en pause.
         """
         nowtime = datetime.now()
         try:
@@ -3498,6 +3521,28 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updatedeploystate1(self, session, sessionid, state):
+        """
+        Met à jour l'état de déploiement pour une session donnée en exécutant une requête SQL personnalisée.
+
+        Paramètres :
+            - session : Session SQLAlchemy. Une session SQLAlchemy préexistante pour la base de données.
+            - sessionid : str. ID de la session de déploiement à mettre à jour.
+            - state : str. Nouvel état du déploiement à enregistrer dans la base de données.
+
+        Remarques :
+            - Cette fonction met à jour l'état d'une session de déploiement spécifiée par "sessionid" avec le nouvel état "state".
+            - Elle exécute une requête SQL personnalisée pour mettre à jour l'état, en utilisant les valeurs fournies par les
+            paramètres "state" et "sessionid".
+            - L'état ne sera mis à jour que si l'état précédent n'est pas "DEPLOYMENT SUCCESS", "ABORT DEPLOYMENT CANCELLED BY USER"
+            ou s'il ne commence pas par "ERROR", "SUCCESS" ou "ABORT".
+            - En cas de succès de la mise à jour, la fonction renvoie None. En cas d'erreur ou d'exception lors de l'exécution de la
+            requête SQL, la fonction renverra -1 avec un message d'erreur approprié.
+
+        Retour :
+            - None : Mise à jour réussie de l'état du déploiement.
+            - -1 : Erreur ou exception lors de la mise à jour de l'état du déploiement. Consultez les logs pour plus de détails.
+        """
+
         try:
             sql="""UPDATE `xmppmaster`.`deploy`
                 SET
@@ -3537,12 +3582,40 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def updatedeploystate(self, session, sessionid, state):
         """
-        update status deploy
+        Met à jour l'état de déploiement pour une session donnée.
+
+        Paramètres :
+            - session : Session SQLAlchemy. Une session SQLAlchemy préexistante pour la base de données. (session fournie par le decorateur)
+            - sessionid : str. ID de la session de déploiement à mettre à jour.
+            - state : str. Nouvel état du déploiement à enregistrer dans la base de données.
+
+        Remarques :
+            - Cette fonction met à jour l'état d'une session de déploiement spécifiée par "sessionid" avec le nouvel état "state".
+            - Elle vérifie que l'état ne commence pas par "abort", "success" ou "error", car ces états ne peuvent pas être modifiés
+            ultérieurement.
+            - Si l'état est "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)", la fonction vérifie si l'état précédent était l'un des états
+            ["WOL 1", "WOL 2", "WOL 3", "WAITING MACHINE ONLINE"]. Si c'est le cas, l'état ne change pas.
+            - Si la requête SQLAlchemy ne retourne pas de résultat, la fonction renverra -1 avec un message d'erreur approprié.
+            - Si la requête SQLAlchemy retourne plusieurs résultats, la fonction renverra -1 avec un message d'erreur approprié.
+
+        Retour :
+            - 1 : Mise à jour réussie de l'état du déploiement.
+            - 0 : Aucun changement d'état nécessaire car l'état est "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)" et l'état précédent
+                était l'un des états ["WOL 1", "WOL 2", "WOL 3", "WAITING MACHINE ONLINE"].
+            - -1 : Erreur ou exception lors de la mise à jour de l'état du déploiement. Consultez les logs pour plus de détails.
         """
+
         try:
+            # on peut lever 2 exceptions
             deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
             if deploysession:
                 # les status commençant par error, success, abort ne peuvent plus être modifiés.
+                # L'expression régulière ^(?!abort) est une expression régulière en utilisant la syntaxe des assertions (lookahead) négatives pour rechercher des lignes
+                #    qui ne commencent pas par le mot "abort".
+                # Explication :
+                #  ^ : C'est un ancrage qui signifie que l'expression régulière doit rechercher le début de la ligne.
+                #  (?!abort) : C'est une assertion négative (negative lookahead). L'expression régulière suivante ne doit pas être "abort" pour qu'il y ait correspondance. 
+                # | ou entre les preposition de l'expression complete.
                 regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
                 if regexpexlusion.match(state) is None:
                     return
@@ -3558,11 +3631,16 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
                 return 1
+        except MultipleResultsFound:
+            logging.getLogger().error("Several deployments have the same sessionid %s" % sessionid)
+            return -1
+        except NoResultFound:
+            logging.getLogger().error("No deployment found having session %s" % sessionid)
+            return -1
         except Exception:
             logging.getLogger().error("sql : %s" % traceback.format_exc())
             return -1
-        finally:
-            session.close()
+        return -1
 
     @DatabaseHelper._sessionm
     def delNetwork_for_machines_id(self,session, machines_id):
