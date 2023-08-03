@@ -39,10 +39,11 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
         # install code dynamique : fonction Action_update ci dessous
         objectxmpp.Action_update = types.MethodType(Action_update, objectxmpp)
         objectxmpp.msg_debug_local = types.MethodType(msg_debug_local, objectxmpp)
+        objectxmpp.create_deploy_for_up_machine_windows = types.MethodType(create_deploy_for_up_machine_windows, objectxmpp)
         # schedule appel de cette fonction cette fonctions
         objectxmpp.schedule('Action_update', objectxmpp.time_scrutation, objectxmpp.Action_update, repeat=True)
         objectxmpp.Action_update()
-        objectxmpp.schedule('Action_luncher_deploy', objectxmpp.time_scan_current_deploy_update_on,
+        objectxmpp.schedule('Action_luncher_deploy', objectxmpp.time_scrutation,
                             objectxmpp.create_deploy_for_up_machine_windows, repeat=True)
 
 def create_deploy_for_up_machine_windows(objectxmpp):
