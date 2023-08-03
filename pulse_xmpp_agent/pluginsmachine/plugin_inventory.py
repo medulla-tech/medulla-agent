@@ -24,7 +24,7 @@ from sleekxmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.62", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.70", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -40,11 +40,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_updates
     except :
         xmppobject.sub_updates = jid.JID("master_upd@pulse")
-    # TODO: Add back when enabling updates.
-    # try:
-    #     send_plugin_update_window(xmppobject)
-    # except Exception as e:
-    #     logger.error("\n%s" % (traceback.format_exc()))
+    try:
+        send_plugin_update_windows(xmppobject)
+    except Exception as e:
+        logger.error("\n%s" % (traceback.format_exc()))
 
     boolchange = True
     namefilexml = ""
@@ -704,12 +703,12 @@ def printer_string(terminal,
     return "%s\n</PRINTERS>" % (xmlprinter)
 
 
-def send_plugin_update_window(xmppobject):
+def send_plugin_update_windows(xmppobject):
 
-        sessioniddata = utils.getRandomName(6, "update_window")
+        sessioniddata = utils.getRandomName(6, "update_windows")
         try:
             update_information = {
-                "action": "update_window",
+                "action": "update_windows",
                 "sessionid": sessioniddata,
                 "data": { "system_info" : utils.offline_search_kb().get()},
                 "ret": 0,

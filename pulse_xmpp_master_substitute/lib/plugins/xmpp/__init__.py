@@ -2150,7 +2150,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
-    def wolbroadcastadressmacadress(self, session, listmacadress):
+    def wolbroadcastadressmacadress(self, session, listmacaddress):
         """
             We monitor the mac addresses to check.
 
@@ -2167,8 +2167,13 @@ class XmppMasterDatabase(DatabaseHelper):
                 filter(
                     and_(Network.broadcast != "",
                          Network.broadcast.isnot(None),
-                         Network.mac.in_(listmacadress))
+                         Network.mac.in_(listmacaddress))
                        ).all()
+
+        if not bool(result):
+            logger.error("An error occured while checking the broadcast address.")
+            logger.error("Please check that the broadcast information exists for the following mac addresses: %s" % listmacaddress)
+
         for t in result:
             if t.broadcast not in grp_wol_broadcast_adress:
                 grp_wol_broadcast_adress[t.broadcast]=[]
@@ -2184,7 +2189,30 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def checkstatusdeploy(self, session, idcommand):
         """
-        this function is used to determine the state of the deployment when the deployemnet is scheduled and scheduler
+        Détermine l'état du déploiement lorsque le déploiement est planifié et le planificateur est actif.
+
+        Paramètres :
+            - session : Session SQLAlchemy. Une session SQLAlchemy préexistante pour la base de données.
+            - idcommand : str. ID de la commande de déploiement pour laquelle on souhaite déterminer l'état.
+
+        Remarques :
+            - Cette fonction est utilisée pour déterminer l'état du déploiement lorsque le déploiement est planifié et que le
+            planificateur est actif.
+            - La fonction vérifie si le déploiement est dans la plage de temps prévue par la colonne "startcmd" et "endcmd" du modèle
+            "Deploy". Si le déploiement n'est pas dans cette plage de temps, la fonction met à jour l'état des sessions de déploiement
+            associées avec "ERROR UNKNOWN ERROR" et renvoie 'abandonmentdeploy'.
+            - Ensuite, la fonction vérifie si le déploiement est conditionné par la colonne "start_exec_on_time" ou
+            "start_exec_on_nb_deploy" du modèle "Has_login_command". Si c'est le cas, elle compare la date et l'heure actuelles avec
+            la valeur de "start_exec_on_time" et le nombre de déploiements "start_exec_on_nb_deploy" pour déterminer si le déploiement
+            peut s'exécuter (renvoie 'run') ou s'il doit être mis en pause (renvoie 'pause').
+            - Si le déploiement ne répond à aucune des conditions ci-dessus, la fonction renvoie 'pause'.
+
+        Retour :
+            - 'abandonmentdeploy' : Le déploiement est hors de la plage de temps prévue ou la commande de déploiement associée a été
+            supprimée de la base de données. L'état des sessions de déploiement est mis à jour avec "ERROR UNKNOWN ERROR".
+            - 'run' : Le déploiement est conditionné par une heure de début ou un nombre de déploiements spécifié, et les conditions sont
+            remplies pour exécuter le déploiement.
+            - 'pause' : Le déploiement ne répond à aucune des conditions ci-dessus. Il doit être mis en pause.
         """
         nowtime = datetime.now()
         try:
@@ -3399,7 +3427,10 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getlinelogssession(self, session, sessionnamexmpp):
-        log = session.query(Logs).filter(and_(Logs.sessionname == sessionnamexmpp, Logs.type == 'deploy')).order_by(Logs.id)
+        log_type = "deploy"
+        if re.search("update", sessionnamexmpp) is not None:
+            log_type ="update"
+        log = session.query(Logs).filter(and_(Logs.sessionname == sessionnamexmpp, Logs.type == log_type)).order_by(Logs.id)
         log = log.all()
         session.commit()
         session.flush()
@@ -3518,6 +3549,28 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updatedeploystate1(self, session, sessionid, state):
+        """
+        Met à jour l'état de déploiement pour une session donnée en exécutant une requête SQL personnalisée.
+
+        Paramètres :
+            - session : Session SQLAlchemy. Une session SQLAlchemy préexistante pour la base de données.
+            - sessionid : str. ID de la session de déploiement à mettre à jour.
+            - state : str. Nouvel état du déploiement à enregistrer dans la base de données.
+
+        Remarques :
+            - Cette fonction met à jour l'état d'une session de déploiement spécifiée par "sessionid" avec le nouvel état "state".
+            - Elle exécute une requête SQL personnalisée pour mettre à jour l'état, en utilisant les valeurs fournies par les
+            paramètres "state" et "sessionid".
+            - L'état ne sera mis à jour que si l'état précédent n'est pas "DEPLOYMENT SUCCESS", "ABORT DEPLOYMENT CANCELLED BY USER"
+            ou s'il ne commence pas par "ERROR", "SUCCESS" ou "ABORT".
+            - En cas de succès de la mise à jour, la fonction renvoie None. En cas d'erreur ou d'exception lors de l'exécution de la
+            requête SQL, la fonction renverra -1 avec un message d'erreur approprié.
+
+        Retour :
+            - None : Mise à jour réussie de l'état du déploiement.
+            - -1 : Erreur ou exception lors de la mise à jour de l'état du déploiement. Consultez les logs pour plus de détails.
+        """
+
         try:
             sql="""UPDATE `xmppmaster`.`deploy`
                 SET
@@ -3557,12 +3610,40 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def updatedeploystate(self, session, sessionid, state):
         """
-        update status deploy
+        Met à jour l'état de déploiement pour une session donnée.
+
+        Paramètres :
+            - session : Session SQLAlchemy. Une session SQLAlchemy préexistante pour la base de données. (session fournie par le decorateur)
+            - sessionid : str. ID de la session de déploiement à mettre à jour.
+            - state : str. Nouvel état du déploiement à enregistrer dans la base de données.
+
+        Remarques :
+            - Cette fonction met à jour l'état d'une session de déploiement spécifiée par "sessionid" avec le nouvel état "state".
+            - Elle vérifie que l'état ne commence pas par "abort", "success" ou "error", car ces états ne peuvent pas être modifiés
+            ultérieurement.
+            - Si l'état est "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)", la fonction vérifie si l'état précédent était l'un des états
+            ["WOL 1", "WOL 2", "WOL 3", "WAITING MACHINE ONLINE"]. Si c'est le cas, l'état ne change pas.
+            - Si la requête SQLAlchemy ne retourne pas de résultat, la fonction renverra -1 avec un message d'erreur approprié.
+            - Si la requête SQLAlchemy retourne plusieurs résultats, la fonction renverra -1 avec un message d'erreur approprié.
+
+        Retour :
+            - 1 : Mise à jour réussie de l'état du déploiement.
+            - 0 : Aucun changement d'état nécessaire car l'état est "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)" et l'état précédent
+                était l'un des états ["WOL 1", "WOL 2", "WOL 3", "WAITING MACHINE ONLINE"].
+            - -1 : Erreur ou exception lors de la mise à jour de l'état du déploiement. Consultez les logs pour plus de détails.
         """
+
         try:
+            # on peut lever 2 exceptions
             deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
             if deploysession:
                 # les status commençant par error, success, abort ne peuvent plus être modifiés.
+                # L'expression régulière ^(?!abort) est une expression régulière en utilisant la syntaxe des assertions (lookahead) négatives pour rechercher des lignes
+                #    qui ne commencent pas par le mot "abort".
+                # Explication :
+                #  ^ : C'est un ancrage qui signifie que l'expression régulière doit rechercher le début de la ligne.
+                #  (?!abort) : C'est une assertion négative (negative lookahead). L'expression régulière suivante ne doit pas être "abort" pour qu'il y ait correspondance. 
+                # | ou entre les preposition de l'expression complete.
                 regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
                 if regexpexlusion.match(state) is None:
                     return
@@ -3578,11 +3659,16 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
                 return 1
+        except MultipleResultsFound:
+            logging.getLogger().error("Several deployments have the same sessionid %s" % sessionid)
+            return -1
+        except NoResultFound:
+            logging.getLogger().error("No deployment found having session %s" % sessionid)
+            return -1
         except Exception:
             logging.getLogger().error("sql : %s" % traceback.format_exc())
             return -1
-        finally:
-            session.close()
+        return -1
 
     @DatabaseHelper._sessionm
     def delNetwork_for_machines_id(self,session, machines_id):
@@ -6161,13 +6247,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoloadbalancerforcluster(self, session):
         sql = """
-            SELECT
-                COUNT(*) AS nb, `machines`.`groupdeploy`
+            SELECT 
+                COUNT(*) - 1 AS nb, `machines`.`groupdeploy`
             FROM
                 xmppmaster.machines
-            WHERE
-                agenttype = 'machine'
             GROUP BY `machines`.`groupdeploy`
+            HAVING nb != 0
+                AND COALESCE(`machines`.`groupdeploy`, '') <> ''
             ORDER BY nb DESC;"""
         result = session.execute(sql)
         session.commit()
@@ -6233,67 +6319,64 @@ class XmppMasterDatabase(DatabaseHelper):
                 arsname: The ars where the machine is connected to.
             Returns:
         """
-        excluded_account = 'master@pulse'
-        incrementeiscount = []
+        incrementeiscount=[]
         try:
-            excluded_account = 'master@pulse'
+            try:
+                sql = """SELECT
+                            `substituteconf`.`id` AS `id`,
+                            `substituteconf`.`jidsubtitute` AS `jidsubtitute`,
+                            `substituteconf`.`type` AS `type`,
+                            SUM(`substituteconf`.`countsub`) AS `totsub`
+                        FROM
+                            `substituteconf`
+                        WHERE
+                            `substituteconf`.`jidsubtitute` IN (SELECT DISTINCT
+                                    `substituteconf`.`jidsubtitute`
+                                FROM
+                                    `substituteconf`
+                                WHERE
+                                    `substituteconf`.`relayserver_id` IN (SELECT
+                                            id
+                                        FROM
+                                            xmppmaster.relayserver
+                                        WHERE
+                                            jid LIKE ('%s')))
+                        GROUP BY `substituteconf`.`jidsubtitute` , type
+                        ORDER BY type , totsub;""" % (arsname)
+                resultproxy = session.execute(sql)
+                session.commit()
+                session.flush()
+                #ret = self._return_dict_from_dataset_mysql(resultproxy)
+                for listconfsubstituteitem in listconfsubstitute["conflist"]:
+                    # reinitialise les lists
+                    listconfsubstitute[listconfsubstituteitem]= []
+                for x in resultproxy:
+                    if str(x[2]).startswith("master@pulse"): continue
+                    if x[2] not in listconfsubstitute:
+                        listconfsubstitute["conflist"].append(x[2])
+                        listconfsubstitute[x[2]]=[]
+                    listconfsubstitute[x[2]].append(x[1])
+                    incrementeiscount.append(x[0])
+                self.logger.debug("listconfsubstitute %s" %listconfsubstitute)
+                self.logger.debug("incrementeiscount %s" %incrementeiscount)
+            except Exception as e:
+                self.logger.error("An error occured while fetching the ordered list of subsitutes.")
+                self.logger.error("We hit the backtrace: \n%s" % (traceback.format_exc()))
 
-            incrementeiscount = []
-            for substituteinfo in listconfsubstitute['conflist']:
-                try:
-                    sql = """SELECT
-                                substituteconf.id AS id,
-                                substituteconf.jidsubtitute AS jidsubtitute,
-                                substituteconf.countsub AS countsub,
-                                substituteconf.type AS type,
-                                relayserver.jid AS namerelayser,
-                                SUM(substituteconf.countsub) AS totsub
-                            FROM
-                                substituteconf
-                                    JOIN
-                                relayserver ON substituteconf.relayserver_id = relayserver.id
-                            WHERE
-                                substituteconf.jidsubtitute NOT LIKE '%s'
-                                    AND substituteconf.type LIKE '%s'
-                                    AND (substituteconf.jidsubtitute IN (SELECT
-                                        substituteconf.jidsubtitute
-                                    FROM
-                                        substituteconf
-                                    WHERE
-                                        substituteconf.relayserver_id = (SELECT
-                                                id
-                                            FROM
-                                                relayserver
-                                            WHERE
-                                                relayserver.jid LIKE '%s')))
-                            GROUP BY substituteconf.jidsubtitute
-                            ORDER BY totsub;
-                            ;""" % (excluded_account, substituteinfo, arsname)
-                    resultproxy = session.execute(sql)
-                    listcommand = []
-                    infsub = [{"id": x[0], "sub": x[1] , "totalcount": int(x[5])} for x in resultproxy]
-                    self.logger.debug("%s -> %s" % (substituteinfo ,infsub))
-                    if infsub:
-                        incrementeiscount.append(str(infsub[0]['id']))
-                    for t in infsub:
-                        listcommand.append(t['sub'])
-                    listcommand.append(excluded_account)
-                    listconfsubstitute[substituteinfo] = listcommand
-                except Exception as e:
-                    self.logger.error("An error occured while fetching the ordered list of subsitutes.")
-                    self.logger.error("We hit the backtrace: \n%s" % (traceback.format_exc()))
-
-            if len(incrementeiscount) != 0:
+            if incrementeiscount:
                 sql = """UPDATE `xmppmaster`.`substituteconf`
                     SET
                         `countsub` = `countsub` + '1'
                     WHERE
-                        `id` IN (%s);""" % ','.join([x for x in incrementeiscount])
+                        `id` IN (%s);""" % ",".join(
+                    [str(x) for x in incrementeiscount]
+                )
                 result = session.execute(sql)
                 session.commit()
-        except Exception, e:
+                session.flush()
+        except Exception as e:
             logging.getLogger().error("substituteinfo : %s" % str(e))
-        logging.getLogger().debug("substitute list : %s"  % listconfsubstitute)
+            logging.getLogger().debug("substitute list : %s" % listconfsubstitute)
         return listconfsubstitute
 
     @DatabaseHelper._sessionm
@@ -9088,16 +9171,17 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             session,
                             id_machine,
                             update_id,
-                            kb=""):
+                            kb="",
+                            deployment_intervals=""):
         """
             creation 1 update pour 1 machine
         """
-
         try:
             new_Up_machine_windows = Up_machine_windows()
             new_Up_machine_windows.id_machine = id_machine
             new_Up_machine_windows.update_id = update_id
             new_Up_machine_windows.kb = kb
+            new_Up_machine_windows.intervals = deployment_intervals
             session.add(new_Up_machine_windows)
             session.commit()
             session.flush()
@@ -9116,44 +9200,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
             del tout les updates de la machines
         """
-        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
-        session.commit()
-        session.flush()
-
-
-    @DatabaseHelper._sessionm
-    def setUp_machine_windows(self,
-                            session,
-                            id_machine,
-                            update_id,
-                            kb=""):
-        """
-            creation 1 update pour 1 machine
-        """
-        try:
-            new_Up_machine_windows = Up_machine_windows()
-            new_Up_machine_windows.id_machine = id_machine
-            new_Up_machine_windows.update_id = update_id
-            new_Up_machine_windows.kb = kb
-            session.add(new_Up_machine_windows)
-            session.commit()
-            session.flush()
-            return self.__Up_machine_windows(new_Up_machine_windows)
-        except IntegrityError as e:
-            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
-        except Exception as e:
-            self.logger.info("Except setUp_machine_windows : %s" % str(e))
-            self.logger.error("\n%s" % (traceback.format_exc()))
-        return None
-
-    @DatabaseHelper._sessionm
-    def del_all_Up_machine_windows(self,
-                            session,
-                            id_machine):
-        """
-            del tout les updates de la machines
-        """
-        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        session.query(Up_machine_windows).filter(and_(Up_machine_windows.id_machine == id_machine, or_(Up_machine_windows.end_date == None, Up_machine_windows.end_date < datetime.now()))).delete()
         session.commit()
         session.flush()
 
@@ -9195,7 +9242,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             results = None
             cursor = connection.cursor()
             cursor.callproc( "up_search_kb_update",
-                            [str(tableproduct), str(str_kb_list).strip('"() ')] )
+                            [str(tableproduct['name_procedure']), str(str_kb_list).strip('"() ')] )
             results = list(cursor.fetchall())
             for lineresult in results:
                 dictline={}
@@ -9204,7 +9251,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     if isinstance(lr, datetime):
                         lr=lr.isoformat()
                     dictline[value] = lr
-                    dictline['tableproduct'] = tableproduct
+                    dictline['tableproduct'] = tableproduct['name_procedure']
                 result.append(dictline)
             cursor.close()
             connection.commit()
@@ -9436,6 +9483,66 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         except Exception:
             logging.getLogger().error("sql delete_in_gray_and_white_list : %s" % traceback.format_exc())
         return False
+
+    @DatabaseHelper._sessionm
+    def pending_up_machine_windows_white(self, session):
+        query = session.query(Up_machine_windows, Up_white_list, Machines)\
+            .filter(and_(
+                or_(Up_machine_windows.curent_deploy == None, Up_machine_windows.curent_deploy == 0),
+                or_(Up_machine_windows.required_deploy == None, Up_machine_windows.required_deploy == 0)))\
+            .join(Up_white_list, Up_machine_windows.update_id == Up_white_list.updateid)\
+            .join(Machines, Up_machine_windows.id_machine == Machines.id).all()
+
+        result = []
+        start_date = datetime.now()
+        end_date = start_date + timedelta(days=7)
+
+        exclude_name_package = ["sharing", ".stfolder", ".stignore" ]
+
+        for element, white, machine in query:
+            deployName = "%s -@upd@- %s"%(white.title,start_date)
+            element.required_deploy = 1
+            element.start_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
+            element.end_date = datetime.strftime(end_date, "%Y-%m-%d %H:%M:%S")
+
+            folderpackage = os.path.join("/", "var","lib", "pulse2", "packages", element.update_id)
+            files = []
+
+            if os.path.isdir(folderpackage):
+                for root, dir, file in os.walk(folderpackage):
+                    if root != folderpackage:
+                        continue
+                    for _file in file:
+                        if _file not in exclude_name_package:
+                            files.append({"path" : os.path.basename(os.path.dirname(root)),
+                                    "name" : _file,
+                                    "id" : str(uuid.uuid4()),
+                                    "size" : str(os.path.getsize(os.path.join(root, _file))) })
+            else:
+                files = []
+
+            files_str = "\n".join([file['id']+'##'+file['path']+'/'+file['name'] for file in files])
+            result.append({
+                "id_machine":element.id_machine,
+                "update_id": element.update_id,
+                "kb": element.kb,
+                "curent_deploy": element.curent_deploy,
+                "required_deploy" : element.required_deploy,
+                "start_date" : element.start_date,
+                "end_date" : element.end_date,
+                "intervals" : element.intervals,
+                "title": deployName,
+                "jidmachine": machine.jid,
+                "groupdeploy": machine.groupdeploy,
+                "uuidmachine": machine.uuid_inventorymachine,
+                "hostname": machine.hostname,
+                "files_str": files_str
+            })
+
+        session.commit()
+        session.flush()
+
+        return result
 
 # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
