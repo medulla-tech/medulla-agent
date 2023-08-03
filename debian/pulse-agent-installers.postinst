@@ -9,13 +9,6 @@ chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent/
 
 systemctl daemon-reload
 
-# We try to generate the full and minimal agents
-cd /var/lib/pulse2/clients
-./generate-pulse-agent.sh
-./generate-pulse-agent.sh --minimal
-./generate-agent-package
-./generate-kiosk-package
-
 #DEBHELPER#
 
 exit 0
