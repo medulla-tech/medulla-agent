@@ -10,10 +10,10 @@ import platform
 import tempfile
 import os
 
-TIGHTVNC = "2.8.8"
+TIGHTVNC = "2.8.79"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.02", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
