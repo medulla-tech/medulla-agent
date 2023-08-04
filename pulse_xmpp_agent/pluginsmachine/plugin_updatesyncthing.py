@@ -14,10 +14,10 @@ import configparser
 from lib import utils
 from xml.etree import ElementTree
 
-SYNCTHINGVERSION = "1.18.0"
+SYNCTHINGVERSION = "1.23.4"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.23", "NAME": "updatesyncthing", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.24", "NAME": "updatesyncthing", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
