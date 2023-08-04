@@ -3105,6 +3105,7 @@ def get_user_sid(username="pulseuser"):
     except Exception as e:
         return False
 
+
 def delete_profile(username="pulseuser"):
     """
     Supprime le profil utilisateur spécifié en utilisant WMI (Windows Management Instrumentation).
@@ -3133,17 +3134,22 @@ def delete_profile(username="pulseuser"):
 
         user_profiles = c.Win32_UserProfile(Name=username)
         if len(user_profiles) == 0:
-            logging.getLogger().error(f"Le profil de l'utilisateur {username} n'a pas été trouvé.")
+            logging.getLogger().error(
+                f"Le profil de l'utilisateur {username} n'a pas été trouvé."
+            )
             return
 
         user_profiles[0].Delete_()
-        logging.getLogger().info(f"Le profil de l'utilisateur {username} a été supprimé avec succès.")
+        logging.getLogger().info(
+            f"Le profil de l'utilisateur {username} a été supprimé avec succès."
+        )
 
     except wmi.x_wmi as e:
-        logging.getLogger().error("Erreur WMI lors de la suppression du profil : {str(e)}")
+        logging.getLogger().error(
+            "Erreur WMI lors de la suppression du profil : {str(e)}"
+        )
     except Exception as e:
         logging.getLogger().error("Une erreur inattendue s'est produite : {str(e)}")
-
 
 
 def create_idrsa_on_client(username="pulseuser", key=""):

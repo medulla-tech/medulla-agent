@@ -130,7 +130,7 @@ class global_data_process:
         self.display_Process()
 
     def start_process_agent(self, prog):
-        prog=[ x.replace('"','') for x in prog ]
+        prog = [x.replace('"', "") for x in prog]
         if self.ProcessObj is None:
             self.cmd = prog
             if sys.platform.startswith("win"):
