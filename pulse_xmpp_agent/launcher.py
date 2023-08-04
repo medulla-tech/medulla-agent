@@ -130,7 +130,7 @@ class global_data_process:
         self.display_Process()
 
     def start_process_agent(self, prog):
-        prog=[ x.replace('"','') for x in prog ]
+        prog = [x.replace('"', "") for x in prog]
         if self.ProcessObj is None:
             self.cmd = prog
             if sys.platform.startswith("win"):
@@ -1069,6 +1069,7 @@ def isTemplateConfFile(typeconf):
         )
     )
 
+
 def programfilepath(pathwindows):
     """
     Normalise le chemin de fichier `pathwindows` pour le système d'exploitation Windows.
@@ -1102,20 +1103,21 @@ def programfilepath(pathwindows):
         disk_path = pathwindows.split(":")
         if len(disk_path) < 2:
             return pathwindows
-        disk = disk_path.pop(0)+":"+"\\\\"
+        disk = disk_path.pop(0) + ":" + "\\\\"
         pathdir = "".join(disk_path)
-        t = [ x.strip('" ') for x in pathdir.split("\\") if x.strip('" ') != "" ]
-        result=[]
+        t = [x.strip('" ') for x in pathdir.split("\\") if x.strip('" ') != ""]
+        result = []
         for x in t:
             if " " in x:
-                result.append('"'+x+'"')
+                result.append('"' + x + '"')
             else:
                 result.append(x)
         return disk + "\\\\".join(result)
     return pathwindows
 
+
 def start_agent(pathagent, agent="connection", console=False, typeagent="machine"):
-    pythonexec =  programfilepath(psutil.Process().exe())
+    pythonexec = programfilepath(psutil.Process().exe())
     agentfunction = os.path.join(pathagent, "connectionagent.py")
 
     if agent != "connection":
