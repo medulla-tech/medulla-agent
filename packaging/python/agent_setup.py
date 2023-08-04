@@ -45,6 +45,8 @@ setup(
         "psutil >= 5.9.1",
         "cherrypy >= 18.8.0",
         "requests >= 2.28.1",
+        "lmdb",
+        "PyYAML",
     ]
     + (
         ["pathlib >= 1.0.1", "pypiwin32 >= 223", "comtypes >= 1.1.14", "wmi >= 1.5.1"]
