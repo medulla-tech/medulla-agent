@@ -1068,26 +1068,28 @@ def isTemplateConfFile(typeconf):
         )
     )
 
+
 def programfilepath(pathwindows):
     if sys.platform.startswith("win"):
         pathwindows = os.path.normpath(pathwindows)
         disk_path = pathwindows.split(":")
         if len(disk_path) < 2:
             return pathwindows
-        disk = disk_path.pop(0)+":"+"\\\\"
+        disk = disk_path.pop(0) + ":" + "\\\\"
         pathdir = "".join(disk_path)
-        t = [ x.strip('" ') for x in pathdir.split("\\") if x.strip('" ') != "" ]
-        result=[]
+        t = [x.strip('" ') for x in pathdir.split("\\") if x.strip('" ') != ""]
+        result = []
         for x in t:
             if " " in x:
-                result.append('"'+x+'"')
+                result.append('"' + x + '"')
             else:
                 result.append(x)
         return disk + "\\\\".join(result)
     return pathwindows
 
+
 def start_agent(pathagent, agent="connection", console=False, typeagent="machine"):
-    pythonexec =  programfilepath(psutil.Process().exe())
+    pythonexec = programfilepath(psutil.Process().exe())
     agentfunction = os.path.join(pathagent, "connectionagent.py")
 
     if agent != "connection":
