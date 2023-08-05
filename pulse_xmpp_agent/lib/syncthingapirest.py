@@ -38,7 +38,7 @@ import time
 import os
 import sys
 
-from configparser import ConfigParser
+import configparser
 
 logger = logging.getLogger()
 
@@ -1418,7 +1418,7 @@ class syncthingprogram(Program):
             agentconf = os.path.join(
                 os.environ["programfiles"], "Pulse", "etc", "agentconf.ini"
             )
-            Config = ConfigParser.ConfigParser()
+            Config = configparser.ConfigParser()
             Config.read(agentconf)
 
             syncthing_bin = os.path.join(
