@@ -9148,21 +9148,26 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
             creation 1 update pour 1 machine
         """
-        try:
-            new_Up_machine_windows = Up_machine_windows()
-            new_Up_machine_windows.id_machine = id_machine
-            new_Up_machine_windows.update_id = update_id
-            new_Up_machine_windows.kb = kb
-            new_Up_machine_windows.intervals = deployment_intervals
-            session.add(new_Up_machine_windows)
-            session.commit()
-            session.flush()
-            return self.__Up_machine_windows(new_Up_machine_windows)
-        except IntegrityError as e:
-            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
-        except Exception as e:
-            self.logger.info("Except setUp_machine_windows : %s" % str(e))
-            self.logger.error("\n%s" % (traceback.format_exc()))
+        objet_existant = session.query(Up_machine_windows).filter(
+            and_(Up_machine_windows.id_machine == id_machine,
+                 or_(Up_machine_windows.update_id == update_id, Up_machine_windows.kb == kb ))).first()
+        # Si l'objet n'existe pas, l'ajouter à la base de données
+        if objet_existant is None:
+            try:
+                new_Up_machine_windows = Up_machine_windows()
+                new_Up_machine_windows.id_machine = id_machine
+                new_Up_machine_windows.update_id = update_id
+                new_Up_machine_windows.kb = kb
+                new_Up_machine_windows.intervals = deployment_intervals
+                session.add(new_Up_machine_windows)
+                session.commit()
+                session.flush()
+                return self.__Up_machine_windows(new_Up_machine_windows)
+            except IntegrityError as e:
+                self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
+            except Exception as e:
+                self.logger.info("Except setUp_machine_windows : %s" % str(e))
+                self.logger.error("\n%s" % (traceback.format_exc()))
         return None
 
     @DatabaseHelper._sessionm
@@ -9291,7 +9296,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                                                 title,
                                                                 description,
                                                                 updateid_package,
-                                                                payloadfiles,supersededby,
+                                                                payloadfiles,
+                                                                supersededby,
                                                                 title_short,
                                                                 validity_date)
                             ( SELECT updateid,

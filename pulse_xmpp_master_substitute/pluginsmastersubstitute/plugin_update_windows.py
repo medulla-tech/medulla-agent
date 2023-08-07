@@ -40,6 +40,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("=====================================================")
         logger.debug("call %s from %s" % (plugin, msg["from"]))
         logger.debug("=====================================================")
+
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
         if compteurcallplugin == 0:
             try:
@@ -54,6 +55,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
             xmppobject.list_produits = []
             xmppobject.list_produits = XmppMasterDatabase().list_produits()
+
             # return
             # function comment for next feature
             # this functions will be used later
@@ -84,7 +86,7 @@ def exclude_update_in_select( msg, exclude_update, list_update ):
     for upd in list_update:
         if upd['kb'] in exclude_update['kb'] or upd['updateid'] in exclude_update['update_id']:
             # exclution suivant les regles definie
-            logger.debug("Excluding %s, %s, %s, %s" % (msg['from'], upd['kb'], upd['updateid'], upd['title']))
+            #logger.debug("Excluding %s, %s, %s, %s" % (msg['from'], upd['kb'], upd['updateid'], upd['title']))
             continue
         else:
             logger.debug("Adding update %s, %s, %s, %s" % (msg['from'], upd['kb'], upd['updateid'], upd['title']))
@@ -96,8 +98,9 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     logger.debug(json.dumps(data, indent=4))
     logger.debug("Enabled products (xmppobject.list_produits):  %s" % xmppobject.list_produits)
     # suivant type de windows exclude list produit
-    list_table_product_select = list_produis_on(xmppobject, data, xmppobject.list_produits)
 
+    list_table_product_select = list_produis_on(xmppobject, data, xmppobject.list_produits)
+    logger.debug("For machine %s only the following tables will be updated:  %s" % (msg['from'], list_table_product_select))
     machine = XmppMasterDatabase().getId_UuidFromJid( msg['from'])
     if not machine:
         logger.warning("Machine %s is not yet registered" % msg['from'])
@@ -121,7 +124,8 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     logger.debug("Installed KB list: %s" % data['system_info']["kb_list"])
     list_update=exclude_update=res_update=[]
     exclude_update = XmppMasterDatabase().test_black_list(msg['from'])
-    logger.debug("Excluding updates for %s: %s" %(msg['from'], exclude_update))
+    for _ in range(10):
+        logger.debug("Excluding updates for %s: %s" %(msg['from'], exclude_update))
     for t in list_table_product_select:
         if t == "up_packages_Win_Malicious_X64":
             # le traitement de cette mise a jour est dependante de la version revoyer par la machine du logiciel.
@@ -133,6 +137,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         list_update=XmppMasterDatabase().search_update_by_products(
                            tableproduct=t,
                            str_kb_list=data['system_info']["kb_list"])
+        logger.debug("list_update search is : " % list_update)
         res_update.extend(exclude_update_in_select( msg, exclude_update, list_update ))
     # autre methode attribution des update
     #list_update = XmppMasterDatabase().search_kb_windows1( "", product=data['system_info']['platform_info']['type'],
@@ -156,9 +161,9 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                 data['system_info']['malicious_software_removal_tool']['FileMinorPart'])
             #logger.info("result search_update_windows_malicious_software_tool\n %s" % res)
             res_update.extend(exclude_update_in_select( msg, exclude_update, list_update))
+
     # update les updates windows a installer
     XmppMasterDatabase().del_all_Up_machine_windows(machine['id'])
-
     for t in res_update:
         logger.info("Enabling update %s: %s - %s" %(t['updateid'], t['title'], t['kb'], ))
         XmppMasterDatabase().setUp_machine_windows(machine['id'],
@@ -169,39 +174,40 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         XmppMasterDatabase().setUp_machine_windows_gray_list(t['updateid'], t['tableproduct'])
 
 def list_produis_on(xmppobject, data, list_produits):
-    prds = list_produits[:]
-    def remove_item(x, listitem):
-        if x in listitem:
-            listitem.remove(x)
+    listpack = []
+    def del_element(x):
+        if x in listpack:
+            listpack.remove(x)
+
+    for t in  list_produits:
+        listpack.append(t['name_procedure'])
+    logger.debug("listin fonction  selectionne package  %s  " % list_produits)
     if data['system_info']['platform_info']['machine'] == "x64":
         if data['system_info']['platform_info']['type'] == "Windows 10":
-            remove_item("up_packages_Win11_X64", prds)
+            del_element("up_packages_Win11_X64")
             if data['system_info']['infobuild']['DisplayVersion'] =="21H2":
-                remove_item("up_packages_Win10_X64_1903", prds)
-                remove_item("up_packages_Win10_X64_21H1", prds)
+                del_element("up_packages_Win10_X64_1903")
+                del_element("up_packages_Win10_X64_21H1")
+                del_element("up_packages_Win10_X64_22H2")
             elif data['system_info']['infobuild']['DisplayVersion'] =="21H1":
-                remove_item("up_packages_Win10_X64_1903", prds)
-                remove_item("up_packages_Win10_X64_21H2", prds)
+                del_element("up_packages_Win10_X64_1903")
+                del_element("up_packages_Win10_X64_21H2")
             else:
-                remove_item("up_packages_Win10_X64_21H1", prds)
-                remove_item("up_packages_Win10_X64_21H2", prds)
+                del_element("up_packages_Win10_X64_21H1")
+                del_element("up_packages_Win10_X64_21H2")
         else:
-            remove_item("up_packages_Win10_X64_21H1", prds)
-            remove_item("up_packages_Win10_X64_21H2", prds)
-            remove_item("up_packages_Win10_X64_1903", prds)
+            del_element("up_packages_Win10_X64_21H1")
+            del_element("up_packages_Win10_X64_21H2")
+            del_element("up_packages_Win10_X64_1903")
     else:
-        remove_item("up_packages_Win10_X64_21H1", prds)
-        remove_item("up_packages_Win10_X64_21H2", prds)
-        remove_item("up_packages_Win10_X64_1903", prds)
-        remove_item("up_packages_Win11_X64", prds)
-        remove_item("up_packages_Win_Malicious_X64", prds)
-        remove_item("up_packages_office_2003_64bit", prds)
-        remove_item("up_packages_office_2007_64bit", prds)
-        remove_item("up_packages_office_2010_64bit", prds)
-        remove_item("up_packages_office_2013_64bit", prds)
-        remove_item("up_packages_office_2016_64bit", prds)
+        # on ne regarde pas les update x64
+        liste_a_supprimer=["up_packages_Win10_X64_21H1", "up_packages_Win10_X64_21H2",
+       "up_packages_Win10_X64_1903", "up_packages_Win11_X64", "up_packages_Win_Malicious_X64",
+        "up_packages_office_2003_64bit", "up_packages_office_2007_64bit", "up_packages_office_2010_64bit",
+       "up_packages_office_2013_64bit", "up_packages_office_2016_64bit" ]
+        listpack = [element for element in listpack if element not in liste_a_supprimer]
+    prds =  [ {'name_procedure' : element } for element in listpack if  element != "" ]
     return prds
-
 
 def read_conf_remote_update_windows(xmppobject):
     xmppobject.exclude_history_list = True
@@ -230,7 +236,7 @@ def read_conf_remote_update_windows(xmppobject):
             if Config.has_option("parameters", "exclude_history_list"):
                 xmppobject.exclude_history_list = Config.getboolean('parameters', 'exclude_history_list')
             else:
-                xmppobject.exclude_history_list = True
+                xmppobject.exclude_history_list = true
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
 
