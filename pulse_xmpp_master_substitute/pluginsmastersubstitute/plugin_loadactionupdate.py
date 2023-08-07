@@ -78,25 +78,32 @@ def create_deploy_for_up_machine_windows(objectxmpp):
             except Exception as e:
                 logger.error("Unable to create Msc Target for update %s"%update['update_id'])
 
-            MscDatabase().xmpp_create_CommandsOnHost(command.id,
+            com_on_host = MscDatabase().xmpp_create_CommandsOnHost(command.id,
                 target['id'],
                 update['hostname'],
                 command.end_date,
                 command.start_date)
-            XmppMasterDatabase().addlogincommand(
-                "root",
-                command.id,
-                "",
-                "",
-                "",
-                "",
-                "",
-                0,
-                0,
-                0,
-                0,
-                {})
-            logger.info("Update %s will be deployed on %s between %s and %s %s"%(update['update_id'], update['title'], update['start_date'], update['end_date'], intervals))
+
+            if com_on_host is not None or com_on_host is not False:
+                MscDatabase().xmpp_create_CommandsOnHostPhasedeploykiosk(com_on_host.id)
+
+                XmppMasterDatabase().addlogincommand(
+                    "root",
+                    command.id,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    0,
+                    0,
+                    0,
+                    0,
+                    {})
+                logger.info("Update %s will be deployed on %s between %s and %s %s"%(update['update_id'], update['title'], update['start_date'], update['end_date'], intervals))
+
+            else:
+                logger.error("Unable to create phases for update %s"%(update['title']))
     except Exception as e:
         logger.error(e)
 
