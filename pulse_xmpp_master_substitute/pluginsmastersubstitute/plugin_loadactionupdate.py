@@ -51,9 +51,10 @@ def create_deploy_for_up_machine_windows(objectxmpp):
         need_to_add = XmppMasterDatabase().pending_up_machine_windows_white()
         for update in need_to_add:
             intervals = update['intervals'] if update['intervals'] is not None else ""
+            section = '"section":"update"'
             command = MscDatabase().createcommanddirectxmpp(update['update_id'],
                 '',
-                "",#section
+                section,
                 update['files_str'],
                 'enable',
                 'disable',
