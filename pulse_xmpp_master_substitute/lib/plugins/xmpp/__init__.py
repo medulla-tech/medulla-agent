@@ -8752,6 +8752,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 ,"supersededby"
                 ,"creationdate"
                 ,"title_short"
+                ,''
+                ,"msrcseverity"
                ]
 
     @DatabaseHelper._sessionm
@@ -9144,7 +9146,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             id_machine,
                             update_id,
                             kb="",
-                            deployment_intervals=""):
+                            deployment_intervals="",
+                            msrcseverity=""):
         """
             creation 1 update pour 1 machine
         """
@@ -9159,6 +9162,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 new_Up_machine_windows.update_id = update_id
                 new_Up_machine_windows.kb = kb
                 new_Up_machine_windows.intervals = deployment_intervals
+                new_Up_machine_windows.msrcseverity = msrcseverity
+
                 session.add(new_Up_machine_windows)
                 session.commit()
                 session.flush()
@@ -9224,6 +9229,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 dictline={}
                 dictline['tableproduct'] = tableproduct['name_procedure']
                 for index, value in enumerate(colonnename):
+                    if value=="" : continue
                     lr = lineresult[index]
                     if isinstance(lr, datetime):
                         lr=lr.isoformat()

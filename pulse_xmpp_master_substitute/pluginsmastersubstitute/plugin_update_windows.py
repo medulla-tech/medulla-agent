@@ -89,8 +89,9 @@ def exclude_update_in_select( msg, exclude_update, list_update ):
             #logger.debug("Excluding %s, %s, %s, %s" % (msg['from'], upd['kb'], upd['updateid'], upd['title']))
             continue
         else:
-            logger.debug("Adding update %s, %s, %s, %s" % (msg['from'], upd['kb'], upd['updateid'], upd['title']))
-            res.append({ 'kb' : upd['kb'], 'updateid' : upd['updateid'], "title" : upd['title'], "tableproduct" : upd['tableproduct']})
+            logger.debug("Adding update %s, %s, %s, %s %s" % (msg['from'], upd['kb'], upd['updateid'], upd['title'], upd['msrcseverity']))
+            res.append({ 'kb' : upd['kb'], 'updateid' : upd['updateid'], "title" : upd['title'],
+                        "tableproduct" : upd['tableproduct'], 'msrcseverity' : upd['msrcseverity']})
     return res
 
 def traitement_update(xmppobject, action, sessionid, data, msg, ret):
@@ -169,7 +170,8 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         XmppMasterDatabase().setUp_machine_windows(machine['id'],
                                                     t['updateid'],
                                                     kb=t['kb'],
-                                                    deployment_intervals=xmppobject.deployment_intervals)
+                                                    deployment_intervals=xmppobject.deployment_intervals,
+                                                    msrcseverity= t['msrcseverity'])
         # on add ou update le kb dans la gray list
         XmppMasterDatabase().setUp_machine_windows_gray_list(t['updateid'], t['tableproduct'])
 
