@@ -8752,6 +8752,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 ,"supersededby"
                 ,"creationdate"
                 ,"title_short"
+                ,''
+                ,"msrcseverity"
                ]
 
     @DatabaseHelper._sessionm
@@ -9144,7 +9146,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             id_machine,
                             update_id,
                             kb="",
-                            deployment_intervals=""):
+                            deployment_intervals="",
+                            msrcseverity=""):
         """
             creation 1 update pour 1 machine
         """
@@ -9159,6 +9162,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 new_Up_machine_windows.update_id = update_id
                 new_Up_machine_windows.kb = kb
                 new_Up_machine_windows.intervals = deployment_intervals
+                new_Up_machine_windows.msrcseverity = msrcseverity
+
                 session.add(new_Up_machine_windows)
                 session.commit()
                 session.flush()
@@ -9202,8 +9207,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
         return ret
 
-    @DatabaseHelper._sessionm
-    def search_update_by_products(self, session,
+    def search_update_by_products(self,
                            tableproduct="",
                            str_kb_list=""):
         """
@@ -9223,12 +9227,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             results = list(cursor.fetchall())
             for lineresult in results:
                 dictline={}
+                dictline['tableproduct'] = tableproduct['name_procedure']
                 for index, value in enumerate(colonnename):
+                    if value=="" : continue
                     lr = lineresult[index]
                     if isinstance(lr, datetime):
                         lr=lr.isoformat()
                     dictline[value] = lr
-                    dictline['tableproduct'] = tableproduct['name_procedure']
                 result.append(dictline)
             cursor.close()
             connection.commit()
@@ -9237,7 +9242,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         finally:
             connection.close()
         return result
-
 
     @DatabaseHelper._sessionm
     def is_exist_value_in_table(self, session,
