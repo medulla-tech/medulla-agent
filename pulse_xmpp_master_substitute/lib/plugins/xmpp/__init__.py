@@ -9202,8 +9202,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
         return ret
 
-    @DatabaseHelper._sessionm
-    def search_update_by_products(self, session,
+    def search_update_by_products(self,
                            tableproduct="",
                            str_kb_list=""):
         """
@@ -9223,12 +9222,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             results = list(cursor.fetchall())
             for lineresult in results:
                 dictline={}
+                dictline['tableproduct'] = tableproduct['name_procedure']
                 for index, value in enumerate(colonnename):
                     lr = lineresult[index]
                     if isinstance(lr, datetime):
                         lr=lr.isoformat()
                     dictline[value] = lr
-                    dictline['tableproduct'] = tableproduct['name_procedure']
                 result.append(dictline)
             cursor.close()
             connection.commit()
@@ -9237,7 +9236,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         finally:
             connection.close()
         return result
-
 
     @DatabaseHelper._sessionm
     def is_exist_value_in_table(self, session,
