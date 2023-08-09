@@ -9147,10 +9147,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             update_id,
                             kb="",
                             deployment_intervals="",
-                            msrcseverity=""):
+                            msrcseverity="Corrective"):
         """
             creation 1 update pour 1 machine
         """
+        if msrcseverity.strip()=="":
+            msrcseverity="Corrective"
         objet_existant = session.query(Up_machine_windows).filter(
             and_(Up_machine_windows.id_machine == id_machine,
                  or_(Up_machine_windows.update_id == update_id, Up_machine_windows.kb == kb ))).first()
@@ -9163,7 +9165,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 new_Up_machine_windows.kb = kb
                 new_Up_machine_windows.intervals = deployment_intervals
                 new_Up_machine_windows.msrcseverity = msrcseverity
-
                 session.add(new_Up_machine_windows)
                 session.commit()
                 session.flush()
