@@ -686,6 +686,21 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         logger.debug("###################################################")
         logger.debug("##############AGENT RELAY SERVER###################")
         logger.debug("###################################################")
+        if 'advanced' in data and 'paramdeploy' in data['advanced'] and 'section' in data['advanced']['paramdeploy'] and \
+            data['advanced']['paramdeploy']['section'] in ['update','install','uninstall']:
+            # priorite avanced selection
+            pass
+        else:
+            # paramdeploy pas definie au lancement
+            if 'descriptor' in data and \
+                'info' in data['descriptor'] and \
+                'type_section' in data['descriptor']['info']:
+                if data['descriptor']['info']["type_section"].lower() in ['update','install','uninstall'] and \
+                    'advanced' in data:
+                    if 'paramdeploy' not in data['advanced']:
+                        data['advanced']['paramdeploy']= {"section" : data['descriptor']['info']["type_section"].lower()}
+                    else:
+                        data['advanced']['paramdeploy']['section'] = data['descriptor']['info']["type_section"].lower()
         try:
             objectxmpp.reversedelpoy  # reversedelpoy add port for reverse ssh, used for del reverse
         except AttributeError:
