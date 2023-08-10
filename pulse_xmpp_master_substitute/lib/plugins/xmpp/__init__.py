@@ -9194,8 +9194,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             - La date de fin est soit nulle, soit antérieure à la date et à l'heure actuelles.
             - L'ID de mise à jour n'est pas présent dans la liste 'listupdatiddesire'.
         """
-        logging.getLogger().error("id_machine : %s" %id_machine)
-        logging.getLogger().error("listupdatiddesire : %s" %listupdatiddesire)
+        logging.getLogger().debug("id_machine : %s" %id_machine)
+        logging.getLogger().debug("listupdatiddesire : %s" %listupdatiddesire)
         if  listupdatiddesire:
             sql="""DELETE
                 FROM
@@ -9212,7 +9212,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     `xmppmaster`.`up_machine_windows`
                 WHERE
                     (`id_machine` = '%s');""" % (id_machine)
-        logging.getLogger().error("sql : %s" %sql)
+        logging.getLogger().debug("sql : %s" %sql)
         req = session.execute(sql)
         session.commit()
         session.flush()

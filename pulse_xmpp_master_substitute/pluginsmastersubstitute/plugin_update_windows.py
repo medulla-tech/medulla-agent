@@ -165,8 +165,8 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
 
     # update les updates windows a installer
     # delete les mise a jour faites ou a reactualise
-    udp_machine = [ x['updateid']  for x in res_update]
-    XmppMasterDatabase().del_all_Up_machine_windows(machine['id'], udp_machine)
+    upd_machine = [ x['updateid']  for x in res_update]
+    XmppMasterDatabase().del_all_Up_machine_windows(machine['id'], upd_machine)
     for t in res_update:
         logger.info("Enabling update %s: %s - %s" %(t['updateid'], t['title'], t['kb'], ))
         XmppMasterDatabase().setUp_machine_windows(machine['id'],
