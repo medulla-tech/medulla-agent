@@ -10,11 +10,11 @@ import tempfile
 import os
 import socket
 
-URBACKUP_VERSION = '2.4.11'
+URBACKUP_VERSION = '2.5.24'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatebackupclient", "TYPE": "machine"}
+plugin = {"VERSION": "1.4", "NAME": "updatebackupclient", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -84,14 +84,19 @@ def backupclientsettings(xmppobject):
 
     hostname = socket.gethostname()
     urbackup_dir = os.path.join("c:\\", "Program Files", "UrBackup")
+    logger.debug("Urbackup urbackup_dir: %s" % urbackup_dir)
 
     if sys.platform.startswith('win'):
         filename = os.path.join('%s' % urbackup_dir, 'UrBackupClient_cmd.exe')
         if os.path.exists(filename):
+            logger.debug("Urbackup filename: %s" % filename)
             os.chdir(urbackup_dir)
             cmd = '"%s" set-settings -k  internet_mode_enabled -v true -k internet_server -v %s -k internet_server_port -v %s -k computername -v %s -k internet_image_backups -v true -k internet_full_file_backups -v true' % (filename, xmppobject.config.backup_server, xmppobject.config.backup_port, hostname)
+            logger.debug("Urbackup cmd: %s" % cmd)
             cmd_result = utils.simplecommand(cmd)
             if cmd_result['code'] == 0:
                 logger.info("Settings successfully applied to client %s" % (hostname))
             else:
                 logger.error("Error applying settings: %s" % (filename, cmd_result['result']))
+        else:
+            logger.error("Urbackup filename %s does not exist" % filename)
