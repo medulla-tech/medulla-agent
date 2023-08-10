@@ -9176,14 +9176,44 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 self.logger.error("\n%s" % (traceback.format_exc()))
         return None
 
+
     @DatabaseHelper._sessionm
-    def del_all_Up_machine_windows(self,
-                            session,
-                            id_machine):
+    def del_all_Up_machine_windows(self, session, id_machine, listupdatiddesire=[]):
         """
-            del tout les updates de la machines
+        Supprime les enregistrements de la table 'Up_machine_windows' qui sont maintenant installé.
+
+        Args:
+            session (Session): Session SQLAlchemy active.
+                La session active fournie par le décorateur @DatabaseHelper._sessionm.
+            id_machine (int): L'ID de la machine cible pour laquelle les enregistrements doivent être supprimés.
+            listupdatiddesire (list): Liste des mises necessaire a la machine.
+
+        Note:
+            requête de suppression sur la table 'Up_machine_windows', en fonction des conditions fournies. Les conditions incluent :
+            - L'ID de la machine correspondant à 'id_machine'.
+            - La date de fin est soit nulle, soit antérieure à la date et à l'heure actuelles.
+            - L'ID de mise à jour n'est pas présent dans la liste 'listupdatiddesire'.
         """
-        session.query(Up_machine_windows).filter(and_(Up_machine_windows.id_machine == id_machine, or_(Up_machine_windows.end_date == None, Up_machine_windows.end_date < datetime.now()))).delete()
+        logging.getLogger().error("id_machine : %s" %id_machine)
+        logging.getLogger().error("listupdatiddesire : %s" %listupdatiddesire)
+        if  listupdatiddesire:
+            sql="""DELETE
+                FROM
+                    `xmppmaster`.`up_machine_windows`
+                WHERE
+                    (`id_machine` = '%s')
+                        AND (`update_id` NOT IN (%s)
+                        OR up_machine_windows.end_date IS NULL
+                        OR up_machine_windows.end_date < NOW());""" % (id_machine,
+                                                                    ",".join(["'%s'"%x for x in listupdatiddesire]))
+        else:
+             sql="""DELETE
+                FROM
+                    `xmppmaster`.`up_machine_windows`
+                WHERE
+                    (`id_machine` = '%s');""" % (id_machine)
+        logging.getLogger().error("sql : %s" %sql)
+        req = session.execute(sql)
         session.commit()
         session.flush()
 
