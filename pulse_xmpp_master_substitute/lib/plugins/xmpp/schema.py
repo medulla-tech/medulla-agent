@@ -839,6 +839,8 @@ class Up_machine_windows(Base):
     required_deploy = Column(Boolean, unique=False)
     start_date = Column(DateTime, default=None)
     end_date = Column(DateTime, default=None)
+    intervals = Column(String(256), nullable=True, default=None)
+    msrcseverity = Column(String(16), default="")
 
 
 class Up_white_list(Base):

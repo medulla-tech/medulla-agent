@@ -15,6 +15,7 @@ import types
 from lib.configuration import confParameter
 from datetime import datetime, timedelta
 from lib.plugins.xmpp import XmppMasterDatabase
+from lib.plugins.msc import MscDatabase
 import traceback
 from lib.utils import file_put_contents, simplecommandstr, simplecommand
 
@@ -45,6 +46,9 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
         # install code dynamique : fonction Action_update ci dessous
         objectxmpp.Action_update = types.MethodType(Action_update, objectxmpp)
         objectxmpp.msg_debug_local = types.MethodType(msg_debug_local, objectxmpp)
+        objectxmpp.create_deploy_for_up_machine_windows = types.MethodType(
+            create_deploy_for_up_machine_windows, objectxmpp
+        )
         # schedule appel de cette fonction cette fonctions
         objectxmpp.schedule(
             "Action_update",
@@ -53,6 +57,84 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
             repeat=True,
         )
         objectxmpp.Action_update()
+        objectxmpp.schedule(
+            "Action_luncher_deploy",
+            objectxmpp.time_scrutation,
+            objectxmpp.create_deploy_for_up_machine_windows,
+            repeat=True,
+        )
+
+
+def create_deploy_for_up_machine_windows(objectxmpp):
+    try:
+        need_to_add = XmppMasterDatabase().pending_up_machine_windows_white()
+        for update in need_to_add:
+            intervals = update["intervals"] if update["intervals"] is not None else ""
+            section = '"section":"update"'
+            command = MscDatabase().createcommanddirectxmpp(
+                update["update_id"],
+                "",
+                section,
+                update["files_str"],
+                "enable",
+                "disable",
+                update["start_date"],
+                update["end_date"],
+                "root",
+                "root",
+                update["title"],
+                0,
+                28,
+                0,
+                intervals,
+                None,
+                None,
+                None,
+                "none",
+                "active",
+                "1",
+                cmd_type=0,
+            )
+            try:
+                target = MscDatabase().xmpp_create_Target(
+                    update["uuidmachine"], update["hostname"]
+                )
+            except Exception as e:
+                logger.error(
+                    "Unable to create Msc Target for update %s" % update["update_id"]
+                )
+
+            com_on_host = MscDatabase().xmpp_create_CommandsOnHost(
+                command.id,
+                target["id"],
+                update["hostname"],
+                command.end_date,
+                command.start_date,
+            )
+
+            if com_on_host is not None or com_on_host is not False:
+                MscDatabase().xmpp_create_CommandsOnHostPhasedeploykiosk(com_on_host.id)
+
+                XmppMasterDatabase().addlogincommand(
+                    "root", command.id, "", "", "", "", "", 0, 0, 0, 0, {}
+                )
+                logger.info(
+                    "Update %s will be deployed on %s between %s and %s %s"
+                    % (
+                        update["update_id"],
+                        update["title"],
+                        update["start_date"],
+                        update["end_date"],
+                        intervals,
+                    )
+                )
+
+            else:
+                logger.error(
+                    "Unable to create phases for update %s" % (update["title"])
+                )
+    except Exception as e:
+        logger.error(e)
 
 
 def read_conf_loadactionupdate(objectxmpp):
@@ -169,7 +251,7 @@ def Action_update(self):
         if resultbase:
             self.msg_debug_local("Action update list action package %s " % resultbase)
             for t in resultbase:
-                cmd = "/usr/sbin/medulla-launcher.sh %s" % str(t["action"])
+                cmd = "/usr/sbin/medulla_mysql_exec_update.sh %s" % str(t["action"])
                 self.msg_debug_local("call launcher : %s" % cmd)
                 rr = simplecommand(cmd)
                 if rr["code"] == 0:
