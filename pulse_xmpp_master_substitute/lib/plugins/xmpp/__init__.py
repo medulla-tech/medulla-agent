@@ -9303,7 +9303,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return False
 
     @DatabaseHelper._sessionm
-    def setUp_machine_windows_gray_list(self, session, updateid, tableproduct="", validity_day=10):
+    def setUp_machine_windows_gray_list(self,
+                                        session,
+                                        updateid,
+                                        tableproduct="",
+                                        validity_day=10):
         """
         cette fonction insert dans la table gray list 1 update
         Si l update existe. Il update seulement la date de validity
@@ -9311,6 +9315,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             tableproduct voir table produits dans la table list_produits
             str_kb_list list des kb installer sur la machine
         """
+        # if le update existe dans la table up_white_list
+        # on ne fait rien
         # if le update existe dans la table up_gray_list_flop
         # on supprime dans la stock_table up_gray_list_flop
         # ce qui fera que l'update sera reinitialiser
@@ -9319,44 +9325,105 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         try:
             if self.is_exist_value_in_table(updateid,
                                             namefield="updateid",
+                                            tablename="up_white_list"):
+                return False
+
+            if self.is_exist_value_in_table(updateid,
+                                            namefield="updateid",
                                             tablename="up_gray_list_flop"):
+                # si l'update existe dans la flip flop, la supprimer de la table flip flop la reinitialise dans la table gray list.
+                # On met a jour la date avant que l'enregistrement change de table.
+                self.update_in_grays_list_validity(updateid ,
+                                                   flipflop=True,
+                                                   validity_day=validity_day)
                 sql="""DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');"""%(updateid)
                 session.execute(sql)
                 session.commit()
                 session.flush()
-            else:
-                sql="""INSERT INTO `xmppmaster`.`up_gray_list` (updateid,
-                                                                kb,
-                                                                revisionid,
-                                                                title,
-                                                                description,
-                                                                updateid_package,
-                                                                payloadfiles,
-                                                                supersededby,
-                                                                title_short,
-                                                                validity_date)
-                            ( SELECT updateid,
-                                    kb,
-                                    revisionid,
-                                    title,
-                                    description,
-                                    updateid_package,
-                                    payloadfiles,
-                                    supersededby,
-                                    title_short,
-                                    now() + INTERVAL %s day
-                            FROM
-                                xmppmaster.%s
-                            WHERE
-                                updateid LIKE '%s')
-                            ON DUPLICATE KEY UPDATE validity_date = now() + INTERVAL %s day;"""%(validity_day,tableproduct,updateid,validity_day)
-                #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
-                session.execute(sql)
-                session.commit()
-                session.flush()
+                return True
+            if self.is_exist_value_in_table(updateid,
+                                            namefield="updateid",
+                                            tablename="up_gray_list"):
+                #update date validity date
+                self.update_in_grays_list_validity(updateid ,
+                                                   flipflop=False,
+                                                   validity_day=validity_day)
+                return True
+
+            #insertion
+            sql="""INSERT INTO `xmppmaster`.`up_gray_list` (updateid,
+                                                            kb,
+                                                            revisionid,
+                                                            title,
+                                                            description,
+                                                            updateid_package,
+                                                            payloadfiles,
+                                                            supersededby,
+                                                            title_short,
+                                                            validity_date)
+                        ( SELECT updateid,
+                                kb,
+                                revisionid,
+                                title,
+                                description,
+                                updateid_package,
+                                payloadfiles,
+                                supersededby,
+                                title_short,
+                                now() + INTERVAL %s day
+                        FROM
+                            xmppmaster.%s
+                        WHERE
+                            updateid LIKE '%s')
+                        ON DUPLICATE KEY UPDATE validity_date = now() + INTERVAL %s day;"""%(validity_day,tableproduct,updateid,validity_day)
+            #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
             return True
         except Exception:
             logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def update_in_grays_list_validity(self,
+                                    session,
+                                    updateid,
+                                    flipflop=True,
+                                    validity_day=10):
+        """
+        Met à jour la date de validité d'un enregistrement dans la table
+        # up_gray_list_flop ou "up_gray_list"
+
+        Parameters:
+            session: Session de base de données.
+            updateid: updateID de la mise à jour.
+            flipflop: Indicateur pour déterminer la (table up_gray_list_flop ou up_gray_list (par défaut : True).
+            validity_day: Nombre de jours de validité (par défaut : 10 jours).
+        Returns:
+            True si l'opération réussit, False sinon.
+        """
+        # Sélectionne la table en fonction de l'indicateur flipflop.
+        if flipflop:
+            table = "up_gray_list_flop"
+        else:
+            table = "up_gray_list"
+
+        try:
+            # Met à jour la date de validité de l'enregistrement.
+            sql = """
+            UPDATE `xmppmaster`.`%s`
+            SET validity_date = DATE_ADD(NOW(), INTERVAL %s DAY)
+            WHERE updateid LIKE '%s';
+            """ % (table, validity_day, updateid)
+
+            # Exécute la requête SQL.
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("update_in_grays_list_validity : %s" % traceback.format_exc())
         return False
 
     @DatabaseHelper._sessionm
