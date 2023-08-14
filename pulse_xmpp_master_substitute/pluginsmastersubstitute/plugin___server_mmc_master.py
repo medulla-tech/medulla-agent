@@ -282,7 +282,7 @@ def process_connection_ssl(self, connection):
                     "nous acceptons pas le client venant de  %s(%s)"
                     % (remote_adesse, remote_port)
                 )
-                logger.warning("ALLOWED_IPS n'a pas CIDR incluent ip du client")
+                logger.warning("The allowed_ips setting does not have a CIDR value that includes the ip of the client")
                 return
         try:
             # Création du contexte SSL
@@ -537,30 +537,30 @@ class Configuration:
             self.config.read(config_file)
             # SSL parameters
             xmppobject.server_mmc_master_certfile = self.config.get(
-                "ssl", "CERTFILE", fallback="/var/lib/pulse2/masterkey/cert.pem"
+                "ssl", "certfile", fallback="/var/lib/pulse2/masterkey/cert.pem"
             )
             xmppobject.server_mmc_master_keyfile = self.config.get(
-                "ssl", "KEYFILE", fallback="/var/lib/pulse2/masterkey/key.pem"
+                "ssl", "keyfile", fallback="/var/lib/pulse2/masterkey/key.pem"
             )
             # Server parameters
             xmppobject.server_mmc_master_server_host_ipv6 = self.config.get(
-                "server", "SERVER_HOST_IPV6", fallback="::"
+                "server", "server_host_ipv6", fallback="::"
             )
             xmppobject.server_mmc_master_server_host_ipv4 = self.config.get(
-                "server", "SERVER_HOST_IPV4", fallback="0,0,0,0"
+                "server", "server_host_ipv4", fallback="0,0,0,0"
             )
             xmppobject.server_mmc_master_server_port_ipv4 = self.config.getint(
-                "server", "SERVER_PORT_IPV4", fallback=port_default_serveur
+                "server", "server_port_ipv4", fallback=port_default_serveur
             )
             xmppobject.server_mmc_master_server_port_ipv6 = self.config.getint(
-                "server", "SERVER_PORT_IPV6", fallback=port_default_serveur + 1
+                "server", "server_port_ipv6", fallback=port_default_serveur + 1
             )
             # Filtered addresses parameters
             xmppobject.server_mmc_master_active_filter = self.config.getboolean(
-                "filter", "ACTIVEFILTRE", fallback=True
+                "filter", "filter_enabled", fallback=True
             )
             xmppobject.server_mmc_master_allowed_ips = self.config.get(
-                "filter", "ALLOWED_IPS", fallback="127.0.0.1/32,::1/128"
+                "filter", "allowed_ips", fallback="127.0.0.1/32,::1/128"
             )
             xmppobject.server_mmc_master_allowed_list_ips = [
                 x.strip()
@@ -568,17 +568,17 @@ class Configuration:
                 if x.strip() != ""
             ]
             xmppobject.server_mmc_master_allowed_token = self.config.get(
-                "filter", "ALLOWED_TOKEN", fallback=""
+                "filter", "allowed_token", fallback=""
             )
             xmppobject.server_mmc_master_size_allowed_token = len(
                 xmppobject.server_mmc_master_allowed_token
             )
             # Message parameters
             xmppobject.server_mmc_master_max_message_size = self.config.getint(
-                "message", "MAX_MESSAGE_SIZE", fallback=taille_mac_message
+                "message", "max_message_size", fallback=taille_mac_message
             )
             xmppobject.server_mmc_master_compress = self.config.getboolean(
-                "message", "COMPRESS", fallback=True
+                "message", "compress_message", fallback=True
             )
         else:
             # creation du fichier de configuration
@@ -599,66 +599,66 @@ class Configuration:
             f.write("# file conf generation automatique" + (os.linesep) * 2)
             f.write("[ssl]" + os.linesep)
             # f.write("UTILISER_SSL_OU_NON=%s" % xmppobject.server_mmc_master_use_ssl + os.linesep)
-            f.write("KEYFILE=%s" % xmppobject.server_mmc_master_keyfile + os.linesep)
+            f.write("keyfile=%s" % xmppobject.server_mmc_master_keyfile + os.linesep)
             f.write(
-                "CERTFILE=%s" % xmppobject.server_mmc_master_certfile + (os.linesep) * 2
+                "certfile=%s" % xmppobject.server_mmc_master_certfile + (os.linesep) * 2
             )
             f.write("[server]" + os.linesep)
             f.write(
-                "SERVER_HOST_IPV6=%s" % xmppobject.server_mmc_master_server_host_ipv6
+                "server_host_ipv6=%s" % xmppobject.server_mmc_master_server_host_ipv6
                 + os.linesep
             )
             f.write(
-                "SERVER_HOST_IPV4=%s" % xmppobject.server_mmc_master_server_host_ipv4
+                "server_host_ipv4=%s" % xmppobject.server_mmc_master_server_host_ipv4
                 + os.linesep
             )
             f.write(
-                "SERVER_PORT_IPV4=%s" % xmppobject.server_mmc_master_server_port_ipv4
+                "server_port_ipv4=%s" % xmppobject.server_mmc_master_server_port_ipv4
                 + (os.linesep) * 1
             )
             f.write(
-                "SERVER_PORT_IPV6=%s" % xmppobject.server_mmc_master_server_port_ipv6
+                "server_port_ipv6=%s" % xmppobject.server_mmc_master_server_port_ipv6
                 + (os.linesep) * 2
             )
             f.write("[filter]" + os.linesep)
             f.write(
-                "ACTIVEFILTRE=%s" % xmppobject.server_mmc_master_active_filter
+                "filter_enabled=%s" % xmppobject.server_mmc_master_active_filter
                 + os.linesep
             )
             f.write(
-                "# ACTIVEFILTRE = True  on filtre les ip des clients. le parametre est ALLOWED_IPS"
+                "# filter_enabled = True  on filtre les ip des clients. le parametre est allowed_ips"
                 + os.linesep
             )
             f.write(
-                "ALLOWED_IPS=%s" % xmppobject.server_mmc_master_allowed_ips + os.linesep
+                "allowed_ips=%s" % xmppobject.server_mmc_master_allowed_ips + os.linesep
             )
             f.write(
-                "# ALLOWED_IPS = list des CIDR permettant de controler que ip de la machine client est permise."
+                "# allowed_ips = list des CIDR permettant de controler que ip de la machine client est permise."
                 + os.linesep
             )
             f.write(
-                "# ALLOWED_IPS = "
+                "# allowed_ips = "
                 "  permet la connexion a tout les clients." + os.linesep
             )
             f.write(
-                "# ALLOWED_IPS = 127.0.0.1/32, ::1/128, localhost permet la connexion a tout les clients local."
+                "# allowed_ips = 127.0.0.1/32, ::1/128, localhost permet la connexion a tout les clients local."
                 + os.linesep
             )
             f.write(
-                "# ALLOWED_IPS = '2001:db8::/96' permet par exemple '2001:0db8:0000:0000:0000:0000:0000:0001"
+                "# allowed_ips = '2001:db8::/96' permet par exemple '2001:0db8:0000:0000:0000:0000:0000:0001"
                 + os.linesep
             )
             f.write(
-                "ALLOWED_TOKEN=%s" % xmppobject.server_mmc_master_allowed_token
+                "allowed_token=%s" % xmppobject.server_mmc_master_allowed_token
                 + os.linesep
             )
             f.write("[message]" + os.linesep)
             f.write(
-                "MAX_MESSAGE_SIZE=%s" % xmppobject.server_mmc_master_max_message_size
+                "max_message_size=%s" % xmppobject.server_mmc_master_max_message_size
                 + os.linesep
             )
             f.write(
-                "COMPRESS=%s" % xmppobject.server_mmc_master_compress + (os.linesep) * 2
+                "compress_message=%s" % xmppobject.server_mmc_master_compress + (os.linesep) * 2
             )
 
     def get_parameters(self):

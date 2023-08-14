@@ -8,8 +8,8 @@ import threading
 HOST = "localhost"
 PORT = 5822
 
-CERTFILE = "/var/lib/pulse2/masterkey/cert.pem"
-KEYFILE = "/var/lib/pulse2/masterkey/key.pem"
+certfile = "/var/lib/pulse2/masterkey/cert.pem"
+keyfile = "/var/lib/pulse2/masterkey/key.pem"
 
 
 # Fonction de gestion de la connexion
@@ -17,7 +17,7 @@ def handle_connection(conn):
     try:
         # Configuration du contexte SSL
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        context.load_cert_chain(certfile=CERTFILE, keyfile=KEYFILE)
+        context.load_cert_chain(certfile=certfile, keyfile=keyfile)
 
         # Établissement de la connexion SSL
         ssl_conn = context.wrap_socket(conn, server_side=True)
