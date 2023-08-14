@@ -282,7 +282,9 @@ def process_connection_ssl(self, connection):
                     "nous acceptons pas le client venant de  %s(%s)"
                     % (remote_adesse, remote_port)
                 )
-                logger.warning("The allowed_ips setting does not have a CIDR value that includes the ip of the client")
+                logger.warning(
+                    "The allowed_ips setting does not have a CIDR value that includes the ip of the client"
+                )
                 return
         try:
             # Création du contexte SSL
@@ -658,7 +660,8 @@ class Configuration:
                 + os.linesep
             )
             f.write(
-                "compress_message=%s" % xmppobject.server_mmc_master_compress + (os.linesep) * 2
+                "compress_message=%s" % xmppobject.server_mmc_master_compress
+                + (os.linesep) * 2
             )
 
     def get_parameters(self):
