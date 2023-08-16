@@ -22,6 +22,7 @@ logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
 
+# DEBUGSCRIPT = True active fonction debug msg_debug_local
 # this plugin calling to starting agent
 
 plugin = {"VERSION" : "1.0", "NAME" : "loadactionupdate", "TYPE" : "substitute", "LOAD" : "START" }
@@ -173,12 +174,20 @@ def create_default_config(objectxmpp):
         with open(pathconffile, 'w') as configfile:
             Config.write(configfile)
 
+
 def msg_debug_local(self, msg):
+    deb=False
     try:
-        if self.debuglocal:
+        global DEBUGSCRIPT
+        deb = True
+    except NameError:
+        deb=False
+    try:
+        if self.debuglocal or deb:
             logger.info(msg)
     except Exception as e:
         logger.error("error localdebug %s" % str(e))
+
 
 def Action_update(self):
     """
@@ -186,38 +195,14 @@ def Action_update(self):
     """
     try:
         read_debug_conf(self)
-        self.msg_debug_local("===================Action_update=====================")
-        pidlist = XmppMasterDatabase().get_pid_list_all_Up_action_update_packages()
-        if pidlist:
-            self.msg_debug_local("Action update pid en cour %s" % pidlist)
-            # pid python or bash
-            cmd=r"""ps -U root -e | grep python | awk '{print $1}'"""
-            self.msg_debug_local("commande list pid possible %s" % cmd)
-            rr = simplecommand(cmd)
-
-            if rr['code'] == 0:
-                list_pid_bash = [ x.strip() for x in rr['result']]
-                self.msg_debug_local("Action update   pid en cour %s" % list_pid_bash)
-            pid_finish = [int(x['id']) for x in  pidlist if x['pid_run'] not in list_pid_bash]
-            self.msg_debug_local("Action update test list pid finish %s" % pid_finish)
-            XmppMasterDatabase().del_Up_action_update_packages_id(pid_finish)
-        resultbase = []
         resultbase = XmppMasterDatabase().get_all_Up_action_update_packages()
         if resultbase:
-            self.msg_debug_local("Action update list action package %s " % resultbase)
             for t in resultbase:
-                cmd = "/usr/sbin/medulla_mysql_exec_update.sh %s" % str(t['action'])
+                cmd = "%s" % (str(t['action'])) # str(t['packages'])/usr/sbin/medulla_mysql_exec_update.sh %s
                 self.msg_debug_local("call launcher : %s" % cmd)
                 rr = simplecommand(cmd)
-                if rr['code'] == 0:
-                    for ligneresult in rr['result']:
-                        if ligneresult.startswith('pid : '):
-                            pid_run = int(ligneresult.split(" ")[2].strip())
-                            self.msg_debug_local("pid programme launcher : %s" % pid_run)
-                            # on met a jour le pid
-                            XmppMasterDatabase().update_pid_all_Up_action_update_packages(int(t['id']),
-                                                                                          pid_run)
-        self.msg_debug_local("===================Action_update=====================")
+            idlist = [ x['id'] for x in resultbase]
+            XmppMasterDatabase().del_Up_action_update_packages_id(idlist)
     except Exception as e:
         logger.error("Plugin %s, we encountered the error %s" % ( plugin['NAME'], str(e)))
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
