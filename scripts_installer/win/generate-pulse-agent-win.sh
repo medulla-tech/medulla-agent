@@ -103,7 +103,7 @@ more_itertools-9.1.0-py3-none-any.whl \
 pyparsing-3.0.9-py3-none-any.whl \
 urllib3-1.26.15-py2.py3-none-any.whl \
 charset_normalizer-3.1.0-cp311-cp311-win_amd64.whl \
-netifaces-0.11.0-cp311-cp311-win_amd64.whl \
+netifaces2-0.0.18-cp37-abi3-win_amd64.whl \
 zc.lockfile-3.0.post1-py3-none-any.whl \
 pypiwin32-223-py3-none-any.whl \
 PyYAML-6.0.1-cp311-cp311-win_amd64.whl \
