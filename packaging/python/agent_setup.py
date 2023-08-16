@@ -36,7 +36,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "netifaces >= 0.11.0",
+        "netifaces2 >= 0.11.0",
         "slixmpp >= 1.8.2",
         "pycurl >= 7.45.1",
         "lxml >= 4.9.1",
@@ -47,6 +47,7 @@ setup(
         "requests >= 2.28.1",
         "lmdb",
         "PyYAML",
+        "netaddr",
     ]
     + (
         ["pathlib >= 1.0.1", "pypiwin32 >= 223", "comtypes >= 1.1.14", "wmi >= 1.5.1"]
