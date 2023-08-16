@@ -36,7 +36,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "netifaces2 >= 0.11.0",
+        "netifaces2 >= 0.0.18",
         "slixmpp >= 1.8.2",
         "pycurl >= 7.45.1",
         "lxml >= 4.9.1",
