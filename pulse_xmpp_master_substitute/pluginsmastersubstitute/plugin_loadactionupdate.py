@@ -31,10 +31,10 @@ GLOBALPARAM={"duration" : 30 , "debuglocal" : False}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug(f"call {plugin} from {msg['from']}")
     logger.debug("=====================================================")
 
-    compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+    compteurcallplugin = getattr(objectxmpp, f"num_call{action}")
     if compteurcallplugin == 0:
         read_conf_loadactionupdate(objectxmpp)
         # install code dynamique : fonction Action_update ci dessous
@@ -50,9 +50,9 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 def create_deploy_for_up_machine_windows(objectxmpp):
     try:
         need_to_add = XmppMasterDatabase().pending_up_machine_windows_white()
+        section = '"section":"update"'
         for update in need_to_add:
             intervals = update['intervals'] if update['intervals'] is not None else ""
-            section = '"section":"update"'
             command = MscDatabase().createcommanddirectxmpp(update['update_id'],
                 '',
                 section,
@@ -78,7 +78,7 @@ def create_deploy_for_up_machine_windows(objectxmpp):
             try:
                 target = MscDatabase().xmpp_create_Target(update['uuidmachine'], update['hostname'])
             except Exception as e:
-                logger.error("Unable to create Msc Target for update %s"%update['update_id'])
+                logger.error(f"Unable to create Msc Target for update {update['update_id']}")
 
             com_on_host = MscDatabase().xmpp_create_CommandsOnHost(command.id,
                 target['id'],
@@ -102,10 +102,12 @@ def create_deploy_for_up_machine_windows(objectxmpp):
                     0,
                     0,
                     {})
-                logger.info("Update %s will be deployed on %s between %s and %s %s"%(update['update_id'], update['title'], update['start_date'], update['end_date'], intervals))
+                logger.info(
+                    f"Update {update['update_id']} will be deployed on {update['title']} between {update['start_date']} and {update['end_date']} {intervals}"
+                )
 
             else:
-                logger.error("Unable to create phases for update %s"%(update['title']))
+                logger.error(f"Unable to create phases for update {update['title']}")
     except Exception as e:
         logger.error(e)
 
@@ -123,12 +125,14 @@ def read_conf_loadactionupdate(objectxmpp):
             "\neg conf:\n[parameters]\ntime_scrutation = %s\n" \
                 "\ndebuglocal=%s" %(plugin['NAME'], pathconffile, GLOBALPARAM["duration"], GLOBALPARAM["debuglocal"]))
         create_default_config(objectxmpp)
-        logger.warning("default value for time_scrutation is %s secondes" % objectxmpp.time_scrutation)
+        logger.warning(
+            f"default value for time_scrutation is {objectxmpp.time_scrutation} secondes"
+        )
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathconffile)
-        if os.path.exists(pathconffile + ".local"):
-            Config.read(pathconffile + ".local")
+        if os.path.exists(f"{pathconffile}.local"):
+            Config.read(f"{pathconffile}.local")
         if Config.has_option("parameters", "time_scrutation"):
             objectxmpp.time_scrutation = Config.getint('parameters', 'time_scrutation')
         else:
@@ -139,10 +143,10 @@ def read_conf_loadactionupdate(objectxmpp):
         else:
             # default values parameters
             objectxmpp.debuglocal = GLOBALPARAM["debuglocal"]
-        logger.info("%s"%vars(Config)['_sections'])
+        logger.info(f"{vars(Config)['_sections']}")
         # file_get_contents
-        logger.info("debuglocal  %s   " % objectxmpp.debuglocal )
-        logger.info("time_scrutation  %s   " % objectxmpp.time_scrutation )
+        logger.info(f"debuglocal  {objectxmpp.debuglocal}   ")
+        logger.info(f"time_scrutation  {objectxmpp.time_scrutation}   ")
 
 def read_debug_conf(objectxmpp):
     """
@@ -155,8 +159,8 @@ def read_debug_conf(objectxmpp):
     if os.path.isfile(pathconffile):
         Config = ConfigParser.ConfigParser()
         Config.read(pathconffile)
-        if os.path.exists(pathconffile + ".local"):
-            Config.read(pathconffile + ".local")
+        if os.path.exists(f"{pathconffile}.local"):
+            Config.read(f"{pathconffile}.local")
         if Config.has_option("parameters", "debuglocal"):
             objectxmpp.debuglocal = Config.getboolean('parameters', 'debuglocal')
 
@@ -166,7 +170,7 @@ def create_default_config(objectxmpp):
     nameconffile = plugin['NAME'] + ".ini"
     pathconffile = os.path.join( objectxmpp.config.pathdirconffile, nameconffile )
     if not os.path.isfile(pathconffile):
-        logger.warning("Creation default config file %s" % pathconffile)
+        logger.warning(f"Creation default config file {pathconffile}")
         Config = ConfigParser.ConfigParser()
         Config.add_section('parameters')
         Config.set('parameters', 'time_scrutation', GLOBALPARAM["duration"])
@@ -186,7 +190,7 @@ def msg_debug_local(self, msg):
         if self.debuglocal or deb:
             logger.info(msg)
     except Exception as e:
-        logger.error("error localdebug %s" % str(e))
+        logger.error(f"error localdebug {str(e)}")
 
 
 def Action_update(self):
@@ -195,14 +199,15 @@ def Action_update(self):
     """
     try:
         read_debug_conf(self)
-        resultbase = XmppMasterDatabase().get_all_Up_action_update_packages()
-        if resultbase:
+        if (
+            resultbase := XmppMasterDatabase().get_all_Up_action_update_packages()
+        ):
             for t in resultbase:
-                cmd = "%s" % (str(t['action'])) # str(t['packages'])/usr/sbin/medulla_mysql_exec_update.sh %s
-                self.msg_debug_local("call launcher : %s" % cmd)
+                cmd = f"{str(t['action'])}"
+                self.msg_debug_local(f"call launcher : {cmd}")
                 rr = simplecommand(cmd)
             idlist = [ x['id'] for x in resultbase]
             XmppMasterDatabase().del_Up_action_update_packages_id(idlist)
     except Exception as e:
-        logger.error("Plugin %s, we encountered the error %s" % ( plugin['NAME'], str(e)))
-        logger.error("We obtained the backtrace %s" % traceback.format_exc())
+        logger.error(f"Plugin {plugin['NAME']}, we encountered the error {str(e)}")
+        logger.error(f"We obtained the backtrace {traceback.format_exc()}")
