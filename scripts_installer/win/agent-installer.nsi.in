@@ -340,7 +340,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ClearErrors
   SetOutPath "$INSTDIR\tmp"
   File "${CACERTIFICATE}"
-  StrCpy $0 `certutil -addstore root "$INSTDIR\tmp\${CACERTIFICATE}"`
+  StrCpy $0 `certutil -addstore ca "$INSTDIR\tmp\${CACERTIFICATE}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
     SectionIn RO
