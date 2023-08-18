@@ -23,7 +23,6 @@ logger = logging.getLogger()
 if sys.platform.startswith("win"):
     from lib import registerwindows
     import winreg
-from xml.etree import ElementTree
 from slixmpp import jid
 
 DEBUGPULSEPLUGIN = 25

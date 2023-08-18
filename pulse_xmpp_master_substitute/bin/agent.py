@@ -39,7 +39,6 @@ import signal
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.manage_scheduler import manage_scheduler
-import asyncio
 import random
 from lib import manageRSAsigned
 import datetime

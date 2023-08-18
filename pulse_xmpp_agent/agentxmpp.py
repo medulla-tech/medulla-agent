@@ -76,7 +76,6 @@ from lib.utils import (
     serialnumbermachine,
     file_put_contents_w_a,
     os_version,
-    unregister_agent,
     offline_search_kb,
     file_message_iq,
     call_plugin_sequentially,
@@ -101,8 +100,6 @@ import multiprocessing
 from modulefinder import ModuleFinder
 from datetime import datetime
 
-import datetime
-
 import zipfile
 
 
@@ -111,8 +108,7 @@ from slixmpp import jid
 from slixmpp.xmlstream import handler, matcher
 from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp.xmlstream.stanzabase import ET
-from slixmpp.xmlstream.handler import CoroutineCallback
-from slixmpp.xmlstream.handler import Callback
+from slixmpp.xmlstream.handler import Callback, CoroutineCallback
 from slixmpp.xmlstream.matcher.xpath import MatchXPath
 from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
 from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
@@ -120,9 +116,7 @@ from slixmpp.xmlstream.matcher.many import MatchMany
 from slixmpp.xmlstream.matcher.idsender import MatchIDSender
 from slixmpp.xmlstream.matcher.id import MatcherId
 from slixmpp.xmlstream.matcher.base import MatcherBase
-import slixmpp
 import asyncio
-from slixmpp.xmlstream.handler import Callback, CoroutineCallback
 
 if sys.platform.startswith("win"):
     import win32api

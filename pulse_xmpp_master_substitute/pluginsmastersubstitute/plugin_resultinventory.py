@@ -13,26 +13,20 @@ import urllib.request
 import urllib.error
 import time
 import json
-import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.utils import convert
 import re
 import inspect
 import requests
-import gzip
 import shutil
 from urllib.parse import urlparse
 from datetime import datetime
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-import zlib
 import logging
 from logging.handlers import RotatingFileHandler
 import importlib.util
 
-
-from urllib.parse import urlparse
-from datetime import datetime
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip

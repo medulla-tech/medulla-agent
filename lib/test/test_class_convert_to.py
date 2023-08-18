@@ -24,7 +24,6 @@ from json2xml import json2xml
 from json2xml.utils import readfromstring, readfromjson
 import xmltodict
 import yaml
-import json
 from collections import OrderedDict
 
 

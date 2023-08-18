@@ -50,11 +50,8 @@ import yaml
 import inspect
 
 import xml.dom.minidom
-import xmltodict
-import yaml
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
-import collections
 
 
 if sys.platform.startswith("win"):
@@ -79,8 +76,6 @@ if sys.platform.startswith("darwin"):
     import pwd
     import grp
     import fcntl
-
-import inspect
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.insert(0, currentdir)

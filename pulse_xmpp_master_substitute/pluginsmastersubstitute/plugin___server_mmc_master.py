@@ -65,8 +65,6 @@ import asyncio
 from slixmpp import ClientXMPP
 import xml.etree.ElementTree as ET
 
-import datetime
-
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "__server_mmc_master", "TYPE": "code"}  # fmt: skip

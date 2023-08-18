@@ -34,11 +34,6 @@ from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
 from lib.utils import getRandomName, call_plugin, call_plugin_separate, simplecommand
 
-# os.makedirs(base_file, exist_ok=True)
-
-import configparser
-
-# , call_pluginseparatedthred
 import re
 from distutils.version import LooseVersion
 import configparser
