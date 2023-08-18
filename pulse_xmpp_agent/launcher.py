@@ -1098,22 +1098,22 @@ def programfilepath(pathwindows):
         >>> programfilepath("D:/répertoire_sans_espaces/")
         'D:\\répertoire_sans_espaces'
     """
-    if sys.platform.startswith("win"):
-        pathwindows = os.path.normpath(pathwindows)
-        disk_path = pathwindows.split(":")
-        if len(disk_path) < 2:
-            return pathwindows
-        disk = disk_path.pop(0) + ":" + "\\\\"
-        pathdir = "".join(disk_path)
-        t = [x.strip('" ') for x in pathdir.split("\\") if x.strip('" ') != ""]
-        result = []
-        for x in t:
-            if " " in x:
-                result.append('"' + x + '"')
-            else:
-                result.append(x)
-        return disk + "\\\\".join(result)
-    return pathwindows
+    if not sys.platform.startswith("win"):
+        return pathwindows
+    pathwindows = os.path.normpath(pathwindows)
+    disk_path = pathwindows.split(":")
+    if len(disk_path) < 2:
+        return pathwindows
+    disk = f"{disk_path.pop(0)}:" + "\\\\"
+    pathdir = "".join(disk_path)
+    t = [x.strip('" ') for x in pathdir.split("\\") if x.strip('" ') != ""]
+    result = []
+    for x in t:
+        if " " in x:
+            result.append(f'"{x}"')
+        else:
+            result.append(x)
+    return disk + "\\\\".join(result)
 
 
 def start_agent(pathagent, agent="connection", console=False, typeagent="machine"):
@@ -1132,12 +1132,11 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
             logger.debug(
                 f"launcher for os system  {pythonexec} {agentfunction}{modeagent} -t {typeagent}"
             )
-            os.system(f"{pythonexec} {agentfunction}{modeagent} -t {typeagent}")
         else:
             logger.debug(
                 f"launcher for os windows system {pythonexec}  {agentfunction}{modeagent} -t {typeagent}"
             )
-            os.system(f"{pythonexec} {agentfunction}{modeagent} -t {typeagent}")
+        os.system(f"{pythonexec} {agentfunction}{modeagent} -t {typeagent}")
         logger.debug(
             "Refreshing fingerprint of configuration agent after its reconfiguration"
         )

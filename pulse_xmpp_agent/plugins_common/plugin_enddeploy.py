@@ -16,7 +16,7 @@ logger = logging.getLogger()
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")
     logging.getLogger().debug(
-        "call %s from %s session id %s" % (plugin, message["from"], sessionid)
+        f'call {plugin} from {message["from"]} session id {sessionid}'
     )
     logging.getLogger().debug("###################################################")
     if objectxmpp.config.agenttype in ["relayserver"]:
@@ -25,7 +25,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             # Convention 1 ban
             pathfile = utils._path_packagequickaction()
             filedeploy = [x for x in os.listdir(pathfile) if x.endswith("QDeploy")]
-            logging.getLogger().debug("filedeploy %s" % filedeploy)
+            logging.getLogger().debug(f"filedeploy {filedeploy}")
             # Remove all pool files
             for filledeployement in filedeploy:
                 tabfile = filledeployement.split("@_@_@")
@@ -41,10 +41,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                 utils._path_packagequickaction(), "*.QDeploy"
                             )
                         )
-                        if res["code"] == 0:
-                            nbpool = res["result"]
-                        else:
-                            nbpool = "????"
+                        nbpool = res["result"] if res["code"] == 0 else "????"
                         objectxmpp.xmpplog(
                             "<span class='log_err'>ABORT DEPLOYMENT CANCELLED BY USER</span>\n "
                             "Deleting deployment %s from queue %s : %s"
@@ -70,8 +67,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             ).getdatasession()
             result = utils.simplecommand(
                 utils.encode_strconsole(
-                    "netstat -tpn | grep -v tcp6 | grep -v sshd | grep ssh | grep ESTABLISHED | grep '%s'"
-                    % datesession["ipmachine"]
+                    f"""netstat -tpn | grep -v tcp6 | grep -v sshd | grep ssh | grep ESTABLISHED | grep '{datesession["ipmachine"]}'"""
                 )
             )
             if result["code"] == 0:
@@ -83,20 +79,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     if "ssh" in parameterconnection[6]:
                         processus = parameterconnection[6].split("/")[0]
                         logger.debug(
-                            "Stopping file transfer %s [package %s] to machine %s"
-                            % (
-                                datesession["packagefile"],
-                                datesession["name"],
-                                datesession["jidmachine"].split("/")[1],
-                            )
+                            f'Stopping file transfer {datesession["packagefile"]} [package {datesession["name"]}] to machine {datesession["jidmachine"].split("/")[1]}'
                         )
                         objectxmpp.xmpplog(
-                            "Stopping file transfer %s [package %s] to machine %s"
-                            % (
-                                datesession["packagefile"],
-                                datesession["name"],
-                                datesession["jidmachine"].split("/")[1],
-                            ),
+                            f'Stopping file transfer {datesession["packagefile"]} [package {datesession["name"]}] to machine {datesession["jidmachine"].split("/")[1]}',
                             type="deploy",
                             sessionname=sessionid,
                             priority=-1,
@@ -110,12 +96,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             touser="",
                         )
                         result1 = utils.simplecommand(
-                            utils.encode_strconsole("kill -6 %s" % processus)
+                            utils.encode_strconsole(f"kill -6 {processus}")
                         )
                         if result1["code"] != 0:
                             logger.error(
-                                "the process %s closed with the status %s"
-                                % (processus, str(result1["result"]))
+                                f'the process {processus} closed with the status {str(result1["result"])}'
                             )
         # add session id pour clear interdiction apres un certain momment
         objectxmpp.banterminate[sessionid] = time.time()

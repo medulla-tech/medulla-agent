@@ -53,22 +53,22 @@ plugin = {"VERSION": "1.0", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
     try:
         logger.debug("###################################################")
-        logger.debug("call %s from %s" % (plugin, msg["from"]))
+        logger.debug(f'call {plugin} from {msg["from"]}')
         logger.debug("###################################################")
         strjidagent = str(xmppobject.boundjid.bare)
 
         logger.debug("========================================================")
-        logger.debug("call %s from %s" % (plugin, msg["from"]))
+        logger.debug(f'call {plugin} from {msg["from"]}')
         logger.debug("=======================================================")
-        compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
+        compteurcallplugin = getattr(xmppobject, f"num_call{action}")
         if compteurcallplugin == 0:
             logger.debug("===================== master_agent =====================")
             logger.debug("========================================================")
             read_conf_load_agent_machine(xmppobject)
             logger.debug("========================================================")
     except Exception as e:
-        logger.error("Plugin load_agent_machine, we encountered the error %s" % str(e))
-        logger.error("We obtained the backtrace %s" % traceback.format_exc())
+        logger.error(f"Plugin load_agent_machine, we encountered the error {str(e)}")
+        logger.error(f"We obtained the backtrace {traceback.format_exc()}")
 
 
 def read_conf_load_agent_machine(xmppobject):
@@ -83,21 +83,16 @@ def read_conf_load_agent_machine(xmppobject):
                 "\n\t%s missing" % (plugin["NAME"], pathfileconf)
             )
         else:
-            logger.info("Read Configuration in File %s" % pathfileconf)
+            logger.info(f"Read Configuration in File {pathfileconf}")
         Config = configparser.ConfigParser()
         Config.read(pathfileconf)
-        if os.path.exists(pathfileconf + ".local"):
-            Config.read(pathfileconf + ".local")
-            ### actuelly parameter empty
-            pass
+        if os.path.exists(f"{pathfileconf}.local"):
+            Config.read(f"{pathfileconf}.local")
     except Exception as e:
-        logger.error("We obtained the backtrace %s" % traceback.format_exc())
+        logger.error(f"We obtained the backtrace {traceback.format_exc()}")
 
     logger.debug("Install fonction code specialiser agent machine")
-    xmppobject.list_function_agent_name = []
-    # ---------- install "get_list_function_dyn_agent_machine" --------
-    xmppobject.list_function_agent_name.append("get_list_function_dyn_agent_machine")
-
+    xmppobject.list_function_agent_name = ["get_list_function_dyn_agent_machine"]
     xmppobject.get_list_function_dyn_agent_machine = types.MethodType(
         get_list_function_dyn_agent_machine, xmppobject
     )
@@ -108,7 +103,7 @@ def read_conf_load_agent_machine(xmppobject):
     )
 
     ### Create TCP/IP Server
-    module = "%s/plugin_%s.py" % (xmppobject.modulepath, "__server_tcpip")
+    module = f"{xmppobject.modulepath}/plugin___server_tcpip.py"
 
     logger.debug("module :% s " % module)
     try:
@@ -127,13 +122,12 @@ def read_conf_load_agent_machine(xmppobject):
                 % (plugin["NAME"], conffile_path)
             )
     except Exception as e:
-        logger.error("We obtained the backtrace %s" % traceback.format_exc())
+        logger.error(f"We obtained the backtrace {traceback.format_exc()}")
 
 
 def get_list_function_dyn_agent_machine(xmppobject):
     logger.debug(
-        "return list function install from this plugin : %s"
-        % xmppobject.list_function_agent_name
+        f"return list function install from this plugin : {xmppobject.list_function_agent_name}"
     )
     return xmppobject.list_function_agent_name
 
@@ -165,37 +159,29 @@ def _minifyjsonstringrecv(strjson):
 def _test_type(value):
     if isinstance(value, (bool, int, float)):
         return value
-    else:
+    try:
+        return int(value)
+    except BaseException:
         try:
-            return int(value)
+            return float(value)
         except BaseException:
-            try:
-                return float(value)
-            except BaseException:
-                _value = value.lstrip(" ").strip(" ").lower().capitalize()
-                if _value == "True":
-                    return True
-                elif _value == "False":
-                    return False
-                else:
-                    return value
+            _value = value.lstrip(" ").strip(" ").lower().capitalize()
+            if _value == "False":
+                return False
+            elif _value == "True":
+                return True
+            else:
+                return value
 
 
 def _runjson(jsonf, level=0):
     if isinstance(jsonf, dict):
-        msg = "%sdict" % (level * "  ")
-        tmp = {}
-        for element in jsonf:
-            tmp[element] = _runjson(jsonf[element], level=level + 1)
-        return tmp
+        msg = f'{level * "  "}dict'
+        return {element: _runjson(jsonf[element], level=level + 1) for element in jsonf}
     elif isinstance(jsonf, list):
-        tmp = []
-        for element in jsonf:
-            tmp.append(_runjson(element, level=level + 1))
-        return tmp
+        return [_runjson(element, level=level + 1) for element in jsonf]
     else:
-        tmp = _test_type(jsonf)
-        return tmp
+        return _test_type(jsonf)
 
 
 def handle_client_connection(self, msg):
@@ -205,7 +191,7 @@ def handle_client_connection(self, msg):
     substitute_recv = ""
 
     try:
-        logger.info("Received {}".format(msg))
+        logger.info(f"Received {msg}")
         datasend = {
             "action": "resultkiosk",
             "sessionid": utils.getRandomName(6, "kioskGrub"),
@@ -221,7 +207,7 @@ def handle_client_connection(self, msg):
             result = _runjson(_result)
             logger.info("__Event network or kiosk %s" % json.dumps(result, indent=4))
         except ValueError as e:
-            logger.error("Message socket is not json correct : %s" % (str(e)))
+            logger.error(f"Message socket is not json correct : {str(e)}")
             return False, ""
         try:
             if "interface" in result:
@@ -259,8 +245,7 @@ def handle_client_connection(self, msg):
                     )
                 if self.config.ipxmpp in result["removedinterface"]:
                     logger.info(
-                        "The IP address used to contact the XMPP Server is: %s"
-                        % self.config.ipxmpp
+                        f"The IP address used to contact the XMPP Server is: {self.config.ipxmpp}"
                     )
                     logger.info(
                         "__DETECT SUPP INTERFACE USED FOR CONNECTION AGENT MACHINE TO EJABBERD__"
@@ -292,26 +277,23 @@ def handle_client_connection(self, msg):
                                 "Agent reconfiguration needed to resume the service."
                             )
                             self.networkMonitor()
-                            pass
+                elif len(result["interface"]) < 2:
+                    # il y a seulement l'interface 127.0.0.1
+                    # dans ce cas on refait la total.
+                    logger.warning(
+                        "The new uniq network interface. "
+                        "Agent reconfiguration needed to resume the service."
+                    )
+                    self.networkMonitor()
                 else:
-                    # detection si 1 seule interface presente or 127.0.0.1
-                    if len(result["interface"]) < 2:
-                        # il y a seulement l'interface 127.0.0.1
-                        # dans ce cas on refait la total.
-                        logger.warning(
-                            "The new uniq network interface. "
-                            "Agent reconfiguration needed to resume the service."
-                        )
-                        self.networkMonitor()
-                    else:
-                        logger.warning(
-                            "The new network interface is directly usable. Nothing to do"
-                        )
-                        self.md5reseau = utils.refreshfingerprint()
-                        self.update_plugin()
+                    logger.warning(
+                        "The new network interface is directly usable. Nothing to do"
+                    )
+                    self.md5reseau = utils.refreshfingerprint()
+                    self.update_plugin()
                 return True, ""
         except Exception as e:
-            logger.error("%s" % str(e))
+            logger.error(f"{str(e)}")
             return False, ""
         # Manage message from tcp connection
         logger.debug("RECV FROM TCP/IP CLIENT")
@@ -383,10 +365,7 @@ def handle_client_connection(self, msg):
             elif result["action"] == "help":
                 # direct action help
                 return helpcmd(self, result)
-            elif (
-                result["action"] == "terminalInformations"
-                or result["action"] == "terminalAlert"
-            ):
+            elif result["action"] in ["terminalInformations", "terminalAlert"]:
                 substitute_recv = self.sub_monitoring
                 datasend["action"] = "vectormonitoringagent"
                 datasend["sessionid"] = utils.getRandomName(
@@ -401,23 +380,22 @@ def handle_client_connection(self, msg):
             else:
                 # bad action
                 logger.warning(
-                    "this action is not taken " "into account : %s" % result["action"]
+                    f'this action is not taken into account : {result["action"]}'
                 )
                 return False, ""
             if substitute_recv:
                 # pour le monitoring l agent est  le substitut monitoring
-                logger.warning("send to %s " % substitute_recv)
+                logger.warning(f"send to {substitute_recv} ")
                 self.send_message(
                     mbody=json.dumps(datasend), mto=substitute_recv, mtype="chat"
                 )
-                return True, ""
             else:
                 # Call plugin on master
                 logger.warning("send to master")
                 self.send_message_to_master(datasend)
-                return True, ""
+            return True, ""
     except Exception as e:
-        logger.error("message to kiosk server : %s" % str(e))
+        logger.error(f"message to kiosk server : {str(e)}")
         logger.error("\n%s" % (traceback.format_exc()))
         return False, ""
 
@@ -520,13 +498,11 @@ def iqsendpulse_str(xmppobject, result):
 def unzip_str(xmppobject, result):
     boolresult, msg = helpcmd(xmppobject, {"data": result["action"]})
     try:
-        if "data" in result and isinstance(result["data"], str):
-            resultdata = zlib.decompress(base64.b64decode(result["data"]))
-            msg = resultdata.decode("utf-8")
-            return False, msg
-        else:
-            msgdecompress = "error verify format command \n"
-            return False, msgdecompress + msg
+        if "data" not in result or not isinstance(result["data"], str):
+            return False, "error verify format command \n" + msg
+        resultdata = zlib.decompress(base64.b64decode(result["data"]))
+        msg = resultdata.decode("utf-8")
+        return False, msg
     except Exception as e:
         msgr = "error verify format command %s\n%s" % (msg, traceback.format_exc())
         logger.warning(msgr)
@@ -611,12 +587,11 @@ def set_debug_level_str(xmppobject, result):
         if "data" in result and result["data"]:
             if isinstance(result["data"], (str, int)):
                 name, level = levellogger()
-                newlevel = value_facility(result["data"])
-                if newlevel:
+                if newlevel := value_facility(result["data"]):
                     msgr = "logger name %s( old level %s)\n" % (name, level)
                     logging.getLogger().setLevel(newlevel)
                     name, level = levellogger()
-                    msgr = msgr + "logger name %s( new level %s)\n" % (name, level)
+                    msgr += "logger name %s( new level %s)\n" % (name, level)
                     return False, msgr
                 msgr = "error verify format command \n %s" % (msg)
                 return False, msgr
@@ -643,22 +618,20 @@ def set_debug_level_str(xmppobject, result):
                             name, level = levellogger(
                                 module_name_handler=result["data"]["loggername"]
                             )
-                            msgr = msgr + "logger name %s( new level %s)\n" % (
+                            msgr += "logger name %s( new level %s)\n" % (
                                 name,
                                 level,
                             )
-                            return False, msgr
                         else:
                             msgr = "error verify format module existe\n %s %s" % (
                                 result["data"]["loggername"],
                                 msg,
                             )
-                            return False, msgr
+                        return False, msgr
                     except Exception as e:
-                        logger.error("%s" % traceback.format_exc())
+                        logger.error(f"{traceback.format_exc()}")
                         logger.error(
-                            "handler module logger missing %s"
-                            % result["data"]["loggername"]
+                            f'handler module logger missing {result["data"]["loggername"]}'
                         )
                         msgr = "handler module logger missing %s\n%s" % (
                             result["data"]["loggername"],
@@ -671,20 +644,18 @@ def set_debug_level_str(xmppobject, result):
 
 
 def get_debug_level_str(xmppobject, result):
-    logger.error("get_debug_level_str %s" % result)
+    logger.error(f"get_debug_level_str {result}")
     boolresult, msg = helpcmd(xmppobject, {"data": result["action"]})
-    logger.error("get_debug_level_str %s %s" % (boolresult, msg))
+    logger.error(f"get_debug_level_str {boolresult} {msg}")
     try:
         if "data" in result and result["data"]:
             handler_name_obj = logging.getLogger(result["data"])
             name, level = levellogger(module_name_handler=result["data"])
-            msgr = "logger name %s( level %s)\n" % (name, level)
-            return False, msgr
         else:
             handler_name_obj = logging.getLogger()
             name, level = levellogger()
-            msgr = "logger name %s( level %s)\n" % (name, level)
-            return False, msgr
+        msgr = "logger name %s( level %s)\n" % (name, level)
+        return False, msgr
     except Exception:
         msgr = "error verify format command %s\n%s" % (msg, traceback.format_exc())
         logger.warning(msgr)
