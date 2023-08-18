@@ -11,7 +11,9 @@ import socket
 import logging
 import pycurl
 import platform
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import shutil
 from urllib.parse import urlparse
 from lib import utils, managepackage, grafcetdeploy
