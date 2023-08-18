@@ -15,7 +15,6 @@ import json
 import logging
 import subprocess
 import lxml.etree as ET
-from xml.etree import ElementTree
 
 import hashlib
 
