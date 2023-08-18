@@ -24,6 +24,10 @@ def get_ars_key(xmppobject, remotejidars, timeout=15):
             },
             timeout,
         )
+        if isinstance(iqresult, str):
+            res = json.loads(iqresult.encode("utf-8"))
+        elif isinstance(iqresult, dict):
+            return iqresult
         res = json.loads(iqresult)
         return res
     except KeyError:

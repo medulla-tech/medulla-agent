@@ -3269,26 +3269,30 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     Returns:
         message sent telling if the key have been well copied or not.
     """
-    if sys.platform.startswith("win"):
-        authorized_keys_path = os.path.join(
-            "C:\\Users", username, ".ssh", "authorized_keys"
-        )
-    else:
-        authorized_keys_path = os.path.join(
-            os.path.expanduser("~%s" % username), ".ssh", "authorized_keys"
-        )
-    if not os.path.isfile(authorized_keys_path):
-        logger.debug("Creating authorized_keys file in %s" % authorized_keys_path)
-        if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-            os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
-        file_put_contents(authorized_keys_path, key)
-    else:
-        authorized_keys_content = file_get_contents(authorized_keys_path)
-        if not key.strip(" \t\n\r") in authorized_keys_content:
-            logger.debug("Adding key to %s" % authorized_keys_path)
-            file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
+    try:
+        if sys.platform.startswith("win"):
+            authorized_keys_path = os.path.join(
+                "C:\\Users", username, ".ssh", "authorized_keys"
+            )
         else:
-            logger.debug("Key is already present in %s" % authorized_keys_path)
+            authorized_keys_path = os.path.join(
+                os.path.expanduser("~%s" % username), ".ssh", "authorized_keys"
+            )
+        if not os.path.isfile(authorized_keys_path):
+            logger.debug("Creating authorized_keys file in %s" % authorized_keys_path)
+            if not os.path.isdir(os.path.dirname(authorized_keys_path)):
+                os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
+            file_put_contents(authorized_keys_path, key)
+        else:
+            authorized_keys_content = file_get_contents(authorized_keys_path)
+            if not key.strip(" \t\n\r") in authorized_keys_content:
+                logger.debug("Adding key to %s" % authorized_keys_path)
+                file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
+            else:
+                logger.debug("Key is already present in %s" % authorized_keys_path)
+    except PermissionError as e:
+        logger.debug("Permission Error Key verifier les permitions enecriture de l agent")
+        return False , e
     # Check if key is present
     authorized_keys_content = file_get_contents(authorized_keys_path)
     if key.strip(" \t\n\r") in authorized_keys_content:
