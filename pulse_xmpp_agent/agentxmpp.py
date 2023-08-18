@@ -2550,6 +2550,8 @@ class MUCBot(slixmpp.ClientXMPP):
         )
 
     async def start(self, event):
+        self.send_presence()
+        await self.get_roster()
         # send iq to subscribe
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         self.__clean_message_box()
