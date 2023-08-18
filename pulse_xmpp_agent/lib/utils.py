@@ -710,12 +710,11 @@ class FunctionThread(threading.Thread):
     def start(self):
         threading.Thread.start(self)
         self.join(self.timeout)  # Attendre jusqu'à la fin du thread ou le timeout
-        if self.is_alive():
-            # Si le thread n'est pas terminé dans le délai imparti, on le termine de force
-            self._stop()
-            raise TimeoutError("Le thread a dépassé le temps d'exécution maximal.")
-        else:
+        if not self.is_alive():
             return self.result
+        # Si le thread n'est pas terminé dans le délai imparti, on le termine de force
+        self._stop()
+        raise TimeoutError("Le thread a dépassé le temps d'exécution maximal.")
 
 
 def call_mon_plugin(name, *args, **kwargs):
@@ -723,30 +722,30 @@ def call_mon_plugin(name, *args, **kwargs):
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
-                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-                logger.debug("Loading plugin %s" % args[1])
+                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
+                logger.debug(f"Loading plugin {args[1]}")
 
                 loop = asyncio.new_event_loop()
                 count = 0
                 try:
-                    count = getattr(args[0], "num_call%s" % args[1])
-                    setattr(args[0], "num_call%s" % args[1], count + 1)
+                    count = getattr(args[0], f"num_call{args[1]}")
+                    setattr(args[0], f"num_call{args[1]}", count + 1)
                 except AttributeError:
                     count = 0
-                    setattr(args[0], "num_call%s" % args[1], count)
+                    setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
                 # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
                 executor = ThreadPoolExecutor()
                 thread = FunctionThread(pluginaction.action, *args, **kwargs)
                 result = loop.run_in_executor(executor, thread.start)
             else:
-                logging.getLogger().debug("The plugin %s is excluded" % args[1])
+                logging.getLogger().debug(f"The plugin {args[1]} is excluded")
         else:
             logging.getLogger().debug(
-                "The plugin %s is not allowed due to plugin_action parameter" % args[1]
+                f"The plugin {args[1]} is not allowed due to plugin_action parameter"
             )
     except:
-        logging.getLogger().error(("%s" % (traceback.format_exc())))
+        logging.getLogger().error(f"{traceback.format_exc()}")
 
 
 def call_plugin(name, *args, **kwargs):
@@ -2871,7 +2870,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            msg = "%s user account already exists. Nothing to do." % username
+            msg = f"{username} user account already exists. Nothing to do."
             return True, msg
         except Exception:
             adduser_cmd = (
@@ -2887,13 +2886,13 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
             simplecommand(
                 encode_strconsole(
-                    'net localgroup %s "%s" /ADD' % (adminsgroup, username)
+                    f'net localgroup {adminsgroup} "{username}" /ADD'
                 )
             )
-            msg = "%s user account already exists. Nothing to do." % username
+            msg = f"{username} user account already exists. Nothing to do."
             return True, msg
         except Exception:
-            passwdchars = string.hexdigits + "-" + "$" + "#" + "," + "_"
+            passwdchars = f"{string.hexdigits}-$#,_"
             userpassword = "".join(random.sample(list(passwdchars), 14))
             adduser_cmd = (
                 'net user "%s" "%s" /ADD /COMMENT:"Pulse '
@@ -2903,10 +2902,10 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            msg = "%s user account already exists. Nothing to do." % username
+            msg = f"{username} user account already exists. Nothing to do."
             return True, msg
         except Exception:
-            passwdchars = string.hexdigits + "-" + "$" + "#" + "," + "_"
+            passwdchars = f"{string.hexdigits}-$#,_"
             userpassword = "".join(random.sample(list(passwdchars), 14))
             adduser_cmd = (
                 "dscl . -create /Users/%s "
@@ -2916,7 +2915,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     # Create the account
     result = simplecommand(encode_strconsole(adduser_cmd))
     if result["code"] == 0:
-        msg = "Creation of %s user account successful: %s" % (username, result)
+        msg = f"Creation of {username} user account successful: {result}"
         # Other operations specific to Windows
         if sys.platform.startswith("win"):
             result = simplecommand(
@@ -2926,23 +2925,17 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
                 )
             )
             if result["code"] != 0:
-                msg = "Error setting %s user account to not expire: %s" % (
-                    username,
-                    result,
-                )
+                msg = f"Error setting {username} user account to not expire: {result}"
                 return False, msg
             adminsgrpsid = win32security.ConvertStringSidToSid("S-1-5-32-544")
             adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
             result = simplecommand(
                 encode_strconsole(
-                    'net localgroup %s "%s" /ADD' % (adminsgroup, username)
+                    f'net localgroup {adminsgroup} "{username}" /ADD'
                 )
             )
             if result["code"] != 0:
-                msg = "Error adding %s account to administrators group: %s" % (
-                    username,
-                    result,
-                )
+                msg = f"Error adding {username} account to administrators group: {result}"
                 return False, msg
             result = simplecommand(
                 encode_strconsole(
@@ -2951,18 +2944,16 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
                 )
             )
             if result["code"] != 0:
-                msg = "Error hiding %s account: %s" % (username, result)
+                msg = f"Error hiding {username} account: {result}"
                 return False, msg
             user_home = os.path.join("c:\\", "Users", username)
-            hide_from_explorer = simplecommand(
-                encode_strconsole("attrib +h %s" % user_home)
-            )
+            hide_from_explorer = simplecommand(encode_strconsole(f"attrib +h {user_home}"))
             if hide_from_explorer["code"] != 0:
-                msg = "Error hiding %s account: %s" % (username, hide_from_explorer)
+                msg = f"Error hiding {username} account: {hide_from_explorer}"
                 return False, msg
         return True, msg
     else:
-        msg = "Creation of %s user account failed: %s" % (username, result)
+        msg = f"Creation of {username} user account failed: {result}"
         return False, msg
 
 
@@ -3001,7 +2992,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
 
         userenvdll = ctypes.WinDLL("userenv.dll")
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath("C:/Users/%s" % username).strip().lower()
+        defined_profilepath = os.path.normpath(f"C:/Users/{username}").strip().lower()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
@@ -3014,33 +3005,21 @@ def pulseuser_profile_mustexist(username="pulseuser"):
                 os.path.normpath(ptr_profilepath.value).strip().lower()
                 == defined_profilepath
             ):
-                msg = "%s profile created successfully at %s" % (
-                    username,
-                    ptr_profilepath.value,
-                )
+                msg = f"{username} profile created successfully at {ptr_profilepath.value}"
                 return True, msg
             else:
-                msg = "Error creating %s profile at %s" % (
-                    username,
-                    ptr_profilepath.value,
-                )
+                msg = f"Error creating {username} profile at {ptr_profilepath.value}"
                 return False, msg
         else:
-            msg = "%s profile already exists at %s. Nothing to do." % (
-                username,
-                profile_location,
-            )
+            msg = f"{username} profile already exists at {profile_location}. Nothing to do."
             return True, msg
     elif sys.platform.startswith("linux"):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            homedir = os.path.expanduser("~%s" % username)
+            homedir = os.path.expanduser(f"~{username}")
         except Exception as e:
-            msg = (
-                "Error getting information for creating home folder for user %s"
-                % username
-            )
+            msg = f"Error getting information for creating home folder for user {username}"
             return False, msg
         if not os.path.isdir(homedir):
             os.makedirs(homedir, 0o751)
@@ -3052,18 +3031,15 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         gidroot = grp.getgrnam("root").gr_gid
         os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
-        msg = "%s profile created successfully at %s" % (username, homedir)
+        msg = f"{username} profile created successfully at {homedir}"
         return True, msg
     elif sys.platform.startswith("darwin"):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            homedir = os.path.expanduser("~%s" % username)
+            homedir = os.path.expanduser(f"~{username}")
         except Exception as e:
-            msg = (
-                "Error getting information for creating home folder for user %s"
-                % username
-            )
+            msg = f"Error getting information for creating home folder for user {username}"
             return False, msg
         if not os.path.isdir(homedir):
             os.makedirs(homedir, 0o751)
@@ -3075,7 +3051,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         gidroot = grp.getgrnam("root").gr_gid
         os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
-        msg = "%s profile created successfully at %s" % (username, homedir)
+        msg = f"{username} profile created successfully at {homedir}"
         return True, msg
 
 
@@ -3090,18 +3066,14 @@ def get_user_profile(username="pulseuser"):
         '| Select -ExpandProperty ProfileImagePath"' % usersid
     )
     result = simplecommand(encode_strconsole(check_profile_cmd))
-    if result["code"] == 0 and result["result"]:
-        return result["result"][0]
-    else:
-        return ""
+    return result["result"][0] if result["code"] == 0 and result["result"] else ""
 
 
 def get_user_sid(username="pulseuser"):
     try:
-        usersid = win32security.ConvertSidToStringSid(
+        return win32security.ConvertSidToStringSid(
             win32security.LookupAccountName(None, username)[0]
         )
-        return usersid
     except Exception as e:
         return False
 
@@ -3160,18 +3132,18 @@ def create_idrsa_on_client(username="pulseuser", key=""):
         id_rsa_path = os.path.join("C:\\Users", username, ".ssh", "id_rsa")
     else:
         id_rsa_path = os.path.join(
-            os.path.expanduser("~%s" % username), ".ssh", "id_rsa"
+            os.path.expanduser(f"~{username}"), ".ssh", "id_rsa"
         )
-    delete_keyfile_cmd = 'del /f /q "%s" ' % id_rsa_path
+    delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
     result = simplecommand(encode_strconsole(delete_keyfile_cmd))
-    logger.debug("Creating id_rsa file in %s" % id_rsa_path)
+    logger.debug(f"Creating id_rsa file in {id_rsa_path}")
     if not os.path.isdir(os.path.dirname(id_rsa_path)):
         os.makedirs(os.path.dirname(id_rsa_path), 0o700)
     file_put_contents(id_rsa_path, key)
     result, logs = apply_perms_sshkey(id_rsa_path, True)
     if result is False:
         return False, logs
-    msg = "Key %s successfully created" % id_rsa_path
+    msg = f"Key {id_rsa_path} successfully created"
     return True, msg
 
 
@@ -3182,15 +3154,10 @@ def apply_perms_sshkey(path, private=True):
     If private = False, the permissions are based on pulseuser
     """
     if not os.path.isfile(path):
-        msg = "Error: File %s does not exist" % path
+        msg = f"Error: File {path} does not exist"
         return False, msg
     if sys.platform.startswith("win"):
-        if private is True:
-            # We are using id_rsa. The owner must be the user running the Agent
-            username = win32api.GetUserName().lower()
-        else:
-            # The owner must be pulseuser
-            username = "pulseuser"
+        username = win32api.GetUserName().lower() if private is True else "pulseuser"
         try:
             sd = win32security.GetFileSecurity(
                 path, win32security.DACL_SECURITY_INFORMATION
@@ -3214,11 +3181,7 @@ def apply_perms_sshkey(path, private=True):
                     path, win32security.DACL_SECURITY_INFORMATION, sd
                 )
         except Exception as e:
-            msg = "Error setting permissions on %s for user %s: %s" % (
-                path,
-                user,
-                str(e),
-            )
+            msg = f"Error setting permissions on {path} for user {user}: {str(e)}"
             return False, msg
     else:
         if private is True:
@@ -3236,11 +3199,7 @@ def apply_perms_sshkey(path, private=True):
             os.chmod(os.path.dirname(path), 0o700)
             os.chmod(path, 0o600)
         except Exception as e:
-            msg = "Error setting permissions on %s for user %s: %s" % (
-                path,
-                pwd.getpwuid(uid).pw_name,
-                str(e),
-            )
+            msg = f"Error setting permissions on {path} for user {pwd.getpwuid(uid).pw_name}: {str(e)}"
             return False, msg
     if sys.platform.startswith("win"):
         list_perms_cmd = (
@@ -3248,13 +3207,13 @@ def apply_perms_sshkey(path, private=True):
             '| ft IdentityReference,FileSystemRights,AccessControlType"' % path
         )
     elif sys.platform.startswith("linux"):
-        list_perms_cmd = "getfacl %s" % path
+        list_perms_cmd = f"getfacl {path}"
     elif sys.platform.startswith("darwin"):
-        list_perms_cmd = "ls -e -l %s" % path
+        list_perms_cmd = f"ls -e -l {path}"
     result = simplecommand(encode_strconsole(list_perms_cmd))
-    logger.debug("Permissions on file %s:" % path)
-    logger.debug("%s" % "".join(result["result"]))
-    msg = "Success applying permissions to file %s" % path
+    logger.debug(f"Permissions on file {path}:")
+    logger.debug(f'{"".join(result["result"])}')
+    msg = f"Success applying permissions to file {path}"
     return True, msg
 
 
@@ -3276,20 +3235,20 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
             )
         else:
             authorized_keys_path = os.path.join(
-                os.path.expanduser("~%s" % username), ".ssh", "authorized_keys"
+                os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys"
             )
         if not os.path.isfile(authorized_keys_path):
-            logger.debug("Creating authorized_keys file in %s" % authorized_keys_path)
+            logger.debug(f"Creating authorized_keys file in {authorized_keys_path}")
             if not os.path.isdir(os.path.dirname(authorized_keys_path)):
                 os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
             file_put_contents(authorized_keys_path, key)
         else:
             authorized_keys_content = file_get_contents(authorized_keys_path)
-            if not key.strip(" \t\n\r") in authorized_keys_content:
-                logger.debug("Adding key to %s" % authorized_keys_path)
+            if key.strip(" \t\n\r") not in authorized_keys_content:
+                logger.debug(f"Adding key to {authorized_keys_path}")
                 file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
             else:
-                logger.debug("Key is already present in %s" % authorized_keys_path)
+                logger.debug(f"Key is already present in {authorized_keys_path}")
     except PermissionError as e:
         logger.debug(
             "Permission Error Key verifier les permitions enecriture de l agent"
@@ -3298,11 +3257,9 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     # Check if key is present
     authorized_keys_content = file_get_contents(authorized_keys_path)
     if key.strip(" \t\n\r") in authorized_keys_content:
-        msg = "Key successfully present in %s" % authorized_keys_path
+        msg = f"Key successfully present in {authorized_keys_path}"
         result, logs = apply_perms_sshkey(authorized_keys_path, False)
-        if result is False:
-            return False, logs
-        return True, msg
+        return (False, logs) if result is False else (True, msg)
     # Function didn't return earlier, meaning the key is not present
     msg = "An error occured while adding the public key to the authorized_keys file. The id_rsa.pub key is missing"
     return False, msg
@@ -3311,7 +3268,7 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
 def reversessh_useraccount_mustexist_on_relay(username="reversessh"):
     try:
         uid = pwd.getpwnam(username).pw_uid
-        msg = "%s user account already exists. Nothing to do." % username
+        msg = f"{username} user account already exists. Nothing to do."
         return True, msg
     except Exception:
         adduser_cmd = (
@@ -3321,21 +3278,19 @@ def reversessh_useraccount_mustexist_on_relay(username="reversessh"):
         )
     result = simplecommand(encode_strconsole(adduser_cmd))
     if result["code"] == 0:
-        msg = "Creation of %s user account successful: %s" % (username, result)
+        msg = f"Creation of {username} user account successful: {result}"
         return True, msg
     else:
-        msg = "Creation of %s user account failed: %s" % (username, result)
+        msg = f"Creation of {username} user account failed: {result}"
         return False, msg
 
 
 def reversessh_keys_mustexist_on_relay(username="reversessh"):
     try:
         uid = pwd.getpwnam(username).pw_uid
-        homedir = os.path.expanduser("~%s" % username)
+        homedir = os.path.expanduser(f"~{username}")
     except Exception as e:
-        msg = (
-            "Error getting information for creating home folder for user %s" % username
-        )
+        msg = f"Error getting information for creating home folder for user {username}"
         return False, msg
     if not os.path.isdir(homedir):
         os.makedirs(homedir, 0o751)
@@ -3343,23 +3298,23 @@ def reversessh_keys_mustexist_on_relay(username="reversessh"):
     os.chown(homedir, uid, -1)
     # Check keys
     id_rsa_key_path = os.path.join(
-        os.path.expanduser("~%s" % username), ".ssh", "id_rsa"
+        os.path.expanduser(f"~{username}"), ".ssh", "id_rsa"
     )
     public_key_path = os.path.join(
-        os.path.expanduser("~%s" % username), ".ssh", "id_rsa.pub"
+        os.path.expanduser(f"~{username}"), ".ssh", "id_rsa.pub"
     )
-    keycheck_cmd = "ssh-keygen -y -f %s > %s" % (id_rsa_key_path, public_key_path)
+    keycheck_cmd = f"ssh-keygen -y -f {id_rsa_key_path} > {public_key_path}"
     result = simplecommand(encode_strconsole(keycheck_cmd))
     if result["code"] != 0:
-        logger.debug("Creating id_rsa file in %s" % id_rsa_key_path)
+        logger.debug(f"Creating id_rsa file in {id_rsa_key_path}")
         if not os.path.isdir(os.path.dirname(id_rsa_key_path)):
             os.makedirs(os.path.dirname(id_rsa_key_path), 0o700)
-        keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
+        keygen_cmd = f'ssh-keygen -q -N "" -b 2048 -t rsa -f {id_rsa_key_path}'
         result = simplecommand(encode_strconsole(keygen_cmd))
     authorized_keys_path = os.path.join(
-        os.path.expanduser("~%s" % username), ".ssh", "authorized_keys"
+        os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys"
     )
-    addtoauth_cmd = "ssh-keygen -y -f %s > %s" % (id_rsa_key_path, authorized_keys_path)
+    addtoauth_cmd = f"ssh-keygen -y -f {id_rsa_key_path} > {authorized_keys_path}"
     simplecommand(encode_strconsole(addtoauth_cmd))
     os.chmod(os.path.dirname(id_rsa_key_path), 0o700)
     os.chown(os.path.dirname(id_rsa_key_path), uid, -1)
@@ -3377,7 +3332,7 @@ def get_relayserver_pubkey(username="root"):
     returns relayserver s root public key
     """
     public_key_path = os.path.join(
-        os.path.expanduser("~%s" % username), ".ssh", "id_rsa.pub"
+        os.path.expanduser(f"~{username}"), ".ssh", "id_rsa.pub"
     )
     return file_get_contents(public_key_path)
 
@@ -3387,7 +3342,7 @@ def get_relayserver_reversessh_idrsa(username="reversessh"):
     returns relayserver s reversessh private key
     """
     idrsa_key_path = os.path.join(
-        os.path.expanduser("~%s" % username), ".ssh", "id_rsa"
+        os.path.expanduser(f"~{username}"), ".ssh", "id_rsa"
     )
     return file_get_contents(idrsa_key_path)
 
@@ -3408,7 +3363,7 @@ class geolocalisation_agent:
             Setdirectorytempinfo(), "filegeolocalisation"
         )
         self.listgeoserver = [
-            "http://%s/json" % x
+            f"http://{x}/json"
             for x in re.split(
                 r"[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]", strlistgeoserveur
             )
@@ -3426,9 +3381,7 @@ class geolocalisation_agent:
         Returns:
             It return the localisation file if it exists, None otherwise
         """
-        if self.localisation is None:
-            return {}
-        return self.localisation
+        return {} if self.localisation is None else self.localisation
 
     def getdatafilegeolocalisation(self):
         """
@@ -3463,9 +3416,7 @@ class geolocalisation_agent:
         Returns:
             It returns True if the file exists, False otherwise
         """
-        if os.path.exists(self.filegeolocalisation):
-            return True
-        return False
+        return bool(os.path.exists(self.filegeolocalisation))
 
     def getgeolocalisation(self):
         """
@@ -3485,23 +3436,22 @@ class geolocalisation_agent:
             if self.localisation is not None:
                 return self.localisation
 
-            if self.geolocalisation:
-                # We reload geolocalisation
-                if self.geoinfoexist():
-                    self.getdatafilegeolocalisation()
-                    self.determination = False
-                else:
-                    self.localisation = geolocalisation_agent.searchgeolocalisation(
-                        self.listgeoserver
-                    )
-                    self.setdatafilegeolocalisation()
-                    self.determination = True
+            if (
+                self.geolocalisation
+                and self.geoinfoexist()
+                or not self.geolocalisation
+                and self.geoinfoexist()
+            ):
+                self.getdatafilegeolocalisation()
+                self.determination = False
+            elif self.geolocalisation and not self.geoinfoexist():
+                self.localisation = geolocalisation_agent.searchgeolocalisation(
+                    self.listgeoserver
+                )
+                self.setdatafilegeolocalisation()
+                self.determination = True
             else:
-                if self.geoinfoexist():
-                    self.getdatafilegeolocalisation()
-                    self.determination = False
-                else:
-                    return None
+                return None
 
         return self.localisation
 
@@ -3516,24 +3466,24 @@ class geolocalisation_agent:
             if self.localisation is None:
                 self.getgeolocalisation()
 
-            if self.localisation is not None and is_valid_ipv4(self.localisation["ip"]):
-                if not self.determination:
-                    logger.warning("Determination use file")
-                self.ip_public = self.localisation["ip"]
-                return self.localisation["ip"]
-            else:
+            if self.localisation is None or not is_valid_ipv4(
+                self.localisation["ip"]
+            ):
                 return None
+            if not self.determination:
+                logger.warning("Determination use file")
+            self.ip_public = self.localisation["ip"]
+            return self.localisation["ip"]
         else:
             if not self.determination:
                 logger.warning("Using the old way of determination for the ip_public")
-            if self.localisation is None:
-                if self.geoinfoexist():
-                    localisationData = self.getdatafilegeolocalisation()
-                    logger.warning("%s" % localisationData)
-                    if self.localisation is not None:
-                        return self.localisation["ip"]
-            else:
+            if self.localisation is not None:
                 return self.localisation["ip"]
+            if self.geoinfoexist():
+                localisationData = self.getdatafilegeolocalisation()
+                logger.warning(f"{localisationData}")
+                if self.localisation is not None:
+                    return self.localisation["ip"]
         return self.ip_public
 
     @staticmethod
@@ -3546,9 +3496,7 @@ class geolocalisation_agent:
                 )
                 return None
             result = r.json()
-            if "longitude" not in result:
-                return None
-            return result
+            return None if "longitude" not in result else result
         except BaseException:
             return None
 
@@ -3603,29 +3551,29 @@ class downloadfile:
             It returns a userfriendly return message based on the code provided by
             urllib2.
         """
-        msghtml = "error html code %s" % code
+        msghtml = f"error html code {code}"
         if code == 200:
-            msghtml = "[%s succes]" % code
+            msghtml = f"[{code} succes]"
         if code == 301:
-            msghtml = "[%s Moved Permanently]" % code
+            msghtml = f"[{code} Moved Permanently]"
         if code == 302:
-            msghtml = "[%s Moved temporarily]" % code
+            msghtml = f"[{code} Moved temporarily]"
         if code == 400:
-            msghtml = "[%s Bad Request]" % code
+            msghtml = f"[{code} Bad Request]"
         if code == 401:
-            msghtml = "[%s Unauthorized]" % code
+            msghtml = f"[{code} Unauthorized]"
         elif code == 403:
-            msghtml = "[%s Forbidden]" % code
+            msghtml = f"[{code} Forbidden]"
         elif code == 404:
-            msghtml = "[%s Not Found]" % code
+            msghtml = f"[{code} Not Found]"
         elif code == 408:
-            msghtml = "[%s Request Timeout]" % code
+            msghtml = f"[{code} Request Timeout]"
         elif code == 500:
-            msghtml = "[%s Internal Server Error]" % code
+            msghtml = f"[{code} Internal Server Error]"
         elif code == 503:
-            msghtml = "[%s Service Unavailable]" % code
+            msghtml = f"[{code} Service Unavailable]"
         elif code == 504:
-            msghtml = "[%s Gateway Timeout]" % code
+            msghtml = f"[{code} Gateway Timeout]"
         return msghtml
 
     def downloadurl(self):
@@ -3644,13 +3592,12 @@ class downloadfile:
                     local_file.write(f.read())
             return True, "Download successful"
         except urllib2.HTTPError as e:
-            return False, "HTTP Error %s while downloading %s: %s" % (
-                self.code_return_html(e.code),
-                self.url,
-                e.reason,
+            return (
+                False,
+                f"HTTP Error {self.code_return_html(e.code)} while downloading {self.url}: {e.reason}",
             )
         except urllib2.URLError as e:
-            return False, "URL Error on %s: %s" % (self.url, e.reason)
+            return False, f"URL Error on {self.url}: {e.reason}"
         except IOError as e:
             return False, "I/O error {0} on file {1}: {2}".format(
                 e.errno, self.urllocalfile, e.strerror
@@ -3716,8 +3663,7 @@ def serialnumbermachine():
                 )
         else:
             logger.warning(
-                "the serialnumbermachine function is not implemented for your os: %s"
-                % sys.platform
+                f"the serialnumbermachine function is not implemented for your os: {sys.platform}"
             )
     except Exception:
         logger.error(
@@ -3732,24 +3678,23 @@ def base64strencode(data):
     if sys.version_info[0] == 3:
         if isinstance(data, str):
             data = bytes(data, "utf-8")
-    else:
-        if isinstance(data, bytes):
-            data = data.decode("utf-8")
+    elif isinstance(data, bytes):
+        data = data.decode("utf-8")
     try:
         result = base64.b64encode(data)
         if sys.version_info[0] == 3:
             result = result.decode()
     except Exception as e:
-        logger.error("error decode data in function base64strencode %s" % str(e))
+        logger.error(f"error decode data in function base64strencode {str(e)}")
     finally:
         return result
 
 
 class Singleton(object):
-    def __new__(type, *args):
-        if "_the_instance" not in type.__dict__:
-            type._the_instance = object.__new__(type)
-        return type._the_instance
+    def __new__(cls, *args):
+        if "_the_instance" not in cls.__dict__:
+            cls._the_instance = object.__new__(cls)
+        return cls._the_instance
 
 
 class base_message_queue_posix(Singleton):
@@ -3758,13 +3703,13 @@ class base_message_queue_posix(Singleton):
 
     def __init__(self):
         logger.debug("*** INITIALISATION base_message_queue_posix")
-        logger.debug("*** charge %s" % base_message_queue_posix.file_reponse_iq)
+        logger.debug(f"*** charge {base_message_queue_posix.file_reponse_iq}")
 
     def _is_exist(self, name_file):
-        for fmp in base_message_queue_posix.file_reponse_iq:
-            if fmp["name"] == name_file:
-                return True
-        return False
+        return any(
+            fmp["name"] == name_file
+            for fmp in base_message_queue_posix.file_reponse_iq
+        )
 
     def _is_exist_file(self, name_file, prefixe=""):
         name_file = self._namefile(name_file, prefixe)

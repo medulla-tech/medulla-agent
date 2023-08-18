@@ -444,13 +444,10 @@ class MUCBot(ClientXMPP):
                                                     str(x[5]),
                                                     str(x[2]),
                                                     address=[
-                                                        "tcp4://%s:%s" % (x[0], x[6])
+                                                        f"tcp4://{x[0]}:{x[6]}"
                                                     ],
                                                 )
-                                    logger.debug(
-                                        "synchro config %s"
-                                        % self.syncthing.is_config_sync()
-                                    )
+                                    logger.debug(f"synchro config {self.syncthing.is_config_sync()}")
                                     logging.log(
                                         DEBUGPULSE, "write new config syncthing"
                                     )
@@ -499,8 +496,7 @@ class MUCBot(ClientXMPP):
                                     "sessionid": getRandomName(6, "confsyncthing"),
                                     "ret": 255,
                                     "data": {
-                                        "errorsyncthingconf": "%s"
-                                        % traceback.format_exc()
+                                        "errorsyncthingconf": f"{traceback.format_exc()}"
                                     },
                                 }
                                 self.send_message(
@@ -551,12 +547,8 @@ class MUCBot(ClientXMPP):
                             logger.error(
                                 "An error occured while modifying the configuration"
                             )
-                            logger.error(
-                                "We obtained the error %s" % configuration_error
-                            )
-                            logger.error(
-                                "We hit the backtrace %s " % traceback.format_exc()
-                            )
+                            logger.error(f"We obtained the error {configuration_error}")
+                            logger.error(f"We hit the backtrace {traceback.format_exc()} ")
 
                     except Exception:
                         # We failed to read the configuration file. Trying with the old version for compatibility.
@@ -573,20 +565,13 @@ class MUCBot(ClientXMPP):
                             logger.error(
                                 "An error occured while modifying the configuration in old format."
                             )
-                            logger.error(
-                                "We obtained the error %s" % configuration_error
-                            )
-                            logger.error(
-                                "The data variable contains the value: %s" % data
-                            )
-                            logger.error(
-                                "We hit the backtrace %s " % traceback.format_exc()
-                            )
+                            logger.error(f"We obtained the error {configuration_error}")
+                            logger.error(f"The data variable contains the value: {data}")
+                            logger.error(f"We hit the backtrace {traceback.format_exc()} ")
             else:
                 logging.error("The configuration failed.")
                 logging.error(
-                    "The AES key may be invalid. On this machine, this is configured to use the key %s"
-                    % self.config.keyAES32
+                    f"The AES key may be invalid. On this machine, this is configured to use the key {self.config.keyAES32}"
                 )
                 logging.error(
                     "Please check on the server on the /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local"
@@ -656,7 +641,7 @@ class MUCBot(ClientXMPP):
                 "from": self.config.jidagent,
                 "compress": False,
                 "deployment": self.config.jidchatroomcommand,
-                "who": "%s/%s" % (self.config.jidchatroomcommand, self.config.NickName),
+                "who": f"{self.config.jidchatroomcommand}/{self.config.NickName}",
                 "machine": self.config.NickName,
                 "platform": platform.platform(),
                 "completedatamachine": base64.b64encode(
@@ -688,7 +673,7 @@ class MUCBot(ClientXMPP):
             }
 
         except Exception:
-            logger.error("dataobj %s" % traceback.format_exc())
+            logger.error(f"dataobj {traceback.format_exc()}")
 
         if self.geodata is not None:
             dataobj["geolocalisation"] = self.geodata.localisation
@@ -750,7 +735,7 @@ class MUCBot(ClientXMPP):
             self.Port_connect = Port_connect
         self.address = (self.IP_or_FQDN_connect, self.Port_connect)
         if IP_or_FQDN_connect or Port_connect:
-            print("reinitialisation address %s" % self.address)
+            print(f"reinitialisation address {self.address}")
         self.connect(address=self.address, force_starttls=None)
         self.process(forever=forever, timeout=timeout)
 
@@ -779,8 +764,7 @@ class MUCBot(ClientXMPP):
 
     def handle_disconnected(self, data):
         logger.debug(
-            "We got disconnected. We will reconnect in %s seconds"
-            % self.get_connect_loop_wait()
+            f"We got disconnected. We will reconnect in {self.get_connect_loop_wait()} seconds"
         )
 
     def handle_connected(self, data):
@@ -788,21 +772,20 @@ class MUCBot(ClientXMPP):
         success connecting agentconnect(
         """
         logger.debug(
-            "Configurator connected with jid name %s on (%s:%s)"
-            % (self.config.jidagent, self.config.confserver, self.config.confport)
+            f"Configurator connected with jid name {self.config.jidagent} on ({self.config.confserver}:{self.config.confport})"
         )
 
     def register(self, iq):
-        logging.info("register user %s" % self.boundjid)
+        logging.info(f"register user {self.boundjid}")
         resp = self.Iq()
         resp["type"] = "set"
         resp["register"]["username"] = self.boundjid.user
         resp["register"]["password"] = self.password
         try:
             resp.send()
-            logging.info("Account created for %s!" % self.boundjid)
+            logging.info(f"Account created for {self.boundjid}!")
         except IqError as e:
-            logging.error("Could not register account: %s" % e.iq["error"]["text"])
+            logging.error(f'Could not register account: {e.iq["error"]["text"]}')
             self.disconnect()
         except IqTimeout as e:
             logging.error("No response from server.")
@@ -822,7 +805,7 @@ class MUCBot(ClientXMPP):
             msgkey = msg.keys()
             msgfrom = ""
             if "from" not in msgkey:
-                logging.error("Stanza message bad format %s" % msg)
+                logging.error(f"Stanza message bad format {msg}")
                 return (
                     False,
                     "bad format",
@@ -832,44 +815,39 @@ class MUCBot(ClientXMPP):
                 # eg: ref section 2.1
                 type = str(msg["type"])
                 if type == "chat":
-                    # The message is sent in the context of a one-to-one chat
-                    # conversation agent
                     pass
+                elif type == "error":
+                    # An error has occurred related to a previous message sent
+                    # by the sender
+                    logger.error(f"Stanza message from {msgfrom}")
+                    self.errorhandlingstanza(msg, msgfrom, msgkey)
+                    return False, "error"
                 elif type == "groupchat":
                     # The message is sent in the context of a multi-user chat
                     # environment
-                    logger.error("Stanza groupchat message no process %s " % msg)
+                    logger.error(f"Stanza groupchat message no process {msg} ")
                     msg.reply("Thank you, but I do not treat groupchat messages").send()
                     return False, "groupchat"
                 elif type == "headline":
                     # The message is probably generated by an automated service
                     # that delivers or broadcasts content
-                    logger.error(
-                        "Stanza headline (automated service) message no process %s "
-                        % msg
-                    )
+                    logger.error(f"Stanza headline (automated service) message no process {msg} ")
                     return False, "headline"
                 elif type == "normal":
                     # The message is a single message that is sent outside the context of a one-to-one conversation
                     # "or groupchat, and to which it is expected that the recipient will reply
-                    logger.warning("MESSAGE stanza normal %s" % msg)
+                    logger.warning(f"MESSAGE stanza normal {msg}")
                     msg.reply("Thank you, but I do not treat normal messages").send()
                     return False, "normal"
-                elif type == "error":
-                    # An error has occurred related to a previous message sent
-                    # by the sender
-                    logger.error("Stanza message from %s" % msgfrom)
-                    self.errorhandlingstanza(msg, msgfrom, msgkey)
-                    return False, "error"
                 else:
-                    logger.error("Stanza message type inconu %s" % type)
+                    logger.error(f"Stanza message type inconu {type}")
                     return False, "error"
         except Exception as e:
-            logging.error("Stanza message bad format %s" % msg)
-            logging.error("%s" % (traceback.format_exc()))
-            return False, "error %s" % str(e)
+            logging.error(f"Stanza message bad format {msg}")
+            logging.error(f"{traceback.format_exc()}")
+            return False, f"error {str(e)}"
         if "body" not in msgkey:
-            logging.error("Stanza message body missing %s" % msg)
+            logging.error(f"Stanza message body missing {msg}")
             return False, "error body missing"
         return True, "chat"
 
@@ -880,7 +858,7 @@ class MUCBot(ClientXMPP):
         logging.error("child elements message")
         messagestanza = ""
         for t in msgkey:
-            if t != "error" and t != "lang":
+            if t not in ["error", "lang"]:
                 e = str(msg[t])
                 if e != "":
                     messagestanza += "%s : %s\n" % (t, e)
@@ -947,9 +925,11 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     file_put_contents(
         os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidconnection"
+            os.path.dirname(os.path.realpath(__file__)),
+            "INFOSTMP",
+            "pidconnection",
         ),
-        "%s" % os.getpid(),
+        f"{os.getpid()}",
     )
     if sys.platform.startswith("win"):
         try:
@@ -985,40 +965,35 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     format = "%(asctime)s - %(levelname)s - (CONF)%(message)s"
     # more information log
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
-    if not optsdeamon:
-        if optsconsoledebug:
-            # recupere logger principal par son nom
-            loggermain = logging.getLogger(logging.getLogger().name)
-            # current_level = loggermain.getEffectiveLevel()
-            # Configurer le logger
-            logging.basicConfig(
-                level=logging.DEBUG,
-                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            )
-            loggermain.setLevel(logging.DEBUG)
-            # Créer un gestionnaire pour afficher les messages dans la console
+    if not optsdeamon and optsconsoledebug:
+        # recupere logger principal par son nom
+        loggermain = logging.getLogger(logging.getLogger().name)
+        # current_level = loggermain.getEffectiveLevel()
+        # Configurer le logger
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        )
+        loggermain.setLevel(logging.DEBUG)
+        # Créer un gestionnaire pour afficher les messages dans la console
 
-            # gestionnaire log file.
-            file_handler = logging.FileHandler(tglogfile)
-            file_handler.setLevel(logging.DEBUG)
+        # gestionnaire log file.
+        file_handler = logging.FileHandler(tglogfile)
+        file_handler.setLevel(logging.DEBUG)
 
-            # Créer un formatteur pour le gestionnaire de fichier
-            file_formatter = logging.Formatter(
-                "CLI : CONNECT %(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-            file_handler.setFormatter(file_formatter)
+        # Créer un formatteur pour le gestionnaire de fichier
+        file_formatter = logging.Formatter(
+            "CLI : CONNECT %(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        file_handler.setFormatter(file_formatter)
 
-            loggermain.addHandler(file_handler)
-            logger.debug(
-                "\n------------------------------------------------------------"
-                "\n----------- Connecteur launcher by console -----------------"
-                "\n------------------------------------------------------------"
-            )
+        loggermain.addHandler(file_handler)
+        logger.debug(
+            "\n------------------------------------------------------------"
+            "\n----------- Connecteur launcher by console -----------------"
+            "\n------------------------------------------------------------"
+        )
 
-        else:
-            logging.basicConfig(
-                level=tglevellog, format=format, filename=tglogfile, filemode="a"
-            )
     else:
         logging.basicConfig(
             level=tglevellog, format=format, filename=tglogfile, filemode="a"
@@ -1057,15 +1032,13 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         ):
             break
         logging.error("The connector failed.")
-        logging.error("Unable to connect to %s:%s." % (tg.confserver, tg.confport))
+        logging.error(f"Unable to connect to {tg.confserver}:{tg.confport}.")
         if ipfromdns(tg.confserver) == "":
-            logging.log(DEBUGPULSE, "We cannot contact: %s " % tg.confserver)
+            logging.log(DEBUGPULSE, f"We cannot contact: {tg.confserver} ")
 
         time.sleep(2)
     if tg.agenttype != "relayserver":
-        logging.log(
-            DEBUGPULSE, "connect %s %s" % (ipfromdns(tg.confserver), tg.confport)
-        )
+        logging.log(DEBUGPULSE, f"connect {ipfromdns(tg.confserver)} {tg.confport}")
         xmpp = MUCBot(tg)
         xmpp.register_plugin("xep_0030")  # Service Discovery
         xmpp.register_plugin("xep_0045")  # Multi-User Chat
@@ -1079,8 +1052,8 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         xmpp["xep_0077"].force_registration = True
 
         # Connect to the XMPP server and start processing XMPP
-        logger.debug("Connecting to %s:%s" % (ipfromdns(tg.confserver), tg.confport))
-        logger.debug("The jid for the configuration is : %s" % tg.jidagent)
+        logger.debug(f"Connecting to {ipfromdns(tg.confserver)}:{tg.confport}")
+        logger.debug(f"The jid for the configuration is : {tg.jidagent}")
         xmpp.Mode_Marche_Arret_init_adress_connect(
             ipfromdns(tg.confserver), int(tg.confport)
         )

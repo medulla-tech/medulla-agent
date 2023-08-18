@@ -16,7 +16,7 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")
     logging.getLogger().debug("########AGENT INSTALL PLUGINS SCHEDULED#############")
     logging.getLogger().debug("###################################################")
-    logging.getLogger().debug("call %s from %s" % (plugin, message["from"]))
+    logging.getLogger().debug(f'call {plugin} from {message["from"]}')
     logging.getLogger().debug("###################################################")
     if action == "installpluginscheduled":
         if len(data) != 0:
@@ -28,9 +28,8 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur):
                 "###################################################"
             )
             try:
-                fileplugin = open(namefile, "w")
-                fileplugin.write(str(data["datafile"]))
-                fileplugin.close()
+                with open(namefile, "w") as fileplugin:
+                    fileplugin.write(str(data["datafile"]))
             except BaseException:
                 print("Error: cannor write on file")
                 return

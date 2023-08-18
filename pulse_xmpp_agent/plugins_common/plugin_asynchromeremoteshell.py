@@ -14,11 +14,11 @@ plugin = {"VERSION": "2.0", "NAME": "asynchromeremoteshell", "TYPE": "all"}  # f
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().info("###################################################")
-    logging.getLogger().info("call %s from %s" % (plugin, message["from"]))
+    logging.getLogger().info(f'call {plugin} from {message["from"]}')
     logging.getLogger().info("###################################################")
 
     result = {
-        "action": "result%s" % action,
+        "action": f"result{action}",
         "sessionid": sessionid,
         "data": {},
         "ret": 0,
@@ -26,7 +26,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     }
     try:
         obj = utils.simplecommand(data["command"])
-        logging.getLogger().info("encodage result : %s" % sys.stdout.encoding)
+        logging.getLogger().info(f"encodage result : {sys.stdout.encoding}")
 
         result["ret"] = 0
         result["data"]["code"] = obj["code"]

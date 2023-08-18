@@ -347,7 +347,7 @@ if __name__ == "__main__":
             daemonize = False
             logging.getLogger().setLevel(logging.DEBUG)
             print("pid file: %d\n" % os.getpid())
-            print("kill -9 %s" % os.getpid())
+            print(f"kill -9 {os.getpid()}")
         elif option == "-h":
             print(
                 "Configure in file '%s' \n[network_agent]\nip_ars=???\nport_ars=???"
@@ -415,7 +415,7 @@ if __name__ == "__main__":
         print("kill %1")
         print("or")
         print("kill -9 %s" % os.getpid())
-        logging.getLogger().info("PID file : " + str(pidrun) + " in file " + pidfile)
+        logging.getLogger().info(f"PID file : {str(pidrun)} in file {pidfile}")
         logging.getLogger().info("kill -9 $(cat %s)" % pidfile)
         logging.getLogger().info("killall package_watching.py")
         logging.getLogger().info(

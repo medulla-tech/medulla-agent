@@ -30,7 +30,7 @@ plugin = {"VERSION": "1.0", "NAME": "remote_script_monitoring", "VERSIONAGENT": 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     data_return = {
-        "action": "result" + action,
+        "action": f"result{action}",
         "data": {"result_script": ""},
         "sessionid": sessionid,
         "ret": 255,
@@ -38,9 +38,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     }
     try:
         logger.debug("###################################################")
-        logger.debug(
-            "call %s from %s session id %s" % (plugin, message["from"], sessionid)
-        )
+        logger.debug(f'call {plugin} from {message["from"]} session id {sessionid}')
         logger.debug("###################################################")
         logger.debug(json.dumps(data, indent=4))
 
@@ -56,7 +54,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             try:
                 strctfilestr = zlib.decompress(base64.b64decode(data["script_data"]))
             except Exception as e:
-                result_script = "%s" % (traceback.format_exc())
+                result_script = f"{traceback.format_exc()}"
                 data_return["data"]["result_script"] = result_script
                 raise
         else:
@@ -94,12 +92,12 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         obj = None
         if "type_script" in data:
             if data["type_script"].startswith("python"):
-                obj = simplecommandstr("%s %s" % (data["type_script"], path_file))
+                obj = simplecommandstr(f'{data["type_script"]} {path_file}')
             elif data["type_script"].startswith("bash"):
                 if sys.platform.startswith("linux") or sys.platform.startswith(
                     "darwin"
                 ):
-                    obj = simplecommandstr("/bin/bash %s" % path_file)
+                    obj = simplecommandstr(f"/bin/bash {path_file}")
                 else:
                     obj["code"] = -1
                     obj["result"] = (
@@ -110,7 +108,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 if sys.platform.startswith("linux") or sys.platform.startswith(
                     "darwin"
                 ):
-                    obj = simplecommandstr("/bin/csh %s" % path_file)
+                    obj = simplecommandstr(f"/bin/csh {path_file}")
                 else:
                     obj["code"] = -1
                     obj["result"] = (
@@ -121,7 +119,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 if sys.platform.startswith("linux") or sys.platform.startswith(
                     "darwin"
                 ):
-                    obj = simplecommandstr("/bin/ksh %s" % path_file)
+                    obj = simplecommandstr(f"/bin/ksh {path_file}")
                 else:
                     obj["code"] = -1
                     obj["result"] = (
@@ -139,9 +137,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     )
             elif data["type_script"].startswith("batch"):
                 if sys.platform.startswith("win"):
-                    path_file1 = path_file + ".bat"
+                    path_file1 = f"{path_file}.bat"
                     os.rename(path_file, path_file1)
-                    obj = simplecommandstr("%s" % (path_file1))
+                    obj = simplecommandstr(f"{path_file1}")
                 else:
                     obj["code"] = -1
                     obj["result"] = (
@@ -166,7 +164,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             data_return["data"]["result_script"] = "resultat missing"
             raise
     except:
-        logger.error("%s" % (traceback.format_exc()))
+        logger.error(f"{traceback.format_exc()}")
         objectxmpp.send_message(
             mto=message["from"], mbody=json.dumps(data_return), mtype="chat"
         )

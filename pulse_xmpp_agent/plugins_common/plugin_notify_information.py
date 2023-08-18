@@ -14,11 +14,11 @@ DEBUGPULSEPLUGIN = 25
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message["from"]))
-    logger.debug("sessionid : %s" % sessionid)
+    logger.debug(f'call {plugin} from {message["from"]}')
+    logger.debug(f"sessionid : {sessionid}")
     logger.debug("###################################################")
     if "notify" in data:
-        logger.debug("notify : %s" % data["notify"])
+        logger.debug(f'notify : {data["notify"]}')
 
         if data["notify"] in ["recording_case1", "recording_case2"]:
             if objectxmpp.config.agenttype in ["relayserver"]:

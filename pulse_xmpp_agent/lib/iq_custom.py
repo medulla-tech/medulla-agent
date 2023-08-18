@@ -156,9 +156,7 @@ class iq_value:
             Tuple[Optional[Any], Optional[int]]: Un tuple contenant la valeur et le temps d'expiration associés à la clé,
             ou (None, None) si la clé n'existe pas.
         """
-        if cle in self.dictionnaire:
-            return self.dictionnaire[cle]
-        return None, None
+        return self.dictionnaire[cle] if cle in self.dictionnaire else (None, None)
 
     def get_valeur_only(self, cle):
         """
@@ -189,8 +187,7 @@ class iq_value:
         if cle in self.dictionnaire:
             maintenant = int(time.time())
             _, expiration = self.dictionnaire[cle]
-            temps_restant = expiration - maintenant
-            return temps_restant
+            return expiration - maintenant
         return None
 
     def mettre_a_jour_valeur(self, cle, nouvelle_valeur):
@@ -235,10 +232,11 @@ class iq_value:
             None
         """
         maintenant = int(time.time())
-        cles_a_supprimer = []
-        for cle, (_, expiration) in self.dictionnaire.items():
-            if expiration <= maintenant:
-                cles_a_supprimer.append(cle)
+        cles_a_supprimer = [
+            cle
+            for cle, (_, expiration) in self.dictionnaire.items()
+            if expiration <= maintenant
+        ]
         for cle in cles_a_supprimer:
             del self.dictionnaire[cle]
 
@@ -251,11 +249,13 @@ class iq_value:
         """
         lines = []
         for cle, (valeur, expiration) in self.dictionnaire.items():
-            lines.append(f"Clé: {cle}")
-            lines.append(
-                f"Expiration: {expiration} secondes ({datetime.datetime.fromtimestamp(expiration)})"
+            lines.extend(
+                (
+                    f"Clé: {cle}",
+                    f"Expiration: {expiration} secondes ({datetime.datetime.fromtimestamp(expiration)})",
+                    "Valeur:",
+                )
             )
-            lines.append("Valeur:")
             if self.contenuetype == "string":
                 lines.append(valeur)
             elif self.contenuetype == "xml":
@@ -318,11 +318,11 @@ class iq_value:
             str: La représentation formatée des clés, temps d'expiration et temps restants.
         """
         maintenant = int(time.time())
-        tableau = []
-        tableau.append(
-            "{:<40} {:<20} {:<10}".format("Clé", "Temps d'expiration", "Temps restant")
-        )
-
+        tableau = [
+            "{:<40} {:<20} {:<10}".format(
+                "Clé", "Temps d'expiration", "Temps restant"
+            )
+        ]
         for cle, (valeur, expiration) in self.dictionnaire.items():
             temps_restant = expiration - maintenant
             date_heure = datetime.datetime.fromtimestamp(expiration)
@@ -385,10 +385,7 @@ class iq_value:
         Returns:
             bool: True si la valeur existe, False sinon.
         """
-        for cle, (v, _) in self.dictionnaire.items():
-            if v == valeur:
-                return True
-        return False
+        return any(v == valeur for cle, (v, _) in self.dictionnaire.items())
 
     def obtenir_toutes_cles(self):
         """
@@ -447,7 +444,7 @@ class iq_value:
         if cle in self.dictionnaire:
             _, expiration = self.dictionnaire[cle]
             temps_restant = expiration - maintenant
-            return temps_restant if temps_restant > 0 else 0
+            return max(temps_restant, 0)
         return 0
 
     def fusionner(self, autre_iq_value):
@@ -476,10 +473,7 @@ class iq_value:
         self.nettoyer_valeurs_expirees()
         if cle in self.dictionnaire:
             valeur, _ = self.dictionnaire[cle]
-            if valeur is None or valeur == "":
-                return None
-            else:
-                return valeur
+            return None if valeur is None or valeur == "" else valeur
         return False
 
     def set_contenuetype(self, contenuetype):
@@ -543,8 +537,7 @@ class iq_value:
             str: La chaîne de caractères XML formatée.
         """
         root = ET.fromstring(xml_string)
-        xml_prettified = ET.tostring(root, encoding="unicode", method="xml")
-        return xml_prettified
+        return ET.tostring(root, encoding="unicode", method="xml")
 
     def _prettify_yaml(self, yaml_string):
         """
@@ -557,8 +550,7 @@ class iq_value:
             str: La chaîne de caractères YAML formatée.
         """
         yaml_data = yaml.safe_load(yaml_string)
-        yaml_prettified = yaml.dump(yaml_data, sort_keys=False, indent=4)
-        return yaml_prettified
+        return yaml.dump(yaml_data, sort_keys=False, indent=4)
 
     def _prettify_json(self, json_string):
         """
@@ -571,8 +563,7 @@ class iq_value:
             str: La chaîne de caractères JSON formatée.
         """
         json_data = json.loads(json_string)
-        json_prettified = json.dumps(json_data, sort_keys=False, indent=4)
-        return json_prettified
+        return json.dumps(json_data, sort_keys=False, indent=4)
 
 
 class Myiq(threading.Thread):
@@ -624,11 +615,10 @@ class Myiq(threading.Thread):
         """
         self.start()
         self.join(self.param["timeout"])
-        if self.is_alive():
-            self._stop()
-            raise TimeoutError("Le thread a dépassé le temps d'exécution maximal.")
-        else:
+        if not self.is_alive():
             return self.result
+        self._stop()
+        raise TimeoutError("Le thread a dépassé le temps d'exécution maximal.")
 
 
 class iq_custom_xep:
@@ -643,14 +633,14 @@ class iq_custom_xep:
             self.sessionid = (
                 sessionid
                 if sessionid
-                else getRandomName(8, pref="__" + xmppobject.boundjid.user + "__")
+                else getRandomName(8, pref=f"__{xmppobject.boundjid.user}__")
             )
-            logger.debug("sessionid %s" % self.sessionid)
+            logger.debug(f"sessionid {self.sessionid}")
             self.xmppobject = (
                 xmppobject if xmppobject.__class__.__name__ == "MUCBot" else None
             )
             res = to.strip().split("/")
-            if not (len(res) == 2 and res[1] != ""):
+            if len(res) != 2 or res[1] == "":
                 logger.error("Pas de ressource dans jid")
                 self.to = None
             else:
@@ -666,7 +656,7 @@ class iq_custom_xep:
                     elif isinstance(dict__str, (bytes)):
                         self.data = convert.encode_to_string_base64(dict_str)
             except Exception as e:
-                logger.error("%s" % (traceback.format_exc()))
+                logger.error(f"{traceback.format_exc()}")
                 self.data = None
 
             if (
@@ -687,7 +677,7 @@ class iq_custom_xep:
                             child.append(itemXML)
                     self.iq["id"] = self.sessionid
                 except Exception as e:
-                    logger.error("%s" % (traceback.format_exc()))
+                    logger.error(f"{traceback.format_exc()}")
             else:
                 if not self.data:
                     logger.error("message nmal initialise")
@@ -701,14 +691,14 @@ class iq_custom_xep:
                     logger.error("to nmal initialise")
 
         except Exception as e:
-            logger.error("%s" % (traceback.format_exc()))
+            logger.error(f"{traceback.format_exc()}")
 
     def iq_send(self):
         logger.debug("#############################################################")
         logger.debug("####################### iq_send #######################")
         logger.debug("#############################################################")
         logger.debug(
-            "#############################################################%s " % self.iq
+            f"#############################################################{self.iq} "
         )
 
         if not self.iq:
@@ -719,7 +709,7 @@ class iq_custom_xep:
         logger.debug("####################### send #######################")
         logger.debug("#############################################################")
 
-        logger.debug(" iq class %s  " % self.iq.__class__.__name__)
+        logger.debug(f" iq class {self.iq.__class__.__name__}  ")
 
         self.iq.send(
             callback=self.on_response,
@@ -728,15 +718,12 @@ class iq_custom_xep:
         )
         logger.debug("#############################################################")
         logger.debug(
-            "####################### send ####################### %s" % self.on_timeout
+            f"####################### send ####################### {self.on_timeout}"
         )
         logger.debug("#############################################################")
         while True:
             if not timeoutloop:
-                er = "IQ type get id [%s] to [%s] in Timeout" % (
-                    self.iq["id"],
-                    self.iq["to"],
-                )
+                er = f'IQ type get id [{self.iq["id"]}] to [{self.iq["to"]}] in Timeout'
                 self.result_iq = {"error": er}
                 return self.result_iq
             timeoutloop = timeoutloop - 0.5
@@ -752,16 +739,14 @@ class iq_custom_xep:
                 )
                 break
             time.sleep(0.5)
-            logger.debug("timrout %s" % timeoutloop)
+            logger.debug(f"timrout {timeoutloop}")
         # la reponse
         self.reponse_iq = self.iq
         return self.result_iq
 
     def on_response(self, reponse_iq):
         logger.debug("#############################################################")
-        logger.debug(
-            "on_response iq id %s from %s" % (reponse_iq["iq"], reponse_iq["from"])
-        )
+        logger.debug(f'on_response iq id {reponse_iq["iq"]} from {reponse_iq["from"]}')
         logger.debug("#############################################################")
         self.result_iq = {"error": "on_response"}
         try:
@@ -769,7 +754,7 @@ class iq_custom_xep:
             if reponse_iq["type"] == "error":
                 texterror = ""
                 actionerror = ""
-                logger.error("on_response1 %s" % reponse_iq["type"])
+                logger.error(f'on_response1 {reponse_iq["type"]}')
                 for child in reponse_iq.xml:
                     logger.error("---------\nchild %s" % child)
                     if child.tag.endswith("error"):
@@ -778,19 +763,13 @@ class iq_custom_xep:
                             logger.error("########\nz %s" % z.tag)
                             if z.tag.endswith("text"):
                                 if z.text:
-                                    texterror = "IQ Messsage is %s" % z.text
+                                    texterror = f"IQ Messsage is {z.text}"
                                     logger.error(texterror)
                             elif z.tag.endswith("service-unavailable"):
-                                actionerror = (
-                                    "service-unavailable, Verify presense agent %s (user and resourse]"
-                                    % reponse_iq["from"]
-                                )
+                                actionerror = f'service-unavailable, Verify presense agent {reponse_iq["from"]} (user and resourse]'
                                 logger.error(actionerror)
                             elif z.tag.endswith("remote-server-not-found"):
-                                actionerror = (
-                                    "remote-server-not-found, Verify domaine jid agent %s"
-                                    % reponse_iq["from"]
-                                )
+                                actionerror = f'remote-server-not-found, Verify domaine jid agent {reponse_iq["from"]}'
                                 logger.error(actionerror)
                             elif z.tag.endswith("undefined-condition"):
                                 actionerror = (
@@ -800,8 +779,7 @@ class iq_custom_xep:
                                 logger.error(actionerror)
 
                 self.result_iq = {
-                    "error": "IQ error id [%s] to [%s] (%s) : %s"
-                    % (reponse_iq["id"], reponse_iq["to"], texterror, actionerror)
+                    "error": f'IQ error id [{reponse_iq["id"]}] to [{reponse_iq["to"]}] ({texterror}) : {actionerror}'
                 }
                 self.fin = True
                 return
@@ -818,25 +796,22 @@ class iq_custom_xep:
                                 self.result_iq = convert.decode_base64_to_string_(data)
                                 return self.result_iq
                             except Exception as e:
-                                logger.error("on_response custom_xep : %s" % str(e))
+                                logger.error(f"on_response custom_xep : {str(e)}")
                                 logger.error("\n%s" % (traceback.format_exc()))
-                                logger.error("xml reponse : %s " % str(e))
+                                logger.error(f"xml reponse : {str(e)} ")
                                 return {"err": "erreur decodage iq"}
             else:
-                self.result_iq = {"error": "type iq [%s] " % reponse_iq["type"]}
+                self.result_iq = {"error": f'type iq [{reponse_iq["type"]}] '}
                 self.fin = True
         except Exception as e:
-            self.result_iq = {"error": "type iq [%s] " % str(e)}
+            self.result_iq = {"error": f"type iq [{str(e)}] "}
             self.fin = True
         finally:
             self.fin = True
 
     def on_timeout(self, reponse_iq):
         self.reponse_iq = reponse_iq
-        er = "IQ type get id [%s] to [%s] in Timeout" % (
-            reponse_iq["id"],
-            reponse_iq["to"],
-        )
+        er = f'IQ type get id [{reponse_iq["id"]}] to [{reponse_iq["to"]}] in Timeout'
         logger.error(er)
         self.result_iq = {"error": er}
         self.fin = True

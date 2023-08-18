@@ -39,9 +39,9 @@ plugin = {"VERSION": "1.55", "NAME": "update_window", "TYPE": "substitute"}
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     try:
         logger.debug("=====================================================")
-        logger.debug("call %s from %s" % (plugin, msg["from"]))
+        logger.debug(f'call {plugin} from {msg["from"]}')
         logger.debug("=====================================================")
-        compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
+        compteurcallplugin = getattr(xmppobject, f"num_call{action}")
         if compteurcallplugin == 0:
             try:
                 xmppobject.registeryagent_showinfomachine
@@ -49,18 +49,17 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.registeryagent_showinfomachine = []
             read_conf_remote_update_window(xmppobject)
             logger.debug(
-                "Including debug information for list jid %s"
-                % (xmppobject.registeryagent_showinfomachine)
+                f"Including debug information for list jid {xmppobject.registeryagent_showinfomachine}"
             )
 
             xmppobject.list_produits = []
             init_list_produits = XmppMasterDatabase().list_produits()
-            # return
-            # function comment for next feature
-            # this functions will be used later
-            # add function for event change staus des autre agent
-            # function_dynamique_declaration_plugin(xmppobject)
-            # intercepte event change status call function
+                    # return
+                    # function comment for next feature
+                    # this functions will be used later
+                    # add function for event change staus des autre agent
+                    # function_dynamique_declaration_plugin(xmppobject)
+                    # intercepte event change status call function
         showinfobool = True
         # listupt = [x.upper() for x in xmppobject.registeryagent_showinfomachine]
         # for x in listupt:
@@ -88,14 +87,12 @@ def exclude_update_in_select(msg, exclude_update, list_update):
         ):
             # exclution suivant les regles definie
             logger.debug(
-                "exclude %s, %s,%s,%s"
-                % (msg["from"], upd["kb"], upd["updateid"], upd["title"])
+                f'exclude {msg["from"]}, {upd["kb"]},{upd["updateid"]},{upd["title"]}'
             )
             continue
         else:
             logger.debug(
-                "add update %s %s,%s,%s"
-                % (msg["from"], upd["kb"], upd["updateid"], upd["title"])
+                f'add update {msg["from"]} {upd["kb"]},{upd["updateid"]},{upd["title"]}'
             )
             res.append(
                 {"kb": upd["kb"], "updateid": upd["updateid"], "title": upd["title"]}
@@ -104,9 +101,9 @@ def exclude_update_in_select(msg, exclude_update, list_update):
 
 
 def traitement_update(xmppobject, action, sessionid, data, msg, ret):
-    logger.debug("TRAITEMENT UPDATE from %s " % msg["from"])
+    logger.debug(f'TRAITEMENT UPDATE from {msg["from"]} ')
     logger.debug(json.dumps(data, indent=4))
-    logger.debug("xmppobject.list_produits  %s" % xmppobject.list_produits)
+    logger.debug(f"xmppobject.list_produits  {xmppobject.list_produits}")
     # suivant type de windows exclude list produit
     list_table_product_select = list_produis_on(
         xmppobject, data, xmppobject.list_produits
@@ -114,7 +111,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
 
     machine = XmppMasterDatabase().getId_UuidFromJid(msg["from"])
     if not machine:
-        logger.warning("machine %s not yet registered" % msg["from"])
+        logger.warning(f'machine {msg["from"]} not yet registered')
         return
     # filtersql = "%%%s Version %s for %s%%" %(data['system_info']['platform_info']['type'],
     # data['system_info']['infobuild']['DisplayVersion'],
@@ -124,29 +121,28 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     if not xmppobject.exclud_history_list:
         logger.debug("Verify avec kb historique")
         kblistexclde = []
-        history_list_kb = XmppMasterDatabase().history_list_kb(
+        if history_list_kb := XmppMasterDatabase().history_list_kb(
             data["system_info"]["history_package_uuid"]
-        )
-        if history_list_kb:
+        ):
             kblistexclde.extend(history_list_kb)
         kb_installed = [
             x["HotFixID"].replace("KB", "") for x in data["system_info"]["kb_installed"]
         ]
         kblistexclde.extend(kb_installed)
-        lkbe = '"%s"' % ",".join(kblistexclde)
+        lkbe = f'"{",".join(kblistexclde)}"'
         data["system_info"]["kb_list"] = lkbe
-    logger.debug("kb list installed %s" % data["system_info"]["kb_list"])
+    logger.debug(f'kb list installed {data["system_info"]["kb_list"]}')
     list_update = exclude_update = res_update = []
     exclude_update = XmppMasterDatabase().test_black_list(msg["from"])
-    logger.debug("EXCLUDE update windows for %s  %s" % (msg["from"], exclude_update))
+    logger.debug(f'EXCLUDE update windows for {msg["from"]}  {exclude_update}')
     for t in list_table_product_select:
         if t == "up_packages_Win_Malicious_X64":
             # le traitement de cette mise a jour est dependante de la version revoyer par la machine du logiciel.
             # le kb n'est pas modifier.
             continue
         list_update = []
-        logger.debug("produit search  %s" % t)
-        logger.debug("produit search  %s" % data["system_info"]["kb_list"])
+        logger.debug(f"produit search  {t}")
+        logger.debug(f'produit search  {data["system_info"]["kb_list"]}')
 
         list_update = XmppMasterDatabase().search_update_by_products(
             tableproduct=t, str_kb_list=data["system_info"]["kb_list"]
@@ -194,14 +190,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     XmppMasterDatabase().del_all_Up_machine_windows(machine["id"])
 
     for t in res_update:
-        logger.info(
-            "update title   : %s %s %s"
-            % (
-                t["updateid"],
-                t["title"],
-                t["kb"],
-            )
-        )
+        logger.info(f'update title   : {t["updateid"]} {t["title"]} {t["kb"]}')
         XmppMasterDatabase().setUp_machine_windows(
             machine["id"], t["updateid"], kb=t["kb"]
         )
@@ -267,12 +256,10 @@ def read_conf_remote_update_window(xmppobject):
         else:
             Config = configparser.ConfigParser()
             Config.read(pathfileconf)
-            logger.debug(
-                "Config file %s for plugin %s" % (pathfileconf, plugin["NAME"])
-            )
-            if os.path.exists(pathfileconf + ".local"):
-                Config.read(pathfileconf + ".local")
-                logger.debug("read file %s.local" % pathfileconf)
+            logger.debug(f'Config file {pathfileconf} for plugin {plugin["NAME"]}')
+            if os.path.exists(f"{pathfileconf}.local"):
+                Config.read(f"{pathfileconf}.local")
+                logger.debug(f"read file {pathfileconf}.local")
 
             if Config.has_option("parameters", "exclud_history_list"):
                 xmppobject.exclud_history_list = Config.getboolean(

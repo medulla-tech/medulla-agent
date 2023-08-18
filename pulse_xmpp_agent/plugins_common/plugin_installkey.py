@@ -13,11 +13,11 @@ plugin = { "VERSION": "4.1", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYP
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message["from"]))
+    logger.debug(f'call {plugin} from {message["from"]}')
     logger.debug("###################################################")
     dataerreur = {
-        "action": "result" + action,
-        "data": {"msg": "error plugin : " + action},
+        "action": f"result{action}",
+        "data": {"msg": f"error plugin : {action}"},
         "sessionid": sessionid,
         "ret": 255,
         "base64": False,
@@ -27,7 +27,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         logger.debug("#######################################################")
         logger.debug("##############AGENT INSTALL KEY MACHINE################")
         logger.debug("#######################################################")
-        msg = []
         if "key" not in data:
             objectxmpp.send_message_agent(message["from"], dataerreur, mtype="chat")
             return
@@ -36,7 +35,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         result, msglog = utils.pulseuser_useraccount_mustexist(username)
         if result is False:
             logger.error(msglog)
-        msg.append(msglog)
+        msg = [msglog]
         result, msglog = utils.pulseuser_profile_mustexist(username)
         if result is False:
             logger.error(msglog)
@@ -82,13 +81,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         key = ""
         key = utils.file_get_contents(os.path.join("/", "root", ".ssh", "id_rsa.pub"))
         if key == "":
-            dataerreur["data"]["msg"] = "ARS key %s missing" % dataerreur["data"]["msg"]
+            dataerreur["data"]["msg"] = f'ARS key {dataerreur["data"]["msg"]} missing'
             objectxmpp.send_message_agent(message["from"], dataerreur, mtype="chat")
             return
         if "jidAM" not in data:
-            dataerreur["data"]["msg"] = (
-                "Machine JID %s missing" % dataerreur["data"]["msg"]
-            )
+            dataerreur["data"]["msg"] = f'Machine JID {dataerreur["data"]["msg"]} missing'
             objectxmpp.send_message_agent(message["from"], dataerreur, mtype="chat")
             return
 

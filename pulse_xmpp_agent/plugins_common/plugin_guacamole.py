@@ -31,10 +31,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             )
             cursor = db.cursor()
             # First find out if we need to run a reversessh connection
-            sql = (
-                """ SELECT parameter_value FROM guacamole_connection_parameter WHERE connection_id = %s AND parameter_name = 'hostname';"""
-                % (data["cux_id"])
-            )
+            sql = f""" SELECT parameter_value FROM guacamole_connection_parameter WHERE connection_id = {data["cux_id"]} AND parameter_name = 'hostname';"""
             cursor.execute(sql)
             results = cursor.fetchall()
             hostname = results[0][0]
@@ -42,36 +39,33 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 # We won't need a reversessh connection. We can safely quit and
                 # let guacamole connect directly to machine
                 return
-            else:
                 # We need to run a reversessh connection
-                sql = (
-                    """ SELECT parameter_value FROM guacamole_connection_parameter WHERE connection_id = %s AND parameter_name = 'port';"""
-                    % (data["cux_id"])
+            sql = f""" SELECT parameter_value FROM guacamole_connection_parameter WHERE connection_id = {data["cux_id"]} AND parameter_name = 'port';"""
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            localport = results[0][0]
+            if data["cux_type"] == "SSH":
+                remoteport = (
+                    int(xmppobject.config.clients_ssh_port)
+                    if hasattr(xmppobject.config, "clients_ssh_port")
+                    else 22
                 )
-                cursor.execute(sql)
-                results = cursor.fetchall()
-                localport = results[0][0]
-                if data["cux_type"] == "SSH":
-                    if hasattr(xmppobject.config, "clients_ssh_port"):
-                        remoteport = int(xmppobject.config.clients_ssh_port)
-                    else:
-                        remoteport = 22
-                    reversetype = "R"
-                elif data["cux_type"] == "RDP":
-                    remoteport = 3389
-                    reversetype = "R"
-                elif data["cux_type"] == "VNC":
-                    # Specific VNC case. We will use a listener
-                    remoteport = localport
-                    if hasattr(xmppobject.config, "clients_vnc_port"):
-                        localport = int(xmppobject.config.clients_vnc_port)
-                    else:
-                        localport = 5900
-                    reversetype = "L"
+                reversetype = "R"
+            elif data["cux_type"] == "RDP":
+                remoteport = 3389
+                reversetype = "R"
+            elif data["cux_type"] == "VNC":
+                # Specific VNC case. We will use a listener
+                remoteport = localport
+                if hasattr(xmppobject.config, "clients_vnc_port"):
+                    localport = int(xmppobject.config.clients_vnc_port)
+                else:
+                    localport = 5900
+                reversetype = "L"
 
         except Exception as e:
             db.close()
-            dataerreur["data"]["msg"] = "MySQL Error: %s" % str(e)
+            dataerreur["data"]["msg"] = f"MySQL Error: {str(e)}"
             logger.error("\n%s" % (traceback.format_exc()))
             raise
 
@@ -134,7 +128,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     cmd = """\"%s\" -controlservice -connect localhost""" % (program)
                     simplecommand(cmd)
                 except Exception as e:
-                    logger.error("Error start VNC listener TightVNC: %s" % str(e))
+                    logger.error(f"Error start VNC listener TightVNC: {str(e)}")
                     logger.error("\n%s" % (traceback.format_exc()))
                     raise
             if sys.platform.startswith("darwin"):
@@ -144,16 +138,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         '"/Applications/Vine Server.app/Contents/MacOS/OSXvnc-server" -connectHost localhost'
                     )
                 except Exception as e:
-                    logger.error("Error start VNC listener OSXvnc-server: %s" % str(e))
+                    logger.error(f"Error start VNC listener OSXvnc-server: {str(e)}")
                     logger.error("\n%s" % (traceback.format_exc()))
                     raise
             else:
                 try:
                     simplecommand("vncconfig -nowin -connect localhost")
                 except Exception as e:
-                    logging.getLogger().error(
-                        "Error start VNC listener vncconfig: %s" % str(e)
-                    )
+                    logging.getLogger().error(f"Error start VNC listener vncconfig: {str(e)}")
                     logger.error("\n%s" % (traceback.format_exc()))
                     raise
 

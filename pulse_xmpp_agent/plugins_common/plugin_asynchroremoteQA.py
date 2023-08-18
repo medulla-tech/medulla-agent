@@ -14,10 +14,10 @@ plugin = {"VERSION": "2.0", "NAME": "asynchroremoteQA", "TYPE": "all"}  # fmt: s
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().info("###################################################")
-    logging.getLogger().info("call %s from %s" % (plugin, message["from"]))
+    logging.getLogger().info(f'call {plugin} from {message["from"]}')
     logging.getLogger().info("###################################################")
     result = {
-        "action": "result%s" % action,
+        "action": f"result{action}",
         "sessionid": sessionid,
         "data": {},
         "ret": 0,
