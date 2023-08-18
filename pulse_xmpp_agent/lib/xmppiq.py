@@ -85,7 +85,9 @@ def dispach_iq_command(xmppobject, jsonin):
         logging.log(DEBUGPULSE, f'call function {data["action"]} ')
         result = callXmppFunctionIq(data["action"], xmppobject=xmppobject, data=data)
         if not isinstance(result, str):
-            logging.getLogger().warning(f'function {data["action"]} not return str json')
+            logging.getLogger().warning(
+                f'function {data["action"]} not return str json'
+            )
         return result
     else:
         logging.log(
@@ -164,7 +166,7 @@ class functionsynchroxmpp:
             args = shlex.split(reversesshsh)
             result = subprocess.Popen(args)
             logger.debug(f"Command reversessh {dd}")
-                # /usr/bin/ssh -t -t -R 36591:localhost:22 -o StrictHostKeyChecking=no -i /var/lib/pulse2/.ssh/id_rsa -l reversessh 212.83.136.107 -p 22
+            # /usr/bin/ssh -t -t -R 36591:localhost:22 -o StrictHostKeyChecking=no -i /var/lib/pulse2/.ssh/id_rsa -l reversessh 212.83.136.107 -p 22
         elif sys.platform.startswith("win"):
             ################# win reverse #################
             try:
@@ -257,7 +259,9 @@ class functionsynchroxmpp:
             try:
                 datastr = json.dumps(data, encoding="latin1")
             except Exception as e:
-                logging.getLogger().error(f"synchro xmpp function remotefile : {str(e)}")
+                logging.getLogger().error(
+                    f"synchro xmpp function remotefile : {str(e)}"
+                )
                 return ""
         try:
             result = base64.b64encode(zlib.compress(datastr, 9))
@@ -360,10 +364,7 @@ class functionsynchroxmpp:
         for info_ask in data["data"]["listinformation"]:
             try:
                 if info_ask == "add_proxy_port_reverse":
-                    if (
-                            "param" in data["data"]
-                            and "proxyport" in data["data"]["param"]
-                        ):
+                    if "param" in data["data"] and "proxyport" in data["data"]["param"]:
                         if xmppobject.config.agenttype in ["relayserver"]:
                             xmppobject.manage_persistence_reverse_ssh.add_port(
                                 data["data"]["param"]["proxyport"]

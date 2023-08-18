@@ -271,7 +271,9 @@ async def handle_client(client, xmppobject):
 
 async def run_server(xmppobject):
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-        linux_command = f'netstat -lnt4p | grep python | grep ":{xmppobject.port_tcp_kiosk}"'
+        linux_command = (
+            f'netstat -lnt4p | grep python | grep ":{xmppobject.port_tcp_kiosk}"'
+        )
         logger.warning(f"linux command : {linux_command}")
         result = simplecommand(linux_command)
 

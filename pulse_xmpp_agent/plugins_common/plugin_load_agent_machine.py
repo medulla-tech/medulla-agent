@@ -177,10 +177,7 @@ def _test_type(value):
 def _runjson(jsonf, level=0):
     if isinstance(jsonf, dict):
         msg = f'{level * "  "}dict'
-        return {
-            element: _runjson(jsonf[element], level=level + 1)
-            for element in jsonf
-        }
+        return {element: _runjson(jsonf[element], level=level + 1) for element in jsonf}
     elif isinstance(jsonf, list):
         return [_runjson(element, level=level + 1) for element in jsonf]
     else:
@@ -382,7 +379,9 @@ def handle_client_connection(self, msg):
                     result["data"]["serial"] = result["serial"]
             else:
                 # bad action
-                logger.warning(f'this action is not taken into account : {result["action"]}')
+                logger.warning(
+                    f'this action is not taken into account : {result["action"]}'
+                )
                 return False, ""
             if substitute_recv:
                 # pour le monitoring l agent est  le substitut monitoring
@@ -631,7 +630,9 @@ def set_debug_level_str(xmppobject, result):
                         return False, msgr
                     except Exception as e:
                         logger.error(f"{traceback.format_exc()}")
-                        logger.error(f'handler module logger missing {result["data"]["loggername"]}')
+                        logger.error(
+                            f'handler module logger missing {result["data"]["loggername"]}'
+                        )
                         msgr = "handler module logger missing %s\n%s" % (
                             result["data"]["loggername"],
                             msg,

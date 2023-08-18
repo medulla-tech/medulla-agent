@@ -33,7 +33,7 @@ def sensors_battery():
         return result + "\n" + va + "\n" + vb
     else:
         va = f"left:       {secs2hours(batt.secsleft)}"
-        vb = 'status:     discharging'
+        vb = "status:     discharging"
         vc = "plugged in: no"
         return result + "\n" + va + "\n" + vb + "\n" + vc
 

@@ -145,7 +145,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 try:
                     simplecommand("vncconfig -nowin -connect localhost")
                 except Exception as e:
-                    logging.getLogger().error(f"Error start VNC listener vncconfig: {str(e)}")
+                    logging.getLogger().error(
+                        f"Error start VNC listener vncconfig: {str(e)}"
+                    )
                     logger.error("\n%s" % (traceback.format_exc()))
                     raise
 

@@ -2885,9 +2885,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             adminsgrpsid = win32security.ConvertStringSidToSid("S-1-5-32-544")
             adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
             simplecommand(
-                encode_strconsole(
-                    f'net localgroup {adminsgroup} "{username}" /ADD'
-                )
+                encode_strconsole(f'net localgroup {adminsgroup} "{username}" /ADD')
             )
             msg = f"{username} user account already exists. Nothing to do."
             return True, msg
@@ -2930,12 +2928,12 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             adminsgrpsid = win32security.ConvertStringSidToSid("S-1-5-32-544")
             adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
             result = simplecommand(
-                encode_strconsole(
-                    f'net localgroup {adminsgroup} "{username}" /ADD'
-                )
+                encode_strconsole(f'net localgroup {adminsgroup} "{username}" /ADD')
             )
             if result["code"] != 0:
-                msg = f"Error adding {username} account to administrators group: {result}"
+                msg = (
+                    f"Error adding {username} account to administrators group: {result}"
+                )
                 return False, msg
             result = simplecommand(
                 encode_strconsole(
@@ -2947,7 +2945,9 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
                 msg = f"Error hiding {username} account: {result}"
                 return False, msg
             user_home = os.path.join("c:\\", "Users", username)
-            hide_from_explorer = simplecommand(encode_strconsole(f"attrib +h {user_home}"))
+            hide_from_explorer = simplecommand(
+                encode_strconsole(f"attrib +h {user_home}")
+            )
             if hide_from_explorer["code"] != 0:
                 msg = f"Error hiding {username} account: {hide_from_explorer}"
                 return False, msg
@@ -3131,9 +3131,7 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     if sys.platform.startswith("win"):
         id_rsa_path = os.path.join("C:\\Users", username, ".ssh", "id_rsa")
     else:
-        id_rsa_path = os.path.join(
-            os.path.expanduser(f"~{username}"), ".ssh", "id_rsa"
-        )
+        id_rsa_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "id_rsa")
     delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
     result = simplecommand(encode_strconsole(delete_keyfile_cmd))
     logger.debug(f"Creating id_rsa file in {id_rsa_path}")
@@ -3297,9 +3295,7 @@ def reversessh_keys_mustexist_on_relay(username="reversessh"):
     os.chmod(homedir, 0o751)
     os.chown(homedir, uid, -1)
     # Check keys
-    id_rsa_key_path = os.path.join(
-        os.path.expanduser(f"~{username}"), ".ssh", "id_rsa"
-    )
+    id_rsa_key_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "id_rsa")
     public_key_path = os.path.join(
         os.path.expanduser(f"~{username}"), ".ssh", "id_rsa.pub"
     )
@@ -3341,9 +3337,7 @@ def get_relayserver_reversessh_idrsa(username="reversessh"):
     """
     returns relayserver s reversessh private key
     """
-    idrsa_key_path = os.path.join(
-        os.path.expanduser(f"~{username}"), ".ssh", "id_rsa"
-    )
+    idrsa_key_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "id_rsa")
     return file_get_contents(idrsa_key_path)
 
 
@@ -3466,9 +3460,7 @@ class geolocalisation_agent:
             if self.localisation is None:
                 self.getgeolocalisation()
 
-            if self.localisation is None or not is_valid_ipv4(
-                self.localisation["ip"]
-            ):
+            if self.localisation is None or not is_valid_ipv4(self.localisation["ip"]):
                 return None
             if not self.determination:
                 logger.warning("Determination use file")
@@ -3707,8 +3699,7 @@ class base_message_queue_posix(Singleton):
 
     def _is_exist(self, name_file):
         return any(
-            fmp["name"] == name_file
-            for fmp in base_message_queue_posix.file_reponse_iq
+            fmp["name"] == name_file for fmp in base_message_queue_posix.file_reponse_iq
         )
 
     def _is_exist_file(self, name_file, prefixe=""):

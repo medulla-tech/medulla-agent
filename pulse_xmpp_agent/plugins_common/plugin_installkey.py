@@ -85,7 +85,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.send_message_agent(message["from"], dataerreur, mtype="chat")
             return
         if "jidAM" not in data:
-            dataerreur["data"]["msg"] = f'Machine JID {dataerreur["data"]["msg"]} missing'
+            dataerreur["data"][
+                "msg"
+            ] = f'Machine JID {dataerreur["data"]["msg"]} missing'
             objectxmpp.send_message_agent(message["from"], dataerreur, mtype="chat")
             return
 

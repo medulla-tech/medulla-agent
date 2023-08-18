@@ -1931,7 +1931,9 @@ class grafcet:
                 self.workingstep["waiting"] = "10"
                 logging.getLogger().warning("waiting missing : default value 180s")
             # timewaiting = int(self.workingstep['waiting']) + 180
-            logging.getLogger().warn(f'timeout  waiting : {self.workingstep["waiting"]}')
+            logging.getLogger().warn(
+                f'timeout  waiting : {self.workingstep["waiting"]}'
+            )
             self.__affiche_message(
                 f'[{self.data["name"]}]-[{self.workingstep["step"]}]: Waiting {self.workingstep["waiting"]} s before resuming deployment',
                 module="Deployment | Error | Execution",
@@ -2010,7 +2012,7 @@ class grafcet:
                 elif sys.platform.startswith("darwin"):
                     logging.debug("actionrestartmachine  shutdown machine MacOS")
                     os.system("shutdown -r now")
-                        # os.system("pkill -f agentxmpp")
+                    # os.system("pkill -f agentxmpp")
         except Exception as e:
             logging.getLogger().error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
@@ -2040,7 +2042,9 @@ class grafcet:
             ):
                 os.chdir(managepackage.packagedir())
                 if sys.platform.startswith("win"):
-                    os.system(f'rmdir /s /q "{self.datasend["data"]["pathpackageonmachine"]}"')
+                    os.system(
+                        f'rmdir /s /q "{self.datasend["data"]["pathpackageonmachine"]}"'
+                    )
                 else:
                     os.system(f'rm -Rf {self.datasend["data"]["pathpackageonmachine"]}')
                 self.__affiche_message(

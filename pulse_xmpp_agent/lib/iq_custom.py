@@ -319,9 +319,7 @@ class iq_value:
         """
         maintenant = int(time.time())
         tableau = [
-            "{:<40} {:<20} {:<10}".format(
-                "Clé", "Temps d'expiration", "Temps restant"
-            )
+            "{:<40} {:<20} {:<10}".format("Clé", "Temps d'expiration", "Temps restant")
         ]
         for cle, (valeur, expiration) in self.dictionnaire.items():
             temps_restant = expiration - maintenant

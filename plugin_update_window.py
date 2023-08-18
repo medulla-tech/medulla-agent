@@ -54,12 +54,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
             xmppobject.list_produits = []
             init_list_produits = XmppMasterDatabase().list_produits()
-                    # return
-                    # function comment for next feature
-                    # this functions will be used later
-                    # add function for event change staus des autre agent
-                    # function_dynamique_declaration_plugin(xmppobject)
-                    # intercepte event change status call function
+            # return
+            # function comment for next feature
+            # this functions will be used later
+            # add function for event change staus des autre agent
+            # function_dynamique_declaration_plugin(xmppobject)
+            # intercepte event change status call function
         showinfobool = True
         # listupt = [x.upper() for x in xmppobject.registeryagent_showinfomachine]
         # for x in listupt:

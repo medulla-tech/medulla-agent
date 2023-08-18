@@ -95,7 +95,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             fromuser=datesession["login"],
                             touser="",
                         )
-                        result1 = utils.simplecommand(utils.encode_strconsole(f"kill -6 {processus}"))
+                        result1 = utils.simplecommand(
+                            utils.encode_strconsole(f"kill -6 {processus}")
+                        )
                         if result1["code"] != 0:
                             logger.error(
                                 f'the process {processus} closed with the status {str(result1["result"])}'
