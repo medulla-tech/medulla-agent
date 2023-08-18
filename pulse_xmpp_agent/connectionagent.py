@@ -987,11 +987,14 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
     if not optsdeamon:
         if optsconsoledebug:
-            #recupere logger principal par son nom
-            loggermain= logging.getLogger( logging.getLogger().name)
+            # recupere logger principal par son nom
+            loggermain = logging.getLogger(logging.getLogger().name)
             # current_level = loggermain.getEffectiveLevel()
             # Configurer le logger
-            logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            logging.basicConfig(
+                level=logging.DEBUG,
+                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            )
             loggermain.setLevel(logging.DEBUG)
             # Créer un gestionnaire pour afficher les messages dans la console
 
@@ -1000,13 +1003,17 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             file_handler.setLevel(logging.DEBUG)
 
             # Créer un formatteur pour le gestionnaire de fichier
-            file_formatter = logging.Formatter('CLI : CONNECT %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            file_formatter = logging.Formatter(
+                "CLI : CONNECT %(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
             file_handler.setFormatter(file_formatter)
 
             loggermain.addHandler(file_handler)
-            logger.debug("\n------------------------------------------------------------" \
-                         "\n----------- Connecteur launcher by console -----------------" \
-                         "\n------------------------------------------------------------")
+            logger.debug(
+                "\n------------------------------------------------------------"
+                "\n----------- Connecteur launcher by console -----------------"
+                "\n------------------------------------------------------------"
+            )
 
         else:
             logging.basicConfig(

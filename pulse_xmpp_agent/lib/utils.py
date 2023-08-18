@@ -4625,6 +4625,7 @@ def measure_time(func):
     Returns:
         callable: The wrapped function with added execution time measurement.
     """
+
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -4649,6 +4650,7 @@ def log_params(func):
     Returns:
         callable: The wrapped function with added logging of arguments.
     """
+
     def wrapper(*args, **kwargs):
         print(f"Paramètres positionnels : {args}")
         print(f"Paramètres nommés : {kwargs}")
@@ -4671,6 +4673,7 @@ def log_details(func):
     Returns:
         callable: The wrapped function with added logging of details.
     """
+
     def wrapper(*args, **kwargs):
         frame = inspect.currentframe().f_back
         filename = frame.f_code.co_filename
@@ -4700,6 +4703,7 @@ def log_details_debug_info(func):
     Returns:
         callable: The wrapped function with added logging capabilities.
     """
+
     def wrapper(*args, **kwargs):
         frame = inspect.currentframe().f_back
         filename = frame.f_code.co_filename
@@ -4758,7 +4762,7 @@ def display_message_dev(message):
     Returns:
         None
     """
-    if 'DEV' in globals() and DEV == 1:
+    if "DEV" in globals() and DEV == 1:
         frame = inspect.currentframe().f_back
         file_name = inspect.getframeinfo(frame).filename
         line_number = frame.f_lineno
@@ -4770,6 +4774,7 @@ def display_message_dev(message):
         logger.addHandler(stream_handler)
         log_line = generate_log_line(message)
         logger.info(log_line)
+
 
 def display_message(message):
     """
