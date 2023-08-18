@@ -4613,6 +4613,18 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
 
 # decorateur mesure temps d'une fonction
 def measure_time(func):
+    """
+    Decorator that measures and prints the execution time of the wrapped function.
+
+    This decorator calculates and prints the execution time of the wrapped function
+    and displays the result in seconds.
+
+    Parameters:
+        func (callable): The function to be wrapped and for which the execution time will be measured.
+
+    Returns:
+        callable: The wrapped function with added execution time measurement.
+    """
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -4625,6 +4637,18 @@ def measure_time(func):
 
 
 def log_params(func):
+    """
+    Decorator that logs positional and keyword arguments of the wrapped function.
+
+    This decorator prints the positional and keyword arguments passed to the wrapped
+    function, helping to debug and inspect the arguments.
+
+    Parameters:
+        func (callable): The function to be wrapped and for which the arguments will be logged.
+
+    Returns:
+        callable: The wrapped function with added logging of arguments.
+    """
     def wrapper(*args, **kwargs):
         print(f"Paramètres positionnels : {args}")
         print(f"Paramètres nommés : {kwargs}")
@@ -4635,6 +4659,18 @@ def log_params(func):
 
 
 def log_details(func):
+    """
+    Decorator that logs detailed information about the wrapped function.
+
+    This decorator prints the name of the wrapped function, the file name, line number,
+    positional, and keyword arguments passed to the function.
+
+    Parameters:
+        func (callable): The function to be wrapped and for which detailed information will be logged.
+
+    Returns:
+        callable: The wrapped function with added logging of details.
+    """
     def wrapper(*args, **kwargs):
         frame = inspect.currentframe().f_back
         filename = frame.f_code.co_filename
@@ -4651,6 +4687,19 @@ def log_details(func):
 
 
 def log_details_debug_info(func):
+    """
+    Decorator that logs debug information for the wrapped function.
+
+    This decorator adds logging functionality to the wrapped function, providing debug
+    information such as function name, line number, positional arguments, and keyword
+    arguments to the console.
+
+    Parameters:
+        func (callable): The function to be wrapped and enhanced with logging.
+
+    Returns:
+        callable: The wrapped function with added logging capabilities.
+    """
     def wrapper(*args, **kwargs):
         frame = inspect.currentframe().f_back
         filename = frame.f_code.co_filename
@@ -4677,6 +4726,18 @@ def log_details_debug_info(func):
 
 
 def generate_log_line(message):
+    """
+    Generate a log line with the provided message, including the filename and line number.
+
+    This function is used to create a log line in the format:
+    "[filename:line_number] - message"
+
+    Parameters:
+        message (str): The message to be included in the log line.
+
+    Returns:
+        str: A log line string in the format "[filename:line_number] - message".
+    """
     frame = inspect.currentframe().f_back
     file_name = inspect.getframeinfo(frame).filename
     line_number = frame.f_lineno
@@ -4684,7 +4745,42 @@ def generate_log_line(message):
     return log_line
 
 
+def display_message_dev(message):
+    """
+    Display the given message in the log if the global variable 'DEV' is defined and equal to 1.
+
+    If the global variable 'DEV' is defined and its value is 1, this function will log the provided
+    message using the 'logging' module to the console.
+
+    Parameters:
+        message (str): The message to be displayed in the log.
+
+    Returns:
+        None
+    """
+    if 'DEV' in globals() and DEV == 1:
+        frame = inspect.currentframe().f_back
+        file_name = inspect.getframeinfo(frame).filename
+        line_number = frame.f_lineno
+        logger = logging.getLogger(file_name)
+        logger.setLevel(logging.INFO)
+        # Configuration du handler de stream (affichage console)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.INFO)
+        logger.addHandler(stream_handler)
+        log_line = generate_log_line(message)
+        logger.info(log_line)
+
 def display_message(message):
+    """
+    Display the given message in the log.
+
+    Parameters:
+        message (str): The message to be displayed in the log.
+
+    Returns:
+        None
+    """
     frame = inspect.currentframe().f_back
     file_name = inspect.getframeinfo(frame).filename
     line_number = frame.f_lineno
