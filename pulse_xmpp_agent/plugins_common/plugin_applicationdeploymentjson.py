@@ -26,12 +26,8 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {
-    "VERSION": "5.30",
-    "NAME": "applicationdeploymentjson",
-    "VERSIONAGENT": "2.0.0",
-    "TYPE": "all",
-}
+
+plugin = { "VERSION": "5.30", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all" }  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
@@ -877,21 +873,37 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         logger.debug("###################################################")
         logger.debug("##############AGENT RELAY SERVER###################")
         logger.debug("###################################################")
-        if 'advanced' in data and 'paramdeploy' in data['advanced'] and 'section' in data['advanced']['paramdeploy'] and \
-            data['advanced']['paramdeploy']['section'] in ['update','install','uninstall']:
+        if (
+            "advanced" in data
+            and "paramdeploy" in data["advanced"]
+            and "section" in data["advanced"]["paramdeploy"]
+            and data["advanced"]["paramdeploy"]["section"]
+            in ["update", "install", "uninstall"]
+        ):
             # priorite avanced selection
             pass
         else:
             # paramdeploy pas definie au lancement
-            if 'descriptor' in data and \
-                'info' in data['descriptor'] and \
-                'type_section' in data['descriptor']['info']:
-                if data['descriptor']['info']["type_section"].lower() in ['update','install','uninstall'] and \
-                    'advanced' in data:
-                    if 'paramdeploy' not in data['advanced']:
-                        data['advanced']['paramdeploy']= {"section" : data['descriptor']['info']["type_section"].lower()}
+            if (
+                "descriptor" in data
+                and "info" in data["descriptor"]
+                and "type_section" in data["descriptor"]["info"]
+            ):
+                if (
+                    data["descriptor"]["info"]["type_section"].lower()
+                    in ["update", "install", "uninstall"]
+                    and "advanced" in data
+                ):
+                    if "paramdeploy" not in data["advanced"]:
+                        data["advanced"]["paramdeploy"] = {
+                            "section": data["descriptor"]["info"][
+                                "type_section"
+                            ].lower()
+                        }
                     else:
-                        data['advanced']['paramdeploy']['section'] = data['descriptor']['info']["type_section"].lower()
+                        data["advanced"]["paramdeploy"]["section"] = data["descriptor"][
+                            "info"
+                        ]["type_section"].lower()
         try:
             objectxmpp.reversedelpoy  # reversedelpoy add port for reverse ssh, used for del reverse
         except AttributeError:
@@ -2838,9 +2850,13 @@ def pull_package_transfert_rsync(
         elif sys.platform.startswith("win"):
             try:
                 win32net.NetUserGetInfo("", "pulseuser", 0)
-                path_key_priv = os.path.join("c:\Users\pulseuser", ".ssh", "id_rsa")
+                path_key_priv = os.path.join(
+                    "c:", "Users", "pulseuser", ".ssh", "id_rsa"
+                )
             except:
-                path_key_priv = os.path.join("c:\progra~1", "pulse", ".ssh", "id_rsa")
+                path_key_priv = os.path.join(
+                    "c:", "progra~1", "pulse", ".ssh", "id_rsa"
+                )
             localdest = ' "%s/%s"' % (
                 managepackage.managepackage.packagedir(),
                 packagename,
