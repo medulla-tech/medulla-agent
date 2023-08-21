@@ -752,13 +752,9 @@ class iq_custom_xep:
             if reponse_iq["type"] == "error":
                 texterror = ""
                 actionerror = ""
-                logger.error(f'on_response1 {reponse_iq["type"]}')
                 for child in reponse_iq.xml:
-                    logger.error("---------\nchild %s" % child)
                     if child.tag.endswith("error"):
-                        logger.error("result iq avec erreur")
                         for z in child:
-                            logger.error("########\nz %s" % z.tag)
                             if z.tag.endswith("text"):
                                 if z.text:
                                     texterror = f"IQ Messsage is {z.text}"

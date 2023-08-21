@@ -973,7 +973,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     format = "%(asctime)s - %(levelname)s - (CONF)%(message)s"
     # more information log
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
-    if not optsdeamon and optsconsoledebug:
+    if optsconsoledebug:
         # recupere logger principal par son nom
         loggermain = logging.getLogger(logging.getLogger().name)
         # current_level = loggermain.getEffectiveLevel()

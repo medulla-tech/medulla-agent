@@ -3613,7 +3613,7 @@ AGENT %s ERROR TERMINATE""" % (
                     dataobj["plugin"][module["NAME"]] = module["VERSION"]
                 except Exception as e:
                     logger.error(
-                        "error loading plugin %s : %s\verify plugin %s and import"
+                        "error loading plugin %s : %s verify plugin %s and import"
                         % (element, str(e), element)
                     )
         # add list scheduler plugins
