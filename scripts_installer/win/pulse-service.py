@@ -83,9 +83,9 @@ class SMWinservice(win32serviceutil.ServiceFramework):
         pass
 
 
-log_file = os.path.join("c:\\", "Program Files", "Pulse", "var", "log", "service.log")
+log_file = os.path.join("c:\\", "Progra~1", "Pulse", "var", "log", "service.log")
 agent_dir = os.path.join(
-    "C:\\", "Program Files", "Python311", "Lib", "site-packages", "pulse_xmpp_agent"
+    "C:\\", "Program~1", "Python311", "Lib", "site-packages", "pulse_xmpp_agent"
 )
 
 logger = logging.getLogger("pulseagentservice")
@@ -161,14 +161,14 @@ class PulseAgentService(SMWinservice):
             if not re.search(filter, result):
                 if not self.isdebug:
                     os.system(
-                        os.path.join("c:\\", "Program Files", "Python311", "python.exe")
+                        os.path.join("c:\\", "Progra~1", "Python311", "python.exe")
                         + " "
                         + os.path.join(agent_dir, "launcher.py")
                         + " -t machine"
                     )
                 else:
                     os.system(
-                        os.path.join("c:\\", "Program Files", "Python311", "python.exe")
+                        os.path.join("c:\\", "Progra~1", "Python311", "python.exe")
                         + " "
                         + os.path.join(agent_dir, "launcher.py")
                         + " -c -t machine"
