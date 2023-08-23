@@ -218,7 +218,7 @@ class DateTimebytesEncoderjson(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
-class MUCBot(slixmpp.ClientXMPP):
+class MUCBot(ClientXMPP):
     """
     bot xmpp
     """
@@ -255,7 +255,7 @@ class MUCBot(slixmpp.ClientXMPP):
         )
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs(self.dirsyncthing, 0o755)
-        slixmpp.ClientXMPP.__init__(
+        ClientXMPP.__init__(
             self, jid.JID(conf.jidagent), conf.passwordconnection
         )
         laps_time_update_plugin = 3600
