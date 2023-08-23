@@ -157,7 +157,7 @@ class PulseAgentService(SMWinservice):
         while self.isrunning:
             batcmd = "NET START"
             result = subprocess.check_output(batcmd, shell=True)
-            filter = "medullaagent"
+            filter = "Medulla agent"
             if not re.search(filter, result):
                 if not self.isdebug:
                     os.system(
