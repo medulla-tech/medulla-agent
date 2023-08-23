@@ -255,9 +255,7 @@ class MUCBot(ClientXMPP):
         )
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs(self.dirsyncthing, 0o755)
-        ClientXMPP.__init__(
-            self, jid.JID(conf.jidagent), conf.passwordconnection
-        )
+        ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
         laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
