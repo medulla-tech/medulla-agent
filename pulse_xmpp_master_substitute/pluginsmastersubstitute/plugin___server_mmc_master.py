@@ -535,6 +535,8 @@ class Configuration:
         if os.path.isfile(config_file):
             self.config = configparser.ConfigParser()
             self.config.read(config_file)
+            if os.path.exists(config_file + ".local"):
+                self.config.read(config_file + ".local")
             # SSL parameters
             xmppobject.server_mmc_master_certfile = self.config.get(
                 "ssl", "certfile", fallback="/var/lib/pulse2/masterkey/cert.pem"
