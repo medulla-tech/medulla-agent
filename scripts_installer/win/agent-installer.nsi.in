@@ -339,7 +339,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Install of CA Certificate
   ClearErrors
   SetOutPath "$INSTDIR\tmp"
-  File "${CACERTIFICATE}"
+  File "../${CACERTIFICATE}"
   StrCpy $0 `certutil -addstore ca "$INSTDIR\tmp\${CACERTIFICATE}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
