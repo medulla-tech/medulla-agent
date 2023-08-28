@@ -9,10 +9,10 @@ import json
 import logging
 import sys
 
-plugin = {"VERSION" : "1.0", "NAME" : "scheduling_deploy",  "TYPE" : "all", "SCHEDULED" : True}
+plugin = {"VERSION" : "1.1", "NAME" : "scheduling_deploy",  "TYPE" : "all", "SCHEDULED" : True}
 
 # nb  -1 infinie
-SCHEDULE = {"schedule" : "*/1 * * * *", "nb" : -1}
+SCHEDULE = {"schedule" : "*/15 * * * *", "nb" : -1}
 #SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}
 
 def schedule_main(objectxmpp):
