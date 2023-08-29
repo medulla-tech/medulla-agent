@@ -145,15 +145,12 @@ def updatenetworkcheckversion(version):
 
 def updatenetworkcheck(xmppobject):
     logger.info("Updating Network Check to version %s" % NETWORKVERSION)
-    if sys.platform.startswith("win"):
-        pywintypes27_file = os.path.join(
-            "c:\\",
-            "Program Files",
-            "Python39",
-            "Lib",
+     if sys.platform.startswith("win"):
+        pywintypesxxx_file = os.path.join(
+            utils.python_info.get_path_lib(),
             "site-packages",
             "pywin32_system32",
-            "pywintypes27.dll",
+            "pywintypes%s.dll"%utils.python_info.get_version()
         )
         win32_path = os.path.join(
             "c:\\", "Program Files", "Python39", "Lib", "site-packages", "win32"
@@ -176,9 +173,9 @@ def updatenetworkcheck(xmppobject):
         stop_command = "sc stop medullanetnotify"
         stop_service = utils.simplecommand(stop_command)
         # Activation of network notify windows service
-        if not os.path.isfile(os.path.join(win32_path, "pywintypes27.dll")):
+        if not os.path.isfile(os.path.join(win32_path,"pywintypes%s.dll"%utils.python_info.get_version())):
             shutil.copyfile(
-                pywintypes27_file, os.path.join(win32_path, "pywintypes27.dll")
+                pywintypesxxx_file, os.path.join(win32_path, "pywintypes%s.dll"%utils.python_info.get_version())
             )
 
         servicefilename = "netcheck-service.py"
