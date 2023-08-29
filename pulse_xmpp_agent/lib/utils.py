@@ -3118,10 +3118,10 @@ def delete_profile(username="pulseuser"):
 
     except wmi.x_wmi as e:
         logging.getLogger().error(
-            "Erreur WMI lors de la suppression du profil : {str(e)}"
+            f"Erreur WMI lors de la suppression du profil : {str(e)}"
         )
     except Exception as e:
-        logging.getLogger().error("Une erreur inattendue s'est produite : {str(e)}")
+        logging.getLogger().error(f"Une erreur inattendue s'est produite : {str(e)}")
 
 
 def create_idrsa_on_client(username="pulseuser", key=""):
