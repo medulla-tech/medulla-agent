@@ -144,16 +144,17 @@ def updatenetworkcheckversion(version):
 
 
 def updatenetworkcheck(xmppobject):
+    version_info = utils.PythonVersionInfo()
     logger.info("Updating Network Check to version %s" % NETWORKVERSION)
      if sys.platform.startswith("win"):
         pywintypesxxx_file = os.path.join(
-            utils.python_info.get_path_lib(),
+            version_info.path_lib,
             "site-packages",
             "pywin32_system32",
-            "pywintypes%s.dll"%utils.python_info.get_version()
+            "pywintypes%s.dll"%version_info.version
         )
         win32_path = os.path.join(
-            "c:\\", "Program Files", "Python39", "Lib", "site-packages", "win32"
+           version_info.get_path_packages_python(), "win32"
         )
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 
@@ -173,9 +174,9 @@ def updatenetworkcheck(xmppobject):
         stop_command = "sc stop medullanetnotify"
         stop_service = utils.simplecommand(stop_command)
         # Activation of network notify windows service
-        if not os.path.isfile(os.path.join(win32_path,"pywintypes%s.dll"%utils.python_info.get_version())):
+        if not os.path.isfile(os.path.join(win32_path,"pywintypes%s.dll"%version_info.version)):
             shutil.copyfile(
-                pywintypesxxx_file, os.path.join(win32_path, "pywintypes%s.dll"%utils.python_info.get_version())
+                pywintypesxxx_file, os.path.join(win32_path, "pywintypes%s.dll"%version_info.version)
             )
 
         servicefilename = "netcheck-service.py"
@@ -194,8 +195,10 @@ def updatenetworkcheck(xmppobject):
             querycmd_result = utils.simplecommand(querycmd)
             if querycmd_result["code"] != 0:
                 servicecmd = (
-                    'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" --startup=auto install'
-                    % (pulsedir_path, servicefilename)
+                    '%s "%s\\%s" --startup=auto install'
+                    % (utils.get_python_executable_console(),
+                       pulsedir_path,
+                       servicefilename)
                 )
                 servicecmd_result = utils.simplecommand(servicecmd)
                 if servicecmd_result["code"] == 0:

@@ -163,6 +163,23 @@ class PythonVersionInfo:
         """
         return self.path_lib
 
+    def get_path_root_files_python(self):
+        """
+        Renvoie le chemin racine des fichiers python
+        """
+        return os.path.dirname(self._get_path_lib())
+
+    def get_path_packages_python(self):
+        """
+        Renvoie le chemin des packages python
+        """
+        if os.path.exists(os.path.join(self._get_path_lib(),"dist-packages")):
+            return os.path.join(self._get_path_lib(),"dist-packages")
+        else:
+            return os.path.join(self._get_path_lib(),"site-packages")
+
+
+
 def get_python_executable_console():
     """
     Renvoie le chemin absolu de l'exécutable Python en cours d'exécution.

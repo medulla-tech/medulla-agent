@@ -53,9 +53,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 
 def fileviewer_path():
+    version_info = utils.PythonVersionInfo()
     if sys.platform.startswith("win"):
         destpath = os.path.join(
-            utils.python_info.get_path_lib(),
+            version_info.path_lib,
             "site-packages",
             "pulse_xmpp_agent",
             "lib",

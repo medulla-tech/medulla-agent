@@ -71,7 +71,7 @@ def updatecherrypyversion(version):
 
 def updatecherrypy(xmppobject, installed_version):
     logger.info("Updating CherryPy to version %s" % CHERRYPYVERSION)
-
+    version_info = utils.PythonVersionInfo()
     if sys.platform.startswith("win"):
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
@@ -105,9 +105,12 @@ def updatecherrypy(xmppobject, installed_version):
 
         if result:
             cmd = (
-                'C:\\Program\ Files\\Python%s\\Scripts\\pip3 install --quiet --upgrade --no-index --find-links="%s" CherryPy-%s-py2.py3-none-any.whl'
+                'C:\\Program\ Files\\Python%s\\Scripts\\pip%s install --quiet --upgrade --no-index --find-links="%s" CherryPy-%s-py2.py3-none-any.whl'
                 % (
-                     utils.python_info.get_path_lib(), install_tempdir, CHERRYPYVERSION)
+                     version_info.version,
+                     version_info.version_major,
+                     install_tempdir,
+                     CHERRYPYVERSION)
             )
             os.chdir(install_tempdir)
             utils.simplecommand(cmd)
