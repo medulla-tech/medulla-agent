@@ -1228,22 +1228,23 @@ if __name__ == "__main__":
         default=False,
         help="console debug",
     )
-    optp.add_option('-k',
-                    '--check',
-                    dest='check_agent',
-                    action='store_false',
-                    default=True,
-                    help='deactive les controles process')
+    optp.add_option(
+        "-k",
+        "--check",
+        dest="check_agent",
+        action="store_false",
+        default=True,
+        help="deactive les controles process",
+    )
 
-
-    #optp.add_option(
-        #"-n",
-        #"--no_check",
-        #action="store_true",
-        #dest="checking",
-        #default=False,
-        #help="deactive les controles process",
-    #)
+    # optp.add_option(
+    # "-n",
+    # "--no_check",
+    # action="store_true",
+    # dest="checking",
+    # default=False,
+    # help="deactive les controles process",
+    # )
     opts, args = optp.parse_args()
 
     if opts.typemachine.lower() in ["machine"]:
@@ -1293,7 +1294,6 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-
     BOOL_SUPPORT_CHECK_AGENT = os.path.join(filePath, "BOOL_LAUNCHER_NO_CHECK_AGENT")
     if os.path.exists(BOOL_SUPPORT_CHECK_AGENT):
         logger.debug("file BOOL_SUPPORT_CHECK_AGENT exist")
@@ -1308,9 +1308,7 @@ if __name__ == "__main__":
         if not opts.check_agent:
             ret = install_rescue_image().reinstall_agent_rescue()
         else:
-            logger.warning(
-                        "option check agent is False, no process monitoring"
-                )
+            logger.warning("option check agent is False, no process monitoring")
 
     # first start network changed
     networkchanged = networkchanged()
@@ -1328,10 +1326,7 @@ if __name__ == "__main__":
             if not opts.check_agent:
                 ret = install_rescue_image().reinstall_agent_rescue()
             else:
-                logger.warning(
-                        "option check agent is False, no process monitoring"
-                )
-
+                logger.warning("option check agent is False, no process monitoring")
 
     if networkchanged:
         logger.debug("We detected modifications in the network configuration.")
@@ -1469,7 +1464,9 @@ if __name__ == "__main__":
                             "We are reinstalling the agent thanks to the rescue image"
                         )
                         ret = install_rescue_image().reinstall_agent_rescue()
-                        logger.debug("The rescue is done, now We start a reconfiguration")
+                        logger.debug(
+                            "The rescue is done, now We start a reconfiguration"
+                        )
                         if opts.typemachine.lower() in ["machine"]:
                             start_agent(
                                 pathagent, agent="connection", console=opts.consoledebug
@@ -1488,9 +1485,7 @@ if __name__ == "__main__":
                         logger.warning(
                             "option check agent is False, no process monitoring"
                         )
-                        logger.warning(
-                            "ecreation rescue image."
-                        )
+                        logger.warning("ecreation rescue image.")
                         rescue_image = create_rescue_agent().save_rescue_src()
             else:
                 pass

@@ -107,10 +107,11 @@ def updatecherrypy(xmppobject, installed_version):
             cmd = (
                 'C:\\Program\ Files\\Python%s\\Scripts\\pip%s install --quiet --upgrade --no-index --find-links="%s" CherryPy-%s-py2.py3-none-any.whl'
                 % (
-                     version_info.version,
-                     version_info.version_major,
-                     install_tempdir,
-                     CHERRYPYVERSION)
+                    version_info.version,
+                    version_info.version_major,
+                    install_tempdir,
+                    CHERRYPYVERSION,
+                )
             )
             os.chdir(install_tempdir)
             utils.simplecommand(cmd)
