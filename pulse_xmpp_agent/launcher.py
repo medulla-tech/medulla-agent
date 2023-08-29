@@ -449,17 +449,21 @@ class create_rescue_agent:
         for files in self.info.list_config_file_ini:
             src = os.path.join(self.info.path_files_configuration, files)
             dest = os.path.join(self.info.path_rescue, "etc", files)
-            logger.debug(f"copy {src} into {dest}")
+            logger.debug(f"Copying {src} into {dest}")
             try:
                 shutil.copy2(src, dest)
             except:
                 if not install:
-                    logger.error(f"rescue save error copy {src} {dest}")
-        logger.debug("rescue fileviewer resource")
+                    logger.error(f"Error saving {src} to {dest}")
+        logger.debug("We are copying the fileviewer resources")
         src = os.path.join(self.info.path_agent, "lib", "ressources", "fileviewer")
         dest = os.path.join(self.info.path_rescue, "fileviewer")
-        logger.debug(f"copy {src} into {dest}")
-        self.info.copytree(src, dest)
+        logger.debug(f"Copying {src} into {dest}")
+        try:
+            self.info.copytree(src, dest)
+        except FileNotFoundError:
+            logger.warning(f"Could not find {src}. Either fileviewer is not yet installed or there is a problem on the folder")
+            pass
 
 
 class install_rescue_image:
