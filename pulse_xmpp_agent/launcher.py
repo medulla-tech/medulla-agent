@@ -462,7 +462,9 @@ class create_rescue_agent:
         try:
             self.info.copytree(src, dest)
         except FileNotFoundError:
-            logger.warning(f"Could not find {src}. Either fileviewer is not yet installed or there is a problem on the folder")
+            logger.warning(
+                f"Could not find {src}. Either fileviewer is not yet installed or there is a problem on the folder"
+            )
             pass
 
 
