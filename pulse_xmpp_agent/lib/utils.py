@@ -96,6 +96,73 @@ class Env(object):
         return os.path.expanduser("~pulseuser")
 
 
+class PythonVersionInfo:
+    def __init__(self):
+        """
+        Initialise la classe PythonVersionInfo en extrayant les informations sur la version et le chemin de la bibliothèque standard.
+        """
+        self.version_major, self.version_minor, self.version_revision = self._extract_version_parts()
+        self.version = self.version_major + self.version_minor
+        self.path_lib = self._get_path_lib()
+
+    def _extract_version_parts(self):
+        """
+        Extrait les parties majeure, mineure et de révision de la version de Python.
+        """
+        # Obtenir le numéro de version complet
+        numero_version_complet = sys.version.split(" ")[0]
+
+        # Extraire les parties de la version sous le format "3.11.3"
+        numeros_version = numero_version_complet.split(".")
+        if len(numeros_version) >= 3:
+            version_majeur = numeros_version[0]
+            version_mineur = numeros_version[1]
+            version_revision = numeros_version[2]
+            return version_majeur, version_mineur, version_revision
+        else:
+            return None, None, None
+
+    def _get_path_lib(self):
+        """
+        Obtient le chemin de la bibliothèque standard en fonction du système d'exploitation.
+        """
+        if sys.platform.startswith("win"):
+            return os.path.join(sys.prefix, "Lib")
+        elif sys.platform.startswith("darwin"):
+            return os.path.join(sys.prefix, "lib", "python" + sys.version[:3])
+        else:
+            return os.path.join(sys.prefix, "lib", "python" + sys.version[:3])
+
+    def get_version(self):
+        """
+        Renvoie la version majeure et mineure combinée en une seule chaîne.
+        """
+        return self.version
+
+    def get_major_version(self):
+        """
+        Renvoie le numéro de version majeure.
+        """
+        return self.version_major
+
+    def get_minor_version(self):
+        """
+        Renvoie le numéro de version mineure.
+        """
+        return self.version_minor
+
+    def get_revision(self):
+        """
+        Renvoie le numéro de révision de la version.
+        """
+        return self.version_revision
+
+    def get_path_lib(self):
+        """
+        Renvoie le chemin de la bibliothèque standard.
+        """
+        return self.path_lib
+
 def get_python_executable_console():
     """
     Renvoie le chemin absolu de l'exécutable Python en cours d'exécution.
