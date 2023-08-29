@@ -101,7 +101,11 @@ class PythonVersionInfo:
         """
         Initialise la classe PythonVersionInfo en extrayant les informations sur la version et le chemin de la bibliothèque standard.
         """
-        self.version_major, self.version_minor, self.version_revision = self._extract_version_parts()
+        (
+            self.version_major,
+            self.version_minor,
+            self.version_revision,
+        ) = self._extract_version_parts()
         self.version = self.version_major + self.version_minor
         self.path_lib = self._get_path_lib()
 
@@ -173,11 +177,10 @@ class PythonVersionInfo:
         """
         Renvoie le chemin des packages python
         """
-        if os.path.exists(os.path.join(self._get_path_lib(),"dist-packages")):
-            return os.path.join(self._get_path_lib(),"dist-packages")
+        if os.path.exists(os.path.join(self._get_path_lib(), "dist-packages")):
+            return os.path.join(self._get_path_lib(), "dist-packages")
         else:
-            return os.path.join(self._get_path_lib(),"site-packages")
-
+            return os.path.join(self._get_path_lib(), "site-packages")
 
 
 def get_python_executable_console():
@@ -189,11 +192,13 @@ def get_python_executable_console():
         return executable_path[:-5] + ".exe"
     return executable_path
 
+
 def get_python_exec():
     """
     Renvoie le chemin absolu de l'exécutable Python en cours d'exécution.
     """
     return sys.executable
+
 
 def os_version():
     """
