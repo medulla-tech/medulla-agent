@@ -1371,7 +1371,7 @@ if __name__ == "__main__":
     agentxmpp = os.path.join(pathagent, "agentxmpp.py")
 
     pythonexec = psutil.Process().exe()
-    # pythonexec = "C:\\Program\ Files\\Python39\\python.exe"
+    # pythonexec = "C:\\Program\ Files\\Pythonxxx\\python.exe"
     os.chdir(pathagent)
 
     if ProcessData.terminate_process:

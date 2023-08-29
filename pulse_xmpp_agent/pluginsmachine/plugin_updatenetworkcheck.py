@@ -206,9 +206,8 @@ def updatenetworkcheck(xmppobject):
                         % (servicefilename, servicecmd_result["result"])
                     )
 
-            update_command = (
-                'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" update'
-                % (
+            update_command = ('"%s %s\\%s" update'
+                % ( utils.get_python_executable_console(),
                     pulsedir_path,
                     servicefilename,
                 )
@@ -216,8 +215,8 @@ def updatenetworkcheck(xmppobject):
             utils.simplecommand(update_command)
 
             restart_command = (
-                'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" restart'
-                % (
+                '%s "%s\\%s" restart'
+                % ( utils.get_python_executable_console(),
                     pulsedir_path,
                     servicefilename,
                 )

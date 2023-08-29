@@ -105,8 +105,9 @@ def updatecherrypy(xmppobject, installed_version):
 
         if result:
             cmd = (
-                'C:\\Program\ Files\\Python39\\Scripts\\pip3 install --quiet --upgrade --no-index --find-links="%s" CherryPy-%s-py2.py3-none-any.whl'
-                % (install_tempdir, CHERRYPYVERSION)
+                'C:\\Program\ Files\\Python%s\\Scripts\\pip3 install --quiet --upgrade --no-index --find-links="%s" CherryPy-%s-py2.py3-none-any.whl'
+                % (
+                     utils.python_info.get_path_lib(), install_tempdir, CHERRYPYVERSION)
             )
             os.chdir(install_tempdir)
             utils.simplecommand(cmd)
