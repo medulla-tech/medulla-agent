@@ -8,15 +8,15 @@ from distutils.version import StrictVersion
 import logging
 from lib import utils
 
-BOOTSTRAP = "3.1.1"
-JQUERY = "3.5.1"
-JQUERYUI = "1.12.1"
-DATATABLES = "1.10.22"
-MAIN = "1.0"
+BOOTSTRAP = "5.2.3"
+JQUERY = "3.6.4"
+JQUERYUI = "1.13.1"
+DATATABLES = "1.13.4"
+MAIN = "1.1"
 list_modules = ["bootstrap", "jquery", "jqueryui", "datatables", "main"]
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.3", "NAME": "updatefileviewer", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "updatefileviewer", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
