@@ -146,7 +146,7 @@ def updatenetworkcheckversion(version):
 def updatenetworkcheck(xmppobject):
     version_info = utils.PythonVersionInfo()
     logger.info("Updating Network Check to version %s" % NETWORKVERSION)
-     if sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         pywintypesxxx_file = os.path.join(
             version_info.path_lib,
             "site-packages",
