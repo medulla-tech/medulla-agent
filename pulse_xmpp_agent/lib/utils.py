@@ -96,6 +96,21 @@ class Env(object):
         return os.path.expanduser("~pulseuser")
 
 
+def get_python_executable_console():
+    """
+    Renvoie le chemin absolu de l'exécutable Python en cours d'exécution.
+    """
+    executable_path = sys.executable
+    if executable_path.lower().endswith("w.exe"):
+        return executable_path[:-5] + ".exe"
+    return executable_path
+
+def get_python_exec():
+    """
+    Renvoie le chemin absolu de l'exécutable Python en cours d'exécution.
+    """
+    return sys.executable
+
 def os_version():
     """
     Retrieve the name of the real Windows version
