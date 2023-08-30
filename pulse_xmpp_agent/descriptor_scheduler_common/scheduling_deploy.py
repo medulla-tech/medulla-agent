@@ -10,10 +10,11 @@ import logging
 import sys
 import traceback
 
-plugin = {"VERSION": "1.1", "NAME": "scheduling_deploy", "TYPE": "all","SCHEDULED": True}  # fmt: skip
+plugin = { "VERSION": "1.1", "NAME": "scheduling_deploy", "TYPE": "all", "SCHEDULED": True}  # fmt: skip
 
 # nb  -1 infinie
-SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
+SCHEDULE = {"schedule": "*/15 * * * *", "nb": -1}
+# SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}
 
 
 def schedule_main(objectxmpp):
