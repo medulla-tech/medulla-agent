@@ -101,16 +101,16 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
 def install_key_register_windows(version):
     if sys.platform.startswith("win"):
         try:
-            key = _winreg.OpenKey(
-                _winreg.HKEY_LOCAL_MACHINE,
+            key = winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
                 "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Medulla Agent\\",
                 0,
-                _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY,
+                winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY,
             )
-            _winreg.SetValueEx(
-                key, "DisplayVersion", 0, _winreg.REG_SZ, version.strip()
+            winreg.SetValueEx(
+                key, "DisplayVersion", 0, winreg.REG_SZ, version.strip()
             )
-            _winreg.CloseKey(key)
+            winreg.CloseKey(key)
         except Exception as e:
             return False
     return True

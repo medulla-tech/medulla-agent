@@ -27,11 +27,11 @@ class manageskioskdb:
                     os.makedirs(self.name_launch_cmd_db, mode=0o700)
 
     def openbase(self):
-        env = lmdb.open(self.name_launch_cmd_db, map_size=10485760)
-        self.dblaunchcmd = env.begin(write=True)
+        self.env = lmdb.open(self.name_launch_cmd_db, map_size=10485760)
+        self.dblaunchcmd = self.env.begin(write=True)
 
     def closebase(self):
-        env.close()
+        self.env.close()
 
     def bddir(self):
         if sys.platform.startswith("linux"):

@@ -42,6 +42,8 @@ import json
 import yaml
 import xml.etree.ElementTree as ET
 
+import unittest
+
 DEBUGPULSE = 25
 logger = logging.getLogger()
 
@@ -651,7 +653,7 @@ class iq_custom_xep:
                 elif isinstance(dict_str, (bytes, str)):
                     if convert.check_base64_encoding(dict_str):
                         self.data = convert.convert_bytes_datetime_to_string(dict_str)
-                    elif isinstance(dict__str, (bytes)):
+                    elif isinstance(dict_str, (bytes)):
                         self.data = convert.encode_to_string_base64(dict_str)
             except Exception as e:
                 logger.error(f"{traceback.format_exc()}")

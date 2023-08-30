@@ -8,6 +8,7 @@ from distutils.version import StrictVersion
 import logging
 from lib import utils
 import platform
+import tempfile
 
 CACERTVERSION = "1.0"
 

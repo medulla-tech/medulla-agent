@@ -20,6 +20,7 @@ import psutil
 
 import signal
 import configparser
+import urllib
 
 if sys.platform.startswith("win"):
     import win32con

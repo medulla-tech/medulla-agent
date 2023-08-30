@@ -28,7 +28,7 @@ from lib.agentconffile import conffilename
 import socket
 import psutil
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import imp
 import requests
 import asyncio
@@ -46,6 +46,13 @@ import tarfile
 from functools import wraps
 import string
 import platform
+import urllib
+import yaml
+import xml.etree.ElementTree as ET
+import xmltodict
+from collections import OrderedDict
+import gzip
+from xml.dom.minidom import parseString
 
 logger = logging.getLogger()
 
@@ -4620,10 +4627,10 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
             re.IGNORECASE,
         )
         if not re.match(regex, url) is not None:
-            "url non conforme"
+            # url non conforme
             logging.getLogger().error("incorrect url [%s]" % (url))
             return False
-        if outdir is None:
+        if outdirname is None:
             base_file = os.path.join("/", "var", "lib", "pulse2", "base_file_update")
         else:
             base_file = os.path.join("/", "var", "lib", "pulse2", outdirname)
@@ -4637,7 +4644,7 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
             os.makedirs(base_file)
         except OSError:
             if not os.path.isdir(base_file):
-                Raise
+                raise
         # os.makedirs(base_file, exist_ok=True)
         res = simplecommand("wget --connect-timeout=20 '%s'" % sys.argv[1])
         if res["code"] == 0:
@@ -4808,18 +4815,18 @@ def display_message_dev(message):
     Returns:
         None
     """
-    if "DEV" in globals() and DEV == 1:
-        frame = inspect.currentframe().f_back
-        file_name = inspect.getframeinfo(frame).filename
-        line_number = frame.f_lineno
-        logger = logging.getLogger(file_name)
-        logger.setLevel(logging.INFO)
-        # Configuration du handler de stream (affichage console)
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        logger.addHandler(stream_handler)
-        log_line = generate_log_line(message)
-        logger.info(log_line)
+    # if "DEV" in globals() and DEV == 1:
+    #     frame = inspect.currentframe().f_back
+    #     file_name = inspect.getframeinfo(frame).filename
+    #     line_number = frame.f_lineno
+    #     logger = logging.getLogger(file_name)
+    #     logger.setLevel(logging.INFO)
+    #     # Configuration du handler de stream (affichage console)
+    #     stream_handler = logging.StreamHandler()
+    #     stream_handler.setLevel(logging.INFO)
+    #     logger.addHandler(stream_handler)
+    #     log_line = generate_log_line(message)
+    #     logger.info(log_line)
 
 
 def display_message(message):
@@ -5197,7 +5204,7 @@ class convert:
         elif isinstance(data, bytes):
             return data.decode("utf-8")
         elif isinstance(data, datetime):
-            returndata.strftime("%Y-%m-%d %H:%M:%S")
+            return data.strftime("%Y-%m-%d %H:%M:%S")
         elif data is None:
             return ""
         else:
@@ -5548,6 +5555,6 @@ class convert:
 
     @staticmethod
     def format_xml(xml_string):
-        dom = xml.dom.minidom.parseString(xml_string)
+        dom = parseString(xml_string)
         formatted_xml = dom.toprettyxml(indent="  ")
         return formatted_xml
