@@ -302,41 +302,12 @@ build_deb() {
 		dpkg-buildpackage
         cd ..
 
-        if [ -d "debian/9" ]; then
-            cp -fv *.deb debian/9
-            pushd debian/9
+        if [ -d "debian/12" ]; then
+            cp -fv *.deb debian/12
+            pushd debian/12
                 dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
             popd
         fi
-        if [ -d "debian/10" ]; then
-            cp -fv *.deb debian/10
-            pushd debian/10
-                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
-            popd
-        fi
-
-        if [ -d "ubuntu/16.04" ]; then
-            cp -fv *.deb ubuntu/16.04
-            pushd ubuntu/16.04
-                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
-            popd
-        fi
-
-        if [ -d "ubuntu/18.04" ]; then
-            cp -fv *.deb ubuntu/18.04
-            pushd ubuntu/18.04
-                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
-            popd
-        fi
-
-
-        if [ -d "ubuntu/19.10" ]; then
-            cp -fv *.deb ubuntu/19.10
-            pushd ubuntu/19.10
-                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
-            popd
-        fi
-
         if [ -d "ubuntu/20.04" ]; then
             cp -fv *.deb ubuntu/20.04
             pushd ubuntu/20.04
