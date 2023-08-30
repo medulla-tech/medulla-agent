@@ -9,7 +9,7 @@ import sys
 import socket
 from lib.managedbkiosk import manageskioskdb
 
-plugin = {"VERSION": "1.31", "NAME": "kiosk", "TYPE": "machine"}
+plugin = {"VERSION": "1.31", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

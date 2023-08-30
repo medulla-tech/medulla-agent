@@ -9,7 +9,7 @@ import json
 from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
-plugin = { "VERSION": "1.0", "NAME": "resultapplicationdeploymentjson", "TYPE": "substitute", }  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "resultapplicationdeploymentjson", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppsub, action, sessionid, data, message, ret, dataobj):

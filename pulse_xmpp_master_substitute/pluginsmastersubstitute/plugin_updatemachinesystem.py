@@ -36,7 +36,7 @@ DEBUGPULSEPLUGIN = 25
 # kb for window
 # connectionconf et le nom du plugin appeler.
 
-plugin = {"VERSION": "1.0","NAME": "updatemachinesystem","TYPE": "substitute","FEATURE":"update_remote_machine",}  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "updatemachinesystem", "TYPE": "substitute", "FEATURE":"update_remote_machine"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):

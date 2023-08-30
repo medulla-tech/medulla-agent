@@ -34,7 +34,7 @@ import posix_ipc
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "__server_mmc_master", "TYPE": "code"}
+plugin = {"VERSION": "1.0", "NAME": "__server_mmc_master", "TYPE": "code"}  # fmt: skip
 name_queue = ["/mysend", "/myrep"]
 
 

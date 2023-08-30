@@ -13,7 +13,7 @@ NOTIFICATIONVERSION = "2.2.0"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatenotification", "TYPE": "machine"}
+plugin = {"VERSION": "1.0", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

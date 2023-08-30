@@ -12,12 +12,7 @@ from lib.utils import simplecommand
 logger = logging.getLogger()
 
 
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "unregistrer_subscribe",
-    "TYPE": "substitute",
-    "FEATURE": "subscribe",
-}
+plugin = {"VERSION": "1.0", "NAME": "unregistrer_subscribe", "TYPE": "substitute", "FEATURE": "subscribe"}  # fmt: skip
 
 
 """

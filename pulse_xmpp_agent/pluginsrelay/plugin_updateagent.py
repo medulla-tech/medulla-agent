@@ -11,7 +11,7 @@ import base64
 import traceback
 from lib import utils, update_remote_agent
 
-plugin = { "VERSION": "2.1", "VERSIONAGENT": "2.0", "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5, }  # fmt: skip
+plugin = {"VERSION": "2.1", "VERSIONAGENT": "2.0", "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}  # fmt: skip
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

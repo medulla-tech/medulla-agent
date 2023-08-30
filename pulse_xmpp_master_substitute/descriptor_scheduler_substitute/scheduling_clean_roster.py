@@ -30,7 +30,7 @@ import logging
 import traceback
 from lib.utils import simplecommand
 
-plugin = { "VERSION": "1.0", "NAME": "scheduling_clean_roster", "TYPE": "all", "SCHEDULED": True, }  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "scheduling_clean_roster", "TYPE": "all", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "5 0 * * *", "nb": -1}
 

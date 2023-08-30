@@ -45,7 +45,7 @@ import types
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "master_agent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.0", "NAME": "master_agent", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, dataerreur):

@@ -30,7 +30,7 @@ except BaseException:
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor", }  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}  # fmt: skip
 
 
 params = {"duration": 300}

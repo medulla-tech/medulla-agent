@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.14", "NAME": "cluster", "VERSIONAGENT": "2.0.0", "TYPE": "relayserver", "DESC": "update list ARS cluster",}  # fmt: skip
+plugin = {"VERSION": "1.14", "NAME": "cluster", "VERSIONAGENT": "2.0.0", "TYPE": "relayserver", "DESC": "update list ARS cluster"}  # fmt: skip
 
 
 def refreshremotears(objectxmpp, action, sessionid):

@@ -27,7 +27,7 @@ DEBUGPULSEPLUGIN = 25
 # this plugin calling to starting agent
 
 
-plugin = {"VERSION" : "1.0", "NAME" : "loadactionupdate", "TYPE" : "substitute", "LOAD" : "START" }  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "loadactionupdate", "TYPE": "substitute", "LOAD": "START"}  # fmt: skip
 
 GLOBALPARAM={"duration" : 30 , "debuglocal" : False}  # fmt: skip
 

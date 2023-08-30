@@ -11,7 +11,7 @@ import traceback
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "test_plugin_master", "TYPE": "master"}
+plugin = {"VERSION": "1.0", "NAME": "test_plugin_master", "TYPE": "master"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataobj):

@@ -13,7 +13,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION": "1.1", "NAME": "loadpluginlistversion", "TYPE": "substitute", "LOAD": "START", }  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "loadpluginlistversion", "TYPE": "substitute", "LOAD": "START"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):

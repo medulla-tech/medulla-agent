@@ -9,7 +9,7 @@ import json
 from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "unregister_agent", "TYPE": "substitute", "FEATURE": "subscribe",}  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "unregister_agent", "TYPE": "substitute", "FEATURE": "subscribe"}  # fmt: skip
 
 
 """

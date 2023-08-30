@@ -50,7 +50,7 @@ from lib.utils import DateTimebytesEncoderjson, simplecommand, AESCipher, isBase
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code" }  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
 
 
 def action(xmppobject, action):

@@ -10,7 +10,7 @@ import traceback
 from lib import utils, managepackage
 from slixmpp import jid
 
-plugin = { "VERSION": "2.01", "VERSIONAGENT": "2.1", "NAME": "deploysyncthing", "TYPE": "all", }  # fmt: skip
+plugin = {"VERSION": "2.01", "VERSIONAGENT": "2.1", "NAME": "deploysyncthing", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

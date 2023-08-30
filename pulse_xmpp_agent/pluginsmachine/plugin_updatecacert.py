@@ -13,7 +13,7 @@ CACERTVERSION = "1.0"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatecacert", "TYPE": "machine"}
+plugin = {"VERSION": "1.0", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

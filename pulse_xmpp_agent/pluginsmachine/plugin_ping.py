@@ -5,7 +5,7 @@
 import logging
 import json
 
-plugin = {"VERSION": "1.1", "NAME": "ping", "TYPE": "all"}
+plugin = {"VERSION": "1.1", "NAME": "ping", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 

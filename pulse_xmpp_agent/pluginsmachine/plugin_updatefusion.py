@@ -14,7 +14,7 @@ FUSIONVERSION = "2.6"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatefusion", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "updatefusion", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

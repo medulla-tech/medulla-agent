@@ -24,7 +24,7 @@ import netaddr
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.55", "NAME": "update_window", "TYPE": "substitute"}
+plugin = {"VERSION": "1.55", "NAME": "update_window", "TYPE": "substitute"}  # fmt: skip
 
 # function comment for next feature
 # this functions will be used later

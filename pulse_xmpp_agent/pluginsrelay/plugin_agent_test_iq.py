@@ -16,7 +16,7 @@ import types
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION": "1.0", "NAME": "agent_test_iq", "TYPE": "substitute" }  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "agent_test_iq", "TYPE": "substitute"}  # fmt: skip
 
 # plugin test
 # Ce plugin agent_test_iq sur ars est appelé par console mmc.

@@ -35,12 +35,7 @@ DEBUGPULSEPLUGIN = 25
 
 # connectionconf et le nom du plugin appeler.
 
-plugin = {
-    "VERSION": "1.2",
-    "NAME": "assessor_agent",
-    "TYPE": "substitute",
-    "FEATURE": "assessor",
-}
+plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}  # fmt: skip
 
 params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.

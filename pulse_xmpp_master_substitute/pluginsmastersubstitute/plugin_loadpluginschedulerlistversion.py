@@ -12,7 +12,7 @@ import configparser
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION": "1.0", "NAME": "loadpluginschedulerlistversion", "TYPE": "substitute", }  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "loadpluginschedulerlistversion", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):

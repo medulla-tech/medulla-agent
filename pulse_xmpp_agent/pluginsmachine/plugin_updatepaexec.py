@@ -17,7 +17,7 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatepaexec", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

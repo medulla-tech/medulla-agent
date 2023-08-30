@@ -9,7 +9,7 @@ import json
 import logging
 import sys
 
-plugin = {"VERSION": "1.0", "NAME": "scheduling_deploy", "TYPE": "all","SCHEDULED": True, }  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "scheduling_deploy", "TYPE": "all", "SCHEDULED": True}  # fmt: skip
 
 # nb  -1 infinie
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}

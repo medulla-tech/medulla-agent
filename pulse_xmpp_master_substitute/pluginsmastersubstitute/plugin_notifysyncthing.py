@@ -13,7 +13,7 @@ from lib.plugins.pkgs import PkgsDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "notifysyncthing", "TYPE": "substitute"}
+plugin = {"VERSION": "1.0", "NAME": "notifysyncthing", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):

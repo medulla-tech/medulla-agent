@@ -9,7 +9,7 @@ from lib import utils
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "unregistrer_agent", "TYPE": "relayserver"}
+plugin = {"VERSION": "1.0", "NAME": "unregistrer_agent", "TYPE": "relayserver"}  # fmt: skip
 
 """
     This plugin is used to unregister an ejabberd account of old accounts.

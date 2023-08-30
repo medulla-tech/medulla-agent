@@ -14,7 +14,7 @@ URBACKUP_VERSION = "2.5.24"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatebackupclient", "TYPE": "machine"}
+plugin = {"VERSION": "1.4", "NAME": "updatebackupclient", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

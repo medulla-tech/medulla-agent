@@ -6,7 +6,7 @@ import os
 import logging
 from lib.utils import file_put_contents
 
-plugin = { "VERSION": "1.0", "VERSIONAGENT": "2.1", "NAME": "notify_information",  "TYPE": "all", }  # fmt: skip
+plugin = {"VERSION": "1.0", "VERSIONAGENT": "2.1", "NAME": "notify_information",  "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

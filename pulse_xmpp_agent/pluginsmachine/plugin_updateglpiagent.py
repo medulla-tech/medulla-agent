@@ -14,7 +14,7 @@ FUSIONVERSION = "2.5.2"
 GLPIAGENTVERSION = "1.4"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updateglpiagent", "TYPE": "machine"}
+plugin = {"VERSION": "1.0", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

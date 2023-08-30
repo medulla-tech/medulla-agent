@@ -8,7 +8,7 @@ this plugin process inventory from crontab descriptor time
 import logging
 from lib import utils
 
-plugin = {"VERSION": "2.0", "NAME": "scheduling_inv", "TYPE": "machine","SCHEDULED": True,}  # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "scheduling_inv", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "$[0,59] $[8,17] * * *", "nb": -1}  # nb  -1 infinie
 

@@ -12,12 +12,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
 
 
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "unregistrer_agent",
-    "TYPE": "substitute",
-    "FEATURE": "subscribe",
-}
+plugin = {"VERSION": "1.0", "NAME": "unregistrer_agent", "TYPE": "substitute", "FEATURE": "subscribe"}  # fmt: skip
 
 
 """
