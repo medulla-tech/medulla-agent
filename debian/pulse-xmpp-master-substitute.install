@@ -4,6 +4,7 @@ usr/lib/python3/*-packages/pulse_xmpp_master_substitute/agentversion
 usr/lib/python3/*-packages/pulse_xmpp_master_substitute/bin
 usr/lib/python3/*-packages/pulse_xmpp_master_substitute/lib
 usr/lib/python3/*-packages/pulse_xmpp_master_substitute/pluginsmastersubstitute
+usr/lib/python3/*-packages/pulse_xmpp_master_substitute/sessiondeploysubstitute
 usr/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-assessor.service

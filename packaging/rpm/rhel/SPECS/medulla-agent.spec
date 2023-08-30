@@ -353,6 +353,8 @@ cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python3_sitelib}/pulse_xmpp_
 cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
+mkdir -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute/
+touch -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute/EMPTY
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp -fr pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system
