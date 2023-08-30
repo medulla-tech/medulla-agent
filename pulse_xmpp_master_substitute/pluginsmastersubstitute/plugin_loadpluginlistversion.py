@@ -171,7 +171,8 @@ def deployPlugin(self, jid, plugin):
     dd = {}
     dd["datafile"] = content
     dd["pluginname"] = "plugin_%s.py" % plugin
-    DataFile["data"] = base64.b64encode(convert.convert_dict_to_json(dd))
+
+    DataFile["data"] =  convert.encode_to_string_base64 (convert.convert_dict_to_json(dd))
     DataFile["sessionid"] = "sans"
     DataFile["base64"] = True
     try:
