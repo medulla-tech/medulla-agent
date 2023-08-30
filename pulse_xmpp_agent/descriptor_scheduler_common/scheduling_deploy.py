@@ -50,5 +50,5 @@ def schedule_main(objectxmpp):
                 )
     except Exception:
         logging.getLogger().error("\n%s" % (traceback.format_exc()))
-    finally :
+    finally:
         objectxmpp.Deploybasesched.closebase()
