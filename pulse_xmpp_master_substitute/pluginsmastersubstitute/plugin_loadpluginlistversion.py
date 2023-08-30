@@ -10,6 +10,7 @@ import traceback
 import configparser
 import types
 from lib.plugins.xmpp import XmppMasterDatabase
+from lib.utils import convert
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -170,7 +171,7 @@ def deployPlugin(self, jid, plugin):
     dd = {}
     dd["datafile"] = content
     dd["pluginname"] = "plugin_%s.py" % plugin
-    DataFile["data"] = base64.b64encode(json.dumps(dd))
+    DataFile["data"] = base64.b64encode(convert.convert_dict_to_json(dd))
     DataFile["sessionid"] = "sans"
     DataFile["base64"] = True
     try:
