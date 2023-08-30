@@ -107,9 +107,7 @@ def install_key_register_windows(version):
                 0,
                 winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY,
             )
-            winreg.SetValueEx(
-                key, "DisplayVersion", 0, winreg.REG_SZ, version.strip()
-            )
+            winreg.SetValueEx(key, "DisplayVersion", 0, winreg.REG_SZ, version.strip())
             winreg.CloseKey(key)
         except Exception as e:
             return False
