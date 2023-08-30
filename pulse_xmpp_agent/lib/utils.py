@@ -49,7 +49,6 @@ import platform
 import urllib
 import yaml
 import xml.etree.ElementTree as ET
-import xmltodict
 from collections import OrderedDict
 import gzip
 from xml.dom.minidom import parseString
@@ -78,6 +77,7 @@ if sys.platform.startswith("linux"):
     import pwd
     import grp
     import posix_ipc
+    import xmltodict
 
 if sys.platform.startswith("darwin"):
     import pwd
