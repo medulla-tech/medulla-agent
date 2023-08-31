@@ -94,14 +94,6 @@ def conf_ars_deploy(
             listresulterrordevice = root.xpath(pathxmldeviceerrormsg)
             for devicexml in listresulterrordevice:
                 logger.error("%s" % etree.tostring(devicexml, pretty_print=True))
-        if listresult:
-            device = listresult[0].getparent()
-            for t in listresult:
-                device.remove(t)
-            adresstcp = f"tcp://{adressurl}:{port}"
-            device.append(etree.XML("<address>dynamic</address>"))
-            device.append(etree.XML(f"<address>{adresstcp}</address>"))
-            save_xml_file(root, configfile)
 
 
 def save_xml_file(
