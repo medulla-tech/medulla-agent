@@ -56,7 +56,7 @@ def updatebackupclient(xmppobject):
     if sys.platform.startswith('win'):
         filename = 'UrBackup_Client_%s.exe' % URBACKUP_VERSION
         dl_url = 'http://%s/downloads/win/downloads/%s' % (
-            xmppobject.config.confserver, filename)
+            xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
         if result:
