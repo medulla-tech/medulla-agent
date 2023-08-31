@@ -1309,7 +1309,9 @@ if __name__ == "__main__":
         if not opts.check_agent:
             ret = install_rescue_image().reinstall_agent_rescue()
         else:
-            logger.warning("BOOL_LAUNCHER_NO_CHECK_AGENT is set. Processes will not be monitored")
+            logger.warning(
+                "BOOL_LAUNCHER_NO_CHECK_AGENT is set. Processes will not be monitored"
+            )
 
     # first start network changed
     networkchanged = networkchanged()
@@ -1327,7 +1329,9 @@ if __name__ == "__main__":
             if not opts.check_agent:
                 ret = install_rescue_image().reinstall_agent_rescue()
             else:
-                logger.warning("BOOL_LAUNCHER_NO_CHECK_AGENT is set. Processes will not be monitored")
+                logger.warning(
+                    "BOOL_LAUNCHER_NO_CHECK_AGENT is set. Processes will not be monitored"
+                )
 
     if networkchanged:
         logger.debug("We detected modifications in the network configuration.")
