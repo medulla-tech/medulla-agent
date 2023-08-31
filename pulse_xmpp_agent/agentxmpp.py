@@ -758,20 +758,20 @@ class MUCBot(ClientXMPP):
         self.RSA = MsgsignedRSA(self.boundjid.user)
         logger.info("The version of the agent is %s" % self.version_agent())
 
-        if self.config.agenttype in ["relayserver"]:
-            from lib.manage_info_command import manage_infoconsole
+        # if self.config.agenttype in ["relayserver"]:
+        #     from lib.manage_info_command import manage_infoconsole
 
-            self.qin = Queue(10)
-            self.qoutARS = Queue(10)
-            QueueManager.register("json_to_ARS", self.setinARS)
-            QueueManager.register("json_from_ARS", self.getoutARS)
-            QueueManager.register("size_nb_msg_ARS", self.sizeoutARS)
-            self.commandinfoconsole = manage_infoconsole(self.qin, self.qoutARS, self)
-            self.managerQueue = QueueManager(
-                ("", self.config.parametersscriptconnection["port"]),
-                authkey=self.config.passwordconnection.encode("utf-8"),
-            )
-            self.managerQueue.start()
+        #     self.qin = Queue(10)
+        #     self.qoutARS = Queue(10)
+        #     QueueManager.register("json_to_ARS", self.setinARS)
+        #     QueueManager.register("json_from_ARS", self.getoutARS)
+        #     QueueManager.register("size_nb_msg_ARS", self.sizeoutARS)
+        #     self.commandinfoconsole = manage_infoconsole(self.qin, self.qoutARS, self)
+        #     self.managerQueue = QueueManager(
+        #         ("", self.config.parametersscriptconnection["port"]),
+        #         authkey=self.config.passwordconnection.encode("utf-8"),
+        #     )
+        #     self.managerQueue.start()
 
         if sys.platform.startswith("win"):
             result = win32api.SetConsoleCtrlHandler(self._CtrlHandler, 1)
