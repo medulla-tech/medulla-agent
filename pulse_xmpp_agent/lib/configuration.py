@@ -411,7 +411,6 @@ class confParameter:
                 if os.path.exists(path_reconf_nomade):
                     os.remove(path_reconf_nomade)
 
-        self.syncthing_on = True
         if self.agenttype == "relayserver":
             self.syncthing_share = "/var/lib/syncthing-depl/depl_share"
             self.syncthing_home = "/var/lib/syncthing-depl/.config/syncthing"
@@ -433,13 +432,15 @@ class confParameter:
         else:
             self.syncthing_home = "/var/lib/pulse2/.config/syncthing"
             self.syncthing_gui_port = 8384
-            if Config.has_option("syncthing", "activation"):
-                self.syncthing_on = Config.getboolean("syncthing", "activation")
-            else:
-                self.syncthing_on = True
+
         if Config.has_option("syncthing-deploy", "syncthing_home"):
             self.syncthing_home = Config.get("syncthing-deploy", "syncthing_home")
 
+        if Config.has_option("syncthing", "activation"):
+            self.syncthing_on = Config.getboolean("syncthing", "activation")
+        else:
+            self.syncthing_on = True
+            
         if self.syncthing_on:
             logger.debug("Syncthing have been activated.")
         else:
