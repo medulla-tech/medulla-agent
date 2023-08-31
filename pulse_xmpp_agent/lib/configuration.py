@@ -440,7 +440,7 @@ class confParameter:
             self.syncthing_on = Config.getboolean("syncthing", "activation")
         else:
             self.syncthing_on = True
-            
+
         if self.syncthing_on:
             logger.debug("Syncthing have been activated.")
         else:
