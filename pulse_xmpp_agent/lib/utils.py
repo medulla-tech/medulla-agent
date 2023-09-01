@@ -4801,7 +4801,6 @@ def generate_log_line(message):
     log_line = f"[{file_name}:{line_number}] - {message}"
     return log_line
 
-
 def display_message_dev(message):
     """
     Display the given message in the log if the global variable 'DEV' is defined and equal to 1.
@@ -4815,18 +4814,24 @@ def display_message_dev(message):
     Returns:
         None
     """
-    # if "DEV" in globals() and DEV == 1:
-    #     frame = inspect.currentframe().f_back
-    #     file_name = inspect.getframeinfo(frame).filename
-    #     line_number = frame.f_lineno
-    #     logger = logging.getLogger(file_name)
-    #     logger.setLevel(logging.INFO)
-    #     # Configuration du handler de stream (affichage console)
-    #     stream_handler = logging.StreamHandler()
-    #     stream_handler.setLevel(logging.INFO)
-    #     logger.addHandler(stream_handler)
-    #     log_line = generate_log_line(message)
-    #     logger.info(log_line)
+    try:
+        DEV
+    except NameError:
+        DEV = 0
+
+    if DEV == 1:
+        frame = inspect.currentframe().f_back
+        file_name = inspect.getframeinfo(frame).filename
+        line_number = frame.f_lineno
+        logger = logging.getLogger(file_name)
+        logger.setLevel(logging.INFO)
+        # Configuration du handler de stream (affichage console)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.INFO)
+        logger.addHandler(stream_handler)
+        log_line = generate_log_line(message)
+        logger.info(log_line)
+
 
 
 def display_message(message):
