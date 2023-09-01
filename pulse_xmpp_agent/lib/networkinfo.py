@@ -55,6 +55,33 @@ class networkagentinfo:
         return list({users[0] for users in psutil.users()})
 
     def networkobjet(self, sessionid, action):
+        """
+        Collecte des informations sur la configuration réseau de l'ordinateur.
+
+        Args:
+            sessionid (str): Identifiant de session pour l'action en cours.
+            action (str): Action à entreprendre.
+
+        Returns:
+            dict: Un dictionnaire contenant des informations sur la configuration réseau.
+                Les clés comprennent :
+                - "action": Action spécifiée en argument.
+                - "sessionid": Identifiant de session spécifié en argument.
+                - "listdns": Liste des serveurs DNS configurés.
+                - "listipinfo": Liste des informations sur les adresses IP et les interfaces réseau.
+                - "dhcp": Indique si DHCP est activé (True/False).
+                - 'dhcpinfo' est présent seulement si dhcp est True
+                - "dnshostname": Nom de l'hôte DNS.
+                - "msg": Système d'exploitation en cours d'exécution.
+
+        Note:
+            Cette fonction collecte des informations sur la configuration réseau de l'ordinateur
+            en fonction du système d'exploitation en cours d'exécution.
+            - Sur Linux, elle vérifie la configuration DHCP et collecte les informations des interfaces réseau.
+            - Sur Windows, elle collecte les informations des interfaces réseau, y compris les adresses IP, les passerelles, etc.
+            - Sur macOS, elle appelle la fonction MacOsNetworkInfo pour collecter des informations spécifiques.
+            - Pour d'autres systèmes d'exploitation, un message indiquant qu'ils ne sont pas encore gérés est renvoyé.
+        """
         self.messagejson = {
             "action": action,
             "sessionid": sessionid,
@@ -68,19 +95,32 @@ class networkagentinfo:
             self.messagejson["users"] = self.getuser()
         except BaseException:
             self.messagejson["users"] = ["system"]
-
         if sys.platform.startswith("linux"):
             p = subprocess.Popen(
-                "ps aux | grep dhclient | grep -v leases | grep -v grep | awk '{print $NF}'",
+                "ip addr show | grep dynamic",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-            if sys.version_info[0] == 3:
-                result = [x.decode("utf-8") for x in p.stdout.readlines()]
-            else:
-                result = p.stdout.readlines()
+            result = [x.decode("utf-8").strip() for x in p.stdout.readlines()]
             self.messagejson["dhcp"] = "True" if len(result) > 0 else "False"
+            if self.messagejson["dhcp"]:
+                pattern = r'inet (\S+)\/(\d+) metric (\d+) brd (\S+) scope global (\S+) (\S+)'
+                messagejson['dhcpinfo']=[ ]
+                for t in result:
+                    match = re.match(pattern, info_line)
+                    if match:
+                        # Créez un dictionnaire avec les informations extraites
+                        info_dict = {
+                            'ip_address': match.group(1),
+                            'subnet_mask': match.group(2),
+                            'metric': match.group(3),
+                            'broadcast_address': match.group(4),
+                            'scope': match.group(5),
+                            'interface': match.group(6)
+                        }
+                        messagejson['dhcpinfo'].append(info_dict)
+
             self.messagejson["listdns"] = self.listdnslinux()
             self.messagejson["listipinfo"] = self.getLocalIipAddress()
             self.messagejson["dnshostname"] = platform.node()
@@ -412,10 +452,146 @@ class networkagentinfo:
                         ip_addresses.append(obj)
         return ip_addresses
 
+
+    def get_network_info(self):
+        """
+        Collecte des informations détaillées sur les interfaces réseau de l'ordinateur sous Linux.
+
+        Returns:
+            list: Une liste de dictionnaires, chaque dictionnaire contenant des informations détaillées sur une interface réseau.
+                Les informations incluses sont :
+                - "interface": Nom de l'interface réseau.
+                - "ipv4": Adresse IPv4 de l'interface.
+                - "ipv6": Adresse IPv6 de l'interface.
+                - "mask": Masque de sous-réseau de l'interface.
+                - "broadcast": Adresse de diffusion de l'interface (par défaut 0.0.0.0).
+                - "macaddress": Adresse MAC de l'interface.
+                - "dhcp": Indique si DHCP est activé sur l'interface (True/False).
+                - "scope": Portée de l'interface.
+                - "metric": Métrique de l'interface.
+                - "gateway": Adresse de passerelle de l'interface.
+                - "mtu": MTU (Maximum Transmission Unit) de l'interface.
+                - "dns_servers": Liste des serveurs DNS configurés pour l'interface.
+                - "status": Statut de l'interface (Up/Down).
+                - "speed": Vitesse de l'interface (en Mbps).
+                - "duplex": Mode duplex de l'interface.
+                - "isp": Nom du fournisseur de services (ISP) si applicable.
+                - "network_type": Type de réseau (public, privé, domaine) si applicable.
+                - "connection_quality": Informations sur la qualité de la connexion si applicable.
+                - "custom_config": Informations de configuration spécifique de l'interface si nécessaire.
+
+        Note:
+            Cette fonction collecte des informations détaillées sur les interfaces réseau de l'ordinateur sous Linux,
+            notamment les informations sur les adresses IP, les adresses MAC, la configuration DHCP, le MTU, les serveurs DNS,
+            le statut de l'interface, la vitesse, le mode duplex, le fournisseur de services (ISP), le type de réseau,
+            la qualité de la connexion, et toute information de configuration personnalisée si spécifiée.
+    """
+        network_info = []
+        if platform.system().lower() == "linux":
+            # Collecte les informations réseau sous Linux
+            interfaces = netifaces.interfaces()
+            for interface in interfaces:
+                interface_info = {}
+                interface_info["interface"] = interface
+                interface_info["ipv4"] = None
+                interface_info["ipv6"] = None
+                interface_info["mask"] = None
+                interface_info["broadcast"] = "0.0.0.0"
+                interface_info["macaddress"] = None
+                interface_info["dhcp"] = False
+                interface_info["scope"] = None
+                interface_info["metric"] = None
+                interface_info["gateway"] = None
+                interface_info["mtu"] = None
+                interface_info["dns_servers"] = []
+                interface_info["status"] = None
+                interface_info["speed"] = None
+                interface_info["isp"] = None
+                interface_info["network_type"] = None
+                interface_info["connection_quality"] = None
+                interface_info["custom_config"] = None
+                try:
+                    # Obtient les informations d'adresse IP pour l'interface
+                    addrs = netifaces.ifaddresses(interface)
+                    if netifaces.AF_INET in addrs:
+                        ipv4_info = addrs[netifaces.AF_INET][0]
+                        interface_info["ipv4"] = ipv4_info.get("addr")
+                        interface_info["mask"] = ipv4_info.get("netmask")
+                        interface_info["broadcast"] = ipv4_info.get("broadcast", "0.0.0.0")
+                    if netifaces.AF_INET6 in addrs:
+                        ipv6_info = addrs[netifaces.AF_INET6][0]
+                        interface_info["ipv6"] = ipv6_info.get("addr")
+                    # Obtient l'adresse MAC de l'interface
+                    mac_info = netifaces.ifaddresses(interface)[netifaces.AF_LINK][0]
+                    interface_info["macaddress"] = mac_info.get("addr")
+                    # Vérifie si l'interface utilise DHCP
+                    result = subprocess.run(
+                        ["ip", "addr", "show", "dev", interface], capture_output=True, text=True
+                    )
+                    if "inet dynamic" in result.stdout:
+                        interface_info["dhcp"] = True
+                    # Obtient la métrique et la portée de l'interface
+                    result = subprocess.run(
+                        ["ip", "route", "show", "dev", interface], capture_output=True, text=True
+                    )
+                    for line in result.stdout.splitlines():
+                        if "metric" in line:
+                            metric_match = re.search(r"metric (\d+)", line)
+                            if metric_match:
+                                interface_info["metric"] = metric_match.group(1)
+                        if "scope" in line:
+                            scope_match = re.search(r"scope (\w+)", line)
+                            if scope_match:
+                                interface_info["scope"] = scope_match.group(1)
+                    # Obtient l'information MTU
+                    result = subprocess.run(
+                        ["ip", "link", "show", "dev", interface], capture_output=True, text=True
+                    )
+                    mtu_match = re.search(r"mtu (\d+)", result.stdout)
+                    if mtu_match:
+                        interface_info["mtu"] = mtu_match.group(1)
+                    # Obtient les serveurs DNS
+                    dns_result = subprocess.run(
+                        ["cat", "/etc/resolv.conf"], capture_output=True, text=True
+                    )
+                    dns_servers = re.findall(r"nameserver (\S+)", dns_result.stdout)
+                    interface_info["dns_servers"] = dns_servers
+                    # Obtient l'état de l'interface (Up/Down)
+                    status_result = subprocess.run(
+                        ["ip", "link", "show", "dev", interface], capture_output=True, text=True
+                    )
+                    if "state UP" in status_result.stdout:
+                        interface_info["status"] = "Up"
+                    else:
+                        interface_info["status"] = "Down"
+                    # Obtient la vitesse et le mode duplex de l'interface
+                    ethtool_result = subprocess.run(
+                        ["ethtool", interface], capture_output=True, text=True
+                    )
+                    speed_match = re.search(r"Speed: (\d+)", ethtool_result.stdout)
+                    duplex_match = re.search(r"Duplex: (\w+)", ethtool_result.stdout)
+                    if speed_match:
+                        interface_info["speed"] = speed_match.group(1)
+                    if duplex_match:
+                        interface_info["duplex"] = duplex_match.group(1)
+                    # Obtient le nom du fournisseur de services (ISP) si possible
+                    if "ppp" in interface:
+                        ppp_result = subprocess.run(
+                            ["pppoe-status"], capture_output=True, text=True
+                        )
+                        isp_match = re.search(r"ISP Name\s*:\s*(.*)", ppp_result.stdout)
+                        if isp_match:
+                            interface_info["isp"] = isp_match.group(1)
+                except Exception as e:
+                    print(f"Erreur lors de la collecte d'informations pour {interface}: {str(e)}")
+                network_info.append(interface_info)
+        return network_info
+
+
     def listdnslinux(self):
         dns = []
         p = subprocess.Popen(
-            "cat /etc/resolv.conf | grep nameserver | awk '{print $2}'",
+            "",
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
