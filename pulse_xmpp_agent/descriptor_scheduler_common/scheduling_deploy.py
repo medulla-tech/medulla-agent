@@ -37,18 +37,28 @@ def schedule_main(objectxmpp):
                     mto=obj["data"]["jidmaster"], mbody=json.dumps(obj), mtype="chat"
                 )
         else:
-            for k, v in objectxmpp.Deploybasesched.dbsessionscheduler.items():
-                obj = json.loads(v)
-                obj["data"]["fromaction"] = obj["action"]
-                obj["action"] = "machineexecutionscheduler"
-                del obj["data"]["descriptor"]
-                del obj["data"]["packagefile"]  # ['descriptor']
-                print(json.dumps(obj, indent=4))
-                # send message to master(plugin_machineexecutionscheduler)
-                # print "SEND", json.dumps(obj, indent = 4)
-                objectxmpp.send_message(
-                    mto=obj["data"]["jidmaster"], mbody=json.dumps(obj), mtype="chat"
-                )
+            # Ouvrir un environnement de transaction
+            with objectxmpp.Deploybasesched.dbsessionscheduler.begin() as txn:
+                # Ouvrir un curseur pour parcourir les clés et les valeurs
+                cursor = txn.cursor()
+
+                # Parcourir toutes les paires clé-valeur
+                for key, value in cursor:
+                    # Convertir les données de type bytes en str (si nécessaire)
+                    k = key.decode('utf-8')
+                    v = value.decode('utf-8')
+                #for k, v in objectxmpp.Deploybasesched.dbsessionscheduler.items():
+                    obj = json.loads(v)
+                    obj["data"]["fromaction"] = obj["action"]
+                    obj["action"] = "machineexecutionscheduler"
+                    del obj["data"]["descriptor"]
+                    del obj["data"]["packagefile"]  # ['descriptor']
+                    print(json.dumps(obj, indent=4))
+                    # send message to master(plugin_machineexecutionscheduler)
+                    # print "SEND", json.dumps(obj, indent = 4)
+                    objectxmpp.send_message(
+                        mto=obj["data"]["jidmaster"], mbody=json.dumps(obj), mtype="chat"
+                    )
     except Exception:
         logging.getLogger().error("\n%s" % (traceback.format_exc()))
     finally:
