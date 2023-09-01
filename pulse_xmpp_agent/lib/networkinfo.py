@@ -245,19 +245,66 @@ class networkagentinfo:
                     continue
         return obj1
 
-    def MacAdressToIp(self, ip):
-        "Returns a list of MACs for interfaces that have given IP, returns None if not found"
-        for i in netifaces.interfaces():
-            addrs = netifaces.ifaddresses(i)
-            try:
-                if_mac = addrs[netifaces.AF_LINK][0]["addr"]
-                if_ip = addrs[netifaces.AF_INET][0]["addr"]
-            except (
-                BaseException
-            ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
-                if_mac = if_ip = None
-            if if_ip == ip:
-                return if_mac
+    @staticmethod
+    def get_mac_address(ip):
+        """
+        Récupère l'adresse MAC associée à une adresse IPv4 en utilisant la commande 'ip' sous Linux.
+        Args:
+            ip (str): Adresse IPv4 pour laquelle vous souhaitez obtenir l'adresse MAC.
+        Returns:
+            str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
+        """
+        try:
+            # Vérifie le système d'exploitation
+            current_os = platform.system().lower()
+            if current_os == 'linux':
+                # Utilise la commande 'ip' pour obtenir le nom de l'interface
+                name_command = f"ip addr | grep 'inet {ip}' | awk '{{print($NF)}}'"
+                interface_name = (
+                    subprocess.check_output(name_command, shell=True, text=True).strip()
+                )
+                # Utilise la commande 'ip' pour obtenir l'adresse MAC de l'interface
+                mac_command = f"ip link show dev {interface_name} | grep link/ether | awk '{{print($2)}}'"
+                mac_address = subprocess.check_output(mac_command, shell=True, text=True).strip()
+                return mac_address
+            else:
+                # Autres systèmes d'exploitation (non Linux), vous pouvez ajouter ici une autre logique si nécessaire
+                return None
+        except Exception:
+            return None
+
+    @staticmethod
+    def get_mac_address_with_netifaces(ip):
+        """
+        Récupère l'adresse MAC associée à une adresse IPv4 en utilisant la bibliothèque netifaces.
+        Args:
+            ip (str): Adresse IPv4 pour laquelle vous souhaitez obtenir l'adresse MAC.
+        Returns:
+            str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
+        """
+        try:
+            mac_address = ni.ifaddresses(ip)[ni.AF_LINK][0]['addr']
+            return mac_address
+        except KeyError:
+            return None
+
+    def MacAddressToIp(self, ip):
+        """
+        Récupère l'adresse MAC associée à une adresse IPv4 en utilisant d'abord la fonction get_mac_address_with_netifaces,
+        puis en utilisant la fonction get_mac_address si la première échoue sous Linux.
+        Args:
+            ip (str): Adresse IPv4 pour laquelle vous souhaitez obtenir l'adresse MAC.
+        Returns:
+            str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
+        """
+        mac = NetworkAgentInfo.get_mac_address_with_netifaces(ip)
+
+        if mac is not None:
+            return mac
+        # Si la première fonction échoue et que le système est Linux, utilisez la fonction get_mac_address
+        current_os = platform.system().lower()
+        if current_os == 'linux':
+            return NetworkAgentInfo.get_mac_address(ip)
         return None
 
     def MacOsNetworkInfo(self):
