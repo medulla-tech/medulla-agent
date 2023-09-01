@@ -31,7 +31,7 @@ INVENTORY_TAG="@@INVENTORY_TAG@@"
 AGENT_VERSION="@@AGENT_VERSION@@"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-@@AGENT_VERSION@@.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-@@AGENT_VERSION@@.tar.gz"
-
+NETIFACES_WHL="netifaces2-0.0.18-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -76,10 +76,8 @@ install_agent() {
         mageia)
         ;;
         debian)
-            if [[ ${VERSION} == "9" ]]; then
-                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-crypto python-pip pulse-agent-linux python-cherrypy3
-            elif [[ ${VERSION} == "10" ]]; then
-                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-pip pulse-agent-linux python-cherrypy3
+            if [[ ${VERSION} == "12" ]]; then
+                apt install -y python3-setuptools python3-pycryptodome python3-wheel python3-croniter python3-lxml python3-netifaces python3-psutil python3-pycurl python3-slixmpp python3-pip pulse-agent-linux python3-cherrypy3 python3-lmdb python3-posix-ipc python3-xmltodict python3-typing-extensions
             fi
         ;;
         ubuntu)
@@ -88,14 +86,15 @@ install_agent() {
         ;;
         esac
 
-pip3 install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
+python3 -m pip install --upgrade --break-system-packages --root-user-action=ignore ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/${NETIFACES_WHL}
+python3 -m pip install --upgrade --break-system-packages --root-user-action=ignore --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
 
 [ ! -d "/var/lib/pulse2/packages" ] && mkdir -p /var/lib/pulse2/packages
 
 }
 
 create_service () {
-local PYTHON_DIR="/usr/local/lib/python2.7/dist-packages/"
+local PYTHON_DIR="/usr/local/lib/python3.11/dist-packages/"
 mkdir -p /usr/lib/systemd/system/
 cat <<EOF > /usr/lib/systemd/system/pulse-xmpp-agent-machine.service
 [Unit]
