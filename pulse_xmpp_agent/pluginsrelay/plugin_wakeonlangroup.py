@@ -4,13 +4,13 @@
 
 # file: pulse_xmpp_agent/pluginsrelay/plugin_wakeonlangroup.py
 
-import wakeonlan as wol
+import wakeonlan3 as wol
 import logging
 import traceback
 from netifaces import interfaces, ifaddresses, AF_INET
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.2", "NAME": "wakeonlangroup", "TYPE": "relayserver"}  # fmt: skip
+plugin = {"VERSION": "2.3", "NAME": "wakeonlangroup", "TYPE": "relayserver"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
