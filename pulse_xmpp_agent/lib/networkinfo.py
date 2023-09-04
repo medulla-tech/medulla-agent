@@ -285,8 +285,7 @@ class networkagentinfo:
                     continue
         return obj1
 
-    @staticmethod
-    def get_mac_address(ip):
+     def get_mac_address(self, ip):
         """
         Récupère l'adresse MAC associée à une adresse IPv4 en utilisant la commande 'ip' sous Linux.
         Args:
@@ -323,9 +322,10 @@ class networkagentinfo:
             str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
         """
         try:
-            mac_address = ni.ifaddresses(ip)[ni.AF_LINK][0]['addr']
+            mac_address = netifaces.ifaddresses(ip)[netifaces.AF_LINK][0]['addr']
             return mac_address
-        except KeyError:
+        except Exception:
+            #logger.error("\n%s" % (traceback.format_exc()))
             return None
 
     def MacAddressToIp(self, ip):
@@ -338,13 +338,13 @@ class networkagentinfo:
             str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
         """
         mac = NetworkAgentInfo.get_mac_address_with_netifaces(ip)
-
         if mac is not None:
             return mac
+        logger.warning("Network issues detected\nnetifaces could not find the MAC address of an interface with a valid IPv4 address.\nNetwork connectivity issues can impact MAC address resolution.\nPlease check your network configuration.")
         # Si la première fonction échoue et que le système est Linux, utilisez la fonction get_mac_address
         current_os = platform.system().lower()
         if current_os == 'linux':
-            return NetworkAgentInfo.get_mac_address(ip)
+            return self.get_mac_address(ip)
         return None
 
     def MacOsNetworkInfo(self):
@@ -426,7 +426,7 @@ class networkagentinfo:
                 for j in iface:
                     if (
                         j["addr"] != "127.0.0.1"
-                        and self.MacAdressToIp(j["addr"]) is not None
+                        and self.MacAddressToIp(j["addr"]) is not None
                     ):
                         obj = {"ipaddress": j["addr"], "mask": j["netmask"]}
                         try:
@@ -438,7 +438,7 @@ class networkagentinfo:
                         except Exception:
                             obj["gateway"] = "0.0.0.0"
 
-                        obj["macaddress"] = self.MacAdressToIp(j["addr"])
+                        obj["macaddress"] = self.MacAddressToIp(j["addr"])
                         try:
                             if dhcpserver[j["addr"]] is not None:
                                 obj["dhcp"] = "True"
