@@ -268,7 +268,7 @@ class MUCBot(ClientXMPP):
         self.config = conf
 
         self.ipconnection = self.config.Server
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+        # self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
@@ -2546,6 +2546,9 @@ class MUCBot(ClientXMPP):
         await self.get_roster()
         # send iq to subscribe
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
+        # machine connected
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+
         self.__clean_message_box()
         if self.config.agenttype in ["relayserver"]:
             try:
