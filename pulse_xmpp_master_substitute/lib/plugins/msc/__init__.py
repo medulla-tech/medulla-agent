@@ -278,7 +278,7 @@ class MscDatabase(DatabaseHelper):
             self.logger.error("We failed to connect to the Msc database.")
             self.logger.error("Please verify your configuration")
             self.logger.error(str(e))
-            self.logger.error("\n%s"%(traceback.format_exc()))
+            self.logger.error("\n%s" % (traceback.format_exc()))
             self.is_activated = False
             return False
 
@@ -288,53 +288,25 @@ class MscDatabase(DatabaseHelper):
         """
         try:
             # commands
-            self.commands = Table(
-                "commands",
-                self.metadata,
-                autoload = True
-            )
+            self.commands = Table("commands", self.metadata, autoload=True)
             # commands_history
             self.commands_history = Table(
-                "commands_history",
-                self.metadata,
-                autoload = True
+                "commands_history", self.metadata, autoload=True
             )
             # target
-            self.target = Table(
-                "target",
-                self.metadata,
-                autoload = True
-            )
+            self.target = Table("target", self.metadata, autoload=True)
             # pull_targets
-            self.pull_targets = Table(
-                "pull_targets",
-                self.metadata,
-                autoload = True
-            )
+            self.pull_targets = Table("pull_targets", self.metadata, autoload=True)
             # bundle
-            self.bundle = Table(
-                "bundle",
-                self.metadata,
-                autoload = True
-            )
+            self.bundle = Table("bundle", self.metadata, autoload=True)
             # commands_on_host_phase
-            self.commands_on_host_phase = Table(
-                "phase",
-                self.metadata,
-                autoload = True
-            )
+            self.commands_on_host_phase = Table("phase", self.metadata, autoload=True)
             # commands_on_host
             self.commands_on_host = Table(
-                "commands_on_host",
-                self.metadata,
-                autoload = True
+                "commands_on_host", self.metadata, autoload=True
             )
             # version
-            self.version = Table(
-                "version", 
-                self.metadata, 
-                autoload=True
-            )
+            self.version = Table("version", self.metadata, autoload=True)
 
         except NoSuchTableError as e:
             self.logger.error(
