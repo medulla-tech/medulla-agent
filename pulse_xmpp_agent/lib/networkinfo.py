@@ -285,7 +285,7 @@ class networkagentinfo:
                     continue
         return obj1
 
-     def get_mac_address(self, ip):
+    def get_mac_address(self, ip):
         """
         Récupère l'adresse MAC associée à une adresse IPv4 en utilisant la commande 'ip' sous Linux.
         Args:
