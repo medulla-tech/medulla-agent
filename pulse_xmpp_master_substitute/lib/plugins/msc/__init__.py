@@ -287,13 +287,11 @@ class MscDatabase(DatabaseHelper):
         Initialize all SQLalchemy tables
         """
         try:
-
-
-              self.commands = Table("commands",
-                                  self.metadata,
-                                autoload = True)
-
-
+            self.commands = Table(
+                "commands",
+                self.metadata,
+                autoload = True
+            )
             self.commands_history = Table(
                 "commands_history",
                 self.metadata,
