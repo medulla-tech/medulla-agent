@@ -105,21 +105,23 @@ class networkagentinfo:
             result = [x.decode("utf-8").strip() for x in p.stdout.readlines()]
             self.messagejson["dhcp"] = "True" if len(result) > 0 else "False"
             if self.messagejson["dhcp"]:
-                pattern = r'inet (\S+)\/(\d+) metric (\d+) brd (\S+) scope global (\S+) (\S+)'
-                messagejson['dhcpinfo']=[ ]
+                pattern = (
+                    r"inet (\S+)\/(\d+) metric (\d+) brd (\S+) scope global (\S+) (\S+)"
+                )
+                messagejson["dhcpinfo"] = []
                 for t in result:
                     match = re.match(pattern, info_line)
                     if match:
                         # Créez un dictionnaire avec les informations extraites
                         info_dict = {
-                            'ip_address': match.group(1),
-                            'subnet_mask': match.group(2),
-                            'metric': match.group(3),
-                            'broadcast_address': match.group(4),
-                            'scope': match.group(5),
-                            'interface': match.group(6)
+                            "ip_address": match.group(1),
+                            "subnet_mask": match.group(2),
+                            "metric": match.group(3),
+                            "broadcast_address": match.group(4),
+                            "scope": match.group(5),
+                            "interface": match.group(6),
                         }
-                        messagejson['dhcpinfo'].append(info_dict)
+                        messagejson["dhcpinfo"].append(info_dict)
 
             self.messagejson["listdns"] = self.listdnslinux()
             self.messagejson["listipinfo"] = self.getLocalIipAddress()
@@ -296,15 +298,17 @@ class networkagentinfo:
         try:
             # Vérifie le système d'exploitation
             current_os = platform.system().lower()
-            if current_os == 'linux':
+            if current_os == "linux":
                 # Utilise la commande 'ip' pour obtenir le nom de l'interface
                 name_command = f"ip addr | grep 'inet {ip}' | awk '{{print($NF)}}'"
-                interface_name = (
-                    subprocess.check_output(name_command, shell=True, text=True).strip()
-                )
+                interface_name = subprocess.check_output(
+                    name_command, shell=True, text=True
+                ).strip()
                 # Utilise la commande 'ip' pour obtenir l'adresse MAC de l'interface
                 mac_command = f"ip link show dev {interface_name} | grep link/ether | awk '{{print($2)}}'"
-                mac_address = subprocess.check_output(mac_command, shell=True, text=True).strip()
+                mac_address = subprocess.check_output(
+                    mac_command, shell=True, text=True
+                ).strip()
                 return mac_address
             else:
                 # Autres systèmes d'exploitation (non Linux), vous pouvez ajouter ici une autre logique si nécessaire
@@ -322,10 +326,10 @@ class networkagentinfo:
             str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
         """
         try:
-            mac_address = netifaces.ifaddresses(ip)[netifaces.AF_LINK][0]['addr']
+            mac_address = netifaces.ifaddresses(ip)[netifaces.AF_LINK][0]["addr"]
             return mac_address
         except Exception:
-            #logger.error("\n%s" % (traceback.format_exc()))
+            # logger.error("\n%s" % (traceback.format_exc()))
             return None
 
     def MacAddressToIp(self, ip):
@@ -340,10 +344,12 @@ class networkagentinfo:
         mac = NetworkAgentInfo.get_mac_address_with_netifaces(ip)
         if mac is not None:
             return mac
-        logger.warning("Network issues detected\nnetifaces could not find the MAC address of an interface with a valid IPv4 address.\nNetwork connectivity issues can impact MAC address resolution.\nPlease check your network configuration.")
+        logger.warning(
+            "Network issues detected\nnetifaces could not find the MAC address of an interface with a valid IPv4 address.\nNetwork connectivity issues can impact MAC address resolution.\nPlease check your network configuration."
+        )
         # Si la première fonction échoue et que le système est Linux, utilisez la fonction get_mac_address
         current_os = platform.system().lower()
-        if current_os == 'linux':
+        if current_os == "linux":
             return self.get_mac_address(ip)
         return None
 
@@ -452,7 +458,6 @@ class networkagentinfo:
                         ip_addresses.append(obj)
         return ip_addresses
 
-
     def get_network_info(self):
         """
         Collecte des informations détaillées sur les interfaces réseau de l'ordinateur sous Linux.
@@ -485,7 +490,7 @@ class networkagentinfo:
             notamment les informations sur les adresses IP, les adresses MAC, la configuration DHCP, le MTU, les serveurs DNS,
             le statut de l'interface, la vitesse, le mode duplex, le fournisseur de services (ISP), le type de réseau,
             la qualité de la connexion, et toute information de configuration personnalisée si spécifiée.
-    """
+        """
         network_info = []
         if platform.system().lower() == "linux":
             # Collecte les informations réseau sous Linux
@@ -517,7 +522,9 @@ class networkagentinfo:
                         ipv4_info = addrs[netifaces.AF_INET][0]
                         interface_info["ipv4"] = ipv4_info.get("addr")
                         interface_info["mask"] = ipv4_info.get("netmask")
-                        interface_info["broadcast"] = ipv4_info.get("broadcast", "0.0.0.0")
+                        interface_info["broadcast"] = ipv4_info.get(
+                            "broadcast", "0.0.0.0"
+                        )
                     if netifaces.AF_INET6 in addrs:
                         ipv6_info = addrs[netifaces.AF_INET6][0]
                         interface_info["ipv6"] = ipv6_info.get("addr")
@@ -526,13 +533,17 @@ class networkagentinfo:
                     interface_info["macaddress"] = mac_info.get("addr")
                     # Vérifie si l'interface utilise DHCP
                     result = subprocess.run(
-                        ["ip", "addr", "show", "dev", interface], capture_output=True, text=True
+                        ["ip", "addr", "show", "dev", interface],
+                        capture_output=True,
+                        text=True,
                     )
                     if "inet dynamic" in result.stdout:
                         interface_info["dhcp"] = True
                     # Obtient la métrique et la portée de l'interface
                     result = subprocess.run(
-                        ["ip", "route", "show", "dev", interface], capture_output=True, text=True
+                        ["ip", "route", "show", "dev", interface],
+                        capture_output=True,
+                        text=True,
                     )
                     for line in result.stdout.splitlines():
                         if "metric" in line:
@@ -545,7 +556,9 @@ class networkagentinfo:
                                 interface_info["scope"] = scope_match.group(1)
                     # Obtient l'information MTU
                     result = subprocess.run(
-                        ["ip", "link", "show", "dev", interface], capture_output=True, text=True
+                        ["ip", "link", "show", "dev", interface],
+                        capture_output=True,
+                        text=True,
                     )
                     mtu_match = re.search(r"mtu (\d+)", result.stdout)
                     if mtu_match:
@@ -558,7 +571,9 @@ class networkagentinfo:
                     interface_info["dns_servers"] = dns_servers
                     # Obtient l'état de l'interface (Up/Down)
                     status_result = subprocess.run(
-                        ["ip", "link", "show", "dev", interface], capture_output=True, text=True
+                        ["ip", "link", "show", "dev", interface],
+                        capture_output=True,
+                        text=True,
                     )
                     if "state UP" in status_result.stdout:
                         interface_info["status"] = "Up"
@@ -583,10 +598,11 @@ class networkagentinfo:
                         if isp_match:
                             interface_info["isp"] = isp_match.group(1)
                 except Exception as e:
-                    print(f"Erreur lors de la collecte d'informations pour {interface}: {str(e)}")
+                    print(
+                        f"Erreur lors de la collecte d'informations pour {interface}: {str(e)}"
+                    )
                 network_info.append(interface_info)
         return network_info
-
 
     def listdnslinux(self):
         dns = []
