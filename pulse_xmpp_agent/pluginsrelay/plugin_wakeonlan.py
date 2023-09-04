@@ -16,7 +16,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur, result):
         wol_port = 9
 
     try:
-            packet(data["macaddress"], port=wol_port)
+        wol.send_magic_packet(data["macaddress"], port=wol_port)
         result["data"]["start"] = "ok"
     except BaseException:
         dataerreur["data"]["msg"] = "ERROR : plugin wakeonlan"
