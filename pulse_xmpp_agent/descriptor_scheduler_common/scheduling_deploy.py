@@ -45,9 +45,9 @@ def schedule_main(objectxmpp):
                 # Parcourir toutes les paires clé-valeur
                 for key, value in cursor:
                     # Convertir les données de type bytes en str (si nécessaire)
-                    k = key.decode('utf-8')
-                    v = value.decode('utf-8')
-                #for k, v in objectxmpp.Deploybasesched.dbsessionscheduler.items():
+                    k = key.decode("utf-8")
+                    v = value.decode("utf-8")
+                    # for k, v in objectxmpp.Deploybasesched.dbsessionscheduler.items():
                     obj = json.loads(v)
                     obj["data"]["fromaction"] = obj["action"]
                     obj["action"] = "machineexecutionscheduler"
@@ -57,7 +57,9 @@ def schedule_main(objectxmpp):
                     # send message to master(plugin_machineexecutionscheduler)
                     # print "SEND", json.dumps(obj, indent = 4)
                     objectxmpp.send_message(
-                        mto=obj["data"]["jidmaster"], mbody=json.dumps(obj), mtype="chat"
+                        mto=obj["data"]["jidmaster"],
+                        mbody=json.dumps(obj),
+                        mtype="chat",
                     )
     except Exception:
         logging.getLogger().error("\n%s" % (traceback.format_exc()))

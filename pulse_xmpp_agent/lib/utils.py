@@ -4801,6 +4801,7 @@ def generate_log_line(message):
     log_line = f"[{file_name}:{line_number}] - {message}"
     return log_line
 
+
 def display_message_dev(message):
     """
     Display the given message in the log if the global variable 'DEV' is defined and equal to 1.
@@ -4831,7 +4832,6 @@ def display_message_dev(message):
         logger.addHandler(stream_handler)
         log_line = generate_log_line(message)
         logger.info(log_line)
-
 
 
 def display_message(message):
