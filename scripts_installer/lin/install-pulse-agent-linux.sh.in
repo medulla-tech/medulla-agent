@@ -31,7 +31,6 @@ INVENTORY_TAG="@@INVENTORY_TAG@@"
 AGENT_VERSION="@@AGENT_VERSION@@"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-@@AGENT_VERSION@@.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-@@AGENT_VERSION@@.tar.gz"
-NETIFACES_WHL="netifaces2-0.0.18-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -81,12 +80,11 @@ install_agent() {
             fi
         ;;
         ubuntu)
-            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-pip pulse-agent-linux python-cherrypy3
+            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-pip pulse-agent-linux python-cherrypy3 python3-netifaces
 
         ;;
         esac
 
-python3 -m pip install --upgrade --break-system-packages --root-user-action=ignore ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/${NETIFACES_WHL}
 python3 -m pip install --upgrade --break-system-packages --root-user-action=ignore --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
 
 [ ! -d "/var/lib/pulse2/packages" ] && mkdir -p /var/lib/pulse2/packages
