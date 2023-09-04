@@ -277,6 +277,8 @@ class MscDatabase(DatabaseHelper):
         except Exception as e:
             self.logger.error("We failed to connect to the Msc database.")
             self.logger.error("Please verify your configuration")
+            self.logger.error(str(e))
+            self.logger.error("\n%s"%(traceback.format_exc()))
             self.is_activated = False
             return False
 
@@ -285,50 +287,92 @@ class MscDatabase(DatabaseHelper):
         Initialize all SQLalchemy tables
         """
         try:
-            # commands
-            self.commands = Table(
-                "commands",
-                self.metadata,
-                Column("dispatched", String(32), default="YES"),
-                Column("fk_bundle", Integer, ForeignKey("bundle.id")),
-                autoload=True,
-            )
-            # commands_history
+
+
+              self.commands = Table("commands",
+                                  self.metadata,
+                                autoload = True)
+
+
             self.commands_history = Table(
                 "commands_history",
                 self.metadata,
-                Column(
-                    "fk_commands_on_host", Integer, ForeignKey("commands_on_host.id")
-                ),
-                autoload=True,
+                autoload = True
             )
             # target
-            self.target = Table("target", self.metadata, autoload=True)
-
+            self.target = Table(
+                "target",
+                self.metadata,
+                autoload = True
+            )
             # pull_targets
-            self.pull_targets = Table("pull_targets", self.metadata, autoload=True)
-
+            self.pull_targets = Table(
+                "pull_targets",
+                self.metadata,
+                autoload = True
+            )
             # bundle
-            self.bundle = Table("bundle", self.metadata, autoload=True)
-
+            self.bundle = Table(
+                "bundle",
+                self.metadata,
+                autoload = True
+            )
             # commands_on_host_phase
             self.commands_on_host_phase = Table(
                 "phase",
                 self.metadata,
-                Column(
-                    "fk_commands_on_host", Integer, ForeignKey("commands_on_host.id")
-                ),
-                autoload=True,
+                autoload = True
             )
-
             # commands_on_host
             self.commands_on_host = Table(
                 "commands_on_host",
                 self.metadata,
-                Column("fk_commands", Integer, ForeignKey("commands.id")),
-                Column("fk_target", Integer, ForeignKey("target.id")),
-                autoload=True,
+                autoload = True
             )
+            # commands
+            #self.commands = Table(
+                #"commands",
+                #self.metadata,
+                #Column("dispatched", String(32), default="YES"),
+                #Column("fk_bundle", Integer, ForeignKey("bundle.id")),
+                #autoload=True,
+            #)
+            ## commands_history
+            #self.commands_history = Table(
+                #"commands_history",
+                #self.metadata,
+                #Column(
+                    #"fk_commands_on_host", Integer, ForeignKey("commands_on_host.id")
+                #),
+                #autoload=True,
+            #)
+            ## target
+            #self.target = Table("target", self.metadata, autoload=True)
+
+            ## pull_targets
+            #self.pull_targets = Table("pull_targets", self.metadata, autoload=True)
+
+            ## bundle
+            #self.bundle = Table("bundle", self.metadata, autoload=True)
+
+            ## commands_on_host_phase
+            #self.commands_on_host_phase = Table(
+                #"phase",
+                #self.metadata,
+                #Column(
+                    #"fk_commands_on_host", Integer, ForeignKey("commands_on_host.id")
+                #),
+                #autoload=True,
+            #)
+
+            ## commands_on_host
+            #self.commands_on_host = Table(
+                #"commands_on_host",
+                #self.metadata,
+                #Column("fk_commands", Integer, ForeignKey("commands.id")),
+                #Column("fk_target", Integer, ForeignKey("target.id")),
+                #autoload=True,
+            #)
 
             # version
             self.version = Table("version", self.metadata, autoload=True)
@@ -348,29 +392,37 @@ class MscDatabase(DatabaseHelper):
         mapper(CommandsHistory, self.commands_history)
         mapper(CommandsOnHostPhase, self.commands_on_host_phase)
         mapper(PullTargets, self.pull_targets)
-        mapper(
-            CommandsOnHost,
-            self.commands_on_host,
-            properties={
-                "historys": relation(CommandsHistory),
-            },
-        )
+        mapper(CommandsOnHost, self.commands_on_host)
+        mapper(Target, self.target)
+        mapper(Bundle, self.bundle)
+        mapper(Commands, self.commands)
 
-        mapper(
-            Target,
-            self.target,
-            properties={"commandsonhosts": relation(CommandsOnHost)},
-        )
+        #mapper(CommandsHistory, self.commands_history)
+        #mapper(CommandsOnHostPhase, self.commands_on_host_phase)
+        #mapper(PullTargets, self.pull_targets)
+        #mapper(
+            #CommandsOnHost,
+            #self.commands_on_host,
+            #properties={
+                #"historys": relation(CommandsHistory),
+            #},
+        #)
 
-        mapper(Bundle, self.bundle, properties={})
-        mapper(
-            Commands,
-            self.commands,
-            properties={
-                "commandsonhosts": relation(CommandsOnHost),
-                "bundle": relation(Bundle),
-            },
-        )
+        #mapper(
+            #Target,
+            #self.target,
+            #properties={"commandsonhosts": relation(CommandsOnHost)},
+        #)
+
+        #mapper(Bundle, self.bundle, properties={})
+        #mapper(
+            #Commands,
+            #self.commands,
+            #properties={
+                #"commandsonhosts": relation(CommandsOnHost),
+                #"bundle": relation(Bundle),
+            #},
+        #)
 
         # FIXME: Version is missing
 
