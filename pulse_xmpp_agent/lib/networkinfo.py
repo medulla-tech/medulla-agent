@@ -108,8 +108,8 @@ class networkagentinfo:
                 pattern = (
                     r"inet (\S+)\/(\d+) metric (\d+) brd (\S+) scope global (\S+) (\S+)"
                 )
-                messagejson["dhcpinfo"] = []
-                for t in result:
+                self.messagejson['dhcpinfo']=[ ]
+                for info_line in result:
                     match = re.match(pattern, info_line)
                     if match:
                         # Créez un dictionnaire avec les informations extraites
@@ -121,7 +121,8 @@ class networkagentinfo:
                             "scope": match.group(5),
                             "interface": match.group(6),
                         }
-                        messagejson["dhcpinfo"].append(info_dict)
+                        self.messagejson['dhcpinfo'].append(info_dict)
+
 
             self.messagejson["listdns"] = self.listdnslinux()
             self.messagejson["listipinfo"] = self.getLocalIipAddress()
