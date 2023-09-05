@@ -254,7 +254,8 @@ class MscDatabase(DatabaseHelper):
             self.commands = Table(
                 "commands", 
                 self.metadata,
-                autoload=True
+                autoload=True,
+                extend_existing=True
             )
             # commands_history
             self.commands_history = Table(
@@ -287,14 +288,16 @@ class MscDatabase(DatabaseHelper):
             self.commands_on_host_phase = Table(
                 "phase", 
                 self.metadata,
-                autoload=True
+                autoload=True,
+                extend_existing=True
             )
 
             # commands_on_host
             self.commands_on_host = Table(
                 "commands_on_host", 
                 self.metadata,
-                autoload=True
+                autoload=True,
+                extend_existing=True
             )
 
             # version
