@@ -9,7 +9,7 @@ cette fonction a pour charge d'executer les actions creation des packages d'upda
 
 import os
 import logging
-import ConfigParser
+import configparser
 import shutil
 import types
 from lib.configuration import confParameter
@@ -161,7 +161,7 @@ def read_conf_loadactionupdate(objectxmpp):
             % objectxmpp.time_scrutation
         )
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(pathconffile)
         if os.path.exists(pathconffile + ".local"):
             Config.read(pathconffile + ".local")
@@ -190,7 +190,7 @@ def read_debug_conf(objectxmpp):
     nameconffile = plugin["NAME"] + ".ini"
     pathconffile = os.path.join(objectxmpp.config.pathdirconffile, nameconffile)
     if os.path.isfile(pathconffile):
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(pathconffile)
         if os.path.exists(pathconffile + ".local"):
             Config.read(pathconffile + ".local")
@@ -204,7 +204,7 @@ def create_default_config(objectxmpp):
     pathconffile = os.path.join(objectxmpp.config.pathdirconffile, nameconffile)
     if not os.path.isfile(pathconffile):
         logger.warning("Creation default config file %s" % pathconffile)
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.add_section("parameters")
         Config.set("parameters", "time_scrutation", GLOBALPARAM["duration"])
         Config.set("parameters", "debuglocal", GLOBALPARAM["debuglocal"])
