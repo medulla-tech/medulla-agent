@@ -297,18 +297,23 @@ class MscDatabase(DatabaseHelper):
             )
             # target
             self.target = Table("target", self.metadata, autoload=True)
+
             # pull_targets
             self.pull_targets = Table("pull_targets", self.metadata, autoload=True)
+
             # bundle
             self.bundle = Table("bundle", self.metadata, autoload=True)
+
             # commands_on_host_phase
             self.commands_on_host_phase = Table(
                 "phase", self.metadata, autoload=True, extend_existing=True
             )
+
             # commands_on_host
             self.commands_on_host = Table(
                 "commands_on_host", self.metadata, autoload=True, extend_existing=True
             )
+
             # version
             self.version = Table("version", self.metadata, autoload=True)
 
