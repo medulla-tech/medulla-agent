@@ -57,6 +57,11 @@ setup(
             "pycryptodome >= 3.15.0",
         ]
         if "win" in sys.platform
-        else ["posix_ipc >= 1.0.5", "lmdb", "netifaces", "pycryptodomex >= 3.15.0",]
+        else [
+            "posix_ipc >= 1.0.5",
+            "lmdb",
+            "netifaces",
+            "pycryptodomex >= 3.15.0",
+        ]
     ),
 )
