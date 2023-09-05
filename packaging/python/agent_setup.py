@@ -39,7 +39,6 @@ setup(
         "slixmpp >= 1.8.2",
         "pycurl >= 7.45.1",
         "lxml >= 4.9.1",
-        "pycryptodome >= 3.15.0",
         "croniter >= 1.3.5",
         "psutil >= 5.9.1",
         "cherrypy >= 18.8.0",
@@ -55,8 +54,9 @@ setup(
             "comtypes >= 1.1.14",
             "wmi >= 1.5.1",
             "netifaces2",
+            "pycryptodome >= 3.15.0",
         ]
         if "win" in sys.platform
-        else ["posix_ipc >= 1.0.5", "lmdb", "netifaces"]
+        else ["posix_ipc >= 1.0.5", "lmdb", "netifaces", "pycryptodomex >= 3.15.0",]
     ),
 )
