@@ -129,7 +129,7 @@ configure_inventory() {
 }
 
 start_agent() {
-    chmod +x /usr/local/lib/python2.7/dist-packages/pulse_xmpp_agent/launcher.py
+    chmod +x /usr/local/lib/python3.11/dist-packages/pulse_xmpp_agent/launcher.py
     [ ! -d "/var/log/pulse" ] && mkdir /var/log/pulse
 
     # Enable and start the service
