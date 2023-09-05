@@ -49,7 +49,13 @@ setup(
         "netaddr",
     ]
     + (
-        ["pathlib >= 1.0.1", "pypiwin32 >= 223", "comtypes >= 1.1.14", "wmi >= 1.5.1", "netifaces2"]
+        [
+            "pathlib >= 1.0.1",
+            "pypiwin32 >= 223",
+            "comtypes >= 1.1.14",
+            "wmi >= 1.5.1",
+            "netifaces2",
+        ]
         if "win" in sys.platform
         else ["posix_ipc >= 1.0.5", "lmdb", "netifaces"]
     ),
