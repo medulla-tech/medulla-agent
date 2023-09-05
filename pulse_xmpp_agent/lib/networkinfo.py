@@ -342,7 +342,7 @@ class networkagentinfo:
         Returns:
             str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
         """
-        mac = NetworkAgentInfo.get_mac_address_with_netifaces(ip)
+        mac = networkagentinfo.get_mac_address_with_netifaces(ip)
         if mac is not None:
             return mac
         logger.warning(
