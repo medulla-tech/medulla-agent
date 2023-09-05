@@ -57,9 +57,9 @@ check_arguments() {
 	for i in "$@"; do
         case $i in
             --inventory-tag=*)
-        		INVENTORY_TAG="${i#*=}"
-        		shift
-        		;;
+		INVENTORY_TAG="${i#*=}"
+		shift
+		;;
             --minimal*)
                 MINIMAL=1
                 shift
@@ -92,12 +92,12 @@ check_arguments() {
                 DISTROS="${i#*=}"
                 shift
                 ;;
-			*)
-        		# unknown option
-        		display_usage
-        		exit 1
-                ;;
-		esac
+	    *)
+		# unknown option
+		display_usage
+		exit 1
+		;;
+	esac
 	done
 
 	if [[ ${MINIMAL} ]] && [[ ${TEST_URL} ]]; then
