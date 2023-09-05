@@ -270,6 +270,10 @@ install_repos() {
                 install_package pulse-agent-linux-repo-stretch
                 INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-stretch}" )
                 ;;
+	    debian-bookworm)
+                install_package pulse-agent-linux-repo-bookworm
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-bookworm}" )
+                ;;
             ubuntu-bionic)
                 install_package pulse-agent-linux-repo-bionic
                 INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-bionic}" )
