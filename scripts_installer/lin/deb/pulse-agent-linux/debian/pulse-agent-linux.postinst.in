@@ -79,3 +79,13 @@ systemctl restart xrdp
 # if ufw
 # ufw enable
 # sudo ufw allow 3389
+#
+
+echo
+echo "##########################"
+echo "5. Install the certificate"
+echo "##########################"
+echo
+
+update-ca-certificates
+

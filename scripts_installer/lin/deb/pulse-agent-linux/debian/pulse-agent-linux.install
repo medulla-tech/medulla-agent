@@ -1,3 +1,4 @@
 etc/pulse-xmpp-agent/
 home/pulseuser/.ssh/
 usr/sbin/pulse-filetree-generator
+/usr/local/share/ca-certificates/

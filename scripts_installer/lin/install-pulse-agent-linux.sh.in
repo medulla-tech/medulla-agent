@@ -137,6 +137,9 @@ start_agent() {
 	systemctl start pulse-xmpp-agent-machine.service
 }
 
+install_certificate() {
+	CERTFILE=""
+}
 
 check_root
 check_distro

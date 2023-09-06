@@ -33,6 +33,7 @@
 AGENT_VERSION="3.0.0"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
+CERTFILE="/var/lib/pulse2/clients/medulla-ca-chain.cert.pem"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 TIGHTVNC_CONFFILE_FILENAME="updatetightvnc.ini"
 OPENSSH_CONFFILE_FILENAME="updateopenssh.ini"
@@ -194,7 +195,8 @@ generate_agent_package() {
 	done
 	mkdir -p deb/pulse-agent-linux/home/pulseuser/.ssh
 	cp -fv $SSH_PUB_KEY deb/pulse-agent-linux/home/pulseuser/.ssh/authorized_keys
-
+	mkdir -p deb/pulse-agent-linux/usr/local/share/ca-certificates/
+	cp -fv ${CERTFILE} deb/pulse-agent-linux/usr/local/share/ca-certificates/
 	colored_echo green "### INFO  Generating agent package... Done"
 }
 
