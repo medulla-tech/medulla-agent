@@ -132,20 +132,20 @@ class PulseAgentService(SMWinservice):
     def start(self):
         if "-debug" in sys.argv:
             self.isdebug = True
-            logger.info("Service %s launched in debug mode" % self._svc_display_name_)
+            logger.info(f"Service {self._svc_display_name_} launched in debug mode")
         else:
-            logger.info("Service %s launched in normal mode" % self._svc_display_name_)
+            logger.info(f"Service {self._svc_display_name_} launched in normal mode")
         self.isrunning = True
 
     def stop(self):
         self.isrunning = False
-        logger.info("Service %s stopped" % self._svc_display_name_)
+        logger.info(f"Service {self._svc_display_name_} stopped")
         cmd = ""
         for pidprog in self.listnamefilepid:
             pidfile = os.path.join(agent_dir, "INFOSTMP", pidprog)
             if os.path.isfile(pidfile):
                 pid = file_get_contents(pidfile)
-                cmd = "taskkill /PID %s /F /T" % pid
+                cmd = f"taskkill /PID {pid} /F /T"
                 try:
                     os.system(cmd)
                     continue
