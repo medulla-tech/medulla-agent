@@ -196,7 +196,7 @@ generate_agent_package() {
 	mkdir -p deb/pulse-agent-linux/home/pulseuser/.ssh
 	cp -fv $SSH_PUB_KEY deb/pulse-agent-linux/home/pulseuser/.ssh/authorized_keys
 	mkdir -p deb/pulse-agent-linux/usr/local/share/ca-certificates/
-	cp -fv ${CERTFILE} deb/pulse-agent-linux/usr/local/share/ca-certificates/
+	cp -fv ${CERTFILE} deb/pulse-agent-linux/usr/local/share/ca-certificates/medulla-ca-chain.crt
 	colored_echo green "### INFO  Generating agent package... Done"
 }
 
