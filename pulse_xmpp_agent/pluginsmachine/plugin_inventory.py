@@ -210,7 +210,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             date=None,
                         )
                 except Exception as e:
-                    logger.error("An error occured while calling the plugin:  %s" % str(e))
+                    logger.error(
+                        "An error occured while calling the plugin:  %s" % str(e)
+                    )
                     logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
                     xmppobject.xmpplog(
                         "Inventory error %s " % str(e),
@@ -419,7 +421,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                     listfinger.append(str(key_value[0]))
                                     winreg.CloseKey(key)
                                 except Exception as e:
-                                    logger.error("An error occured while calling the plugin:  %s" % str(e))
+                                    logger.error(
+                                        "An error occured while calling the plugin:  %s"
+                                        % str(e)
+                                    )
                                     logging.log(
                                         ERRORPULSEPLUGIN,
                                         "Error getting key: %s" % str(e),
@@ -488,8 +493,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                 date=None,
                             )
                     except Exception as e:
-                        logger.error("An error occured while calling the plugin:  %s" % str(e))
-                        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+                        logger.error(
+                            "An error occured while calling the plugin:  %s" % str(e)
+                        )
+                        logger.error(
+                            "We got the backtrace\n%s" % (traceback.format_exc())
+                        )
                         xmppobject.xmpplog(
                             "Inventory error %s " % str(e),
                             type="deploy",
@@ -589,7 +598,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             date=None,
                         )
                 except Exception as e:
-                    logger.error("An error occured while calling the plugin:  %s" % str(e))
+                    logger.error(
+                        "An error occured while calling the plugin:  %s" % str(e)
+                    )
                     logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
                     xmppobject.xmpplog(
                         "Inventory error %s " % str(e),
@@ -900,4 +911,3 @@ def send_plugin_update_windows(xmppobject):
     except Exception as e:
         logger.error("An error occured while calling the plugin:  %s" % str(e))
         logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
-
