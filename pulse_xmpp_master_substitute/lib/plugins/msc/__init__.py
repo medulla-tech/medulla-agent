@@ -1167,14 +1167,17 @@ class MscDatabase(DatabaseHelper):
                                     `current_state`='done',
                                         `stage`='ended'
                                     WHERE `commands_on_host`.`id` in(%s); """ % (
-                            list_uuid_machine)
+                            list_uuid_machine
+                        )
                         ret = session.execute(sql)
                         sql = """
                                 UPDATE `msc`.`phase`
                                     SET
                                     `phase`.`state`='done'
                                     WHERE `phase`.`fk_commands_on_host` in(%s);
-                        """ % (list_uuid_machine)
+                        """ % (
+                            list_uuid_machine
+                        )
                         ret = session.execute(sql)
                         session.commit()
                         session.flush()
