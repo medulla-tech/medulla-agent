@@ -47,7 +47,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         try:
             send_plugin_update_windows(xmppobject)
         except Exception as e:
-            logger.error("\n%s" % (traceback.format_exc()))
+            logger.error("An error occured while calling the plugin:  %s" % str(e))
+            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
 
     boolchange = True
     namefilexml = ""
@@ -209,7 +210,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             date=None,
                         )
                 except Exception as e:
-                    logger.error("\n%s" % (traceback.format_exc()))
+                    logger.error("An error occured while calling the plugin:  %s" % str(e))
+                    logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
                     xmppobject.xmpplog(
                         "Inventory error %s " % str(e),
                         type="deploy",
@@ -234,7 +236,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 dataerreur["data"]["msg"],
                 str(e),
             )
-            logger.error("\n%s" % (traceback.format_exc()))
+            logger.error("An error occured while calling the plugin:  %s" % str(e))
+            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(
                 mto=xmppobject.sub_inventory, mbody=json.dumps(dataerreur), mtype="chat"
@@ -415,7 +418,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                     ] = str(key_value[0])
                                     listfinger.append(str(key_value[0]))
                                     winreg.CloseKey(key)
-                                except Exception as e:
+                               except Exception as e:
+                                    logger.error("An error occured while calling the plugin:  %s" % str(e))
                                     logging.log(
                                         ERRORPULSEPLUGIN,
                                         "Error getting key: %s" % str(e),
@@ -484,7 +488,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                 date=None,
                             )
                     except Exception as e:
-                        logger.error("\n%s" % (traceback.format_exc()))
+                        logger.error("An error occured while calling the plugin:  %s" % str(e))
+                        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
                         xmppobject.xmpplog(
                             "Inventory error %s " % str(e),
                             type="deploy",
@@ -508,7 +513,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 dataerreur["data"]["msg"],
                 str(e),
             )
-            logger.error("\n%s" % (traceback.format_exc()))
+            logger.error("An error occured while calling the plugin:  %s" % str(e))
+            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(
                 mto=xmppobject.sub_inventory, mbody=json.dumps(dataerreur), mtype="chat"
@@ -583,7 +589,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             date=None,
                         )
                 except Exception as e:
-                    logger.error("\n%s" % (traceback.format_exc()))
+                    logger.error("An error occured while calling the plugin:  %s" % str(e))
+                    logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
                     xmppobject.xmpplog(
                         "Inventory error %s " % str(e),
                         type="deploy",
@@ -602,7 +609,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 dataerreur["data"]["msg"],
                 str(e),
             )
-            logger.error("\n%s" % (traceback.format_exc()))
+            logger.error("An error occured while calling the plugin:  %s" % str(e))
+            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(
                 mto=xmppobject.sub_inventory, mbody=json.dumps(dataerreur), mtype="chat"
@@ -890,4 +898,6 @@ def send_plugin_update_windows(xmppobject):
             mtype="chat",
         )
     except Exception as e:
-        logger.error("\n%s" % (traceback.format_exc()))
+        logger.error("An error occured while calling the plugin:  %s" % str(e))
+        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+
