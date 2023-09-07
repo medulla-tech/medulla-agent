@@ -284,15 +284,16 @@ prepare_mandatory_includes() {
 	# rsync
 	if [ -e ${DOWNLOADS_DIR}/${RSYNC_DL_FILENAME} ]; then
 		pushd ${DOWNLOADS_DIR}
-		unzip -o -q ${RSYNC_DL_FILENAME}
+        FOLDERNAME="${RSYNC_DL_FILENAME%.*}"
+		unzip -o -q ${RSYNC_DL_FILENAME} -d ${FOLDERNAME}
 		mkdir rsync
 		rm -f rsync.zip
-		FOLDERNAME="${RSYNC_DL_FILENAME%.*}"
 		cp ${FOLDERNAME}/bin/* rsync
-		rm rsync/cygcrypto-1.0.0.dll
-		rm rsync/cygssp-0.dll
+		rm rsync/cygcrypto-50.dll
 		rm rsync/ssh-keygen.exe
 		rm rsync/ssh.exe
+        rm rsync/ssh-agent.exe
+        rm rsync/ssh-add.exe     
 		zip -r rsync.zip rsync
 		rm -rf rsync
 		rm -rf ${FOLDERNAME}
