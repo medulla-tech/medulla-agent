@@ -894,7 +894,7 @@ def simplecommand(cmd, emptyline=True):
     result = p.stdout.readlines()
     obj = {"code": p.wait()}
     if emptyline:
-        obj["result"] = [x.strip("\n") for x in result if x.strip() != ""]
+        obj["result"] = [x.strip(b"\n") for x in result if x.strip() != ""]
     else:
         obj["result"] = result
     return obj
