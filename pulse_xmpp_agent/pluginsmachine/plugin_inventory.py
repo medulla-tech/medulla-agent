@@ -27,7 +27,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.70", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.71", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -418,7 +418,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                     ] = str(key_value[0])
                                     listfinger.append(str(key_value[0]))
                                     winreg.CloseKey(key)
-                               except Exception as e:
+                                except Exception as e:
                                     logger.error("An error occured while calling the plugin:  %s" % str(e))
                                     logging.log(
                                         ERRORPULSEPLUGIN,
