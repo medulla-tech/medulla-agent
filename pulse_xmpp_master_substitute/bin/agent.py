@@ -1038,7 +1038,6 @@ class MUCBot(slixmpp.ClientXMPP):
             # ... This will capture error responses too
             ret = "{}"
             return ret
-            pass
 
         # self.register_handler(Callback(
         #'CustomXEP Handler3',
