@@ -1603,6 +1603,30 @@ def utc2local (utc):
     offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
     return utc + offset
 
+
+def getHomedrive(username='pulseuser'):
+    """
+        Retrieve the path to the home of the user `username`
+        Args: 
+            username: The username of the user for which we are searching the homepath
+
+        Returns:
+            It returns the path to the home of `username`
+    """ 
+    usersid = get_user_sid(username)
+
+    try:
+        regquery = 'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" /v "ProfileImagePath" /s'% usersid
+        resultquery = simplecommand(encode_strconsole(regquery))
+
+    except Exception as e:
+        logger.error("An error occured whil trying to %s" % (str(e)))
+
+    if resultquery['code'] == 0:
+        homedrive = resultquery['result'].split("    ")[-1].replace("\r\n", "")
+    
+    return homedrive
+
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
     if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
@@ -1971,7 +1995,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath('C:/Users/%s' % username).strip()
+        defined_profilepath = os.path.normpath(getHomedrive())).strip()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip()
         if not profile_location or profile_location != defined_profilepath:
@@ -2061,16 +2085,12 @@ def delete_profile(username='pulseuser'):
     if sys.platform.startswith('win'):
         # Delete profile folder in C:\Users if any
         try:
-            for name in os.listdir('C:/Users/'):
-                if name.startswith(username):
-                    delete_folder_cmd = 'rd /s /q "C:\Users\%s" ' % name
-                    result = simplecommand(encode_strconsole(delete_folder_cmd))
-                    if result['code'] == 0:
-                        logger.debug('Deleted %s folder' % os.path.join('C:/Users/', name))
-                    else:
-                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
-        except Exception as e:
-            pass
+            delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive()
+            result = simplecommand(encode_strconsole(delete_folder_cmd))
+            if result['code'] == 0:
+                logger.debug('Deleted %s folder' % getHomedrive())
+        else:
+            logger.error('Error deleting %s folder' % getHomedrive())
         # Delete profile
         userenvdll = ctypes.WinDLL('userenv.dll')
         usersid = get_user_sid(username)
@@ -2086,7 +2106,7 @@ def create_idrsa_on_client(username='pulseuser', key=''):
     Used on client machine for connecting to relay server
     """
     if sys.platform.startswith('win'):
-        id_rsa_path = os.path.join('C:\Users', username, '.ssh', 'id_rsa')
+        id_rsa_path = os.path.join(getHomedrive(), '.ssh', 'id_rsa')
     else:
         id_rsa_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
     delete_keyfile_cmd = 'del /f /q "%s" ' % id_rsa_path
@@ -2184,7 +2204,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
         message sent telling if the key have been well copied or not.
     """
     if sys.platform.startswith('win'):
-        authorized_keys_path = os.path.join('C:\Users', username, '.ssh', 'authorized_keys')
+        authorized_keys_path = os.path.join(getHomedrive(), '.ssh', 'authorized_keys')
     else:
         authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
     if not os.path.isfile(authorized_keys_path):
