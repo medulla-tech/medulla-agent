@@ -34,9 +34,7 @@ import urllib.request
 
 # GLOBAL DATA
 
-log_file = os.path.join(
-    "c:", "progra~1", "Pulse", "var", "log", "service.log"
-)
+log_file = os.path.join("c:", "progra~1", "Pulse", "var", "log", "service.log")
 
 program_dir = os.path.join("c:", "progra~1", "Pulse", "bin")
 

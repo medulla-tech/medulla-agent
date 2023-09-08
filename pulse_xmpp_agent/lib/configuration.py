@@ -671,7 +671,7 @@ class confParameter:
         except BaseException:
             if sys.platform.startswith("win"):
                 self.logfile = os.path.join(
-                    "c:", 
+                    "c:",
                     "progra~1",
                     "Pulse",
                     "var",

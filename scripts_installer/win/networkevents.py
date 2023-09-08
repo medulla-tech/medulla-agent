@@ -314,9 +314,7 @@ class NetworkManager(DesignatedWrapPolicy):
 
 
 if __name__ == "__main__":
-    logfile = os.path.join(
-        "c:", "progra~1", "Pulse", "var", "log", "networkevents.log"
-    )
+    logfile = os.path.join("c:", "progra~1", "Pulse", "var", "log", "networkevents.log")
 
     program_dir = os.path.join("c:", "progra~1", "Pulse", "bin")
     pidfile = os.path.join(program_dir, ".PID_NETWORKS_ENVENTS")

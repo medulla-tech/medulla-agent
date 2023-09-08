@@ -52,9 +52,7 @@ def checkfusionversion():
 def check_if_binary_ok():
     if sys.platform.startswith("win"):
         # We check if the fusion inventory binary is correctly installed.
-        fusiondir_path = os.path.join(
-            "c:", "progra~1", "FusionInventory-Agent"
-        )
+        fusiondir_path = os.path.join("c:", "progra~1", "FusionInventory-Agent")
         fusion_bin_path = os.path.join(fusiondir_path, "fusioninventory-agent.bat")
 
         if os.path.isfile(fusion_bin_path):

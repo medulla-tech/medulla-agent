@@ -552,9 +552,7 @@ class MUCBot(ClientXMPP):
             self.fichierconfsyncthing = (
                 "c:\\progra~1\\pulse\\etc\\syncthing\\config.xml"
             )
-            self.tmpfile = (
-                "c:\\progra~1\\Pulse\\tmp\\confsyncting.txt"
-            )
+            self.tmpfile = "c:\\progra~1\\Pulse\\tmp\\confsyncting.txt"
         elif sys.platform.startswith("darwin"):
             self.fichierconfsyncthing = os.path.join(
                 "/opt", "Pulse", "etc", "syncthing", "config.xml"
@@ -4356,9 +4354,7 @@ if __name__ == "__main__":
     tg = confParameter(opts.typemachine)
     # termine ssh reverse
     if sys.platform.startswith("win"):
-        searchreversesshprocess = os.path.join(
-            "c:", "progra~1", "Pulse", "bin"
-        )
+        searchreversesshprocess = os.path.join("c:", "progra~1", "Pulse", "bin")
         for f in [
             os.path.join("c:", "progra~1", "Pulse", "bin", x)
             for x in os.listdir(searchreversesshprocess)

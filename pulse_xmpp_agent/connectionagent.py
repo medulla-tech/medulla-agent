@@ -169,9 +169,7 @@ class MUCBot(ClientXMPP):
                 self.fichierconfsyncthing = (
                     "c:\\progra~1\\pulse\\etc\\syncthing\\config.xml"
                 )
-                tmpfile = (
-                    "c:\\progra~1\\Pulse\\tmp\\confsyncting.txt"
-                )
+                tmpfile = "c:\\progra~1\\Pulse\\tmp\\confsyncting.txt"
             elif sys.platform.startswith("darwin"):
                 self.fichierconfsyncthing = os.path.join(
                     "/opt", "Pulse", "etc", "syncthing", "config.xml"

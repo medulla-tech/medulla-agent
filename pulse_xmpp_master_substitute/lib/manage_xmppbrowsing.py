@@ -45,7 +45,7 @@ class xmppbrowsing:
                 "c:", "progra~1", "Pulse", "tmp", "treejson.json"
             )
             self.programmetreejson = os.path.join(
-                "c:", 
+                "c:",
                 "progra~1",
                 "Pulse",
                 "bin",
@@ -66,9 +66,7 @@ class xmppbrowsing:
         try:
             if sys.platform.startswith("win"):
                 cont = file_get_content(
-                    os.path.join(
-                        "c:", "progra~1", "Pulse", "tmp", "treejson.json"
-                    )
+                    os.path.join("c:", "progra~1", "Pulse", "tmp", "treejson.json")
                 )
                 l = decode_strconsole(cont)
                 return l

@@ -1401,13 +1401,11 @@ class syncthingprogram(Program):
             if self.home == "":
                 self.home = "c:\\progra~1\\pulse\\etc\\syncthing\\"
             if self.logfile == "":
-                self.logfile = ("c:\\progra~1\\pulse\\var\\log\\syncthing.log")
+                self.logfile = "c:\\progra~1\\pulse\\var\\log\\syncthing.log"
 
             self.stop_syncthing()
 
-            agentconf = os.path.join(
-                "c:", "progra~1", "Pulse", "etc", "agentconf.ini"
-            )
+            agentconf = os.path.join("c:", "progra~1", "Pulse", "etc", "agentconf.ini")
             Config = configparser.ConfigParser()
             Config.read(agentconf)
 
