@@ -54,18 +54,13 @@ class managepackage:
         Returns:
             It returns the content of the JSON file
         """
-        if os.path.isfile(filename):
-            with open(filename, "r", encoding="utf-8", errors="ignore") as info:
-                jsonFile = info.read()
-            try:
-                outputJSONFile = json.loads(jsonFile)
-                return outputJSONFile
-            except Exception as e:
-                logger.error("We failed to decode the file %s" % filename)
-                logger.error("we encountered the error: %s" % str(e))
+        if os.path.exists(filename):
+            with open(filename, 'r') as file:
+                data = json.load(file)
+                return data
         else:
-            logger.error("The file %s does not exist" % filename)
-        return None
+            logger.error(f"The json file {filename} is missing.")
+            return None
 
     @staticmethod
     def getdescriptorpackagename(packagename):
