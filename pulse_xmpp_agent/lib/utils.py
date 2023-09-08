@@ -63,7 +63,6 @@ if sys.platform.startswith("win"):
     import pythoncom
     import winreg as wr
 
-    # import win32netcon
     import win32api
     import win32security
     import ntsecuritycon
@@ -845,7 +844,6 @@ def call_mon_plugin(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
-                # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
                 executor = ThreadPoolExecutor()
                 thread = FunctionThread(pluginaction.action, *args, **kwargs)
                 result = loop.run_in_executor(executor, thread.start)
@@ -883,7 +881,6 @@ def call_plugin(name, *args, **kwargs):
                     setattr(args[0], f"num_call{args[1]}", count)
 
                 pluginaction = loadModule(nameplugin)
-                # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
                 result = loop.run_in_executor(
                     None, pluginaction.action, *args, **kwargs
                 )
@@ -4155,7 +4152,6 @@ class kb_catalogue:
             if strmsg is not None:
                 logger.warning("creation object attente get_iq_result")
                 self.dumps_msg_iq_in_file(id_iq, strmsg)
-                # self.add_msg_iq_in_file(id_iq, textmsg)
             logger.warning("creation object attente get_iq_result")
 
             if self.dev_mod:
@@ -4314,16 +4310,11 @@ class offline_search_kb:
                         t = decode_strconsole(t)
                         resultat = {}
                         resultat["description"] = t[0:16].strip()
-                        # resultat['FixComments'] =t[17:29].strip()
                         resultat["HotFixID"] = t[30:40].strip()
                         if not resultat["HotFixID"].startswith("KB"):
                             continue
-                        # resultat['InstallDate'] =t[41:53].strip()
                         resultat["InstalledBy"] = t[54:74].strip()
                         resultat["InstalledOn"] = t[75:87].strip()
-                        # resultat['Name'] =t[88:93].strip()
-                        # resultat['ServicePackInEffect'] =t[94:114].strip()
-                        # resultat['Status'] =t[115:].strip()
                         endresult.append(resultat)
             except Exception as e:
                 logger.error("searchpackage : %s" % e)
@@ -4572,7 +4563,6 @@ class offline_search_kb:
             "processor": platform.processor(),
             "version": platform.version(),
         }
-        # x.decode('cp850', 'ignore')
         if sys.platform.startswith("win"):
             informationlist = {}
             cmd = """systeminfo.exe /FO csv /NH"""
@@ -4897,13 +4887,6 @@ class MotDePasse:
     def est_valide(self):
         return datetime.now() < self.date_expiration
 
-    # def generer_qr_code(self, nom_fichier):
-    # qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    # qr.add_data(self.mot_de_passe)
-    # qr.make(fit=True)
-    # qr_img = qr.make_image(fill="black", back_color="white")
-    # qr_img.save(nom_fichier)
-    # print(f"QR code généré et sauvegardé dans {nom_fichier}.")
 
 
 class DateTimebytesEncoderjson(json.JSONEncoder):

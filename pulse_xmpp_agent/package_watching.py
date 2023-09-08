@@ -161,7 +161,6 @@ def send_agent_data(datastrdata, conf):
         logging.getLogger().debug("send to ARS event")
     except Exception as e:
         logging.getLogger().error(str(e))
-        # traceback.print_exc(file=sys.stdout)
     finally:
         sock.close()
 
@@ -237,7 +236,6 @@ class MyEventHandler(pyinotify.ProcessEvent):
             datasendstr = json.dumps(datasend, indent=4)
             logging.getLogger().debug(f"Msg : {datasendstr}")
             send_agent_data(datasendstr, self.config)
-            # send_agent_data("Copie de fichier :", self.config)
         if self.config["rsynctocdn_enable"]:
             # Run rsync command
             rsync_to_cdn(self.config)

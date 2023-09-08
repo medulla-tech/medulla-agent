@@ -4607,7 +4607,6 @@ class Glpi95(DatabaseHelper):
                     Peripheralsmanufacturers,
                     Peripherals.manufacturers_id == Peripheralsmanufacturers.id,
                 )
-        # if 'cn' in self.config.summary or idmachine != "":
         query = query.add_column(Machine.name.label("cn"))
         if uuidsetup != "" or idmachine != "":
             query = query.add_column(Machine.uuid.label("uuid_setup"))

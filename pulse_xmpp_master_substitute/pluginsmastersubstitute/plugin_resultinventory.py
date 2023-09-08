@@ -69,7 +69,6 @@ class InventoryFix:
                         )
                         py_mod = importlib.util.module_from_spec(spec)
                         spec.loader.exec_module(py_mod)
-                        # py_mod = imp.load_source(mod_name, pathname)
                     except ImportError:
                         logger.warning("Cannot load fixing script '%s'" % filename)
                         continue
@@ -104,7 +103,6 @@ class InventoryFix:
             f.close()
 
         for index, fnc in enumerate(self.fixers):
-            # for fnc in self.fixers:
             try:
                 if self.verbose:
                     logger.debug("Exec fix plugin %s %s" % (index, fnc.__module__))
@@ -366,7 +364,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         xmppobject.boundjid.bare,
                         xmppobject.boundjid.bare,
                     )
-                    # Glpi().addRegistryCollectContent(machine['id'], registry_id, key_name, reg_key_value)
                     if uuidglpi != -1:
                         Glpi().addRegistryCollectContent(
                             uuidglpi, registry_id, key_name, reg_key_value

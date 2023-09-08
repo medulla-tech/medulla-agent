@@ -421,7 +421,6 @@ class MUCBot(slixmpp.ClientXMPP):
         self.shutdown = True
         logging.log(DEBUGPULSE, "shutdown xmpp agent %s!" % self.boundjid.user)
         self.Mode_Marche_Arret_stop_agent(time_stop=1)
-        # self.disconnect(wait=10)
 
     def restartAgent(self, to):
         self.send_message(
@@ -577,7 +576,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 # traite plugin
                 try:
                     msg["body"] = dataobj
-                    # logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
 
                     dataerreur = {
                         "action": "result" + dataobj["action"],
@@ -818,16 +816,6 @@ class MUCBot(slixmpp.ClientXMPP):
     # if child.tag.endswith('query'):
     # child.append(itemXML)
 
-    # mq = base_message_queue_posix()
-    # mq.create_file_message(iq['id'],
-    # prefixe = self.boundjid.user)
-    # if result['type'] == 'result':
-    # for child in result.xml:
-    # if child.tag.endswith('query'):
-    # for z in child:
-    # if z.tag.endswith('data'):
-    ##ret = str(base64.b64decode(bytes(z.tag[1:-5], 'utf-8')), 'utf-8')
-    # ret = base64.b64decode(bytes(z.tag[1:-5], 'utf-8'))
 
     # mq.sendbytes(iq['id'],
     # ret,
@@ -853,11 +841,6 @@ class MUCBot(slixmpp.ClientXMPP):
     # prefixe = self.boundjid.user,
     # priority= 9)
 
-    # except IqError as e:
-    # err_resp = e.iq
-    # logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
-    # logger.error("\n%s"%(traceback.format_exc()))
-    # ret='{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
     # except IqTimeout:
     # logging.error("iqsendpulse : Timeout Error")

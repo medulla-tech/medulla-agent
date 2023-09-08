@@ -31,9 +31,6 @@ plugin = {"VERSION": "2.0", "NAME": "update_windows", "TYPE": "substitute"}  # f
 # def function_dynamique_declaration_plugin(xmppobject):
 # xmppobject.changestatusin_plugin = types.MethodType(changestatusin_plugin, xmppobject)
 
-# def changestatusin_plugin(self, msg_changed_status):
-# logger.debug("chang status for %s"%msg_changed_status['from'])
-# pass
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
@@ -132,10 +129,6 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     if not machine:
         logger.warning("Machine %s is not yet registered" % msg["from"])
         return
-    # filtersql = "%%%s Version %s for %s%%" %(data['system_info']['platform_info']['type'],
-    # data['system_info']['infobuild']['DisplayVersion'],
-    # data['system_info']['platform_info']['machine'])
-    # logger.info("filtersql %s" % filtersql)
 
     if not xmppobject.exclude_history_list:
         logger.debug("Checking against KB history list")
@@ -206,7 +199,6 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                     ],
                 )
             )
-            # logger.info("result search_update_windows_malicious_software_tool\n %s" % res)
             res_update.extend(
                 exclude_update_in_select(msg, exclude_update, list_update)
             )

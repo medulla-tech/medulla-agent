@@ -268,7 +268,6 @@ class MscDatabase(DatabaseHelper):
             # FIXME: should be removed
             self.session = create_session(bind=self.engine_mscmmaster_base)
             if self.session is not None:
-                # self.session = sessionmaker(bind=self.engine_xmppmmaster_base)
                 self.is_activated = True
                 self.logger.debug("Msc database connected")
                 return True
@@ -350,7 +349,6 @@ class MscDatabase(DatabaseHelper):
         query = query.all()
         if not isinstance(query, list):
             ret = query.id
-            # elif query:
         elif len(query) > 0:
             ret = []
             for q in query:
@@ -539,7 +537,6 @@ class MscDatabase(DatabaseHelper):
             cmds = session.query(Commands)
             cmds = cmds.select_from(self.commands)
             cmds = cmds.filter(self.commands.c.fk_bundle == bundle_id)
-            # self.logger.warning("Commands : %s)" % cmds.all())
 
             ok = self._deleteCommands(session, cmds)
             if ok:
@@ -665,7 +662,6 @@ class MscDatabase(DatabaseHelper):
         """
         this function scheduled by xmpp, change current_state et stage if command is out of deployment_intervals
         """
-        # datenow = datetime.datetime.now()
         session = create_session()
         q = (
             session.query(func.count(CommandsOnHost))
@@ -979,8 +975,6 @@ class MscDatabase(DatabaseHelper):
             updatemachine: Informations about the deployment (title, start_date, end_date, etc. )
         """
         with Locker("lockfile.lck", text_lock_indicator_file=textindicator):
-            # start = datetime.datetime.now()
-            # self.logger.debug("deployxmpp in %s" % start)
             try:
                 datenow = datetime.datetime.now()
                 datestr = datenow.strftime("%Y-%m-%d %H:%M:%S")
@@ -1054,8 +1048,6 @@ class MscDatabase(DatabaseHelper):
 
                 if nb_machine_select_for_deploy_cycle == 0:
                     self.logger.debug("There is no deployment to process.")
-                    # start = datetime.datetime.now()
-                    # self.logger.debug("deployxmpp out %s" % start)
                     return nb_machine_select_for_deploy_cycle, []
 
                 machine_status_update = []
@@ -1147,8 +1139,6 @@ class MscDatabase(DatabaseHelper):
 
                 if nb_machine_select_for_deploy_cycle == 0:
                     self.logger.debug("There is no deployment to process.")
-                    # start = datetime.datetime.now()
-                    # self.logger.debug("deployxmpp out %s" % start)
                     return nb_machine_select_for_deploy_cycle, []
                 elif nb_machine_select_for_deploy_cycle == 1:
                     self.logger.debug("We will start a deployment on 1 computer")
@@ -1185,8 +1175,6 @@ class MscDatabase(DatabaseHelper):
                         self.logger.error("%s" % (traceback.format_exc()))
             except Exception:
                 self.logger.error("%s" % (traceback.format_exc()))
-        # start = datetime.datetime.now()
-        # self.logger.debug("deployxmpp out %s" % start)
         return nb_machine_select_for_deploy_cycle, updatemachine
 
     @DatabaseHelper._sessionm
@@ -1995,7 +1983,6 @@ class MscDatabase(DatabaseHelper):
             .filter(self.commands.c.creator == ctx.userid)
             .filter(self.commands.c.fk_bundle == fk_bundle)
         )
-        # ret = ret.filter(self.commands_on_host.c.id == self.target.c.fk_commands_on_host)
         if filt != "":
             ret = ret.filter(self.commands.c.title.like("%" + filt + "%"))
         if history:
@@ -2261,8 +2248,6 @@ class MscDatabase(DatabaseHelper):
             query = query.filter(self.target.c.target_uuid == params["uuid"])
         if params["filt"] is not None:
             query = query.filter(self.commands.c.title.like("%" + params["filt"] + "%"))
-        # if params['finished']:
-        # query = query.filter(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed']))
         else:
             # If we are querying on a bundle, we also want to display the
             # commands_on_host flagged as done
@@ -2288,7 +2273,6 @@ class MscDatabase(DatabaseHelper):
             filter = [self.commands.c.fk_bundle == params["b_id"]]
         elif params["cmd_id"] is not None:
             filter = [self.commands.c.id == params["cmd_id"]]
-        # filter.append(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
         query = query.filter(and_(*filter))
         how_much = query.count()
         if how_much > 0:
@@ -2476,8 +2460,6 @@ class MscDatabase(DatabaseHelper):
             params["min"] = 0
         if "max" not in params:
             params["max"] = -1
-        # if not 'finished' in params or params['finished'] == '':
-        # params['finished'] = False
         try:
             params["order_by"] = getattr(self.commands_on_host.c, params["order_by"])
         except BaseException:
@@ -2485,7 +2467,6 @@ class MscDatabase(DatabaseHelper):
 
         size = 0
 
-        # msc.displayLogs({'max': 10, 'finished': '', 'filt': '', 'uuid': 'UUID1620', 'min': 0},)
         if (
             params["gid"] or params["uuid"]
         ):  # we want informations about one group / host
@@ -2728,8 +2709,6 @@ class MscDatabase(DatabaseHelper):
                     "do_halt": "halt",
                     "do_windows_update": "windows_update",
                 }
-                # for step in ['do_wol', 'clean_on_success', 'do_inventory',
-                # 'do_reboot', 'do_halt']:
                 for step in __statuses.keys():
                     setattr(
                         command,

@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
-# SPDX-License-Identifier: GPL-3.0-or-later
 
 # file : /pluginsmastersubstitute/plugin_assessor_agent.py
 
@@ -81,10 +78,6 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         # delete compteur expire
         deletelist = []
         for sessionid_save in list(objectxmpp.compteur_de_traitement.keys()):
-            # logger.warning("time creation %s" % objectxmpp.compteur_de_traitement[sessionid_save][0])
-            # logger.warning("time maintenant %s" % int(time.time()) )
-            # logger.warning("time timeact %s" % timeact)
-            # logger.warning("delay %s > %s"%(int(time.time()) - int(objectxmpp.compteur_de_traitement[sessionid_save][0]),params["duration"] ))
             if (
                 timeact - int(objectxmpp.compteur_de_traitement[sessionid_save][0])
             ) > params["duration"]:
@@ -107,7 +100,6 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
                     },
                 ]
             )
-            # logger.warning("ADD dans listconfiguration %s %s"%(len(objectxmpp.listconfiguration), msg['from']))
 
             if bool(objectxmpp.show_queue_status):
                 logger.info(
@@ -124,7 +116,6 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         # execute configuration
         try:
             objectxmpp.compteur_de_traitement[sessionid] = [timeact, msgq]
-            # logger.info("add in compteur_de_traitement session %s %s" % ([sessionid] , objectxmpp.compteur_de_traitement[sessionid] ))
             if bool(objectxmpp.show_queue_status):
                 logger.info(
                     "Pending pool counter = %s"
@@ -138,8 +129,6 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             logger.error("\n%s" % (traceback.format_exc()))
         finally:
             if sessionid in objectxmpp.compteur_de_traitement:
-                # logger.info("delete in compteur_de_traitement session %s %s" % ([sessionid] , objectxmpp.compteur_de_traitement[sessionid] ))
-                # logger.info("nb compteur_de_traitement session %s" % ( len(objectxmpp.compteur_de_traitement) ))
                 del objectxmpp.compteur_de_traitement[sessionid]
         # ______________________________________
 
@@ -1113,7 +1102,6 @@ def read_conf_assessor(objectxmpp):
                     str(x.strip()) for x in paramkeyAES32.split(",") if x.strip() != ""
                 ]
 
-                # objectxmpp.keyAES32 = Config.get('parameters', 'keyAES32')
                 if len(objectxmpp.assessor_agent_keyAES32) > 0:
                     for keyAES32items in objectxmpp.assessor_agent_keyAES32:
                         if len(keyAES32items) != 32:

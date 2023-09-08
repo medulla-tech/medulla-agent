@@ -386,8 +386,6 @@ def scheduledeployrecoveryjob(self):
         )
         for machine in machines_scheduled_deploy:
             msglog = []
-            # datetime_startcmd = datetime.strptime(machine['startcmd'], '%Y-%m-%d %H:%M:%S')
-            # datetime_endcmd = datetime.strptime(machine['startcmd'], '%Y-%m-%d %H:%M:%S')
             UUID = machine["inventoryuuid"]
 
             resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
@@ -1410,7 +1408,6 @@ def applicationdeploymentjson(
     else:
         state = "DEPLOYMENT START"
         data["wol"] = 0
-        # data['advanced']['syncthing'] = 1
         if (
             data["advanced"]
             and data["advanced"]["grp"] is not None
@@ -1430,7 +1427,6 @@ def applicationdeploymentjson(
                 encodebase64=False,
                 prefix=prefixcommanddeploy,
             )
-            # state = "DEPLOYMENT SYNCTHING"
             result = json.dumps(data, indent=4)
             msg.append("Starting peer deployment on machine %s" % jidmachine)
         else:

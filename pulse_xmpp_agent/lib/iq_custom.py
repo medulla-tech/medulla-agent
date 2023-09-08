@@ -35,7 +35,6 @@ import threading
 import logging
 import traceback
 
-# from collections import OrderedDict
 from pprint import pprint
 import uuid
 import json
@@ -281,9 +280,6 @@ class iq_value:
             lines.append("")
         return "\n".join(lines)
 
-    # def __str__(self):
-    # """
-    # Retourne une représentation formatée du dictionnaire sous forme de chaîne de caractères.
 
     # Returns:
     # str: La représentation formatée du dictionnaire.

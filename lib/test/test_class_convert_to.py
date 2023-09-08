@@ -320,8 +320,6 @@ class TestConvert(unittest.TestCase):
     def test_list_to_set(self):
         self.assertEqual(convert.list_to_set(["a", "b", "a", "c"]), {"a", "b", "c"})
 
-    # def test_set_to_list(self):
-    # self.assertEqual(convert.set_to_list({"a", "b", "c"}), ["a", "b", "c"])
 
     def test_dict_to_list(self):
         self.assertEqual(
@@ -360,7 +358,6 @@ class TestConvert(unittest.TestCase):
             {"id": [1, 2]},
         ]
         columns = convert.convert_rows_to_columns(data)
-        # self.assertEqual(columns, expected_columns)
         self.assertCountEqual(columns, expected_columns)
 
     def test_convert_columns_to_rows(self):

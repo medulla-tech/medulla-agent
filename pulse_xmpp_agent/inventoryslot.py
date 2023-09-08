@@ -10052,20 +10052,10 @@ class configuration:
             self.charge_conf(Config)
 
     def charge_conf(self, Config):
-        # if  Config.has_option("connection", "password"):
-        # self.Password=Config.get('connection', 'password')
 
-        # if  Config.has_option("connection", "port"):
-        # self.Port = Config.get('connection', 'port')
 
-        # if  Config.has_option("connection", "server"):
-        # self.Server=Config.get('connection', 'server')
 
-        # if  Config.has_option("connection", "agentname"):
-        # self.Agentname=Config.get('connection', 'agentname')
 
-        # if  Config.has_option("connection", "domain"):
-        # self.Domain=Config.get('connection', 'domain')
 
         if Config.has_option("global", "log_level"):
             self.log_level = Config.get("global", "log_level")
@@ -10078,7 +10068,6 @@ class configuration:
         else:
             self.nbthreadmax = None
 
-        # self.Jid = "%s@%s"%(self.Agentname, self.Domain,)
 
         # global
         if self.log_level == "INFO":
@@ -10302,7 +10291,6 @@ def createDaemon(opts, conf):
 
 def doTask(opts, conf):
     logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
-    # logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     if opts.consoledebug:
         logging.basicConfig(
             level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -10409,9 +10397,6 @@ if __name__ == "__main__":
         help="nomber thread maximun",
     )
 
-    # optp.add_option("-p", "--password",
-    # dest="password", default=None,
-    # help="password connection xmpp")
 
     # optp.add_option("-P", "--port",
     # dest="port" default=None,
@@ -10436,17 +10421,9 @@ if __name__ == "__main__":
     if opts.url is not None:
         conf.Url = opts.url
 
-    # if opts.jid != None:
-    # conf.Jid = opts.jid
 
-    # if opts.password != None:
-    # conf.Password = str(opts.password)
 
-    # if opts.port != None:
-    # conf.Port = int(opts.port)
 
-    # if opts.server != None:
-    # conf.Server = str(opts.server)
 
     if opts.numberbyseconde is not None:
         conf.Nbmessage = float(opts.numberbyseconde)

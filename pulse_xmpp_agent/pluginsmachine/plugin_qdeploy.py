@@ -256,7 +256,6 @@ def cleandescriptor(datasend):
             datasend["descriptor"]["sequence"] = datasend["descriptor"]["win"][
                 "sequence"
             ]
-            # del datasend['descriptor']['win']['sequence']
             del datasend["descriptor"]["win"]
         except BaseException:
             return False
@@ -273,7 +272,6 @@ def cleandescriptor(datasend):
             datasend["descriptor"]["sequence"] = datasend["descriptor"]["mac"][
                 "sequence"
             ]
-            # del datasend['descriptor']['Macos']['sequence']
             del datasend["descriptor"]["mac"]
         except BaseException:
             return False

@@ -401,7 +401,6 @@ class functionsynchroxmpp:
                             "w",
                         )
                         file.close()
-                        # xmppobject.networkMonitor()
                         xmppobject.reconfagent()
                     result["result"]["informationresult"][info_ask] = (
                         "action force " "reconfiguration for" % xmppobject.boundjid.bare

@@ -14,7 +14,6 @@ import os
 import configparser
 import re
 
-# import MySQLdb
 import traceback
 import sys
 
@@ -37,11 +36,6 @@ def schedule_main(xmppobject):
     logger.info("=================================================\n")
     return
 
-    # if xmppobject.config.agenttype in ["relayserver"]:
-    # try:
-    # pkgsdata = pkgsbase(xmppobject)
-    # if xmppobject.num_call_scheduling_ars_synchronization == 0:
-    # __read_conf_scheduling_ars_synchronization(xmppobject, pkgsdata)
 
     # lien_obj = lncreate(
     # xmppobject.config.list_folder_sources,
@@ -208,47 +202,17 @@ def schedule_main(xmppobject):
     # pkgsdata.disconect_pkgs()
 
 
-# def __read_conf_scheduling_ars_synchronization(xmppobject, pkgsdata):
-# """
-# Read the plugin configuration
-# The xmppobject.config.pathdirconffile contains the location of the configuration folder.
-# """
 
-# namefichierconf = plugin["NAME"] + ".ini"
-## path cf function directoryconffile() for oss and type agent
 
-# xmppobject.pathfileconfscheduling_ars_synchronization = os.path.join(
-# xmppobject.config.nameplugindir, namefichierconf
-# )
-# logger.info(
-# "Read Configuration in File %s"
-# % xmppobject.pathfileconfscheduling_ars_synchronization
-# )
 
 ## application des valeurs par default
-# fgpp = os.path.abspath(
-# os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "INFOSTMP")
-# )
 
-# path_packageagent = os.path.join(fgpp, "package_agent")
 
-# if not os.path.exists(path_packageagent):
-# os.mkdir(path_packageagent)
-# os.chmod(path_packageagent, 0o777)
 
 ## creation base fingerprint
-# pakage_print_fingers_base = os.path.join(path_packageagent, "base")
 
-# if not os.path.exists(pakage_print_fingers_base):
-# os.mkdir(pakage_print_fingers_base)
-# os.chmod(pakage_print_fingers_base, 0o777)
 
-# xmppobject.config.pakage_print_fingers_base = pakage_print_fingers_base
 
-# logger.info("%s" % xmppobject.config.pakage_print_fingers_base)
-# xmppobject.config.list_folder_sources = ["/var/lib/pulse2/packages/sharing/global"]
-# xmppobject.config.location_packages = "/var/lib/pulse2/packages"
-# xmppobject.config.modulo = 20
 
 ## FIXME: Implement me
 ## xmppobject.config.xmppmaster_dbhost = "localhost"
@@ -264,7 +228,6 @@ def schedule_main(xmppobject):
 # xmppobject.config.pkgs_dbport = 3306
 # xmppobject.config.pkgs_connect_timeout = 15
 
-# xmppobject.config.debug_info_ars_synchro = False
 
 # if not os.path.isfile(xmppobject.pathfileconfscheduling_ars_synchronization):
 # logger.warning(
@@ -284,31 +247,6 @@ def schedule_main(xmppobject):
 # xmppobject.pathfileconfscheduling_ars_synchronization + ".local"
 # )
 
-# if Config.has_section("global"):
-# if Config.has_option("global", "debug_info"):
-# xmppobject.config.debug_info_ars_synchro = Config.getboolean(
-# "global", "debug_info"
-# )
-# if Config.has_option("global", "location_folder_packages"):
-# xmppobject.config.location_packages = Config.get(
-# "global", "location_folder_packages"
-# )
-# if Config.has_option("global", "list_folder_sources"):
-# list_folder_sources = Config.get("global", "list_folder_sources")
-# xmppobject.config.list_folder_sources = [
-# str(x.strip())
-# for x in re.split(r"[;,:@\(\)\[\]\|\s]\s*", list_folder_sources)
-# if x.strip() != ""
-# ]
-## FIXME: Implement me
-## if Config.has_section("fingerprint"):
-## if Config.has_option("fingerprint",
-## "exclude"):
-## exclude = Config.get('fingerprint',
-## 'exclude')
-## xmppobject.config.exclude =  [str(x.strip()) \
-## for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', exclude) \
-## if x.strip() != "" ]
 
 ## if Config.has_option("fingerprint",
 ## "modulo"):
@@ -335,42 +273,8 @@ def schedule_main(xmppobject):
 ## "xmpp_master_dbport"):
 ## xmppobject.config.xmpp_master_dbport = Config.getint('xmpp_master_db',
 ## 'xmpp_master_dbport')
-# if Config.has_section("pkgsdatabase"):
-# if Config.has_option("pkgsdatabase", "pkgs_dbhost"):
-# xmppobject.config.pkgs_dbhost = Config.get(
-# "pkgsdatabase", "pkgs_dbhost"
-# )
-# if Config.has_option("pkgsdatabase", "pkgs_dbuser"):
-# xmppobject.config.pkgs_dbuser = Config.get(
-# "pkgsdatabase", "pkgs_dbuser"
-# )
-# if Config.has_option("pkgsdatabase", "pkgs_dbpasswd"):
-# xmppobject.config.pkgs_dbpasswd = Config.get(
-# "pkgsdatabase", "pkgs_dbpasswd"
-# )
-# if Config.has_option("pkgsdatabase", "pkgs_dbname"):
-# xmppobject.config.pkgs_dbname = Config.get(
-# "pkgsdatabase", "pkgs_dbname"
-# )
-# if Config.has_option("pkgsdatabase", "pkgs_dbport"):
-# xmppobject.config.pkgs_dbport = Config.getint(
-# "pkgsdatabase", "pkgs_dbport"
-# )
-# if Config.has_option("pkgsdatabase", "pkgs_connect_timeout"):
-# xmppobject.config.pkgs_connect_timeout = Config.getint(
-# "pkgsdatabase", "pkgs_connect_timeout"
-# )
 
 ## on recupere les id des packages
-# sql = (
-# """SELECT
-# id
-# FROM
-# pkgs.pkgs_shares_ars
-# WHERE
-# pkgs_shares_ars.jid LIKE '%s%%' limit 1;"""
-# % xmppobject.boundjid.user
-# )
 
 # result = pkgsdata.fetching(sql)
 # if xmppobject.config.debug_info_ars_synchro:
@@ -482,11 +386,6 @@ def schedule_main(xmppobject):
 # logger.info("insert result %s" % result)
 
 
-# class pkgsbase:
-# def __init__(self, xmppobject):
-# self.boolconnectionbase = False
-# self.dbconnectionpkgs = None
-# self.xmppobject = xmppobject
 
 # def connection_pkgs(self):
 # if self.boolconnectionbase:
@@ -516,18 +415,10 @@ def schedule_main(xmppobject):
 # logger.error("\n%s" % (traceback.format_exc()))
 # return self.dbconnectionpkgs
 
-# def disconect_pkgs(self):
-# if self.boolconnectionbase:
-# self.dbconnectionpkgs.close()
 
 # def is_connection_pkgs(self):
 # return self.boolconnectionbase
 
-# def fetching(self, query):
-# results = None
-# try:
-# if not self.boolconnectionbase:
-# self.connection_pkgs()
 
 # if self.boolconnectionbase:
 # try:
@@ -544,11 +435,6 @@ def schedule_main(xmppobject):
 # logger.error("Error: unable to connection %s" % str(e))
 # return results
 
-# def commit(self, query):
-# results = None
-# try:
-# if not self.boolconnectionbase:
-# self.connection_pkgs()
 
 # if self.boolconnectionbase:
 # try:
@@ -593,12 +479,6 @@ def schedule_main(xmppobject):
 # if not os.path.exists(self.path_abs_dest):
 # os.makedirs(self.path_abs_dest, mode)
 
-# def remove_links(self):
-# for f in os.listdir(self.path_abs_dest):
-# if len(f) == 36:
-# ln = os.path.join(self.path_abs_dest, f)
-# if not os.path.exists(ln) and os.path.islink(ln):
-# os.unlink(ln)
 
 # def create_symlink(self):
 # self.remove_links()

@@ -265,8 +265,6 @@ def read_conf_loadarscheck(objectxmpp):
     """
     logger.debug("Initialisation plugin : %s " % plugin["NAME"])
     namefichierconf = plugin["NAME"] + ".ini"
-    # objectxmpp.ars_server_list_status = []
-    # for _ in range(15): logger.info("read_conf_loadarscheck")
 
     pathfileconf = os.path.join(objectxmpp.config.pathdirconffile, namefichierconf)
     objectxmpp.ressource_scan_available = True

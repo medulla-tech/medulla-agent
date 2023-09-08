@@ -7,7 +7,6 @@ import sys
 import os
 import os.path
 
-# import traceback
 import logging
 import time
 from datetime import datetime

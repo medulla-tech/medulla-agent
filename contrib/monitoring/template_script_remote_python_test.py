@@ -104,10 +104,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # logging.basicConfig(level=logging.DEBUG,
-    # format='%(asctime)s %(message)s',
-    # filename = LOGFILE,
-    # filemode = 'a')
-    # logger.debug("Program started")
     eventstruct = loads_alert()
     main()

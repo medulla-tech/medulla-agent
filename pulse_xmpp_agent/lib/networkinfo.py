@@ -14,7 +14,6 @@ import psutil
 import os
 import sys
 
-# from distutils.util import strtobool
 from lib.utils import simplecommand, powerschellscript1ps1
 from . import utils
 
@@ -252,7 +251,6 @@ class networkagentinfo:
             else:
                 result = [x.rstrip("\n") for x in arrayresult]
             for item in result:
-                # result[i] = result[i].rstrip('\n')
                 d = item.split("@")
                 obj1[d[0]] = d[1]
         elif system == "systemd":
@@ -268,7 +266,6 @@ class networkagentinfo:
             else:
                 result = [x.rstrip("\n") for x in arrayresult]
             for i in result:
-                # i = i.rstrip('\n')
                 colonne = i.split(" ")
                 if "DHCPACK" in i:
                     ipdhcp = ""
@@ -370,10 +367,7 @@ class networkagentinfo:
         self.messagejson["dhcp"] = "False"
 
         for i in netifaces.interfaces():
-            # addrs = netifaces.ifaddresses(i)
             try:
-                # if_mac = addrs[netifaces.AF_LINK][0]['addr']
-                # if_ip = addrs[netifaces.AF_INET][0]['addr']
                 p = subprocess.Popen(
                     f"ipconfig getpacket {i}",
                     shell=True,

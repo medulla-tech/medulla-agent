@@ -141,15 +141,6 @@ def GetIpAddrTable():
     table = []
 
     for i in range(ipTable.dwNumEntries):
-        #        entry = dict(   ip_raw      = ipTable.table[i].dwAddr,
-        #                        ip_str      = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr)),
-        #                        mask        = ipTable.table[i].dwMask,
-        #                        bcast_addr  = ipTable.table[i].dwBCastAddr,
-        #                        reasm_size  = ipTable.table[i].dwReasmSize,
-        #                        type        = ipTable.table[i].wType,
-        #                    )
-        #        entry = dict( ip_str      = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr)),
-        #                      mask        = ipTable.table[i].dwMask)
         entry = socket.inet_ntoa(struct.pack("L", ipTable.table[i].dwAddr))
         table.append(str(entry))
     table.sort()
@@ -199,9 +190,6 @@ class NetworkManager(DesignatedWrapPolicy):
 
         self.main_thread_id = win32api.GetCurrentThreadId()
 
-    #    def on_timer(self):
-    #        thread_id = win32api.GetCurrentThreadId()
-    #        win32api.PostThreadMessage(self.main_thread_id, WM_QUIT, 0, 0);
 
     def ConnectionMade(self, *args):
         """Tell that the connection is up again."""
@@ -273,7 +261,6 @@ class NetworkManager(DesignatedWrapPolicy):
         global iplist
         pilemessage = deque()
         self.register()
-        # pythoncom.PumpMessages()
         service_logger.info("start listen network interface")
         while True:
             ctypes.windll.iphlpapi.NotifyAddrChange(0, 0)
@@ -301,7 +288,6 @@ class NetworkManager(DesignatedWrapPolicy):
                             datainterface["removedinterface"],
                         )
                     strchang = "%s]" % (strchang)
-                    # if len(datainterface['removedinterface']) > 0:
                     message = json.dumps(datainterface)
                     self.send_message(message)
                     service_logger.info("%s" % strchang)

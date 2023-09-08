@@ -39,7 +39,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                 "sessionid": sessionid,
                 "data": {"macaddress": ""},
             }
-            # listserverrelay = XmppMasterDatabase().listserverrelay()
             serverrelaylist = (
                 XmppMasterDatabase().random_list_ars_relay_one_only_in_cluster()
             )

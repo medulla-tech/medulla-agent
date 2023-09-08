@@ -18,32 +18,12 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.glpi import Glpi
 
-# from managepackage import managepackage
 
-# from lib.utils import name_random, file_put_contents, file_get_contents, utc2local
-# import re
-# from mmc.plugins.kiosk import handlerkioskpresence
-# from mmc.plugins.pkgs import get_xmpp_package
 
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
 
-# def handlerkioskpresence(
-# jid, id, os, hostname, uuid_inventorymachine, agenttype, classutil, fromplugin=False
-# ):
-# """
-# This function launch the kiosk actions when a prensence machine is active
-# """
-# logger.debug("kiosk handled")
-## print jid, id, os, hostname, uuid_inventorymachine, agenttype, classutil
-## get the profiles from the table machine.
-# machine = XmppMasterDatabase().getMachinefromjid(jid)
-# structuredatakiosk = get_packages_for_machine(machine)
-# datas = {
-# "subaction": "initialisation_kiosk",
-# "data": {"action": "packages", "packages_list": structuredatakiosk},
-# }
 
 # if not fromplugin:
 # send_message_to_machine(datas, jid, name_random(6, "initialisation_kiosk"))
@@ -63,14 +43,8 @@ plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt:
 # machine["ad_ou_user"].replace("\n", "").replace("\r", "").replace("@@", "/")
 # ]
 
-# tree = get_ou_tree()
 
-# OU = list(set(OUmachine + OUuser))
 
-# for ou in OU:
-# tmp = [ou]
-# partial = tree.search(ou)
-# partial.recursive_parent(tmp)
 
 ## search packages for the applied profiles
 # list_profile_packages = KioskDatabase().get_profile_list_for_OUList(tmp)
@@ -80,42 +54,13 @@ plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt:
 ## For mac os and linux, profile association will be done on the login name.
 # return
 
-# granted_packages = []
-# for element in list_profile_packages:
-# granted_packages += KioskDatabase().get_acknowledges_for_package_profile(
-# element[9], element[6], machine["lastuser"]
-# )
-# list_software_glpi = []
-# softwareonmachine = Glpi().getLastMachineInventoryPart(
-# machine["uuid_inventorymachine"],
-# "Softwares",
-# 0,
-# -1,
-# "",
-# {"hide_win_updates": True, "history_delta": ""},
-# )
-# for x in softwareonmachine:
-# list_software_glpi.append([x[0][1], x[1][1], x[2][1]])
 
-# structuredatakiosk = []
 
 ## Create structuredatakiosk for initialization
-# for packageprofile in list_profile_packages:
-# structuredatakiosk.append(
-# __search_software_in_glpi(
-# list_software_glpi, granted_packages, packageprofile, structuredatakiosk
-# )
-# )
-# logger.debug(
-# "initialisation kiosk %s on machine %s"
-# % (structuredatakiosk, machine["hostname"])
-# )
 
 # return structuredatakiosk
 
 
-# def get_ou_tree():
-# """This function returns the list of OUs
 
 # Returns:
 # TreeOU object which contains all the OUs.
@@ -124,10 +69,7 @@ plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt:
 # """
 
 ## Check the ldap config
-# config = PluginConfigFactory.new(BasePluginConfig, "base")
-# kconfig = KioskConfig("kiosk")
 
-# ous = []
 
 # if kconfig.use_external_ldap is False:
 # ous = XmppMasterDatabase().get_ou_list_from_machines()
@@ -136,58 +78,22 @@ plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt:
 # file = "/tmp/ous-" + id
 
 ## Get the parameters from the config file
-# ldapurl = config.get("authentication_externalldap", "ldapurl")
-# suffix = config.get("authentication_externalldap", "suffix_ou")
-# bindname = config.get("authentication_externalldap", "bindname")
-# bindpasswd = config.get("authentication_externalldap", "bindpasswd")
 
 ## Execute the command which get the OU list and write into the specified file
-# command = """ldapsearch -o ldif-wrap=no -H %s -x -b "%s" -D "%s" -w %s -LLL "(
-# objectClass=organizationalUnit)" dn > %s""" % (
-# ldapurl,
-# suffix,
-# bindname,
-# bindpasswd,
-# file,
-# )
 
 # os.system(command)
 
 ## Parse the file
-# with open(file, "r") as ou_file:
-# lines = ou_file.read().splitlines()
-## The lines that don't start by 'dn' are ignored
-# lines = [element for element in lines if element.startswith("dn")]
 
 ## Parse the result for each lines
-# for element in lines:
-## Lines starts with dn:: are get in base64 format
-# if element.startswith("dn:: "):
-# tmp = element.split("::")
-# ou = base64.b64decode(tmp[1])
 
-# else:
-# tmp = element.split(": ")
-# ou = tmp[1]
-## Format the result
-# ou = ou.replace(",OU=", " < ")
-# ou = ou.replace("OU=", "")
-# ou = re.sub(",DC=(.+)", "", ou)
 
-# ou = ou.split(" < ")
-# ou.reverse()
-# ou = "/".join(ou)
-## Save the content into a list
-# ous.append(ou)
 
 ## Delete the file
 # os.remove(file)
 # else:
 # return False
 
-# tree = TreeOU()
-# for line in ous:
-# tree.create_recursively(line)
 
 # return tree
 
@@ -231,13 +137,8 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     # pass
 
 
-# def parsexmppjsonfile(path):
-# datastr = file_get_contents(path)
 
-# datastr = re.sub(r"(?i) *: *false", " : false", datastr)
-# datastr = re.sub(r"(?i) *: *true", " : true", datastr)
 
-# file_put_contents(path, datastr)
 
 
 # def initialisekiosk(data, message, xmppobject):
@@ -251,40 +152,12 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # XmppMasterDatabase().updatemachineAD(machine['id'], user, data['oumachine'], data['ouuser'])
 
 
-# initializationdatakiosk = handlerkioskpresence( message['from'],
-# machine['id'],
-# machine['platform'],
-# machine['hostname'],
-# machine['uuid_inventorymachine'],
-# machine['agenttype'],
-# classutil = machine['classutil'],
-# fromplugin = True)
-
-# datasend = {
-# "sessionid" : name_random(6, "initialisation_kiosk"),
-# "action" : "kiosk",
-# "data" : initializationdatakiosk
-# }
-# xmppobject.send_message(mto= message['from'],
-# mbody=json.dumps(datasend),
-# mtype='chat')
 
 
-# def deploypackage(data, message, xmppobject, sessionid):
-# machine =  XmppMasterDatabase().getMachinefromjid( message['from'])
+
 
 ## Get the actual timestamp in utc format
-# current_date = datetime.datetime.utcnow()
-# current_date = current_date.replace(tzinfo=pytz.UTC)
-# section = ""
 
-# if "utcdatetime" in data:
-# date_str = data["utcdatetime"].replace("(","")
-# date_str = date_str.replace(")","")
-# date_list_tmp = date_str.split(",")
-# date_list = []
-# for element in date_list_tmp:
-# date_list.append(int(element))
 
 # sent_datetime = datetime.datetime(date_list[0],
 # date_list[1],
@@ -344,33 +217,11 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # print str(e)
 # traceback.print_exc(file=sys.stdout)
 
-# idtarget = target['id']
 
-# MscDatabase().xmpp_create_CommandsOnHost(commandid,
-# idtarget,
-# machine['hostname'],
-# commandstop,
-# commandstart)
 
 ## Write advanced parameter for the deployment
-# XmppMasterDatabase().addlogincommand(
-# nameuser,
-# commandid,
-# "",
-# "",
-# "",
-# "",
-# section,
-# 0,
-# 0,
-# 0,
-# 0,
-# {})
 
-# sessionid = name_random(5, "deploykiosk_")
-# name = managepackage.getnamepackagefromuuidpackage(data['uuid'])
 
-# path = managepackage.getpathpackagename(name)
 
 # descript = managepackage.loadjsonfile(os.path.join(path, 'xmppdeploy.json'))
 # parsexmppjsonfile(os.path.join(path, 'xmppdeploy.json'))
@@ -429,16 +280,3 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # machine['macaddress'])
 
 ## Convert install_date to timestamp and send it to logs
-# timestamp_install_date = int(time.mktime(install_date.timetuple()))
-# xmppobject.xmpplog("Start deploy on machine %s"%jidmachine,
-# type='deploy',
-# sessionname=sessionid,
-# priority=-1,
-# action="",
-# who=nameuser,
-# how="",
-# why=xmppobject.boundjid.bare,
-# module="Deployment | Start | Creation",
-# date=timestamp_install_date,
-# fromuser=nameuser,
-# touser="")

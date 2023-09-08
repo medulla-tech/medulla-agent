@@ -13,7 +13,6 @@ import re
 import traceback
 import sys
 
-# from sets import Set
 import datetime
 import calendar
 import hashlib
@@ -57,14 +56,10 @@ from sqlalchemy.exc import OperationalError
 
 # TODO rename location into entity (and locations in location)
 
-# from mmc.plugins.glpi.config import GlpiConfig
-# from mmc.plugins.glpi.utilities import complete_ctx
-# from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
 
-# from mmc.plugins.dyngroup.config import DGConfig
 from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
@@ -648,7 +643,6 @@ class Glpi84(DatabaseHelper):
             Column("manufacturers_id", Integer, ForeignKey("glpi_manufacturers.id")),
             Column("name", String(255), nullable=False),
             Column("serial", String(255), nullable=False),
-            # Column('license_id', String(255), nullable=True),
             Column("is_deleted", Integer, nullable=False),
             Column("is_template", Integer, nullable=False),
             Column("states_id", Integer, ForeignKey("glpi_states.id"), nullable=False),
@@ -5037,7 +5031,6 @@ class Glpi84(DatabaseHelper):
         entity.entities_id = parent_id  # parent
         entity.name = entity_name
         entity.comment = comment
-        # entity.level = parent_id
         entity = self.updateEntityCompleteName(entity)
         session.commit()
         session.flush()
@@ -5677,12 +5670,9 @@ class Machine(object):
             ["owner", owner_login],
             ["owner_firstname", owner_firstname],
             ["owner_realname", owner_realname],
-            # ['tech_num',self.tech_num],
             ["os", self.operatingsystems_id],
             ["os_version", self.operatingsystemversions_id],
             ["os_sp", self.operatingsystemservicepacks_id],
-            # ['license_number',self.license_number],
-            # ['licenseid',self.license_id],
             ["location", self.locations_id],
             ["domain", self.domains_id],
             ["network", self.networks_id],

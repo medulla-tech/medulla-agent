@@ -27,13 +27,8 @@ class SingletonDecorator:
 
 @SingletonDecorator
 class confParameter:
-    # dbport = None
-    # dbsslenable = False
 
-    # check_db_enable = False
-    # check_db_interval = 300
 
-    # filter_on = None
 
     # state section
     # orange = 10
@@ -114,7 +109,6 @@ class confParameter:
         # list des noms des plugins start executer au demarage.
         # le code de ces plugins est execute au demarage. il commence par start
 
-        # pluginlist = 'load_plugins_base, load_plugin_base_scheduled,autoupdateagent'
         self.pluginliststart = "loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration"
         if Config.has_option("plugins", "pluginliststart"):
             self.pluginliststart = Config.get("plugins", "pluginliststart")

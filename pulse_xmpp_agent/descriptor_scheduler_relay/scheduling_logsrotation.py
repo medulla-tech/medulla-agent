@@ -91,7 +91,6 @@ def schedule_main(objectxmpp):
                         f"{objectxmpp.config.logfile}.1.zip",
                         zipfile.ZIP_DEFLATED,
                     )
-                    # shutil.copyfile(objectxmpp.config.logfile, objectxmpp.config.logfile + '.1')
             except BaseException:
                 pass
         elif objectxmpp.compress in ["gzip", "gz"]:  # decompress to stdout zcat

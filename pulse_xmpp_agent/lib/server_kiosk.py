@@ -219,7 +219,6 @@ class process_tcp_serveur:
                 self.sock.close()
                 self.logger.error("Quit connection kiosk")
                 break
-        # self.quitserverkiosk = True
         self.logger.info("QUIT process tcp serveur")
         self.sock.close()
 
