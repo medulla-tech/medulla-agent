@@ -16,7 +16,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug(f'call {plugin} from {message["from"]}')
     logger.debug("###################################################")
     namefilebool = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "..", "BOOL_LAUNCHER_NO_CHECK_AGENT"
+        os.path.dirname(os.path.realpath(__file__)),
+        "..",
+        "BOOL_LAUNCHER_NO_CHECK_AGENT",
     )
     file = open(namefilebool, "w")
     file.close()
