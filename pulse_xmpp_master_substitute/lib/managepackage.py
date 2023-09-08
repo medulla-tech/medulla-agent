@@ -55,7 +55,7 @@ class managepackage:
             It returns the content of the JSON file
         """
         if os.path.exists(filename):
-            with open(filename, 'r') as file:
+            with open(filename, "r") as file:
                 data = json.load(file)
                 return data
         else:
