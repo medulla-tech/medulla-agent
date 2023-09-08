@@ -289,7 +289,6 @@ prepare_mandatory_includes() {
 		mkdir rsync
 		rm -f rsync.zip
 		cp ${FOLDERNAME}/bin/* rsync
-		rm rsync/cygcrypto-50.dll
 		rm rsync/ssh-keygen.exe
 		rm rsync/ssh.exe
         rm rsync/ssh-agent.exe
