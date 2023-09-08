@@ -218,8 +218,6 @@ class XmppMasterDatabase(DatabaseHelper):
         self.logger = logging.getLogger()
         self.logger.debug("Xmpp activation")
         self.engine = None
-        # self.dbpoolrecycle = 60
-        # self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
@@ -823,8 +821,6 @@ class XmppMasterDatabase(DatabaseHelper):
                     Command_qa.command_start
                     >= (datetime.now() - timedelta(seconds=during_the_last_seconds))
                 )
-            # nb = self.get_count(deploylog)
-            # lentaillerequette = session.query(func.count(distinct(Deploy.title)))[0]
 
             nbtotal = self.get_count(command_qa)
             if start != "" and stop != "":
@@ -1230,7 +1226,6 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         get Glpi_entity by glpi id machine
         """
-        # logging.getLogger().error("get_Glpi_entity")
         try:
             result_entity = (
                 session.query(Glpi_entity)
@@ -1255,7 +1250,6 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         get Glpi_location by glpi id machine
         """
-        # logging.getLogger().error("get_Glpi_location")
         try:
             result_location = (
                 session.query(Glpi_location)
@@ -1282,7 +1276,6 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         get Glpi_register_key by glpi id machine and name key reg
         """
-        # logging.getLogger().error("get_Glpi_register_key %s %s" %(machines_id, name) )
         try:
             result_register_key = (
                 session.query(Glpi_Register_Keys)
@@ -1393,7 +1386,6 @@ class XmppMasterDatabase(DatabaseHelper):
         create Glpi_Register_Keys
         """
 
-        # logging.getLogger().error("create %s = %s" %(name, value))
 
         if machines_id is None or machines_id == "" or name is None or name == "":
             return None
@@ -1428,7 +1420,6 @@ class XmppMasterDatabase(DatabaseHelper):
     def updateMachineGlpiInformationInventory(
         self, session, glpiinformation, idmachine, data
     ):
-        # logging.getLogger().warning("data %s" % data)
         retentity = self.create_Glpi_entity(
             glpiinformation["data"]["complete_entity"][0],
             glpiinformation["data"]["entity"][0],
@@ -2398,7 +2389,6 @@ class XmppMasterDatabase(DatabaseHelper):
             l = [x[0] for x in result][0]
             return l
         except Exception as e:
-            # logging.getLogger().error("addPresenceMachine %s" % jid)
             logging.getLogger().error(str(e))
             return ""
 
@@ -2543,9 +2533,6 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def update_status_deploy_end(self, session):
         """this function schedued by xmppmaster"""
-        # session.query(Deploy).filter( and_( Deploy.endcmd < datenow,
-        # Deploy.state == "DEPLOYMENT START")
-        # ).update({ Deploy.state : "DEPLOYMENT ERROR"})
         datenow = datetime.now()
         result = (
             session.query(Deploy)
@@ -2687,7 +2674,6 @@ class XmppMasterDatabase(DatabaseHelper):
             startcmd = datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S")
             endcmd = datetime.fromtimestamp(end).strftime("%Y-%m-%d %H:%M:%S")
         except Exception as e:
-            # logger.error(str(e))
             pass
         # del doublon macadess
         if macadress is not None:
@@ -2750,7 +2736,6 @@ class XmppMasterDatabase(DatabaseHelper):
         # syncthing and set stat to 2
         self.chang_status_deploy_syncthing(datenow)
         cluster = self.clusterlistars()
-        # keysyncthing  = getMachinefromjid(jid)
         cluster_pris_encharge = []
         gr_pris_en_charge = -1
         command_pris_en_charge = -1
@@ -4409,18 +4394,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 listchamp.append(linelogs.sessionname)
             if headercolumn != "" and "text" in headercolumn:
                 listchamp.append(linelogs.text)
-            # listchamp.append(linelogs.type)
-            # listchamp.append(linelogs.action)
-            # listchamp.append(linelogs.module)
-            # listchamp.append(linelogs.how)
-            # istchamp.append(linelogs.who)
-            # listchamp.append(linelogs.why)
-            # listchamp.append(linelogs.priority)
-            # listchamp.append(linelogs.touser)
-            # listchamp.append(linelogs.sessionname)
-            # listchamp.append(linelogs.text)
             ret["data"].append(listchamp)
-            # index = index + 1
         return ret
 
     @DatabaseHelper._sessionm
@@ -4437,16 +4411,8 @@ class XmppMasterDatabase(DatabaseHelper):
         if state:
             deploylog = deploylog.filter(Deploy.state == state)
 
-        # TODO: filter
-        # if filt:
-        # deploylog = deploylog.filter( or_(Deploy.state.like('%%%s%%'%(filt)),
-        # Deploy.pathpackage.like('%%%s%%'%(filt)),
-        # Deploy.start.like('%%%s%%'%(filt)),
-        # Deploy.login.like('%%%s%%'%(filt)),
-        # Deploy.host.like('%%%s%%'%(filt))))
         nb = self.get_count(deploylog)
         lentaillerequette = session.query(func.count(distinct(Deploy.title)))[0]
-        # deploylog = deploylog.group_by(Deploy.title)
         deploylog = deploylog.order_by(desc(Deploy.id))
 
         nb = self.get_count(deploylog)
@@ -4481,7 +4447,6 @@ class XmppMasterDatabase(DatabaseHelper):
         ret["lentotal"] = lentaillerequette[0]
         ret["lenquery"] = nb
         for linedeploy in result:
-            # ret['tabdeploy']['len'].append(linedeploy[1])
             ret["tabdeploy"]["state"].append(linedeploy.state)
             ret["tabdeploy"]["pathpackage"].append(
                 linedeploy.pathpackage.split("/")[-1]
@@ -4516,21 +4481,11 @@ class XmppMasterDatabase(DatabaseHelper):
             )
         if state:
             deploylog = deploylog.filter(Deploy.state == state)
-        # else:
-        # deploylog = deploylog.filter( Deploy.state == "DEPLOYMENT START")
 
-        # if filt:
-        # deploylog = deploylog.filter(or_(Deploy.state.like('%%%s%%'%(filt)),
-        # Deploy.pathpackage.like('%%%s%%'%(filt)),
-        # Deploy.start.like('%%%s%%'%(filt)),
-        # Deploy.login.like('%%%s%%'%(filt)),
-        # Deploy.host.like('%%%s%%'%(filt))))
 
         nb = self.get_count(deploylog)
 
         lentaillerequette = session.query(func.count(distinct(Deploy.title)))[0]
-        # deploylog = deploylog.group_by(Deploy.title)
-        # deploylog = deploylog.add_column(func.count(Deploy.title))
         deploylog = deploylog.order_by(desc(Deploy.id))
 
         nb = self.get_count(deploylog)
@@ -4564,7 +4519,6 @@ class XmppMasterDatabase(DatabaseHelper):
         ret["lentotal"] = lentaillerequette[0]
         ret["lenquery"] = nb
         for linedeploy in result:
-            # ret['tabdeploy']['len'].append(linedeploy[1])
             ret["tabdeploy"]["state"].append(linedeploy.state)
             ret["tabdeploy"]["pathpackage"].append(
                 linedeploy.pathpackage.split("/")[-1]
@@ -4668,12 +4622,10 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         lenrequest = [x for x in result]
 
-        # lentaillerequette = session.query(func.count(distinct(Deploy.title)))[0]
         deploylog = deploylog.group_by(Deploy.title)
 
         deploylog = deploylog.order_by(desc(Deploy.id))
 
-        # deploylog = deploylog.add_column(func.count(Deploy.title))
         if min is not None and max is not None:
             deploylog = deploylog.offset(int(min)).limit(int(max) - int(min))
         result = deploylog.all()
@@ -4799,7 +4751,6 @@ class XmppMasterDatabase(DatabaseHelper):
 
         deploylog = deploylog.order_by(desc(Deploy.id))
 
-        # deploylog = deploylog.add_column(func.count(Deploy.title))
 
         nbfilter = self.get_count(deploylog)
 
@@ -4830,7 +4781,6 @@ class XmppMasterDatabase(DatabaseHelper):
             },
         }
 
-        # ret['lentotal'] = nbfilter
         ret["lentotal"] = lentaillerequette[0]
         for linedeploy in result:
             ret["tabdeploy"]["state"].append(linedeploy.state)
@@ -5606,13 +5556,7 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         return [x for x in result]
 
-    # @DatabaseHelper._sessionm
-    # def algoruledefault(self, session, subnetmachine, classutilMachine = "private",  enabled=1):
-    # pass
 
-    # @DatabaseHelper._sessionm
-    # def algorulegeo(self, session, subnetmachine, classutilMachine = "private",  enabled=1):
-    # pass
 
     @DatabaseHelper._sessionm
     def Orderrules(self, session):
@@ -5659,7 +5603,6 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
         except Exception as e:
-            # logging.getLogger().error("addPresenceNetwork : %s " % new_network)
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -5690,7 +5633,6 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
             except Exception as e:
-                # logging.getLogger().error("addPresenceNetwork : %s " % new_network)
                 logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -5873,7 +5815,6 @@ class XmppMasterDatabase(DatabaseHelper):
                 id_machineinventory,
                 idmachine,
             )
-            # logging.getLogger().debug("sql %s" % sql)
             updatedb = session.execute(sql)
             session.commit()
             session.flush()
@@ -6088,9 +6029,6 @@ class XmppMasterDatabase(DatabaseHelper):
             # ARS['children'] = builddatajson
             # print listmachinesstring
             builddatajson["children"].append(ARS)
-        # import pprint
-        # pp = pprint.PrettyPrinter(indent=4)
-        # pp.pprint(builddatajson)
 
         with open(pathfile, "w") as outfile:
             json.dump(builddatajson, outfile, indent=4)
@@ -6362,7 +6300,6 @@ class XmppMasterDatabase(DatabaseHelper):
                         xmppmaster.machines.jid = '%s';"""
                 % jid
             )
-            # logging.getLogger().debug(" sql %s" % sql)
             id = session.execute(sql)
             session.commit()
             session.flush()
@@ -7087,7 +7024,6 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
                 if ars:
-                    # result1 = [(m.ipconnection,m.port,m.jid,m.urlguacamole)for m in ars]
                     try:
                         result2 = {
                             m.jid: [
@@ -7240,7 +7176,6 @@ class XmppMasterDatabase(DatabaseHelper):
                 resultproxy = session.execute(sql)
                 session.commit()
                 session.flush()
-                # ret = self._return_dict_from_dataset_mysql(resultproxy)
                 for listconfsubstituteitem in listconfsubstitute["conflist"]:
                     # reinitialise les lists
                     listconfsubstitute[listconfsubstituteitem] = []
@@ -8295,29 +8230,7 @@ class XmppMasterDatabase(DatabaseHelper):
             except ValueError:
                 pass
 
-        # f=r"\[\'.*\'\]"
-        # r=re.compile(f)
-        # data = resultproxy['mon_rules_binding']
-        # data = data.replace("resultbinding =","")
-        # data = data.replace("resultbinding  =","")
-        # data = data.replace("resultbinding   =","")
 
-        # chaine=r.findall(data)
-        # chaine = chaine[0].replace("[","")
-        # chaine = chaine.replace("'","")
-        # chaine = chaine.replace("]",",")
-        # params= [x.strip() for x in chaine.split(",") if x.strip() != ""]
-        # f=r"=.*else"
-        # r=re.compile(f)
-        # valuebind=r.findall(data)
-        # valuebind=valuebind[0].replace("=","")
-        # valuebind=valuebind.replace("else","")
-        # resultproxy["valuebind"]=valuebind
-        # nb=0
-        # for val in params:
-        # nameparam="param%s"%nb
-        # resultproxy[nameparam]=val
-        # nb=nb+1
         return resultproxy
 
     @DatabaseHelper._sessionm
@@ -8872,8 +8785,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         "%a_%d%b%Y_%Hh%M"
                     )
                     if z["type_event"] == "ack":
-                        # rd = getRandomName(2, pref=datetime.now().strftime("%a_%d%b%Y_%Hh%M"))
-                        # rd = getRandomName(2, pref="%s"%time.time())
                         self.logger.debug("ack event %s" % idevent)
                         rd = "%s" % time.time()
                         msgfrom = "%s" % msg_from.split("/")[0]
@@ -9509,7 +9420,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             agenttype,
             device_type,
         )
-        # logging.getLogger().debug("sql %s"%sql)
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -10054,13 +9964,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         if res is not None:
             for update_package in res:
                 update_package.in_process = True
-                # self.logger.debug("get_all_Up_action_update_packages : %s %s %s %s %s %s" % (update_package.id,
-                # update_package.action,
-                # update_package.date.isoformat(),
-                # update_package.in_process,
-                # update_package.packages,
-                # update_package.option,
-                # ))
                 result.append(
                     {
                         "id": update_package.id,
@@ -10082,7 +9985,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         get list de tout les pid des process de package en cour sur le serveur
         """
         result = []
-        # self.logger.debug("get_all_Up_action_update_packages ")
         res = (
             session.query(
                 Up_action_update_packages.id, Up_action_update_packages.pid_run
@@ -10286,7 +10188,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             updateid IN (%s); """ % ",".join(
                     indata
                 )
-                # logging.getLogger().error("sql history_list_kb : %s" %sql)
                 req = session.execute(sql)
                 session.commit()
                 session.flush()
@@ -10386,7 +10287,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         AND "%s" REGEXP userjid_regexp;"""
                 % user
             )
-            # self.logger.info("sql : %s" % sql)
             req = session.execute(sql)
             session.commit()
             session.flush()
@@ -10397,7 +10297,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     elif x[1].lower() == "id":
                         up.append(x[0])
             ret = {"update_id": up, "kb": kb}
-            # ret = self._return_dict_from_dataset_mysql(req)
         except Exception:
             logging.getLogger().error(
                 "sql test_black_list : %s" % traceback.format_exc()
@@ -10573,13 +10472,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 tablename,
                 valchamp,
             )
-            # self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
             rest = session.execute(sql)
             session.commit()
             session.flush()
             if rest:
                 ret = [elt for elt in rest][0]
-                # self.logger.info("is_exist_value_in_table ret: %s" % ret)
                 return True if ret[0] == 1 else False
         except Exception:
             logging.getLogger().error(
@@ -10667,7 +10564,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 updateid,
                 validity_day,
             )
-            # self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
             session.execute(sql)
             session.commit()
             session.flush()
@@ -10743,7 +10639,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 updateidreduit,
                 updateidreduit,
             )
-            # self.logger.info("delete_in_gray_list : %s" % sql)
             session.execute(sql)
             session.commit()
             session.flush()

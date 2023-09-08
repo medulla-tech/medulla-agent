@@ -212,10 +212,7 @@ class networkagentinfo:
         self.messagejson["dhcp"] = "False"
 
         for i in netifaces.interfaces():
-            # addrs = netifaces.ifaddresses(i)
             try:
-                # if_mac = addrs[netifaces.AF_LINK][0]['addr']
-                # if_ip = addrs[netifaces.AF_INET][0]['addr']
                 p = subprocess.Popen(
                     "ipconfig getpacket %s" % i,
                     shell=True,

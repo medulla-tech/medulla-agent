@@ -268,7 +268,6 @@ class MUCBot(ClientXMPP):
         self.config = conf
 
         self.ipconnection = self.config.Server
-        # self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
@@ -654,7 +653,6 @@ class MUCBot(ClientXMPP):
                 self.update_plugin,
                 repeat=True,
             )
-        # if not sys.platform.startswith('win'):
         self.schedule("check reconf file", 300, self.checkreconf, repeat=True)
 
         if self.config.netchanging == 1:
@@ -756,20 +754,7 @@ class MUCBot(ClientXMPP):
         self.RSA = MsgsignedRSA(self.boundjid.user)
         logger.info("The version of the agent is %s" % self.version_agent())
 
-        # if self.config.agenttype in ["relayserver"]:
-        #     from lib.manage_info_command import manage_infoconsole
 
-        #     self.qin = Queue(10)
-        #     self.qoutARS = Queue(10)
-        #     QueueManager.register("json_to_ARS", self.setinARS)
-        #     QueueManager.register("json_from_ARS", self.getoutARS)
-        #     QueueManager.register("size_nb_msg_ARS", self.sizeoutARS)
-        #     self.commandinfoconsole = manage_infoconsole(self.qin, self.qoutARS, self)
-        #     self.managerQueue = QueueManager(
-        #         ("", self.config.parametersscriptconnection["port"]),
-        #         authkey=self.config.passwordconnection.encode("utf-8"),
-        #     )
-        #     self.managerQueue.start()
 
         if sys.platform.startswith("win"):
             result = win32api.SetConsoleCtrlHandler(self._CtrlHandler, 1)
@@ -850,7 +835,6 @@ class MUCBot(ClientXMPP):
                     for z in childresult:
                         # composition message
                         z.tag = "{%s}data" % result
-                        # reply.reply(clear=False)
                 iq.send()
 
         def reply_error(iq, str_message_erreur):
@@ -867,7 +851,6 @@ class MUCBot(ClientXMPP):
                     for z in childresult:
                         # composition message
                         z.tag = "{%s}data" % messageerror
-                        # reply.reply(clear=False)
                 iq.send()
 
         logger.debug("traitement de iq get custom_xep")
@@ -919,7 +902,6 @@ class MUCBot(ClientXMPP):
         """
         if sys.platform.startswith("win"):
             cmd = "TASKKILL /F /PID %s /T" % self.pidprogrammprincipal
-            # logging.log(DEBUGPULSE, "cmd %s" % cmd)
             os.system(cmd)
         else:
             if self.config.agenttype in ["relayserver"]:
@@ -985,7 +967,6 @@ class MUCBot(ClientXMPP):
                     for z in childresult:
                         # composition message
                         z.tag = "{%s}data" % result
-                        # reply.reply(clear=False)
                 iq.send()
 
         def reply_error(iq, str_message_erreur):
@@ -1002,7 +983,6 @@ class MUCBot(ClientXMPP):
                     for z in childresult:
                         # composition message
                         z.tag = "{%s}data" % messageerror
-                        # reply.reply(clear=False)
                 iq.send()
 
         logger.debug("processing of iq get custom xep")
@@ -1091,7 +1071,6 @@ class MUCBot(ClientXMPP):
         il relit la conf...
         """
         self.brestartbot = True  # boucle reinitialise.
-        # setgetrestart(1)
         logging.log(
             DEBUGPULSE,
             "We restart the medulla agent for the machine %s" % self.boundjid.user,
@@ -1124,7 +1103,6 @@ class MUCBot(ClientXMPP):
         il faut reinitialiser adress et port de connection.
         """
         logger.error("CONNECTION FAILED")
-        # event_loop.close()
         if self.brestartbot:
             # on force 1 restart bot xmpp
             self.startdata = -1
@@ -1641,9 +1619,7 @@ class MUCBot(ClientXMPP):
             self.clean_old_partage_syncting()
         try:
             config = self.syncthing.get_config()  # content all config
-            # logger.debug("\n%s"%(json.dumps(config, indent=4 )))
         except Exception:
-            # logger.error("\n%s"%(traceback.format_exc()))
             return
         if len(config) == 0:
             return
@@ -1651,8 +1627,6 @@ class MUCBot(ClientXMPP):
             if self.pendingdevice_accept(config):
                 self.syncthingreconfigure = True
             config["pendingDevices"] = []
-            # self.syncthing.reload_config(config=config)
-            # config = self.syncthing.get_config() # content all config
         if "remoteIgnoredDevices" in config:
             config["remoteIgnoredDevices"] = []
         if "defaultFolderPath" in config["options"]:
@@ -2258,7 +2232,6 @@ class MUCBot(ClientXMPP):
         for index, elt in enumerate(self.levelcharge["machinelist"][:]):
             if elt == jidmachine:
                 del self.levelcharge["machinelist"][index]
-                # self.checklevelcharge(ressource = -1)
         self.levelcharge["charge"] = len(self.levelcharge["machinelist"])
 
     def signal_handler(self, signal, frame):
@@ -3893,11 +3866,6 @@ def servercherrypy(
         # They can be usefull to configure the server
         # ===
 
-        # server1.thread_pool = 30
-        # server1.ssl_module = 'pyopenssl'
-        # server1.ssl_certificate = '/home/ubuntu/my_cert.crt'
-        # server1.ssl_private_key = '/home/ubuntu/my_cert.key'
-        # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
 
         server1.subscribe()
         cherrypy.engine.start()
@@ -4059,7 +4027,6 @@ def doTask(
 
     elif sys.platform.startswith("win"):
         try:
-            # time.sleep(30)
             windowfilepid = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)),
                 "INFOSTMP",
@@ -4164,7 +4131,6 @@ class process_xmpp_agent:
         self.logger = logging.getLogger()
         self.process_restartbot = True
         while self.process_restartbot:
-            # self.restartbot = False
             self.process_restartbot = False
             self.logger.debug(
                 "____________________________________________________________"
@@ -4287,7 +4253,6 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE, "terminate manage data sharing")
     time.sleep(2)
     logging.log(DEBUGPULSE, "terminate scheduler")
-    # xmpp.scheduler.cancel()
     logging.log(DEBUGPULSE, "Waiting to stop kiosk server")
     logging.log(DEBUGPULSE, "QUIT")
     logging.log(DEBUGPULSE, "bye bye Agent")
@@ -4310,7 +4275,6 @@ def terminateserver(xmpp):
             aa = file_get_contents(pidfile).strip()
             logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa)
             cmd = "TASKKILL /F /PID %s /T" % pythonmainproces
-            # logging.log(DEBUGPULSE, "cmd %s" % cmd)
             os.system(cmd)
     os._exit(0)
 

@@ -647,11 +647,6 @@ def schedule_main(xmppobject):
                     cursor.execute(query)
                     count = cursor.rowcount
                     pulse_main_json["deployments"]["current"] = count
-                    # TODO
-                    # query = "SELECT id FROM xmppmaster.deploy WHERE state = 'DEPLOYMENT QUEUED'"
-                    # cursor.execute(query)
-                    # count = cursor.rowcount
-                    # pulse_json['deployments']['queued_at_relay'] = count
                     pulse_main_json["agents"] = {}
                     query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND enabled = 1"
                     cursor.execute(query)
@@ -678,8 +673,6 @@ def schedule_main(xmppobject):
                     cursor.execute(query)
                     count = cursor.rowcount
                     pulse_main_json["packages"]["total_global"] = count
-                    # TODO
-                    # pulse_json['packages']['corrupted'] = xxxx
                     cursor.close()
                     cnx.close()
                 except Exception as e:

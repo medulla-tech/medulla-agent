@@ -65,8 +65,6 @@ def copytree2(src, dst, symlinks=False):
         pass
     except OSError as why:
         errors.extend((src, dst, str(why)))
-    # if errors:
-    # raise shutil.Error(errors)
     return not errors
 
 
@@ -211,8 +209,6 @@ class Update_Remote_Agent:
             "replicator.py",
         ]
 
-        # for fichiername in [ x for x in os.listdir(self.dir_agent_base) if
-        # x[-3:]== ".py"]:
         for fichiername in list_script_python_for_update:
             self.directory["program_agent"][fichiername] = hashlib.md5(
                 file_get_contents(os.path.join(self.dir_agent_base, fichiername))

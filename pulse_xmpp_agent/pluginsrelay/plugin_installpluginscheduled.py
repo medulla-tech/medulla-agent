@@ -34,4 +34,3 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur):
             except BaseException:
                 print("Error: cannor write on file")
                 return
-            # msg = "install plugin scheduled %s on %s"%(data['pluginname'],message['to'].user)

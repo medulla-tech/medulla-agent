@@ -144,7 +144,6 @@ def plugin_loadshowregistration(self, msg, data):
         strlistplugin = ""
         if self.showplugins:
             logger.warning("ShowPlugins")
-            # logger.debug("Machine %s"%msg['from'])
             if "plugin" in data:
                 strlistplugin += "\nlist plugins on machine %s\n" % msg["from"]
                 strlistplugin += "|{0:35}|{1:10}|\n".format("Plugin Name", "Version")

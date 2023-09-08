@@ -92,20 +92,13 @@ def action(xmppobject, action):
         logger.debug("call plugin code %s " % (plugin))
         logger.debug("=====================================================")
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
-        # loop = asyncio.new_event_loop()
-        # asyncio.set_event_loop(loop)
 
-        # loop = asyncio.new_event_loop()
         if compteurcallplugin == 0:
             try:
                 logger.debug("=====================================================")
                 logger.debug("================ INITIALIZATION =====================")
                 logger.debug("=====================================================")
                 ## cette variale permet
-                # running=name_random(5, pref="running")
-                # setattr(xmppobject, running, True )
-                # logger.debug(" La variable %s est utiliser pour controler l'arret du serveur." % running)
-                # logger.debug("running %s" % running)
                 xmppobject.running_mmc = True
                 connexions_simultane = 10
                 read_conf__server_mmc_master(xmppobject)
@@ -226,8 +219,6 @@ def action(xmppobject, action):
                 server_socket_ipv4.close()
     except Exception as e:
         pass
-        # logger.error("Plugin loadarscheck, we encountered the error %s" % str(e))
-        # logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
 ## Fonction pour traiter la connexion en SSL dans un thread séparé
@@ -241,18 +232,8 @@ def process_connection_ssl(self, connection):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         logger.debug("JFKJFK REV MESSAGE")
-        # iq = self.Iq()
-        # iq['type'] = 'get'
-        # iq['to'] = "master_asse@pulse/115042525291666541091346"
-        # iq['from'] = self.boundjid.bare
-        # iq['id'] = 'get_roster'
 
-        # iq.send(callback=on_response, timeout=10)
-        # res = self.get_ars_key()
-        # self.dede("master_asse@pulse/115042525291666541091346", "", 15)
 
-        # logger.warning("recu iq %s" %res)
-        # logger.warning("type recu iq %s" %type(res))
 
         if (
             self.server_mmc_master_active_filter
@@ -418,7 +399,6 @@ def mast_serv_recv_dict(self, ssl_connect=None, message_dict=None, tocken=""):
             "to": "master@pulse/MASTER",
             "type": "chat",
         }
-        # if 'ret' not in message_dict:
         call_plugin(
             module,
             self,
@@ -437,10 +417,8 @@ def mast_serv_recv_dict(self, ssl_connect=None, message_dict=None, tocken=""):
         logger.debug("#############################################################")
         logger.debug("####################### traitement IQ #######################")
         logger.debug("#############################################################")
-        # result=self.iqsendpulse(to, message_dict, timeout = 30)
         iqc = iq_custom_xep(self, to, message_dict, timeout=30, sessionid=None)
         result = iqc.iq_send()
-        # logger.debug("le resultat is %s" % result)
         self.retour_result(ssl_connect, result)
 
     else:
@@ -600,7 +578,6 @@ class Configuration:
         with open(config_file, "w") as f:
             f.write("# file conf generation automatique" + (os.linesep) * 2)
             f.write("[ssl]" + os.linesep)
-            # f.write("UTILISER_SSL_OU_NON=%s" % xmppobject.server_mmc_master_use_ssl + os.linesep)
             f.write("keyfile=%s" % xmppobject.server_mmc_master_keyfile + os.linesep)
             f.write(
                 "certfile=%s" % xmppobject.server_mmc_master_certfile + (os.linesep) * 2
@@ -691,7 +668,6 @@ class Configuration:
     def creation_or_validite_key_certificat(
         self, xmppobject, path_file_cert_pam="/var/lib/pulse2/masterkey", valid_days=365
     ):
-        # logger.info("ecriture de /tmp/script_key.sh")
         script = """#!/bin/bash
         create_certificate() {
             valid_days=$1
@@ -792,9 +768,6 @@ def read_conf__server_mmc_master(xmppobject):
     )
     xmppobject.mast_serv_recv_dict = types.MethodType(mast_serv_recv_dict, xmppobject)
     xmppobject.retour_result = types.MethodType(retour_result, xmppobject)
-    # xmppobject.send_iq_synchrone = types.MethodType(send_iq_synchrone, xmppobject)
-    # xmppobject.on_response1 = types.MethodType(on_response1, xmppobject)
-    # xmppobject.on_timeout1 = types.MethodType(on_timeout1, xmppobject)
 
     logger.debug("creation fonction process_connection_ssl")
     xmppobject.process_connection_ssl = types.MethodType(

@@ -71,8 +71,6 @@ def read_conf_loadmastersubstitut(xmppobject):
 
     try:
         conffile_path = os.path.join(xmppobject.config.pathdirconffile, conffile_name)
-        # logger.info("file config : %s" % conffile_path)
-        # xmppobject.master_conf=Configuration(xmppobject, conffile_path)
     except Exception as e:
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
     xmppobject.loadmastersubstitut_code = types.MethodType(

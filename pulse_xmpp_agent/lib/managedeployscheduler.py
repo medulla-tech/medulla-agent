@@ -31,14 +31,12 @@ class manageschedulerdeploy:
             )
             self.name_basecmdcorrup = os.path.join(path_bd, f"__db.{name_basecmd}")
             if os.path.exists(self.name_basesessioncorrup):
-                # os.remove(self.name_basesessioncorrup)
                 logger.warning(
                     "Verify integrity of data "
                     "base\n\t%s on ->? %s"
                     % (self.name_basesession, self.name_basesessioncorrup)
                 )
             if os.path.exists(self.name_basecmdcorrup):
-                # os.remove(self.name_basecmdcorrup)
                 logger.warning(
                     "Verify integrity of data "
                     "base\n\t%s on ->? %s"

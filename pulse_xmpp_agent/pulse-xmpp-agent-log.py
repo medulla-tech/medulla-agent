@@ -19,12 +19,8 @@ from sqlalchemy import Column, String, Integer, DateTime, Text
 from optparse import OptionParser
 from lib.utils import StreamToLogger
 
-# from sqlalchemy.dialects.mysql import  TINYINT
 import copy
 
-# from mmc.database.database_helper import DBObj
-# from sqlalchemy.orm import relationship
-# import datetime
 import traceback
 from sqlalchemy.orm import sessionmaker
 import re
@@ -554,7 +550,6 @@ class MUCBot(slixmpp.ClientXMPP):
             logger.error("\n%s" % (traceback.format_exc()))
             return
         try:
-            # logging.debug("recu message from %s \n%s"%(msg['from'], json.dumps(dataobj, indent=4) ))
             if "action" in dataobj:
                 if "data" in dataobj and "action" in dataobj["data"]:
                     if dataobj["data"]["action"] == "resultapplicationdeploymentjson":
@@ -595,7 +590,6 @@ def createDaemon(opts, conf):
 
 def doTask(opts, conf):
     logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
-    # logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
     if opts.consoledebug:
         logging.basicConfig(

@@ -236,7 +236,6 @@ class CommandsOnHost(object):
         self.start_date = start_date
         self.next_launch_date = start_date
         self.end_date = end_date
-        # self.attempts_left += attempts
         self.attempts_failed = 0
         self.flush()
 

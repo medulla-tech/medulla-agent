@@ -38,8 +38,6 @@ def processcommand(command, queue_out_session, messagestr, timeout):
         logging.debug("code error  %s" % cmd.code_error)
         logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
         queue_out_session.put(msgoutsucces)
-        # logging.debug("code error  %s"% cmd.code_error)
-        # logging.debug("result  %s"% cmd.stdout)
         logging.debug("================================================")
 
     except TimeoutError:
@@ -72,8 +70,6 @@ def processstepcommand(command, queue_out_session, messagestr, timeout, step):
 
     try:
         workingstep = {}
-        # logging.debug("######MESSAGE#############\n%s"%json.dumps(message['data'],
-        # indent=4, sort_keys=True))
         sequence = message["data"]["descriptor"]["sequence"]
         for i in sequence:
             if i["step"] == step:
@@ -207,8 +203,6 @@ class process_on_end_send_message_xmpp:
 
         try:
             workingstep = {}
-            # logging.debug("######MESSAGE#############\n%s"%json.dumps(message['data'],
-            # indent=4, sort_keys=True))
             sequence = message["data"]["descriptor"]["sequence"]
             for i in sequence:
                 if i["step"] == step:
@@ -322,8 +316,6 @@ class process_on_end_send_message_xmpp:
             logging.debug("code error  %s" % cmd.code_error)
             logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
             queue_out_session.put(msgoutsucces)
-            # logging.debug("code error  %s"% cmd.code_error)
-            # logging.debug("result  %s"% cmd.stdout)
             logging.debug("================================================")
 
         except TimeoutError:
@@ -419,7 +411,6 @@ class mannageprocess:
                 ev = False
             logging.debug("444 ================================================")
             logging.debug(" execution command in process")
-            # logging.debug("command : \n%s"%command)
             logging.debug("================================================")
             # print "444================================================"
             # print " execution command in process"
@@ -432,7 +423,6 @@ class mannageprocess:
                 if "_eventype" in ev and "_eventype" == "TEVENT":
                     # ecrit dans queue_out_session le TEVENT
                     msgout["event"] = ev
-                    # msgout['result']['resultcommand'] = cmd['result']
                     msgout["result"]["resultcommand"] = cmddecode
                     msgout["result"]["codeerror"] = cmd.code_error
                     queue_out_session.put(msgout)
@@ -441,7 +431,6 @@ class mannageprocess:
                     # "10@lastlines": "",
                     # "@resultcommand":""
 
-                    # ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
                     ev["data"]["result"] = {
                         "codeerror": cmd.code_error,
                         "command": command,
@@ -465,7 +454,6 @@ class mannageprocess:
                             ev["data"]["result"][t] = os.linesep.join(tab)
                     queue_out_session.put(ev)
 
-            # cmd = simplecommandstr(command)
 
             # if cmd['code'] == 0 and eventfinish != False:
             # ev = eventfinish
@@ -533,23 +521,19 @@ class cmdx(object):
         self.proc = subprocess.Popen(
             self.cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
-        # kill_proc = lambda p: p.kill()
         timer = Timer(self.timeout, self.kill_proc, [self.proc])
         try:
             timer.start()
             stdout, stderr = self.proc.communicate()
         finally:
             timer.cancel()
-        # self.stderr = stderr
         self.stdout = decode_strconsole(stdout)
 
         self.code_error = self.proc.returncode
         if self.timeoutbool:
             self.stdout = "error : timeout %s" % self.timeout
-            # self.code_error = 150
 
 
-# ff = cmdx ("echo 'Process started';echo; echo; sleep 2; echo 'Process finished';ls;",3)
 
 # print "stdout",ff.stdout
 

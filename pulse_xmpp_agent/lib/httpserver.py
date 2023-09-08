@@ -48,7 +48,6 @@ class Controller:
         @returns:
             A list of tuples (filename, date, size)
         """
-        # ext = ['.jpg', '.bmp', '.jpeg', '.png', '.gif']
         final_list = []
         # Test if the path exists
         if os.path.exists(str_path):

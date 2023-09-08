@@ -1238,14 +1238,6 @@ if __name__ == "__main__":
         help="deactive les controles process",
     )
 
-    # optp.add_option(
-    # "-n",
-    # "--no_check",
-    # action="store_true",
-    # dest="checking",
-    # default=False,
-    # help="deactive les controles process",
-    # )
     opts, args = optp.parse_args()
 
     if opts.typemachine.lower() in ["machine"]:
@@ -1371,7 +1363,6 @@ if __name__ == "__main__":
     agentxmpp = os.path.join(pathagent, "agentxmpp.py")
 
     pythonexec = psutil.Process().exe()
-    # pythonexec = "C:\\Program\ Files\\Pythonxxx\\python.exe"
     os.chdir(pathagent)
 
     if ProcessData.terminate_process:

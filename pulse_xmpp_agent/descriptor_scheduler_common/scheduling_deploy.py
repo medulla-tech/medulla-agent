@@ -14,7 +14,6 @@ plugin = { "VERSION": "1.1", "NAME": "scheduling_deploy", "TYPE": "all", "SCHEDU
 
 # nb  -1 infinie
 SCHEDULE = {"schedule": "*/15 * * * *", "nb": -1}
-# SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}
 
 
 def schedule_main(objectxmpp):
@@ -47,7 +46,6 @@ def schedule_main(objectxmpp):
                     # Convertir les données de type bytes en str (si nécessaire)
                     k = key.decode("utf-8")
                     v = value.decode("utf-8")
-                    # for k, v in objectxmpp.Deploybasesched.dbsessionscheduler.items():
                     obj = json.loads(v)
                     obj["data"]["fromaction"] = obj["action"]
                     obj["action"] = "machineexecutionscheduler"

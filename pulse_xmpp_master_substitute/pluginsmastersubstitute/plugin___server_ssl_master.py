@@ -83,7 +83,6 @@ def action(xmppobject, action):
         logger.error("Plugin loadarscheck, we encountered the error %s" % str(e))
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
-    # ['base', 'support', 'backuppc', 'glpi', 'xmppmaster', 'admin', 'dashboard', 'dyngroup', 'msc', 'pkgs', 'services', 'guacamole', 'imaging', 'pulse2']
 
 
 def decode_msg(xmppobject, msg, prioritymsg):

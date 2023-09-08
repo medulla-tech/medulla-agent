@@ -387,22 +387,7 @@ def cpu_num():
     total = psutil.cpu_count()
     result += f"{total} cpu"
 
-    # if hasattr(psutil.Process, "cpu_num"):
-    # while True:
-    # header
-    # clean_screen()
-    # cpus_percent = psutil.cpu_percent(percpu=True)
-    # for i in range(total):
-    # result = result + "CPU %-6i\n" % i
-    # result = result + "\n"
-    # for percent in cpus_percent:
-    # result = result + "%-10s" % percent
-    # result = result + "\n"
 
-    # processes
-    # procs = collections.defaultdict(list)
-    # for p in psutil.process_iter(attrs=['name', 'cpu_num']):
-    # procs[p.info['cpu_num']].append(p.info['name'][:5])
 
     # end_marker = [[] for x in range(total)]
     # while True:
@@ -416,7 +401,6 @@ def cpu_num():
     # if procs.values() == end_marker:
     # break
 
-    # time.sleep(1)
     return result
 
 

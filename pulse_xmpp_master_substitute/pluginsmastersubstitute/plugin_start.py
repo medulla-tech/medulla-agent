@@ -26,7 +26,6 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
         mbody=json.dumps(data_struct_message("enable_mmc_module")),
         mtype="chat",
     )
-    # dirplugin =os.path.dirname(os.path.realpath(__file__))
     for nameplugin in objectxmpp.config.pluginliststart:
         try:
             plugindescriptorparameter = data_struct_message(

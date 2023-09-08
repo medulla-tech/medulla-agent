@@ -25,7 +25,6 @@
 import logging
 import json
 
-# from mmc.agent import PluginManager
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.0", "NAME": "enable_mmc_module", "TYPE": "substitute"}  # fmt: skip

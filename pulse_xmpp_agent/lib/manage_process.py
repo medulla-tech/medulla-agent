@@ -37,7 +37,6 @@ def processcommand(command, queue_out_session, messagestr, timeout):
         logging.debug(f"code error  {cmd.code_error}")
         logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
         queue_out_session.put(msgoutsucces)
-        # logging.debug("result  %s"% cmd.stdout)
         logging.debug("================================================")
 
     except TimeoutError:
@@ -293,8 +292,6 @@ class process_on_end_send_message_xmpp:
             logging.debug(f"code error  {cmd.code_error}")
             logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
             queue_out_session.put(msgoutsucces)
-            # logging.debug("code error  %s"% cmd.code_error)
-            # logging.debug("result  %s"% cmd.stdout)
             logging.debug("================================================")
 
         except TimeoutError:
@@ -393,7 +390,6 @@ class mannageprocess:
                 if "_eventype" in ev and "_eventype" == "TEVENT":
                     # ecrit dans queue_out_session le TEVENT
                     msgout["event"] = ev
-                    # msgout['result']['resultcommand'] = cmd['result']
                     msgout["result"]["resultcommand"] = cmddecode
                     msgout["result"]["codeerror"] = cmd.code_error
                     queue_out_session.put(msgout)
@@ -402,7 +398,6 @@ class mannageprocess:
                     # "10@lastlines": "",
                     # "@resultcommand":""
 
-                    # ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
                     ev["data"]["result"] = {
                         "codeerror": cmd.code_error,
                         "command": command,
@@ -458,14 +453,12 @@ class cmdx(object):
         self.proc = subprocess.Popen(
             self.cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
-        # kill_proc = lambda p: p.kill()
         timer = Timer(self.timeout, self.kill_proc, [self.proc])
         try:
             timer.start()
             stdout, stderr = self.proc.communicate()
         finally:
             timer.cancel()
-        # self.stderr = stderr
         self.stdout = decode_strconsole(stdout)
 
         self.code_error = self.proc.returncode

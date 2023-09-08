@@ -567,18 +567,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             firstinstall
                         ]
                     )
-                    # objectxmpp.xmpplog('! : first dependency [%s] '%(data['name']),
-                    # type = 'deploy',
-                    # sessionname = sessionid,
-                    # priority = -1,
-                    # action = "xmpplog",
-                    # who = strjidagent,
-                    # how = "",
-                    # why = "",
-                    # module = "Deployment",
-                    # date=None,
-                    # fromuser = data['name'],
-                    # touser = "")
                     try:
                         # Removes all the occurrences of this package if it
                         # exists because it is installing
@@ -807,7 +795,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         fromuser="AM %s" % strjidagent,
                         touser="",
                     )
-                    # signalendsessionforARS(data , objectxmpp, sessionid, error = True)
 
                     # termine sesion on error
                     # clean session
@@ -1435,7 +1422,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 fromuser=data["login"],
                 touser="",
             )
-            # objectxmpp.levelcharge = objectxmpp.levelcharge - 1
         if "advanced" in data and "limit_rate_ko" in data["advanced"]:
             if data["advanced"]["limit_rate_ko"] != 0:
                 # limit_rate_ko in avansed deploy
@@ -2255,7 +2241,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     else:
                         # Creation of the message from depoy to machine
                         logger.debug("APPEL PLUGIN FOR DEPLOY ON MACHINE")
-                        # del reversessh
                         ARSremovereversessh(
                             objectxmpp,
                             strjidagent,
@@ -2270,7 +2255,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             "ret": 0,
                             "base64": False,
                         }
-                        # logger.debug(json.dumps(transfertdeploy, indent = 4))
                         objectxmpp.send_message(
                             mto=data_in_session["jidmachine"],
                             mbody=json.dumps(transfertdeploy),
@@ -2529,7 +2513,6 @@ def cleandescriptor(datasend):
             datasend["descriptor"]["sequence"] = datasend["descriptor"]["win"][
                 "sequence"
             ]
-            # del datasend['descriptor']['win']['sequence']
             del datasend["descriptor"]["win"]
         except BaseException:
             return False
@@ -2546,7 +2529,6 @@ def cleandescriptor(datasend):
             datasend["descriptor"]["sequence"] = datasend["descriptor"]["mac"][
                 "sequence"
             ]
-            # del datasend['descriptor']['Macos']['sequence']
             del datasend["descriptor"]["mac"]
         except BaseException:
             return False
@@ -2845,7 +2827,6 @@ def pull_package_transfert_rsync(
             path_key_priv = os.path.join(
                 os.path.expanduser("~pulseuser"), ".ssh", "id_rsa"
             )
-            # localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
             localdest = " '%s'" % (managepackage.managepackage.packagedir())
         elif sys.platform.startswith("win"):
             try:
@@ -2868,7 +2849,6 @@ def pull_package_transfert_rsync(
             execscp = '"c:\\progra~1\\OpenSSH\\scp.exe"'
         elif sys.platform.startswith("darwin"):
             path_key_priv = os.path.join("/", "var", "root", ".ssh", "id_rsa")
-            # localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
             localdest = " '%s'" % (managepackage.managepackage.packagedir())
         else:
             return False

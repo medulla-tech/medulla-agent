@@ -103,8 +103,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 # call suppression partage syncthing
                 if "iddeploy" in data:
                     logger.debug("Delete share %s if exist" % data["iddeploy"])
-                    # objectxmpp.syncthing.delete_folder_id_pulsedeploy(data['iddeploy'])
-                    # objectxmpp.syncthing.del_folder(data['iddeploy'])
                     objectxmpp.syncthing.delete_folder_pulse_deploy(data["iddeploy"])
                     # call function nettoyage old partage files.
             elif data["subaction"] == "create_partage":
@@ -671,7 +669,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             )
                 elif data["subaction"] == "pausefolder":
                     if "folder" in data:
-                        # objectxmpp.syncthing.set_pause_folder(data['folder'], paused = True)
                         objectxmpp.syncthing.maxSendKbps(kb=1)
         except BaseException:
             logger.error("\n%s" % (traceback.format_exc()))

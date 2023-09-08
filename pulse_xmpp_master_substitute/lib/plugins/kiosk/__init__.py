@@ -89,8 +89,6 @@ class KioskDatabase(DatabaseHelper):
         self.logger = logging.getLogger()
         self.logger.debug("kiosk activation")
         self.engine = None
-        # self.dbpoolrecycle = 60
-        # self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
         self.sessionkiosk = None
@@ -362,11 +360,6 @@ class KioskDatabase(DatabaseHelper):
                     session.flush()
         return id
 
-    # @DatabaseHelper._sessionm
-    # def refresh_package_list(self, session):
-    # """
-    # Refresh the package table, to be sure to not link the profile with deprecated packages.
-    # """
 
     # Get the real list of packages
     # package_list = xmpp_packages_list()
@@ -399,9 +392,6 @@ class KioskDatabase(DatabaseHelper):
     # ref_pkg['software'], ref_pkg['version'], ref_pkg['software'],
     # ref_pkg['description'], ref_pkg['uuid'], os, ref_pkg['uuid'])
 
-    # session.execute(sql)
-    # session.commit()
-    # session.flush()
 
     # Now we need to verify if all the registered packages are still existing into the server
     # sql = """SELECT id, package_uuid FROM package;"""

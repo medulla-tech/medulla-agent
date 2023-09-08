@@ -637,7 +637,6 @@ class MUCBot(ClientXMPP):
         if os.path.exists(BOOLFILECOMPLETREGISTRATION):
             self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
-        # (base64.b64encode(bytes(json.dumps(er.messagejson),'utf-8'))).decode('utf-8')
         try:
             dataobj = {
                 "action": "connectionconf",

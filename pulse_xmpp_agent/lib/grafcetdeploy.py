@@ -792,7 +792,6 @@ class grafcet:
                     self.__search_Next_step_int__(val)
                     self.__execstep__()
                     return True
-        # if 'goto' in self.workingstep :
         if returncode != 0 and "error" in self.workingstep:
             self.__search_Next_step_int__(self.workingstep["error"])
             self.__execstep__()
@@ -1366,13 +1365,6 @@ class grafcet:
                 self.workingstep["timeout"],
                 self.workingstep["step"],
             )
-            # if not comdbool:
-            # self.objectxmpp.logtopulse('[%s]: Error descriptor actionprocessscript %s'%(self.workingstep['step'],
-            # self.workingstep['pwd']),
-            # type='deploy',
-            # sessionname = self.sessionid ,
-            # priority =self.workingstep['step'],
-            # who=self.objectxmpp.boundjid.bare)
         except Exception as e:
             self.steplog()
             logging.getLogger().error(str(e))
@@ -1930,7 +1922,6 @@ class grafcet:
             if "waiting" not in self.workingstep:
                 self.workingstep["waiting"] = "10"
                 logging.getLogger().warning("waiting missing : default value 180s")
-            # timewaiting = int(self.workingstep['waiting']) + 180
             logging.getLogger().warn(
                 f'timeout  waiting : {self.workingstep["waiting"]}'
             )
@@ -2012,7 +2003,6 @@ class grafcet:
                 elif sys.platform.startswith("darwin"):
                     logging.debug("actionrestartmachine  shutdown machine MacOS")
                     os.system("shutdown -r now")
-                    # os.system("pkill -f agentxmpp")
         except Exception as e:
             logging.getLogger().error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
@@ -2319,9 +2309,6 @@ class grafcet:
                     % (self.data["name"], self.workingstep["step"])
                 )
 
-            # self.userconecter=None
-            # self.userstatus=None
-            # self.userconectdate=None
 
             if self.userconecter is None:
                 msg.append(
@@ -2434,9 +2421,6 @@ class grafcet:
                     % (self.data["name"], self.workingstep["step"])
                 )
 
-            # self.userconecter=None
-            # self.userstatus=None
-            # self.userconectdate=None
             self.steplog()
             if self.userconecter is None:
                 msg.append(
@@ -2513,8 +2497,6 @@ class grafcet:
                 )
                 self.__Etape_Next_in__()
                 return True
-            # self.__action_completed__(self.workingstep)
-            # self.__Etape_Next_in__()
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(
@@ -2772,8 +2754,6 @@ class grafcet:
                 )
                 self.__Etape_Next_in__()
                 return True
-            # self.__action_completed__(self.workingstep)
-            # self.__Etape_Next_in__()
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(

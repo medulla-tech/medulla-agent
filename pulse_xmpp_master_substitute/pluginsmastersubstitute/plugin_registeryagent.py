@@ -40,9 +40,6 @@ params = {"duration": 300}
 # def function_dynamique_declaration_plugin(xmppobject):
 # xmppobject.changestatusin_plugin = types.MethodType(changestatusin_plugin, xmppobject)
 
-# def changestatusin_plugin(self, msg_changed_status):
-# logger.debug("chang status for %s"%msg_changed_status['from'])
-# pass
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
@@ -78,10 +75,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         # delete compteur expire
         deletelist = []
         for sessionid_save in xmppobject.compteur_de_traitement.keys():
-            # logger.warning("time creation %s" % xmppobject.compteur_de_traitement[sessionid_save][0])
-            # logger.warning("time maintenant %s" % int(time.time()) )
-            # logger.warning("time timeact %s" % timeact)
-            # logger.warning("delay %s > %s"%(int(time.time()) - int(xmppobject.compteur_de_traitement[sessionid_save][0]),params["duration"] ))
             if (
                 timeact - int(xmppobject.compteur_de_traitement[sessionid_save][0])
             ) > params["duration"]:
@@ -104,7 +97,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     },
                 ]
             )
-            # logger.warning("ADD dans listconfiguration %s %s"%(len(xmppobject.listconfiguration), msg['from']))
 
             if bool(xmppobject.show_queue_status):
                 logger.info(
@@ -120,7 +112,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         # execute configuration
         try:
             xmppobject.compteur_de_traitement[sessionid] = [timeact, msgq]
-            # logger.info("add in compteur_de_traitement session %s %s" % ([sessionid] , xmppobject.compteur_de_traitement[sessionid] ))
             if bool(xmppobject.show_queue_status):
                 logger.info(
                     "Pending pool counter = %s"
@@ -519,7 +510,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                     )
                                 uuid = ""
                                 btestfindcomputer = False
-                                # for testinventaireremonte in range(20):
                                 if showinfobool:
                                     logger.info(
                                         "Finding uuid from GLPI computer id for mac address"

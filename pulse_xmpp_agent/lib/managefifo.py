@@ -180,7 +180,6 @@ class fifodeploy:
             Logger.error(
                 "look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e))
             )
-            # Logger.error("\n%s"%(traceback.format_exc()))
             if os.path.isfile(pathnamefile):
                 Logger.error(f"del fichier fifo on error json{pathnamefile}")
                 os.remove(pathnamefile)

@@ -79,8 +79,6 @@ class Update_Remote_Agent:
             "replicator.py",
         ]
 
-        # for fichiername in [ x for x in os.listdir(self.dir_agent_base) if
-        # x[-3:]== ".py"]:
         for fichiername in list_script_python_for_update:
             self.directory["program_agent"][fichiername] = hashlib.md5(
                 file_get_contents(

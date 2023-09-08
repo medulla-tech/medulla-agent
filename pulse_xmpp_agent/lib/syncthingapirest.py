@@ -250,7 +250,6 @@ class syncthingapi:
                         address=["dynamic"],
                     )
         self.clean_pending()
-        # validate_chang_config()
 
     def save_conf_to_file(self, filedatajson):
         with open(filedatajson, "w") as outfile:
@@ -889,8 +888,6 @@ class syncthingapi:
 
     def __postAPIREST__(self, cmd, dictpython={}, paramsurl={}, RestCurl=False):
         def analyseresult(r):
-            # r.headers['content-type']
-            # r.encoding
             if r.status_code == 200:
                 return r.text
             elif r.status_code in [301, 302]:
@@ -1088,7 +1085,6 @@ class syncthingapi:
                 time.sleep(2)
                 self.post_restart()
                 time.sleep(2)
-                # self.reload_config(clean = False)
                 self.synchro = True
         except Exception as e:
             logger.error(f"{str(e)}")
@@ -1368,16 +1364,7 @@ class syncthing(syncthingapi):
     def ignore_shareid(self, shareid, reload=True):
         if reload:
             self.reload_config()
-        # for i, elem in enumerate(self.devices):
-        # if elem["name"] == "pulse": continue
-        # if not elem["deviceID"] in listdeviceutil:
-        # to_delete.append(i)
-        # to_delete.reverse()
-        # for i in to_delete:
-        # del self.devices[i]
 
-        # listdeviceutil = self.get_list_device_used_in_folder()
-        # self.delete_device_is_not_list(listdeviceutil)
 
 
 class syncthingprogram(Program):

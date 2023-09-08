@@ -537,7 +537,6 @@ class grafcet:
                     os.system(
                         "rm -Rf %s" % self.datasend["data"]["pathpackageonmachine"]
                     )
-            # os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
             datas = {}
             datas = self.datasend
             if msgstate != "":
@@ -689,7 +688,6 @@ class grafcet:
                     self.__search_Next_step_int__(val)
                     self.__execstep__()
                     return True
-        # if 'goto' in self.workingstep :
         if returncode != 0 and "error" in self.workingstep:
             self.__search_Next_step_int__(self.workingstep["error"])
             self.__execstep__()
@@ -1373,7 +1371,6 @@ class grafcet:
         except Exception as e:
             self.workingstep["@resultcommand"] = traceback.format_exc()
             logger.error(str(e))
-            # logger.error("\n%s"%(traceback.format_exc()))
             self.objectxmpp.xmpplog(
                 "[%s]-[%s]: Error extracting %s to directory %s"
                 % (
@@ -2251,7 +2248,6 @@ class grafcet:
             )
 
     def actioncleaning(self):
-        # logtopulse(self,text,type='noset',sessionname = '',priority = 0, who = '')
         self.objectxmpp.xmpplog(
             "[%s] Cleaning package" % (self.data["name"]),
             type="deploy",

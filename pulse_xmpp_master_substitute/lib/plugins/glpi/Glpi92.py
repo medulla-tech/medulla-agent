@@ -62,7 +62,6 @@ from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
 
-# from mmc.plugins.dyngroup.config import DGConfig
 from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
@@ -3773,14 +3772,6 @@ class Glpi92(DatabaseHelper):
         else:
             return [[q.id, q.name] for q in query]
 
-    # def getAllEntities(self, ctx, filt = ''):
-    # """
-    # @return: all entities defined in the GLPI database
-    # """
-    # session = create_session()
-    # query = session.query(Entities)
-    # if filter != '':
-    # query = query.filter(self.entities.c.name.like('%'+filt+'%'))
 
     # Request only entites current user can access
     # if not hasattr(ctx, 'locationsid'):
@@ -3846,31 +3837,9 @@ class Glpi92(DatabaseHelper):
             ret[i] = t
         return ret
 
-    # @DatabaseHelper._sessionm
-    # def getAllVersion4Software(self, session, ctx, softname, version = ''):
-    # """
-    # @return: all softwares defined in the GLPI database
-    # """
-    # if not hasattr(ctx, 'locationsid'):
-    # complete_ctx(ctx)
-    # query = session.query(distinct(SoftwareVersion.name)) \
-    # .select_from(self.softwareversions.join(self.software))
 
-    # my_parents_ids = self.getEntitiesParentsAsList(ctx.locationsid)
-    # query = query.filter(
-    # or_(
-    # Software.entities_id.in_(ctx.locationsid),
-    # and_(
-    # Software.is_recursive == 1,
-    # Software.entities_id.in_(my_parents_ids)
-    # )
-    # )
-    # )
 
-    # query = query.filter(Software.name.like('%' + softname + '%'))
 
-    # if version:
-    # query = query.filter(SoftwareVersion.name.like('%' + version + '%'))
 
     # Last softwareversion entries first
     # query = query.order_by(desc(SoftwareVersion.id))
@@ -3878,36 +3847,8 @@ class Glpi92(DatabaseHelper):
     # ret = query.all()
     # return ret
 
-    # @DatabaseHelper._sessionm
-    # def getAllSoftwares(self, session, ctx, softname='', vendor=None, limit=None):
-    # """
-    # @return: all softwares defined in the GLPI database
-    # """
-    # if not hasattr(ctx, 'locationsid'):
-    # complete_ctx(ctx)
 
-    # query = session.query(distinct(Software.name))
-    # query = query.select_from(
-    # self.software \
-    # .join(self.softwareversions) \
-    # .join(self.inst_software) \
-    # .join(self.manufacturers, isouter=True)
-    # )
-    # my_parents_ids = self.getEntitiesParentsAsList(ctx.locationsid)
-    # query = query.filter(
-    # or_(
-    # Software.entities_id.in_(ctx.locationsid),
-    # and_(
-    # Software.is_recursive == 1,
-    # Software.entities_id.in_(my_parents_ids)
-    # )
-    # )
-    # )
-    # if vendor is not None:
-    # query = query.filter(Manufacturers.name.like(vendor))
 
-    # if softname != '':
-    # query = query.filter(Software.name.like('%' + softname + '%'))
 
     # Last software entries first
     # query = query.order_by(desc(Software.id))
@@ -4794,7 +4735,6 @@ class Glpi92(DatabaseHelper):
                     Peripheralsmanufacturers,
                     Peripherals.manufacturers_id == Peripheralsmanufacturers.id,
                 )
-        # if 'cn' in self.config.summary or idmachine != "":
         query = query.add_column(Machine.name.label("cn"))
         if uuidsetup != "" or idmachine != "":
             query = query.add_column(Machine.uuid.label("uuid_setup"))
@@ -4955,7 +4895,6 @@ class Glpi92(DatabaseHelper):
 
         nb_columns = len(columns_name)
         if idmachine != "" or uuidsetup != "":
-            # result['data']['entity_glpi_id'] = 0 if result['data']['entity_glpi_id'] == '' else int(result['data']['entity_glpi_id'])
             result["data"]["columns_name"] = columns_name
             result["data"]["columns_name_reg"] = list_reg_columns_name
 
@@ -5317,27 +5256,14 @@ class Glpi92(DatabaseHelper):
 
         return ret_gw
 
-    # def getMachineListByState(self, ctx, groupName):
-    # """
-    # """
 
     # Read config from ini file
     # orange = self.config.orange
     # red = self.config.red
 
-    # complete_ctx(ctx)
-    # filt = {'ctxlocation': ctx.locations}
 
-    # session = create_session()
-    # now = datetime.datetime.now()
-    # orange = now - datetime.timedelta(orange)
-    # red = now - datetime.timedelta(red)
 
-    # date_mod = self.machine.c.date_mod
-    # if self.fusionagents is not None:
-    # date_mod = FusionAgents.last_contact
 
-    # query = self.__getRestrictedComputersListQuery(ctx, filt, session)
 
     # Limit list according to max_elements_for_static_list param in dyngroup.ini
     # limit = DGConfig().maxElementsForStaticList
@@ -5358,13 +5284,6 @@ class Glpi92(DatabaseHelper):
     # session.close()
     # return ret
 
-    # def getMachineNumberByState(self, ctx):
-    # """
-    # return number of machines sorted by state
-    # default states are:
-    # * green: less than 10 days
-    # * orange: more than 10 days and less than 35 days
-    # * red: more than 35 days
 
     # @return: dictionnary with state as key, number as value
     # @rtype: dict
@@ -5374,16 +5293,7 @@ class Glpi92(DatabaseHelper):
     # orange = self.config.orange
     # red = self.config.red
 
-    # complete_ctx(ctx)
-    # filt = {'ctxlocation': ctx.locations}
 
-    # ret = {
-    # "days": {
-    # "orange": orange,
-    # "red": red,
-    # },
-    # "count": self.getRestrictedComputersListStatesLen(ctx, filt, orange, red),
-    # }
 
     # return ret
 
@@ -5396,59 +5306,27 @@ class Glpi92(DatabaseHelper):
     # """
     # session = create_session()
 
-    # __computersListQ = self.__getRestrictedComputersListQuery
 
-    # complete_ctx(ctx)
-    # filt = {
-    # 'ctxlocation': ctx.locations
-    # }
 
-    # ret = {
-    # 'green': int(__computersListQ(ctx, dict(filt, **{'antivirus': 'green'}), session, count=True)),
-    # 'orange': int(__computersListQ(ctx, dict(filt, **{'antivirus': 'orange'}), session, count=True)),
-    # 'red': int(__computersListQ(ctx, dict(filt, **{'antivirus': 'red'}), session, count=True)),
-    # }
 
-    # session.close()
 
     # return ret
 
-    # def getMachineIdsNotInAntivirusRed(self, ctx):
-    # """
-    # return ids list of machines who are not in antivirus red status
-    # """
-    # session = create_session()
-    # __computersListQ = self.__getRestrictedComputersListQuery
 
     # complete_ctx(ctx)
 
-    # filt = {
-    # 'ctxlocation': ctx.locations
-    # }
 
-    # query1 = __computersListQ(ctx, dict(filt, **{'antivirus': 'green'}), session)
-    # query2 = __computersListQ(ctx, dict(filt, **{'antivirus': 'orange'}), session)
 
-    # session.close()
 
     # return [machine.id for machine in query1.all()] + [machine.id for
     # machine in query2.all()]
 
-    # def getMachineListByAntivirusState(self, ctx, groupName):
-    # session = create_session()
 
-    # __computersListQ = self.__getRestrictedComputersListQuery
 
-    # complete_ctx(ctx)
-    # filt = {
-    # 'ctxlocation': ctx.locations
-    # }
-    # query = __computersListQ(ctx, dict(filt, **{'antivirus': groupName}), session)
 
     # Limit list according to max_elements_for_static_list param in dyngroup.ini
     # limit = DGConfig().maxElementsForStaticList
 
-    # query = query.limit(limit)
 
     # ret = {}
     # for machine in query.all():
@@ -5559,7 +5437,6 @@ class Glpi92(DatabaseHelper):
         entity.entities_id = parent_id  # parent
         entity.name = entity_name
         entity.comment = comment
-        # entity.level = parent_id
         entity = self.updateEntityCompleteName(entity)
         session.commit()
         session.flush()
@@ -6237,7 +6114,6 @@ class Machine(object):
             ["owner", owner_login],
             ["owner_firstname", owner_firstname],
             ["owner_realname", owner_realname],
-            # ['tech_num',self.tech_num],
             ["os", self.operatingsystems_id],
             ["os_version", self.operatingsystemversions_id],
             ["os_sp", self.operatingsystemservicepacks_id],

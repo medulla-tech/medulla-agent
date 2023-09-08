@@ -662,7 +662,6 @@ def isMacOsUserAdmin():
         return False
 
 
-# listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
@@ -762,7 +761,6 @@ def call_plugin(name, *args, **kwargs):
     except AttributeError:
         setattr(args[0], "num_call%s" % args[1], 0)
     pluginaction = loadModule(name)
-    # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
     result = loop.run_in_executor(None, pluginaction.action, *args, **kwargs)
 
 
@@ -863,7 +861,6 @@ def reduction_mac(mac):
     mac = mac.replace(":", "")
     mac = mac.replace("-", "")
     mac = mac.replace(" ", "")
-    # mac = mac.replace("/","")
     return mac
 
 
@@ -958,7 +955,6 @@ def typelinux():
         "cat /proc/1/comm", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
     result = p.stdout.readlines()
-    # code_result = p.wait()
     system = result[0].rstrip("\n")
     return system
 
@@ -1111,7 +1107,6 @@ def service(name, action):
             stderr=subprocess.STDOUT,
         )
         result = p.stdout.readlines()
-        # code_result = p.wait()
         system = result[0].rstrip("\n")
         if system == "init":
             p = subprocess.Popen(
@@ -3261,13 +3256,6 @@ class MotDePasse:
     def est_valide(self):
         return datetime.now() < self.date_expiration
 
-    # def generer_qr_code(self, nom_fichier):
-    # qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    # qr.add_data(self.mot_de_passe)
-    # qr.make(fit=True)
-    # qr_img = qr.make_image(fill="black", back_color="white")
-    # qr_img.save(nom_fichier)
-    # print(f"QR code généré et sauvegardé dans {nom_fichier}.")
 
 
 class DateTimebytesEncoderjson(json.JSONEncoder):

@@ -131,7 +131,6 @@ class PkgsDatabase(DatabaseHelper):
             # FIXME: should be removed
             self.session = create_session(bind=self.engine_pkgsmmaster_base)
             if self.session is not None:
-                # self.session = sessionmaker(bind=self.engine_xmppmmaster_base)
                 self.is_activated = True
                 self.logger.debug("Pkgs database connected")
                 return True
