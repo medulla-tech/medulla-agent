@@ -64,9 +64,7 @@ def conffilename(agenttype):
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent", conffilenameparameter)
     elif sys.platform.startswith("win"):
-        fileconf = os.path.join(
-            "c:", "progra~1", "Pulse", "etc", conffilenameparameter
-        )
+        fileconf = os.path.join("c:", "progra~1", "Pulse", "etc", conffilenameparameter)
     elif sys.platform.startswith("darwin"):
         fileconf = os.path.join(
             "/", "Library", "Application Support", "Pulse", "etc", conffilenameparameter

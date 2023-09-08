@@ -114,9 +114,7 @@ def enabledoublerun(xmppobject):
             )
         else:
             windows_system = "System32"
-            nytrio_sshdir_path = os.path.join(
-                "c:", "progra~1", "Nytrio", "OpenSSH"
-            )
+            nytrio_sshdir_path = os.path.join("c:", "progra~1", "Nytrio", "OpenSSH")
         rsync_dest_folder = os.path.join("C:\\", "Windows", windows_system)
 
         # Stop Nytrio ssh daemon

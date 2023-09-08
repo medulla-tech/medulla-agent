@@ -27,9 +27,7 @@ class managepackage:
             else:
                 return os.path.join(os.path.expanduser("~pulseuser"), "packages")
         elif sys.platform.startswith("win"):
-            return os.path.join(
-                "c:", "progra~1", "Pulse", "var", "tmp", "packages"
-            )
+            return os.path.join("c:", "progra~1", "Pulse", "var", "tmp", "packages")
         elif sys.platform.startswith("darwin"):
             return os.path.join("/opt", "Pulse", "var", "tmp", "packages")
         else:

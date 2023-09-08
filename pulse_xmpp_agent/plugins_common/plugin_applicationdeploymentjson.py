@@ -3303,7 +3303,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
     if _check_hash != datasend["data"]["hash"]["global"]:
         shutil.rmtree(
             os.path.join(
-                "c:", 
+                "c:",
                 "progra~1",
                 "Pulse",
                 "var",
