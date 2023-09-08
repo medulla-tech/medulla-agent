@@ -16,7 +16,7 @@ OPENSSHVERSION = "9.2"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.8", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.9", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -49,7 +49,15 @@ def check_if_binary_ok():
         opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
         sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
 
-        if os.path.isfile(sshdaemon_bin_path):
+        if platform.architecture()[0] == "64bit":
+            architecture = "Win64"
+            windows_system = "SysWOW64"
+        else:
+            architecture = "Win32"
+            windows_system = "System32"
+        rsync_exefile = os.path.join("C:\\", "Windows", windows_system, "rsync.exe")
+
+        if os.path.isfile(sshdaemon_bin_path) or os.path.isfile(rsync_exefile):
             logger.debug("OpenSSH is correctly installed. Nothing to do")
         else:
             logger.info("OpenSSH is not present, we need to install the component.")
