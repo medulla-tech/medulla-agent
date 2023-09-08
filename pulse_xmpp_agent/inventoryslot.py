@@ -10052,11 +10052,6 @@ class configuration:
             self.charge_conf(Config)
 
     def charge_conf(self, Config):
-
-
-
-
-
         if Config.has_option("global", "log_level"):
             self.log_level = Config.get("global", "log_level")
 
@@ -10067,7 +10062,6 @@ class configuration:
             self.nbthreadmax = Config.get("inventory", "nbthreadmax")
         else:
             self.nbthreadmax = None
-
 
         # global
         if self.log_level == "INFO":
@@ -10397,7 +10391,6 @@ if __name__ == "__main__":
         help="nomber thread maximun",
     )
 
-
     # optp.add_option("-P", "--port",
     # dest="port" default=None,
     # help="port connection xmpp")
@@ -10420,10 +10413,6 @@ if __name__ == "__main__":
     conf = configuration()
     if opts.url is not None:
         conf.Url = opts.url
-
-
-
-
 
     if opts.numberbyseconde is not None:
         conf.Nbmessage = float(opts.numberbyseconde)

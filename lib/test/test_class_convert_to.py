@@ -320,7 +320,6 @@ class TestConvert(unittest.TestCase):
     def test_list_to_set(self):
         self.assertEqual(convert.list_to_set(["a", "b", "a", "c"]), {"a", "b", "c"})
 
-
     def test_dict_to_list(self):
         self.assertEqual(
             convert.dict_to_list({"a": 1, "b": 2, "c": 3}),

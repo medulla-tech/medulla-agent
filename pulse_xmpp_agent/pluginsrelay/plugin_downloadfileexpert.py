@@ -261,7 +261,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         print("dest %s" % dest)
         print("command %s" % command)
 
-
         print(json.dumps(data, indent=4))
         print("----------------------------")
         print("exec command\n %s" % command)

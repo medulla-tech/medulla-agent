@@ -1366,7 +1366,6 @@ class syncthing(syncthingapi):
             self.reload_config()
 
 
-
 class syncthingprogram(Program):
     def __init__(
         self, console=False, browser=False, home="", logfile="", agenttype="relayserver"

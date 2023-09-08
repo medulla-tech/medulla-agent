@@ -280,7 +280,6 @@ class iq_value:
             lines.append("")
         return "\n".join(lines)
 
-
     # Returns:
     # str: La représentation formatée du dictionnaire.
     # """

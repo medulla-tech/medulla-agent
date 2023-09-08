@@ -1,4 +1,3 @@
-
 # file : /pluginsmastersubstitute/plugin_assessor_agent.py
 
 import base64

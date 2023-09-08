@@ -84,7 +84,6 @@ def action(xmppobject, action):
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
-
 def decode_msg(xmppobject, msg, prioritymsg):
     msg = msg.decode("utf-8")
     if prioritymsg == 9:

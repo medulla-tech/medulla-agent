@@ -1386,7 +1386,6 @@ class XmppMasterDatabase(DatabaseHelper):
         create Glpi_Register_Keys
         """
 
-
         if machines_id is None or machines_id == "" or name is None or name == "":
             return None
         ret = self.get_Glpi_register_key(machines_id, name)
@@ -4482,7 +4481,6 @@ class XmppMasterDatabase(DatabaseHelper):
         if state:
             deploylog = deploylog.filter(Deploy.state == state)
 
-
         nb = self.get_count(deploylog)
 
         lentaillerequette = session.query(func.count(distinct(Deploy.title)))[0]
@@ -4750,7 +4748,6 @@ class XmppMasterDatabase(DatabaseHelper):
         deploylog = deploylog.group_by(Deploy.title)
 
         deploylog = deploylog.order_by(desc(Deploy.id))
-
 
         nbfilter = self.get_count(deploylog)
 
@@ -5555,8 +5552,6 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
         return [x for x in result]
-
-
 
     @DatabaseHelper._sessionm
     def Orderrules(self, session):
@@ -8229,7 +8224,6 @@ class XmppMasterDatabase(DatabaseHelper):
                 )
             except ValueError:
                 pass
-
 
         return resultproxy
 

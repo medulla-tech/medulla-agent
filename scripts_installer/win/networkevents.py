@@ -190,7 +190,6 @@ class NetworkManager(DesignatedWrapPolicy):
 
         self.main_thread_id = win32api.GetCurrentThreadId()
 
-
     def ConnectionMade(self, *args):
         """Tell that the connection is up again."""
         service_logger.info("Connection was made.")

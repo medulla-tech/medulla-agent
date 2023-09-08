@@ -36,7 +36,6 @@ def schedule_main(xmppobject):
     logger.info("=================================================\n")
     return
 
-
     # lien_obj = lncreate(
     # xmppobject.config.list_folder_sources,
     # xmppobject.config.location_packages,
@@ -202,16 +201,10 @@ def schedule_main(xmppobject):
     # pkgsdata.disconect_pkgs()
 
 
-
-
-
 ## application des valeurs par default
 
 
-
 ## creation base fingerprint
-
-
 
 
 ## FIXME: Implement me
@@ -384,7 +377,6 @@ def schedule_main(xmppobject):
 # if result:
 # if xmppobject.config.debug_info_ars_synchro:
 # logger.info("insert result %s" % result)
-
 
 
 # def connection_pkgs(self):

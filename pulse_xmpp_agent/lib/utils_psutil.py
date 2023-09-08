@@ -387,8 +387,6 @@ def cpu_num():
     total = psutil.cpu_count()
     result += f"{total} cpu"
 
-
-
     # end_marker = [[] for x in range(total)]
     # while True:
     # for num in range(total):
