@@ -75,7 +75,7 @@ def updatefiletreegenerator(xmppobject, installed_version):
         % (installed_version, FILETREEVERSION)
     )
     if sys.platform.startswith("win"):
-        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        pulsedir_path = os.path.join("c:", "progra~1", "Pulse", "bin")
 
         filename = "pulse-filetree-generator.exe"
         dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)

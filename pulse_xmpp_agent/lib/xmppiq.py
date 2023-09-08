@@ -174,12 +174,12 @@ class functionsynchroxmpp:
                 filekey = os.path.join("C:\\", "Users", "pulseuser", ".ssh", "id_rsa")
             except Exception:
                 filekey = os.path.join(
-                    os.environ["ProgramFiles"], "pulse", ".ssh", "id_rsa"
+                    "c:", "progra~1", "pulse", ".ssh", "id_rsa"
                 )
 
-            sshexec = os.path.join(os.environ["ProgramFiles"], "OpenSSH", "ssh.exe")
+            sshexec = os.path.join("c:", "progra~1", "OpenSSH", "ssh.exe")
             reversesshbat = os.path.join(
-                os.environ["ProgramFiles"], "Pulse", "bin", "reversessh.bat"
+                "c:", "progra~1", "Pulse", "bin", "reversessh.bat"
             )
             cmd = (
                 """\\"%s\\" -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
@@ -199,14 +199,14 @@ class functionsynchroxmpp:
                 """for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """
                 % cmd,
                 """echo %$PID%""",
-                """echo %$PID% > C:\\"Program Files"\\Pulse\\bin\\%$PID%.pid""",
+                """echo %$PID% > C:\\progra~1\\Pulse\\bin\\%$PID%.pid""",
             ]
             cmd = "\r\n".join(linecmd)
 
             if not os.path.exists(
-                os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+                os.path.join("c:", "progra~1", "Pulse", "bin")
             ):
-                os.makedirs(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin"))
+                os.makedirs(os.path.join("c:", "progra~1", "Pulse", "bin"))
             file_put_contents(reversesshbat, cmd)
             result = subprocess.Popen(reversesshbat)
             time.sleep(2)

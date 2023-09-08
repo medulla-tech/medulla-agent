@@ -42,10 +42,11 @@ class xmppbrowsing:
             )
         elif sys.platform.startswith("win"):
             self.jsonfile = os.path.join(
-                os.environ["ProgramFiles"], "Pulse", "tmp", "treejson.json"
+                "c:", "progra~1", "Pulse", "tmp", "treejson.json"
             )
             self.programmetreejson = os.path.join(
-                os.environ["ProgramFiles"],
+                "c:", 
+                "progra~1",
                 "Pulse",
                 "bin",
                 "pulse-filetree-generator.exe",
@@ -66,7 +67,7 @@ class xmppbrowsing:
             if sys.platform.startswith("win"):
                 cont = file_get_content(
                     os.path.join(
-                        os.environ["ProgramFiles"], "Pulse", "tmp", "treejson.json"
+                        "c:", "progra~1", "Pulse", "tmp", "treejson.json"
                     )
                 )
                 l = decode_strconsole(cont)

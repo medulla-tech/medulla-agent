@@ -64,7 +64,7 @@ class xmppbrowsing:
                 return {}
             cont = file_get_content(
                 os.path.join(
-                    os.environ["ProgramFiles"], "Pulse", "tmp", "treejson.json"
+                    "c:", "progra~1", "Pulse", "tmp", "treejson.json"
                 )
             )
             return decode_strconsole(cont)

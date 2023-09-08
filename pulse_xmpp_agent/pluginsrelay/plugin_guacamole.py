@@ -124,7 +124,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 try:
                     logger.info("start VNC listener")
                     program = os.path.join(
-                        os.environ["ProgramFiles"], "TightVNC", "tvnserver.exe"
+                        "c:", "progra~1", "TightVNC", "tvnserver.exe"
                     )
                     # select display for vnc
                     cmd = """\"%s\" -controlservice -disconnectall""" % (program)

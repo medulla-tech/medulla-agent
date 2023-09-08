@@ -1809,10 +1809,10 @@ def test_kiosk_presence():
         if sys.platform.startswith("win"):
             list = [
                 os.path.join(
-                    os.environ["ProgramFiles"], "Python36", "Lib", "site-packages"
+                    "c:", "progra~1", "Python311", "Lib", "site-packages"
                 ),
                 os.path.join(
-                    os.environ["ProgramFiles"], "Python36-32", "Lib", "site-packages"
+                    "c:", "progra~1", "Python311-32", "Lib", "site-packages"
                 ),
             ]
         elif sys.platform == "darwin":

@@ -2103,10 +2103,10 @@ def test_kiosk_presence():
         if sys.platform.startswith("win"):
             list = [
                 os.path.join(
-                    os.environ["ProgramFiles"], "Python36", "Lib", "site-packages"
+                    "c:", "progra~1", "Python311", "Lib", "site-packages"
                 ),
                 os.path.join(
-                    os.environ["ProgramFiles"], "Python36-32", "Lib", "site-packages"
+                    "c:", "progra~1", "Python311-32", "Lib", "site-packages"
                 ),
             ]
         elif sys.platform == "darwin":
@@ -2162,10 +2162,10 @@ def keypub():
             win32net.NetUserGetInfo("", "pulseuser", 0)
             pathkey = os.path.join("c:\\Users\\pulseuser", ".ssh")
         except BaseException:
-            pathkey = os.path.join(os.environ["ProgramFiles"], "pulse", ".ssh")
+            pathkey = os.path.join("c:", "progra~1", "pulse", ".ssh")
         if not os.path.isfile(os.path.join(pathkey, "id_rsa")):
             obj = simplecommand(
-                '"C:\\Program Files\\OpenSSH\\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'
+                '"C:\\progra~1\\OpenSSH\\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'
                 % os.path.join(pathkey, "id_rsa")
             )
         return file_get_contents(os.path.join(pathkey, "id_rsa.pub"))
@@ -2218,7 +2218,8 @@ def showlinelog(nbline=200, logfile=None):
     if sys.platform.startswith("win"):
         if logfile is None:
             na = os.path.join(
-                os.environ["ProgramFiles"],
+                "c:", 
+                "progra~1",
                 "Pulse",
                 "var",
                 "log",

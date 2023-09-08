@@ -55,7 +55,7 @@ class manageschedulerdeploy:
             return os.path.join(Env.user_dir(), "BDDeploy")
         elif sys.platform.startswith("win"):
             return os.path.join(
-                os.environ["ProgramFiles"], "Pulse", "var", "tmp", "BDDeploy"
+                "c:", "progra~1", "Pulse", "var", "tmp", "BDDeploy"
             )
         elif sys.platform.startswith("darwin"):
             return os.path.join("/opt", "Pulse", "var", "tmp", "BDDeploy")

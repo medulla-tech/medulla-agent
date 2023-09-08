@@ -91,7 +91,7 @@ def backupclientsettings(xmppobject):
     logger.info("Configuring UrBackup client settings")
 
     hostname = socket.gethostname()
-    urbackup_dir = os.path.join("c:\\", "Program Files", "UrBackup")
+    urbackup_dir = os.path.join("c:\\", "progra~1", "UrBackup")
     logger.debug("Urbackup urbackup_dir: %s" % urbackup_dir)
 
     if sys.platform.startswith("win"):

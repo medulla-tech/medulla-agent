@@ -35,10 +35,10 @@ import urllib.request
 # GLOBAL DATA
 
 log_file = os.path.join(
-    os.environ["ProgramFiles"], "Pulse", "var", "log", "service.log"
+    "c:", "progra~1", "Pulse", "var", "log", "service.log"
 )
 
-program_dir = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+program_dir = os.path.join("c:", "progra~1", "Pulse", "bin")
 
 logger = logging.getLogger("pulseagentservice")
 

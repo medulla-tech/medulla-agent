@@ -122,7 +122,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
     elif sys.platform.startswith("win"):
         inventoryfile = os.path.join(
-            os.environ["ProgramFiles"], "Pulse", "tmp", "inventory.txt"
+            "c:", "progra~1", "Pulse", "tmp", "inventory.txt"
         )
     else:
         logger.error("undefined OS")
@@ -274,7 +274,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 agent_bin = "fusioninventory-agent.bat"
                 agent_path = "FusionInventory-Agent"
 
-            program = os.path.join(os.environ["ProgramFiles"], agent_path, agent_bin)
+            program = os.path.join("c:", "progra~1", agent_path, agent_bin)
             general_options = (
                 "--config=none --scan-profiles "
                 "--backend-collect-timeout=%s" % timeoutfusion

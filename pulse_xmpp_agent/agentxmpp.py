@@ -550,10 +550,10 @@ class MUCBot(ClientXMPP):
             self.tmpfile = "/tmp/confsyncting.txt"
         elif sys.platform.startswith("win"):
             self.fichierconfsyncthing = (
-                "%s\\pulse\\etc\\syncthing\\config.xml" % os.environ["programfiles"]
+                "c:\\progra~1\\pulse\\etc\\syncthing\\config.xml"
             )
             self.tmpfile = (
-                "%s\\Pulse\\tmp\\confsyncting.txt" % os.environ["programfiles"]
+                "c:\\progra~1\\Pulse\\tmp\\confsyncting.txt"
             )
         elif sys.platform.startswith("darwin"):
             self.fichierconfsyncthing = os.path.join(
@@ -1743,7 +1743,7 @@ class MUCBot(ClientXMPP):
         if self.config.agenttype in ["relayserver"]:
             return self.config.syncthing_share
         if sys.platform.startswith("win"):
-            syncthingroot = "%s\\pulse\\var\\syncthing" % os.environ["programfiles"]
+            syncthingroot = "c:\\progra~1\\pulse\\var\\syncthing"
         elif sys.platform.startswith("linux"):
             syncthingroot = os.path.join(os.path.expanduser("~pulseuser"), "syncthing")
         elif sys.platform.startswith("darwin"):
@@ -4357,10 +4357,10 @@ if __name__ == "__main__":
     # termine ssh reverse
     if sys.platform.startswith("win"):
         searchreversesshprocess = os.path.join(
-            os.environ["ProgramFiles"], "Pulse", "bin"
+            "c:", "progra~1", "Pulse", "bin"
         )
         for f in [
-            os.path.join(os.environ["ProgramFiles"], "Pulse", "bin", x)
+            os.path.join("c:", "progra~1", "Pulse", "bin", x)
             for x in os.listdir(searchreversesshprocess)
             if x[-4:] == ".pid"
         ]:
