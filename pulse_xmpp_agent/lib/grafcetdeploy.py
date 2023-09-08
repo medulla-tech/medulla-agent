@@ -2299,7 +2299,7 @@ class grafcet:
 
                 command = (
                     """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """
-                    """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py"""
+                    """C:\\progra~1\\Python311\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py"""
                     """ -M "%s"  -B"%s" -t %s -Y "%s" -S%s -s%s -c"""
                     % (
                         message,
@@ -2414,7 +2414,7 @@ class grafcet:
             elif sys.platform.startswith("win"):
                 command = (
                     """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """
-                    """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c"""
+                    """C:\\progra~1\\Python311\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c"""
                     % (
                         message,
                         titlemessage,
@@ -2622,7 +2622,7 @@ class grafcet:
             elif sys.platform.startswith("win"):
                 command = (
                     """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """
-                    """C:\\Python27\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c"""
+                    """C:\\progra~1\\Python311\\pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c"""
                     % (
                         message,
                         titlemessage,

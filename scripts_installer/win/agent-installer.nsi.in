@@ -260,15 +260,15 @@ Section "Python" sec_py
   nsExec::Exec 'sc stop medullanetnotify'
 
   ; Delete previous rescue folder if any
-  RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\agentrescue
-  RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\img_agent
+  RMDir /r C:\progra~1\Python311\Lib\site-packages\pulse_xmpp_agent\agentrescue
+  RMDir /r C:\progra~1\Python311\Lib\site-packages\pulse_xmpp_agent\img_agent
 
   ; Prevent agentrescue to be run at first launcher execution
-  FileOpen $0 "C:\Python27\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
+  FileOpen $0 "C:\progra~1\Python311\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
   FileClose $0
 
   ; Remove old three random characters for unicity
-  Delete C:\Python27\Lib\site-packages\pulse_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
+  Delete C:\progra~1\Python311\Lib\site-packages\pulse_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
 SectionEnd
 ; ####################### Installation of Medulla Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
