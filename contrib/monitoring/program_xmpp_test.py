@@ -43,7 +43,6 @@ def action(struct):
         # - In 1 Strut JSON in how {"action": "qa_test_monitoring"}
         # or directly in the code template
 
-
         # action is the name of the plugin call
         send_message = {
             "action": action,

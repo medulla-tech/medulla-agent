@@ -2309,7 +2309,6 @@ class grafcet:
                     % (self.data["name"], self.workingstep["step"])
                 )
 
-
             if self.userconecter is None:
                 msg.append(
                     """[%s]-[%s]: user session not active, the notification is not delivered. [notif : %s]"""

@@ -32,7 +32,6 @@ plugin = {"VERSION": "2.0", "NAME": "update_windows", "TYPE": "substitute"}  # f
 # xmppobject.changestatusin_plugin = types.MethodType(changestatusin_plugin, xmppobject)
 
 
-
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     try:
         logger.debug("=====================================================")

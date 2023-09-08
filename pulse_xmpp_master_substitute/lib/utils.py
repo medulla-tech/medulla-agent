@@ -3257,7 +3257,6 @@ class MotDePasse:
         return datetime.now() < self.date_expiration
 
 
-
 class DateTimebytesEncoderjson(json.JSONEncoder):
     """
     Used to handle datetime in json files.

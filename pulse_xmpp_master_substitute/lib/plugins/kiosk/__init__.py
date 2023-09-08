@@ -360,7 +360,6 @@ class KioskDatabase(DatabaseHelper):
                     session.flush()
         return id
 
-
     # Get the real list of packages
     # package_list = xmpp_packages_list()
 
@@ -391,7 +390,6 @@ class KioskDatabase(DatabaseHelper):
     # description='%s', package_uuid='%s', os='%s' WHERE package_uuid='%s';""" % (
     # ref_pkg['software'], ref_pkg['version'], ref_pkg['software'],
     # ref_pkg['description'], ref_pkg['uuid'], os, ref_pkg['uuid'])
-
 
     # Now we need to verify if all the registered packages are still existing into the server
     # sql = """SELECT id, package_uuid FROM package;"""

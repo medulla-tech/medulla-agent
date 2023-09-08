@@ -754,8 +754,6 @@ class MUCBot(ClientXMPP):
         self.RSA = MsgsignedRSA(self.boundjid.user)
         logger.info("The version of the agent is %s" % self.version_agent())
 
-
-
         if sys.platform.startswith("win"):
             result = win32api.SetConsoleCtrlHandler(self._CtrlHandler, 1)
             if result == 0:
@@ -3865,7 +3863,6 @@ def servercherrypy(
         # Do not remove the following lines
         # They can be usefull to configure the server
         # ===
-
 
         server1.subscribe()
         cherrypy.engine.start()

@@ -816,7 +816,6 @@ class MUCBot(slixmpp.ClientXMPP):
     # if child.tag.endswith('query'):
     # child.append(itemXML)
 
-
     # mq.sendbytes(iq['id'],
     # ret,
     # prefixe = self.boundjid.user,
@@ -840,7 +839,6 @@ class MUCBot(slixmpp.ClientXMPP):
     # ret,
     # prefixe = self.boundjid.user,
     # priority= 9)
-
 
     # except IqTimeout:
     # logging.error("iqsendpulse : Timeout Error")

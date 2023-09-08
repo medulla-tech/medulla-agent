@@ -41,7 +41,6 @@ params = {"duration": 300}
 # xmppobject.changestatusin_plugin = types.MethodType(changestatusin_plugin, xmppobject)
 
 
-
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     try:
         logger.debug("=====================================================")

@@ -3772,7 +3772,6 @@ class Glpi92(DatabaseHelper):
         else:
             return [[q.id, q.name] for q in query]
 
-
     # Request only entites current user can access
     # if not hasattr(ctx, 'locationsid'):
     # complete_ctx(ctx)
@@ -3837,18 +3836,11 @@ class Glpi92(DatabaseHelper):
             ret[i] = t
         return ret
 
-
-
-
-
     # Last softwareversion entries first
     # query = query.order_by(desc(SoftwareVersion.id))
 
     # ret = query.all()
     # return ret
-
-
-
 
     # Last software entries first
     # query = query.order_by(desc(Software.id))
@@ -5256,14 +5248,9 @@ class Glpi92(DatabaseHelper):
 
         return ret_gw
 
-
     # Read config from ini file
     # orange = self.config.orange
     # red = self.config.red
-
-
-
-
 
     # Limit list according to max_elements_for_static_list param in dyngroup.ini
     # limit = DGConfig().maxElementsForStaticList
@@ -5284,7 +5271,6 @@ class Glpi92(DatabaseHelper):
     # session.close()
     # return ret
 
-
     # @return: dictionnary with state as key, number as value
     # @rtype: dict
     # """
@@ -5292,8 +5278,6 @@ class Glpi92(DatabaseHelper):
     # Read config from ini file
     # orange = self.config.orange
     # red = self.config.red
-
-
 
     # return ret
 
@@ -5306,27 +5290,15 @@ class Glpi92(DatabaseHelper):
     # """
     # session = create_session()
 
-
-
-
-
     # return ret
 
-
     # complete_ctx(ctx)
-
-
-
 
     # return [machine.id for machine in query1.all()] + [machine.id for
     # machine in query2.all()]
 
-
-
-
     # Limit list according to max_elements_for_static_list param in dyngroup.ini
     # limit = DGConfig().maxElementsForStaticList
-
 
     # ret = {}
     # for machine in query.all():

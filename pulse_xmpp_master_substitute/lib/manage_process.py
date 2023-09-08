@@ -454,7 +454,6 @@ class mannageprocess:
                             ev["data"]["result"][t] = os.linesep.join(tab)
                     queue_out_session.put(ev)
 
-
             # if cmd['code'] == 0 and eventfinish != False:
             # ev = eventfinish
             # elif cmd['code'] != 0 and eventfinish != False:
@@ -532,7 +531,6 @@ class cmdx(object):
         self.code_error = self.proc.returncode
         if self.timeoutbool:
             self.stdout = "error : timeout %s" % self.timeout
-
 
 
 # print "stdout",ff.stdout

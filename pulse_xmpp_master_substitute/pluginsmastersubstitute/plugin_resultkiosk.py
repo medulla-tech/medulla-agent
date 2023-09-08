@@ -19,7 +19,6 @@ from lib.plugins.msc import MscDatabase
 from lib.plugins.glpi import Glpi
 
 
-
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
@@ -44,8 +43,6 @@ plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt:
 # ]
 
 
-
-
 ## search packages for the applied profiles
 # list_profile_packages = KioskDatabase().get_profile_list_for_OUList(tmp)
 # if list_profile_packages is None:
@@ -55,11 +52,9 @@ plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt:
 # return
 
 
-
 ## Create structuredatakiosk for initialization
 
 # return structuredatakiosk
-
 
 
 # Returns:
@@ -86,7 +81,6 @@ plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt:
 ## Parse the file
 
 ## Parse the result for each lines
-
 
 
 ## Delete the file
@@ -137,10 +131,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     # pass
 
 
-
-
-
-
 # def initialisekiosk(data, message, xmppobject):
 # machine = XmppMasterDatabase().getMachinefromjid(message['from'])
 # if "userlist" and "oumachine" and "ouuser" in data:
@@ -150,10 +140,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # user = data['userlist'][0]
 # print "call updatemachineAD"
 # XmppMasterDatabase().updatemachineAD(machine['id'], user, data['oumachine'], data['ouuser'])
-
-
-
-
 
 
 ## Get the actual timestamp in utc format
@@ -218,9 +204,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # traceback.print_exc(file=sys.stdout)
 
 
-
 ## Write advanced parameter for the deployment
-
 
 
 # descript = managepackage.loadjsonfile(os.path.join(path, 'xmppdeploy.json'))

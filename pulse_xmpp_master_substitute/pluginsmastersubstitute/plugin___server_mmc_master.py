@@ -233,8 +233,6 @@ def process_connection_ssl(self, connection):
         asyncio.set_event_loop(loop)
         logger.debug("JFKJFK REV MESSAGE")
 
-
-
         if (
             self.server_mmc_master_active_filter
             and self.server_mmc_master_allowed_list_ips

@@ -27,9 +27,6 @@ class SingletonDecorator:
 
 @SingletonDecorator
 class confParameter:
-
-
-
     # state section
     # orange = 10
     # red = 35
