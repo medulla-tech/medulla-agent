@@ -2245,7 +2245,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
-                path_key_priv =  os.path.join("c:\Users\pulseuser", ".ssh", "id_rsa")
+                path_key_priv =  os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
             except:
                 path_key_priv = os.path.join("c:\progra~1", "pulse", '.ssh', "id_rsa")
             localdest = " \"%s/%s\"" % (managepackage.managepackage.packagedir(), packagename)
