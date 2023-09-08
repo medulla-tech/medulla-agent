@@ -324,12 +324,23 @@ class networkagentinfo:
             ip (str): Adresse IPv4 pour laquelle vous souhaitez obtenir l'adresse MAC.
         Returns:
             str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
+        TODO: Add IPV6 support
         """
         try:
-            mac_address = netifaces.ifaddresses(ip)[netifaces.AF_LINK][0]["addr"]
-            return mac_address
+            for interface in netifaces.interfaces():
+                addrs = netifaces.ifaddresses(interface)
+
+            if netifaces.AF_INET in addrs:
+                ipv4_info = addrs[netifaces.AF_INET][0]
+                if 'addr' in ipv4_info and ipv4_info['addr'] == ip:
+                    # Si l'adresse IP correspond, obtenir l'adresse MAC
+                    if netifaces.AF_LINK in addrs:
+                        mac_address = addrs[netifaces.AF_LINK][0]['addr']
+                        return mac_address
+
+            return None
         except Exception:
-            # logger.error("\n%s" % (traceback.format_exc()))
+            logger.error("\n%s" % (traceback.format_exc()))
             return None
 
     def MacAddressToIp(self, ip):
