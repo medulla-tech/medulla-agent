@@ -281,7 +281,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             elif sys.platform.startswith("win"):
                 ################# win reverse #################
                 try:
-                    win32net.NetUserGetInfo('','pulseuser',0)
+                    win32net.NetUserGetInfo("", "pulseuser", 0)
                     filekey = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
                 except:
                     filekey = os.path.join("c:", "progra~1", "pulse", ".ssh", "id_rsa")
