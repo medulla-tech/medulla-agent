@@ -2597,7 +2597,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath(os.path.join(getHomedrive()).strip().lower()
+        defined_profilepath = getHomedrive()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
@@ -2689,9 +2689,9 @@ def delete_profile(username='pulseuser'):
             delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive()
             result = simplecommand(encode_strconsole(delete_folder_cmd))
             if result['code'] == 0:
-                logger.debug('Deleted %s folder' % getHomedrive()
+                logger.debug('Deleted %s folder' % getHomedrive())
             else:
-                logger.error('Error deleting %s folder' % getHomedrive()
+                logger.error('Error deleting %s folder' % getHomedrive())
         except Exception as e:
             pass
         # Delete profile
