@@ -1391,7 +1391,9 @@ class syncthingprogram(Program):
 
             self.stop_syncthing()
 
-            agentconf = os.path.join("c:\\", "progra~1", "Pulse", "etc", "agentconf.ini")
+            agentconf = os.path.join(
+                "c:\\", "progra~1", "Pulse", "etc", "agentconf.ini"
+            )
             Config = configparser.ConfigParser()
             Config.read(agentconf)
 

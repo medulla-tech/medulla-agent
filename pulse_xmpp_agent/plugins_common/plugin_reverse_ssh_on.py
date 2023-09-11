@@ -281,10 +281,12 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             elif sys.platform.startswith("win"):
                 ################# win reverse #################
                 try:
-                    win32net.NetUserGetInfo('','pulseuser',0)
+                    win32net.NetUserGetInfo("", "pulseuser", 0)
                     filekey = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
                 except:
-                    filekey = os.path.join("c:\\", "progra~1", "pulse", ".ssh", "id_rsa")
+                    filekey = os.path.join(
+                        "c:\\", "progra~1", "pulse", ".ssh", "id_rsa"
+                    )
                 # Define the permissions depending on the user running the agent (admin or system)
                 utils.apply_perms_sshkey(filekey, private=True)
 
@@ -321,7 +323,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 if "persistence" not in data:
                     data["persistence"] = "no"
                 # clear tout les reverse ssh
-                searchreversesshprocess = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+                searchreversesshprocess = os.path.join(
+                    "c:\\", "progra~1", "Pulse", "bin"
+                )
                 for f in [
                     os.path.join("c:\\", "progra~1", "Pulse", "bin", x)
                     for x in os.listdir(searchreversesshprocess)
