@@ -171,7 +171,7 @@ class functionsynchroxmpp:
             ################# win reverse #################
             try:
                 win32net.NetUserGetInfo("", "pulseuser", 0)
-                filekey = os.path.join("C:\\", "Users", "pulseuser", ".ssh", "id_rsa")
+                filekey = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
             except Exception:
                 filekey = os.path.join("c:", "progra~1", "pulse", ".ssh", "id_rsa")
 

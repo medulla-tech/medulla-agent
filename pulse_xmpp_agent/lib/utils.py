@@ -2142,6 +2142,33 @@ def utc2local(utc):
     return utc + offset
 
 
+def getHomedrive(username="pulseuser"):
+    """
+    Retrieve the path to the home of the user `username`
+    Args:
+        username: The username of the user for which we are searching the homepath
+
+    Returns:
+        It returns the path to the home of `username`
+    """
+    usersid = get_user_sid(username)
+
+    try:
+        regquery = (
+            'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" /v "ProfileImagePath" /s'
+            % usersid
+        )
+        resultquery = simplecommand(encode_strconsole(regquery))
+
+    except Exception as e:
+        logger.error("An error occured whil trying to %s" % (str(e)))
+
+    if resultquery["code"] == 0:
+        homedrive = resultquery["result"].split("    ")[-1].replace("\r\n", "")
+
+    return homedrive
+
+
 def keypub():
     keypubstring = ""
     if sys.platform.startswith("linux"):
@@ -2153,9 +2180,9 @@ def keypub():
     elif sys.platform.startswith("win"):
         try:
             win32net.NetUserGetInfo("", "pulseuser", 0)
-            pathkey = os.path.join("c:\\Users\\pulseuser", ".ssh")
-        except BaseException:
-            pathkey = os.path.join("c:", "progra~1", "pulse", ".ssh")
+            pathkey = os.path.join(getHomedrive(), ".ssh")
+        except:
+            pathkey = os.path.join(os.environ["ProgramFiles"], "pulse", ".ssh")
         if not os.path.isfile(os.path.join(pathkey, "id_rsa")):
             obj = simplecommand(
                 '"C:\\progra~1\\OpenSSH\\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'
@@ -3049,12 +3076,12 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             if result["code"] != 0:
                 msg = f"Error hiding {username} account: {result}"
                 return False, msg
-            user_home = os.path.join("c:\\", "Users", username)
+            user_home = getHomedrive()
             hide_from_explorer = simplecommand(
-                encode_strconsole(f"attrib +h {user_home}")
+                encode_strconsole("attrib +h %s" % user_home)
             )
             if hide_from_explorer["code"] != 0:
-                msg = f"Error hiding {username} account: {hide_from_explorer}"
+                msg = "Error hiding %s account: %s" % (username, hide_from_explorer)
                 return False, msg
         return True, msg
     else:
@@ -3097,7 +3124,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
 
         userenvdll = ctypes.WinDLL("userenv.dll")
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath(f"C:/Users/{username}").strip().lower()
+        defined_profilepath = getHomedrive()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
@@ -3184,6 +3211,31 @@ def get_user_sid(username="pulseuser"):
 
 
 def delete_profile(username="pulseuser"):
+    if sys.platform.startswith("win"):
+        # Delete profile folder in C:\Users if any
+        try:
+            delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive()
+            result = simplecommand(encode_strconsole(delete_folder_cmd))
+            if result["code"] == 0:
+                logger.debug("Deleted %s folder" % getHomedrive())
+            else:
+                logger.error("Error deleting %s folder" % getHomedrive())
+        except Exception as e:
+            pass
+        # Delete profile
+        userenvdll = ctypes.WinDLL("userenv.dll")
+        usersid = get_user_sid(username)
+        delete_profile_result = userenvdll.DeleteProfileA(LPCSTR(usersid))
+        if delete_profile_result == 0:
+            logger.debug("%s profile deleted." % username)
+        else:
+            logger.error(
+                "Error deleting %s profile: %s" % (username, delete_profile_result)
+            )
+    return True
+
+
+def delete_profile(username="pulseuser"):
     """
     Supprime le profil utilisateur spécifié en utilisant WMI (Windows Management Instrumentation).
 
@@ -3234,7 +3286,7 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     Used on client machine for connecting to relay server
     """
     if sys.platform.startswith("win"):
-        id_rsa_path = os.path.join("C:\\Users", username, ".ssh", "id_rsa")
+        id_rsa_path = os.path.join(getHomedrive(), ".ssh", "id_rsa")
     else:
         id_rsa_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "id_rsa")
     delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
@@ -3331,11 +3383,22 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     Returns:
         message sent telling if the key have been well copied or not.
     """
-    try:
-        if sys.platform.startswith("win"):
-            authorized_keys_path = os.path.join(
-                "C:\\Users", username, ".ssh", "authorized_keys"
-            )
+    if sys.platform.startswith("win"):
+        authorized_keys_path = os.path.join(getHomedrive(), ".ssh", "authorized_keys")
+    else:
+        authorized_keys_path = os.path.join(
+            os.path.expanduser("~%s" % username), ".ssh", "authorized_keys"
+        )
+    if not os.path.isfile(authorized_keys_path):
+        logger.debug("Creating authorized_keys file in %s" % authorized_keys_path)
+        if not os.path.isdir(os.path.dirname(authorized_keys_path)):
+            os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
+        file_put_contents(authorized_keys_path, key)
+    else:
+        authorized_keys_content = file_get_contents(authorized_keys_path)
+        if not key.strip(" \t\n\r") in authorized_keys_content:
+            logger.debug("Adding key to %s" % authorized_keys_path)
+            file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
         else:
             authorized_keys_path = os.path.join(
                 os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys"
@@ -3352,11 +3415,6 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
                 file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
             else:
                 logger.debug(f"Key is already present in {authorized_keys_path}")
-    except PermissionError as e:
-        logger.debug(
-            "Permission Error Key verifier les permitions enecriture de l agent"
-        )
-        return False, e
     # Check if key is present
     authorized_keys_content = file_get_contents(authorized_keys_path)
     if key.strip(" \t\n\r") in authorized_keys_content:
