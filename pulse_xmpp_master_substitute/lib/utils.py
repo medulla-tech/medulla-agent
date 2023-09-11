@@ -1975,7 +1975,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath(getHomedrive())).strip()
+        defined_profilepath = os.path.normpath(getHomedrive()).strip()
         # Get user profile as created on the machine
         profile_location = os.path.normpath(get_user_profile(username)).strip()
         if not profile_location or profile_location != defined_profilepath:
