@@ -37,7 +37,7 @@ class manageskioskdb:
         if sys.platform.startswith("linux"):
             return os.path.join("/", "var", "lib", "pulse2", "BDKiosk")
         elif sys.platform.startswith("win"):
-            return os.path.join("c:", "progra~1", "Pulse", "var", "tmp", "BDKiosk")
+            return os.path.join("c:\\", "progra~1", "Pulse", "var", "tmp", "BDKiosk")
         elif sys.platform.startswith("darwin"):
             return os.path.join(
                 "/", "Library", "Application Support", "Pulse", "BDKiosk"

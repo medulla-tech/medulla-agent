@@ -286,14 +286,14 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         "C:\\", "Users", "pulseuser", ".ssh", "id_rsa"
                     )
                 except BaseException:
-                    filekey = os.path.join("c:", "progra~1", "pulse", ".ssh", "id_rsa")
+                    filekey = os.path.join("c:\\", "progra~1", "pulse", ".ssh", "id_rsa")
                 # Define the permissions depending on the user running the
                 # agent (admin or system)
                 utils.apply_perms_sshkey(filekey, private=True)
 
-                sshexec = os.path.join("c:", "progra~1", "OpenSSH", "ssh.exe")
+                sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
                 reversesshbat = os.path.join(
-                    "c:", "progra~1", "Pulse", "bin", "reversessh.bat"
+                    "c:\\", "progra~1", "Pulse", "bin", "reversessh.bat"
                 )
 
                 linecmd = []
@@ -318,15 +318,15 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 linecmd.append("""echo %$PID% > C:\\progra~1\\Pulse\\bin\\%$PID%.pid""")
                 dd = "\r\n".join(linecmd)
 
-                if not os.path.exists(os.path.join("c:", "progra~1", "Pulse", "bin")):
-                    os.makedirs(os.path.join("c:", "progra~1", "Pulse", "bin"))
+                if not os.path.exists(os.path.join("c:\\", "progra~1", "Pulse", "bin")):
+                    os.makedirs(os.path.join("c:\\", "progra~1", "Pulse", "bin"))
                 utils.file_put_contents(reversesshbat, dd)
                 if "persistence" not in data:
                     data["persistence"] = "no"
                 # clear tout les reverse ssh
-                searchreversesshprocess = os.path.join("c:", "progra~1", "Pulse", "bin")
+                searchreversesshprocess = os.path.join("c:\\", "progra~1", "Pulse", "bin")
                 for f in [
-                    os.path.join("c:", "progra~1", "Pulse", "bin", x)
+                    os.path.join("c:\\", "progra~1", "Pulse", "bin", x)
                     for x in os.listdir(searchreversesshprocess)
                     if x[-4:] == ".pid"
                 ]:
@@ -352,7 +352,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 result = subprocess.Popen(reversesshbat)
                 time.sleep(2)
                 for f in [
-                    os.path.join("c:", "progra~1", "Pulse", "bin", x)
+                    os.path.join("c:\\", "progra~1", "Pulse", "bin", x)
                     for x in os.listdir(searchreversesshprocess)
                     if x[-4:] == ".pid"
                 ]:

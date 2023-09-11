@@ -173,11 +173,11 @@ class functionsynchroxmpp:
                 win32net.NetUserGetInfo("", "pulseuser", 0)
                 filekey = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
             except Exception:
-                filekey = os.path.join("c:", "progra~1", "pulse", ".ssh", "id_rsa")
+                filekey = os.path.join("c:\\", "progra~1", "pulse", ".ssh", "id_rsa")
 
-            sshexec = os.path.join("c:", "progra~1", "OpenSSH", "ssh.exe")
+            sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
             reversesshbat = os.path.join(
-                "c:", "progra~1", "Pulse", "bin", "reversessh.bat"
+                "c:\\", "progra~1", "Pulse", "bin", "reversessh.bat"
             )
             cmd = (
                 """\\"%s\\" -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
@@ -201,8 +201,8 @@ class functionsynchroxmpp:
             ]
             cmd = "\r\n".join(linecmd)
 
-            if not os.path.exists(os.path.join("c:", "progra~1", "Pulse", "bin")):
-                os.makedirs(os.path.join("c:", "progra~1", "Pulse", "bin"))
+            if not os.path.exists(os.path.join("c:\\", "progra~1", "Pulse", "bin")):
+                os.makedirs(os.path.join("c:\\", "progra~1", "Pulse", "bin"))
             file_put_contents(reversesshbat, cmd)
             result = subprocess.Popen(reversesshbat)
             time.sleep(2)

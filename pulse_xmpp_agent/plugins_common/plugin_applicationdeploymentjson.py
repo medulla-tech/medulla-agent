@@ -2834,7 +2834,7 @@ def pull_package_transfert_rsync(
                 path_key_priv =  os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
             except:
                 path_key_priv = os.path.join(
-                    "c:", "progra~1", "pulse", ".ssh", "id_rsa"
+                    "c:\\", "progra~1", "pulse", ".ssh", "id_rsa"
                 )
             localdest = ' "%s/%s"' % (
                 managepackage.managepackage.packagedir(),
@@ -3043,7 +3043,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 def check_hash(objectxmpp, data):
     hash_type = data["hash"]["type"]
     dest = os.path.join(
-        "c:", "progra~1", "Pulse", "var", "tmp", "packages", data["name"]
+        "c:\\", "progra~1", "Pulse", "var", "tmp", "packages", data["name"]
     )
     dest += "\\"
     concat_hash = ""
@@ -3281,7 +3281,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
     if _check_hash != datasend["data"]["hash"]["global"]:
         shutil.rmtree(
             os.path.join(
-                "c:",
+                "c:\\",
                 "progra~1",
                 "Pulse",
                 "var",

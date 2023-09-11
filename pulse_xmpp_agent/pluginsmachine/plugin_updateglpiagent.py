@@ -48,7 +48,7 @@ def checkGlpiAgentVersion():
 def check_if_binary_ok():
     if sys.platform.startswith("win"):
         # We check if the GLPI-Agent inventory binary is correctly installed.
-        glpiAgentdir_path = os.path.join("c:", "progra~1", "GLPI-Agent")
+        glpiAgentdir_path = os.path.join("c:\\", "progra~1", "GLPI-Agent")
         glpiAgent_bin_path = os.path.join(glpiAgentdir_path, "glpi-agent.bat")
 
         if os.path.isfile(glpiAgent_bin_path):

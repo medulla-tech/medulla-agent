@@ -17,7 +17,7 @@ def directoryconffile():
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
     elif sys.platform.startswith("win"):
-        fileconf = os.path.join("c:", "progra~1", "Pulse", "etc")
+        fileconf = os.path.join("c:\\", "progra~1", "Pulse", "etc")
     elif sys.platform.startswith("darwin"):
         fileconf = os.path.join("/opt", "Pulse", "etc")
     if os.path.isdir(fileconf):
@@ -36,7 +36,7 @@ def pulseTempDir():
     if sys.platform.startswith("linux"):
         tempdir = os.path.join("/", "tmp")
     elif sys.platform.startswith("win"):
-        tempdir = os.path.join("c:", "progra~1", "Pulse", "tmp")
+        tempdir = os.path.join("c:\\", "progra~1", "Pulse", "tmp")
     elif sys.platform.startswith("darwin"):
         tempdir = os.path.join("/opt", "Pulse", "tmp")
 
@@ -64,7 +64,7 @@ def conffilename(agenttype):
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent", conffilenameparameter)
     elif sys.platform.startswith("win"):
-        fileconf = os.path.join("c:", "progra~1", "Pulse", "etc", conffilenameparameter)
+        fileconf = os.path.join("c:\\", "progra~1", "Pulse", "etc", conffilenameparameter)
     elif sys.platform.startswith("darwin"):
         fileconf = os.path.join(
             "/", "Library", "Application Support", "Pulse", "etc", conffilenameparameter

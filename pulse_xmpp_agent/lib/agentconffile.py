@@ -22,7 +22,7 @@ def directoryconffile():
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
     elif sys.platform.startswith("win"):
-        fileconf = os.path.join("c:", "progra~1", "Pulse", "etc")
+        fileconf = os.path.join("c:\\", "progra~1", "Pulse", "etc")
     elif sys.platform.startswith("darwin"):
         fileconf = os.path.join("/opt", "Pulse", "etc")
     return fileconf if os.path.isdir(fileconf) else None
@@ -38,7 +38,7 @@ def pulseTempDir():
     if sys.platform.startswith("linux"):
         tempdir = os.path.join("/", "tmp")
     elif sys.platform.startswith("win"):
-        tempdir = os.path.join("c:", "progra~1", "Pulse", "tmp")
+        tempdir = os.path.join("c:\\", "progra~1", "Pulse", "tmp")
     elif sys.platform.startswith("darwin"):
         tempdir = os.path.join("/opt", "Pulse", "tmp")
 

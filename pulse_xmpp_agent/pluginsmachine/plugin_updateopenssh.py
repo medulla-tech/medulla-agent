@@ -46,7 +46,7 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the openssh binary is correctly installed.
-        opensshdir_path = os.path.join("c:", "progra~1", "OpenSSH")
+        opensshdir_path = os.path.join("c:\\", "progra~1", "OpenSSH")
         sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
 
         if platform.architecture()[0] == "64bit":
@@ -228,8 +228,8 @@ def updateopenssh(xmppobject, installed_version):
             architecture = "Win32"
             windows_system = "System32"
 
-        pulsedir_path = os.path.join("c:", "progra~1", "Pulse", "bin")
-        opensshdir_path = os.path.join("c:", "progra~1", "OpenSSH")
+        pulsedir_path = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+        opensshdir_path = os.path.join("c:\\", "progra~1", "OpenSSH")
         sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
         mandriva_sshdir_path = os.path.join(
             os.environ["ProgramFiles(x86)"], "Mandriva", "OpenSSH"

@@ -2825,7 +2825,7 @@ def pull_package_transfert_rsync(
         )
 
         if sys.platform.startswith("win"):
-            scp = str(os.path.join("c:", "progra~1", "OpenSSH", "scp.exe"))
+            scp = str(os.path.join("c:\\", "progra~1", "OpenSSH", "scp.exe"))
             cmd = (
                 """ "c:\\progra~1\\OpenSSH\\scp.exe"%s -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """
                 % (
@@ -3010,7 +3010,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 def check_hash(objectxmpp, data):
     hash_type = data["hash"]["type"]
     dest = os.path.join(
-        "c:", "progra~1", "Pulse", "var", "tmp", "packages", data["name"]
+        "c:\\", "progra~1", "Pulse", "var", "tmp", "packages", data["name"]
     )
     dest += "\\"
     concat_hash = ""
@@ -3248,7 +3248,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
     if _check_hash != datasend["data"]["hash"]["global"]:
         shutil.rmtree(
             os.path.join(
-                "c:",
+                "c:\\",
                 "progra~1",
                 "Pulse",
                 "var",

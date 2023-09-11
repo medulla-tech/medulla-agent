@@ -838,7 +838,7 @@ def directoryconffile():
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
     elif sys.platform.startswith("win"):
-        fileconf = os.path.join("c:", "progra~1", "Pulse", "etc")
+        fileconf = os.path.join("c:\\", "progra~1", "Pulse", "etc")
     elif sys.platform.startswith("darwin"):
         fileconf = os.path.join("/opt", "Pulse", "etc")
     return fileconf if os.path.isdir(fileconf) else None
@@ -1247,7 +1247,7 @@ if __name__ == "__main__":
 
     if sys.platform.startswith("win"):
         logfile = os.path.join(
-            "c:", "progra~1", "Pulse", "var", "log", defaultnamelogfile
+            "c:\\", "progra~1", "Pulse", "var", "log", defaultnamelogfile
         )
     elif sys.platform.startswith("darwin"):
         logfile = os.path.join("/opt", "Pulse", "var", "log", defaultnamelogfile)

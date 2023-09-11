@@ -33,7 +33,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
             # Configure syncthing
             syncthingconfig_path = os.path.join(
-                "c:", "progra~1", "Pulse", "etc", "syncthing"
+                "c:\\", "progra~1", "Pulse", "etc", "syncthing"
             )
             syncthing_configfile = os.path.join(syncthingconfig_path, "config.xml")
             if os.path.isfile(syncthing_configfile):
@@ -107,10 +107,10 @@ def updatesyncthing(xmppobject, installed_version):
             architecture = "amd64"
         else:
             architecture = "386"
-        pulsedir_path = os.path.join("c:", "progra~1", "Pulse", "bin")
-        pulseconfig_path = os.path.join("c:", "progra~1", "Pulse", "etc")
+        pulsedir_path = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+        pulseconfig_path = os.path.join("c:\\", "progra~1", "Pulse", "etc")
         syncthingconfig_path = os.path.join(
-            "c:", "progra~1", "Pulse", "etc", "syncthing"
+            "c:\\", "progra~1", "Pulse", "etc", "syncthing"
         )
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
 

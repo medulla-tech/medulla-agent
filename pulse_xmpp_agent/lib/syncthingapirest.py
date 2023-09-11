@@ -1391,12 +1391,12 @@ class syncthingprogram(Program):
 
             self.stop_syncthing()
 
-            agentconf = os.path.join("c:", "progra~1", "Pulse", "etc", "agentconf.ini")
+            agentconf = os.path.join("c:\\", "progra~1", "Pulse", "etc", "agentconf.ini")
             Config = configparser.ConfigParser()
             Config.read(agentconf)
 
             syncthing_bin = os.path.join(
-                "c:", "progra~1", "Pulse", "bin", "syncthing.exe"
+                "c:\\", "progra~1", "Pulse", "bin", "syncthing.exe"
             )
 
             if not os.path.isfile(syncthing_bin):

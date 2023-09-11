@@ -4315,9 +4315,9 @@ if __name__ == "__main__":
     tg = confParameter(opts.typemachine)
     # termine ssh reverse
     if sys.platform.startswith("win"):
-        searchreversesshprocess = os.path.join("c:", "progra~1", "Pulse", "bin")
+        searchreversesshprocess = os.path.join("c:\\", "progra~1", "Pulse", "bin")
         for f in [
-            os.path.join("c:", "progra~1", "Pulse", "bin", x)
+            os.path.join("c:\\", "progra~1", "Pulse", "bin", x)
             for x in os.listdir(searchreversesshprocess)
             if x[-4:] == ".pid"
         ]:
