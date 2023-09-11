@@ -688,7 +688,7 @@ class grafcet:
             else:
                 self.objectxmpp.send_message(
                     mto=mach,
-                    mbody=json.dumps(datapackage, encoding="utf-8"),
+                    mbody=json.dumps(datapackage),
                     mtype="chat",
                 )
 

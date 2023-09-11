@@ -567,7 +567,7 @@ class grafcet:
                 datapackage["msgstate"] = {"msg": msgstate, "quitonerror": quiterror}
             datapackage["action"] = "applicationdeploymentjson"
             self.objectxmpp.send_message(
-                mto=mach, mbody=json.dumps(datapackage, encoding="utf-8"), mtype="chat"
+                mto=mach, mbody=json.dumps(datapackage), mtype="chat"
             )
 
             if shutdownmachine or restarmachine:
