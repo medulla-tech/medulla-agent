@@ -147,8 +147,6 @@ class medullaagent(win32serviceutil.ServiceFramework):
                     "-t",
                     "machine",
                 ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
                 shell=True,
             )
             self.log_message("lance process %s" % self.process.pid)
