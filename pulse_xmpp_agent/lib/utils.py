@@ -1772,6 +1772,7 @@ def getHomedrive(username='pulseuser'):
         Returns:
             It returns the path to the home of `username`
     """
+    homedrive = os.path.join("c:\\", "Users", "pulseuser")
     usersid = get_user_sid(username)
 
     try:
@@ -1782,7 +1783,7 @@ def getHomedrive(username='pulseuser'):
         logger.error("An error occured whil trying to %s" % (str(e)))
 
     if resultquery['code'] == 0:
-        homedrive = resultquery['result'].split("    ")[-1].replace("\r\n", "")
+        homedrive = resultquery["result"][-3].split("    ")[-1].replace("\r\n", "")
 
     return homedrive
 
