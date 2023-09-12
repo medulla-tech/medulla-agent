@@ -19,21 +19,21 @@ logger = logging.getLogger()
 
 class MsgsignedRSA:
     """
-        Class use for verify from message xmpp.
-        The message structure pulse xmpp has a session id.
-        Session id is signed with the private key of the sender of the message.
-        The receiver of the message can verify the origin of the message by
-        comparing the signature of the sessionid with the sessionid.
+    Class use for verify from message xmpp.
+    The message structure pulse xmpp has a session id.
+    Session id is signed with the private key of the sender of the message.
+    The receiver of the message can verify the origin of the message by
+    comparing the signature of the sessionid with the sessionid.
 
-        Examples sender signed  data:
-            master = MsgsignedRSA("master")
-            sig = master.signedmsg(data)
+    Examples sender signed  data:
+        master = MsgsignedRSA("master")
+        sig = master.signedmsg(data)
 
-            receiver verify data:
-            client = MsgsignedRSA("client")
-            key_public_server_String_base = "KGlDcnlwdG8uUHVibGljS.....NTE5OTFMCnNiLg=="
-            object_key_public_server = client.Base64_To_ObjKeyRSA(key_public_server_String_base)
-            client.verifymsg(object_key_public_server,data, sig)
+        receiver verify data:
+        client = MsgsignedRSA("client")
+        key_public_server_String_base = "KGlDcnlwdG8uUHVibGljS.....NTE5OTFMCnNiLg=="
+        object_key_public_server = client.Base64_To_ObjKeyRSA(key_public_server_String_base)
+        client.verifymsg(object_key_public_server,data, sig)
     """
 
     def __init__(self, type):
