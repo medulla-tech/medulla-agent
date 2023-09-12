@@ -80,11 +80,10 @@ if platform.system() == "Windows":
     )
 else:
     # all non-Windows platforms are supporting ANSI escapes so we use them
-    logging.StreamHandler.emit = add_coloring_to_emit_ansi(
-        logging.StreamHandler.emit
-    )
+    logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
 
 logger = logging.getLogger()
+
 
 class MUCBot(ClientXMPP):
     def __init__(self, conf):  # jid, password, room, nick):
@@ -404,7 +403,7 @@ class MUCBot(ClientXMPP):
                             "Start relay server agent configuration\n%s"
                             % json.dumps(data["data"], indent=4, sort_keys=True)
                         )
-                        logger.debug( "write new config")
+                        logger.debug("write new config")
 
                         if self.config.syncthing_on:
                             try:
@@ -456,16 +455,14 @@ class MUCBot(ClientXMPP):
                                     logger.debug(
                                         f"synchro config {self.syncthing.is_config_sync()}"
                                     )
-                                    logger.debug( "write new config syncthing"
-                                    )
+                                    logger.debug("write new config syncthing")
                                     self.syncthing.validate_chang_config()
                                     time.sleep(2)
                                     filesyncthing = os.path.join(
                                         os.path.dirname(os.path.realpath(__file__)),
                                         "baseconfigsyncthing.xml",
                                     )
-                                    logger.debug( "copy configuration syncthing"
-                                    )
+                                    logger.debug("copy configuration syncthing")
                                     shutil.copyfile(
                                         self.fichierconfsyncthing, filesyncthing
                                     )
@@ -474,9 +471,9 @@ class MUCBot(ClientXMPP):
                                         % json.dumps(self.syncthing.config, indent=4)
                                     )
                                     # if logging.getLogger().level == logging.DEBUG:
-                                        # dataconf = json.dumps(
-                                            # self.syncthing.config, indent=4
-                                        # )
+                                    # dataconf = json.dumps(
+                                    # self.syncthing.config, indent=4
+                                    # )
                                     # else:
                                     dataconf = "re-setup syncthing ok"
 
@@ -998,11 +995,11 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         logger.error("The connector failed.")
         logger.error(f"Unable to connect to {tg.confserver}:{tg.confport}.")
         if ipfromdns(tg.confserver) == "":
-            logger.debug( f"We cannot contact: {tg.confserver} ")
+            logger.debug(f"We cannot contact: {tg.confserver} ")
 
         time.sleep(2)
     if tg.agenttype != "relayserver":
-        logger.debug( f"connect {ipfromdns(tg.confserver)} {tg.confport}")
+        logger.debug(f"connect {ipfromdns(tg.confserver)} {tg.confport}")
         xmpp = MUCBot(tg)
         xmpp.register_plugin("xep_0030")  # Service Discovery
         xmpp.register_plugin("xep_0045")  # Multi-User Chat
@@ -1100,20 +1097,22 @@ if __name__ == "__main__":
     print(opts.typemachine)
     tg = confParameter(opts.typemachine)
 
-    mfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                         "DEBUG_CONNECTION_AGENT")
-    if opts.consoledebug or os.path.isfile(mfile) or os.path.isfile(f'{mfile}.txt') :
+    mfile = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "DEBUG_CONNECTION_AGENT"
+    )
+    if opts.consoledebug or os.path.isfile(mfile) or os.path.isfile(f"{mfile}.txt"):
         tg.levellog = logging.DEBUG
     format = "%(asctime)s - %(levelname)s - (CONF)%(message)s"
     formatter = logging.Formatter(format)
-    logging.basicConfig(
-            level=tg.levellog, format=format)
+    logging.basicConfig(level=tg.levellog, format=format)
 
-    logger =logging.getLogger()  # either the given logger or the root logger
+    logger = logging.getLogger()  # either the given logger or the root logger
     logger.setLevel(tg.levellog)
     # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
     if logger.handlers:
-        console = logger.handlers[0]  # we assume the first handler is the one we want to configure
+        console = logger.handlers[
+            0
+        ]  # we assume the first handler is the one we want to configure
     else:
         console = logging.StreamHandler()
         logger.addHandler(console)
