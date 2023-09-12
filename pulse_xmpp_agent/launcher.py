@@ -26,6 +26,19 @@ if sys.platform.startswith("win"):
     import win32con
     import win32api
 
+if platform.system() == "Windows":
+    # Windows does not support ANSI escapes and we are using API calls to
+    # set the console color
+    logging.StreamHandler.emit = add_coloring_to_emit_windows(
+        logging.StreamHandler.emit
+    )
+else:
+    # all non-Windows platforms are supporting ANSI escapes so we use them
+    logging.StreamHandler.emit = add_coloring_to_emit_ansi(
+        logging.StreamHandler.emit
+    )
+
+
 logger = logging.getLogger()
 
 filePath = os.path.dirname(os.path.realpath(__file__))
@@ -1163,20 +1176,6 @@ if __name__ == "__main__":
     start_time = datetime.now()
     ProcessData = global_data_process()
 
-    if platform.system() == "Windows":
-        # Windows does not support ANSI escapes and we are using API calls to set the console color
-        logging.StreamHandler.emit = add_coloring_to_emit_windows(
-            logging.StreamHandler.emit
-        )
-    else:
-        # all non-Windows platforms are supporting ANSI escapes so we use them
-        logging.StreamHandler.emit = add_coloring_to_emit_ansi(
-            logging.StreamHandler.emit
-        )
-
-    # format log more informations
-    format = "%(asctime)s - %(levelname)s - (LAUNCHER)%(message)s"
-
     directory_file = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP"
     )
@@ -1253,19 +1252,23 @@ if __name__ == "__main__":
         logfile = os.path.join("/opt", "Pulse", "var", "log", defaultnamelogfile)
     else:
         logfile = os.path.join("/", "var", "log", "pulse", defaultnamelogfile)
+
+    format = "%(asctime)s - %(levelname)s -(LAUNCHER)%(message)s"
+    formatter = logging.Formatter(format)
+
+    levellog = logging.INFO
+    if os.path.isfile(mfile) or os.path.isfile(f'{mfile}.txt') or opts.consoledebug:
+        levellog = logging.DEBUG
+    logging.basicConfig(
+            level=levellog, format=format, filename=logfile, filemode="a")
     if opts.consoledebug:
-        logging.basicConfig(level=logging.DEBUG, format=format)
-    else:
-        mfile = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "DEBUG_LAUNCHER"
-        )
-        if os.path.isfile(mfile):
-            LOGMODE = logging.DEBUG
-        else:
-            LOGMODE = logging.INFO
-        logging.basicConfig(
-            level=LOGMODE, format=format, filename=logfile, filemode="a"
-        )
+        # on ajoute 1 logger pour la console.
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(levellog)
+        console_handler.setFormatter(formatter)
+        logger = logging.getLogger()
+        logger.addHandler(console_handler)
+        logger.info("flux des logs vers console")
 
     if sys.platform.startswith("win"):
         result = win32api.SetConsoleCtrlHandler(ProcessData._CtrlHandler, 1)
