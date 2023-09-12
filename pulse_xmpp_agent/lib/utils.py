@@ -2172,6 +2172,7 @@ def getHomedrive(username="pulseuser"):
 
         return homedrive
 
+
 def keypub():
     keypubstring = ""
     if sys.platform.startswith("linux"):
