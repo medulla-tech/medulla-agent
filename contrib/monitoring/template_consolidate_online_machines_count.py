@@ -135,7 +135,7 @@ def loads_alert():
 
 def main():
     # Personal Code below
-    # The print are displayed in the final result file. 
+    # The print are displayed in the final result file.
     # They are needed for a better comprehension.
     # In the following example code, it shows how to use the base directly
 
@@ -167,7 +167,7 @@ def main():
     result_ejabberd = xmppmaster.fetching(sql)
     sum_from_monitoring = int(result_ejabberd[0]["nb_connected_users"])
     print(f"Sum from monitoring: {sum_from_monitoring}")
-    # Above result contains online machines, relays, substitutes 
+    # Above result contains online machines, relays, substitutes
     # (including master_reconf) and master
 
     sql = """ SELECT COUNT(*) AS nb_online FROM machines WHERE enabled = 1;"""
