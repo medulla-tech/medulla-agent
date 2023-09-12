@@ -2153,23 +2153,23 @@ def getHomedrive(username="pulseuser"):
     Returns:
         It returns the path to the home of `username`
     """
-    usersid = get_user_sid(username)
+    if sys.platform.startswith("win"):
+        usersid = get_user_sid(username)
 
-    try:
-        regquery = (
-            'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" /v "ProfileImagePath" /s'
-            % usersid
-        )
-        resultquery = simplecommand(encode_strconsole(regquery))
+        try:
+            regquery = (
+                'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" /v "ProfileImagePath" /s'
+                % usersid
+            )
+            resultquery = simplecommand(encode_strconsole(regquery))
 
-    except Exception as e:
-        logger.error("An error occured whil trying to %s" % (str(e)))
+        except Exception as e:
+            logger.error("An error occured whil trying to %s" % (str(e)))
 
-    if resultquery["code"] == 0:
-        homedrive = resultquery["result"].split("    ")[-1].replace("\r\n", "")
+        if resultquery["code"] == 0:
+            homedrive = resultquery["result"].split("    ")[-1].replace("\r\n", "")
 
-    return homedrive
-
+        return homedrive
 
 def keypub():
     keypubstring = ""
