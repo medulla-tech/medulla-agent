@@ -195,6 +195,17 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
         os.remove(dfn)
 
 
+if platform.system() == "Windows":
+    # Windows does not support ANSI escapes and we are using API calls to
+    # set the console color
+    logging.StreamHandler.emit = add_coloring_to_emit_windows(
+        logging.StreamHandler.emit
+    )
+else:
+    # all non-Windows platforms are supporting ANSI escapes so we use them
+    logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+
+
 logger = logging.getLogger()
 
 signalint = False
@@ -269,10 +280,19 @@ class MUCBot(ClientXMPP):
 
         self.ipconnection = self.config.Server
 
+        format = "%(asctime)s - %(levelname)s - (XMPP)%(message)s"
+        formatter = logging.Formatter(format)
+
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
         logger.debug("slixmpp log level is %s" % self.config.log_level_slixmpp)
         handler_slixmpp.setLevel(self.config.log_level_slixmpp)
+
+        if handler_slixmpp.handlers:
+            hslixmpp = logger.handlers[
+                0
+            ]  # we assume the first handler is the one we want to configure
+            hslixmpp.setFormatter(formatter)
 
         # _____________ verify network interface _____________
         # verifi si on a changer les interface pendant l'arret de l'agent.
@@ -3907,33 +3927,27 @@ def doTask(
         except subprocess.CalledProcessError as e:
             pass
     global signalint
-    if platform.system() == "Windows":
-        # Windows does not support ANSI escapes and we are using API calls to
-        # set the console color
-        logging.StreamHandler.emit = add_coloring_to_emit_windows(
-            logging.StreamHandler.emit
-        )
+
+    format = "%(asctime)s - %(levelname)s - (AGENT_TASK)%(message)s"
+    formatter = logging.Formatter(format)
+
+    logger = logging.getLogger()  # either the given logger or the root logger
+    # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
+    if logger.handlers:
+        console = logger.handlers[
+            0
+        ]  # we assume the first handler is the one we want to configure
     else:
-        # all non-Windows platforms are supporting ANSI escapes so we use them
-        logging.StreamHandler.emit = add_coloring_to_emit_ansi(
-            logging.StreamHandler.emit
-        )
-    # format log more informations
-    format = "%(asctime)s - %(levelname)s - %(message)s"
-    # logging.handlers.TimedCompressedRotatingFileHandler = TimedCompressedRotatingFileHandler
-    # more information log
-    # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
-    if not optsdeamon:
-        if optsconsoledebug:
-            logging.basicConfig(level=logging.DEBUG, format=format)
-        else:
-            logging.basicConfig(
-                level=tglevellog, format=format, filename=tglogfile, filemode="a"
-            )
-    else:
-        logging.basicConfig(
-            level=tglevellog, format=format, filename=tglogfile, filemode="a"
-        )
+        console = logging.StreamHandler()
+        logger.addHandler(console)
+    console.setFormatter(formatter)
+    console.setLevel(tglevellog)
+
+    file_handler = logging.FileHandler(tglogfile)
+    file_handler.setLevel(tglevellog)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
     if optstypemachine.lower() in ["machine"]:
         sys.path.append(
             os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
@@ -4098,33 +4112,29 @@ class process_xmpp_agent:
 
         self.pidprogrammprincipal = pidprogrammprincipal
 
-        if platform.system() == "Windows":
-            # Windows does not support ANSI escapes and we are using API calls
-            # to set the console color
-            logging.StreamHandler.emit = add_coloring_to_emit_windows(
-                logging.StreamHandler.emit
-            )
+        format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
+        formatter = logging.Formatter(format)
+
+        logger = logging.getLogger()  # either the given logger or the root logger
+        logger.setLevel(tglevellog)
+        # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
+        if logger.handlers:
+            console = logger.handlers[
+                0
+            ]  # we assume the first handler is the one we want to configure
         else:
-            # all non-Windows platforms are supporting ANSI escapes so we use
-            # them
-            logging.StreamHandler.emit = add_coloring_to_emit_ansi(
-                logging.StreamHandler.emit
-            )
-        # format log more informations
-        format = "%(asctime)s - %(levelname)s - %(message)s"
-        # more information log
-        # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
-        if not optsdeamon:
-            if optsconsoledebug:
-                logging.basicConfig(level=logging.DEBUG, format=format)
-            else:
-                logging.basicConfig(
-                    level=tglevellog, format=format, filename=tglogfile, filemode="a"
-                )
-        else:
-            logging.basicConfig(
-                level=tglevellog, format=format, filename=tglogfile, filemode="a"
-            )
+            console = logging.StreamHandler()
+            logger.addHandler(console)
+        console.setFormatter(formatter)
+        console.setLevel(tglevellog)
+
+        file_handler = logging.FileHandler(tglogfile)
+        file_handler.setLevel(tglevellog)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+        self.logger = logger
+
         self.logger = logging.getLogger()
         self.process_restartbot = True
         while self.process_restartbot:
@@ -4326,6 +4336,31 @@ if __name__ == "__main__":
             logger.info(cmd)
             simplecommand(cmd)
             os.remove(f)
+    mfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "DEBUG_AGENT")
+    if opts.consoledebug or os.path.isfile(mfile) or os.path.isfile(f"{mfile}.txt"):
+        tg.levellog = logging.DEBUG
+
+    format = "%(asctime)s - %(levelname)s - (AGENT)%(message)s"
+    formatter = logging.Formatter(format)
+    logging.basicConfig(level=tg.levellog, format=format)
+    logger = logging.getLogger()  # either the given logger or the root logger
+    logger.setLevel(tg.levellog)
+    # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
+    if logger.handlers:
+        console = logger.handlers[
+            0
+        ]  # we assume the first handler is the one we want to configure
+    else:
+        console = logging.StreamHandler()
+        logger.addHandler(console)
+    console.setFormatter(formatter)
+    console.setLevel(tg.levellog)
+    file_handler = logging.FileHandler(tg.logfile)
+    file_handler.setLevel(tg.levellog)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.info("file_handler (%s) %s " % (tg.levellog, tg.logfile))
+    logger.info("opts.consoledebug (%s) " % (opts.consoledebug))
 
     if not opts.deamon:
         doTask(
