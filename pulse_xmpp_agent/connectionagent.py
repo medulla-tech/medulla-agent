@@ -72,8 +72,19 @@ sys.path.append(pathplugins)
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
-logger = logging.getLogger()
+if platform.system() == "Windows":
+    # Windows does not support ANSI escapes and we are using API calls to
+    # set the console color
+    logging.StreamHandler.emit = add_coloring_to_emit_windows(
+        logging.StreamHandler.emit
+    )
+else:
+    # all non-Windows platforms are supporting ANSI escapes so we use them
+    logging.StreamHandler.emit = add_coloring_to_emit_ansi(
+        logging.StreamHandler.emit
+    )
 
+logger = logging.getLogger()
 
 class MUCBot(ClientXMPP):
     def __init__(self, conf):  # jid, password, room, nick):
@@ -205,7 +216,7 @@ class MUCBot(ClientXMPP):
                 logger.debug(f"device local syncthing : [{self.deviceid}]")
 
             except KeyError as keyerror:
-                logging.error(
+                logger.error(
                     f"The {keyerror} key is missing in your syncthing config file"
                 )
                 confsyncthing = {
@@ -382,18 +393,18 @@ class MUCBot(ClientXMPP):
                     fromagent = str(msg["from"].bare)
                     if fromagent == self.sub_assessor:
                         # resultconnectionconf
-                        logging.info(
+                        logger.info(
                             "Resultat data : %s"
                             % json.dumps(data, indent=4, sort_keys=True)
                         )
                         if len(data["data"]) == 0:
-                            logging.error("Verify table cluster : has_cluster_ars")
+                            logger.error("Verify table cluster : has_cluster_ars")
                             sys.exit(0)
-                        logging.info(
+                        logger.info(
                             "Start relay server agent configuration\n%s"
                             % json.dumps(data["data"], indent=4, sort_keys=True)
                         )
-                        logging.log(DEBUGPULSE, "write new config")
+                        logger.debug( "write new config")
 
                         if self.config.syncthing_on:
                             try:
@@ -445,8 +456,7 @@ class MUCBot(ClientXMPP):
                                     logger.debug(
                                         f"synchro config {self.syncthing.is_config_sync()}"
                                     )
-                                    logging.log(
-                                        DEBUGPULSE, "write new config syncthing"
+                                    logger.debug( "write new config syncthing"
                                     )
                                     self.syncthing.validate_chang_config()
                                     time.sleep(2)
@@ -454,8 +464,7 @@ class MUCBot(ClientXMPP):
                                         os.path.dirname(os.path.realpath(__file__)),
                                         "baseconfigsyncthing.xml",
                                     )
-                                    logging.log(
-                                        DEBUGPULSE, "copy configuration syncthing"
+                                    logger.debug( "copy configuration syncthing"
                                     )
                                     shutil.copyfile(
                                         self.fichierconfsyncthing, filesyncthing
@@ -464,12 +473,12 @@ class MUCBot(ClientXMPP):
                                         "%s"
                                         % json.dumps(self.syncthing.config, indent=4)
                                     )
-                                    if logging.getLogger().level == logging.DEBUG:
-                                        dataconf = json.dumps(
-                                            self.syncthing.config, indent=4
-                                        )
-                                    else:
-                                        dataconf = "re-setup syncthing ok"
+                                    # if logging.getLogger().level == logging.DEBUG:
+                                        # dataconf = json.dumps(
+                                            # self.syncthing.config, indent=4
+                                        # )
+                                    # else:
+                                    dataconf = "re-setup syncthing ok"
 
                                     confsyncthing = {
                                         "action": "resultconfsyncthing",
@@ -572,11 +581,11 @@ class MUCBot(ClientXMPP):
                                 f"We hit the backtrace {traceback.format_exc()} "
                             )
             else:
-                logging.error("The configuration failed.")
-                logging.error(
+                logger.error("The configuration failed.")
+                logger.error(
                     f"The AES key may be invalid. On this machine, this is configured to use the key {self.config.keyAES32}"
                 )
-                logging.error(
+                logger.error(
                     "Please check on the server on the /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local"
                 )
             self.disconnect(wait=5)
@@ -680,7 +689,7 @@ class MUCBot(ClientXMPP):
         if self.geodata is not None:
             dataobj["geolocalisation"] = self.geodata.localisation
         else:
-            logging.warning("geolocalisation disabled")
+            logger.warning("geolocalisation disabled")
         lastusersession = ""
         try:
             lastusersession = os.environ["USERNAME"]
@@ -778,19 +787,19 @@ class MUCBot(ClientXMPP):
         )
 
     def register(self, iq):
-        logging.info(f"register user {self.boundjid}")
+        logger.info(f"register user {self.boundjid}")
         resp = self.Iq()
         resp["type"] = "set"
         resp["register"]["username"] = self.boundjid.user
         resp["register"]["password"] = self.password
         try:
             resp.send()
-            logging.info(f"Account created for {self.boundjid}!")
+            logger.info(f"Account created for {self.boundjid}!")
         except IqError as e:
-            logging.error(f'Could not register account: {e.iq["error"]["text"]}')
+            logger.error(f'Could not register account: {e.iq["error"]["text"]}')
             self.disconnect()
         except IqTimeout as e:
-            logging.error("No response from server.")
+            logger.error("No response from server.")
             self.disconnect()
 
     # -----------------------------------------------------------------------
@@ -807,7 +816,7 @@ class MUCBot(ClientXMPP):
             msgkey = msg.keys()
             msgfrom = ""
             if "from" not in msgkey:
-                logging.error(f"Stanza message bad format {msg}")
+                logger.error(f"Stanza message bad format {msg}")
                 return (
                     False,
                     "bad format",
@@ -847,11 +856,11 @@ class MUCBot(ClientXMPP):
                     logger.error(f"Stanza message type inconu {type}")
                     return False, "error"
         except Exception as e:
-            logging.error(f"Stanza message bad format {msg}")
-            logging.error(f"{traceback.format_exc()}")
+            logger.error(f"Stanza message bad format {msg}")
+            logger.error(f"{traceback.format_exc()}")
             return False, f"error {str(e)}"
         if "body" not in msgkey:
-            logging.error(f"Stanza message body missing {msg}")
+            logger.error(f"Stanza message body missing {msg}")
             return False, "error body missing"
         return True, "chat"
 
@@ -859,7 +868,7 @@ class MUCBot(ClientXMPP):
         """
         analyse stanza information
         """
-        logging.error("child elements message")
+        logger.error("child elements message")
         messagestanza = ""
         for t in msgkey:
             if t not in ["error", "lang"]:
@@ -875,7 +884,7 @@ class MUCBot(ClientXMPP):
                     if e != "":
                         messagestanza += "%s : %s\n" % (t, e)
         if messagestanza != "":
-            logging.error(messagestanza)
+            logger.error(messagestanza)
 
     # -----------------------------------------------------------------------
     # ---------------------- END analyse strophe xmpp -----------------------
@@ -921,7 +930,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
                 os._exit(0)
             doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     except OSError as error:
-        logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
+        logger.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logger.error("\n%s" % (traceback.format_exc()))
         os._exit(1)
 
@@ -954,54 +963,6 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         except subprocess.CalledProcessError as e:
             pass
 
-    if platform.system() == "Windows":
-        # Windows does not support ANSI escapes and we are using API calls to
-        # set the console color
-        logging.StreamHandler.emit = add_coloring_to_emit_windows(
-            logging.StreamHandler.emit
-        )
-    else:
-        # all non-Windows platforms are supporting ANSI escapes so we use them
-        logging.StreamHandler.emit = add_coloring_to_emit_ansi(
-            logging.StreamHandler.emit
-        )
-    # format log more informations
-    format = "%(asctime)s - %(levelname)s - (CONF)%(message)s"
-    # more information log
-    # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
-    if optsconsoledebug:
-        # recupere logger principal par son nom
-        loggermain = logging.getLogger(logging.getLogger().name)
-        # current_level = loggermain.getEffectiveLevel()
-        # Configurer le logger
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
-        loggermain.setLevel(logging.DEBUG)
-        # Créer un gestionnaire pour afficher les messages dans la console
-
-        # gestionnaire log file.
-        file_handler = logging.FileHandler(tglogfile)
-        file_handler.setLevel(logging.DEBUG)
-
-        # Créer un formatteur pour le gestionnaire de fichier
-        file_formatter = logging.Formatter(
-            "CLI : CONNECT %(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(file_formatter)
-
-        loggermain.addHandler(file_handler)
-        logger.debug(
-            "\n------------------------------------------------------------"
-            "\n----------- Connecteur launcher by console -----------------"
-            "\n------------------------------------------------------------"
-        )
-
-    else:
-        logging.basicConfig(
-            level=tglevellog, format=format, filename=tglogfile, filemode="a"
-        )
     if optstypemachine.lower() in ["machine"]:
         sys.path.append(
             os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
@@ -1012,8 +973,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         )
     # Setup the command line arguments.
     tg = confParameter(optstypemachine)
-    logging.log(
-        DEBUGPULSE,
+    logger.debug(
         "Parameter to connect. (%s : %s) on xmpp server."
         " %s" % (tg.confserver, tg.confport, tg.confserver),
     )
@@ -1035,14 +995,14 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             ipfromdns(tg.confserver), tg.confport
         ):
             break
-        logging.error("The connector failed.")
-        logging.error(f"Unable to connect to {tg.confserver}:{tg.confport}.")
+        logger.error("The connector failed.")
+        logger.error(f"Unable to connect to {tg.confserver}:{tg.confport}.")
         if ipfromdns(tg.confserver) == "":
-            logging.log(DEBUGPULSE, f"We cannot contact: {tg.confserver} ")
+            logger.debug( f"We cannot contact: {tg.confserver} ")
 
         time.sleep(2)
     if tg.agenttype != "relayserver":
-        logging.log(DEBUGPULSE, f"connect {ipfromdns(tg.confserver)} {tg.confport}")
+        logger.debug( f"connect {ipfromdns(tg.confserver)} {tg.confport}")
         xmpp = MUCBot(tg)
         xmpp.register_plugin("xep_0030")  # Service Discovery
         xmpp.register_plugin("xep_0045")  # Multi-User Chat
@@ -1073,8 +1033,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         fichier = open(namefilebool, "w")
         fichier.close()
     else:
-        logging.log(
-            DEBUGPULSE,
+        logger.debug(
             "Warning: A relay server holds a Static "
             "configuration. Do not run configurator agent on relay servers.",
         )
@@ -1085,13 +1044,13 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         # t.start()
         # xmpp.process(block=True)
         # t.cancel()
-        # logging.log(DEBUGPULSE,"bye bye connecteur")
+        # logger.debug("bye bye connecteur")
         # namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
         # "BOOLCONNECTOR")
         # fichier= open(namefilebool,"w")
         # fichier.close()
         # else:
-        # logging.log(DEBUGPULSE,"Unable to connect to %s" % tg.confserver)
+        # logger.debug("Unable to connect to %s" % tg.confserver)
     # else:
     # logging.log(
     # DEBUGPULSE,
@@ -1137,8 +1096,35 @@ if __name__ == "__main__":
     )
 
     opts, args = optp.parse_args()
+
     print(opts.typemachine)
     tg = confParameter(opts.typemachine)
+
+    mfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         "DEBUG_CONNECTION_AGENT")
+    if opts.consoledebug or os.path.isfile(mfile) or os.path.isfile(f'{mfile}.txt') :
+        tg.levellog = logging.DEBUG
+    format = "%(asctime)s - %(levelname)s - (CONF)%(message)s"
+    formatter = logging.Formatter(format)
+    logging.basicConfig(
+            level=tg.levellog, format=format)
+
+    logger =logging.getLogger()  # either the given logger or the root logger
+    logger.setLevel(tg.levellog)
+    # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
+    if logger.handlers:
+        console = logger.handlers[0]  # we assume the first handler is the one we want to configure
+    else:
+        console = logging.StreamHandler()
+        logger.addHandler(console)
+    console.setFormatter(formatter)
+    console.setLevel(tg.levellog)
+    file_handler = logging.FileHandler(tg.logfile)
+    file_handler.setLevel(tg.levellog)
+    # formatter = logging.Formatter(format)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
     if not opts.deamon:
         doTask(
             opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile
