@@ -135,7 +135,8 @@ def loads_alert():
 
 def main():
     # Personal Code below
-    # The print are displayed in the final result file. They are needed for a better comprehension.
+    # The print are displayed in the final result file. 
+    # They are needed for a better comprehension.
     # In the following example code, it shows how to use the base directly
 
     print("Python Script execution")
@@ -166,7 +167,8 @@ def main():
     result_ejabberd = xmppmaster.fetching(sql)
     sum_from_monitoring = int(result_ejabberd[0]["nb_connected_users"])
     print(f"Sum from monitoring: {sum_from_monitoring}")
-    # Above result contains online machines, relays, substitutes (including master_reconf) and master
+    # Above result contains online machines, relays, substitutes 
+    # (including master_reconf) and master
 
     sql = """ SELECT COUNT(*) AS nb_online FROM machines WHERE enabled = 1;"""
     result_online_agents = xmppmaster.fetching(sql)
@@ -179,7 +181,8 @@ def main():
         + 1
     )
     print(f"Sum from db: {sum_from_db}")
-    # Above result contains substitutes including master and master_reconf as they are present in sum_from_monitoring
+    # Above result contains substitutes including master and master_reconf
+    # as they are present in sum_from_monitoring
 
     # Define an error margin as 1% of the number of machines
     error_margin = int(sum_from_monitoring * 0.01)

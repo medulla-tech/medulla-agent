@@ -22,8 +22,8 @@ class MsgsignedRSA:
         Class use for verify from message xmpp.
         The message structure pulse xmpp has a session id.
         Session id is signed with the private key of the sender of the message.
-        The receiver of the message can verify the origin of the message by comparing\
-        the signature of the sessionid with the sessionid.
+        The receiver of the message can verify the origin of the message by
+        comparing the signature of the sessionid with the sessionid.
 
         Examples sender signed  data:
             master = MsgsignedRSA("master")

@@ -136,7 +136,8 @@ def loads_alert():
 
 def main():
     # Personal Code below
-    # The print are displayed in the final result file. They are needed for a better comprehension.
+    # The print are displayed in the final result file.
+    # They are needed for a better comprehension.
     # In the following example code, it shows how to use the base directly
 
     print("Python Script execution")
