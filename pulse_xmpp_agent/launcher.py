@@ -22,6 +22,7 @@ import signal
 import configparser
 import urllib
 
+from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 if sys.platform.startswith("win"):
     import win32con
     import win32api
@@ -1244,6 +1245,7 @@ if __name__ == "__main__":
     else:
         defaultnamelogfile = "xmpp-agent-relay.log"
 
+
     if sys.platform.startswith("win"):
         logfile = os.path.join(
             "c:\\", "progra~1", "Pulse", "var", "log", defaultnamelogfile
@@ -1255,10 +1257,13 @@ if __name__ == "__main__":
 
     format = "%(asctime)s - %(levelname)s -(LAUNCHER)%(message)s"
     formatter = logging.Formatter(format)
-
+    mfile = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "DEBUG_LAUNCHER"
+        )
     levellog = logging.INFO
     if os.path.isfile(mfile) or os.path.isfile(f'{mfile}.txt') or opts.consoledebug:
         levellog = logging.DEBUG
+
     logging.basicConfig(
             level=levellog, format=format, filename=logfile, filemode="a")
     if opts.consoledebug:
