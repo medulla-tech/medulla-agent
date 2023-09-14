@@ -23,6 +23,7 @@ import json
 import re
 import traceback
 import base64
+import socket
 
 from lib.networkinfo import (
     networkagentinfo,
@@ -91,7 +92,8 @@ class MUCBot(ClientXMPP):
         newjidconf = conf.jidagent.split("@")
         resourcejid = newjidconf[1].split("/")
         resourcejid[0] = conf.confdomain
-        newjidconf[0] = getRandomName(10, "conf")
+        #newjidconf[0] = getRandomName(10, "conf")
+        newjidconf[0] = getRandomName(4, "conf_%s_" % socket.gethostname())
         self.HostNameSystem = platform.node().split(".")[0]
         conf.jidagent = f"{newjidconf[0]}@{resourcejid[0]}/{self.HostNameSystem}"
         self.agentmaster = jid.JID("master@pulse")
