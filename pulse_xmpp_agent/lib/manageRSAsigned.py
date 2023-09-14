@@ -54,6 +54,24 @@ class MsgsignedRSA:
             self.Setdirectorytempinfo(), f"{self.type}-private-RSA.key"
         )
 
+        if os.path.exists(self.filekeypublic ):
+            self.filekeypublicexists = True
+        else:
+            self.filekeypublicexists = False
+            logger.warning(f"public key {self.filekeypublic} no exits")
+
+        if os.path.exists(self.fileallkey ):
+            self.fileallkeyexists = True
+        else:
+            self.fileallkeyexists = False
+            logger.warning(f"complete key PEN  {self.fileallkey} no exits")
+
+        if os.path.exists(self.filekeyprivate ):
+            self.filekeyprivateexists = True
+        else:
+            self.filekeyprivateexists = False
+            logger.warning(f"public key : {filekeypublic} no exist")
+
         self.dirtempinfo = self.Setdirectorytempinfo()
         self.allkey = None
         self.publickey = None
@@ -195,18 +213,24 @@ class MsgsignedRSA:
         """
         Function load from file the public key to object RSA key
         """
+        if filekeypublic is None:
+            filekeypublic = self.filekeypublic
         return self.tobytes(self.loadkeypublic(filekeypublic=filekeypublic))
 
     def loadkeyprivatebytes(self, filekeyprivate=None):
         """
         Function load from file the private key to object RSA key
         """
+        if filekeyprivate is None:
+            filekeyprivate = self.filekeyprivate
         return self.tobytes(self.loadkeyprivate(filekeyprivate=filekeyprivate))
 
     def loadkeypublictobase64byte(self, filekeypublic=None):
         """
         Function load from file the public keys RSA as a base64 string
         """
+        if filekeypublic is None:
+            filekeypublic = self.filekeypublic
         bkespub = self.loadkeypublicbytes(self, filekeypublic=filekeypublic)
         return None if bkespub is None else base64.b64encode(bkespub)
 
@@ -214,12 +238,16 @@ class MsgsignedRSA:
         """
         Function load from file the public keys RSA as a base64 string
         """
+        if filekeypublic is None:
+            filekeypublic = self.filekeypublic
         return self.tostr(self.loadkeypublictobase64byte(filekeypublic=filekeypublic))
 
     def loadkeyprivatetobase64byte(self, filekeyprivate=None):
         """
         Function load from file the private keys RSA as a base64 string
         """
+        if filekeyprivate is None:
+            filekeyprivate = self.filekeyprivate
         bkespriv = self.loadkeyprivatebytes(self, filekeyprivate=filekeyprivate)
         return None if bkespriv is None else base64.b64encode(bkespriv)
 
@@ -227,6 +255,8 @@ class MsgsignedRSA:
         """
         Function load from file the private keys RSA as a base64 string
         """
+        if filekeyprivate is None:
+            filekeyprivate = self.filekeyprivate
         return self.tostr(
             self.loadkeyprivatetobase64byte(filekeyprivate=filekeyprivate)
         )
