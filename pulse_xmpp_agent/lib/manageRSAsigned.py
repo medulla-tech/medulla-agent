@@ -339,6 +339,9 @@ def install_key(name_or_filepublickey, keybase64, typekey):
     try:
         if not keybase64:
             logger.error(f"[install_key] verifymsg keybase64  =({keybase64})")
+            logger.error(f"[install_key] Issue Installing Empty RSA Key")
+            logger.error(f"[install_key] The installation process is failing due to the absence of valid key data.")
+            return False
         keybase64 = tobytes(keybase64)
 
         name_or_filepublickey = tostr(name_or_filepublickey)
