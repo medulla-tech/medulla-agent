@@ -2425,7 +2425,6 @@ def delete_profile(username="pulseuser"):
             else:
                 logger.error("Error deleting %s folder" % getHomedrive())
         except Exception as e:
-            logger.error("Error deleting %s folder" % getHomedrive())
         # Delete profile
         userenvdll = ctypes.WinDLL("userenv.dll")
         usersid = get_user_sid(username)
