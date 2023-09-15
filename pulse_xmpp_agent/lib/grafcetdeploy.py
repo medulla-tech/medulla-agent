@@ -15,6 +15,7 @@ from lib.utils import (
     shutdown_command,
     reboot_command,
     isBase64,
+    Base64tostring,
     downloadfile,
     simplecommand,
     send_data_tcp,
@@ -1323,10 +1324,7 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            if isBase64(self.workingstep["command"]):
-                self.workingstep["command"] = base64.b64decode(
-                    self.workingstep["command"]
-                )
+            self.workingstep["command"] = Base64tostring(self.workingstep["command"])
             self.workingstep["command"] = self.replaceTEMPLATE(
                 self.workingstep["command"]
             )
@@ -1563,10 +1561,7 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            if isBase64(self.workingstep["script"]):
-                self.workingstep["script"] = base64.b64decode(
-                    self.workingstep["script"]
-                )
+            self.workingstep["script"] = Base64tostring(self.workingstep["script"])
             self.workingstep["script"] = self.replaceTEMPLATE(
                 self.workingstep["script"]
             )

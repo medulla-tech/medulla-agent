@@ -1975,13 +1975,44 @@ def reboot_command():
         os.system("shutdown -r now")
 
 
+
 def isBase64(s):
+    """
+    Vérifie si la chaîne donnée est en base64.
+
+    Args:
+        s (str/bytes/bytearray): La chaîne à vérifier.
+
+    Returns:
+        bool: True si la chaîne est en base64, False sinon.
+    """
     try:
-        if base64.b64encode(base64.b64decode(s)) == s:
-            return True
-    except Exception:
-        pass
-    return False
+        decoded = base64.b64decode(s)
+        decoded_str = decoded.decode('utf-8')
+        return True
+    except (base64.binascii.Error, UnicodeDecodeError):
+        return False
+
+
+def isBase64tostring(s):
+    """
+    Vérifie si la chaîne donnée est en base64. Si c'est le cas, la fonction la décode en utf-8.
+
+    Args:
+        s (str/bytes/bytearray): La chaîne à vérifier et potentiellement décoder.
+
+    Returns:
+        str: La chaîne décodée en utf-8 si elle était en base64, sinon la chaîne convertie en utf-8.
+    """
+    try:
+        # Vérifier si la chaîne est en base64 en essayant de la décoder
+        decoded = base64.b64decode(s)
+        decoded_str = decoded.decode('utf-8')
+        return decoded_str
+    except (base64.binascii.Error, UnicodeDecodeError):
+        # Si une erreur se produit, cela signifie que ce n'est pas du base64, donc on renvoie simplement la chaîne en utf-8
+        return str(s, 'utf-8')
+
 
 
 def decode_strconsole(string_bytes):
