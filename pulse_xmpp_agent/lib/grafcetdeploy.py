@@ -1611,10 +1611,10 @@ class grafcet:
             # TODO:  See how we deal with \
             st = self.workingstep["script"]
 
-            if sys.platform.startswith('win'):
-                encoding = 'cp1252'
+            if sys.platform.startswith("win"):
+                encoding = "cp1252"
             else:  # Linux or Mac
-                encoding = 'utf-8'
+                encoding = "utf-8"
 
             if suffix in ["bat", "ps1"]:
                 os.write(fd, st.encode(encoding))
