@@ -54,19 +54,19 @@ class MsgsignedRSA:
             self.Setdirectorytempinfo(), f"{self.type}-private-RSA.key"
         )
 
-        if os.path.exists(self.filekeypublic ):
+        if os.path.exists(self.filekeypublic):
             self.filekeypublicexists = True
         else:
             self.filekeypublicexists = False
             logger.warning(f"public key {self.filekeypublic} no exits")
 
-        if os.path.exists(self.fileallkey ):
+        if os.path.exists(self.fileallkey):
             self.fileallkeyexists = True
         else:
             self.fileallkeyexists = False
             logger.warning(f"complete key PEN  {self.fileallkey} no exits")
 
-        if os.path.exists(self.filekeyprivate ):
+        if os.path.exists(self.filekeyprivate):
             self.filekeyprivateexists = True
         else:
             self.filekeyprivateexists = False
@@ -370,7 +370,9 @@ def install_key(name_or_filepublickey, keybase64, typekey):
         if not keybase64:
             logger.error(f"[install_key] verifymsg keybase64  =({keybase64})")
             logger.error(f"[install_key] Issue Installing Empty RSA Key")
-            logger.error(f"[install_key] The installation process is failing due to the absence of valid key data.")
+            logger.error(
+                f"[install_key] The installation process is failing due to the absence of valid key data."
+            )
             return False
         keybase64 = tobytes(keybase64)
 
