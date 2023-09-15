@@ -1607,14 +1607,19 @@ class grafcet:
             self.workingstep["script"] = self.replaceTEMPLATE(
                 self.workingstep["script"]
             )
-
             fd, temp_path = mkstemp(suffix=f".{suffix}")
             # TODO:  See how we deal with \
             st = self.workingstep["script"]
+
+            if sys.platform.startswith('win'):
+                encoding = 'cp1252'
+            else:  # Linux or Mac
+                encoding = 'utf-8'
+
             if suffix in ["bat", "ps1"]:
-                os.write(fd, st)
+                os.write(fd, st.encode(encoding))
             else:
-                os.write(fd, st.replace("\\", "\\\\"))
+                os.write(fd, st.replace("\\", "\\\\").encode(encoding))
             os.close(fd)
             self.workingstep["script"] = f"script in temp file : {temp_path}"
             # Create command
