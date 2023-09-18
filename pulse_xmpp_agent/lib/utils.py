@@ -1975,7 +1975,6 @@ def reboot_command():
         os.system("shutdown -r now")
 
 
-
 def isBase64(s):
     """
     Vérifie si la chaîne donnée est en base64.
@@ -1988,7 +1987,7 @@ def isBase64(s):
     """
     try:
         decoded = base64.b64decode(s)
-        decoded_str = decoded.decode('utf-8')
+        decoded_str = decoded.decode("utf-8")
         return True
     except (base64.binascii.Error, UnicodeDecodeError):
         return False
@@ -2007,12 +2006,11 @@ def isBase64tostring(s):
     try:
         # Vérifier si la chaîne est en base64 en essayant de la décoder
         decoded = base64.b64decode(s)
-        decoded_str = decoded.decode('utf-8')
+        decoded_str = decoded.decode("utf-8")
         return decoded_str
     except (base64.binascii.Error, UnicodeDecodeError):
         # Si une erreur se produit, cela signifie que ce n'est pas du base64, donc on renvoie simplement la chaîne en utf-8
-        return str(s, 'utf-8')
-
+        return str(s, "utf-8")
 
 
 def decode_strconsole(string_bytes):
@@ -3251,10 +3249,10 @@ def delete_profile(username="pulseuser"):
         try:
             delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive()
             result = simplecommand(encode_strconsole(delete_folder_cmd))
-            if result['code'] == 0:
-                logger.debug('Deleted %s folder' % getHomedrive())
+            if result["code"] == 0:
+                logger.debug("Deleted %s folder" % getHomedrive())
             else:
-                logger.error('Error deleting %s folder' % getHomedrive())
+                logger.error("Error deleting %s folder" % getHomedrive())
         except Exception as e:
             pass
         # Delete profile
