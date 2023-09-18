@@ -15,7 +15,7 @@ from lib.utils import (
     shutdown_command,
     reboot_command,
     isBase64,
-    Base64tostring,
+    isBase64tostring,
     downloadfile,
     simplecommand,
     send_data_tcp,
