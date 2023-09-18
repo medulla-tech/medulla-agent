@@ -35,7 +35,6 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"}
 
-
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     HEADER = {"Pragma": "no-cache",
               "User-Agent": "Proxy:FusionInventory/Pulse2/GLPI",

@@ -48,7 +48,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if StrictVersion(installed_version) < StrictVersion(FUSIONVERSION):
                 updatefusion(xmppobject)
     except Exception as error_plugin:
-        logger.error("An error occured. The error code is %s" % str(e))
+        logger.error("An error occured. The error code is %s" % str(error_plugin))
         pass
 
 

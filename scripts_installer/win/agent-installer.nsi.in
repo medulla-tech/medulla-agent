@@ -805,3 +805,4 @@ FunctionEnd
 !macroend
 !insertmacro StopPulseServices ""
 !insertmacro StopPulseServices "un."
+
