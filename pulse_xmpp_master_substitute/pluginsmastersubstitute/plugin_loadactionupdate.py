@@ -48,66 +48,114 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
                             objectxmpp.create_deploy_for_up_machine_windows, repeat=True)
 
 def create_deploy_for_up_machine_windows(objectxmpp):
+    # Remove all expired updates
+    try:
+        XmppMasterDatabase().remove_expired_updates()
+    except Exception as e:
+        logger.error("%s"%e)
+
+    # Need to remove all deployment done from up_machine_windows and add  it to historic
+    XmppMasterDatabase().delete_all_done_updates()
+
+    # Currently Updates in white list are automatically. We need to tag these udpdates as required
+    # but not to launch the deployment automatically.
+    # Before launching the deployment, we need to test the available slots
+
     try:
         need_to_add = XmppMasterDatabase().pending_up_machine_windows_white()
-        for update in need_to_add:
-            intervals = update['intervals'] if update['intervals'] is not None else ""
-            section = '"section":"update"'
-            command = MscDatabase().createcommanddirectxmpp(update['update_id'],
-                '',
-                section,
-                update['files_str'],
-                'enable',
-                'disable',
-                update['start_date'],
-                update['end_date'],
-                "root",
-                "root",
-                update['title'],
-                0,
-                28,
-                0,
-                intervals,
-                None,
-                None,
-                None,
-                'none',
-                'active',
-                '1',
-                cmd_type=0)
-            try:
-                target = MscDatabase().xmpp_create_Target(update['uuidmachine'], update['hostname'])
-            except Exception as e:
-                logger.error("Unable to create Msc Target for update %s"%update['update_id'])
-
-            com_on_host = MscDatabase().xmpp_create_CommandsOnHost(command.id,
-                target['id'],
-                update['hostname'],
-                command.end_date,
-                command.start_date)
-
-            if com_on_host is not None or com_on_host is not False:
-                MscDatabase().xmpp_create_CommandsOnHostPhasedeploykiosk(com_on_host.id)
-
-                XmppMasterDatabase().addlogincommand(
-                    "root",
-                    command.id,
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    0,
-                    0,
-                    0,
-                    0,
-                    {})
-                logger.info("Update %s will be deployed on %s between %s and %s %s"%(update['update_id'], update['title'], update['start_date'], update['end_date'], intervals))
-
-            else:
-                logger.error("Unable to create phases for update %s"%(update['title']))
     except Exception as e:
         logger.error(e)
+
+    # Check if there are curent_deploy
+    updates_in_deploy_state = XmppMasterDatabase().get_updates_in_deploy_state()
+
+    count_updates_in_current_deploy = int(updates_in_deploy_state['current']["total"])
+    updates_in_current_deploy = updates_in_deploy_state['current']["datas"]
+
+    count_updates_in_required_deploy = int(updates_in_deploy_state['required']["total"])
+    updates_in_required_deploy = updates_in_deploy_state['required']["datas"]
+
+    # get deploy slots number and process the number of available slots
+    slots = objectxmpp.update_slots
+    available_slots = slots - count_updates_in_current_deploy
+
+    count_slots = 0
+    index = 0
+    logger.info("%i deploy slots available for %i required updates "%(available_slots, count_updates_in_required_deploy))
+    while count_slots < available_slots and index < count_updates_in_required_deploy:
+        required = updates_in_required_deploy[index]
+        try:
+            if XmppMasterDatabase().deployment_is_running_on_machine(required['jidmachine']) is True:
+                logger.warning("pass for %s on %s"%(required['jidmachine'], required['updateid']))
+                index += 1
+                continue
+            else:
+                count_slots += 1
+                # Here we have already all the needed datas to the machine
+                update = XmppMasterDatabase().pending_up_machine_windows(required)
+
+                if update is False or update is None:
+                    logger.error("Unable to create phases for update %s"%(update['title']))
+
+                else:
+                    # Activate msc on this pending updates
+                    intervals = update['intervals'] if update['intervals'] is not None else ""
+                    section = '"section":"update"'
+                    command = MscDatabase().createcommanddirectxmpp(update['update_id'],
+                        '',
+                        section,
+                        update['files_str'],
+                        'enable',
+                        'disable',
+                        update['start_date'],
+                        update['end_date'],
+                        "root",
+                        "root",
+                        update['title'],
+                        0,
+                        28,
+                        0,
+                        intervals,
+                        None,
+                        None,
+                        None,
+                        'none',
+                        'active',
+                        '1',
+                        cmd_type=0)
+                    try:
+                        target = MscDatabase().xmpp_create_Target(update['uuidmachine'], update['hostname'])
+                    except Exception as e:
+                        logger.error("Unable to create Msc Target for update %s"%update['update_id'])
+
+                    com_on_host = MscDatabase().xmpp_create_CommandsOnHost(command.id,
+                        target['id'],
+                        update['hostname'],
+                        command.end_date,
+                        command.start_date)
+
+                    if com_on_host is not None or com_on_host is not False:
+                        MscDatabase().xmpp_create_CommandsOnHostPhasedeploykiosk(com_on_host.id)
+
+                        XmppMasterDatabase().addlogincommand(
+                            "root",
+                            command.id,
+                            "",
+                            "",
+                            "",
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            0,
+                            {})
+
+                logger.info("pending for %s on %s"%(required['jidmachine'], required['updateid']))
+
+        except Exception as e:
+            logger.error(e)
+            index += 1
 
 def read_conf_loadactionupdate(objectxmpp):
     """
@@ -143,6 +191,11 @@ def read_conf_loadactionupdate(objectxmpp):
         # file_get_contents
         logger.info("debuglocal  %s   " % objectxmpp.debuglocal )
         logger.info("time_scrutation  %s   " % objectxmpp.time_scrutation )
+
+        objectxmpp.update_slots = 10
+        if Config.has_option("parameters", "slots"):
+            objectxmpp.update_slots = Config.getint('parameters', 'slots')
+
 
 def read_debug_conf(objectxmpp):
     """
