@@ -3251,17 +3251,10 @@ def delete_profile(username="pulseuser"):
         try:
             delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive()
             result = simplecommand(encode_strconsole(delete_folder_cmd))
-<<<<<<< HEAD
-            if result["code"] == 0:
-                logger.debug("Deleted %s folder" % getHomedrive())
-            else:
-                logger.error("Error deleting %s folder" % getHomedrive())
-=======
             if result['code'] == 0:
                 logger.debug('Deleted %s folder' % getHomedrive())
             else:
                 logger.error('Error deleting %s folder' % getHomedrive())
->>>>>>> integration
         except Exception as e:
             pass
         # Delete profile
