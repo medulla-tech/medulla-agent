@@ -453,7 +453,7 @@ def encode_terminal(s):
     else:
         raise NotImplementedError(f"Système d'exploitation non pris en charge : {sys.platform}")
 
-class cmdx(object):self.cmd = encode_strconsole(cmd)
+class cmdx(object):
     def __init__(self, cmd, timeout):
         self.cmd = encode_terminal(cmd)
         try:
