@@ -70,7 +70,7 @@ class MsgsignedRSA:
             self.filekeyprivateexists = True
         else:
             self.filekeyprivateexists = False
-            logger.warning(f"public key : {filekeypublic} no exist")
+            logger.warning(f"public key : {self.filekeypublic} no exist")
 
         self.dirtempinfo = self.Setdirectorytempinfo()
         self.allkey = None
