@@ -11,6 +11,7 @@ from lib.utils import set_logging_level
 logger = logging.getLogger()
 plugin = {"VERSION": "1.1", "NAME": "installconfmonitoring", "TYPE": "machine"}  # fmt: skip
 
+
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

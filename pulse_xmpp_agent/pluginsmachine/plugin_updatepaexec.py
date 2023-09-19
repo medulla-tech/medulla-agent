@@ -19,6 +19,7 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.51", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
 
+
 @set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

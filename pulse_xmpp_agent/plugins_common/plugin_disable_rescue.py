@@ -6,6 +6,7 @@ import logging
 import os
 import json
 from lib.utils import set_logging_level
+
 plugin = {"VERSION": "1.1", "NAME": "disable_rescue", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()

@@ -16,6 +16,7 @@ plugin = {"VERSION": "2.2", "VERSIONAGENT": "2.0", "NAME": "updateagent", "TYPE"
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
+
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

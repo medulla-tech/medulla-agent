@@ -12,6 +12,7 @@ from lib.utils import set_logging_level
 
 plugin = {"VERSION": "1.32", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
 
+
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("=====================================================")

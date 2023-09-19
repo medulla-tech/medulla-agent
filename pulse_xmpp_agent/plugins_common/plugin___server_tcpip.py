@@ -45,7 +45,13 @@ import json
 import pickle
 
 from lib.agentconffile import directoryconffile
-from lib.utils import DateTimebytesEncoderjson, simplecommand, AESCipher, isBase64, set_logging_level
+from lib.utils import (
+    DateTimebytesEncoderjson,
+    simplecommand,
+    AESCipher,
+    isBase64,
+    set_logging_level,
+)
 
 # file : pluginsmachine/plugin___server_tcpip.py
 

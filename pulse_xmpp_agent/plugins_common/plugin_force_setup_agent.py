@@ -5,9 +5,11 @@
 import logging
 import os
 from lib.utils import set_logging_level
+
 plugin = {"VERSION": "1.5", "NAME": "force_setup_agent", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
+
 
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

@@ -46,6 +46,7 @@ def read_conf_plugin_start(objectxmpp):
                 if x.strip() != ""
             ]
 
+
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
