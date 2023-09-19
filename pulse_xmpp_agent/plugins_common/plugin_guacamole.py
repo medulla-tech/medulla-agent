@@ -15,6 +15,7 @@ plugin = {"VERSION": "1.14", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 
+
 @set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     # print json.dumps(data, indent=4)

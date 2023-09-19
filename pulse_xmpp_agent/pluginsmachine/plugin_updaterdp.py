@@ -12,6 +12,7 @@ RDPVERSION = "0.2"
 logger = logging.getLogger()
 plugin = {"VERSION": "1.2", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
 
+
 @set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

@@ -140,7 +140,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 msg.append(msglog)
         except PermissionError:
             current_user = getpass.getuser()
-            msglog= f'user {current_user} ne peut pas installer cette clé privee {message["from"]}'
+            msglog = f'user {current_user} ne peut pas installer cette clé privee {message["from"]}'
             logger.warning(msglog)
         # Write message to logger
         for line in msg:

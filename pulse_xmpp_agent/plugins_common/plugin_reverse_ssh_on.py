@@ -35,6 +35,7 @@ def runProcess(cmd, shell=False, envoption=os.environ):
     args = shlex.split(cmd)
     return Popen(args, env=envoption, shell=shell).pid
 
+
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

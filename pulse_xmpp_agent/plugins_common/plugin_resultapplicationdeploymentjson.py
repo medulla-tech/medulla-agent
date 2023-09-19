@@ -4,9 +4,11 @@
 
 import logging
 from lib.utils import set_logging_level
+
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 plugin = {"VERSION": "1.306", "NAME": "resultapplicationdeploymentjson", "TYPE": "all"}  # fmt: skip
+
 
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

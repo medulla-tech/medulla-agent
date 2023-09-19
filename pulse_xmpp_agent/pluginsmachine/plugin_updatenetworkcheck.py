@@ -14,6 +14,7 @@ NETWORKVERSION = "3.0.0"
 logger = logging.getLogger()
 plugin = {"VERSION": "2.1", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
+
 @set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

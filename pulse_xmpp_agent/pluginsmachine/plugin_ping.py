@@ -10,6 +10,7 @@ plugin = {"VERSION": "1.2", "NAME": "ping", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 
+
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")

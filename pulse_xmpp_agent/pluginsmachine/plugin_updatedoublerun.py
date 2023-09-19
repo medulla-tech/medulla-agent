@@ -22,6 +22,7 @@ RSYNC_VERSION = "3.1.2"
 # TODO: See how to handle this on a plain text file.
 P4ONLYUCANSS = ""
 
+
 @set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

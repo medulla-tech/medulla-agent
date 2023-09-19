@@ -75,6 +75,7 @@ def createlistpluginupdate(objectxmpp):
     ]
     objectxmpp.liststartpluginstartupdate.remove("updateagent")
 
+
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

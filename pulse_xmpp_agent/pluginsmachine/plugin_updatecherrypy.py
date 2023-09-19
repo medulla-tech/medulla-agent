@@ -14,6 +14,7 @@ CHERRYPYVERSION = "18.8.0"
 logger = logging.getLogger()
 plugin = {"VERSION": "2.1", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
+
 @set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

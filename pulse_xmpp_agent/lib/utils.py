@@ -85,6 +85,7 @@ if sys.platform.startswith("darwin"):
 
 import inspect
 
+
 def set_logging_level(func):
     """
     Décorateur pour ajuster le niveau de journalisation (logging level) dans les plugins execute par windows.
@@ -110,15 +111,17 @@ def set_logging_level(func):
         ...
 
     """
+
     def wrapper(*args, **kwargs):
         if args:
             arg = args[0]
-            if hasattr(arg, 'config'):
-                if hasattr(arg.config, 'levellog'):
-                    logging.getLogger().setLevel( logging.DEBUG)
+            if hasattr(arg, "config"):
+                if hasattr(arg.config, "levellog"):
+                    logging.getLogger().setLevel(logging.DEBUG)
             else:
                 logging.warning("L objet n'a pas l attribut config")
         return func(*args, **kwargs)
+
     return wrapper
 
 

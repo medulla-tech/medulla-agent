@@ -9,6 +9,7 @@ import sys
 
 plugin = {"VERSION": "2.1", "NAME": "shellcommand", "TYPE": "all"}  # fmt: skip
 
+
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     result = {
