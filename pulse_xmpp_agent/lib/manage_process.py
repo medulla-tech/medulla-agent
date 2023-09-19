@@ -433,7 +433,6 @@ class mannageprocess:
             sys.exit(0)
 
 
-
 def encode_terminal(s):
     """
     Encode la chaîne donnée en utilisant l'encodage du terminal.
@@ -444,14 +443,17 @@ def encode_terminal(s):
     Returns:
         str: La chaîne encodée avec l'encodage du terminal.
     """
-    if sys.platform in ['linux', 'darwin']:
+    if sys.platform in ["linux", "darwin"]:
         # Si le système d'exploitation est Linux ou macOS, on encode en utf-8
-        return s.encode('utf-8').decode('utf-8')
-    elif sys.platform == 'win32':
+        return s.encode("utf-8").decode("utf-8")
+    elif sys.platform == "win32":
         # Si le système d'exploitation est Windows, on encode avec l'encodage Windows spécifique (cp1252)
-        return s.encode('cp1252').decode('cp1252')
+        return s.encode("cp1252").decode("cp1252")
     else:
-        raise NotImplementedError(f"Système d'exploitation non pris en charge : {sys.platform}")
+        raise NotImplementedError(
+            f"Système d'exploitation non pris en charge : {sys.platform}"
+        )
+
 
 class cmdx(object):
     def __init__(self, cmd, timeout):
