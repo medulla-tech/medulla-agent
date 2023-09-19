@@ -6,6 +6,8 @@ import logging
 import json
 from lib import utils
 import traceback
+import getpass
+from lib.utils import set_logging_level
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.7", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
@@ -38,6 +40,7 @@ def get_ars_key(xmppobject, remotejidars, timeout=15):
         return None
 
 
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
@@ -116,19 +119,29 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         if result is False:
             logger.error(msglog)
         msg.append(msglog)
-        result, msglog = utils.add_key_to_authorizedkeys_on_client(
-            username, relayserver_pubkey
-        )
-        if result is False:
-            logger.error(msglog)
-        msg.append(msglog)
-        result, msglog = utils.add_key_to_authorizedkeys_on_client(
-            username, mainserver_pubkey
-        )
-        if result is False:
-            logger.error(msglog)
-        msg.append(msglog)
+        try:
+            result, msglog = utils.add_key_to_authorizedkeys_on_client(
+                username, relayserver_pubkey
+            )
+            if result is False:
+                logger.error(msglog)
+                msg.append(msglog)
+        except PermissionError:
+            current_user = getpass.getuser()
+            msglog = f'user {current_user} ne peut pas installer cette cle publique {message["from"]}'
+            logger.warning(msglog)
 
+        try:
+            result, msglog = utils.add_key_to_authorizedkeys_on_client(
+                username, mainserver_pubkey
+            )
+            if result is False:
+                logger.error(msglog)
+                msg.append(msglog)
+        except PermissionError:
+            current_user = getpass.getuser()
+            msglog= f'user {current_user} ne peut pas installer cette clé privee {message["from"]}'
+            logger.warning(msglog)
         # Write message to logger
         for line in msg:
             logger.debug(line)
