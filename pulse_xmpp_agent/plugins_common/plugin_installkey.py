@@ -8,9 +8,9 @@ from lib import utils
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "4.1", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "4.2", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug(f'call {plugin} from {message["from"]}')

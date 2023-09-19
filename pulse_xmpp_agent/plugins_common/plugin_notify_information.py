@@ -4,14 +4,15 @@
 
 import os
 import logging
-from lib.utils import file_put_contents
+from lib.utils import file_put_contents, set_logging_level
 
-plugin = {"VERSION": "1.0", "VERSIONAGENT": "2.1", "NAME": "notify_information", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.1", "VERSIONAGENT": "2.1", "NAME": "notify_information", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug(f'call {plugin} from {message["from"]}')

@@ -47,9 +47,10 @@ import time
 import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 
+@set_logging_level
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
     try:
         logger.debug("###################################################")

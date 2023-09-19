@@ -16,9 +16,9 @@ MAIN = "1.1"
 list_modules = ["bootstrap", "jquery", "jqueryui", "datatables", "main"]
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.4", "NAME": "updatefileviewer", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updatefileviewer", "TYPE": "machine"}  # fmt: skip
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

@@ -10,12 +10,13 @@ import traceback
 from lib import utils, managepackage
 from slixmpp import jid
 
-plugin = {"VERSION": "2.01", "VERSIONAGENT": "2.1", "NAME": "deploysyncthing", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "2.02", "VERSIONAGENT": "2.1", "NAME": "deploysyncthing", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

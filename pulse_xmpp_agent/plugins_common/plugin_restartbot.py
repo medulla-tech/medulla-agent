@@ -5,15 +5,15 @@
 """
  This plugin restartBot restart agent
 """
-
-
+from lib.utils import set_logging_level
 import json
 import logging
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.3", "NAME": "restartbot", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.31", "NAME": "restartbot", "TYPE": "all"}  # fmt: skip
 
 
+@set_logging_level
 def action(objetxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

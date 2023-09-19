@@ -17,7 +17,7 @@ import re
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.3", "NAME": "startupdate", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "startupdate", "TYPE": "machine"}  # fmt: skip
 
 
 def read_conf_plugin_startupdate(objectxmpp):
@@ -75,7 +75,7 @@ def createlistpluginupdate(objectxmpp):
     ]
     objectxmpp.liststartpluginstartupdate.remove("updateagent")
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

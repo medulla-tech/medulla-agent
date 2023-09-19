@@ -11,9 +11,9 @@ from lib import utils
 FILETREEVERSION = "0.1"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "0.2", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "0.3", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

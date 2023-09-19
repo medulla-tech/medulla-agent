@@ -5,12 +5,13 @@
 import logging
 import os
 import json
-
-plugin = {"VERSION": "1.0", "NAME": "disable_rescue", "TYPE": "all"}  # fmt: skip
+from lib.utils import set_logging_level
+plugin = {"VERSION": "1.1", "NAME": "disable_rescue", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 
 
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug(f'call {plugin} from {message["from"]}')

@@ -8,13 +8,14 @@ import sys
 import time
 import logging
 import os
+from lib.utils import set_logging_level
 
-plugin = {"VERSION": "1.13", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.14", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
 
 
 logger = logging.getLogger()
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     # print json.dumps(data, indent=4)
 

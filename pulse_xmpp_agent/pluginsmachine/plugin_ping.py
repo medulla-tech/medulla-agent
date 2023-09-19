@@ -4,12 +4,13 @@
 
 import logging
 import json
+from lib.utils import set_logging_level
 
-plugin = {"VERSION": "1.1", "NAME": "ping", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "ping", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")
     logging.getLogger().debug(

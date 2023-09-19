@@ -14,9 +14,9 @@ URBACKUP_VERSION = "2.5.24"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatebackupclient", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updatebackupclient", "TYPE": "machine"}  # fmt: skip
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

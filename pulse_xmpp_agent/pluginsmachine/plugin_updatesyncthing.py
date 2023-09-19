@@ -17,9 +17,9 @@ from xml.etree import ElementTree
 SYNCTHINGVERSION = "1.23.4"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.24", "NAME": "updatesyncthing", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.25", "NAME": "updatesyncthing", "TYPE": "machine"}  # fmt: skip
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

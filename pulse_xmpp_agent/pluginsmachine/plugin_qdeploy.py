@@ -18,7 +18,7 @@ elif sys.platform.startswith("win"):
 
 import tempfile
 
-plugin = {"VERSION": "2.0", "NAME": "qdeploy", "VERSIONAGENT": "2.0.0", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.1", "NAME": "qdeploy", "VERSIONAGENT": "2.0.0", "TYPE": "machine"}  # fmt: skip
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -26,7 +26,7 @@ DEBUGPULSEPLUGIN = 25
 Plugin for deploying a package
 """
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     strjidagent = str(objectxmpp.boundjid.bare)
     if objectxmpp.config.agenttype in ["machine"]:

@@ -45,14 +45,15 @@ import json
 import pickle
 
 from lib.agentconffile import directoryconffile
-from lib.utils import DateTimebytesEncoderjson, simplecommand, AESCipher, isBase64
+from lib.utils import DateTimebytesEncoderjson, simplecommand, AESCipher, isBase64, set_logging_level
 
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code" }  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code" }  # fmt: skip
 
 
+@set_logging_level
 def action(xmppobject, action):
     try:
         logger.debug("=====================================================")

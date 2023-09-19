@@ -11,7 +11,7 @@ import re
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "2.1", "NAME": "start", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "2.2", "NAME": "start", "TYPE": "all"}  # fmt: skip
 
 
 def read_conf_plugin_start(objectxmpp):
@@ -46,7 +46,7 @@ def read_conf_plugin_start(objectxmpp):
                 if x.strip() != ""
             ]
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

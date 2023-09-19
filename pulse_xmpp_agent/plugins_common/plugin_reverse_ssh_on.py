@@ -19,7 +19,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "3.2", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "3.3", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -35,7 +35,7 @@ def runProcess(cmd, shell=False, envoption=os.environ):
     args = shlex.split(cmd)
     return Popen(args, env=envoption, shell=shell).pid
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

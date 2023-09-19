@@ -12,9 +12,9 @@ from lib import utils
 CHERRYPYVERSION = "18.8.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.0", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.1", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

@@ -10,7 +10,7 @@ import getpass
 from lib.utils import set_logging_level
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.7", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.8", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
 
 
 def get_ars_key(xmppobject, remotejidars, timeout=15):

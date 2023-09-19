@@ -13,9 +13,9 @@ import os
 TIGHTVNC = "2.8.79"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

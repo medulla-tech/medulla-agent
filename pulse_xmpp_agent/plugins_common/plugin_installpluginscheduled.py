@@ -3,15 +3,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
-
+from lib.utils import set_logging_level
 
 import logging
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.0", "NAME": "installpluginscheduled", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "installpluginscheduled", "TYPE": "all"}  # fmt: skip
 
 
+@set_logging_level
 def action(objetxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")
     logging.getLogger().debug("########AGENT INSTALL PLUGINS SCHEDULED#############")

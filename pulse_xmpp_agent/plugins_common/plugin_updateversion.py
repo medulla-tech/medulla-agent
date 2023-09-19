@@ -10,9 +10,9 @@ from lib import utils
 logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.0", "NAME": "updateversion", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "updateversion", "TYPE": "all"}  # fmt: skip
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

@@ -4,9 +4,9 @@
 
 import logging
 from lib.configuration import setconfigfile
-
+from lib.utils import set_logging_level
 logger = logging.getLogger()
-plugin = {"VERSION": "1.3", "NAME": "updatesettings", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "updatesettings", "TYPE": "machine"}  # fmt: skip
 
 # Examples
 # param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'
@@ -20,7 +20,7 @@ plugin = {"VERSION": "1.3", "NAME": "updatesettings", "TYPE": "machine"}  # fmt:
 # nb_params = 2
 # ---END-PARAMS---
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

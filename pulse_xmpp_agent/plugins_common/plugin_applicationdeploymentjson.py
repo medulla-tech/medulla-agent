@@ -27,7 +27,7 @@ elif sys.platform.startswith("win"):
     import win32net
 
 
-plugin = { "VERSION": "5.30", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all" }  # fmt: skip
+plugin = { "VERSION": "5.31", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all" }  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
@@ -36,7 +36,7 @@ DEBUGPULSEPLUGIN = 25
 Plugin for deploying a package
 """
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     strjidagent = str(objectxmpp.boundjid.bare)
     if hasattr(objectxmpp.config, "clients_ssh_port"):

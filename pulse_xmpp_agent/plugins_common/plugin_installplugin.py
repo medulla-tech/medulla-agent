@@ -5,10 +5,11 @@
 import os
 import logging
 import json
+from lib.utils import set_logging_level
 
-plugin = {"VERSION": "1.26", "NAME": "installplugin", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.27", "NAME": "installplugin", "TYPE": "all"}  # fmt: skip
 
-
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     if action != "installplugin":
         return

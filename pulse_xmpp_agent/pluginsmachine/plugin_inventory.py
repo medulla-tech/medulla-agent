@@ -27,9 +27,9 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.71", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.72", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
-
+@set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

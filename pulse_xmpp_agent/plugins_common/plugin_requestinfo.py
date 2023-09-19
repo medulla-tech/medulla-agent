@@ -14,9 +14,10 @@ import sys
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "2.0", "NAME": "requestinfo", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "2.1", "NAME": "requestinfo", "TYPE": "all"}  # fmt: skip
 
 
+@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("call %s from %s" % (plugin, message["from"]))
     result = {
