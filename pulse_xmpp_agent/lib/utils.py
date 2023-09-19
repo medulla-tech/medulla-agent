@@ -85,6 +85,42 @@ if sys.platform.startswith("darwin"):
 
 import inspect
 
+def set_logging_level(func):
+    """
+    Décorateur pour ajuster le niveau de journalisation (logging level) dans les plugins execute par windows.
+
+    Le décorateur doit être inclus dans les plugins exécutés par les agents machines.
+
+    Parameters:
+        func (callable): Fonction à décorer.
+        le premier parametre doit etre 1 object xmppobject
+
+    Returns:
+        callable: Fonction décorée.
+
+    Usage:
+        @set_logging_level
+        def action(xmppobject, action, sessionid, data, message, dataerreur):
+            ...
+
+    Example:
+
+    @set_logging_level
+    def action(xmppobject, action, sessionid, data, message, dataerreur):
+        ...
+
+    """
+    def wrapper(*args, **kwargs):
+        if args:
+            arg = args[0]
+            if hasattr(arg, 'config'):
+                if hasattr(arg.config, 'levellog'):
+                    logging.getLogger().setLevel( logging.DEBUG)
+            else:
+                logging.warning("L objet n'a pas l attribut config")
+        return func(*args, **kwargs)
+    return wrapper
+
 
 class Env(object):
     agenttype = None  # Non specified by default
