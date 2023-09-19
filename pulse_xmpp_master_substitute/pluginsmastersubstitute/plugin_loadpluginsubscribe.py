@@ -173,12 +173,12 @@ async def changed_status(self, presence):
         lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
         if presence["type"] == "unavailable":
             if lastevent and lastevent[0]["status"] == 1:
+                try:
+                    updowntime = time.time() - lastevent[0]["time"]
+                except:
+                    updowntime = time.time()
                 XmppMasterDatabase().setUptime_machine(
-                    hostname,
-                    spresence,
-                    status=0,
-                    updowntime=time.time() - lastevent[0]["time"],
-                    date=None,
+                    hostname, spresence, status=0, updowntime=updowntime, date=None
                 )
             result = XmppMasterDatabase().getMachinefromjid(spresence)
             if result and result["enabled"] == 0:
@@ -309,12 +309,13 @@ async def changed_status(self, presence):
             lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
             if lastevent:
                 if lastevent[0]["status"] == 0:
+                    try:
+                        updowntime = time.time() - lastevent[0]["time"]
+                    except:
+                        updowntime = time.time()
+
                     XmppMasterDatabase().setUptime_machine(
-                        hostname,
-                        spresence,
-                        status=1,
-                        updowntime=time.time() - lastevent[0]["time"],
-                        date=None,
+                        hostname, spresence, status=1, updowntime=updowntime, date=None
                     )
             else:
                 XmppMasterDatabase().setUptime_machine(
