@@ -51,6 +51,7 @@ plugin = {"VERSION": "1.1", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0
            pugin TCP_IP command in/out
 """
 
+
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
     try:
