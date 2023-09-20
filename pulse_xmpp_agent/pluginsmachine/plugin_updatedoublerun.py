@@ -23,7 +23,7 @@ RSYNC_VERSION = "3.1.2"
 P4ONLYUCANSS = ""
 
 
-@set_logging_level
+@utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

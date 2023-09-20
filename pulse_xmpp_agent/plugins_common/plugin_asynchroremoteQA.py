@@ -12,7 +12,7 @@ import logging
 plugin = {"VERSION": "2.1", "NAME": "asynchroremoteQA", "TYPE": "all"}  # fmt: skip
 
 
-@set_logging_level
+@utils.set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().info("###################################################")
     logging.getLogger().info(f'call {plugin} from {message["from"]}')

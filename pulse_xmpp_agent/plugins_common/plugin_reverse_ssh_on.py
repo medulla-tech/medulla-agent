@@ -36,7 +36,7 @@ def runProcess(cmd, shell=False, envoption=os.environ):
     return Popen(args, env=envoption, shell=shell).pid
 
 
-@set_logging_level
+@utils.set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))

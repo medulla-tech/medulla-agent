@@ -27,7 +27,7 @@ Plugin for deploying a package
 """
 
 
-@set_logging_level
+@utils.set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     strjidagent = str(objectxmpp.boundjid.bare)
     if objectxmpp.config.agenttype in ["machine"]:

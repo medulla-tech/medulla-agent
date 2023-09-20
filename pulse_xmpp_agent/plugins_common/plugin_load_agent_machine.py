@@ -23,12 +23,6 @@
 #
 # file : plugin_load_agent_machine.py
 #
-"""
-    Ce plugin install les plugins de codes necessaire au fonctionnement de l'agent machine dans des boucles événement différente. (Ce plugin doit etre appeler par le plugin start.
-    (voir parametre pluginlist section [plugin] configuration agent)
-    1) install serveur tcp/ip dans boucle événement asynio
-           pugin TCP_IP command in/out
-"""
 import base64
 import traceback
 import os
@@ -50,7 +44,14 @@ logger = logging.getLogger()
 plugin = {"VERSION": "1.1", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 
-@set_logging_level
+"""
+    Ce plugin install les plugins de codes necessaire au fonctionnement de l'agent machine dans des boucles événement différente. (Ce plugin doit etre appeler par le plugin start.
+    (voir parametre pluginlist section [plugin] configuration agent)
+    1) install serveur tcp/ip dans boucle événement asynio
+           pugin TCP_IP command in/out
+"""
+
+@utils.set_logging_level
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
     try:
         logger.debug("###################################################")

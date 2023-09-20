@@ -13,7 +13,7 @@ plugin = {"VERSION": "2.2", "NAME": "enddeploy", "TYPE": "all"}  # fmt: skip
 logger = logging.getLogger()
 
 
-@set_logging_level
+@utils.set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")
     logging.getLogger().debug(
