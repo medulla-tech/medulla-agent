@@ -1220,51 +1220,101 @@ def powerschellscript1ps1(namescript):
     return obj
 
 
-class shellcommandtimeout(object):
+class shellcommandtimeout:
+    """
+    Classe pour exécuter une commande shell sur Linux, Windows ou macOS.
+
+    Attributes:
+        cmd (bytes, bytearray, str): La commande à exécuter (encodée selon l'OS).
+        timeout (int): Le temps maximal en secondes pour attendre que la commande se termine.
+        strimresult (bool): Indique si les lignes vides doivent être omises et si les espaces doivent être supprimés.
+
+    Returns:
+        dict: Un dictionnaire contenant le code d'erreur et le résultat de la commande.
+
+    Raises:
+        OSError: En cas d'erreur lors de l'exécution de la commande.
+    """
+
     def __init__(self, cmd, timeout=15, strimresult=False):
-        self.process = None
-        self.obj = {}
+        """
+        Initialise un objet ShellCommandExecutor.
+
+        Args:
+            cmd (bytes, bytearray, str): La commande à exécuter (encodée selon l'OS).
+            timeout (int, optional): Le temps maximal en secondes pour attendre que la commande se termine. Par défaut, 15 secondes.
+            strimresult (bool, optional): Indique si les lignes vides doivent être omises et si les espaces doivent être supprimés. Par défaut, False.
+        """
+        if isinstance(cmd, str):
+            self.cmd = cmd
+        elif isinstance(cmd, (bytes, bytearray)):
+            self.cmd = cmd.decode('utf-8')
+        else:
+            raise ValueError("Le paramètre cmd doit être de type str, bytes ou bytearray.")
+
+        self.timeout = timeout
         self.strimresult = strimresult
-        self.obj["timeout"] = timeout
-        self.obj["cmd"] = cmd
-        self.obj["result"] = "result undefined"
-        self.obj["code"] = 255
-        self.obj["separateurline"] = os.linesep
+        self.obj = {
+            "code": 255,
+            "result": "result undefined",
+            "separateurline": os.linesep,
+            "cmd": self.cmd,
+            "timeout": timeout,
+        }
+
+    def run_command(self):
+        """
+        Exécute la commande shell.
+
+        Returns:
+            dict: Un dictionnaire contenant le code d'erreur et le résultat de la commande.
+        """
+        try:
+            if sys.platform == "win32":
+                # Windows text=True indique texte doit être traité en tant que chaîne de caractères (UTF-8 par défaut).
+                # Cela permet d'interpréter correctement les caractères spéciaux.
+                self.process = subprocess.Popen(
+                    self.cmd,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True
+                )
+            else:
+                # Linux ou macOS
+                self.process = subprocess.Popen(
+                    self.cmd,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    encoding="utf-8"
+                )
+
+            self.obj["result"], _ = self.process.communicate(timeout=self.timeout)
+            self.obj["result"] = self.obj["result"].splitlines()
+            if self.strimresult:
+                self.obj["result"] = [line.strip() for line in self.obj["result"] if line != ""]
+            else:
+                self.obj["result"] = [line.replace(os.linesep, '\n') for line in self.obj["result"] if line != "" ]
+
+            self.obj["code"] = self.process.returncode
+
+        except subprocess.TimeoutExpired:
+            self.obj["code"] = -15  # Timeout
+            self.process.terminate()
+            self.obj["result"] = "error timeout"
+        except Exception as e:
+            self.obj["code"] = 1
+            self.obj["result"] = str(e)
 
     def run(self):
-        def target():
-            self.process = subprocess.Popen(
-                self.obj["cmd"],
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            if sys.version_info[0] == 3:
-                if self.strimresult:
-                    self.obj["result"] = [
-                        x.decode("utf-8").strip()
-                        for x in self.process.stdout.readlines()
-                    ]
-                else:
-                    self.obj["result"] = [
-                        x.decode("utf-8") for x in self.process.stdout.readlines()
-                    ]
-            else:
-                self.obj["result"] = self.process.stdout.readlines()
-            self.obj["code"] = self.process.wait()
-            self.process.communicate()
+        """
+        Exécute la commande shell avec le timeout spécifié.
 
-        thread = threading.Thread(target=target)
-        thread.start()
-        thread.join(self.obj["timeout"])
-        if thread.is_alive():
-            print("Terminating process")
-            print(f'timeout {self.obj["timeout"]}')
-            self.process.terminate()
-            thread.join()
-        self.obj["codereturn"] = self.process.returncode
-        if self.obj["codereturn"] == -15:
-            self.result = "error tineout"
+        Returns:
+            dict: Un dictionnaire contenant le code d'erreur et le résultat de la commande.
+        """
+        self.run_command()
         return self.obj
 
 
