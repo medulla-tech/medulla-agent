@@ -13,6 +13,7 @@ logger = logging.getLogger()
 plugin = {"VERSION": "1.0", "NAME": "plugin_guacamole", "TYPE": "submaster"}
 # plugin run guacamole
 
+
 def action(xmppobject, action, sessionid, data, message, dataobj):
     logger.debug(plugin)
     try:
@@ -28,16 +29,16 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
                 "uuid": data["uuid"],
             },
         }
-        #xmppobject.send_message(
-            #mto=relayserver["jid"],
-            #mbody=json.dumps(senddataplugin, encoding="latin1"),
-            #mtype="chat",
-        #)
+        # xmppobject.send_message(
+        # mto=relayserver["jid"],
+        # mbody=json.dumps(senddataplugin, encoding="latin1"),
+        # mtype="chat",
+        # )
         logger.error("senddataplugin %s" % senddataplugin)
 
         xmppobject.send_message(
             mto=relayserver["jid"],
-            mbody=json.dumps(senddataplugin, ensure_ascii=False).encode('latin1'),
+            mbody=json.dumps(senddataplugin, ensure_ascii=False).encode("latin1"),
             mtype="chat",
         )
 

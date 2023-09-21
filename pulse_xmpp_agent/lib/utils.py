@@ -1248,9 +1248,11 @@ class shellcommandtimeout:
         if isinstance(cmd, str):
             self.cmd = cmd
         elif isinstance(cmd, (bytes, bytearray)):
-            self.cmd = cmd.decode('utf-8')
+            self.cmd = cmd.decode("utf-8")
         else:
-            raise ValueError("Le paramètre cmd doit être de type str, bytes ou bytearray.")
+            raise ValueError(
+                "Le paramètre cmd doit être de type str, bytes ou bytearray."
+            )
 
         self.timeout = timeout
         self.strimresult = strimresult
@@ -1278,7 +1280,7 @@ class shellcommandtimeout:
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    text=True
+                    text=True,
                 )
             else:
                 # Linux ou macOS
@@ -1287,15 +1289,21 @@ class shellcommandtimeout:
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    encoding="utf-8"
+                    encoding="utf-8",
                 )
 
             self.obj["result"], _ = self.process.communicate(timeout=self.timeout)
             self.obj["result"] = self.obj["result"].splitlines()
             if self.strimresult:
-                self.obj["result"] = [line.strip() for line in self.obj["result"] if line != ""]
+                self.obj["result"] = [
+                    line.strip() for line in self.obj["result"] if line != ""
+                ]
             else:
-                self.obj["result"] = [line.replace(os.linesep, '\n') for line in self.obj["result"] if line != "" ]
+                self.obj["result"] = [
+                    line.replace(os.linesep, "\n")
+                    for line in self.obj["result"]
+                    if line != ""
+                ]
 
             self.obj["code"] = self.process.returncode
 

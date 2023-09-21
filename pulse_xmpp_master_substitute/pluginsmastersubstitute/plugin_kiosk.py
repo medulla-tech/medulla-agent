@@ -5,8 +5,9 @@
 import json
 import traceback
 import logging
-#from lib.utils import name_random
-#from lib.plugins.xmpp import XmppMasterDatabase
+
+# from lib.utils import name_random
+# from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.0", "NAME": "kiosk", "TYPE": "mastersub"}
