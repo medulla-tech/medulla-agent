@@ -1341,7 +1341,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             del data["descriptor"]["metaparameter"]
                         except Exception as e:
                             logger.warning(str(e))
-                            traceback.print_exc(file=sys.stdout)
+                            logger.error("\n%s" % (traceback.format_exc()))
                         msglevelspoolig = '<span class="log_warn">Spooling the deployment in queue</span>'
                         objectxmpp.xmpplog(
                             msglevelspoolig,
@@ -2755,7 +2755,7 @@ def initialisesequence(datasend, objectxmpp, sessionid):
                 logger.warning("id package missing for info launcher command of kiosk")
         except BaseException:
             logger.error("launcher command of kiosk")
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s" % (traceback.format_exc()))
     else:
         logger.warning("launcher command missing for kiosk")
     grafcetdeploy.grafcet(objectxmpp, datasend)
@@ -3008,7 +3008,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
                 )
                 changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
-                traceback.print_exc(file=sys.stdout)
+                logger.error("\n%s" % (traceback.format_exc()))
                 logger.debug(str(e))
                 objectxmpp.xmpplog(
                     '<span class="log_err">Transfer error : curl download [%s] package file: %s</span>'
@@ -3248,7 +3248,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                     )
                 changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
-                traceback.print_exc(file=sys.stdout)
+                logger.error("\n%s" % (traceback.format_exc()))
                 logger.error(
                     "Traceback from downloading package via libcurl: %s" % str(e)
                 )
@@ -3331,4 +3331,4 @@ def signalendsessionforARS(datasend, objectxmpp, sessionid, error=False):
         )
     except Exception as e:
         logger.debug(str(e))
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s" % (traceback.format_exc()))
