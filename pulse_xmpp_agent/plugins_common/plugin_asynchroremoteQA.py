@@ -9,14 +9,16 @@ import traceback
 import sys
 import logging
 
+logger = logging.getLogger()
+
 plugin = {"VERSION": "2.1", "NAME": "asynchroremoteQA", "TYPE": "all"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
-    logging.getLogger().info("###################################################")
-    logging.getLogger().info(f'call {plugin} from {message["from"]}')
-    logging.getLogger().info("###################################################")
+    logger.info("###################################################")
+    logger.info(f'call {plugin} from {message["from"]}')
+    logger.info("###################################################")
     result = {
         "action": f"result{action}",
         "sessionid": sessionid,
@@ -36,8 +38,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             mto=message["from"], mbody=json.dumps(result), mtype="chat"
         )
     except Exception as e:
-        logging.getLogger().error(str(e))
-        traceback.print_exc(file=sys.stdout)
+        logger.error(str(e))
+        logger.error("\n%s" % (traceback.format_exc()))
         dataerreur["ret"] = -255
         dataerreur["data"]["msg"] = "Erreur commande\n %s" % data["data"]["customcmd"]
         objectxmpp.send_message(
