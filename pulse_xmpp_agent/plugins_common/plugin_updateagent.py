@@ -175,7 +175,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     return
             except Exception as e:
                 logger.error(str(e))
-                traceback.print_exc(file=sys.stdout)
+                logger.error("\n%s" % (traceback.format_exc()))
         elif data["subaction"] == "install_lib_agent":
             if not ("namescript" in data and data["namescript"] != ""):
                 logger.error("update agent install lib name missing")
