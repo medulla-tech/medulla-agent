@@ -5,9 +5,11 @@
 
 import logging
 
+logger = logging.getLogger()
+
 plugin = {"VERSION": "1.1", "NAME": "resultenddeploy", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
-    logging.getLogger().debug(plugin)
+    logger.debug(plugin)
     pass
