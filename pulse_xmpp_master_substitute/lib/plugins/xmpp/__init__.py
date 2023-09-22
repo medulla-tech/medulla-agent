@@ -45,7 +45,8 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Up_black_list, \
     Up_white_list, \
     Up_gray_list, \
-    Up_action_update_packages
+    Up_action_update_packages, \
+    Up_history
 # Imported last
 import logging
 import json
@@ -9594,7 +9595,19 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         exclude_name_package = ["sharing", ".stfolder", ".stignore" ]
 
         for element, white, machine in query:
+            # Add entry to history
+
             deployName = "%s -@upd@- %s"%(white.title,start_date)
+
+            history = Up_history()
+            history.update_id = element.update_id
+            history.id_machine = element.id_machine
+            history.jid = machine.jid
+            history.update_list = "white"
+            history.required_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
+            history.deploy_title = deployName
+            session.add(history)
+
             element.required_deploy = 1
             element.curent_deploy = 0
             element.start_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
@@ -9657,7 +9670,15 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 deployName = "%s -@upd@- %s"%(updata.title,start_date)
                 element.required_deploy = 0
                 element.curent_deploy = 1
-
+                try:
+                    history = session.query(Up_history).filter(and_(
+                    element.update_id == Up_history.update_id,
+                    element.id_machine == Up_history.id_machine
+                    )).first()
+                    history.curent_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
+                    history.deploy_title = deployName
+                except Exception as e:
+                    self.logger.error(e)
                 folderpackage = os.path.join("/", "var","lib", "pulse2", "packages", element.update_id)
                 files = []
 
@@ -9795,9 +9816,10 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         date_now = datetime.now()
 
         try:
-            query = session.query(Up_machine_windows, Machines, Update_data)\
+            query = session.query(Up_machine_windows, Machines, Update_data, Up_history)\
                 .join(Machines, Up_machine_windows.id_machine == Machines.id)\
                 .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)\
+                .join(Up_history, and_(Up_machine_windows.update_id == Up_history.update_id, Up_machine_windows.id_machine == Up_history.id_machine))\
                 .filter(
                     and_(Up_machine_windows.curent_deploy == 1)
                 )
@@ -9806,7 +9828,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
             self.logger.info("%s updates in current_deploy state"%count)
         except Exception as e:
-            self.logger.error(e)
+            self.logger.error("delete_all_done_updates : %s"%e)
             return False
 
         if count == 0:
@@ -9814,43 +9836,61 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             return False
 
         result = []
-        for update, machine, data in query:
+        for update, machine, data, history in query:
             result.append({
                 "update_id":update.update_id,
                 "id_machine":machine.id,
                 "jid":machine.jid,
                 "hostname":machine.hostname,
-                "kb":data.kb
+                "kb":data.kb,
+                "command":history.command
             })
 
             try:
+                deploy_done = []
+                deploy_not_done = []
                 query2 = session.query(Deploy).filter(and_(
                     Deploy.jidmachine == machine.jid,
-                    Deploy.title.contains(data.kb),
+                    Deploy.title == history.deploy_title,
+                    Deploy.command == history.command,
                     # Deploy.result.op("regexp")(update.update_id),
                     Deploy.start > update.start_date,
                     Deploy.start < update.end_date,
-                    Deploy.state.op("regexp")("(SUCCESS)|(ABORT)|(ERROR)")
                 ))
-
-                count2 = query2.count()
                 query2 = query2.all()
-
-                self.logger.info("%s deploy done for machine %s and update %s"%(count2, machine.jid, update.update_id))
+                for deploy in query2:
+                    if history.id_deploy is None:
+                        history.id_deploy = deploy.id
+                        history.deploy_date = deploy.start
+                    if re.search("(SUCCESS)|(ABORT)|(ERROR)", deploy.state):
+                        deploy_done.append(deploy)
+                    else:
+                        deploy_not_done.append(deploy)
+                self.logger.info("%s deploy done for machine %s and update %s"%(len(deploy_done), machine.jid, update.update_id))
             except Exception as e:
                 self.logger.error(e)
                 return False
 
-            for deploy in query2:
+            for deploy in deploy_done:
                 self.logger.info("Removing update %s for machine %s : done"%(update.update_id, machine.hostname))
+                history.delete_date = datetime.strftime(date_now, "%Y-%m-%d %H:%M:%S")
                 query_del = session.query(Up_machine_windows).filter(and_(
                 Up_machine_windows.update_id == update.update_id,
                 Up_machine_windows.id_machine == machine.id)).delete()
                 session.commit()
                 session.flush()
-
         return True
 
+    @DatabaseHelper._sessionm
+    def insert_command_into_up_history(self, session, updateid, jidmachine, commandid):
+        query = session.query(Up_history).filter(and_(Up_history.update_id == updateid, Up_history.jid == jidmachine)).order_by(desc(Up_history.curent_date)).first()
+
+        try:
+            query.command = commandid
+            session.commit()
+            session.flush()
+        except Exception as e:
+            self.logger.error(e)
 # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [{column: value for column, value in rowproxy.items()}
