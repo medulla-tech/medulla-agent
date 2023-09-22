@@ -10,14 +10,17 @@ import socket
 from lib.managedbkiosk import manageskioskdb
 from lib.utils import set_logging_level
 
+
+logger = logging.getLogger()
+
 plugin = {"VERSION": "1.32", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
 
 
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
-    logging.getLogger().debug("=====================================================")
-    logging.getLogger().debug(plugin)
-    logging.getLogger().debug("=====================================================")
+    logger.debug("=====================================================")
+    logger.debug(plugin)
+    logger.debug("=====================================================")
 
     datasend = {
         "action": "result%s" % plugin["NAME"],
@@ -36,7 +39,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             # todo
             pass
         elif data["subaction"] == "initialisation_kiosk":
-            logging.getLogger().info("send initialization datas to kiosk")
+            logger.info("send initialization datas to kiosk")
 
             # When the data are initialized for the kiosk, the launchers founded
             # are added for each package. If the package has no launcher, the
@@ -53,7 +56,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             )
             pass
         elif data["subaction"] == "profiles_updated":
-            logging.getLogger().info("send updated profiles to kiosk")
+            logger.info("send updated profiles to kiosk")
             data["data"] = associate_launchers_to_datas(data["data"])
             data["data"]["action"] = "update_profile"
 
@@ -69,7 +72,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         elif data["subaction"] == "update_launcher":
             data["data"]["action"] = "update_launcher"
             if data["data"]["uuid"] != "" or data["data"]["launcher"] != "":
-                logging.getLogger().info(
+                logger.info(
                     "Update the launcher %s" % data["data"]["launcher"]
                 )
                 kioskdb = manageskioskdb()
@@ -90,7 +93,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 pass
             pass
     except Exception as e:
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s" % (traceback.format_exc()))
         dataerreur["ret"] = -255
         dataerreur["data"]["msg"] = "plugin kiosk error on machine %s [%s]" % (
             objectxmpp.boundjid.bare,
@@ -125,8 +128,8 @@ def send_kiosk_data(
         except Exception as e:
             dataerror["ret"] = -255
             if not "Errno 111" in str(e):
-                traceback.print_exc(file=sys.stdout)
-                logging.getLogger().error("Kiosk [%s]" % str(e))
+                logger.error("\n%s" % (traceback.format_exc()))
+                logger.error("Kiosk [%s]" % str(e))
                 dataerror["data"]["msg"] = "plugin kiosk error on machine %s : [%s]" % (
                     objectxmpp.boundjid.bare,
                     str(e),
@@ -137,7 +140,7 @@ def send_kiosk_data(
                 objectxmpp.kiosk_presence == "False"
 
             else:
-                logging.getLogger().warning(
+                logger.warning(
                     "Kiosk is not listen: verify presence kiosk"
                 )
                 msg = (
@@ -156,7 +159,7 @@ def send_kiosk_data(
                     )
                     objectxmpp.kiosk_presence == "False"
     except Exception as e:
-        logging.getLogger().error("Socket to kiosk can't be established")
+        logger.error("Socket to kiosk can't be established")
         if objectxmpp is not None:
             objectxmpp.kiosk_presence == "False"
 
