@@ -132,6 +132,7 @@ def create_deploy_for_up_machine_windows(objectxmpp):
                         'active',
                         '1',
                         cmd_type=0)
+                    XmppMasterDatabase().insert_command_into_up_history(update["update_id"], update["jidmachine"], command.id)
                     try:
                         target = MscDatabase().xmpp_create_Target(update['uuidmachine'], update['hostname'])
                     except Exception as e:
