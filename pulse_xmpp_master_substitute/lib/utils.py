@@ -88,6 +88,59 @@ logger = logging.getLogger()
 
 DEBUGPULSE = 25
 
+# decorator to simplify the plugins
+# Check if session exists.
+# No end of session
+
+
+def pluginmaster(func):
+    def wrapper(xmppobject, action, sessionid, data, message, ret):
+        if action.startswith("result"):
+            action = action[:6]
+        if xmppobject.session.isexist(sessionid):
+            objsessiondata = xmppobject.session.sessionfromsessiondata(sessionid)
+        else:
+            objsessiondata = None
+        response = func(
+            xmppobject, action, sessionid, data, message, ret, objsessiondata
+        )
+        return response
+
+    return wrapper
+
+
+def pluginmastersessionaction(sessionaction, timeminute=10):
+    def decorator(func):
+        def wrapper(xmppobject, action, sessionid, data, message, ret, dataobj):
+            # avant
+            if action.startswith("result"):
+                action = action[6:]
+            if xmppobject.session.isexist(sessionid):
+                if sessionaction == "actualise":
+                    xmppobject.session.reactualisesession(sessionid, 10)
+                objsessiondata = xmppobject.session.sessionfromsessiondata(sessionid)
+            else:
+                objsessiondata = None
+            response = func(
+                xmppobject,
+                action,
+                sessionid,
+                data,
+                message,
+                ret,
+                dataobj,
+                objsessiondata,
+            )
+            if sessionaction == "clear" and objsessiondata != None:
+                xmppobject.session.clear(sessionid)
+            elif sessionaction == "actualise":
+                xmppobject.session.reactualisesession(sessionid, 10)
+            return response
+
+        return wrapper
+
+    return decorator
+
 
 class Locker:
     """
