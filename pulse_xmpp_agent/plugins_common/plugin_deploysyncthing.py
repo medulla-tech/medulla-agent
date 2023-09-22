@@ -756,4 +756,4 @@ def signalendsessionforARS(datasend, objectxmpp, sessionid, error=False):
         )
     except Exception as e:
         logger.debug(str(e))
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s" % (traceback.format_exc()))
