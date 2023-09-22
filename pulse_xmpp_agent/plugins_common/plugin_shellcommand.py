@@ -6,9 +6,11 @@ from lib import utils
 import json
 import traceback
 import sys
+import logging
+
+logger = logging.getLogger()
 
 plugin = {"VERSION": "2.1", "NAME": "shellcommand", "TYPE": "all"}  # fmt: skip
-
 
 @utils.set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
@@ -40,7 +42,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 mto=message["from"], mbody=json.dumps(dataerreur), mtype="chat"
             )
     except Exception:
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s" % (traceback.format_exc()))
         dataerreur["ret"] = -255
         dataerreur["data"]["msg"] = "Erreur commande\n %s" % data["cmd"]
         objectxmpp.send_message(
