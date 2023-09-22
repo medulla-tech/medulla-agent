@@ -277,6 +277,7 @@ class grafcet:
         cmd = cmd.replace(
             "@@@PYTHON_IMPLEMENTATION@@@", platform.python_implementation()
         )
+        cmd = cmd.replace("@@@PYTHON_PATH@@@", sys.executable)
 
         cmd = cmd.replace("@@@ARCHI_MACHINE@@@", platform.machine())
         cmd = cmd.replace("@@@OS_FAMILY@@@", platform.system())
