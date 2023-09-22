@@ -2229,7 +2229,7 @@ class grafcet:
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(
                 -1,
                 False,
