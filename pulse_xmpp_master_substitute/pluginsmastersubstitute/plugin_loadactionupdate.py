@@ -50,13 +50,17 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 def create_deploy_for_up_machine_windows(objectxmpp):
     # Remove all expired updates
     try:
-        XmppMasterDatabase().remove_expired_updates()
+        count = XmppMasterDatabase().remove_expired_updates()
+        logger.info("Remove %i expired updates"%count)
     except Exception as e:
         logger.error("%s"%e)
 
     # Need to remove all deployment done from up_machine_windows and add  it to historic
-    XmppMasterDatabase().delete_all_done_updates()
-
+    try:
+        logger.info("Removing all updates done")
+        XmppMasterDatabase().delete_all_done_updates()
+    except Exception as e:
+        logger.error(e)
     # Currently Updates in white list are automatically. We need to tag these udpdates as required
     # but not to launch the deployment automatically.
     # Before launching the deployment, we need to test the available slots
@@ -82,17 +86,22 @@ def create_deploy_for_up_machine_windows(objectxmpp):
     count_slots = 0
     index = 0
     logger.info("%i deploy slots available for %i required updates "%(available_slots, count_updates_in_required_deploy))
+    added_to_pending = []
     while count_slots < available_slots and index < count_updates_in_required_deploy:
         required = updates_in_required_deploy[index]
         try:
-            if XmppMasterDatabase().deployment_is_running_on_machine(required['jidmachine']) is True:
-                logger.warning("pass for %s on %s"%(required['jidmachine'], required['updateid']))
+            if XmppMasterDatabase().deployment_is_running_on_machine(required['jidmachine']) is True or ('jidmachine' in required and required['jidmachine'] in added_to_pending):
+                logger.warning("deployment running on %s, pass %s deployment"%(required['jidmachine'], required['updateid']))
                 index += 1
                 continue
             else:
                 count_slots += 1
                 # Here we have already all the needed datas to the machine
-                update = XmppMasterDatabase().pending_up_machine_windows(required)
+                try:
+                    update = XmppMasterDatabase().pending_up_machine_windows(required)
+                    added_to_pending.append(required['jidmachine'])
+                except Exception as e:
+                    logger.error(e)
 
                 if update is False or update is None:
                     logger.error("Unable to create phases for update %s"%(update['title']))

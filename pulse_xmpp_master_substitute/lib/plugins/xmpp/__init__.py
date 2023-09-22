@@ -9567,13 +9567,16 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
     @DatabaseHelper._sessionm
     def remove_expired_updates(self, session):
         date_now = datetime.now()
-        session.query(Up_machine_windows).filter(
-            and_(or_(Up_machine_windows.curent_deploy == 1, Up_machine_windows.required_deploy==1),
+        query = session.query(Up_machine_windows).filter(
+            and_(Up_machine_windows.end_date is not None,
                 Up_machine_windows.end_date < date_now
-            )).delete()
+            ))
+        count = query.count()
+        query.delete()
 
         session.commit()
         session.flush()
+        return count
 
     @DatabaseHelper._sessionm
     def pending_up_machine_windows_white(self, session):
@@ -9639,9 +9642,9 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
     @DatabaseHelper._sessionm
     def pending_up_machine_windows(self, session, to_deploy):
         try:
-            query = session.query(Up_machine_windows, Up_white_list, Machines)\
+            query = session.query(Up_machine_windows, Update_data, Machines)\
                 .filter(and_(Up_machine_windows.update_id == to_deploy['updateid'], Up_machine_windows.id_machine == to_deploy['idmachine']))\
-                .join(Up_white_list, Up_machine_windows.update_id == Up_white_list.updateid)\
+                .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)\
                 .join(Machines, Up_machine_windows.id_machine == Machines.id).all()
 
             exclude_name_package = ["sharing", ".stfolder", ".stignore" ]
@@ -9792,46 +9795,59 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         date_now = datetime.now()
 
         try:
-            query = session.query(Up_machine_windows, Machines)\
+            query = session.query(Up_machine_windows, Machines, Update_data)\
                 .join(Machines, Up_machine_windows.id_machine == Machines.id)\
+                .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)\
                 .filter(
-                    and_(
-                        Up_machine_windows.curent_deploy == 1,
-                        Up_machine_windows.start_date < date_now,
-                        Up_machine_windows.end_date > date_now)
-                ).all()
+                    and_(Up_machine_windows.curent_deploy == 1)
+                )
+            count = query.count()
+            query = query.all()
+
+            self.logger.info("%s updates in current_deploy state"%count)
         except Exception as e:
             self.logger.error(e)
             return False
+
+        if count == 0:
+            self.logger.info("No update in current_deploy state, nothing to remove")
+            return False
+
         result = []
-        for update, machine in query:
+        for update, machine, data in query:
             result.append({
                 "update_id":update.update_id,
                 "id_machine":machine.id,
                 "jid":machine.jid,
-                "hostname":machine.hostname
+                "hostname":machine.hostname,
+                "kb":data.kb
             })
 
             try:
-                query = session.query(Deploy).filter(and_(
+                query2 = session.query(Deploy).filter(and_(
                     Deploy.jidmachine == machine.jid,
-                    Deploy.result.op("regexp")(update.update_id),
+                    Deploy.title.contains(data.kb),
+                    # Deploy.result.op("regexp")(update.update_id),
                     Deploy.start > update.start_date,
                     Deploy.start < update.end_date,
                     Deploy.state.op("regexp")("(SUCCESS)|(ABORT)|(ERROR)")
-                )).all()
+                ))
 
-                if query is not None:
-                    self.logger.info("Removing update %s for machine %s : done"%(update.update_id, machine.hostname))
-                    query_del = session.query(Up_machine_windows).filter(and_(
-                        Up_machine_windows.update_id == update.update_id,
-                        Up_machine_windows.id_machine == machine.id)).delete()
-                session.commit()
-                session.flush()
+                count2 = query2.count()
+                query2 = query2.all()
 
+                self.logger.info("%s deploy done for machine %s and update %s"%(count2, machine.jid, update.update_id))
             except Exception as e:
                 self.logger.error(e)
                 return False
+
+            for deploy in query2:
+                self.logger.info("Removing update %s for machine %s : done"%(update.update_id, machine.hostname))
+                query_del = session.query(Up_machine_windows).filter(and_(
+                Up_machine_windows.update_id == update.update_id,
+                Up_machine_windows.id_machine == machine.id)).delete()
+                session.commit()
+                session.flush()
 
         return True
 
