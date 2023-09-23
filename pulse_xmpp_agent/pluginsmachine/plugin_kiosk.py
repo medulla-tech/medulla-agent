@@ -72,9 +72,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         elif data["subaction"] == "update_launcher":
             data["data"]["action"] = "update_launcher"
             if data["data"]["uuid"] != "" or data["data"]["launcher"] != "":
-                logger.info(
-                    "Update the launcher %s" % data["data"]["launcher"]
-                )
+                logger.info("Update the launcher %s" % data["data"]["launcher"])
                 kioskdb = manageskioskdb()
                 old_launcher = kioskdb.get_cmd_launch(data["data"]["uuid"])
                 if old_launcher != data["data"]["launcher"]:
@@ -140,9 +138,7 @@ def send_kiosk_data(
                 objectxmpp.kiosk_presence == "False"
 
             else:
-                logger.warning(
-                    "Kiosk is not listen: verify presence kiosk"
-                )
+                logger.warning("Kiosk is not listen: verify presence kiosk")
                 msg = (
                     "Kiosk is not listen on machine %s : [%s]\nverrify presence kiosk"
                     % (objectxmpp.boundjid.bare, str(e))

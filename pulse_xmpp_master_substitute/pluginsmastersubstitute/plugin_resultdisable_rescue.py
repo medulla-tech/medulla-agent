@@ -5,7 +5,7 @@
 
 import logging
 
-logger =  logging.getLogger()
+logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "resultdisable_rescue", "TYPE": "mastersub"}
 
