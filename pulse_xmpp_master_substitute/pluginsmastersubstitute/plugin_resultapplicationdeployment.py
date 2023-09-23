@@ -6,11 +6,7 @@ import logging
 
 logger = logging.getLogger()
 
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "resultapplicationdeploymentjson",
-    "TYPE": "mastersub",
-}
+plugin = { "VERSION": "1.0", "NAME": "resultapplicationdeploymentjson", "TYPE": "mastersub" } # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
