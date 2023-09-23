@@ -11,6 +11,7 @@ import json
 import logging
 
 from lib.plugins.xmpp import XmppMasterDatabase
+
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "reversessh", "TYPE": "mastersub"}

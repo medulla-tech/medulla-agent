@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from lib.utils import pluginmastersessionaction
 import logging
+
 # from mmc.plugins.xmppmaster.master.lib.utils import pluginmastersessionaction
 import logging
 
