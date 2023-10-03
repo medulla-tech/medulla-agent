@@ -32,7 +32,6 @@ override_dh_auto_install:
 	rm -fr $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/pluginsmachine/plugin_*.py
 	cp -fv pulse_xmpp_agent/plugins_common/plugin_* $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/pluginsrelay
 	cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/descriptor_scheduler_relay/
-	chmod +x $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/agentxmpp.py
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/package_watching.py
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/launcher.py
@@ -44,7 +43,6 @@ override_dh_auto_install:
 	cp -fr pulse_xmpp_agent/config/systemd/* $(CURDIR)/debian/tmp/usr/lib/systemd/system
 	cp -fv ./scripts_installer/lin/*.service $(CURDIR)/debian/tmp/usr/lib/systemd/system
 	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-agent-relay.service
-	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-agent-log.service
 	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-package-watching.service
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseplugin
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_basepluginscheduler

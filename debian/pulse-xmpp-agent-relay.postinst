@@ -33,13 +33,8 @@ case "$1" in
             systemctl restart pulse-xmpp-agent-relay
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-agent-log ; then
-            echo -n "Restarting pulse-xmpp-agent-log service..."
-            systemctl restart pulse-xmpp-agent-log
-            echo "..done"
-        fi
         if systemctl -q is-enabled pulse-package-watching ; then
-            echo -n "Restarting pulse-xmpp-agent-log service..."
+            echo -n "Restarting pulse-package-watching service..."
             systemctl restart pulse-package-watching
             echo "..done"
         fi

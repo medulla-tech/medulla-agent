@@ -149,7 +149,6 @@ if systemctl -q is-enabled pulse-xmpp-master-substitute-updates ; then
 fi
 
 %files -n pulse-xmpp-agent-relay
-%_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_prefix/lib/systemd/system/pulse-package-watching.service
 %dir %_sysconfdir/pulse-xmpp-agent/
@@ -314,7 +313,6 @@ rm -fr %buildroot%{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machin
 rm -fr %buildroot%{python3_sitelib}/pulse_xmpp_agent/pluginsmachine/plugin_*.py
 cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python3_sitelib}/pulse_xmpp_agent/pluginsrelay
 cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
-chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_agent/agentxmpp.py
 chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_agent/package_watching.py
 chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_agent/launcher.py
