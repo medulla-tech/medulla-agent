@@ -22,17 +22,17 @@
 import json
 import os
 from lib import managepackage
+from lib.utils import file_get_contents
 import logging
-
+import configparser
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION" : "2.0", "NAME" : "rsapplicationdeploymentjson", "TYPE" : "relayserver"}
+plugin = {"VERSION" : "2.1", "NAME" : "rsapplicationdeploymentjson", "TYPE" : "relayserver"}
 
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
-    #logging.getLogger().debug("RECV data message %s\n###############\n"%json.dumps(data, indent=4))
     logging.log(DEBUGPULSEPLUGIN,"plugin %s on %s %s from %s"% (plugin, objectxmpp.config.agenttype, message['to'], message['from']))
     datasend = {
                     'action': action,
@@ -43,9 +43,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 }
 
     logging.getLogger().debug("#################RELAY SERVER#####################")
-    logging.getLogger().debug("##############demande pacquage %s ##############"%(data['deploy']))
-    logging.getLogger().debug("##################################################")
-    #envoy descripteur
+    logging.getLogger().debug("##############ask for package %s ##############"%(data['deploy']))
     try:
         descriptor =  managepackage.managepackage.getdescriptorpackageuuid(data['deploy'])
     except Exception as e:
@@ -60,6 +58,21 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         datasend['data'] ['Dtypequery'] =  "TQ"
         datasend['data'] ['Devent'] = "DEPLOYMENT START"
         datasend['data'] ['name'] = managepackage.managepackage.getnamepackagefromuuidpackage(data['deploy'])
+
+        if ('localisation_server' in datasend['data']['descriptor']['info'] and datasend['data']['descriptor']['info']['localisation_server'] != ""):
+            localisation_server = datasend['data']['descriptor']['info']['localisation_server']
+        elif ('previous_localisation_server' in datasend['data']['descriptor']['info'] and datasend['data']['descriptor']['info']['previous_localisation_server'] != ""):
+            localisation_server = datasend['data']['descriptor']['info']['previous_localisation_server']
+
+        hashFolder = os.path.join("/var", "lib", "pulse2", "packages", "hash", localisation_server)
+
+        config = configparser.ConfigParser()
+        config.read('/etc/pulse-xmpp-agent/applicationdeploymentjson.ini.local')
+        hashing_algo = config.get('parameters', 'cdn_hashing_algo')
+
+        if os.path.exists(os.path.join(hashFolder, data['deploy'] + ".hash")):
+            datasend['data']['hash'] = {'global': file_get_contents(os.path.join(hashFolder, data['deploy'] + ".hash")), 'type': hashing_algo}
+
         objectxmpp.send_message(mto=message['from'],
                                 mbody=json.dumps(datasend),
                                 mtype='chat')
