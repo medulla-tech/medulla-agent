@@ -282,6 +282,14 @@ Section "Python" sec_py
   Delete $INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}
   Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
 
+  ; ####################### Remove from previous Pulse installation #######################
+
+  nsExec::Exec 'sc stop pulseagent'
+  nsExec::Exec 'sc delete pulseagent'
+
+  nsExec::Exec 'sc stop medullanetnotify'
+  nsExec::Exec 'sc delete medullanetnotify'
+
   ; ####################### Prevent from previous Medulla installation #######################
   ; Previously stop service
   nsExec::Exec 'sc stop medullaagent'
