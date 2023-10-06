@@ -62,6 +62,7 @@ setup(
             "lmdb",
             "netifaces",
             "pycryptodomex >= 3.15.0",
+            "xmltodict",
         ]
     ),
 )

@@ -58,6 +58,7 @@ Requires:       net-tools
 Requires:       jq
 Requires:       python3-distro
 Requires:       python3-lmdb
+Requires:       python3-xmltodict
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
