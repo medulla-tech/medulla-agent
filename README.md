@@ -21,7 +21,6 @@ With Pulse XMPP Agent you are be able to:
 * IRC : <irc://irc.freenode.net/#pulse-en > <irc://irc.freenode.net/#pulse-fr >
 * Sources : <https://github.com/pulse-project/pulse-xmpp-agent>
 * Bugtracker : <https://github.com/pulse-project/pulse-xmpp-agent/issues>
-* Forum : <http://forum.pulse2.fr/>
 
 
 # Installation
