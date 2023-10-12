@@ -24,11 +24,10 @@ import os
 from lib import managepackage
 from lib.utils import file_get_contents
 import logging
-import configparser
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION" : "2.1", "NAME" : "rsapplicationdeploymentjson", "TYPE" : "relayserver"}
+plugin = {"VERSION" : "2.5", "NAME" : "rsapplicationdeploymentjson", "TYPE" : "relayserver"}
 
 
 
@@ -66,9 +65,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
         hashFolder = os.path.join("/var", "lib", "pulse2", "packages", "hash", localisation_server)
 
-        config = configparser.ConfigParser()
-        config.read('/etc/pulse-xmpp-agent/applicationdeploymentjson.ini.local')
-        hashing_algo = config.get('parameters', 'cdn_hashing_algo')
+        if hasattr(objectxmpp.config, 'cdn_hashing_algo'):
+            hashing_algo = objectxmpp.config.cdn_hashing_algo
+        else:
+            hashing_algo = "SHA256"
 
         if os.path.exists(os.path.join(hashFolder, data['deploy'] + ".hash")):
             datasend['data']['hash'] = {'global': file_get_contents(os.path.join(hashFolder, data['deploy'] + ".hash")), 'type': hashing_algo}
