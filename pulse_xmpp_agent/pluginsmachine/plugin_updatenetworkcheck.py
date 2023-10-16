@@ -12,7 +12,7 @@ NETWORKVERSION = '2.2.0'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatenetworkcheck", "TYPE": "machine"}
+plugin = {"VERSION": "1.6", "NAME": "updatenetworkcheck", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -24,10 +24,19 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         # Update if version is lower
         installed_version = checknetworkcheckversion()
         if StrictVersion(installed_version) < StrictVersion(NETWORKVERSION):
+            remove_old_service()
             updatenetworkcheck(xmppobject)
             updatenetworkcheckversion(installed_version)
     except Exception:
         pass
+
+def remove_old_service():
+    is_old_service_running = utils.simplecommand("sc.exe query pulsenetworknotify")
+    if is_old_service_running['code'] == 0:
+        utils.simplecommand("sc.exe stop pulsenetworknotify")
+        utils.simplecommand("sc.exe delete pulsenetworknotify")
+        regclean = 'REG DELETE "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" /f'
+        utils.simplecommand(regclean)
 
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
