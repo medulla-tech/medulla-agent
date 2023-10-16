@@ -744,6 +744,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 else:
                     package_uuid = data['packageUuid']
 
+                if hasattr(objectxmpp.config, 'cdn_hashing_algo'):
+                    hash_algo = objectxmpp.config.cdn_hashing_algo
+                else:
+                    hash_algo = 'SHA256'
+
                 if ('localisation_server' in data['descriptor']['info'] and data['descriptor']['info']['localisation_server'] != ""):
                     localisation_server = data['descriptor']['info']['localisation_server']
                 elif ('previous_localisation_server' in data['descriptor']['info'] and data['descriptor']['info']['previous_localisation_server'] != ""):
@@ -751,7 +756,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
                 hashFolder = os.path.join("/var", "lib", "pulse2", "packages", "hash", localisation_server)
                 if os.path.exists(os.path.join(hashFolder, package_uuid + ".hash")):
-                    data['hash'] = {'global': file_get_contents(os.path.join(hashFolder, package_uuid + ".hash")), 'type': objectxmpp.config.cdn_hashing_algo}
+                    data['hash'] = {'glaobal': file_get_contents(os.path.join(hashFolder, package_uuid + ".hash")), 'type': hash_algo}
             
             objectxmpp.xmpplog('Transfer Method is %s' % data['methodetransfert'],
                                        type='deploy',
