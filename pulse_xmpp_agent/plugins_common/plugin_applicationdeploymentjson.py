@@ -12,6 +12,7 @@ import pycurl
 import platform
 import urllib
 import shutil
+from lib.utils import file_get_contents
 from urlparse import urlparse
 from lib import utils, \
                 managepackage, \
