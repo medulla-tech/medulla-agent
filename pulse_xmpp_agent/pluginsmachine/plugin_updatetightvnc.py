@@ -29,11 +29,11 @@ import platform
 import tempfile
 import os
 
-TIGHTVNC = '2.8.8'
+TIGHTVNC = '2.8.81'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.02", "NAME": "updatetightvnc", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatetightvnc", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -51,7 +51,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 def checktightvncversion():
     if sys.platform.startswith('win'):
-        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{DEE0B752-52D8-4615-9BEE-1EDA46628960} /s | Find "DisplayVersion"'
+        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{20B44B5F-5DDC-4261-BA3E-3EE3D3F2B106} /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
             tightvncversion = result['result'][0].strip().split()[-1]
