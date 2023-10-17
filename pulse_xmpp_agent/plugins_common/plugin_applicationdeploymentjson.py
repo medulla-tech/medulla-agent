@@ -728,7 +728,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         namefolder = None
         msgdeploy=[]
 
-        if hasattr(objectxmpp.config, 'cdn_enable') and bool(objectxmpp.config.cdn_enable):
+        if hasattr(objectxmpp.config, 'cdn_enable') and bool(strtobool(objectxmpp.config.cdn_enable)) is True:
             data['methodetransfert'] = 'pullcurl'
             data['descriptor']['info']['methodetransfert'] = 'pullcurl'
             url = objectxmpp.config.cdn_baseurl
