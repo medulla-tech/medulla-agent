@@ -13,6 +13,7 @@ import platform
 import urllib
 import shutil
 from lib.utils import file_get_contents
+from distutils.util import strtobool
 from urlparse import urlparse
 from lib import utils, \
                 managepackage, \
@@ -28,7 +29,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.31", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.35", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
