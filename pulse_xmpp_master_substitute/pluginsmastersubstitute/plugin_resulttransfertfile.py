@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from lib.utils import pluginmastersessionaction, md5
-from mmc.plugins.xmppmaster.master.lib.utils import
 import base64
 import json
 import zlib
@@ -126,7 +125,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
             mto=message["from"], mbody=json.dumps(command), mtype="chat"
         )
     except Exception as e:
-        print("erreur %s" % str(e))
         xmppobject.event(
             "pluginaction",
             {
