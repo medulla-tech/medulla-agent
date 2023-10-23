@@ -9,14 +9,19 @@ import logging
 import zipfile
 import platform
 import tempfile
+import time
 import shutil
+import psutil
 from lib import utils
-OPENSSHVERSION = '9.2'
+import win32file
+import win32security
+import re
+OPENSSHVERSION = '9.4'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.8", "NAME": "updateopenssh", "TYPE": "machine"}
-
+plugin = {"VERSION": "1.9", "NAME": "updateopenssh", "TYPE": "machine"}
+programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -37,28 +42,33 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 def check_if_binary_ok():
     if sys.platform.startswith('win'):
         # We check if we have the Regedit entry
-        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" /s | Find "DisplayVersion"'
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
 
         if result['code'] == 0:
-            regedit = True
+            # We check if the openssh binary is correctly installed.
+            opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
+            sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
 
-        # We check if the openssh binary is correctly installed.
-        opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
-        sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
+            if os.path.isfile(sshdaemon_bin_path):
+                logger.debug("OpenSSH daemon is present")
+            else:
+                logger.info("OpenSSH is not present, we need to install the component.")
 
-        if os.path.isfile(sshdaemon_bin_path):
-            logger.debug("OpenSSH is correctly installed. Nothing to do")
+                cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '\
+                    '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+                result = utils.simplecommand(cmd)
+                if result['code'] == 0:
+                    logger.debug("The OpenSSH module is ready to be reinstalled.")
+                else:
+                    logger.debug("We failed to reinitialize the registry entry for OpenSSH.")
         else:
-            logger.info("OpenSSH is not present, we need to install the component.")
-
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
+            cmd = 'REG DELETE "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" /f'
+            result = utils.simplecommand(cmd)
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
             result = utils.simplecommand(cmd)
-            if result['code'] == 0:
-                logger.debug("The OpenSSH module is ready to be reinstalled.")
-            else:
-                logger.debug("We failed to reinitialize the registry entry for OpenSSH.")
+            logger.debug("The OpenSSH module is ready to be reinstalled with Medulla version.")
 
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
@@ -71,19 +81,19 @@ def check_if_service_is_running():
 
 def checkopensshversion():
     if sys.platform.startswith('win'):
-        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" /s | Find "DisplayVersion"'
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
             opensshversion = result['result'][0].strip().split()[-1]
         else:
-            # The filetree generator is not installed. We will force installation by returning
+            # OpenSSH is not installed. We will force installation by returning
             # version 0.0
             opensshversion = '0.0'
     return opensshversion
 
 def updateopensshversion(version):
     if sys.platform.startswith('win'):
-        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
+        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % OPENSSHVERSION
 
         result = utils.simplecommand(cmd)
@@ -91,8 +101,8 @@ def updateopensshversion(version):
             logger.info("we successfully changed the version of OpenSSH to version %s" % OPENSSHVERSION)
 
         if version == "0.0":
-            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Pulse OpenSSH" /f'
+            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '\
+                    '/v "DisplayName" /t REG_SZ  /d "Medulla OpenSSH" /f'
             utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
@@ -154,7 +164,6 @@ def configure_ssh(xmppobject):
         restart_service = True
 
     utils.file_put_contents(os.path.join(programdata_path, "sshd_config"), sshd_config_file)
-
 
     if restart_service:
         utils.simplecommand("sc stop sshdaemon")
@@ -219,8 +228,12 @@ def updateopenssh(xmppobject, installed_version):
                 os.chdir(current_dir)
                 os.rmdir(uninstall_mandriva_ssh)
 
-
             if os.path.isdir(opensshdir_path):
+                PROCNAME = "sshd.exe"
+                for proc in psutil.process_iter():
+                    # check whether the process name matches and kills it
+                    if proc.name() == PROCNAME:
+                        proc.kill()
                 try:
                     shutil.rmtree(opensshdir_path)
                 except OSError as e:
@@ -241,11 +254,12 @@ def updateopenssh(xmppobject, installed_version):
             os.chdir(current_dir)
 
             sshdaemonDesc = "SSH protocol based service to provide secure encrypted communications between two untrusted hosts over an insecure network."
-            command_sshdaemon = "sc.exe create sshdaemon binPath= \"%s\" DisplayName= \"Pulse SSH Server\" start= auto" % sshdaemon_bin_path
+            command_sshdaemon = "sc.exe create sshdaemon binPath= \"%s\" DisplayName= \"Medulla SSH Server\" start= auto" % sshdaemon_bin_path
             utils.simplecommand(command_sshdaemon)
 
             utils.simplecommand("sc.exe privs sshdaemon SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
+            FixPermission()
             utils.simplecommand("sc start sshdaemon")
             utils.simplecommand("sc stop sshdaemon")
 
@@ -258,7 +272,7 @@ def updateopenssh(xmppobject, installed_version):
             configure_ssh(xmppobject)
             utils.simplecommand("sc start sshdaemon")
 
-            utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Pulse\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)
+            utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Medulla\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)
         else:
             # Download error
             logger.error("%s" % txtmsg)
@@ -293,3 +307,24 @@ def updateopenssh(xmppobject, installed_version):
             utils.simplecommand("ssh-keygen -A")
 
         updateopensshversion(installed_version)
+
+def FixPermission():
+    # Constants for ACL permissions
+    GENERIC_WRITE = win32file.GENERIC_WRITE
+    ACL_REVISION = 2
+   
+    # Create a security descriptor
+    sd = win32security.SECURITY_DESCRIPTOR()
+
+    # Initialize an ACL with only SYSTEM and Administrators
+    acl = win32security.ACL()
+    sid = win32security.LookupAccountName(None, "NT AUTHORITY\\SYSTEM")[0]
+    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, sid)
+    sid = win32security.LookupAccountName(None, "BUILTIN\\Administrators")[0]
+    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, sid)
+
+    # Set the ACL on the security descriptor
+    sd.SetSecurityDescriptorDacl(1, acl, 0)
+
+    # Set the security descriptor on the directory
+    win32security.SetFileSecurity(programdata_path, win32security.DACL_SECURITY_INFORMATION, sd)

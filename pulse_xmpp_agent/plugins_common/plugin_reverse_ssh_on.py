@@ -240,7 +240,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 ################# win reverse #################
                 try:
                     win32net.NetUserGetInfo('','pulseuser',0)
-                    filekey = os.path.join("C:\\", "Users", "pulseuser", ".ssh", "id_rsa")
+                    filekey = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
                 except:
                     filekey = os.path.join(os.environ["ProgramFiles"], 'pulse', ".ssh", "id_rsa")
                 # Define the permissions depending on the user running the agent (admin or system)

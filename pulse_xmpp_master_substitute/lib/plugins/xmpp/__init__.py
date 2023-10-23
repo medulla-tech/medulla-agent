@@ -45,7 +45,8 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Up_black_list, \
     Up_white_list, \
     Up_gray_list, \
-    Up_action_update_packages
+    Up_action_update_packages, \
+    Up_history
 # Imported last
 import logging
 import json
@@ -9204,14 +9205,44 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 self.logger.error("\n%s" % (traceback.format_exc()))
         return None
 
+
     @DatabaseHelper._sessionm
-    def del_all_Up_machine_windows(self,
-                            session,
-                            id_machine):
+    def del_all_Up_machine_windows(self, session, id_machine, listupdatiddesire=[]):
         """
-            del tout les updates de la machines
+        Supprime les enregistrements de la table 'Up_machine_windows' qui sont maintenant installé.
+
+        Args:
+            session (Session): Session SQLAlchemy active.
+                La session active fournie par le décorateur @DatabaseHelper._sessionm.
+            id_machine (int): L'ID de la machine cible pour laquelle les enregistrements doivent être supprimés.
+            listupdatiddesire (list): Liste des mises necessaire a la machine.
+
+        Note:
+            requête de suppression sur la table 'Up_machine_windows', en fonction des conditions fournies. Les conditions incluent :
+            - L'ID de la machine correspondant à 'id_machine'.
+            - La date de fin est soit nulle, soit antérieure à la date et à l'heure actuelles.
+            - L'ID de mise à jour n'est pas présent dans la liste 'listupdatiddesire'.
         """
-        session.query(Up_machine_windows).filter(and_(Up_machine_windows.id_machine == id_machine, or_(Up_machine_windows.end_date == None, Up_machine_windows.end_date < datetime.now()))).delete()
+        logging.getLogger().debug("id_machine : %s" %id_machine)
+        logging.getLogger().debug("listupdatiddesire : %s" %listupdatiddesire)
+        if  listupdatiddesire:
+            sql="""DELETE
+                FROM
+                    `xmppmaster`.`up_machine_windows`
+                WHERE
+                    (`id_machine` = '%s')
+                        AND (`update_id` NOT IN (%s)
+                        OR up_machine_windows.end_date IS NULL
+                        OR up_machine_windows.end_date < NOW());""" % (id_machine,
+                                                                    ",".join(["'%s'"%x for x in listupdatiddesire]))
+        else:
+             sql="""DELETE
+                FROM
+                    `xmppmaster`.`up_machine_windows`
+                WHERE
+                    (`id_machine` = '%s');""" % (id_machine)
+        logging.getLogger().debug("sql : %s" %sql)
+        req = session.execute(sql)
         session.commit()
         session.flush()
 
@@ -9301,7 +9332,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return False
 
     @DatabaseHelper._sessionm
-    def setUp_machine_windows_gray_list(self, session, updateid, tableproduct="", validity_day=10):
+    def setUp_machine_windows_gray_list(self,
+                                        session,
+                                        updateid,
+                                        tableproduct="",
+                                        validity_day=10):
         """
         cette fonction insert dans la table gray list 1 update
         Si l update existe. Il update seulement la date de validity
@@ -9309,6 +9344,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             tableproduct voir table produits dans la table list_produits
             str_kb_list list des kb installer sur la machine
         """
+        # if le update existe dans la table up_white_list
+        # on ne fait rien
         # if le update existe dans la table up_gray_list_flop
         # on supprime dans la stock_table up_gray_list_flop
         # ce qui fera que l'update sera reinitialiser
@@ -9317,44 +9354,105 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         try:
             if self.is_exist_value_in_table(updateid,
                                             namefield="updateid",
+                                            tablename="up_white_list"):
+                return False
+
+            if self.is_exist_value_in_table(updateid,
+                                            namefield="updateid",
                                             tablename="up_gray_list_flop"):
+                # si l'update existe dans la flip flop, la supprimer de la table flip flop la reinitialise dans la table gray list.
+                # On met a jour la date avant que l'enregistrement change de table.
+                self.update_in_grays_list_validity(updateid ,
+                                                   flipflop=True,
+                                                   validity_day=validity_day)
                 sql="""DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');"""%(updateid)
                 session.execute(sql)
                 session.commit()
                 session.flush()
-            else:
-                sql="""INSERT INTO `xmppmaster`.`up_gray_list` (updateid,
-                                                                kb,
-                                                                revisionid,
-                                                                title,
-                                                                description,
-                                                                updateid_package,
-                                                                payloadfiles,
-                                                                supersededby,
-                                                                title_short,
-                                                                validity_date)
-                            ( SELECT updateid,
-                                    kb,
-                                    revisionid,
-                                    title,
-                                    description,
-                                    updateid_package,
-                                    payloadfiles,
-                                    supersededby,
-                                    title_short,
-                                    now() + INTERVAL %s day
-                            FROM
-                                xmppmaster.%s
-                            WHERE
-                                updateid LIKE '%s')
-                            ON DUPLICATE KEY UPDATE validity_date = now() + INTERVAL %s day;"""%(validity_day,tableproduct,updateid,validity_day)
-                #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
-                session.execute(sql)
-                session.commit()
-                session.flush()
+                return True
+            if self.is_exist_value_in_table(updateid,
+                                            namefield="updateid",
+                                            tablename="up_gray_list"):
+                #update date validity date
+                self.update_in_grays_list_validity(updateid ,
+                                                   flipflop=False,
+                                                   validity_day=validity_day)
+                return True
+
+            #insertion
+            sql="""INSERT INTO `xmppmaster`.`up_gray_list` (updateid,
+                                                            kb,
+                                                            revisionid,
+                                                            title,
+                                                            description,
+                                                            updateid_package,
+                                                            payloadfiles,
+                                                            supersededby,
+                                                            title_short,
+                                                            validity_date)
+                        ( SELECT updateid,
+                                kb,
+                                revisionid,
+                                title,
+                                description,
+                                updateid_package,
+                                payloadfiles,
+                                supersededby,
+                                title_short,
+                                now() + INTERVAL %s day
+                        FROM
+                            xmppmaster.%s
+                        WHERE
+                            updateid LIKE '%s')
+                        ON DUPLICATE KEY UPDATE validity_date = now() + INTERVAL %s day;"""%(validity_day,tableproduct,updateid,validity_day)
+            #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
             return True
         except Exception:
             logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def update_in_grays_list_validity(self,
+                                    session,
+                                    updateid,
+                                    flipflop=True,
+                                    validity_day=10):
+        """
+        Met à jour la date de validité d'un enregistrement dans la table
+        # up_gray_list_flop ou "up_gray_list"
+
+        Parameters:
+            session: Session de base de données.
+            updateid: updateID de la mise à jour.
+            flipflop: Indicateur pour déterminer la (table up_gray_list_flop ou up_gray_list (par défaut : True).
+            validity_day: Nombre de jours de validité (par défaut : 10 jours).
+        Returns:
+            True si l'opération réussit, False sinon.
+        """
+        # Sélectionne la table en fonction de l'indicateur flipflop.
+        if flipflop:
+            table = "up_gray_list_flop"
+        else:
+            table = "up_gray_list"
+
+        try:
+            # Met à jour la date de validité de l'enregistrement.
+            sql = """
+            UPDATE `xmppmaster`.`%s`
+            SET validity_date = DATE_ADD(NOW(), INTERVAL %s DAY)
+            WHERE updateid LIKE '%s';
+            """ % (table, validity_day, updateid)
+
+            # Exécute la requête SQL.
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("update_in_grays_list_validity : %s" % traceback.format_exc())
         return False
 
     @DatabaseHelper._sessionm
@@ -9496,6 +9594,20 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return False
 
     @DatabaseHelper._sessionm
+    def remove_expired_updates(self, session):
+        date_now = datetime.now()
+        query = session.query(Up_machine_windows).filter(
+            and_(Up_machine_windows.end_date is not None,
+                Up_machine_windows.end_date < date_now
+            ))
+        count = query.count()
+        query.delete()
+
+        session.commit()
+        session.flush()
+        return count
+
+    @DatabaseHelper._sessionm
     def pending_up_machine_windows_white(self, session):
         query = session.query(Up_machine_windows, Up_white_list, Machines)\
             .filter(and_(
@@ -9511,8 +9623,21 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         exclude_name_package = ["sharing", ".stfolder", ".stignore" ]
 
         for element, white, machine in query:
+            # Add entry to history
+
             deployName = "%s -@upd@- %s"%(white.title,start_date)
+
+            history = Up_history()
+            history.update_id = element.update_id
+            history.id_machine = element.id_machine
+            history.jid = machine.jid
+            history.update_list = "white"
+            history.required_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
+            history.deploy_title = deployName
+            session.add(history)
+
             element.required_deploy = 1
+            element.curent_deploy = 0
             element.start_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
             element.end_date = datetime.strftime(end_date, "%Y-%m-%d %H:%M:%S")
 
@@ -9555,6 +9680,245 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         return result
 
+    @DatabaseHelper._sessionm
+    def pending_up_machine_windows(self, session, to_deploy):
+        try:
+            query = session.query(Up_machine_windows, Update_data, Machines)\
+                .filter(and_(Up_machine_windows.update_id == to_deploy['updateid'], Up_machine_windows.id_machine == to_deploy['idmachine']))\
+                .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)\
+                .join(Machines, Up_machine_windows.id_machine == Machines.id).all()
+
+            exclude_name_package = ["sharing", ".stfolder", ".stignore" ]
+            result = {}
+
+            start_date = datetime.now()
+            end_date = start_date + timedelta(days=7)
+
+            for element, updata, machine in query:
+                deployName = "%s -@upd@- %s"%(updata.title,start_date)
+                element.required_deploy = 0
+                element.curent_deploy = 1
+                try:
+                    history = session.query(Up_history).filter(and_(
+                    element.update_id == Up_history.update_id,
+                    element.id_machine == Up_history.id_machine
+                    )).first()
+                    history.curent_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
+                    history.deploy_title = deployName
+                except Exception as e:
+                    self.logger.error(e)
+                folderpackage = os.path.join("/", "var","lib", "pulse2", "packages", element.update_id)
+                files = []
+
+                if os.path.isdir(folderpackage):
+                    for root, dir, file in os.walk(folderpackage):
+                        if root != folderpackage:
+                            continue
+                        for _file in file:
+                            if _file not in exclude_name_package:
+                                files.append({"path" : os.path.basename(os.path.dirname(root)),
+                                        "name" : _file,
+                                        "id" : str(uuid.uuid4()),
+                                        "size" : str(os.path.getsize(os.path.join(root, _file))) })
+                else:
+                    files = []
+
+                files_str = "\n".join([file['id']+'##'+file['path']+'/'+file['name'] for file in files])
+                result = {
+                    "id_machine":element.id_machine,
+                    "update_id": element.update_id,
+                    "kb": element.kb,
+                    "curent_deploy": element.curent_deploy,
+                    "required_deploy" : element.required_deploy,
+                    "start_date" : element.start_date,
+                    "end_date" : element.end_date,
+                    "intervals" : element.intervals,
+                    "title": deployName,
+                    "jidmachine": machine.jid,
+                    "groupdeploy": machine.groupdeploy,
+                    "uuidmachine": machine.uuid_inventorymachine,
+                    "hostname": machine.hostname,
+                    "files_str": files_str
+                }
+
+            session.commit()
+            session.flush()
+            return result
+        except Exception as e:
+            self.logger.error(e)
+            return False
+
+    @DatabaseHelper._sessionm
+    def get_updates_in_required_deploy_state(self, session):
+
+        query = session.query(Up_machine_windows)\
+            .join(Machines, Machines.id == Up_machine_windows.id_machine)\
+            .filter(Up_machine_windows.required_deploy == 1)
+
+        count = query.count()
+        query = query.all()
+
+        result = {"total" : count, "datas":query}
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_updates_in_curent_deploy_state(self, session):
+
+        query = session.query(Up_machine_windows)\
+            .join(Machines, Machines.id == Up_machine_windows.id_machine)\
+            .filter(Up_machine_windows.curent_deploy == 1)
+
+        count = query.count()
+        query = query.all()
+
+        result = {"total" : count, "datas":query}
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_updates_in_deploy_state(self, session):
+        date_now = datetime.now()
+        try:
+            query = session.query(Up_machine_windows, Machines)\
+                .add_column(Update_data.kb.label("kb"))\
+                .join(Machines, Machines.id == Up_machine_windows.id_machine)\
+                .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)\
+                .filter(and_(
+                    or_(Up_machine_windows.required_deploy == 1, Up_machine_windows.curent_deploy==1),
+                    Up_machine_windows.start_date < date_now,
+                    Up_machine_windows.end_date > date_now))
+
+            count = query.count()
+            query = query.all()
+
+            result = {
+                "total" : count,
+                "current" : {
+                    "total": 0,
+                    "datas": []
+                },
+                "required": {
+                    "total": 0,
+                    "datas": []
+                }
+            }
+
+            for update, machine, kb in query:
+                tmp = {
+                    "idmachine":machine.id,
+                    "jidmachine":machine.jid,
+                    "uuid_inventorymachine": machine.uuid_inventorymachine if machine.uuid_inventorymachine is not None else "",
+                    "groupdeploy":machine.groupdeploy,
+                    "updateid":update.update_id,
+                    "kb":kb,
+                    "deployment_intervals":update.intervals,
+                    "start_date": update.start_date,
+                    "end_date":update.end_date
+                }
+
+                switch_list = "current" if update.curent_deploy == 1 else "required"
+                result[switch_list]["total"] += 1
+                result[switch_list]["datas"].append(tmp)
+
+            return result
+        except Exception as e:
+            self.logger.error(e)
+
+    @DatabaseHelper._sessionm
+    def deployment_is_running_on_machine(self, session, jid):
+        date_now = datetime.now()
+
+        query = session.query(Deploy)\
+            .filter(and_(
+                Deploy.jidmachine == jid,
+                Deploy.startcmd < date_now,
+                Deploy.endcmd > date_now,
+                Deploy.state.op("not regexp")("(SUCCESS)|(ABORT)|(ERROR)")
+                ))
+
+        query = query.count()
+
+        return True if query is not None and query != 0 else False
+
+    @DatabaseHelper._sessionm
+    def delete_all_done_updates(self, session):
+        date_now = datetime.now()
+
+        try:
+            query = session.query(Up_machine_windows, Machines, Update_data, Up_history)\
+                .join(Machines, Up_machine_windows.id_machine == Machines.id)\
+                .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)\
+                .join(Up_history, and_(Up_machine_windows.update_id == Up_history.update_id, Up_machine_windows.id_machine == Up_history.id_machine))\
+                .filter(
+                    and_(Up_machine_windows.curent_deploy == 1)
+                )
+            count = query.count()
+            query = query.all()
+
+            self.logger.info("%s updates in current_deploy state"%count)
+        except Exception as e:
+            self.logger.error("delete_all_done_updates : %s"%e)
+            return False
+
+        if count == 0:
+            self.logger.info("No update in current_deploy state, nothing to remove")
+            return False
+
+        result = []
+        for update, machine, data, history in query:
+            result.append({
+                "update_id":update.update_id,
+                "id_machine":machine.id,
+                "jid":machine.jid,
+                "hostname":machine.hostname,
+                "kb":data.kb,
+                "command":history.command
+            })
+
+            try:
+                deploy_done = []
+                deploy_not_done = []
+                query2 = session.query(Deploy).filter(and_(
+                    Deploy.jidmachine == machine.jid,
+                    Deploy.title == history.deploy_title,
+                    Deploy.command == history.command,
+                    # Deploy.result.op("regexp")(update.update_id),
+                    Deploy.start > update.start_date,
+                    Deploy.start < update.end_date,
+                ))
+                query2 = query2.all()
+                for deploy in query2:
+                    if history.id_deploy is None:
+                        history.id_deploy = deploy.id
+                        history.deploy_date = deploy.start
+                    if re.search("(SUCCESS)|(ABORT)|(ERROR)", deploy.state):
+                        deploy_done.append(deploy)
+                    else:
+                        deploy_not_done.append(deploy)
+                self.logger.info("%s deploy done for machine %s and update %s"%(len(deploy_done), machine.jid, update.update_id))
+            except Exception as e:
+                self.logger.error(e)
+                return False
+
+            for deploy in deploy_done:
+                self.logger.info("Removing update %s for machine %s : done"%(update.update_id, machine.hostname))
+                history.delete_date = datetime.strftime(date_now, "%Y-%m-%d %H:%M:%S")
+                query_del = session.query(Up_machine_windows).filter(and_(
+                Up_machine_windows.update_id == update.update_id,
+                Up_machine_windows.id_machine == machine.id)).delete()
+                session.commit()
+                session.flush()
+        return True
+
+    @DatabaseHelper._sessionm
+    def insert_command_into_up_history(self, session, updateid, jidmachine, commandid):
+        query = session.query(Up_history).filter(and_(Up_history.update_id == updateid, Up_history.jid == jidmachine)).order_by(desc(Up_history.curent_date)).first()
+
+        try:
+            query.command = commandid
+            session.commit()
+            session.flush()
+        except Exception as e:
+            self.logger.error(e)
 # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [{column: value for column, value in rowproxy.items()}

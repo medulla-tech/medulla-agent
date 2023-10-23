@@ -12,6 +12,8 @@ import pycurl
 import platform
 import urllib
 import shutil
+from lib.utils import file_get_contents
+from distutils.util import strtobool
 from urlparse import urlparse
 from lib import utils, \
                 managepackage, \
@@ -27,7 +29,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.30", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.40", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -581,11 +583,23 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             if data['transfert'] and \
                 data['methodetransfert'] in ["pullcurl", "pulldirect"]:
                 #pull method download file
+                is_bundle = False
+                if objectxmpp.back_to_deploy:
+                    main_session = next(iter(objectxmpp.back_to_deploy))
+                    bundle_package = objectxmpp.back_to_deploy[main_session]['Dependency'][0]
+                    if ('hash_info' in objectxmpp.back_to_deploy[main_session]['packagelist'][bundle_package]['descriptor']['info'] and objectxmpp.back_to_deploy[main_session]['packagelist'][bundle_package]['descriptor']['info']['hash_info']['url'] != ""):
+                        is_bundle = True
+
+
                 if data['methodetransfert'] in ["pullcurl"]:
-                    if ('hash_info' in data['descriptor']['info'] and data['descriptor']['info']['hash_info']['url'] != ""):
-                        logger.info("----------------------------------------------------")
-                        logger.info("---------------Download file with CDN---------------")
-                        logger.info("----------------------------------------------------")
+                    if (is_bundle or ('hash_info' in data['descriptor']['info'] and data['descriptor']['info']['hash_info']['url'] != "")):
+
+                        logger.debug("----------Download file using CDN----------")
+
+                        if objectxmpp.back_to_deploy:
+                            if not 'hash_info' in data['descriptor']['info']:
+                                data['descriptor']['info']['hash_info'] = objectxmpp.back_to_deploy[main_session]['packagelist'][bundle_package]['descriptor']['info']['hash_info']
+
                         recupfile = recuperefilecdn(datasend,
                                                     objectxmpp,
                                                     sessionid)
@@ -713,7 +727,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         msgdeploy=[]
 
 
-        if hasattr(objectxmpp.config, 'cdn_enable') and bool(objectxmpp.config.cdn_enable):
+        if hasattr(objectxmpp.config, 'cdn_enable') and bool(strtobool(objectxmpp.config.cdn_enable)) is True:
             data['methodetransfert'] = 'pullcurl'
             data['descriptor']['info']['methodetransfert'] = 'pullcurl'
             url = objectxmpp.config.cdn_baseurl
@@ -724,7 +738,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             data['descriptor']['info']['hash_info'] = {}
             data['descriptor']['info']['hash_info']['url'] = url
             data['descriptor']['info']['hash_info']['token'] = token
-            
+
             objectxmpp.xmpplog('Transfer Method is %s' % data['methodetransfert'],
                                        type='deploy',
                                        sessionname=sessionid,
@@ -2245,7 +2259,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
-                path_key_priv =  os.path.join("c:\Users\pulseuser", ".ssh", "id_rsa")
+                path_key_priv =  os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
             except:
                 path_key_priv = os.path.join("c:\progra~1", "pulse", '.ssh', "id_rsa")
             localdest = " \"%s/%s\"" % (managepackage.managepackage.packagedir(), packagename)
@@ -2397,7 +2411,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 
 def check_hash(objectxmpp, data):
     hash_type = data['hash']['type']
-    dest = os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", data['name'])
+    dest = data['pathpackageonmachine']
     dest += "\\"
     concat_hash = ""
 
@@ -2455,18 +2469,18 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
     for filepackage in datasend['data']['packagefile']:
         if datasend['data']['methodetransfert'] == "pullcurl":
             dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
-            
+
+            packageUuid = str(datasend['data']['descriptor']['info']['packageUuid'])
+
             if ('localisation_server' in datasend['data']['descriptor']['info'] and datasend['data']['descriptor']['info']['localisation_server'] != ""):
-                urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['localisation_server']) + "/" + str(datasend['data']['name']) + "/" + str(filepackage)
+                urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['localisation_server']) + "/" + packageUuid + "/" + str(filepackage)
             elif ('previous_localisation_server' in datasend['data']['descriptor']['info'] and datasend['data']['descriptor']['info']['previous_localisation_server'] != ""):
-                urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['previous_localisation_server']) + "/" + str(datasend['data']['name']) + "/" + str(filepackage)
-                
+                urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['previous_localisation_server']) + "/" + packageUuid + "/" + str(filepackage)
+
             urlobject = urlparse(urlfile)
             urlfile = urlobject.scheme + '://' + urllib.quote(urlobject.netloc) + urllib.quote(urlobject.path)
             token = datasend['data']['descriptor']['info']['hash_info']['token']
-            logger.info("###################################################")
-            logger.info("URL for downloading package using curl : " + urlfile)
-            logger.info("###################################################")
+            logger.debug("URL for downloading package using curl : " + urlfile)
             try:
                 if 'limit_rate_ko' in datasend['data']['descriptor']['info'] and \
                                 datasend['data']['descriptor']['info']['limit_rate_ko'] != "" and\
@@ -2559,7 +2573,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                 return False
     _check_hash = check_hash(objectxmpp, datasend['data'])
     if _check_hash != datasend['data']['hash']['global']:
-        shutil.rmtree(os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", datasend['data']['name']))
+        shutil.rmtree(datasend['data']['pathpackageonmachine'])
         logger.error("HASH INVALID - ABORT DEPLOYMENT")
         objectxmpp.xmpplog('<span class="log_err">Package delayed : hash invalid</span>',
             type='deploy',

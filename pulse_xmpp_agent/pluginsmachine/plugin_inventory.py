@@ -40,10 +40,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_updates
     except :
         xmppobject.sub_updates = jid.JID("master_upd@pulse")
-    try:
-        send_plugin_update_windows(xmppobject)
-    except Exception as e:
-        logger.error("\n%s" % (traceback.format_exc()))
+    if sys.platform.startswith("win"):
+        try:
+            send_plugin_update_windows(xmppobject)
+        except Exception as e:
+            logger.error("\n%s" % (traceback.format_exc()))
 
     boolchange = True
     namefilexml = ""
