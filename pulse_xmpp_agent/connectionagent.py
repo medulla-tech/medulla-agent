@@ -125,7 +125,7 @@ class MUCBot(ClientXMPP):
                 strlistgeoserveur=self.config.geoservers,
             )
 
-        self.ippublic = self.geodata.get_ip_public()
+            self.ippublic = self.geodata.get_ip_public()
 
         if self.ippublic == "" or self.ippublic is None:
             self.ippublic = None
