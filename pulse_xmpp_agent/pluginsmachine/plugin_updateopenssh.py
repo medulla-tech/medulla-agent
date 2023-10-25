@@ -29,46 +29,54 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     try:
         # Update if version is lower
-        check_if_binary_ok()
+        check_medulla_conformity()
         installed_version = checkopensshversion()
         if StrictVersion(installed_version) < StrictVersion(OPENSSHVERSION):
             updateopenssh(xmppobject, installed_version)
         else:
             configure_ssh(xmppobject)
-        check_if_service_is_running()
+        StartAndFixSshdaemon()
     except Exception:
         pass
 
-def check_if_binary_ok():
+def check_medulla_conformity():
     if sys.platform.startswith('win'):
-        # We check if we have the Regedit entry
+        # We check the Medulla SSH version
         cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
+        current_ssh_version = result['result'][0].strip().split()[-1]
 
-        if result['code'] == 0:
-            # We check if the openssh binary is correctly installed.
-            opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
-            sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
 
-            if os.path.isfile(sshdaemon_bin_path):
-                logger.debug("OpenSSH daemon is present")
+        if current_ssh_version == OPENSSHVERSION:
+            if not check_if_service_is_running():
+                logger.debug("Medulla OpenSSH is correctly installed, nothing to do")
             else:
-                logger.info("OpenSSH is not present, we need to install the component.")
+                logger.info("Medulla OpenSSH is not correctly installed, we need to install the component.")
 
                 cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '\
                     '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
                 result = utils.simplecommand(cmd)
                 if result['code'] == 0:
-                    logger.debug("The OpenSSH module is ready to be reinstalled.")
+                    logger.debug("Medulla OpenSSH module is ready to be reinstalled.")
                 else:
-                    logger.debug("We failed to reinitialize the registry entry for OpenSSH.")
+                    logger.debug("We failed to reinitialize the registry entry for Medulla OpenSSH.")
         else:
             cmd = 'REG DELETE "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" /f'
             result = utils.simplecommand(cmd)
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
             result = utils.simplecommand(cmd)
-            logger.debug("The OpenSSH module is ready to be reinstalled with Medulla version.")
+            logger.debug("Medulla OpenSSH module is ready to be reinstalled with Medulla version.")
+
+
+def start_sshdaemon(enable_logs=False):
+    if sys.platform.startswith('win'):
+        result = utils.simplecommand("sc.exe start sshdaemon")
+	time.sleep(5)
+	if check_if_service_is_running():
+	    if enable_logs:
+                logger.debug("Medulla OpenSSH is correctly started.")
+
 
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
@@ -76,8 +84,20 @@ def check_if_service_is_running():
         if is_ssh_started['code'] == 0:
             state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
             if state == "STOPPED":
-                logger.debug("The OpenSSH does not seems started. We start it.")
-                utils.simplecommand("sc.exe start sshdaemon")
+		return False
+	    return True
+
+
+def StartAndFixSshdaemon():
+    if sys.platform.startswith('win'):
+        if not check_if_service_is_running():
+            start_sshdaemon(enable_logs=True)
+            if not check_if_service_is_running():
+	        logger.debug("Medulla OpenSSH failed to start")
+                FixPermission()
+	        logger.debug("Medulla OpenSSH permissions has been applied")
+	        start_sshdaemon(enable_logs=True)
+
 
 def checkopensshversion():
     if sys.platform.startswith('win'):
@@ -105,11 +125,6 @@ def updateopensshversion(version):
                     '/v "DisplayName" /t REG_SZ  /d "Medulla OpenSSH" /f'
             utils.simplecommand(cmdDisplay)
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
-
-            utils.simplecommand(cmd)
-
 def configure_ssh(xmppobject):
     Used_ssh_port = "22"
     programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
@@ -122,6 +137,12 @@ def configure_ssh(xmppobject):
     # Now we customize the config file
     sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
     sshport = "Port %s" % Used_ssh_port
+
+    if "# Ciphers and keying" in sshd_config_file:
+        HostKeyAlgorithms = "HostKeyAlgorithms +ssh-rsa"
+        PubkeyAcceptedAlgorithms = "PubkeyAcceptedAlgorithms +ssh-rsa"
+        sshd_config_file = sshd_config_file.replace("# Ciphers and keying", "# Medulla allow old ssh-rsa" + "\n" + "HostKeyAlgorithms +ssh-rsa" + "\n" + "PubkeyAcceptedAlgorithms +ssh-rsa")
+        restart_service = True
 
     if "#Port" in sshd_config_file or sshport not in sshd_config_file:
         sshd_config_file = sshd_config_file.replace("#Port 22", sshport)
@@ -167,7 +188,8 @@ def configure_ssh(xmppobject):
 
     if restart_service:
         utils.simplecommand("sc stop sshdaemon")
-        utils.simplecommand("sc start sshdaemon")
+        start_sshdaemon()
+        logger.info("Medulla OpenSSH new configuration has been applied")
 
 def updateopenssh(xmppobject, installed_version):
     Used_ssh_port = "22"
@@ -230,10 +252,7 @@ def updateopenssh(xmppobject, installed_version):
 
             if os.path.isdir(opensshdir_path):
                 PROCNAME = "sshd.exe"
-                for proc in psutil.process_iter():
-                    # check whether the process name matches and kills it
-                    if proc.name() == PROCNAME:
-                        proc.kill()
+                os.system("taskkill /F /IM %s" % PROCNAME)
                 try:
                     shutil.rmtree(opensshdir_path)
                 except OSError as e:
@@ -259,8 +278,6 @@ def updateopenssh(xmppobject, installed_version):
 
             utils.simplecommand("sc.exe privs sshdaemon SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
-            FixPermission()
-            utils.simplecommand("sc start sshdaemon")
             utils.simplecommand("sc stop sshdaemon")
 
             try:
@@ -270,8 +287,7 @@ def updateopenssh(xmppobject, installed_version):
                 return
 
             configure_ssh(xmppobject)
-            utils.simplecommand("sc start sshdaemon")
-
+            start_sshdaemon()
             utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Medulla\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)
         else:
             # Download error
@@ -307,6 +323,7 @@ def updateopenssh(xmppobject, installed_version):
             utils.simplecommand("ssh-keygen -A")
 
         updateopensshversion(installed_version)
+
 
 def FixPermission():
     # Constants for ACL permissions
