@@ -2089,8 +2089,11 @@ def delete_profile(username='pulseuser'):
             result = simplecommand(encode_strconsole(delete_folder_cmd))
             if result['code'] == 0:
                 logger.debug('Deleted %s folder' % getHomedrive())
-        else:
-            logger.error('Error deleting %s folder' % getHomedrive())
+            else:
+                logger.error('Error deleting %s folder' % getHomedrive())
+        except Exception as e:
+            pass
+
         # Delete profile
         userenvdll = ctypes.WinDLL('userenv.dll')
         usersid = get_user_sid(username)
