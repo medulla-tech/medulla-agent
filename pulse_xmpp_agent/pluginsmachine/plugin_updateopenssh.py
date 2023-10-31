@@ -65,7 +65,7 @@ def check_medulla_conformity():
 
 
         if current_ssh_version == OPENSSHVERSION:
-            if not check_if_service_is_running():
+            if check_if_service_is_running():
                 logger.debug("Medulla OpenSSH is correctly installed, nothing to do")
             else:
                 logger.info("Medulla OpenSSH is not correctly installed, we need to install the component.")
