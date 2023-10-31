@@ -132,8 +132,12 @@ def updateopensshversion(version):
     if sys.platform.startswith('win'):
         cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % OPENSSHVERSION
-
         result = utils.simplecommand(cmd)
+
+        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '\
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+        utils.simplecommand(cmd)
+
         if result['code'] == 0:
             logger.info("we successfully changed the version of OpenSSH to version %s" % OPENSSHVERSION)
 
