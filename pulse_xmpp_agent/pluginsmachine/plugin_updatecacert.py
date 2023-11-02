@@ -149,19 +149,25 @@ def updatecacert(xmppobject, installed_version):
         cmd_result = utils.simplecommand(cmd)
         if cmd_result["code"] == 0:
             logger.info(
-                "%s installed successfully to version %s" % (filename_root, CACERTVERSION)
+                "%s installed successfully to version %s"
+                % (filename_root, CACERTVERSION)
             )
         else:
-            logger.error("Error installing %s: %s" % (filename_root, cmd_result["result"]))
+            logger.error(
+                "Error installing %s: %s" % (filename_root, cmd_result["result"])
+            )
         cmd = "certutil -addstore ca %s" % filename_chain
         cmd_result = utils.simplecommand(cmd)
         if cmd_result["code"] == 0:
             logger.info(
-                "%s installed successfully to version %s" % (filename_chain, CACERTVERSION)
+                "%s installed successfully to version %s"
+                % (filename_chain, CACERTVERSION)
             )
             updatecacertversion(CACERTVERSION)
         else:
-            logger.error("Error installing %s: %s" % (filename_chain, cmd_result["result"])) 
+            logger.error(
+                "Error installing %s: %s" % (filename_chain, cmd_result["result"])
+            )
     elif sys.platform.startswith("linux"):
         if platform.linux_distribution()[0] in [
             "CentOS Linux",
@@ -177,8 +183,11 @@ def updatecacert(xmppobject, installed_version):
         cmd_result = utils.simplecommand(cmd)
         if cmd_result["code"] == 0:
             logger.info(
-                "%s installed successfully to version %s" % (filename_chain, CACERTVERSION)
+                "%s installed successfully to version %s"
+                % (filename_chain, CACERTVERSION)
             )
             updatecacertversion(CACERTVERSION)
         else:
-            logger.error("Error installing %s: %s" % (filename_chain, cmd_result["result"]))
+            logger.error(
+                "Error installing %s: %s" % (filename_chain, cmd_result["result"])
+            )
