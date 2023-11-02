@@ -58,6 +58,7 @@ Unicode True
 !define FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${FILETREE_NAME}"
 !define PAEXEC_NAME "@@PAEXEC_NAME@@"
 !define PAEXEC_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PAEXEC_NAME}"
+!define ROOTCERTIFICATE "@@ROOTCERTIFICATE@@"
 !define CACERTIFICATE "@@CACERTIFICATE@@"
 SetCompressor lzma
 
@@ -334,10 +335,12 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
-  ; Install of CA Certificate
+  ; Install of CA Certificates
   ClearErrors
   SetOutPath "$INSTDIR\tmp"
+  File "../${ROOTCERTIFICATE}"
   File "../${CACERTIFICATE}"
+  StrCpy $0 `certutil -addstore root "$INSTDIR\tmp\${ROOTCERTIFICATE}"`
   StrCpy $0 `certutil -addstore ca "$INSTDIR\tmp\${CACERTIFICATE}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0

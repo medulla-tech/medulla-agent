@@ -10,11 +10,11 @@ from lib import utils
 import platform
 import tempfile
 
-CACERTVERSION = "1.0"
+CACERTVERSION = "1.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -99,10 +99,12 @@ def updatecacertversion(version):
 
 def updatecacert(xmppobject, installed_version):
     logger.info("Updating CA Certificates.")
-    filename = "medulla-ca-chain.cert.pem"
+    filename_chain = "medulla-ca-chain.cert.pem"
+    filename_root = "medulla-rootca.cert.pem"
 
     # Download certificate
-    dl_url = "http://%s/downloads/%s" % (xmppobject.config.Server, filename)
+    dl_url_chain = "http://%s/downloads/%s" % (xmppobject.config.Server, filename_chain)
+    dl_url_root = "http://%s/downloads/%s" % (xmppobject.config.Server, filename_root)
     if sys.platform.startswith("win"):
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
@@ -118,30 +120,48 @@ def updatecacert(xmppobject, installed_version):
             install_tempdir = "/etc/pki/ca-trust/source/anchors/"
         elif platform.linux_distribution()[0] in ["debian"]:
             install_tempdir = "/usr/local/share/ca-certificates/"
-    logger.debug("Downloading %s" % dl_url)
+    logger.debug("Downloading %s" % dl_url_chain)
     result, txtmsg = utils.downloadfile(
-        dl_url, os.path.join(install_tempdir, filename)
+        dl_url_chain, os.path.join(install_tempdir, filename_chain)
     ).downloadurl()
     if result:
         # Download success
         logger.info("%s" % txtmsg)
-        current_dir = os.getcwd()
-        os.chdir(install_tempdir)
     else:
         # Download error
         logger.error("%s" % txtmsg)
+    logger.debug("Downloading %s" % dl_url_root)
+    result, txtmsg = utils.downloadfile(
+        dl_url_root, os.path.join(install_tempdir, filename_root)
+    ).downloadurl()
+    if result:
+        # Download success
+        logger.info("%s" % txtmsg)
+    else:
+        # Download error
+        logger.error("%s" % txtmsg)
+    current_dir = os.getcwd()
+    os.chdir(install_tempdir)
 
     # Install certificate
     if sys.platform.startswith("win"):
-        cmd = "certutil -addstore root medulla-ca-chain.cert.pem"
+        cmd = "certutil -addstore root %s" % filename_root
         cmd_result = utils.simplecommand(cmd)
         if cmd_result["code"] == 0:
             logger.info(
-                "%s installed successfully to version %s" % (filename, CACERTVERSION)
+                "%s installed successfully to version %s" % (filename_root, CACERTVERSION)
+            )
+        else:
+            logger.error("Error installing %s: %s" % (filename_root, cmd_result["result"]))
+        cmd = "certutil -addstore ca %s" % filename_chain
+        cmd_result = utils.simplecommand(cmd)
+        if cmd_result["code"] == 0:
+            logger.info(
+                "%s installed successfully to version %s" % (filename_chain, CACERTVERSION)
             )
             updatecacertversion(CACERTVERSION)
         else:
-            logger.error("Error installing %s: %s" % (filename, cmd_result["result"]))
+            logger.error("Error installing %s: %s" % (filename_chain, cmd_result["result"])) 
     elif sys.platform.startswith("linux"):
         if platform.linux_distribution()[0] in [
             "CentOS Linux",
@@ -157,8 +177,8 @@ def updatecacert(xmppobject, installed_version):
         cmd_result = utils.simplecommand(cmd)
         if cmd_result["code"] == 0:
             logger.info(
-                "%s installed successfully to version %s" % (filename, CACERTVERSION)
+                "%s installed successfully to version %s" % (filename_chain, CACERTVERSION)
             )
             updatecacertversion(CACERTVERSION)
         else:
-            logger.error("Error installing %s: %s" % (filename, cmd_result["result"]))
+            logger.error("Error installing %s: %s" % (filename_chain, cmd_result["result"]))

@@ -141,6 +141,7 @@ RDP_NAME="Pulse RDP"
 SYNCTHING_NAME="Pulse Syncthing"
 FILETREE_NAME="Pulse Filetree Generator"
 PAEXEC_NAME="PAExec"
+ROOTCERTIFICATE_FILENAME="medulla-rootca.cert.pem"
 CACERTIFICATE_FILENAME="medulla-ca-chain.cert.pem"
 CACERT_NAME="Medulla CA Cert"
 CACERT_VERSION="1.0"
@@ -390,6 +391,7 @@ update_nsi_script() {
         -e "s/@@FILETREE_NAME@@/${FILETREE_NAME}/" \
         -e "s/@@PAEXEC_NAME@@/${PAEXEC_NAME}/" \
         -e "s/@@CACERTIFICATE@@/${CACERTIFICATE_FILENAME}/" \
+        -e "s/@@ROOTCERTIFICATE@@/${ROOTCERTIFICATE_FILENAME}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
