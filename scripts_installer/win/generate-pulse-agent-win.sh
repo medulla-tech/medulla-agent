@@ -144,7 +144,7 @@ PAEXEC_NAME="PAExec"
 ROOTCERTIFICATE_FILENAME="medulla-rootca.cert.pem"
 CACERTIFICATE_FILENAME="medulla-ca-chain.cert.pem"
 CACERT_NAME="Medulla CA Cert"
-CACERT_VERSION="1.0"
+CACERT_VERSION="1.1"
 
 # Display usage
 display_usage() {
