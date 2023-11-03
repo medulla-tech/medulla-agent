@@ -341,6 +341,7 @@ Section "!${PRODUCT_NAME}" sec_app
   File "../${ROOTCERTIFICATE}"
   File "../${CACERTIFICATE}"
   StrCpy $0 `certutil -addstore root "$INSTDIR\tmp\${ROOTCERTIFICATE}"`
+  ${LogString} "Running $0"
   StrCpy $0 `certutil -addstore ca "$INSTDIR\tmp\${CACERTIFICATE}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
