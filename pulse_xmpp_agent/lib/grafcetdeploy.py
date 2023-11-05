@@ -1325,7 +1325,7 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            self.workingstep["command"] = Base64tostring(self.workingstep["command"])
+            self.workingstep["command"] = isBase64tostring(self.workingstep["command"])
             self.workingstep["command"] = self.replaceTEMPLATE(
                 self.workingstep["command"]
             )
@@ -1562,7 +1562,7 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            self.workingstep["script"] = Base64tostring(self.workingstep["script"])
+            self.workingstep["script"] = isBase64tostring(self.workingstep["script"])
             self.workingstep["script"] = self.replaceTEMPLATE(
                 self.workingstep["script"]
             )
