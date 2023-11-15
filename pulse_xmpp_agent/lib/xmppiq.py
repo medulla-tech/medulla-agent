@@ -505,7 +505,9 @@ class functionsynchroxmpp:
                 result = functionsynchroxmpp.__execfunctionmonitoringparameter(
                     datastruct, xmppobject
                 )
-        result = base64.b64encode(zlib.compress(result, 9))
+        if isinstance(result, str):
+            result = result.encode('utf-8')
+        result = base64.b64encode(zlib.compress(result, 9)).decode('utf-8')
         data["result"] = result
         return json.dumps(data)
 
