@@ -216,6 +216,7 @@ class Glpi95(DatabaseHelper):
         """
 
         self.klass = {}
+	self.plugin_fusioninventory = None
 
         # simply declare some tables (that dont need and FK relations, or anything special to declare)
         for i in ('glpi_operatingsystemversions', 'glpi_computertypes', 'glpi_operatingsystems', 'glpi_operatingsystemservicepacks', 'glpi_operatingsystemarchitectures',
@@ -357,7 +358,7 @@ class Glpi95(DatabaseHelper):
         # glpi_plugin_fusioninventory_agents
         self.fusionagents = None
 
-        if self.fusionantivirus is not None:
+        if self.fusionantivirus is not None and self.plugin_fusioninventory is not None:
             self.logger.debug('Load glpi_plugin_fusioninventory_locks')
             self.fusionlocks = Table('glpi_plugin_fusioninventory_locks', self.metadata,
                                      Column('items_id', Integer, ForeignKey('glpi_computers_pulse.id')),
@@ -527,25 +528,6 @@ class Glpi95(DatabaseHelper):
         # group
         self.group = Table("glpi_groups", self.metadata, autoload=True)
         mapper(Group, self.group)
-
-        # collects
-        self.collects = Table("glpi_plugin_fusioninventory_collects", self.metadata,
-                              Column('entities_id', Integer, ForeignKey('glpi_entities.id')),
-                              autoload=True)
-        mapper(Collects, self.collects)
-
-        # registries
-        self.registries = Table("glpi_plugin_fusioninventory_collects_registries", self.metadata,
-                                Column('plugin_fusioninventory_collects_id', Integer, ForeignKey('glpi_plugin_fusioninventory_collects.id')),
-                                autoload=True)
-        mapper(Registries, self.registries)
-
-        # registries contents
-        self.regcontents = Table("glpi_plugin_fusioninventory_collects_registries_contents", self.metadata,
-                                 Column('computers_id', Integer, ForeignKey('glpi_computers_pulse.id')),
-                                 Column('plugin_fusioninventory_collects_registries_id', Integer, ForeignKey('glpi_plugin_fusioninventory_collects_registries.id')),
-                                 autoload=True)
-        mapper(RegContents, self.regcontents)
 
     # internal query generators
     def __filter_on(self, query):
@@ -744,9 +726,6 @@ class Glpi95(DatabaseHelper):
 
             if self.fusionagents is not None:
                 join_query = join_query.outerjoin(self.fusionagents)
-            if 'antivirus' in filt:  # Used for Antivirus dashboard
-                join_query = join_query.outerjoin(self.fusionantivirus)
-                join_query = join_query.outerjoin(self.os)
 
             if query_filter is None:
                 query = query.select_from(join_query)
@@ -863,46 +842,6 @@ class Glpi95(DatabaseHelper):
                 if 'red' in value:
                     query = query.filter(date_mod < state['red'])
 
-            if 'antivirus' in filt:
-                if filt['antivirus'] == 'green':
-                    query = query.filter(
-                        and_(
-                            FusionAntivirus.is_active == 1,
-                            FusionAntivirus.is_uptodate == 1,
-                            OS.name.ilike('%windows%'),
-                            not_(FusionAntivirus.name.in_(self.config.av_false_positive)),
-                        )
-                    )
-                elif filt['antivirus'] == 'orange':
-                    query = query.filter(
-                        and_(
-                            OS.name.ilike('%windows%'),
-                            not_(
-                                and_(
-                                    FusionAntivirus.is_active == 1,
-                                    FusionAntivirus.is_uptodate == 1,
-                                ),
-                            ),
-                            not_(FusionAntivirus.name.in_(self.config.av_false_positive)),
-                        )
-                    )
-                elif filt['antivirus'] == 'red':
-                    query = query.filter(
-                        and_(
-                            OS.name.ilike('%windows%'),
-                            or_(
-                                FusionAntivirus.is_active == None,
-                                FusionAntivirus.is_uptodate == None,
-                                and_(
-                                    FusionAntivirus.name.in_(self.config.av_false_positive),
-                                    not_(FusionAntivirus.computers_id.in_(
-                                        self.getMachineIdsNotInAntivirusRed(ctx),
-                                    )),
-                                ),
-                            ),
-                        )
-                    )
-
         if count:
             query = query.scalar()
         return query
@@ -995,14 +934,8 @@ class Glpi95(DatabaseHelper):
             return base + [self.inst_software, self.softwareversions, self.software, self.manufacturers]
         elif query[2] == 'User location':
             return base + [self.user, self.locations]
-        elif query[2] == 'Register key':
-            return base + [self.regcontents]  # self.collects, self.registries,
-        elif query[2] == 'Register key value':
-            return base + [self.regcontents, self.registries]  # self.collects, self.registries,
         elif query[2] == 'OS Version':
             return base + [self.os_version]
-        elif query[2] == 'Architecture':
-            return base + [self.os_arch]
         return []
 
     def mapping(self, ctx, query, invert=False):
@@ -1143,10 +1076,6 @@ class Glpi95(DatabaseHelper):
             return [[self.software.c.name, query[3][0]], [self.softwareversions.c.name, query[3][1]]]
         elif query[2] == 'Installed software (specific vendor and version)':  # hidden internal dyngroup
             return [[self.manufacturers.c.name, query[3][0]], [self.software.c.name, query[3][1]], [self.softwareversions.c.name, query[3][2]]]
-        elif query[2] == 'Register key':
-            return [[self.registries.c.name, query[3]]]
-        elif query[2] == 'Register key value':
-            return [[self.registries.c.name, query[3][0]], [self.regcontents.c.value, query[3][1]]]
         elif query[2] == 'OS Version':
             return [[self.os_version.c.name, query[3]]]
         elif query[2] == 'Architecture':
@@ -1802,36 +1731,6 @@ class Glpi95(DatabaseHelper):
         path.append('UUID0')
         return path
 
-    def getMachineRegistryKey(self, machine, regkey):
-        """
-        Returns the registry keys and values defined on the computer.
-
-        @param machine: computer's instance
-        @type machine: Machine
-
-        @param regkey: registry key
-        @type regkey: str
-
-        @return: name, value
-        @rtype: tuple
-        """
-
-        ret = None
-        session = create_session()
-
-        query = session.query(RegContents).add_column(self.registries.c.name) \
-            .add_column(self.regcontents.c.key) \
-            .add_column(self.regcontents.c.value) \
-            .select_from(self.machine.outerjoin(self.regcontents) \
-                .outerjoin(self.registries))
-        query = query.filter(self.machine.c.id == machine.id, self.regcontents.c.key == regkey)
-
-        if query.first() is not None:
-            ret = query.first().name, query.first().value
-
-        session.close()
-        return ret
-
     def doesUserHaveAccessToMachines(self, ctx, a_machine_uuid, all=True):
         """
         Check if the user has correct permissions to access more than one or to all machines
@@ -2104,64 +2003,10 @@ class Glpi95(DatabaseHelper):
         return ret
 
     def getLastMachineAntivirusPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        if self.fusionantivirus is None:  # glpi_plugin_fusinvinventory_antivirus doesn't exists
-            return []
-
-        query = self.filterOnUUID(
-            session.query(FusionAntivirus).add_column(self.manufacturers.c.name).select_from(
-                self.machine.outerjoin(self.fusionantivirus).outerjoin(self.manufacturers)
-            ), uuid)
-
-        def __getAntivirusName(manufacturerName, antivirusName):
-            """
-            Returns:
-                complete antivirus name (manufacturer + antivirus name)
-                if antivirus name is a false positive, display it in bracket
-            """
-            if antivirusName in self.config.av_false_positive:
-                antivirusName += '@@FALSE_POSITIVE@@'
-
-            return manufacturerName and ' '.join([manufacturerName, antivirusName]) or antivirusName
-
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for antivirus, manufacturerName in query:
-                if antivirus:
-                    l = [
-                        ['Name', __getAntivirusName(manufacturerName, antivirus.name)],
-                        ['Enabled', antivirus.is_active == 1 and 'Yes' or 'No'],
-                        ['Up-to-date', antivirus.is_uptodate == 1 and 'Yes' or 'No'],
-                    ]
-                    if antivirus.antivirus_version:
-                        l.insert(1, ['Version', antivirus.antivirus_version])
-                    ret.append(l)
-        return ret
+	return []
 
     def getLastMachineRegistryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
-        # Mutable dict options used as default argument to a method or function
-        query = self.filterOnUUID(
-            session.query(RegContents).add_column(self.registries.c.name) \
-            .add_column(self.regcontents.c.key) \
-            .add_column(self.regcontents.c.value) \
-            .select_from(self.machine.outerjoin(self.regcontents) \
-                .outerjoin(self.registries) \
-            ), int(str(uuid).replace("UUID", "")))
-
-        if count:
-            ret = query.count()
-        else:
-            ret = []
-            for row in query:
-                if row.key is not None:
-                    l = [
-                        ['Registry key', row.name],
-                        ['Value', row.value],
-                    ]
-                    ret.append(l)
-        return ret
+	return []
 
     def getLastMachineSoftwaresPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
         # Mutable dict options used as default argument to a method or function
@@ -2256,38 +2101,7 @@ class Glpi95(DatabaseHelper):
 
         self.logger.debug("Update an editable field")
         self.logger.debug("%s: Set %s as new value for %s" % (uuid, value, name))
-        try:
-            session = create_session()
-
-            # Get SQL field who will be updated
-            table, field = self.__getTableAndFieldFromName(name)
-            session.query(table).filter_by(id=fromUUID(uuid)).update({field: value})
-
-            # Set updated field as a locked field so it won't be updated
-            # at next inventory
-            query = session.query(FusionLocks).filter(self.fusionlocks.c.items_id == fromUUID(uuid))
-            flocks = query.first()
-            if flocks is not None:
-                # Update glpi_plugin_fusioninventory_locks tablefields table
-                flocksFields = eval(flocks.tablefields)
-                if field not in flocksFields:
-                    flocksFields.append(field)
-                    query.update({'tablefields': str(flocksFields).replace("'", '"')})
-            else:
-                # Create new glpi_plugin_fusioninventory_locks entry
-                session.execute(
-                    self.fusionlocks.insert().values({
-                        'tablename': table.__tablename__,
-                        'items_id': fromUUID(uuid),
-                        'tablefields': str([field]).replace("'", '"'),
-                    })
-                )
-
-            session.close()
-            return True
-        except Exception, e:
-            self.logger.error(e)
-            return False
+	return False
 
     def getLastMachineSummaryPart(self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False):
         # Mutable dict options used as default argument to a method or function
@@ -2304,7 +2118,6 @@ class Glpi95(DatabaseHelper):
             .add_column(self.glpi_operatingsystemarchitectures.c.name) \
             .add_column(self.glpi_domains.c.name) \
             .add_column(self.state.c.name) \
-            .add_column(self.fusionagents.c.last_contact) \
             .select_from(
                 self.machine.outerjoin(self.entities) \
                 .outerjoin(self.locations) \
@@ -2324,7 +2137,7 @@ class Glpi95(DatabaseHelper):
             ret = query.count()
         else:
             ret = []
-            for machine, infocoms, entity, location, oslocal, manufacturer, type, model, servicepack, version, architecture, domain, state, last_contact in query:
+            for machine, infocoms, entity, location, oslocal, manufacturer, type, model, servicepack, version, architecture, domain, state in query: 
                 endDate = ''
                 if infocoms is not None:
                     endDate = self.getWarrantyEndDate(infocoms)
@@ -2370,9 +2183,6 @@ class Glpi95(DatabaseHelper):
 
                 # Last inventory date
                 date_mod = machine.date_mod
-
-                if self.fusionagents is not None and last_contact is not None:
-                    date_mod = last_contact
 
                 l = [
                     ['Computer Name', ['computer_name', 'text', machine.name]],
@@ -3655,7 +3465,7 @@ class Glpi95(DatabaseHelper):
                         'operatingsystemservicepacks_id': ret.operatingsystemservicepacks_id,
                         'operatingsystemarchitectures_id': ret.operatingsystemarchitectures_id,
                         'license_number': ret.license_number,
-                        'licenseid': ret.licenseid,
+                        'license_id': ret.licenseid,
                         'operatingsystemkernelversions_id': ret.operatingsystemkernelversions_id}
             except Exception:
                 self.logger.error("\n%s" % (traceback.format_exc()))
@@ -3695,8 +3505,7 @@ class Glpi95(DatabaseHelper):
             .join(Entities, Entities.id == Machine.entities_id)\
             .outerjoin(self.locations, Machine.locations_id == self.locations.c.id)\
             .outerjoin(self.manufacturers, Machine.manufacturers_id == self.manufacturers.c.id)\
-            .join(self.glpi_computermodels, Machine.computermodels_id == self.glpi_computermodels.c.id)\
-            .outerjoin(self.regcontents, Machine.id == self.regcontents.c.computers_id)
+            .join(self.glpi_computermodels, Machine.computermodels_id == self.glpi_computermodels.c.id)
         if field != "":
             query = query.join(Computersitems, Machine.id == Computersitems.computers_id)
             if field != "type":
@@ -3777,7 +3586,7 @@ class Glpi95(DatabaseHelper):
                                     'operatingsystemservicepacks_id',
                                     'operatingsystemarchitectures_id',
                                     'license_number',
-                                    'licenseid',
+                                    'license_id',
                                     'operatingsystemkernelversions_id']
             for addcolunm in listcolumaddforinfo                     :
                 query = query.add_column(getattr(Machine, addcolunm).label(addcolunm))
@@ -3804,9 +3613,7 @@ class Glpi95(DatabaseHelper):
                     self.user.c.realname.contains(criterion),
                     self.user.c.name.contains(criterion),
                     self.locations.c.name.contains(criterion),
-                    self.manufacturers.c.name.contains(criterion),
-                    self.model.c.name.contains(criterion),
-                    self.regcontents.c.value.contains(criterion)
+                    self.manufacturers.c.name.contains(criterion)
                 ))
             else:
                 if field == "peripherals":
@@ -3846,8 +3653,8 @@ class Glpi95(DatabaseHelper):
             result['data']['columns_name_reg'] = list_reg_columns_name
 
         #initialiser 1 tableau pour chaque registerkey windows demande in configuration
-        regs = {reg_column :[] for reg_column in list_reg_columns_name}
-        result['data']['reg'] = regs
+        #regs = {reg_column :[] for reg_column in list_reg_columns_name}
+        #result['data']['reg'] = regs
 
         for machine in machines:
             if idmachine == "" and uuidsetup == "":
@@ -3862,23 +3669,6 @@ class Glpi95(DatabaseHelper):
 
             for column in list_reg_columns_name:
                 result['data']['reg'][column].append(None)
-        regquery=[]
-        if list_reg_columns_name:
-            regquery = session.query(
-                self.regcontents.c.computers_id,
-                self.regcontents.c.key,
-                self.regcontents.c.value)\
-            .filter(
-                and_(
-                    self.regcontents.c.key.in_(list_reg_columns_name),
-                    self.regcontents.c.computers_id.in_(result['data']['uuid'])
-                )
-            ).all()
-        for reg in regquery:
-            index = result['data']['uuid'].index(reg[0])
-            result['data']['reg'][reg[1]][index] = reg[2]
-
-        result['count'] = count
 
         uuids = []
         for id in result['data']['uuid']:
@@ -4627,19 +4417,7 @@ class Glpi95(DatabaseHelper):
         @return: id of the registry collect
         @rtype: int
         """
-
-        # Split into hive / path / key
-        hive = full_key.split('\\')[0]
-        key = full_key.split('\\')[-1]
-        path = full_key.replace(hive + '\\', '').replace('\\' + key, '')
-        path = '/' + path + '/'
-        # Get registry_id
-        try:
-            registry_id = session.query(Registries).filter_by(hive=hive, path=path, key=key).first().id
-            if registry_id:
-                return registry_id
-        except:
-            return False
+	return []
 
     @DatabaseHelper._sessionm
     def addRegistryCollect(self, session, full_key, key_name):
@@ -4655,28 +4433,7 @@ class Glpi95(DatabaseHelper):
         @return: success of the operation
         @rtype: bool
         """
-
-        # Split into hive / path / key
-        hive = full_key.split('\\')[0]
-        key = full_key.split('\\')[-1]
-        path = full_key.replace(hive + '\\', '').replace('\\' + key, '')
-        path = '/' + path + '/'
-        # Insert in database
-        registry = Registries()
-        registry.name = key_name
-        # Get collects_id
-        try:
-            collects_id = session.query(Collects).filter_by(name='PulseRegistryCollects').first().id
-        except:
-            return False
-        registry.plugin_fusioninventory_collects_id = collects_id
-        registry.hive = hive
-        registry.path = path
-        registry.key = key
-        session.add(registry)
-        session.commit()
-        session.flush()
-        return True
+	return []
 
     def getAllOsVersions(self, ctx, filt=''):
         """ @return: all os versions defined in the GLPI database """
@@ -4718,27 +4475,7 @@ class Glpi95(DatabaseHelper):
         @return: success of the operation
         @rtype: bool
         """
-
-        # Check if already present
-        try:
-            contents_id = session.query(RegContents).filter_by(computers_id=computers_id, plugin_fusioninventory_collects_registries_id=registry_id, key=key).first().id
-            if contents_id:
-                # Update database
-                session.query(RegContents).filter_by(id=contents_id).update({'value': str(value)})
-                session.commit()
-                session.flush()
-                return True
-        except AttributeError:
-            # Insert in database
-            regcontents = RegContents()
-            regcontents.computers_id = int(computers_id)
-            regcontents.plugin_fusioninventory_collects_registries_id = int(registry_id)
-            regcontents.key = str(key)
-            regcontents.value = str(value)
-            session.add(regcontents)
-            session.commit()
-            session.flush()
-            return True
+	return []
 
     @DatabaseHelper._sessionm
     def get_os_for_dashboard(self, session):
