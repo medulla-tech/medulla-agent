@@ -1329,7 +1329,7 @@ class XmppMasterDatabase(DatabaseHelper):
             location_id_xmpp = "NULL"
         else:
             location_id_xmpp = retlocation['id']
-        if 'win' in data['information']['info']['platform'].lower():
+        if 'win' in data['information']['info']['platform'].lower() and "reg" in glpiinformation['data']:
             for regwindokey in glpiinformation['data']['reg']:
                 if glpiinformation['data']['reg'][regwindokey][0] is not None:
                     self.create_Glpi_register_keys( idmachine,
