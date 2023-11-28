@@ -173,9 +173,9 @@ def send_content(url, content, verbose=False, user_agent="siveo-injector"):
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     if "inventory" not in data:
-        error_msg="inventory on machine %s "% msg["from"]
-        if 'msg' in data:
-            error_msg = "%s : %s" %(error_msg, data['msg'])
+        error_msg = "inventory on machine %s " % msg["from"]
+        if "msg" in data:
+            error_msg = "%s : %s" % (error_msg, data["msg"])
         logger.error(error_msg)
         return
     try:
