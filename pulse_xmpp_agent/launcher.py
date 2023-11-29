@@ -1290,6 +1290,7 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
+    # This Bool file allow to deactivate the rescue client
     BOOL_SUPPORT_CHECK_AGENT = os.path.join(filePath, "BOOL_LAUNCHER_NO_CHECK_AGENT")
     if os.path.exists(BOOL_SUPPORT_CHECK_AGENT):
         logger.debug("file BOOL_SUPPORT_CHECK_AGENT exist")
