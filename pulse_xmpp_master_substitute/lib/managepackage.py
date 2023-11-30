@@ -191,7 +191,7 @@ class managepackage:
                     "package %s verify format descriptor conf.json [%s]" %
                     (packageuuid, str(e)))
         logger.error("package %s verify version" \
-                        "in descriptor conf.json [%s]" %(packageuuid))
+                        "in descriptor conf.json" %(packageuuid))
         return None
 
     @staticmethod
