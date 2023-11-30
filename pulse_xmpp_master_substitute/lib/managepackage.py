@@ -232,7 +232,7 @@ class managepackage:
                     % (packageuuid, str(e))
                 )
         logger.error(
-            "package %s verify version" "in descriptor conf.json %s" % packageuuid
+            "package %s verify version in descriptor conf.json" % packageuuid
         )
         return None
 
