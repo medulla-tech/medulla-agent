@@ -255,6 +255,12 @@ Section "Python" sec_py
 
   ; ####################### Prevent from previous Medulla installation #######################
   ; Previously stop service
+  nsExec::Exec 'sc stop pulseagent'
+  nsExec::Exec 'sc delete pulseagent'
+
+  nsExec::Exec 'sc stop pulsenetworknotify'
+  nsExec::Exec 'sc delete pulsenetworknotify'
+
   nsExec::Exec 'sc stop medullaagent'
   nsExec::Exec 'sc stop medullanetnotify'
 

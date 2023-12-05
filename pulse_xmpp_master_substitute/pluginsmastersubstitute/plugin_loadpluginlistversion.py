@@ -129,19 +129,22 @@ def remoteinstallPlugin(self):
     Relayservers.
     """
     restart_machine = set()
-    for indexplugin in range(0, len(self.file_deploy_plugin)):
-        plugmachine = self.file_deploy_plugin.pop(0)
-        if XmppMasterDatabase().getPresencejid(plugmachine["dest"]):
-            if plugmachine["type"] == "deployPlugin":
-                logger.debug(
-                    "install plugin normal %s to %s"
-                    % (plugmachine["plugin"], plugmachine["dest"])
-                )
-                self.deployPlugin(plugmachine["dest"], plugmachine["plugin"])
-                restart_machine.add(plugmachine["dest"])
-            elif plugmachine["type"] == "deploySchedulingPlugin":
-                # It is the updating code for the scheduling plugins.
-                pass
+
+    numberToUpdate = len(self.file_deploy_plugin)
+    if numberToUpdate > 0:
+        for indexplugin in range(0, numberToUpdate):
+            plugmachine = self.file_deploy_plugin.pop(0)
+            if XmppMasterDatabase().getPresencejid(plugmachine["dest"]):
+                if plugmachine["type"] == "deployPlugin":
+                    logger.debug(
+                        "install plugin normal %s to %s"
+                        % (plugmachine["plugin"], plugmachine["dest"])
+                    )
+                    self.deployPlugin(plugmachine["dest"], plugmachine["plugin"])
+                    restart_machine.add(plugmachine["dest"])
+                elif plugmachine["type"] == "deploySchedulingPlugin":
+                    # It is the updating code for the scheduling plugins.
+                    pass
     for jidmachine in restart_machine:  # Itération pour chaque élément
         # call one function by message to processing asynchronous tasks and can
         # add a tempo on restart action.

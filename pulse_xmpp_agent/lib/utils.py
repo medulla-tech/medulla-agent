@@ -2296,7 +2296,7 @@ def getHomedrive(username="pulseuser"):
         if resultquery["code"] == 0:
             homedrive = resultquery["result"][-3].split("    ")[-1].replace("\r\n", "")
 
-        return homedrive
+        return homedrive.lower()
 
 
 def keypub():

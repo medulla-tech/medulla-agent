@@ -16,7 +16,7 @@ from slixmpp import jid
 from lib.utils import getRandomName
 import re
 from distutils.version import LooseVersion
-import configparser
+import ConfigParser
 import netaddr
 
 # this import will be used later
@@ -291,7 +291,7 @@ def read_conf_remote_update_windows(xmppobject):
             xmppobject.pluginlistregistered = []
             xmppobject.pluginlistunregistered = []
         else:
-            Config = configparser.ConfigParser()
+            Config = ConfigParser.ConfigParser()
             Config.read(pathfileconf)
             logger.debug(
                 "Config file %s for plugin %s" % (pathfileconf, plugin["NAME"])

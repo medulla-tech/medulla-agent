@@ -78,6 +78,7 @@ from lib.plugins.xmpp.schema import (
     Up_white_list,
     Up_gray_list,
     Up_action_update_packages,
+    Up_history,
 )
 
 # Imported last
@@ -1438,7 +1439,10 @@ class XmppMasterDatabase(DatabaseHelper):
             location_id_xmpp = "NULL"
         else:
             location_id_xmpp = retlocation["id"]
-        if "win" in data["information"]["info"]["platform"].lower() and "reg" in glpiinformation['data']:
+        if (
+            "win" in data["information"]["info"]["platform"].lower()
+            and "reg" in glpiinformation["data"]
+        ):
             for regwindokey in glpiinformation["data"]["reg"]:
                 if glpiinformation["data"]["reg"][regwindokey][0] is not None:
                     self.create_Glpi_register_keys(
@@ -10772,6 +10776,22 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return False
 
     @DatabaseHelper._sessionm
+    def remove_expired_updates(self, session):
+        date_now = datetime.now()
+        query = session.query(Up_machine_windows).filter(
+            and_(
+                Up_machine_windows.end_date is not None,
+                Up_machine_windows.end_date < date_now,
+            )
+        )
+        count = query.count()
+        query.delete()
+
+        session.commit()
+        session.flush()
+        return count
+
+    @DatabaseHelper._sessionm
     def pending_up_machine_windows_white(self, session):
         query = (
             session.query(Up_machine_windows, Up_white_list, Machines)
@@ -10799,8 +10819,21 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         exclude_name_package = ["sharing", ".stfolder", ".stignore"]
 
         for element, white, machine in query:
+            # Add entry to history
+
             deployName = "%s -@upd@- %s" % (white.title, start_date)
+
+            history = Up_history()
+            history.update_id = element.update_id
+            history.id_machine = element.id_machine
+            history.jid = machine.jid
+            history.update_list = "white"
+            history.required_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
+            history.deploy_title = deployName
+            session.add(history)
+
             element.required_deploy = 1
+            element.curent_deploy = 0
             element.start_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
             element.end_date = datetime.strftime(end_date, "%Y-%m-%d %H:%M:%S")
 
@@ -10857,6 +10890,312 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         session.flush()
 
         return result
+
+    @DatabaseHelper._sessionm
+    def pending_up_machine_windows(self, session, to_deploy):
+        try:
+            query = (
+                session.query(Up_machine_windows, Update_data, Machines)
+                .filter(
+                    and_(
+                        Up_machine_windows.update_id == to_deploy["updateid"],
+                        Up_machine_windows.id_machine == to_deploy["idmachine"],
+                    )
+                )
+                .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)
+                .join(Machines, Up_machine_windows.id_machine == Machines.id)
+                .all()
+            )
+
+            exclude_name_package = ["sharing", ".stfolder", ".stignore"]
+            result = {}
+
+            start_date = datetime.now()
+            end_date = start_date + timedelta(days=7)
+
+            for element, updata, machine in query:
+                deployName = "%s -@upd@- %s" % (updata.title, start_date)
+                element.required_deploy = 0
+                element.curent_deploy = 1
+                try:
+                    history = (
+                        session.query(Up_history)
+                        .filter(
+                            and_(
+                                element.update_id == Up_history.update_id,
+                                element.id_machine == Up_history.id_machine,
+                            )
+                        )
+                        .first()
+                    )
+                    history.curent_date = datetime.strftime(
+                        start_date, "%Y-%m-%d %H:%M:%S"
+                    )
+                    history.deploy_title = deployName
+                except Exception as e:
+                    self.logger.error(e)
+                folderpackage = os.path.join(
+                    "/", "var", "lib", "pulse2", "packages", element.update_id
+                )
+                files = []
+
+                if os.path.isdir(folderpackage):
+                    for root, dir, file in os.walk(folderpackage):
+                        if root != folderpackage:
+                            continue
+                        for _file in file:
+                            if _file not in exclude_name_package:
+                                files.append(
+                                    {
+                                        "path": os.path.basename(os.path.dirname(root)),
+                                        "name": _file,
+                                        "id": str(uuid.uuid4()),
+                                        "size": str(
+                                            os.path.getsize(os.path.join(root, _file))
+                                        ),
+                                    }
+                                )
+                else:
+                    files = []
+
+                files_str = "\n".join(
+                    [
+                        file["id"] + "##" + file["path"] + "/" + file["name"]
+                        for file in files
+                    ]
+                )
+                result = {
+                    "id_machine": element.id_machine,
+                    "update_id": element.update_id,
+                    "kb": element.kb,
+                    "curent_deploy": element.curent_deploy,
+                    "required_deploy": element.required_deploy,
+                    "start_date": element.start_date,
+                    "end_date": element.end_date,
+                    "intervals": element.intervals,
+                    "title": deployName,
+                    "jidmachine": machine.jid,
+                    "groupdeploy": machine.groupdeploy,
+                    "uuidmachine": machine.uuid_inventorymachine,
+                    "hostname": machine.hostname,
+                    "files_str": files_str,
+                }
+
+            session.commit()
+            session.flush()
+            return result
+        except Exception as e:
+            self.logger.error(e)
+            return False
+
+    @DatabaseHelper._sessionm
+    def get_updates_in_required_deploy_state(self, session):
+        query = (
+            session.query(Up_machine_windows)
+            .join(Machines, Machines.id == Up_machine_windows.id_machine)
+            .filter(Up_machine_windows.required_deploy == 1)
+        )
+
+        count = query.count()
+        query = query.all()
+
+        result = {"total": count, "datas": query}
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_updates_in_curent_deploy_state(self, session):
+        query = (
+            session.query(Up_machine_windows)
+            .join(Machines, Machines.id == Up_machine_windows.id_machine)
+            .filter(Up_machine_windows.curent_deploy == 1)
+        )
+
+        count = query.count()
+        query = query.all()
+
+        result = {"total": count, "datas": query}
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_updates_in_deploy_state(self, session):
+        date_now = datetime.now()
+        try:
+            query = (
+                session.query(Up_machine_windows, Machines)
+                .add_column(Update_data.kb.label("kb"))
+                .join(Machines, Machines.id == Up_machine_windows.id_machine)
+                .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)
+                .filter(
+                    and_(
+                        or_(
+                            Up_machine_windows.required_deploy == 1,
+                            Up_machine_windows.curent_deploy == 1,
+                        ),
+                        Up_machine_windows.start_date < date_now,
+                        Up_machine_windows.end_date > date_now,
+                    )
+                )
+            )
+
+            count = query.count()
+            query = query.all()
+
+            result = {
+                "total": count,
+                "current": {"total": 0, "datas": []},
+                "required": {"total": 0, "datas": []},
+            }
+
+            for update, machine, kb in query:
+                tmp = {
+                    "idmachine": machine.id,
+                    "jidmachine": machine.jid,
+                    "uuid_inventorymachine": machine.uuid_inventorymachine
+                    if machine.uuid_inventorymachine is not None
+                    else "",
+                    "groupdeploy": machine.groupdeploy,
+                    "updateid": update.update_id,
+                    "kb": kb,
+                    "deployment_intervals": update.intervals,
+                    "start_date": update.start_date,
+                    "end_date": update.end_date,
+                }
+
+                switch_list = "current" if update.curent_deploy == 1 else "required"
+                result[switch_list]["total"] += 1
+                result[switch_list]["datas"].append(tmp)
+
+            return result
+        except Exception as e:
+            self.logger.error(e)
+
+    @DatabaseHelper._sessionm
+    def deployment_is_running_on_machine(self, session, jid):
+        date_now = datetime.now()
+
+        query = session.query(Deploy).filter(
+            and_(
+                Deploy.jidmachine == jid,
+                Deploy.startcmd < date_now,
+                Deploy.endcmd > date_now,
+                Deploy.state.op("not regexp")("(SUCCESS)|(ABORT)|(ERROR)"),
+            )
+        )
+
+        query = query.count()
+
+        return True if query is not None and query != 0 else False
+
+    @DatabaseHelper._sessionm
+    def delete_all_done_updates(self, session):
+        date_now = datetime.now()
+
+        try:
+            query = (
+                session.query(Up_machine_windows, Machines, Update_data, Up_history)
+                .join(Machines, Up_machine_windows.id_machine == Machines.id)
+                .join(Update_data, Up_machine_windows.update_id == Update_data.updateid)
+                .join(
+                    Up_history,
+                    and_(
+                        Up_machine_windows.update_id == Up_history.update_id,
+                        Up_machine_windows.id_machine == Up_history.id_machine,
+                    ),
+                )
+                .filter(and_(Up_machine_windows.curent_deploy == 1))
+            )
+            count = query.count()
+            query = query.all()
+
+            self.logger.info("%s updates in current_deploy state" % count)
+        except Exception as e:
+            self.logger.error("delete_all_done_updates : %s" % e)
+            return False
+
+        if count == 0:
+            self.logger.info("No update in current_deploy state, nothing to remove")
+            return False
+
+        result = []
+        for update, machine, data, history in query:
+            result.append(
+                {
+                    "update_id": update.update_id,
+                    "id_machine": machine.id,
+                    "jid": machine.jid,
+                    "hostname": machine.hostname,
+                    "kb": data.kb,
+                    "command": history.command,
+                }
+            )
+
+            try:
+                deploy_done = []
+                deploy_not_done = []
+                query2 = session.query(Deploy).filter(
+                    and_(
+                        Deploy.jidmachine == machine.jid,
+                        Deploy.title == history.deploy_title,
+                        Deploy.command == history.command,
+                        # Deploy.result.op("regexp")(update.update_id),
+                        Deploy.start > update.start_date,
+                        Deploy.start < update.end_date,
+                    )
+                )
+                query2 = query2.all()
+                for deploy in query2:
+                    if history.id_deploy is None:
+                        history.id_deploy = deploy.id
+                        history.deploy_date = deploy.start
+                    if re.search("(SUCCESS)|(ABORT)|(ERROR)", deploy.state):
+                        deploy_done.append(deploy)
+                    else:
+                        deploy_not_done.append(deploy)
+                self.logger.info(
+                    "%s deploy done for machine %s and update %s"
+                    % (len(deploy_done), machine.jid, update.update_id)
+                )
+            except Exception as e:
+                self.logger.error(e)
+                return False
+
+            for deploy in deploy_done:
+                self.logger.info(
+                    "Removing update %s for machine %s : done"
+                    % (update.update_id, machine.hostname)
+                )
+                history.delete_date = datetime.strftime(date_now, "%Y-%m-%d %H:%M:%S")
+                query_del = (
+                    session.query(Up_machine_windows)
+                    .filter(
+                        and_(
+                            Up_machine_windows.update_id == update.update_id,
+                            Up_machine_windows.id_machine == machine.id,
+                        )
+                    )
+                    .delete()
+                )
+                session.commit()
+                session.flush()
+        return True
+
+    @DatabaseHelper._sessionm
+    def insert_command_into_up_history(self, session, updateid, jidmachine, commandid):
+        query = (
+            session.query(Up_history)
+            .filter(
+                and_(Up_history.update_id == updateid, Up_history.jid == jidmachine)
+            )
+            .order_by(desc(Up_history.curent_date))
+            .first()
+        )
+
+        try:
+            query.command = commandid
+            session.commit()
+            session.flush()
+        except Exception as e:
+            self.logger.error(e)
 
     # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):

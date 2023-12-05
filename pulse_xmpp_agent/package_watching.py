@@ -174,8 +174,18 @@ def rsync_to_cdn(conf):
         remotefolder = conf["rsynctocdn_ssh_destpath"] + os.sep
     else:
         remotefolder = conf["rsynctocdn_ssh_destpath"]
-    rsync_cmd = f'rsync {conf["rsynctocdn_rsync_options"]} -e "ssh -i {conf["rsynctocdn_ssh_privkey_path"]} {conf["rsynctocdn_ssh_options"]}" {localfolder} {conf["rsynctocdn_ssh_remoteuser"]}@{conf["rsynctocdn_ssh_servername"]}:{remotefolder}'
+    rsync_cmd = 'rsync %s -e "ssh -i %s %s" %s %s@%s:%s' % (
+        conf["rsynctocdn_rsync_options"],
+        conf["rsynctocdn_ssh_privkey_path"],
+        conf["rsynctocdn_ssh_options"],
+        localfolder,
+        conf["rsynctocdn_ssh_remoteuser"],
+        conf["rsynctocdn_ssh_servername"],
+        remotefolder,
+    )
+    logging.getLogger().debug("rsync command: %s" % rsync_cmd)
     objcmd = simplecommandstr(rsync_cmd)
+    logging.getLogger().debug("rsync command result: %s" % objcmd["result"])
     if objcmd["code"] != 0:
         logging.getLogger().error(
             "Error synchronizing packages to CDN" % decode_strconsole(objcmd["result"])

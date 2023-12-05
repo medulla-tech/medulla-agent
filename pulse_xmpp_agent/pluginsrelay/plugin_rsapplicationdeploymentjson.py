@@ -5,12 +5,16 @@
 import json
 import os
 from lib import managepackage
+from lib.utils import file_get_contents
 import logging
-
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "2.0", "NAME": "rsapplicationdeploymentjson", "TYPE": "relayserver"}  # fmt: skip
+plugin = {
+    "VERSION": "2.5",
+    "NAME": "rsapplicationdeploymentjson",
+    "TYPE": "relayserver",
+}
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
@@ -29,10 +33,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
     logging.getLogger().debug("#################RELAY SERVER#####################")
     logging.getLogger().debug(
-        "##############demande pacquage %s ##############" % (data["deploy"])
+        "##############ask for package %s ##############" % (data["deploy"])
     )
-    logging.getLogger().debug("##################################################")
-    # envoy descripteur
     try:
         descriptor = managepackage.managepackage.getdescriptorpackageuuid(
             data["deploy"]
@@ -56,6 +58,40 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         datasend["data"][
             "name"
         ] = managepackage.managepackage.getnamepackagefromuuidpackage(data["deploy"])
+
+        if (
+            "localisation_server" in datasend["data"]["descriptor"]["info"]
+            and datasend["data"]["descriptor"]["info"]["localisation_server"] != ""
+        ):
+            localisation_server = datasend["data"]["descriptor"]["info"][
+                "localisation_server"
+            ]
+        elif (
+            "previous_localisation_server" in datasend["data"]["descriptor"]["info"]
+            and datasend["data"]["descriptor"]["info"]["previous_localisation_server"]
+            != ""
+        ):
+            localisation_server = datasend["data"]["descriptor"]["info"][
+                "previous_localisation_server"
+            ]
+
+        hashFolder = os.path.join(
+            "/var", "lib", "pulse2", "packages", "hash", localisation_server
+        )
+
+        if hasattr(objectxmpp.config, "cdn_hashing_algo"):
+            hashing_algo = objectxmpp.config.cdn_hashing_algo
+        else:
+            hashing_algo = "SHA256"
+
+        if os.path.exists(os.path.join(hashFolder, data["deploy"] + ".hash")):
+            datasend["data"]["hash"] = {
+                "global": file_get_contents(
+                    os.path.join(hashFolder, data["deploy"] + ".hash")
+                ),
+                "type": hashing_algo,
+            }
+
         objectxmpp.send_message(
             mto=message["from"], mbody=json.dumps(datasend), mtype="chat"
         )
