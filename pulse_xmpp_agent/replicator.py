@@ -361,11 +361,11 @@ if __name__ == "__main__":
     # First check if machine has all necessary python modules to load image
     if not module_needed(img_agent, verbose=(options.verbose or options.info)):
         if options.verbose or options.info:
-            print("KO: missing python modules in image")
+            print("\nKO: missing python modules in image\n")
         else:
             sys.exit(122)
     elif options.verbose or options.info:
-        print("OK: no missing python modules in image")
+        print("\nOK: no missing python modules in image\n")
 
     # folder for save file supp
     rollback_pulse_xmpp_agent = os.path.abspath(
@@ -386,14 +386,14 @@ if __name__ == "__main__":
     if options.verbose or options.info:
         print("--------------------------------------------")
         if descriptoragent["fingerprint"] != descriptorimage["fingerprint"]:
-            print("The fingerprints are different between the agent and the image")
+            print("\nThe fingerprints are different between the agent and the image")
         else:
-            print("The fingerprints are the same between the agent and the image")
+            print("\nThe fingerprints are the same between the agent and the image")
         print("--------------------------------------------")
         if descriptoragent["version"] != descriptorimage["version"]:
-            print("The versions are different between the agent and the image")
+            print("\nThe versions are different between the agent and the image")
         else:
-            print("The versions are the same between the agent and the image")
+            print("\nThe versions are the same between the agent and the image")
         print("--------------------------------------------")
         print(objdescriptoragent.dir_agent_base)
         print(json.dumps(descriptoragent, indent=4))
@@ -404,7 +404,7 @@ if __name__ == "__main__":
     boolinstalldirect = True
     if descriptorimage["fingerprint"] == descriptoragent["fingerprint"]:
         if options.verbose or options.info:
-            print("No UPDATING, no diff between agent and agentimage")
+            print("\nNo UPDATING, no diff between agent and agentimage")
             print("Agent up to date")
         sys.exit(0)
     else:

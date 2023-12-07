@@ -160,7 +160,7 @@ def agentinfoversion(xmppobject):
         (like testmodule , pathagent, agentdescriptor, pathimg,
           imgdescriptor, actiontxt, conf and plugins)
     """
-    cmd = f'python3 {os.path.join(xmppobject.pathagent, "replicator.py")} -i -v'
+    cmd = f'"C:\\Program Files\\python311\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
     logger.debug(f"cmd : {cmd}")
     result = simplecommand(cmd)
     resultobj = {}
@@ -193,12 +193,12 @@ def agentinfoversion(xmppobject):
         resultobj[val[boottrap]].append(t.strip())
 
     testmodule = resultobj["testmodule"][0]
-    information = "".join(resultobj["testmodule"][1:])
+    information = ",".join(resultobj["testmodule"][1:])
     agentdescriptor = "".join(resultobj["agentdescriptor"])
     imgdescriptor = "".join(resultobj["imgdescriptor"])
     pathimg = resultobj["pathimg"][0]
     pathagent = resultobj["pathagent"][0]
-    actiontxt = ",".join(resultobj["action"])
+    actiontxt = ", ".join(resultobj["action"])
     res = {
         "testmodule": testmodule,
         "information": information,
