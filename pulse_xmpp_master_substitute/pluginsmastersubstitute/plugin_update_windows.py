@@ -240,7 +240,7 @@ def read_conf_remote_update_windows(xmppobject):
             if Config.has_option("parameters", "exclude_history_list"):
                 xmppobject.exclude_history_list = Config.getboolean('parameters', 'exclude_history_list')
             else:
-                xmppobject.exclude_history_list = true
+                xmppobject.exclude_history_list = True
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
 
