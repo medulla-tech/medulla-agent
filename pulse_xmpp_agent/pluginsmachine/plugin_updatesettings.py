@@ -17,8 +17,8 @@ plugin = {"VERSION": "1.3", "NAME": "updatesettings", "TYPE": "machine"}
 #---START-PARAMS---
 # Add parameters here
 # param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'
-# param_2 = 'del@__@agentconf.ini@__@global@__@loglevel'
-# nb_params = 2
+param_1 = 'del@__@startupdate.ini@__@plugins@__@liststartplugin'
+nb_params = 1
 #---END-PARAMS---
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
