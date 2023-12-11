@@ -19,7 +19,7 @@ from lib.plugins.admin import AdminMasterDatabase
 from random import randint
 import operator
 import traceback
-import ConfigParser
+import configparser
 import netaddr
 
 try:
@@ -93,7 +93,7 @@ def read_conf_updatemachinesystem(objectxmpp):
             objectxmpp.stat_updatemachinesystem.display_param_config(msg="DEFAULT")
         return False
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(objectxmpp.pathfileconf)
         if os.path.exists(objectxmpp.pathfileconf + ".local"):
             Config.read(objectxmpp.pathfileconf + ".local")
