@@ -74,7 +74,7 @@ def createlistpluginupdate(objectxmpp):
     plugin_path = os.path.dirname(os.path.realpath(__file__))
     objectxmpp.liststartpluginstartupdate = [x[7:-3] for x in os.listdir(plugin_path)
                                             if x.startswith("plugin_update") and
-                                            not x.endswith(".pyc")]
+                                             x.endswith(".py")]
     objectxmpp.liststartpluginstartupdate.remove("updateagent")
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
