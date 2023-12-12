@@ -10780,9 +10780,17 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         date_now = datetime.now()
 
         # Select "availables" updates which are already in history and done (deleted_date)
-        query1 = session.query(Up_machine_windows)\
-        .join(Up_history, and_(Up_history.id_machine==Up_machine_windows.id_machine, Up_history.update_id == Up_machine_windows.update_id))\
-        .filter(Up_history.delete_date != None)
+        query1 = (
+            session.query(Up_machine_windows)
+            .join(
+                Up_history,
+                and_(
+                    Up_history.id_machine == Up_machine_windows.id_machine,
+                    Up_history.update_id == Up_machine_windows.update_id,
+                ),
+            )
+            .filter(Up_history.delete_date != None)
+        )
         count1 = query1.count()
         query1 = query1.all()
 
@@ -10791,10 +10799,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             history_updateid = [element.update_id for element in query1]
             history_id_machine = [element.id_machine for element in query1]
 
-            session.query(Up_machine_windows).filter(and_(
-                Up_machine_windows.id_machine.in_(history_id_machine),
-                Up_machine_windows.update_id.in_(history_updateid),
-            )).delete()
+            session.query(Up_machine_windows).filter(
+                and_(
+                    Up_machine_windows.id_machine.in_(history_id_machine),
+                    Up_machine_windows.update_id.in_(history_updateid),
+                )
+            ).delete()
             session.commit()
             session.flush()
 
