@@ -9184,7 +9184,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             msrcseverity="Corrective"
         objet_existant = session.query(Up_machine_windows).filter(
             and_(Up_machine_windows.id_machine == id_machine,
-                 or_(Up_machine_windows.update_id == update_id, Up_machine_windows.kb == kb ))).first()
+                 or_(Up_machine_windows.update_id == update_id, Up_machine_windows.kb == kb ))).count()
         # Si l'objet n'existe pas, l'ajouter à la base de données
         if objet_existant is None:
             try:
@@ -9596,6 +9596,26 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
     @DatabaseHelper._sessionm
     def remove_expired_updates(self, session):
         date_now = datetime.now()
+
+        # Select "availables" updates which are already in history and done (deleted_date)
+        query1 = session.query(Up_machine_windows)\
+        .join(Up_history, and_(Up_history.id_machine==Up_machine_windows.id_machine, Up_history.update_id == Up_machine_windows.update_id))\
+        .filter(Up_history.delete_date != None)
+        count1 = query1.count()
+        query1 = query1.all()
+
+        # if some rows are present, we will delete them from the pool (up_machine_windows)
+        if count1 > 0:
+            history_updateid = [element.update_id for element in query1]
+            history_id_machine = [element.id_machine for element in query1]
+
+            session.query(Up_machine_windows).filter(and_(
+                Up_machine_windows.id_machine.in_(history_id_machine),
+                Up_machine_windows.update_id.in_(history_updateid),
+            )).delete()
+            session.commit()
+            session.flush()
+
         query = session.query(Up_machine_windows).filter(
             and_(Up_machine_windows.end_date is not None,
                 Up_machine_windows.end_date < date_now
@@ -9605,7 +9625,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         session.commit()
         session.flush()
-        return count
+        return count1 + count
 
     @DatabaseHelper._sessionm
     def pending_up_machine_windows_white(self, session):
