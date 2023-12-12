@@ -24,7 +24,7 @@ from pprint import pprint
 import hashlib
 import base64
 import pickle
-from lib.agentconffile import conffilename
+from agentconffile import conffilename
 import socket
 import psutil
 import time
