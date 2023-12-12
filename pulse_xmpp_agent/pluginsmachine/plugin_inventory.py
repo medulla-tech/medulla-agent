@@ -242,10 +242,21 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 "--backend-collect-timeout=%s" % timeoutfusion
             location_option = "--local=\"%s\"" % inventoryfile
             if xmppobject.config.via_xmpp == 'False':
+                location_option = "--local=\"%s\"" % inventoryfile
+            if xmppobject.config.via_xmpp == 'False':
                 location_option = "--server=\"%s\"" % xmppobject.config.urlinventory
             if hasattr(xmppobject.config, 'collector'):
                 if xmppobject.config.collector == 'ocs':
-                    program = os.path.join(os.environ["ProgramFiles(x86)"],
+                    # If OCS x64 bits exists use it
+                    if os.path.exists(os.path.join(os.environ["ProgramFiles"],
+                                           'OCS Inventory Agent',
+                                           'OCSInventory.exe')):
+                        program = os.path.join(os.environ["ProgramFiles"],
+                                           'OCS Inventory Agent',
+                                           'OCSInventory.exe')
+                    else:
+                        # Or use OCS x32 bits
+                        program = os.path.join(os.environ["ProgramFiles(x86)"],
                                            'OCS Inventory Agent',
                                            'OCSInventory.exe')
                     admininfoconf = os.path.join(os.environ["Programdata"],
