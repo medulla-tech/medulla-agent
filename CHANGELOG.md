@@ -2,6 +2,16 @@
 
 ## [v3.0.0](unreleased)
 - [FEATURE]  Python stack is now version 3.11
+- [FEATURE]  Migrate from sleexmpp to slixmpp
+- [FEATURE]  Add support for OpenSSH 9.4
+- [FEATURE]  Add support for Tightvnc 2.8.81
+- [FEATURE]  Add support for vim on Windows
+- [FEATURE]  Add support for paexec
+- [FEATURE]  Add support for Glpi Agent 1.5
+- [FEATURE]  Remove the inventory agent, but handle it in the inventory substitute agent
+- [FEATURE]  Add support for Glpi 10+
+- [FEATURE]  Add certificate to use TLS connexion between server and client
+- [BUGFIX]   Fix QA supports with new slixmpp lib
 
 ## [v2.1.9](https://github.com/pulse-project/pulse-xmpp-agent/tree/v2.1.9) (2023-04-14)
 - [FEATURE] Rename start.ini into start_machine.ini or start_relay.ini to handle coexistence
