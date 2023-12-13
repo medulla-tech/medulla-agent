@@ -1,6 +1,6 @@
 # Change Log
 
-## [v3.0.0](unreleased)
+## [v3.0.0](https://github.com/pulse-project/pulse-xmpp-agent/tree/v3.0.0) (2023-12-13)
 - [FEATURE]  Python stack is now version 3.11
 - [FEATURE]  Migrate from sleexmpp to slixmpp
 - [FEATURE]  Add support for OpenSSH 9.4
