@@ -1,9 +1,10 @@
 # Change Log
 
-## [v3.0.0](https://github.com/medulla-tech/medulla-agent/tree/v3.0.1) (unreleased)
+## [v3.0.1](https://github.com/medulla-tech/medulla-agent/tree/v3.0.1) (unreleased)
 - [FEATURE] Use python 3.11.7 by default
-- [BUGFIX]   Fix the exclusion of plugins from the installer
-- [BUGFIX] Fix displaying Agent details QA
+- [BUGFIX]  Fix the exclusion of plugins from the installer
+- [BUGFIX]  Fix displaying Agent details QA
+- [BUGFIX]  Fix detection the arch in order to use the good OCS Agent
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.0...v3.0.1)
 

@@ -27,7 +27,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.72", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.73", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -285,11 +285,22 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 location_option = '--server="%s"' % xmppobject.config.urlinventory
             if hasattr(xmppobject.config, "collector"):
                 if xmppobject.config.collector == "ocs":
-                    program = os.path.join(
-                        os.environ["ProgramFiles(x86)"],
-                        "OCS Inventory Agent",
-                        "OCSInventory.exe",
-                    )
+                    # If OCS x64 bits exists use it
+                    if os.path.exists(os.path.join(os.environ["ProgramFiles"],
+                                           'OCS Inventory Agent',
+                                           'OCSInventory.exe')):
+                        program = os.path.join(
+                            os.environ["ProgramFiles"],
+                            'OCS Inventory Agent',
+                            'OCSInventory.exe'
+                        )
+                    else:
+                        # Or use OCS x32 bits
+                        program = os.path.join(
+                            os.environ["ProgramFiles(x86)"],
+                            "OCS Inventory Agent",
+                            "OCSInventory.exe",
+                        )
                     admininfoconf = os.path.join(
                         os.environ["Programdata"],
                         "OCS Inventory NG",
