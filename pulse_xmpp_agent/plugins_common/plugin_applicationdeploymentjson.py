@@ -11,7 +11,9 @@ import socket
 import logging
 import pycurl
 import platform
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import shutil
 from lib.utils import file_get_contents
 from distutils.util import strtobool
