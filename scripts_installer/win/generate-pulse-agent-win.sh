@@ -319,9 +319,8 @@ prepare_mandatory_includes() {
 enable_and_configure_vnc_plugin() {
 
     if [ $DISABLE_VNC = "1" ]; then
-        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatetightvnc
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatetightvnc
     else
-        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatetightvnc
         crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters rfbport ${VNC_PORT}
     fi
 }
@@ -333,17 +332,13 @@ configure_ssh_plugin() {
 enable_and_configure_inventory_plugin() {
 
     if [ $DISABLE_INVENTORY = "1" ]; then
-        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatefusion
-    else
-        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatefusion
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatefusion
     fi
 }
 
 configure_rdp_plugin() {
     if [ $DISABLE_RDP = "1" ]; then
-        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updaterdp
-    else
-        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updaterdp
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updaterdp
     fi
 }
 
