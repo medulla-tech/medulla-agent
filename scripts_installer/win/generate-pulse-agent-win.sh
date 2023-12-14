@@ -329,13 +329,6 @@ configure_ssh_plugin() {
     crudini --set ../config/${PULSE_AGENTUPDATEOPENSSH_CONFFILE} parameters sshport ${SSH_PORT}
 }
 
-enable_and_configure_inventory_plugin() {
-
-    if [ $DISABLE_INVENTORY = "1" ]; then
-        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatefusion
-    fi
-}
-
 configure_rdp_plugin() {
     if [ $DISABLE_RDP = "1" ]; then
         crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updaterdp
@@ -434,6 +427,5 @@ fi
 update_nsi_script
 configure_ssh_plugin
 enable_and_configure_vnc_plugin
-enable_and_configure_inventory_plugin
 configure_rdp_plugin
 generate_agent_installer
