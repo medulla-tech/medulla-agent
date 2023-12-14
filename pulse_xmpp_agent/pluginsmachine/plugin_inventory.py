@@ -24,7 +24,7 @@ from sleekxmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.70", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.71", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -245,7 +245,16 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 location_option = "--server=\"%s\"" % xmppobject.config.urlinventory
             if hasattr(xmppobject.config, 'collector'):
                 if xmppobject.config.collector == 'ocs':
-                    program = os.path.join(os.environ["ProgramFiles(x86)"],
+                    # If OCS x64 bits exists use it
+                    if os.path.exists(os.path.join(os.environ["ProgramFiles"],
+                                           'OCS Inventory Agent',
+                                           'OCSInventory.exe')):
+                        program = os.path.join(os.environ["ProgramFiles"],
+                                           'OCS Inventory Agent',
+                                           'OCSInventory.exe')
+                    else:
+                        # Or use OCS x32 bits
+                        program = os.path.join(os.environ["ProgramFiles(x86)"],
                                            'OCS Inventory Agent',
                                            'OCSInventory.exe')
                     admininfoconf = os.path.join(os.environ["Programdata"],
