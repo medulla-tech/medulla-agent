@@ -1545,9 +1545,6 @@ class grafcet:
             if doinventory:
                 self.__affiche_message('Sending new inventory from %s : (generated in %s s)' % (self.objectxmpp.boundjid.bare, timeinventory),
                                         module="Deployment | Execution | Inventory")
-            else:
-                self.__affiche_message('[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory execution error <span>' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Execution | Inventory | Error")
         clear = True
         if 'clear' in self.workingstep:
             if isinstance(self.workingstep['clear'], bool):
