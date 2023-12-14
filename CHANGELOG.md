@@ -1,5 +1,7 @@
 # Change Log
 
+- [BUGFIX]   Fix the exclusion of plugins from the installer
+
 ## [v3.0.0](https://github.com/medulla-tech/medulla-agent/tree/v3.0.0) (2023-12-13)
 - [FEATURE]  Python stack is now version 3.11
 - [FEATURE]  Migrate from sleexmpp to slixmpp
