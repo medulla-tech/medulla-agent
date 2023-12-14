@@ -1736,11 +1736,6 @@ class grafcet:
                     f"Sending new inventory from {self.objectxmpp.boundjid.bare} : (generated in {timeinventory} s)",
                     module="Deployment | Execution | Inventory",
                 )
-            else:
-                self.__affiche_message(
-                    f'[{self.data["name"]}]-[{self.workingstep["step"]}] :<span class="log_err"> Deployment aborted: inventory execution error <span>',
-                    module="Deployment | Execution | Inventory | Error",
-                )
         clear = True
         if "clear" in self.workingstep:
             if isinstance(self.workingstep["clear"], bool):
