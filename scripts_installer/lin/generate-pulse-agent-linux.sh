@@ -30,7 +30,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="3.0.0"
+AGENT_VERSION="3.1.0"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 CERTFILE="/var/lib/pulse2/clients/medulla-ca-chain.cert.pem"

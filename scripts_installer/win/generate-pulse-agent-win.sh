@@ -40,7 +40,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="3.0.0"
+AGENT_VERSION="3.1.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
 PYTHON64_FILENAME="python-3.11.7-amd64.exe"
@@ -54,7 +54,7 @@ PyNaCl-1.5.0-cp36-abi3-win_amd64.whl \
 comtypes-1.1.14-py2.py3-none-any.whl \
 paramiko-3.1.0-py3-none-any.whl \
 pytz-2023.3-py2.py3-none-any.whl \
-PyQt6-6.5.0-cp37-abi3-win_amd64.whl \
+PyQt6-6.6.1-cp38-abi3-win_amd64.whl  \
 croniter-1.3.14-py2.py3-none-any.whl \
 pathlib-1.0.1-py3-none-any.whl \
 pywin32-306-cp311-cp311-win_amd64.whl \
