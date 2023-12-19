@@ -7,7 +7,7 @@ from lib.configuration import setconfigfile
 from lib.utils import set_logging_level
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.4", "NAME": "updatesettings", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updatesettings", "TYPE": "machine"}  # fmt: skip
 
 # Examples
 # param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'
@@ -16,9 +16,9 @@ plugin = {"VERSION": "1.4", "NAME": "updatesettings", "TYPE": "machine"}  # fmt:
 
 # ---START-PARAMS---
 # Add parameters here
-# param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'
+param_1 = 'del@__@startupdate.ini@__@plugins@__@liststartplugin'
 # param_2 = 'del@__@agentconf.ini@__@global@__@loglevel'
-# nb_params = 2
+nb_params = 1
 # ---END-PARAMS---
 
 
