@@ -498,7 +498,9 @@ class functionsynchroxmpp:
                 result = functionsynchroxmpp.__execfunctionmonitoringparameter(
                     datastruct
                 )
-        result = base64.b64encode(zlib.compress(result, 9))
+        if isinstance(result, str):
+            result = base64.b64encode(zlib.compress(result, 9))
+        result = base64.b64encode(zlib.compress(result, 9)).decode('utf-8')
         data["result"] = result
         return json.dumps(data)
 
