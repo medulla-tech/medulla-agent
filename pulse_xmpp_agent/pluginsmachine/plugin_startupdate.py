@@ -21,7 +21,7 @@ import re
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION": "1.3", "NAME": "startupdate", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "startupdate", "TYPE": "machine"}
 
 def read_conf_plugin_startupdate(objectxmpp):
     objectxmpp.liststartpluginstartupdate = []
@@ -38,6 +38,9 @@ def read_conf_plugin_startupdate(objectxmpp):
                                             re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*',
                                                      liststartplugin)
                                             if x.strip()!=""]
+        else:
+            createlistpluginupdate(objectxmpp)
+
         if Config.has_option('plugins', 'inventory'):
             objectxmpp.startupdateinventory = Config.getboolean('plugins', 'inventory')
         if Config.has_option('plugins', 'inventoryforced'):
@@ -50,6 +53,19 @@ def read_conf_plugin_startupdate(objectxmpp):
             os.path.isfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'plugin_updatesettings.py')):
             # Run updatesettings if not explicitly defined in liststartplugin
             objectxmpp.liststartpluginstartupdate.append("updatesettings")
+        # Remove excluded plugins
+        if Config.has_option("plugins", "listexcludedplugins"):
+            listexcludedplugins = Config.get("plugins", "listexcludedplugins")
+            objectxmpp.listexcludedpluginsstartupdate = [
+                x
+                for x in re.split(
+                    r"[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*",
+                    listexcludedplugins,
+                )
+                if x.strip() != ""
+            ]
+            for excludedpluginsstartupdate in objectxmpp.listexcludedpluginsstartupdate:
+                objectxmpp.liststartpluginstartupdate.remove(excludedpluginsstartupdate)
     else:
         createlistpluginupdate(objectxmpp)
 
