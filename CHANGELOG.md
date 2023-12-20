@@ -9,6 +9,7 @@
 - [BUGFIX]   Fix the exclusion of plugins from the installer
 - [BUGFIX]   Fix displaying Agent details QA
 - [BUGFIX]   Fix detection the arch in order to use the good OCS Agent
+- [BUGFIX]   Fix the update notification windows, make the text fit the window
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.0...v3.0.1)
 
