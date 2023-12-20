@@ -181,6 +181,7 @@ class dialogboxnotification:
             bg="#25607d",
             fg="white",
             font=("Open Sans Soft Regular", self.sizenotification),
+            wraplength=400,
         ).pack()
 
         if sys.version_info[0] >= 3:
