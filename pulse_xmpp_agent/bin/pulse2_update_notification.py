@@ -181,7 +181,8 @@ class dialogboxnotification:
               pady=(2),
               bg='#25607d',
               fg = 'white',
-              font=("Open Sans Soft Regular",self.sizenotification)).pack()
+              font=("Open Sans Soft Regular",self.sizenotification),
+              wraplength=400).pack()
 
         if not sys.version_info[0] < 3:
             # Create a photoimage object of the image in the path
