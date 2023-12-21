@@ -32,8 +32,8 @@
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>C:\Program\ Files\Python311\python.exe</Command>
-      <Arguments>C:\Program\ Files\Python311\Lib\site-packages\pulse_xmpp_agent\launcher.py -t machine</Arguments>
+      <Command>C:\Program\ Files\Python3\python.exe</Command>
+      <Arguments>C:\Program\ Files\Python3\Lib\site-packages\pulse_xmpp_agent\launcher.py -t machine</Arguments>
     </Exec>
   </Actions>
 </Task>

@@ -6,6 +6,7 @@
 
 ## [v3.0.1](unreleased)
 - [FEATURE]  Use python 3.11.7 by default
+- [FEATURE]  Install python in c:\Program Files\Python3
 - [BUGFIX]   Fix the exclusion of plugins from the installer
 - [BUGFIX]   Fix displaying Agent details QA
 - [BUGFIX]   Fix detection the arch in order to use the good OCS Agent
