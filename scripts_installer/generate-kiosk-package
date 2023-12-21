@@ -325,7 +325,7 @@ cp ${PULSE_KIOSK_PATH}/${PULSE_KIOSK_FILENAME} .
 
 # Generate bat file used for running the kiosk at startup
 cat <<EOF > PulseKiosk.bat
-cd %ProgramFiles%\Python311\Lib\site-packages\kiosk_interface
+cd %ProgramFiles%\Python3\Lib\site-packages\kiosk_interface
 cmd.exe /K py -3 __init__.py
 EOF
 
