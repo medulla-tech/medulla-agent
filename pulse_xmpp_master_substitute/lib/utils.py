@@ -1857,9 +1857,7 @@ def test_kiosk_presence():
         if sys.platform.startswith("win"):
             list = [
                 os.path.join("c:\\", "progra~1", "Python3", "Lib", "site-packages"),
-                os.path.join(
-                    "c:\\", "progra~1", "Python3-32", "Lib", "site-packages"
-                ),
+                os.path.join("c:\\", "progra~1", "Python3-32", "Lib", "site-packages"),
             ]
         elif sys.platform == "darwin":
             list = ["usr", "local", "lib", "python3.6", "dist-packages"]
