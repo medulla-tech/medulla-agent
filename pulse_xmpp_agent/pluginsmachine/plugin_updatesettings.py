@@ -16,7 +16,7 @@ plugin = {"VERSION": "1.5", "NAME": "updatesettings", "TYPE": "machine"}  # fmt:
 
 # ---START-PARAMS---
 # Add parameters here
-param_1 = 'del@__@startupdate.ini@__@plugins@__@liststartplugin'
+param_1 = "del@__@startupdate.ini@__@plugins@__@liststartplugin"
 # param_2 = 'del@__@agentconf.ini@__@global@__@loglevel'
 nb_params = 1
 # ---END-PARAMS---
