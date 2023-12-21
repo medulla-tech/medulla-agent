@@ -286,13 +286,17 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if hasattr(xmppobject.config, "collector"):
                 if xmppobject.config.collector == "ocs":
                     # If OCS x64 bits exists use it
-                    if os.path.exists(os.path.join(os.environ["ProgramFiles"],
-                                           'OCS Inventory Agent',
-                                           'OCSInventory.exe')):
+                    if os.path.exists(
+                        os.path.join(
+                            os.environ["ProgramFiles"],
+                            "OCS Inventory Agent",
+                            "OCSInventory.exe",
+                        )
+                    ):
                         program = os.path.join(
                             os.environ["ProgramFiles"],
-                            'OCS Inventory Agent',
-                            'OCSInventory.exe'
+                            "OCS Inventory Agent",
+                            "OCSInventory.exe",
                         )
                     else:
                         # Or use OCS x32 bits
