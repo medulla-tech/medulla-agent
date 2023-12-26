@@ -11167,7 +11167,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         Deploy.jidmachine == machine.jid,
                         Deploy.title == history.deploy_title,
                         Deploy.command == history.command,
-                        # Deploy.result.op("regexp")(update.update_id),
                         Deploy.start > update.start_date,
                         Deploy.start < update.end_date,
                     )

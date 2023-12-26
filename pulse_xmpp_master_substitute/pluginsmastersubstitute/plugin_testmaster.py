@@ -5,7 +5,6 @@
 from lib.utils import pluginmastersessionaction
 import logging
 
-# from mmc.plugins.xmppmaster.master.lib.utils import pluginmastersessionaction
 import logging
 
 plugin = {"VERSION": "1.0", "NAME": "testmaster", "TYPE": "mastersub"}

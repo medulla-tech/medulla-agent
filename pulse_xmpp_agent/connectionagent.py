@@ -92,7 +92,6 @@ class MUCBot(ClientXMPP):
         newjidconf = conf.jidagent.split("@")
         resourcejid = newjidconf[1].split("/")
         resourcejid[0] = conf.confdomain
-        # newjidconf[0] = getRandomName(10, "conf")
         newjidconf[0] = getRandomName(4, "conf_%s_" % socket.gethostname())
         self.HostNameSystem = platform.node().split(".")[0]
         conf.jidagent = f"{newjidconf[0]}@{resourcejid[0]}/{self.HostNameSystem}"
@@ -1037,27 +1036,6 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             "configuration. Do not run configurator agent on relay servers.",
         )
 
-        ## Connect to the XMPP server and start processing XMPP
-        # if xmpp.connect(address=(ipfromdns(tg.confserver),tg.confport)):
-        # t = Timer(300, xmpp.terminate)
-        # t.start()
-        # xmpp.process(block=True)
-        # t.cancel()
-        # logger.debug("bye bye connecteur")
-        # namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-        # "BOOLCONNECTOR")
-        # fichier= open(namefilebool,"w")
-        # fichier.close()
-        # else:
-        # logger.debug("Unable to connect to %s" % tg.confserver)
-    # else:
-    # logging.log(
-    # DEBUGPULSE,
-    # "Warning: A relay server holds a Static "
-    # "configuration. Do not run configurator agent on relay servers.",
-    # )
-
-
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
         logging.error("Agent must be running as root")
@@ -1122,7 +1100,6 @@ if __name__ == "__main__":
     console.setLevel(tg.levellog)
     file_handler = logging.FileHandler(tg.logfile)
     file_handler.setLevel(tg.levellog)
-    # formatter = logging.Formatter(format)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 

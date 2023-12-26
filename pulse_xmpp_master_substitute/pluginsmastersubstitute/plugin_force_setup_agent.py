@@ -14,7 +14,6 @@ plugin = {"VERSION": "1.4", "NAME": "force_setup_agent", "TYPE": "mastersub"}
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug("_________________________")
     logger.debug(plugin)
-    # logger.debug(json.dumps(data, indent = 4))
     logger.debug(data["data"][0])
     logger.debug("_________________________")
 

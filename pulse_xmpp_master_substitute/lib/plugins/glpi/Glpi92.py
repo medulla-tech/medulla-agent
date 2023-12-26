@@ -54,10 +54,6 @@ except ImportError:
 from sqlalchemy.exc import OperationalError
 
 # TODO rename location into entity (and locations in location)
-
-# from mmc.plugins.glpi.config import GlpiConfig
-# from mmc.plugins.glpi.utilities import complete_ctx
-# from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore

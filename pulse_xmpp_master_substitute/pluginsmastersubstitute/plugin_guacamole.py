@@ -29,12 +29,7 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
                 "uuid": data["uuid"],
             },
         }
-        # xmppobject.send_message(
-        # mto=relayserver["jid"],
-        # mbody=json.dumps(senddataplugin, encoding="latin1"),
-        # mtype="chat",
-        # )
-        logger.error("senddataplugin %s" % senddataplugin)
+        logger.debug("senddataplugin %s" % senddataplugin)
 
         xmppobject.send_message(
             mto=relayserver["jid"],

@@ -16,7 +16,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug(plugin)
     logger.debug("=====================================================")
-    # logger.debug(json.dumps(data, indent=4))
     try:
         XmppMasterDatabase().setCommand_action(
             data["data"]["data"]["uuid_inventorymachine"],
