@@ -10475,7 +10475,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.flush()
             if rest:
                 ret = [elt for elt in rest][0]
-                return True if ret[0] == 1 else False
+                return bool(ret[0] == 1)
         except Exception:
             logging.getLogger().error(
                 "sql is_exist_value_in_table: %s" % traceback.format_exc()
@@ -11114,7 +11114,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         query = query.count()
 
-        return True if query is not None and query != 0 else False
+        return bool(query is not None and query != 0)
 
     @DatabaseHelper._sessionm
     def delete_all_done_updates(self, session):
