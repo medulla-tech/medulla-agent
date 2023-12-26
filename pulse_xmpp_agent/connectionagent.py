@@ -1036,6 +1036,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             "configuration. Do not run configurator agent on relay servers.",
         )
 
+
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
         logging.error("Agent must be running as root")
