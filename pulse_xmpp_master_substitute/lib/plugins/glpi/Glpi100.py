@@ -1205,7 +1205,7 @@ class Glpi100(DatabaseHelper):
 
             if (
                 "uuids" in filt
-                and type(filt["uuids"]) == list
+                and type(filt["uuids"]) is list
                 and len(filt["uuids"]) > 0
             ):
                 query = self.filterOnUUID(query, filt["uuids"])
@@ -1310,18 +1310,18 @@ class Glpi100(DatabaseHelper):
         return query
 
     def __getId(self, obj):
-        if type(obj) == dict:
+        if type(obj) is dict:
             return obj["uuid"]
         if type(obj) != str and type(obj) != str:
             return obj.id
         return obj
 
     def __getName(self, obj):
-        if type(obj) == dict:
+        if type(obj) is dict:
             return obj["name"]
         if type(obj) != str and type(obj) != str:
             return obj.name
-        if type(obj) == str and re.match("UUID", obj):
+        if type(obj) is str and re.match("UUID", obj):
             l = self.getLocation(obj)
             if l:
                 return l.name
@@ -1431,7 +1431,7 @@ class Glpi100(DatabaseHelper):
             query[3] = self.encode(query[3])
             r1 = re.compile("\*")
             like = False
-            if type(query[3]) == list:
+            if type(query[3]) is list:
                 q3 = []
                 for q in query[3]:
                     if r1.search(q):
@@ -1855,7 +1855,7 @@ class Glpi100(DatabaseHelper):
         """
         Modify the given query to filter on the machine UUID
         """
-        if type(uuid) == list:
+        if type(uuid) is list:
             return query.filter(
                 self.machine.c.id.in_([int(str(a).replace("UUID", "")) for a in uuid])
             )
@@ -2417,7 +2417,7 @@ class Glpi100(DatabaseHelper):
             )
             machines_uuid_size = len(all_computers)
         size = 1
-        if type(ret) == list:
+        if type(ret) is list:
             size = len(ret)
         if all and size == machines_uuid_size:
             return True
@@ -2491,7 +2491,7 @@ class Glpi100(DatabaseHelper):
                 else:
                     ma2.append([x, y])
             ret.append(ma2)
-        if type(uuid) == list:
+        if type(uuid) is list:
             return ret
         return ret[0]
 
@@ -3941,8 +3941,8 @@ class Glpi100(DatabaseHelper):
         # FIXME: the way the web interface process dynamic group sub-query
         # is wrong, so for the moment we need this loop:
         version = None
-        if type(swname) == list:
-            while type(swname[0]) == list:
+        if type(swname) is list:
+            while type(swname[0]) is list:
                 swname = swname[0]
             name = swname[0]
             version = swname[1]
@@ -4970,7 +4970,7 @@ class Glpi100(DatabaseHelper):
         @rtype: str
         """
         ret = self.getMachineByMacAddress("imaging_module", mac)
-        if type(ret) == list:
+        if type(ret) is list:
             if len(ret) != 0:
                 return str(toUUID(ret[0].id))
         return None

@@ -50,7 +50,7 @@ raw_input = input
 
 def getComputerByMac(mac):
     ret = Glpi().getMachineByMacAddress("imaging_module", mac)
-    if type(ret) == list:
+    if type(ret) is list:
         if len(ret) != 0:
             return ret[0]
         else:
@@ -658,13 +658,13 @@ class MUCBot(slixmpp.ClientXMPP):
             "time": tempo + timeout,
             "name_iq_queue": datain["name_iq_queue"],
         }
-        if type(datain) == dict or type(datain) == list:
+        if type(datain) is dict or type(datain) is list:
             try:
                 data = json.dumps(datain)
             except Exception as e:
                 logging.error("iqsendpulse : encode json : %s" % str(e))
                 return '{"err" : "%s"}' % str(e).replace('"', "'")
-        elif type(datain) == str:
+        elif type(datain) is str:
             data = str(datain)
         else:
             data = datain
