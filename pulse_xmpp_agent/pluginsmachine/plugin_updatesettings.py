@@ -6,20 +6,18 @@ import logging
 from lib.configuration import setconfigfile
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.3", "NAME": "updatesettings", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "updatesettings", "TYPE": "machine"}  # fmt: skip
 
 # Examples
 # param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'
 # param_2 = 'del@__@agentconf.ini@__@global@__@loglevel'
 # nb_params = 2
 
-#---START-PARAMS---
+# ---START-PARAMS---
 # Add parameters here
-# param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'
-param_1 = 'del@__@startupdate.ini@__@plugins@__@liststartplugin'
+param_1 = 'add@__@startupdate.ini@__@plugins@__@liststartplugin@__@all'
 nb_params = 1
-#---END-PARAMS---
+# ---END-PARAMS---
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
