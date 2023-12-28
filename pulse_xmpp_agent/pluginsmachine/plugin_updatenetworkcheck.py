@@ -9,10 +9,10 @@ import logging
 import shutil
 from lib import utils
 
-NETWORKVERSION = "3.0.0"
+NETWORKVERSION = "3.0.1"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.1", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.2", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level

@@ -15,7 +15,7 @@ for scheme in list(INSTALL_SCHEMES.values()):
 
 setup(
     name="pulse_xmpp_agent",
-    version="3.0.0",
+    version="3.0.1",
     author="SIVEO",
     author_email="support@siveo.net",
     description="XMPP Agent for pulse",
