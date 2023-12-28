@@ -43,7 +43,7 @@ cd "`dirname $0`"
 AGENT_VERSION="3.0.1"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
-PYTHON64_FILENAME="python-3.11.7-amd64.exe"
+PYTHON64_FILENAME="python-3.11.3-amd64.exe"
 LIBCURL_DL_FILENAME="libcurl4-8.0.1-1.tar.xz"
 LIBCURL_FILENAME="cygcurl-4.dll"
 PY_MODULES_64_FILENAMES="CherryPy-18.8.0-py2.py3-none-any.whl \
