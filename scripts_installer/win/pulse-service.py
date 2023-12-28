@@ -53,13 +53,13 @@ def log_message_info(message, event_type=servicemanager.EVENTLOG_INFORMATION_TYP
 
 
 agent_dir = os.path.join(
-    "C:\\", "Progra~1", "Python3", "Lib", "site-packages", "pulse_xmpp_agent"
+    "C:\\", "Progra~1", "Python311", "Lib", "site-packages", "pulse_xmpp_agent"
 )
 
 agent_launcher = os.path.join(
     "C:\\",
     "Progra~1",
-    "Python3",
+    "Python311",
     "Lib",
     "site-packages",
     "pulse_xmpp_agent",
@@ -142,7 +142,7 @@ class medullaagent(win32serviceutil.ServiceFramework):
             # Start your external process here
             self.process = subprocess.Popen(
                 [
-                    'C:\\"Progra~1"\\Python3\\python.exe',
+                    'C:\\"Progra~1"\\Python311\\python.exe',
                     agent_launcher,
                     "-t",
                     "machine",
