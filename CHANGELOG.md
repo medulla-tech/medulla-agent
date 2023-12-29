@@ -6,6 +6,7 @@
 - [BUGFIX]  Fix displaying Agent details QA
 - [BUGFIX]  Fix detection the arch in order to use the good OCS Agent
 - [BUGFIX]   Fix the update notification windows, make the text fit the window
+- [BUGFIX]  Fix the generation of the Kiosk package for python3 version of Medulla
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.0...v3.0.1)
 
