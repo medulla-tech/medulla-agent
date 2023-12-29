@@ -6,6 +6,7 @@
 
 ## [v3.0.1](unreleased)
 - [FEATURE]  Install python in c:\Program Files\Python3
+- [FEATURE]  Install Kiok interface by default now
 - [BUGFIX]   Fix the exclusion of plugins from the installer
 - [BUGFIX]   Fix displaying Agent details QA
 - [BUGFIX]   Fix detection the arch in order to use the good OCS Agent
