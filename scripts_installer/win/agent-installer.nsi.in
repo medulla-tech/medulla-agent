@@ -24,6 +24,7 @@ Unicode True
 !define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
 !define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
+!define KIOSK_FILENAME "@@KIOSK_FILENAME@@"
 !define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
 !define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
 !define PULSE_UPDATEBACKUPCLIENT_CONFFILE "@@PULSE_UPDATEBACKUPCLIENT_CONFFILE@@"
@@ -280,6 +281,7 @@ Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
   File "../${PULSE_AGENT_FILENAME}"
   File "../${AGENT_PLUGINS_FILENAME}"
+  File "../${KIOSK_FILENAME}"
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
@@ -308,6 +310,21 @@ Section "!${PRODUCT_NAME}" sec_app
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Medulla Agent installation failed. $\n\
 	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 128
+    Quit
+  ${EndIf}
+
+  ; Install of Kiosk
+  StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${KIOSK_FILENAME}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Medulla Kiosk installation failed. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 128
     Quit
