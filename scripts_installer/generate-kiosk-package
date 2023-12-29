@@ -39,7 +39,7 @@ fi
 PACKAGE_NAME="Medulla Kiosk"
 PACKAGE_DESC="Kiosk module for machines managed by Medulla"
 
-KIOSK_VERSION="0.3"
+KIOSK_VERSION="1.0"
 PULSE_KIOSK_FILENAME="kiosk-interface-${KIOSK_VERSION}.tar.gz"
 PULSE_KIOSK_PATH="/var/lib/pulse2/clients"
 
