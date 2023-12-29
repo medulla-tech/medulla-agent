@@ -5,7 +5,6 @@
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.1...v3.1.0)
 
 ## [v3.0.1](unreleased)
-- [FEATURE]  Use python 3.11.7 by default
 - [FEATURE]  Install python in c:\Program Files\Python3
 - [BUGFIX]   Fix the exclusion of plugins from the installer
 - [BUGFIX]   Fix displaying Agent details QA
