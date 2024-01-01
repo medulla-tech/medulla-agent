@@ -28,7 +28,7 @@ var/lib/pulse2/clients/mac/rbash
 var/lib/pulse2/clients/mac/runpulseagent
 var/lib/pulse2/clients/pulse-xmpp-agent-3.0.1.tar.gz
 var/lib/pulse2/clients/pulse-machine-plugins-3.0.1.tar.gz
-var/lib/pulse2/clients/kiosk-interface-0.3.tar.gz
+var/lib/pulse2/clients/kiosk-interface-1.0.0.tar.gz
 var/lib/pulse2/clients/style.css
 var/lib/pulse2/clients/win/agent-installer.nsi.in
 var/lib/pulse2/clients/win/artwork
