@@ -117,6 +117,7 @@ def read_conf_load_agent_machine(xmppobject):
             % (traceback.format_exc())
         )
 
+
 def get_list_function_dyn_agent_machine(xmppobject):
     logger.debug(
         f"return list function install from this plugin : {xmppobject.list_function_agent_name}"
