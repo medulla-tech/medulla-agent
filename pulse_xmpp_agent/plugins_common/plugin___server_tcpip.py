@@ -88,9 +88,9 @@ def read_conf_server_tcpip_agent_machine(xmppobject):
         prefixe_agent = "ars_"
         if (
             "ars_local_port" in vars(xmppobject.config)
-            and xmppobject.config()["ars_local_port"] != None
+            and vars(xmppobject.config)["ars_local_port"] != None
         ):
-            xmppobject.port_tcp_kiosk = xmppobject.config.ars_local_port
+            xmppobject.port_tcp_kiosk = vars(xmppobject.config)["ars_local_port"]
             logger.warning(
                 f"paraneter tcp_ip port in section [kiosk]/ars_local_port in relayconf.ini : {xmppobject.port_tcp_kiosk}"
             )
@@ -98,9 +98,9 @@ def read_conf_server_tcpip_agent_machine(xmppobject):
         prefixe_agent = "am_"
         if (
             "am_local_port" in vars(xmppobject.config)
-            and xmppobject.config()["am_local_port"] != None
+            and vars(xmppobject.config)["am_local_port"] != None
         ):
-            xmppobject.port_tcp_kiosk = xmppobject.config.am_local_port
+            xmppobject.port_tcp_kiosk = vars(xmppobject.config)["am_local_port"]
             logger.warning(
                 f"paraneter tcp_ip port in section [kiosk]/am_local_port in agentconf.ini : {xmppobject.port_tcp_kiosk}"
             )
