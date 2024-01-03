@@ -45,20 +45,27 @@ import json
 import pickle
 
 from lib.agentconffile import directoryconffile
-from lib.utils import DateTimebytesEncoderjson, simplecommand, AESCipher, isBase64
+from lib.utils import (
+    DateTimebytesEncoderjson,
+    simplecommand,
+    AESCipher,
+    isBase64,
+    set_logging_level,
+)
 
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code" }  # fmt: skip
 
 
+@set_logging_level
 def action(xmppobject, action):
     try:
         logger.debug("=====================================================")
-        logger.debug("call plugin code %s " % (plugin))
+        logger.debug(f"call plugin code {plugin} ")
         logger.debug("=====================================================")
-        compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
+        compteurcallplugin = getattr(xmppobject, f"num_call{action}")
 
         if compteurcallplugin == 0:
             logger.debug("====================================")
@@ -70,57 +77,69 @@ def action(xmppobject, action):
             asyncio.run(run_server(xmppobject))
 
     except Exception as e:
-        logger.error("Plugin load_TCI/IP, we encountered the error %s" % str(e))
-        logger.error("We hit the backtrace %s" % traceback.format_exc())
+        logger.error(f"Plugin load_TCI/IP, we encountered the error {str(e)}")
+        logger.error(f"We hit the backtrace {traceback.format_exc()}")
 
 
 def read_conf_server_tcpip_agent_machine(xmppobject):
     xmppobject.port_tcp_kiosk = 8765
     prefixe_agent = ""
+    if not hasattr(xmppobject, 'sizebufferrecv'):
+        xmppobject.sizebufferrecv = 1048576
+    if not hasattr(xmppobject, 'encryptionAES'):
+        xmppobject.encryptionAES = False
+
     if xmppobject.config.agenttype in ["relayserver"]:
         prefixe_agent = "ars_"
         if (
             "ars_local_port" in vars(xmppobject.config)
-            and xmppobject.config()["ars_local_port"] != None
+            and vars(xmppobject.config)["ars_local_port"] != None
         ):
-            xmppobject.port_tcp_kiosk = xmppobject.config.ars_local_port
+            xmppobject.port_tcp_kiosk = vars(xmppobject.config)["ars_local_port"]
             logger.warning(
-                "paraneter tcp_ip port in section [kiosk]/ars_local_port in relayconf.ini : %s"
-                % xmppobject.port_tcp_kiosk
+                f"paraneter tcp_ip port in section [kiosk]/ars_local_port in relayconf.ini : {xmppobject.port_tcp_kiosk}"
             )
     elif xmppobject.config.agenttype in ["machine"]:
         prefixe_agent = "am_"
         if (
             "am_local_port" in vars(xmppobject.config)
-            and xmppobject.config()["am_local_port"] != None
+            and vars(xmppobject.config)["am_local_port"] != None
         ):
-            xmppobject.port_tcp_kiosk = xmppobject.config.am_local_port
+            xmppobject.port_tcp_kiosk = vars(xmppobject.config)["am_local_port"]
             logger.warning(
-                "paraneter tcp_ip port in section [kiosk]/am_local_port in agentconf.ini : %s"
-                % xmppobject.port_tcp_kiosk
+                f"paraneter tcp_ip port in section [kiosk]/am_local_port in agentconf.ini : {xmppobject.port_tcp_kiosk}"
             )
     configfilename = os.path.join(
         directoryconffile(), prefixe_agent + plugin["NAME"] + ".ini"
     )
     logger.info(
-        "optionel config file local for plugin___server_tcpip is : %s" % configfilename
+        f"optionel config file local for plugin___server_tcpip is : {configfilename}"
     )
     if os.path.isfile(configfilename):
         Config = configparser.ConfigParser()
         Config.read(configfilename)
-        if os.path.isfile(configfilename + ".local"):
-            Config.read(configfilename + ".local")
+        if os.path.isfile(f"{configfilename}.local"):
+            Config.read(f"{configfilename}.local")
             if Config.has_option("server_tcpip", "port_tcpip"):
                 xmppobject.port_tcp_kiosk = Config.getint("server_tcpip", "port_tcpip")
                 logger.warning(
                     "config local redefini paraneter tcp_ip port in section [server_tcpip]/port_tcpip"
                 )
+            if Config.has_option("server_tcpip", "sizebufferrecv"):
+                xmppobject.sizebufferrecv = Config.getint("server_tcpip", "sizebufferrecv")
+                logger.warning(
+                    "config local redefini paraneter (sizebufferrecv size) in section [server_tcpip]/sizebufferrecv"
+                )
+            if Config.has_option("server_tcpip", "encryptionAES"):
+                xmppobject.sizebufferrecv = Config.getboolean("server_tcpip", "encryptionAES")
+                logger.warning(
+                    "config local redefini paraneter boolean  encryptionAES in section [server_tcpip]/encryptionAES"
+                )
     else:
         logger.warning(
-            "local file configuration %s of plugin %s no exist"
-            % (configfilename, plugin["NAME"])
+            f'local file configuration {configfilename} of plugin {plugin["NAME"]} no exist'
         )
-    logger.warning("port_tcp_kiosk is %s " % xmppobject.port_tcp_kiosk)
+    logger.warning(f"port_tcp_kiosk is {xmppobject.port_tcp_kiosk} ")
 
 
 def client_info(client, show_info=False):
@@ -131,11 +150,11 @@ def client_info(client, show_info=False):
     proto = client.proto
     if show_info:
         logger.debug("socket Information")
-        logger.debug("AddressFamily socket %s" % str(client.family))
-        logger.debug("type STREAM socket %s" % str(client.type))
-        logger.debug("proto socket %s" % client.proto)
-        logger.debug("listen adress %s %s" % (addresslisten, portlisten))
-        logger.debug("recept adress %s %s" % (adressrecept, portrecept))
+        logger.debug(f"AddressFamily socket {str(client.family)}")
+        logger.debug(f"type STREAM socket {str(client.type)}")
+        logger.debug(f"proto socket {client.proto}")
+        logger.debug(f"listen adress {addresslisten} {portlisten}")
+        logger.debug(f"recept adress {adressrecept} {portrecept}")
 
     return {
         "adressfamily": adressfamily,
@@ -158,8 +177,7 @@ def _convert_string(data):
     """
     if isinstance(data, (bytes)):
         try:
-            requestdata = pickle.loads(data)
-            return requestdata
+            return pickle.loads(data)
         except:
             try:
                 data = data.decode("utf8", "ignore")
@@ -202,8 +220,7 @@ async def handle_client(client, xmppobject):
             request = await loop.sock_recv(client, xmppobject.sizebufferrecv)
             if len(request) >= xmppobject.sizebufferrecv:
                 logger.warning(
-                    'message may be incomplete : size message Recv is egal max size message (%s) :"verify param sizebufferrecv"'
-                    % xmppobject.sizebufferrecv
+                    f'message may be incomplete : size message Recv is egal max size message ({xmppobject.sizebufferrecv}) :"verify param sizebufferrecv"'
                 )
             if xmppobject.encryptionAES and len(xmppobject.config.keyAES32) > 0:
                 if not isBase64(request.strip()):
@@ -212,14 +229,12 @@ async def handle_client(client, xmppobject):
                     logger.warning("message input base64")
                 cipher = AESCipher(xmppobject.config.keyAES32)
                 request = cipher.decrypt(str(request.decode("utf8")))
-                logger.warning("request data is %s" % request)
+                logger.warning(f"request data is {request}")
             requestobj = _convert_string(request)
-
             if requestobj is None:
                 break
-
             if isinstance(requestobj, (str)):
-                testresult = requestobj[0:4].lower()
+                testresult = requestobj[:4].lower()
                 if (
                     requestobj == ""
                     or requestobj == "quit_server_kiosk"
@@ -228,10 +243,9 @@ async def handle_client(client, xmppobject):
                     or testresult == "end"
                 ):
                     logger.debug("Receiving a `connexion end` request")
-                    break
                 else:
-                    logger.warning("Receiving data: %s" % requestobj)
-                    break
+                    logger.warning(f"Receiving data: {requestobj}")
+                break
 
             if isinstance(requestobj, (dict)):
                 try:
@@ -239,9 +253,7 @@ async def handle_client(client, xmppobject):
                     codeerror, result = xmppobject.handle_client_connection(
                         json.dumps(requestobj)
                     )
-                    logger.warning(
-                        "reception data : __%s__ __%s__" % (codeerror, result)
-                    )
+                    logger.warning(f"reception data : __{codeerror}__ __{result}__")
 
                     if not result:
                         await loop.sock_sendall(
@@ -265,7 +277,7 @@ async def handle_client(client, xmppobject):
                         except Exception as e:
                             await loop.sock_sendall(client, str(e).encode("utf-8"))
 
-                        logger.warning("type reception data %s" % type(result))
+                        logger.warning(f"type reception data {type(result)}")
                     break  # suivant type de connexion desire
                 except Exception as e:
                     await loop.sock_sendall(client, str(e).encode("utf-8"))
@@ -281,31 +293,26 @@ async def handle_client(client, xmppobject):
 async def run_server(xmppobject):
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         linux_command = (
-            'netstat -lnt4p | grep python | grep ":%s"' % xmppobject.port_tcp_kiosk
+            f'netstat -lnt4p | grep python | grep ":{xmppobject.port_tcp_kiosk}"'
         )
-        logger.warning("linux command : %s" % linux_command)
+        logger.warning(f"linux command : {linux_command}")
         result = simplecommand(linux_command)
 
         if len(result["result"]) > 0:
             logger.debug(
-                "The tcp_ip kiosk server is already running locally in the port %s"
-                % xmppobject.port_tcp_kiosk
+                f"The tcp_ip kiosk server is already running locally in the port {xmppobject.port_tcp_kiosk}"
             )
             return
     elif sys.platform.startswith("win"):
-        windows_command = (
-            'netstat -aof -p TCP | findstr LISTENING | findstr ":%s"'
-            % xmppobject.port_tcp_kiosk
-        )
+        windows_command = f'netstat -aof -p TCP | findstr LISTENING | findstr ":{xmppobject.port_tcp_kiosk}"'
         result = simplecommand(windows_command)
         if len(result["result"]) > 0:
             logger.debug(
-                "The tcp_ip kiosk server is already running locally in the port %s"
-                % xmppobject.port_tcp_kiosk
+                f"The tcp_ip kiosk server is already running locally in the port {xmppobject.port_tcp_kiosk}"
             )
             return
     else:
-        logger.error("We do not support your Operating System %s" % sys.platform)
+        logger.error(f"We do not support your Operating System {sys.platform}")
         return
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -314,7 +321,7 @@ async def run_server(xmppobject):
         server.bind(("localhost", xmppobject.port_tcp_kiosk))
         server.listen(8)
     except Exception as e:
-        logger.error("The run_server function failed with the error %s" % str(e))
+        logger.error(f"The run_server function failed with the error {str(e)}")
         logger.error("We hit the backtrace \n %s" % traceback.format_exc())
         return
     server.setblocking(False)
