@@ -84,6 +84,11 @@ def action(xmppobject, action):
 def read_conf_server_tcpip_agent_machine(xmppobject):
     xmppobject.port_tcp_kiosk = 8765
     prefixe_agent = ""
+    if not hasattr(xmppobject, 'sizebufferrecv'):
+        xmppobject.sizebufferrecv = 1048576
+    if not hasattr(xmppobject, 'encryptionAES'):
+        xmppobject.encryptionAES = False
+
     if xmppobject.config.agenttype in ["relayserver"]:
         prefixe_agent = "ars_"
         if (
@@ -119,6 +124,16 @@ def read_conf_server_tcpip_agent_machine(xmppobject):
                 xmppobject.port_tcp_kiosk = Config.getint("server_tcpip", "port_tcpip")
                 logger.warning(
                     "config local redefini paraneter tcp_ip port in section [server_tcpip]/port_tcpip"
+                )
+            if Config.has_option("server_tcpip", "sizebufferrecv"):
+                xmppobject.sizebufferrecv = Config.getint("server_tcpip", "sizebufferrecv")
+                logger.warning(
+                    "config local redefini paraneter (sizebufferrecv size) in section [server_tcpip]/sizebufferrecv"
+                )
+            if Config.has_option("server_tcpip", "encryptionAES"):
+                xmppobject.sizebufferrecv = Config.getboolean("server_tcpip", "encryptionAES")
+                logger.warning(
+                    "config local redefini paraneter boolean  encryptionAES in section [server_tcpip]/encryptionAES"
                 )
     else:
         logger.warning(
@@ -216,10 +231,8 @@ async def handle_client(client, xmppobject):
                 request = cipher.decrypt(str(request.decode("utf8")))
                 logger.warning(f"request data is {request}")
             requestobj = _convert_string(request)
-
             if requestobj is None:
                 break
-
             if isinstance(requestobj, (str)):
                 testresult = requestobj[:4].lower()
                 if (
@@ -233,6 +246,7 @@ async def handle_client(client, xmppobject):
                 else:
                     logger.warning(f"Receiving data: {requestobj}")
                 break
+
             if isinstance(requestobj, (dict)):
                 try:
                     # creation action
@@ -302,6 +316,7 @@ async def run_server(xmppobject):
         return
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         server.bind(("localhost", xmppobject.port_tcp_kiosk))
         server.listen(8)
