@@ -117,17 +117,6 @@ def read_conf_load_agent_machine(xmppobject):
             % (traceback.format_exc())
         )
 
-    try:
-        conffile_path = os.path.join(xmppobject.config.pathdirconffile, conf_filename)
-        if not os.path.isfile(conffile_path):
-            logger.warning(
-                "The configuration file for the plugin %s is missing. \n It should be located in %s"
-                % (plugin["NAME"], conffile_path)
-            )
-    except Exception as e:
-        logger.error(f"We obtained the backtrace {traceback.format_exc()}")
-
-
 def get_list_function_dyn_agent_machine(xmppobject):
     logger.debug(
         f"return list function install from this plugin : {xmppobject.list_function_agent_name}"
