@@ -111,6 +111,7 @@ pypiwin32-223-py3-none-any.whl \
 PyYAML-6.0.1-cp311-cp311-win_amd64.whl \
 lmdb-1.4.1-cp311-cp311-win_amd64.whl \
 netaddr-0.8.0-py2.py3-none-any.whl \
+wheel-0.42.0-py3-none-any.whl \
 "
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwrsync_6.2.8_x64_free.zip"
