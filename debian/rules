@@ -118,9 +118,9 @@ override_dh_auto_install:
 	mv  pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	mv  pulse-machine-plugins-${VERSION_XMPP_AGENT}.tar.gz $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
-	pushd kiosk-interface
+	cd kiosk-interface
 	git checkout ${BRANCH}
-	popd
+	cd ..
 	mv kiosk-interface kiosk-interface-${VERSION_KIOSK_INTERFACE}
 	tar czvf kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz kiosk-interface-${VERSION_KIOSK_INTERFACE}
 	rm -fr kiosk-interface-${VERSION_KIOSK_INTERFACE}
