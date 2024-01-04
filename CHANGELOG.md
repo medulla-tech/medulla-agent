@@ -1,8 +1,9 @@
 # Change Log
 
 ## [v3.0.1](https://github.com/medulla-tech/medulla-agent/tree/v3.0.1) (unreleased)
+- [FEATURE] Install python in c:\Program Files\Python3
 - [FEATURE] Use python 3.11.7 by default
-- [FEATURE]  Install Kiok interface by default now
+- [FEATURE] Install Kiok interface by default now
 - [BUGFIX]  Fix the exclusion of plugins from the installer
 - [BUGFIX]  Fix displaying Agent details QA
 - [BUGFIX]  Fix detection the arch in order to use the good OCS Agent

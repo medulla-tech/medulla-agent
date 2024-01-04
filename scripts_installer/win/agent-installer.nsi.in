@@ -183,7 +183,7 @@ Section "Python" sec_py
   StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
   ; Install Python
   InstallPython:
-  StrCpy $0 `"$INSTDIR\tmp\$PYTHON_FILENAME" /quiet InstallAllUsers=1 Include_pip=0`
+  StrCpy $0 `"$INSTDIR\tmp\$PYTHON_FILENAME" /quiet InstallAllUsers=1 Include_pip=0 TargetDir="c:\Program Files\Python3"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -207,7 +207,7 @@ Section "Python" sec_py
   ${LogString} $0
 
   ; Install pip
-  StrCpy $0 `$PROGRAMFILES64\Python311\python.exe -m ensurepip --upgrade`
+  StrCpy $0 `$PROGRAMFILES64\Python3\python.exe -m ensurepip --upgrade`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -230,9 +230,9 @@ Section "Python" sec_py
     nsExec::ExecToLog $0
     StrCpy $0 `taskkill /F /IM syncthing*`
     nsExec::ExecToLog $0
-    StrCpy $0 `attrib -r -s -h -a "$PROGRAMFILES64\Python311"`
+    StrCpy $0 `attrib -r -s -h -a "$PROGRAMFILES64\Python3"`
     nsExec::ExecToLog $0
-    StrCpy $0 `rd /s /q "$PROGRAMFILES64\Python311"`
+    StrCpy $0 `rd /s /q "$PROGRAMFILES64\Python3"`
     nsExec::ExecToLog $0
     ${LogString} `Return code 0: $0`
     Goto InstallPython
@@ -267,15 +267,15 @@ Section "Python" sec_py
   nsExec::Exec 'sc stop medullanetnotify'
 
   ; Delete previous rescue folder if any
-  RMDir /r C:\progra~1\Python311\Lib\site-packages\pulse_xmpp_agent\agentrescue
-  RMDir /r C:\progra~1\Python311\Lib\site-packages\pulse_xmpp_agent\img_agent
+  RMDir /r C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\agentrescue
+  RMDir /r C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\img_agent
 
   ; Prevent agentrescue to be run at first launcher execution
-  FileOpen $0 "C:\progra~1\Python311\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
+  FileOpen $0 "C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
   FileClose $0
 
   ; Remove old three random characters for unicity
-  Delete C:\progra~1\Python311\Lib\site-packages\pulse_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
+  Delete C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
 SectionEnd
 ; ####################### Installation of Medulla Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
@@ -302,7 +302,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Install of Medulla agent
-  StrCpy $0 `$PROGRAMFILES64\Python311\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
+  StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -425,8 +425,8 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndSwitch}
   ${LogString} $0
 
-  CopyFiles /SILENT "$PROGRAMFILES64\Python311\Lib\site-packages\pywin32_system32\pywintypes27.dll" "$PROGRAMFILES64\Python311\Lib\site-packages\win32\"
-  StrCpy $0 `$PROGRAMFILES64\Python311\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
+  CopyFiles /SILENT "$PROGRAMFILES64\Python3\Lib\site-packages\pywin32_system32\pywintypes27.dll" "$PROGRAMFILES64\Python3\Lib\site-packages\win32\"
+  StrCpy $0 `$PROGRAMFILES64\Python3\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -445,7 +445,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create bin folder
   CreateDirectory $INSTDIR\bin
 
-  StrCpy $0 `$PROGRAMFILES64\Python311\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
+  StrCpy $0 `$PROGRAMFILES64\Python3\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -459,7 +459,7 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
-  StrCpy $0 `$PROGRAMFILES64\Python311\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
+  StrCpy $0 `$PROGRAMFILES64\Python3\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
