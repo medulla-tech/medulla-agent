@@ -9,3 +9,4 @@
 /etc/pulse-xmpp-agent/package_watching.ini
 /etc/pulse-xmpp-agent/manage_scheduler_relay.ini
 /etc/pulse-xmpp-agent/start_relay.ini
+/etc/pulse-xmpp-agent/ars___server_tcpip.ini

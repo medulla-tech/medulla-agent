@@ -166,6 +166,7 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler_relay.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/start_relay.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/ars___server_tcpip.ini
 %_var/log/pulse
 %dir %{python3_sitelib}/pulse_xmpp_agent/
 %{python3_sitelib}/pulse_xmpp_agent/lib/
@@ -260,6 +261,7 @@ fi
 %config(noreplace) %_var/lib/pulse2/clients/config/updateopenssh.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/updatetightvnc.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/updatebackupclient.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/am___server_tcpip.ini
 %attr(0755,syncthing,syncthing)  %_var/lib/pulse2/xmpp_baseremoteagent/
 
 #--------------------------------------------------------------------
@@ -344,6 +346,7 @@ cp pulse_xmpp_agent/config/relayconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/manage_scheduler_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/start_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
+cp pulse_xmpp_agent/config/ars___server_tcpip.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 mkdir -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
@@ -410,6 +413,7 @@ cp pulse_xmpp_agent/config/startupdate.ini %buildroot%_var/lib/pulse2/clients/co
 cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/updatebackupclient.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/am___server_tcpip.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-kiosk-package %buildroot%_var/lib/pulse2/clients
