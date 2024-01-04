@@ -284,7 +284,7 @@ Section "!${PRODUCT_NAME}" sec_app
   File "../${PULSE_AGENT_FILENAME}"
   File "../${AGENT_PLUGINS_FILENAME}"
   File "../${KIOSK_FILENAME}"
-  File "../${WHEEL_FILENAME}"
+  File "downloads/python_modules/${WHEEL_FILENAME}"
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
