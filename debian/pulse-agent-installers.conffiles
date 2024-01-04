@@ -6,3 +6,4 @@
 /var/lib/pulse2/clients/config/updateopenssh.ini
 /var/lib/pulse2/clients/config/updatetightvnc.ini
 /var/lib/pulse2/clients/config/updatebackupclient.ini
+/var/lib/pulse2/clients/config/am___server_tcpip.ini
