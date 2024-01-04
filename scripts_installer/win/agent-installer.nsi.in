@@ -282,6 +282,7 @@ Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
   File "../${PULSE_AGENT_FILENAME}"
   File "../${AGENT_PLUGINS_FILENAME}"
+  File "../${KIOSK_FILENAME}"
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
