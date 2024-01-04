@@ -111,8 +111,8 @@ pypiwin32-223-py3-none-any.whl \
 PyYAML-6.0.1-cp311-cp311-win_amd64.whl \
 lmdb-1.4.1-cp311-cp311-win_amd64.whl \
 netaddr-0.8.0-py2.py3-none-any.whl \
-wheel-0.42.0-py3-none-any.whl \
 "
+WHEEL_FILENAME="wheel-0.42.0-py3-none-any.whl"
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwrsync_6.2.8_x64_free.zip"
 RSYNC_FILENAME="rsync.zip"
@@ -354,7 +354,8 @@ update_nsi_script() {
         -e "s/@@DELETE_PY_MODULES_FILENAMES@@/${DELETE_PY_MODULES_FILENAMES}/" \
 		-e "s/@@PULSE_AGENT_FILENAME@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@KIOSK_FILENAME@@/${KIOSK_FILENAME}/" \
-                -e "s/@@AGENT_PLUGINS_FILENAME@@/${AGENT_PLUGINS_FILENAME}/" \
+        -e "s/@@WHEEL_FILENAME@@/${WHEEL_FILENAME}/" \
+        -e "s/@@AGENT_PLUGINS_FILENAME@@/${AGENT_PLUGINS_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_SCHEDULER_CONFFILE@@/${PULSE_SCHEDULER_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_INVENTORY_CONFFILE@@/${PULSE_INVENTORY_CONFFILE_FILENAME}/" \
