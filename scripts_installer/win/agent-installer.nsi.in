@@ -25,6 +25,7 @@ Unicode True
 !define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
 !define KIOSK_FILENAME "@@KIOSK_FILENAME@@"
+!define WHEEL_FILENAME "@@WHEEL_FILENAME@@
 !define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
 !define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
 !define PULSE_UPDATEBACKUPCLIENT_CONFFILE "@@PULSE_UPDATEBACKUPCLIENT_CONFFILE@@"
@@ -283,6 +284,7 @@ Section "!${PRODUCT_NAME}" sec_app
   File "../${PULSE_AGENT_FILENAME}"
   File "../${AGENT_PLUGINS_FILENAME}"
   File "../${KIOSK_FILENAME}"
+  File "../${WHEEL_FILENAME}"
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
@@ -301,6 +303,8 @@ Section "!${PRODUCT_NAME}" sec_app
     Delete "$INSTDIR\bin\*.py*"
   ${EndIf}
 
+  ; Install of Medulla agent
+  StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${WHEEL_FILENAME}`
   ; Install of Medulla agent
   StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
   ${LogString} "Running $0"
