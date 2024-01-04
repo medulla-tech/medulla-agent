@@ -84,9 +84,9 @@ def action(xmppobject, action):
 def read_conf_server_tcpip_agent_machine(xmppobject):
     xmppobject.port_tcp_kiosk = 8765
     prefixe_agent = ""
-    if not hasattr(xmppobject, 'sizebufferrecv'):
+    if not hasattr(xmppobject, "sizebufferrecv"):
         xmppobject.sizebufferrecv = 1048576
-    if not hasattr(xmppobject, 'encryptionAES'):
+    if not hasattr(xmppobject, "encryptionAES"):
         xmppobject.encryptionAES = False
 
     if xmppobject.config.agenttype in ["relayserver"]:
@@ -126,12 +126,16 @@ def read_conf_server_tcpip_agent_machine(xmppobject):
                     "config local redefini paraneter tcp_ip port in section [server_tcpip]/port_tcpip"
                 )
             if Config.has_option("server_tcpip", "sizebufferrecv"):
-                xmppobject.sizebufferrecv = Config.getint("server_tcpip", "sizebufferrecv")
+                xmppobject.sizebufferrecv = Config.getint(
+                    "server_tcpip", "sizebufferrecv"
+                )
                 logger.warning(
                     "config local redefini paraneter (sizebufferrecv size) in section [server_tcpip]/sizebufferrecv"
                 )
             if Config.has_option("server_tcpip", "encryptionAES"):
-                xmppobject.sizebufferrecv = Config.getboolean("server_tcpip", "encryptionAES")
+                xmppobject.sizebufferrecv = Config.getboolean(
+                    "server_tcpip", "encryptionAES"
+                )
                 logger.warning(
                     "config local redefini paraneter boolean  encryptionAES in section [server_tcpip]/encryptionAES"
                 )
