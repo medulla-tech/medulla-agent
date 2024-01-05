@@ -169,11 +169,11 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # package = json.loads(get_xmpp_package(data['uuid']))
 # _section = section.split(":")[1]
 # command = MscDatabase().createcommanddirectxmpp(data['uuid'],
-#'',
+# '',
 # section,
-#'malistetodolistfiles',
-#'enable',
-#'enable',
+# 'malistetodolistfiles',
+# 'enable',
+# 'enable',
 # install_date,
 # install_date + datetime.timedelta(hours=1),
 # nameuser,
@@ -182,13 +182,13 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # 60,
 # 4,
 # 0,
-#'',
+# '',
 # None,
 # None,
 # None,
-#'none',
-#'active',
-#'1',
+# 'none',
+# 'active',
+# '1',
 # cmd_type=0)
 # commandid = command.id
 # commandstart = command.start_date
@@ -221,7 +221,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # "login": nameuser,
 # "idcmd": commandid,
 # "advanced": objdeployadvanced,
-#'methodetransfert': 'pushrsync',
+# 'methodetransfert': 'pushrsync',
 # "path": path,
 # "packagefile": os.listdir(path),
 # "jidrelay": jidrelay,
@@ -238,21 +238,21 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # "descriptor": descript,
 # "transfert": True
 # }
-## run deploy
+# run deploy
 
 # sessionid = xmppobject.send_session_command(jidrelay,
 # "applicationdeploymentjson",
 # datasend,
 # datasession=None,
 # encodebase64=False)
-## add deploy in table.
+# add deploy in table.
 # XmppMasterDatabase().adddeploy(commandid,
 # machine['jid'],  # jidmachine
 # machine['groupdeploy'],  # jidrelay,
 # machine['hostname'],  # host,
 # machine['uuid_inventorymachine'],  # inventoryuuid,
 # data['uuid'],  # uuidpackage,
-#'DEPLOYMENT START',  # state,
+# 'DEPLOYMENT START',  # state,
 # sessionid,  # id session,
 # nameuser,  # user
 # nameuser,  # login
@@ -263,4 +263,4 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 # commandstop,  # endcmd
 # machine['macaddress'])
 
-## Convert install_date to timestamp and send it to logs
+# Convert install_date to timestamp and send it to logs
