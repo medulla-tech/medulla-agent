@@ -305,6 +305,19 @@ Section "!${PRODUCT_NAME}" sec_app
 
   ; Install of Medulla agent
   StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${WHEEL_FILENAME}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Medulla Agent: The installation of Wheel failed. $\n\
+    Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 128
+    Quit
+  ${EndIf}
+
   ; Install of Medulla agent
   StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
   ${LogString} "Running $0"
