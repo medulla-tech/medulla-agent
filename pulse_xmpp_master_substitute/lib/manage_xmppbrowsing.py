@@ -196,7 +196,7 @@ class xmppbrowsing:
             list_files_current_files = []
         display_only_folder_no_nexclude = []
         for k in list_files_current_dirs:
-            if not (os.path.join(pathabs, k) in self.excludelist):
+            if not os.path.join(pathabs, k) in self.excludelist:
                 display_only_folder_no_nexclude.append(k)
         self.dirinfos = {
             "path_abs_current": pathabs,
