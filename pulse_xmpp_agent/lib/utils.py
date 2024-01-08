@@ -261,8 +261,8 @@ def os_version():
     if sys.platform.startswith("win"):
         pythoncom.CoInitialize()
         c = wmi.WMI()
-        for os in c.Win32_OperatingSystem():
-            os_version_name = os.Caption
+        for oses in c.Win32_OperatingSystem():
+            os_version_name = oses.Caption
     return os_version_name
 
 
