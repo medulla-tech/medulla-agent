@@ -2873,7 +2873,7 @@ class geolocalisation_agent:
     @staticmethod
     def call_simple_page_urllib(url):
         try:
-            objip = json.loads(urllib.request.urlopen(url).read())
+            objip = json.loads(urllib.request.urlopen(url))
             return objip
         except Exception:
             return None
