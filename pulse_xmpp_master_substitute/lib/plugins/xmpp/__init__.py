@@ -6051,8 +6051,6 @@ class XmppMasterDatabase(DatabaseHelper):
         step = session.execute(sql)
         session.commit()
         session.flush()
-        step
-        # return [x for x in step]
         try:
             a = []
             for t in step:
