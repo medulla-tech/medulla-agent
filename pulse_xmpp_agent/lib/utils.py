@@ -32,6 +32,10 @@ from datetime import datetime, timedelta
 import imp
 import requests
 import asyncio
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())i
+
 from concurrent.futures import ThreadPoolExecutor
 from requests.exceptions import Timeout
 import zlib
