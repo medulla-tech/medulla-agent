@@ -114,8 +114,8 @@ class resource_plugin:
                         self.resource[nameresource]["argv"],
                         self.resource[nameresource]["kwargs"],
                     )
-                    # la resource doit etre supprimer
-                    self.resource[nameresource]
+                    # The ressource needs to be deleted.
+                    del self.resource[nameresource]
                 elif self.resource[nameresource]["typeaction"] == "call_plugin":
                     datasend = {
                         "action": self.resource[nameresource]["plugin_name"],

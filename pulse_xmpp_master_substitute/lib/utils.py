@@ -3182,7 +3182,7 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
             os.makedirs(base_file)
         except OSError:
             if not os.path.isdir(base_file):
-                Raise
+                raise
         # os.makedirs(base_file, exist_ok=True)
         res = simplecommand("wget --connect-timeout=20 '%s'" % sys.argv[1])
         if res["code"] == 0:
