@@ -7,14 +7,8 @@ import sys
 import signal
 from optparse import OptionParser
 
-if sys.version_info[0] < 3:
-    import Tkinter as tk  ## Python 2.x
-    from Tkinter import *
-    import ttk
-    import tkMessageBox
-else:
-    import tkinter as tk  ## Python 3.x
-    from PIL import Image, ImageTk
+import tkinter as tk
+from PIL import Image, ImageTk
 
 import subprocess
 
@@ -184,15 +178,14 @@ class dialogboxnotification:
             wraplength=400,
         ).pack()
 
-        if sys.version_info[0] >= 3:
-            # Create a photoimage object of the image in the path
-            medullaLogoLocation = Image.open("Image3.png")
-            medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
+        # Create a photoimage object of the image in the path
+        medullaLogoLocation = Image.open("Image3.png")
+        medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
 
-            Medullalabel = tk.Label(image=medullaLogo, bg="#25607d")
-            Medullalabel.image = medullaLogo
+        Medullalabel = tk.Label(image=medullaLogo, bg="#25607d")
+        Medullalabel.image = medullaLogo
 
-            Medullalabel.place(x=15, y=12)
+        Medullalabel.place(x=15, y=12)
 
         self.root.update_idletasks()
         # Remove window decorations
