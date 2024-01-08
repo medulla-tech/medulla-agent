@@ -15,9 +15,13 @@ from slixmpp.xmlstream.matcher.xpath import MatchXPath
 from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
 from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
 import slixmpp
-import asyncio
-import sys
+import sys              
 import os
+import asyncio
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 from os import listdir
 from os.path import isfile, join
 import logging

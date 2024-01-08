@@ -16,6 +16,10 @@ from pulse_xmpp_agent.lib.utils import (
     DateTimebytesEncoderjson,
 )
 import asyncio
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 import datetime
 import time
 

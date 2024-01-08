@@ -1,32 +1,17 @@
-# -*- coding: utf-8 -*-
-#
-# (c) 2016-2020 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-#
-# plugin register machine dans presence table xmpp.
-# file pluginsmastersubstitute/plugin___server_mmc_master.py
-# Ce serveur est implementer par plugin
-# Il permet les conexion ipv6/ipv4
-# son fichier de configuration s'auto genere au premier lancement si il n'existe pas.
-# file /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini
-# ce serveur sera l'interface entre les instances de mmcs et les different acteur xmppmaster.(Extensible Messaging and Presence Protocol)
+#!/usr/bin/python3
+# -*- coding: utf-8; -*-
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
+"""
+ plugin register machine dans presence table xmpp.
+ file pluginsmastersubstitute/plugin___server_mmc_master.py
+ Ce serveur est implementer par plugin
+ Il permet les conexion ipv6/ipv4
+ son fichier de configuration s'auto genere au premier lancement si il n'existe pas.
+ file /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini
+ ce serveur sera l'interface entre les instances de mmcs et les different acteur xmppmaster.(Extensible Messaging and Presence Protocol)
+"""
 
 import ssl
 import socket
@@ -62,6 +47,10 @@ import ipaddress
 import inspect
 
 import asyncio
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 from slixmpp import ClientXMPP
 import xml.etree.ElementTree as ET
 
