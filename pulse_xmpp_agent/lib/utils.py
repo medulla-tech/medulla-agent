@@ -1723,8 +1723,7 @@ def subnetnetwork(adressmachine, mask):
 def searchippublic(site=1):
     if site == 1:
         try:
-            page = urllib.urlopen("http://ifconfig.co/json").read()
-            objip = json.loads(page)
+            objip = json.loads(urllib.urlopen("http://ifconfig.co/json"))
             return objip["ip"] if is_valid_ipv4(objip["ip"]) else searchippublic(2)
         except BaseException:
             return searchippublic(2)
@@ -3797,7 +3796,7 @@ class geolocalisation_agent:
     def call_simple_page_urllib(url):
         try:
             result = urllib2.urlopen(url, timeout=5)
-            objip = json.loads(result.read())
+            objip = json.loads(result)
             if result.getcode() != 200:
                 raise
             return objip
