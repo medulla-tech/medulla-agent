@@ -30,7 +30,7 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = { "VERSION": "5.40", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all" }  # fmt: skip
+plugin = {"VERSION": "5.40", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()

@@ -10,7 +10,7 @@ import logging
 import sys
 import traceback
 
-plugin = { "VERSION": "1.1", "NAME": "scheduling_deploy", "TYPE": "all", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "scheduling_deploy", "TYPE": "all", "SCHEDULED": True}  # fmt: skip
 
 # nb  -1 infinie
 SCHEDULE = {"schedule": "*/15 * * * *", "nb": -1}
