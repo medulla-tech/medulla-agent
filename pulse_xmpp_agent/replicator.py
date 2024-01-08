@@ -54,7 +54,7 @@ def copytree2(src, dst, symlinks=False):
             elif not srcname.endswith(".pyc"):
                 shutil.copy2(srcname, dstname)
                 # XXX What about devices, sockets etc.?
-        except (IOError, os.error) as why:
+        except IOError as why:
             errors.append((srcname, dstname, str(why)))
         except Exception as err:
             errors.extend(err.args[0])
