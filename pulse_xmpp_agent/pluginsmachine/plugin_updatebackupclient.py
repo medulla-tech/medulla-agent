@@ -115,7 +115,7 @@ def backupclientsettings(xmppobject):
                 logger.info("Settings successfully applied to client %s" % (hostname))
             else:
                 logger.error(
-                    "Error applying settings: %s" % (filename, cmd_result["result"])
+                    "Error applying settings: %s in %s" % (filename, cmd_result["result"])
                 )
         else:
             logger.error("Urbackup filename %s does not exist" % filename)
