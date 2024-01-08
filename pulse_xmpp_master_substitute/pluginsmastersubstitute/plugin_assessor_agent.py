@@ -1179,7 +1179,7 @@ def read_conf_assessor(objectxmpp):
                     objectxmpp.assessor_agent_errorconf = True
             else:
                 logger.error("default value parameter [port] 5222")
-                objectxmpp.assessor_agent_port == "5222"
+                objectxmpp.assessor_agent_port = "5222"
 
             if Config.has_option("parameters", "guacamole_baseurl"):
                 objectxmpp.assessor_agent_baseurlguacamole = Config.get(

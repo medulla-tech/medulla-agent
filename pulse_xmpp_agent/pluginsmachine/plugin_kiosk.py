@@ -135,7 +135,7 @@ def send_kiosk_data(
                 objectxmpp.send_message(
                     mto=message["from"], mbody=json.dumps(dataerror), mtype="chat"
                 )
-                objectxmpp.kiosk_presence == "False"
+                objectxmpp.kiosk_presence = "False"
 
             else:
                 logger.warning("Kiosk is not listen: verify presence kiosk")
@@ -153,11 +153,11 @@ def send_kiosk_data(
                     objectxmpp.send_message(
                         mto=message["from"], mbody=json.dumps(dataerror), mtype="chat"
                     )
-                    objectxmpp.kiosk_presence == "False"
+                    objectxmpp.kiosk_presence = "False"
     except Exception as e:
         logger.error("Socket to kiosk can't be established")
         if objectxmpp is not None:
-            objectxmpp.kiosk_presence == "False"
+            objectxmpp.kiosk_presence = "False"
 
     finally:
         sock.close()
