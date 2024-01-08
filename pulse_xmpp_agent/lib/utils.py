@@ -3830,7 +3830,7 @@ class geolocalisation_agent:
             r = requests.get(url)
             if r.status_code > 299:
                 logger.warning(
-                    "url localisation %s code error is " % (url, r.status_code)
+                    "url localisation %s code error is %s" % (url, r.status_code)
                 )
                 return None
             result = r.json()
