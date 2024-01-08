@@ -11,10 +11,14 @@ from slixmpp import jid
 import types
 from lib.plugins.xmpp import XmppMasterDatabase
 import os
+import sys
 import time
 from lib.utils import file_put_contents, simplecommandstr
 import configparser
 import asyncio
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 try:
     from lib.stat import statcallplugin
