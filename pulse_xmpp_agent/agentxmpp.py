@@ -118,7 +118,7 @@ from slixmpp.xmlstream.matcher.id import MatcherId
 from slixmpp.xmlstream.matcher.base import MatcherBase
 import asyncio
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 if sys.platform.startswith("win"):

@@ -40,7 +40,7 @@ import tarfile
 import string
 import asyncio as aio
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     aio.set_event_loop_policy(aio.WindowsSelectorEventLoopPolicy())
 
 import gzip
