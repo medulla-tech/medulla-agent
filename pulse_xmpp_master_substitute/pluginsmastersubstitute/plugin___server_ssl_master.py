@@ -14,7 +14,7 @@ import logging
 from lib.utils import name_random
 import asyncio
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 import datetime
