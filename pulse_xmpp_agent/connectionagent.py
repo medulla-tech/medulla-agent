@@ -13,7 +13,7 @@ from slixmpp.xmlstream.stanzabase import ET
 import slixmpp
 import asyncio
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 import shutil
