@@ -1002,7 +1002,6 @@ class MUCBot(slixmpp.ClientXMPP):
                             ret = base64.b64decode(bytes(z.tag[1:-5], "utf-8"))
                             quposix.send(ret, 2)
                             logger.debug("Result inject to %s" % (queue))
-                            return ret
                             try:
                                 strdatajson = base64.b64decode(
                                     bytes(z.tag[1:-5], "utf-8")
