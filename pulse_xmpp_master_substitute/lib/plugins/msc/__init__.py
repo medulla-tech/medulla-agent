@@ -423,7 +423,6 @@ class MscDatabase(DatabaseHelper):
             cmd_type=0,
         )
         return obj
-        session.close()
 
     def createCommand(
         self,
