@@ -222,6 +222,8 @@ class MUCBot(ClientXMPP):
                 logger.error(
                     f"The {keyerror} key is missing in your syncthing config file"
                 )
+                informationerror = traceback.format_exc()
+                logger.error("\n%s" % informationerror)
                 confsyncthing = {
                     "action": "resultconfsyncthing",
                     "sessionid": getRandomName(6, "confsyncthing"),
