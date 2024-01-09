@@ -10,11 +10,11 @@ import tempfile
 import os
 import socket
 
-URBACKUP_VERSION = "2.5.24"
+URBACKUP_VERSION = "2.5.25"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatebackupclient", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "updatebackupclient", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
