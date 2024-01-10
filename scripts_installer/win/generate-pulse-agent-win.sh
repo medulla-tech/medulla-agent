@@ -56,15 +56,15 @@ PyNaCl-1.5.0-cp36-abi3-win_amd64.whl \
 comtypes-1.1.14-py2.py3-none-any.whl \
 paramiko-3.1.0-py3-none-any.whl \
 pytz-2023.3-py2.py3-none-any.whl \
-PyQt6-6.5.0-cp37-abi3-win_amd64.whl \
+PyQt6-6.6.1-cp38-abi3-win_amd64.whl  \
 croniter-1.3.14-py2.py3-none-any.whl \
 pathlib-1.0.1-py3-none-any.whl \
 pywin32-306-cp311-cp311-win_amd64.whl \
-PyQt6_Qt6-6.5.0-py3-none-win_amd64.whl \
+PyQt6_Qt6-6.6.1-py3-none-win_amd64.whl \
 cryptography-41.0.2-cp37-abi3-win_amd64.whl \
 ply-3.11-py2.py3-none-any.whl \
 repoze.lru-0.7-py3-none-any.whl \
-PyQt6_sip-13.5.1-cp311-cp311-win_amd64.whl \
+PyQt6_sip-13.6.0-cp311-cp311-win_amd64.whl \
 ecdsa-0.18.0-py2.py3-none-any.whl \
 portend-3.1.0-py3-none-any.whl \
 requests-2.28.2-py3-none-any.whl \
@@ -75,7 +75,7 @@ simplejson-3.19.1-py3-none-any.whl \
 WMI-1.5.1-py2.py3-none-any.whl \
 inflect-6.0.4-py3-none-any.whl \
 pyasn1-0.5.0-py2.py3-none-any.whl \
-sip-6.7.9-cp37-abi3-win_amd64.whl \
+sip-6.8.1-py3-none-any.whl \
 WebOb-1.8.7-py2.py3-none-any.whl \
 jaraco.classes-3.2.3-py3-none-any.whl \
 pyasn1_modules-0.3.0-py2.py3-none-any.whl \
