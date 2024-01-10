@@ -1431,7 +1431,7 @@ class grafcet:
                 f'end error in action_command_natif_shell step {self.workingstep["step"]}',
             )
             self.objectxmpp.xmpplog(
-                "[%s]-[%s]: Error action_command_natif_shell : %s"
+                "[%s]-[%s]: Error action_command_natif_shell"
                 % (self.data["name"], self.workingstep["step"]),
                 type="deploy",
                 sessionname=self.sessionid,
@@ -2008,7 +2008,7 @@ class grafcet:
                 f'end error in actionrestart {self.workingstep["targetrestart"]} step {self.workingstep["step"]}',
             )
             self.__affiche_message(
-                "[%s]-[%s]: Error actionrestart : %s"
+                "[%s]-[%s]: Error actionrestart"
                 % (self.data["name"], self.workingstep["step"]),
                 module="Deployment | Error | Execution",
             )
