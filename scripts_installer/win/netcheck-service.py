@@ -14,6 +14,8 @@ import os
 import logging
 import logging.handlers
 import urllib.request
+from pulse_xmpp_agent.lib import utils
+
 
 # to had event log, do not remove
 # https://stackoverflow.com/questions/51385195/writing-to-windows-event-log-using-win32evtlog-from-pywin32-library
@@ -50,25 +52,6 @@ formatter = logging.Formatter(
 )
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-
-
-def file_get_contents(filename, use_include_path=0, context=None, offset=-1, maxlen=-1):
-    if filename.find("://") > 0:
-        ret = urllib.request.urlopen(filename).read()
-        if offset > 0:
-            ret = ret[offset:]
-        if maxlen > 0:
-            ret = ret[:maxlen]
-        return ret
-    else:
-        fp = open(filename, "rb")
-        try:
-            if offset > 0:
-                fp.seek(offset)
-            ret = fp.read(maxlen)
-            return ret
-        finally:
-            fp.close()
 
 
 class SMWinservice(win32serviceutil.ServiceFramework):
@@ -153,7 +136,7 @@ class PulseAgentService(SMWinservice):
         for pidprog in self.listnamefilepid:
             pidfile = os.path.join(program_dir, pidprog)
             if os.path.isfile(pidfile):
-                pid = file_get_contents(pidfile)
+                pid = utils.file_get_contents(pidfile)
                 cmd = "taskkill /PID %s /F" % pid
                 try:
                     os.system(cmd)
