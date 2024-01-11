@@ -7,7 +7,7 @@ import os
 import json
 from lib.utils import set_logging_level
 
-plugin = {"VERSION": "1.1", "NAME": "disable_rescue", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "enable_rescue", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 
@@ -20,11 +20,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     namefilebool = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         "..",
-        "BOOL_DISABLE_RESCUE",
+        "BOOL_ENABLE_RESCUE",
     )
     file = open(namefilebool, "w")
     file.close()
-    msg = "QA : Disabling rescue agent"
+    msg = "QA : Enabling rescue agent"
     logger.debug(msg)
     objectxmpp.xmpplog(
         msg,
