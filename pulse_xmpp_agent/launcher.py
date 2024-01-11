@@ -1233,7 +1233,7 @@ if __name__ == "__main__":
         "--check",
         dest="check_agent",
         action="store_false",
-        default=True,
+        default=False,
         help="deactive les controles process",
     )
 
@@ -1290,23 +1290,25 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    # This Bool file allow to deactivate the rescue client
-    BOOL_SUPPORT_CHECK_AGENT = os.path.join(filePath, "BOOL_DISABLE_RESCUE")
-    if os.path.exists(BOOL_SUPPORT_CHECK_AGENT):
-        logger.debug("file BOOL_SUPPORT_CHECK_AGENT exist")
+    # This bool file allow to enable the rescue client
+    BOOL_ENABLE_RESCUE = os.path.join(filePath, "BOOL_ENABLE_RESCUE")
+
+    if os.path.exists(BOOL_ENABLE_RESCUE):
         opts.check_agent = True
+
     namefileconfig = conffilename(opts.typemachine)
+
     if not os.path.isfile(namefileconfig):
-        # The pulseagent config file is missing. We need to reinstall the rescue.
-        logger.debug(
+        # The Medulla agent config file is missing. We need to reinstall the rescue.
+        logger.info(
             "The configuration file %s is missing. Trying to reinstall the rescue agent."
             % namefileconfig
         )
-        if not opts.check_agent:
+        if opts.check_agent:
             ret = install_rescue_image().reinstall_agent_rescue()
         else:
-            logger.warning(
-                "BOOL_DISABLE_RESCUE is set. Processes will not be monitored"
+            logger.debug(
+                "The medulla rescue agent is disabled."
             )
 
     # first start network changed
@@ -1322,11 +1324,11 @@ if __name__ == "__main__":
         if testconfigurable:
             needreconfiguration = True
         else:
-            if not opts.check_agent:
+            if opts.check_agent:
                 ret = install_rescue_image().reinstall_agent_rescue()
             else:
-                logger.warning(
-                    "BOOL_DISABLE_RESCUE is set. Processes will not be monitored"
+                logger.debug(
+                    "Medulla rescue agent is disabled"
                 )
 
     if networkchanged:
