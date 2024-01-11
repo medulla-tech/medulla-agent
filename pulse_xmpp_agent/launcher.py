@@ -1291,7 +1291,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # This Bool file allow to deactivate the rescue client
-    BOOL_SUPPORT_CHECK_AGENT = os.path.join(filePath, "BOOL_LAUNCHER_NO_CHECK_AGENT")
+    BOOL_SUPPORT_CHECK_AGENT = os.path.join(filePath, "BOOL_DISABLE_RESCUE")
     if os.path.exists(BOOL_SUPPORT_CHECK_AGENT):
         logger.debug("file BOOL_SUPPORT_CHECK_AGENT exist")
         opts.check_agent = True
@@ -1306,7 +1306,7 @@ if __name__ == "__main__":
             ret = install_rescue_image().reinstall_agent_rescue()
         else:
             logger.warning(
-                "BOOL_LAUNCHER_NO_CHECK_AGENT is set. Processes will not be monitored"
+                "BOOL_DISABLE_RESCUE is set. Processes will not be monitored"
             )
 
     # first start network changed
@@ -1326,7 +1326,7 @@ if __name__ == "__main__":
                 ret = install_rescue_image().reinstall_agent_rescue()
             else:
                 logger.warning(
-                    "BOOL_LAUNCHER_NO_CHECK_AGENT is set. Processes will not be monitored"
+                    "BOOL_DISABLE_RESCUE is set. Processes will not be monitored"
                 )
 
     if networkchanged:
@@ -1483,7 +1483,7 @@ if __name__ == "__main__":
                         )
                     else:
                         logger.warning(
-                            "BOOL_LAUNCHER_NO_CHECK_AGENT is set. Processes will not be monitored"
+                            "BOOL_DISABLE_RESCUE is set. Processes will not be monitored"
                         )
                         logger.warning("Creation of rescue image.")
                         rescue_image = create_rescue_agent().save_rescue_src()
