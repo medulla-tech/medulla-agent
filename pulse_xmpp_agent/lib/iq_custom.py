@@ -693,33 +693,14 @@ class iq_custom_xep:
             logger.error(f"{traceback.format_exc()}")
 
     def iq_send(self):
-        logger.debug("#############################################################")
-        logger.debug("####################### iq_send #######################")
-        logger.debug("#############################################################")
-        logger.debug(
-            f"#############################################################{self.iq} "
-        )
-
         if not self.iq:
-            logger.debug("######################BYBYBY########################")
             return '{"error" : "initialisation erreur"}'
         timeoutloop = float(self.timeout + 5)
-        logger.debug("#############################################################")
-        logger.debug("####################### send #######################")
-        logger.debug("#############################################################")
-
-        logger.debug(f" iq class {self.iq.__class__.__name__}  ")
-
         self.iq.send(
             callback=self.on_response,
             timeout=int(self.timeout),
             timeout_callback=self.on_timeout,
         )
-        logger.debug("#############################################################")
-        logger.debug(
-            f"####################### send ####################### {self.on_timeout}"
-        )
-        logger.debug("#############################################################")
         while True:
             if not timeoutloop:
                 er = f'IQ type get id [{self.iq["id"]}] to [{self.iq["to"]}] in Timeout'
@@ -727,26 +708,13 @@ class iq_custom_xep:
                 return self.result_iq
             timeoutloop = timeoutloop - 0.5
             if self.fin:
-                logger.debug(
-                    "#############################################################"
-                )
-                logger.debug(
-                    "####################### termine on fin #######################"
-                )
-                logger.debug(
-                    "#############################################################"
-                )
                 break
             time.sleep(0.5)
-            logger.debug(f"timrout {timeoutloop}")
-        # la reponse
         self.reponse_iq = self.iq
         return self.result_iq
 
     def on_response(self, reponse_iq):
-        logger.debug("#############################################################")
         logger.debug(f'on_response iq id {reponse_iq["iq"]} from {reponse_iq["from"]}')
-        logger.debug("#############################################################")
         self.result_iq = {"error": "on_response"}
         try:
             self.reponse_iq = reponse_iq
