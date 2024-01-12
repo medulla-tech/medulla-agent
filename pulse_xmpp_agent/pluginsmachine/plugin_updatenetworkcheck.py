@@ -205,6 +205,13 @@ def updatenetworkcheck(xmppobject):
             # Run installer
             querycmd = "sc query medullanetnotify"
             querycmd_result = utils.simplecommand(querycmd)
+            # We need to have a copy of pythonservices named based on _exe_name_
+            if not os.path.isfile(os.path.join(win32_path, "medullanetnotify.exe")):
+                shutil.copyfile(
+                    os.path.join(win32_path, "pythonservices.exe"),
+                    os.path.join(win32_path, "medullanetnotify.exe"),
+                )
+
             if querycmd_result["code"] != 0:
                 servicecmd = '%s "%s\\%s" --startup=auto install' % (
                     utils.get_python_executable_console(),
