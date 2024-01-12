@@ -22,6 +22,7 @@ Unicode True
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
 
 !define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
+!define PULSE_AGENT_CONFFILE_TPL "@@PULSE_AGENT_CONFFILE_TPL@@"
 !define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
 !define KIOSK_FILENAME "@@KIOSK_FILENAME@@"
@@ -352,6 +353,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ClearErrors
   SetOutPath "$INSTDIR\etc"
   File "../config/${PULSE_AGENT_CONFFILE}"
+  File "../config/${PULSE_AGENT_CONFFILE_TPL}"
   ; Copy of agent scheduler config file only if it does not already exist (using overwrite flag)
   SetOutPath "$INSTDIR\etc"
   SetOverwrite off
