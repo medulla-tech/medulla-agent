@@ -1307,9 +1307,7 @@ if __name__ == "__main__":
         if opts.check_agent:
             ret = install_rescue_image().reinstall_agent_rescue()
         else:
-            logger.debug(
-                "The medulla rescue agent is disabled."
-            )
+            logger.debug("The medulla rescue agent is disabled.")
 
     # first start network changed
     networkchanged = networkchanged()
@@ -1327,9 +1325,7 @@ if __name__ == "__main__":
             if opts.check_agent:
                 ret = install_rescue_image().reinstall_agent_rescue()
             else:
-                logger.debug(
-                    "Medulla rescue agent is disabled"
-                )
+                logger.debug("Medulla rescue agent is disabled")
 
     if networkchanged:
         logger.debug("We detected modifications in the network configuration.")
@@ -1444,17 +1440,23 @@ if __name__ == "__main__":
                                     logger.info(
                                         "We are saving the current agent into the rescue copy."
                                     )
-                                    rescue_image = create_rescue_agent().save_rescue_src()
+                                    rescue_image = (
+                                        create_rescue_agent().save_rescue_src()
+                                    )
                                     update_rescue_on_stabilisation = True
-                                    logger.info("The copy of the rescue agent is finished.")
+                                    logger.info(
+                                        "The copy of the rescue agent is finished."
+                                    )
                                 except:
                                     logger.error(
                                         "We hit a backtrace when saving the rescue agent \n %s"
                                         % traceback.format_exc()
                                     )
                             else:
-                                logger.debug("The rescue agent is disabled. \n"
-                                             "We will not create an image")
+                                logger.debug(
+                                    "The rescue agent is disabled. \n"
+                                    "We will not create an image"
+                                )
                         else:
                             logger.error(
                                 "We cannot save the rescue copy. Something went wrong."
