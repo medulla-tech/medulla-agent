@@ -1430,36 +1430,36 @@ if __name__ == "__main__":
                     res = "".join(re)
                     logger.debug("\n%s" % res)
 
-            if (countcycle % 18) == 0:  # Every 180 seconds
+            if (countcycle % 18) == 0:
                 ProcessData.display_Process()
                 if os.path.isfile(BOOL_FILE_CONTROL_WATCH_DOG):
                     data_file = file_get_contents(BOOL_FILE_CONTROL_WATCH_DOG)
-                    # No problems found. We remove the Watchdog file.
                     os.remove(BOOL_FILE_CONTROL_WATCH_DOG)
                     if not update_rescue_on_stabilisation and os.path.isfile(
                         namefileconfig
                     ):
                         if testagentconf(opts.typemachine):
-                            try:
-                                logger.info(
-                                    "We are saving the current agent into the rescue copy."
-                                )
-                                rescue_image = create_rescue_agent().save_rescue_src()
-                                update_rescue_on_stabilisation = True
-                                logger.info("The copy of the rescue agent is finished.")
-                            except:
-                                logger.error(
-                                    "We hit a backtrace when saving the rescue agent \n %s"
-                                    % traceback.format_exc()
-                                )
+                            if opts.check_agent:
+                                try:
+                                    logger.info(
+                                        "We are saving the current agent into the rescue copy."
+                                    )
+                                    rescue_image = create_rescue_agent().save_rescue_src()
+                                    update_rescue_on_stabilisation = True
+                                    logger.info("The copy of the rescue agent is finished.")
+                                except:
+                                    logger.error(
+                                        "We hit a backtrace when saving the rescue agent \n %s"
+                                        % traceback.format_exc()
+                                    )
+                            else:
+                                logger.debug("The rescue agent is disabled. \n"
+                                             "We will not create an image")
                         else:
                             logger.error(
                                 "We cannot save the rescue copy. Something went wrong."
                             )
                 else:
-                    # probleme sur agent. reinstalle rescue
-                    # We stop the agent.
-
                     if opts.check_agent:
                         ProcessData.stop_process_agent()
                         logger.debug(
