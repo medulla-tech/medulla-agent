@@ -19,6 +19,7 @@ import subprocess
 import psutil
 import random
 import hashlib
+import configparser
 from lib.manageresourceplugin import resource_plugin
 import imp
 import cherrypy
@@ -4325,7 +4326,17 @@ if __name__ == "__main__":
     )
 
     opts, args = optp.parse_args()
-    tg = confParameter(opts.typemachine)
+
+    try:
+        tg = confParameter(opts.typemachine)
+    except configparser.NoSectionError:
+        if opts.typemachine.lower() in ["machine"] and os.path.exists(conffilename(opts.typemachine.lower())+ ".tpl"):
+            logger.error("The agentconf.ini file does not exist. We add the template file")
+            shutil.copy(conffilename(opts.typemachine.lower()) + ".tpl", conffilename(opts.typemachine.lower()))
+            sys.exit(0)
+    except Exception as e:
+        logger.error(str(e))
+
     # termine ssh reverse
     if sys.platform.startswith("win"):
         searchreversesshprocess = os.path.join("c:\\", "progra~1", "Pulse", "bin")

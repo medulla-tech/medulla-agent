@@ -12,7 +12,7 @@ from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp.xmlstream.stanzabase import ET
 import slixmpp
 import asyncio
-
+import configparser
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -1080,8 +1080,14 @@ if __name__ == "__main__":
 
     opts, args = optp.parse_args()
 
-    print(opts.typemachine)
-    tg = confParameter(opts.typemachine)
+    try:
+        tg = confParameter(opts.typemachine)
+    except configparser.NoSectionError:
+        if opts.typemachine.lower() in ["machine"] and os.path.exists(conffilename(opts.typemachine.lower())):
+            logger.error("The agentconf.ini file does not exist. We add the template file")
+            shutil.copy(conffilename(opts.typemachine.lower()) + ".tpl", conffilename(opts.typemachine.lower()))
+    except Exception as e:
+        logger.error(str(e))
 
     mfile = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "DEBUG_CONNECTION_AGENT"
