@@ -702,8 +702,6 @@ class confParameter:
             self.confpassword = Config.get("configuration_server", "confpassword")
         if Config.has_option("configuration_server", "keyAES32"):
             self.keyAES32 = Config.get("configuration_server", "keyAES32")
-        else:
-            self.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
 
         try:
             self.baseurlguacamole = Config.get("type", "guacamole_baseurl")
