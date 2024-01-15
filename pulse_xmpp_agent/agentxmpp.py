@@ -4330,9 +4330,16 @@ if __name__ == "__main__":
     try:
         tg = confParameter(opts.typemachine)
     except configparser.NoSectionError:
-        if opts.typemachine.lower() in ["machine"] and os.path.exists(conffilename(opts.typemachine.lower())+ ".tpl"):
-            logger.error("The agentconf.ini file does not exist. We add the template file")
-            shutil.copy(conffilename(opts.typemachine.lower()) + ".tpl", conffilename(opts.typemachine.lower()))
+        if opts.typemachine.lower() in ["machine"] and os.path.exists(
+            conffilename(opts.typemachine.lower()) + ".tpl"
+        ):
+            logger.error(
+                "The agentconf.ini file does not exist. We add the template file"
+            )
+            shutil.copy(
+                conffilename(opts.typemachine.lower()) + ".tpl",
+                conffilename(opts.typemachine.lower()),
+            )
             sys.exit(0)
     except Exception as e:
         logger.error(str(e))
