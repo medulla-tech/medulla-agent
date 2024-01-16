@@ -99,7 +99,7 @@ class confParameter:
                 Config.get("global", "log_level_slixmpp")
             )
         except BaseException:
-             # Set to FATAL as default
+            # Set to FATAL as default
             self.log_level_slixmpp = 50
 
         self.logfile = "/var/log/mmc/master_inv.log"
