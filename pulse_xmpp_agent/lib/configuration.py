@@ -743,7 +743,7 @@ class confParameter:
                 Config.get("global", "log_level_slixmpp")
             )
         except BaseException:
-             # Set to FATAL as default
+            # Set to FATAL as default
             self.log_level_slixmpp = 50
 
         if Config.has_option("configuration_server", "confdomain"):
