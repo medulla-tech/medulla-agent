@@ -1136,6 +1136,80 @@ def programfilepath(pathwindows):
     return disk + "\\\\".join(result)
 
 
+def isValidAgentconfIni(agenttype):
+    """
+    This function tests sections/keys of agentconf.ini to see if
+    mandatory informations are missing
+
+    Returns:
+        It returns True if the mandatory sections are present
+                   False otherwise
+    """
+    if agenttype == "machine":
+        config = configparser.ConfigParser()
+        namefileconfig = conffilename("machine")
+
+        if not os.path.exists(namefileconfig)
+            return False
+
+        config.read(namefileconfig)
+
+        mandatory_sections = [
+            "global",
+            "type",
+            "configuration_server",
+            "plugin",
+            "connection",
+            "chat",
+            "substitute",
+        ]
+
+        mandatory_configuration_server_options = [
+            "confserver",
+            "confport",
+            "confpassword",
+            "keyaes32",
+        ]
+        mandatory_connection_options = [
+            "server",
+            "port",
+            "password",
+        ]
+
+        for section in mandatory_sections:
+            if not config.has_section(section):
+                return False
+
+            match section:
+                case "global":
+                    if not config.has_option("global", "relayserver_agent"):
+                        return False
+                case "type":
+                    if not config.has_option(
+                        "type", "agent_type"
+                    ) or not config.has_option("type", "guacamole_baseurl"):
+                        return False
+                case "configuration_server":
+                    for (
+                        configuration_server_option
+                    ) in mandatory_configuration_server_options:
+                        if not config.has_option(
+                            "configuration_server", configuration_server_option
+                        ):
+                            return False
+                case "plugins":
+                    if not config.has_option("plugins", "pluginlist"):
+                        return False
+                case "connection":
+                    for connection_option in mandatory_connection_options:
+                        if not config.has_option("connection", connection_option):
+                            return False
+                case "chat":
+                    if not config.has_option("chat", "domain"):
+                        return False
+        return True
+
+
 def start_agent(pathagent, agent="connection", console=False, typeagent="machine"):
     pythonexec = programfilepath(psutil.Process().exe())
     agentfunction = os.path.join(pathagent, "connectionagent.py")
@@ -1175,6 +1249,16 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
 if __name__ == "__main__":
     start_time = datetime.now()
     ProcessData = global_data_process()
+
+    if not isValidAgentconfIni("machine"):
+        if os.path.exists(conffilename("machine") + ".tpl"):
+            logger.error(
+                "The agentconf.ini file is incorrect. We will use the template file."
+            )
+            shutil.copy(
+                conffilename("machine") + ".tpl",
+                conffilename("machine"),
+            )
 
     directory_file = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP"

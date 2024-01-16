@@ -84,6 +84,96 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
         Config.write(configfile)
 
 
+def isValidAgentconfIni(agenttype):
+    """
+    This function tests sections/keys of agentconf.ini to see if
+    mandatory informations are missing
+
+    Returns:
+        It returns True if the mandatory sections are present
+                   False otherwise
+    """
+
+    if agenttype == "machines":
+        Config = configparser.ConfigParser()
+        namefileconfig = conffilename("machine")
+
+        if not os.path.exists(namefileconfig)
+            return False
+
+        Config.read(namefileconfig)
+
+        mandatory_sections = [
+            "global",
+            "type",
+            "configuration_server",
+            "plugin",
+            "connection",
+            "chat",
+            "substitute",
+        ]
+
+        mandatory_configuration_server_options = [
+            "confserver",
+            "confport",
+            "confpassword",
+            "keyaes32",
+        ]
+        mandatory_connection_options = [
+            "server",
+            "port",
+            "password",
+        ]
+
+        mandatory_substitute_options = [
+            "registration",
+            "inventory",
+            "assessor",
+            "subscription",
+            "logger",
+            "monitoring",
+            "updates",
+            "deployment",
+        ]
+
+        for section in mandatory_sections:
+            if not config.has_section(section):
+                return False
+
+            match section:
+                case "global":
+                    if not config.has_option("global", "relayserver_agent"):
+                        return False
+                case "type":
+                    if not config.has_option("type", "agent_type") or config.has_option(
+                        "type", "guacamole_baseurl"
+                    ):
+                        return False
+                case "configuration_server":
+                    for (
+                        configuration_server_option
+                    ) in mandatory_configuration_server_options:
+                        if not config.has_option(
+                            "configuration_server", configuration_server_option
+                        ):
+                            return False
+                case "plugins":
+                    if not config.has_option("plugins", "pluginlist"):
+                        return False
+                case "connection":
+                    for connection_option in mandatory_connection_options:
+                        if not config.has_option("connection", connection_option):
+                            return False
+                case "chat":
+                    if not config.has_option("chat", "domain"):
+                        return False
+                case "substitute":
+                    for substitute_option in mandatory_substitute_options:
+                        if not config.has_option("substitute", substitute_option):
+                            return False
+        return True
+
+
 def alternativeclusterconnection(conffile, data):
     """
     This function allow to add a alternative cluster.
@@ -336,12 +426,15 @@ class confParameter:
         self.nameplugindir = os.path.dirname(namefileconfig)
         self.namefileconfig = namefileconfig
         # parameters AM and kiosk tcp server
-        self.am_local_port = 8765
-        self.kiosk_local_port = 8766
-        if Config.has_option("kiosk", "am_local_port"):
+        try:
             self.am_local_port = Config.getint("kiosk", "am_local_port")
-        if Config.has_option("kiosk", "kiosk_local_port"):
+        except BaseException:
+            self.am_local_port = 8765
+
+        try:
             self.kiosk_local_port = Config.getint("kiosk", "kiosk_local_port")
+        except BaseException:
+            self.kiosk_local_port = 8766
 
         self.sub_inventory = ["master_inv@pulse"]
         self.sub_subscribe = ["master_subs@pulse"]
@@ -436,9 +529,9 @@ class confParameter:
         if Config.has_option("syncthing-deploy", "syncthing_home"):
             self.syncthing_home = Config.get("syncthing-deploy", "syncthing_home")
 
-        if Config.has_option("syncthing", "activation"):
+        try:
             self.syncthing_on = Config.getboolean("syncthing", "activation")
-        else:
+        except BaseException:
             self.syncthing_on = True
 
         if self.syncthing_on:
@@ -446,31 +539,32 @@ class confParameter:
         else:
             logger.debug("Syncthing have not been activated by configuration.")
 
-        self.moderelayserver = "static"
-        if Config.has_option("type", "moderelayserver"):
+        try:
             self.moderelayserver = Config.get("type", "moderelayserver")
+        except BaseException:
+            self.moderelayserver = "static"
 
-        if Config.has_option("updateagent", "updatingplugins"):
+        try:
             self.updatingplugins = Config.getboolean("updateagent", "updatingplugins")
-        else:
+        except BaseException:
             self.updatingplugins = 1
 
-        if Config.has_option("updateagent", "updating"):
-            self.updating = Config.getboolean("updateagent", "updating")
-        else:
+        try:
+            self.updating = config.getboolean("updateagent", "updating")
+        except BaseException:
             self.updating = 1
 
-        if Config.has_option("networkstatus", "netchanging"):
+        try:
             self.netchanging = Config.getint("networkstatus", "netchanging")
-        else:
+        except BaseException:
             if sys.platform.startswith("win"):
                 self.netchanging = 0
             else:
                 self.netchanging = 1
 
-        if Config.has_option("networkstatus", "detectiontime"):
+        try:
             self.detectiontime = Config.getint("networkstatus", "detectiontime")
-        else:
+        except BaseException:
             self.detectiontime = 300
 
         self.parametersscriptconnection = {}
@@ -746,9 +840,9 @@ class confParameter:
             # Set to FATAL as default
             self.log_level_slixmpp = 50
 
-        if Config.has_option("configuration_server", "confdomain"):
+        try:
             self.confdomain = Config.get("configuration_server", "confdomain")
-        else:
+        except BaseException:
             self.confdomain = "pulse"
 
         try:
