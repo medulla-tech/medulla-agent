@@ -89,14 +89,19 @@ class confParameter:
             self.jidmasterreg = Config.get("connection", "jidreg")
 
         # GLOBAL CONFIGURATION
-        self.levellog = 20
         if Config.has_option("global", "log_level"):
             self.levellog = self._levellogdata(Config.get("global", "log_level"))
-        self.log_level_slixmpp = 50
+        else:
+            # Set to INFO as default
+            self.levellog = 20
+
         if Config.has_option("global", "log_level_slixmpp"):
             self.log_level_slixmpp = self._levellogdata(
                 Config.get("global", "log_level_slixmpp")
             )
+        else:
+            # Set to FATAL as default
+            self.log_level_slixmpp = 50
 
         self.logfile = "/var/log/mmc/master_inv.log"
         if Config.has_option("global", "logfile"):
