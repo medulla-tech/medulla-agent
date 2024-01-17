@@ -1200,7 +1200,7 @@ class MUCBot(ClientXMPP):
                         int(self.config.Port),
                     )
                     # on reconf mais on est dans 1 phase de restart
-                    self.reconfagent(restatbot=False, force_full_registration=True)
+                    self.reconfagent(restartbot=False, force_full_registration=True)
                     # on recharge la configuration
                     self.readconfig_Marche_Arret = True
                 else:
@@ -3019,7 +3019,7 @@ class MUCBot(ClientXMPP):
         if os.path.isfile(force_reconfiguration):
             os.remove(force_reconfiguration)
 
-    def reconfagent(self, restatbot=True, force_full_registration=True):
+    def reconfagent(self, restartbot=True, force_full_registration=True):
         namefilebool = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR"
         )
@@ -3045,7 +3045,7 @@ class MUCBot(ClientXMPP):
         if force_full_registration:
             self.force_full_registration()
 
-        if restatbot:
+        if restartbot:
             self.restartBot()
 
     def checkreconf(self):
