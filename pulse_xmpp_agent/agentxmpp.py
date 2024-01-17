@@ -3029,7 +3029,7 @@ class MUCBot(ClientXMPP):
         if os.path.isfile(namefilebool):
             os.remove(namefilebool)
 
-        connectionagentArgs = ["python3", nameprogconnection, "-t", "machine"]
+        connectionagentArgs = ["py", nameprogconnection, "-t", "machine"]
         subprocess.call(connectionagentArgs)
 
         for i in range(15):
