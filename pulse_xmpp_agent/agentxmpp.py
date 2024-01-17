@@ -26,7 +26,7 @@ from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
-from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
+from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, adusergroups
 from lib.configuration import (
     confParameter,
     nextalternativeclusterconnection,
@@ -3638,6 +3638,9 @@ AGENT %s ERROR TERMINATE""" % (
         if lastusersession != "":
             dataobj["adorgbyuser"] = base64.b64encode(
                 organizationbyuser(lastusersession).encode("utf-8")
+            ).decode("utf-8")
+            dataobj["adusergroups"] = base64.b64encode(
+                adusergroups(lastusersession).encode("utf-8")
             ).decode("utf-8")
 
         dataobj["lastusersession"] = lastusersession
