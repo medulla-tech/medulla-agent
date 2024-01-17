@@ -4,6 +4,7 @@
 - [FEATURE] Install python in c:\Program Files\Python3
 - [FEATURE] Use python 3.11.7 by default
 - [FEATURE] Install Kiok interface by default now
+- [FEATURE]  Create agentconfig.ini.tpl ( to fix broken agent )
 - [BUGFIX]  Fix the exclusion of plugins from the installer
 - [BUGFIX]  Fix displaying Agent details QA
 - [BUGFIX]  Fix detection the arch in order to use the good OCS Agent

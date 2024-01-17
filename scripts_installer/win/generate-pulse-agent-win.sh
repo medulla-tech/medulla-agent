@@ -126,6 +126,7 @@ CREATE_PROFILE_FILENAME="create-profile.ps1"
 REMOVE_PROFILE_FILENAME="remove-profile.ps1"
 PULSE_SERVICE_FILENAME="pulse-service.py"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
+PULSE_AGENT_CONFFILE_TPL="agentconf.ini.tpl"
 PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
 PULSE_START_CONFFILE_FILENAME="start_machine.ini"
@@ -353,6 +354,7 @@ update_nsi_script() {
         -e "s/@@FULL_OR_DL_PY_MODULES_64_FILENAMES@@/${FULL_OR_DL_PY_MODULES_64_FILENAMES}/" \
         -e "s/@@DELETE_PY_MODULES_FILENAMES@@/${DELETE_PY_MODULES_FILENAMES}/" \
 		-e "s/@@PULSE_AGENT_FILENAME@@/${PULSE_AGENT_FILENAME}/" \
+        -e "s/@@PULSE_AGENT_CONFFILE_TPL@@/${PULSE_AGENT_CONFFILE_TPL}/" \
         -e "s/@@KIOSK_FILENAME@@/${KIOSK_FILENAME}/" \
         -e "s/@@WHEEL_FILENAME@@/${WHEEL_FILENAME}/" \
 		-e "s/@@AGENT_PLUGINS_FILENAME@@/${AGENT_PLUGINS_FILENAME}/" \
@@ -390,6 +392,7 @@ update_nsi_script() {
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
+    cp -f ../config/agentconf.ini ../config/agentconf.ini.tpl
     # Replace XOXOXOX with new line
     sed -i 's/XOXOXOX/\
 /g' agent-installer.nsi
