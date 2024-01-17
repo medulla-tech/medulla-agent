@@ -396,6 +396,24 @@ def powershellfqdnwindowscommandbyuser(user):
         logger.error("subproces powershellfqdnwindowscommandbyuser.output = " + e.output)
     return ""
 
+def powershellfinduseradgroups(user):
+    result = []
+    try:
+        for line in subprocess.check_output(["powershell.exe", """([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().Properties.memberof"""%user], shell=True).split('\n'):
+            line = line.decode('cp850')
+            outcn = []
+            lcn = [x.replace("CN=", "") for x in line.split(",") if "CN=" in x]
+            for y in lcn:
+                if not re.findall('[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\(\)]', y):
+                    outcn.append(y)
+            if len(outcn) != 0:
+                outcn.reverse()
+                result.append("@@".join(outcn))
+        logger.debug("AD Groups: %s" % result)
+    except subprocess.CalledProcessError, e:
+        logger.error("subproces powershellfinduseradgroups.output = " + e.output)
+    return result
+
 def powershellgetlastuser():
     if sys.platform.startswith('win'):
         script = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "script", "getlastuser.ps1"))
@@ -466,6 +484,18 @@ def organizationbyuser(user):
             return ""
     else:
         return ""
+
+def adusergroups(user):
+    """
+        AD groups of user
+        find groups to which user belongs in AD
+        This function returns an array containing the groups
+    """
+    result = []
+    if sys.platform.startswith("win"):
+        if indomain := isMachineInDomain():
+            result = powershellfinduseradgroups(user)
+    return result
 
 def interfacename(mac):
     for interface in netifaces.interfaces():
