@@ -672,6 +672,31 @@ def powershellfqdnwindowscommandbyuser(user):
     return ""
 
 
+def powershellfinduseradgroups(user):
+    result = []
+    try:
+        for line in subprocess.check_output(
+            [
+                "powershell.exe",
+                f"""([adsisearcher]"(&(objectClass=user)(samaccountname={user}))").findone().Properties.memberof""",
+            ],
+            shell=True,
+        ).split('\n'):
+            line = line.decode("cp850")
+            lcn = [x.replace("CN=", "") for x in line.split(",") if "CN=" in x]
+            outcn = [y for y in lcn if not re.findall("[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\\(\\)]", y)]
+            if len(outcn) != 0:
+                outcn.reverse()
+                result.append("@@".join(outcn))
+        logger.debug(f"AD Groups: {result}")
+        return result
+    except subprocess.CalledProcessError as e:
+        logger.error(
+            f"subproces powershellfinduseradgroups.output = {e.output}"
+        )
+    return ""
+
+
 def powershellgetlastuser():
     if sys.platform.startswith("win"):
         script = os.path.abspath(
@@ -748,6 +773,23 @@ def organizationbyuser(user):
     elif sys.platform.startswith("win"):
         if indomain := isMachineInDomain():
             return powershellfqdnwindowscommandbyuser(user)
+        else:
+            return ""
+    else:
+        return ""
+
+
+def adusergroups(user):
+    """
+    AD groups of user
+    find groups to which user belongs in AD
+    This function returns an array containing the groups
+    """
+    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
+        return ""
+    elif sys.platform.startswith("win"):
+        if indomain := isMachineInDomain():
+            return powershellfinduseradgroups(user)
         else:
             return ""
     else:
