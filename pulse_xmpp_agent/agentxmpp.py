@@ -29,7 +29,8 @@ from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
 from lib.networkinfo import networkagentinfo,\
                             organizationbymachine,\
-                            organizationbyuser
+                            organizationbyuser, \
+                            adusergroups
 from lib.configuration import confParameter,\
                               nextalternativeclusterconnection,\
                               changeconnection
@@ -2658,6 +2659,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             lastusersession = userlist[0]
         if lastusersession != "":
             dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
+            dataobj['adusergroups'] = base64.b64encode(adusergroups(lastusersession))
 
         dataobj['lastusersession'] = lastusersession
         sys.path.append(self.config.pathplugins)
