@@ -583,6 +583,23 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                             lastuser=data['lastusersession'],
                                                                             keysyncthing=data['keysyncthing'],
                                                                             uuid_serial_machine=data['uuid_serial_machine'])
+                adusergroups = []
+                if "adusergroups" in data:
+                    adgroups = base64.b64decode(data["adusergroups"])
+                    if isinstance(adgroups, bytes):
+                        adgroups = adgroups.decode("utf-8")
+                    lines = adgroups.splitlines()
+                    for ou in lines:
+                        ou = ou.replace(",OU=", " < ")
+                        ou = ou.replace("OU=", "")
+                        # ou = re.sub(",DC=(.+)", "", ou)
+                        ou = ou.replace(",CN=", " < ")
+                        ou = ou.replace("CN=", "")
+                        ou = ou.split(" < ")
+                        ou.reverse()
+                        ou = "/".join(ou)
+                        adusergroups.append(ou)
+                XmppMasterDatabase().addadusergroups(data['lastusersession'], adusergroups)
 
                 if msgret.startswith("Update Machine"):
                     if showinfobool:
