@@ -84,7 +84,14 @@ def check_if_binary_ok():
         # We check if we have the Regedit entry
         cmd_reg = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" /s | Find "DisplayVersion"'
         result_reg = utils.simplecommand(cmd_reg)
-        if result_reg['code'] == 0:
+
+        cmd_reg_dn = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" /s | Find "DisplayName"'
+        result_reg_dn = utils.simplecommand(cmd_reg_dn)
+
+        cmd_reg_publisher = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" /s | Find "Publisher"'
+        result_reg_publisher = utils.simplecommand(cmd_reg_publisher)
+
+        if result_reg['code'] == 0 and result_reg_dn['code'] == 0 and result_reg_publisher['code'] == 0:
             regedit = True
 
         # We check if the binary is available
