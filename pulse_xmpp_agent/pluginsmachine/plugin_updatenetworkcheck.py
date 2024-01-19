@@ -136,10 +136,10 @@ def updatenetworkcheckversion(version):
         if version == "0.1":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
                     '/v "DisplayName" /t REG_SZ  /d "Medulla network notify" /f'
-	    utils.simplecommand(cmdDisplay)
+	        utils.simplecommand(cmdDisplay)
 
-        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
+                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
 
