@@ -2872,6 +2872,28 @@ class MUCBot(ClientXMPP):
         )
 
     def update_plugin(self):
+        """
+        Updates the plugin by sending plugin and machine information to the Master.
+
+        This function attempts to gather machine information using the `seachInfoMachine` method,
+        then logs the registration information and sends it to the specified registration address using XMPP.
+        
+        If successful, it logs the registration details and sends the information as a chat message.
+        If an exception occurs during the process, it logs the error details.
+
+        Raises:
+            Exception: If an error occurs during the update process.
+
+        Note:
+            The update process involves obtaining machine information, logging registration details,
+            and sending the information as a chat message using XMPP.
+
+        Usage:
+            To update the plugin, call this method on an instance of the class.
+
+        Example:
+            instance.update_plugin()
+        """
         # Send plugin and machine informations to Master
         try:
             dataobj = self.seachInfoMachine()
@@ -2892,7 +2914,27 @@ class MUCBot(ClientXMPP):
         self, nameplugin, differed=0, data=None, sessionid=None
     ):
         """
-        call plugin   parralelle mode ou differe calling
+        Call a plugin function in parallel or deferred mode.
+
+        This method schedules the execution of the asynchronous plugin function, allowing for parallel
+        or deferred calling. It generates a random event name and, if not provided, a session ID for the
+        asynchronous operation.
+
+        Args:
+            nameplugin (str): The name of the plugin function to be called.
+            differed (int, optional): Time delay (in seconds) before the function execution (default is 0).
+            data (dict, optional): Additional data to be passed to the asynchronous function (default is an empty dictionary).
+            sessionid (str, optional): Session ID for the asynchronous operation (default is generated randomly).
+
+        Note:
+            The function schedules the asynchronous plugin function using the provided parameters and
+            does not wait for its completion.
+
+        Example:
+            To call an asynchronous plugin function named 'example_plugin' with a 5-second delay:
+            ```
+            instance.call_asynchrome_function_plugin("example_plugin", differed=5)
+            ```
         """
         nameevenement = getRandomName(6, nameplugin)
         if sessionid is None:

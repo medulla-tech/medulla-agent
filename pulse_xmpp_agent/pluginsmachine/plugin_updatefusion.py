@@ -2,6 +2,29 @@
 # SPDX-FileCopyrightText: 2020-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+
+"""
+Update FusionInventory Plugin
+
+This module defines a plugin for updating the FusionInventory Agent on a machine.
+The plugin checks the installed version of FusionInventory and updates it if the version is lower than the specified version.
+
+Variables:
+    - FUSIONVERSION (str): The target version of FusionInventory.
+    - logger (Logger): Logger object for logging messages.
+    - plugin (dict): Plugin information dictionary containing version, name, and type.
+    - utils: Utility functions from the lib module.
+
+Functions:
+    - action(xmppobject, action, sessionid, data, message, dataerreur): Main function for the plugin.
+    - checkfusionversion(): Checks the currently installed version of FusionInventory.
+    - check_if_binary_ok(): Checks if the FusionInventory binary is correctly installed.
+    - updatefusion(xmppobject): Updates FusionInventory to the specified version.
+
+Note: This plugin assumes the availability of certain commands and paths on Windows systems.
+
+"""
+
 import sys
 from lib import utils
 from distutils.version import StrictVersion
@@ -10,6 +33,7 @@ import platform
 import tempfile
 import os
 
+# ma_variable est utilisée pour stocker ...
 FUSIONVERSION = "2.6"
 
 logger = logging.getLogger()
@@ -19,6 +43,17 @@ plugin = {"VERSION": "1.6", "NAME": "updatefusion", "TYPE": "machine"}  # fmt: s
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+    """
+    Main function for the update FusionInventory plugin.
+
+    @arg xmppobject: XMPP object.
+    :param action: Action to be performed.
+    :param sessionid: Session ID.
+    :param data: Data related to the action.
+    :param message: Incoming XMPP message.
+    :param dataerreur: Data related to errors.
+
+    """
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
@@ -38,6 +73,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 
 def checkfusionversion():
+    """
+    Check the currently installed version of FusionInventory.
+
+    :return: The installed version of FusionInventory (str).
+
+    """
     if sys.platform.startswith("win"):
         cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\FusionInventory-Agent /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
@@ -51,6 +92,10 @@ def checkfusionversion():
 
 
 def check_if_binary_ok():
+    """
+    Check if the FusionInventory binary is correctly installed.
+
+    """
     if sys.platform.startswith("win"):
         # We check if the fusion inventory binary is correctly installed.
         fusiondir_path = os.path.join("c:\\", "progra~1", "FusionInventory-Agent")
@@ -77,6 +122,12 @@ def check_if_binary_ok():
 
 
 def updatefusion(xmppobject):
+    """
+    Update FusionInventory to the specified version.
+
+    :param xmppobject: XMPP object.
+
+    """
     logger.info("Updating FusionInventory Agent to version %s" % FUSIONVERSION)
 
     windows_tempdir = os.path.join("c:\\", "Windows", "Temp")

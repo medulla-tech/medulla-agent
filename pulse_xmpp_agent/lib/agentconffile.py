@@ -13,11 +13,10 @@ logger = logging.getLogger()
 
 def directoryconffile():
     """
-    This function provide the path to the configuration files of pulse-xmpp-agent.
+    Provides the path to the configuration files of pulse-xmpp-agent.
 
-    Return:
-        it returns the path to the configuration files if it exists
-        it returns None if the path does not exist
+    Returns:
+        str: The path to the configuration files if it exists, None otherwise.
     """
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
@@ -30,10 +29,10 @@ def directoryconffile():
 
 def pulseTempDir():
     """
-    This function permits to obtain the temporary folder.
+    Obtains the temporary folder used by Pulse.
 
     Returns:
-        It returns the path of pulse temporary folder
+        str: The path of the pulse temporary folder.
     """
     if sys.platform.startswith("linux"):
         tempdir = os.path.join("/", "tmp")
@@ -41,20 +40,18 @@ def pulseTempDir():
         tempdir = os.path.join("c:\\", "progra~1", "Pulse", "tmp")
     elif sys.platform.startswith("darwin"):
         tempdir = os.path.join("/opt", "Pulse", "tmp")
-
     return tempdir
 
 
 def conffilename(agenttype):
     """
-    This function define where the configuration file is located.
+    Defines the location of the configuration file.
 
     Args:
-        agenttype: type of the agent, relay or machine or cluster for RelayServer
+        agenttype (str): Type of the agent, relay or machine or cluster for RelayServer.
 
     Returns:
-        Return the config file path
-
+        str: The config file path.
     """
     if agenttype in ["machine"]:
         conffilenameparameter = "agentconf.ini"
@@ -76,14 +73,13 @@ def conffilename(agenttype):
 
 def conffilenametmp(agenttype):
     """
-    This function define where the configuration file tmp is located.
+    Defines the location of the temporary configuration file.
 
     Args:
-        agenttype: type of the agent, relay or machine or cluster for RelayServer
+        agenttype (str): Type of the agent, relay or machine or cluster for RelayServer.
 
     Returns:
-        Return the config file path
-
+        str: The temporary config file path.
     """
     if agenttype in ["machine"]:
         conffilenameparameter = "agentconftmp.ini"
@@ -101,11 +97,11 @@ def conffilenametmp(agenttype):
 
 def rotation_file(namefile, suffixe=""):
     """
-    This function exec rotation file.
+    Executes file rotation.
 
-        Args:
-            namefile: name file rotation
-
+    Args:
+        namefile (str): Name of the file to rotate.
+        suffixe (str): Suffix to be added to the rotated file names.
     """
     if suffixe != "":
         suffixe = f"_{suffixe}"
