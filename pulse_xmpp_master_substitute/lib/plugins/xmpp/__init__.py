@@ -46,7 +46,9 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Up_white_list, \
     Up_gray_list, \
     Up_action_update_packages, \
-    Up_history
+    Up_history, \
+    Users_adgroups
+
 # Imported last
 import logging
 import json
@@ -9939,6 +9941,52 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.flush()
         except Exception as e:
             self.logger.error(e)
+
+    @DatabaseHelper._sessionm
+    def getmachineentityfromjid(self, session, jid):
+        query = session.query(Glpi_entity)\
+            .join(Machines, Glpi_entity.id == Machines.glpi_entity_id)\
+            .filter(Machines.jid == jid).first()
+        return query
+
+    @DatabaseHelper._sessionm
+    def get_ad_group_for_lastuser(self, session, login):
+        query = session.query(Users_adgroups).filter(Users_adgroups.lastuser == login).all()
+
+        result = [element.adname for element in query] if query != None else []
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_all_ad_groups(self, session, start, limit, filter):
+        query = session.query(Users_adgroups)\
+            .group_by(Users_adgroups.adname)\
+            .all()
+
+        result = [element.adname for element in query] if query != None else []
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_all_ad_groups_team(self, session, logins):
+        query = session.query(Users_adgroups)\
+            .filter(Users_adgroups.lastuser.in_(logins))\
+            .group_by(Users_adgroups.adname)\
+            .all()
+
+        result = [element.adname for element in query] if query != None else []
+        return result
+
+    @DatabaseHelper._sessionm
+    def addadusergroups(self, session, lastuser, ous):
+        query = session.query(Users_adgroups).filter(Users_adgroups.lastuser == lastuser).delete()
+        session.commit()
+        if ous != []:
+            for ou in ous:
+                toAdd = Users_adgroups()
+                toAdd.lastuser = lastuser
+                toAdd.adname = ou
+                session.add(toAdd)
+            session.commit()
+
 # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [{column: value for column, value in rowproxy.items()}
