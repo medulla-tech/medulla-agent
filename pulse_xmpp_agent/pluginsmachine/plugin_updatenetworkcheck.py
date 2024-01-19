@@ -30,7 +30,7 @@ NETWORKVERSION = '2.1.9'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.6", "NAME": "updatenetworkcheck", "TYPE": "machine"}
+plugin = {"VERSION": "1.7", "NAME": "updatenetworkcheck", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -138,8 +138,8 @@ def updatenetworkcheckversion(version):
                     '/v "DisplayName" /t REG_SZ  /d "Medulla network notify" /f'
 	    utils.simplecommand(cmdDisplay)
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '\
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
 
