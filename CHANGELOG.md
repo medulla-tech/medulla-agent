@@ -2,6 +2,7 @@
 
 ## [v3.1.0](unreleased)
 - [FEATURE]  Create agentconfig.ini.tpl ( to fix broken agent )
+- [FEATURE]  Create kiosk profiles based on AD groups
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.1...v3.1.0)
 
