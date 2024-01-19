@@ -27,7 +27,12 @@ from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
-from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, adusergroups
+from lib.networkinfo import (
+    networkagentinfo,
+    organizationbymachine,
+    organizationbyuser,
+    adusergroups,
+)
 from lib.configuration import (
     confParameter,
     nextalternativeclusterconnection,
@@ -2877,7 +2882,7 @@ class MUCBot(ClientXMPP):
 
         This function attempts to gather machine information using the `seachInfoMachine` method,
         then logs the registration information and sends it to the specified registration address using XMPP.
-        
+
         If successful, it logs the registration details and sends the information as a chat message.
         If an exception occurs during the process, it logs the error details.
 
