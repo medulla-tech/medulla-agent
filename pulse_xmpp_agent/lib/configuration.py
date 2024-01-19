@@ -23,6 +23,15 @@ logger = logging.getLogger()
 
 
 def uniq(input):
+    """
+    Remove duplicate elements from the input list and return a new list.
+
+    Args:
+        input (list): The input list containing elements.
+
+    Returns:
+        list: A new list with duplicate elements removed.
+    """
     output = []
     for x in input:
         if x not in output:
@@ -32,12 +41,11 @@ def uniq(input):
 
 def changeconfigurationsubtitute(conffile, confsubtitute):
     """
-    This function allow to modify the machine agent to use substitute by default
+    Modify the machine agent to use substitute by default.
 
     Args:
-    conffile: the configuration file to modify
-    confsubtitute: the substitute to add in the configuration file
-
+        conffile (str): The configuration file to modify.
+        confsubtitute (dict): The substitute to add in the configuration file.
     """
     Config = configparser.ConfigParser()
     Config.read(conffile)
@@ -54,14 +62,14 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
 
 def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole):
     """
-    This function allow to modify default configuration.
+    Modify default configuration parameters.
 
     Args:
-    conffile: the configuration file to modify
-    port: the new port to use ( section connection )
-    ipserver:  the new IP of the main server ( section connection )
-    jidrelayserver: the new jid of the relayserver ( section global )
-    baseurlguacamole: the url used for guacamole ( section type )
+        conffile (str): The configuration file to modify.
+        port (int): The new port to use (section connection).
+        ipserver (str): The new IP of the main server (section connection).
+        jidrelayserver (str): The new JID of the relay server (section global).
+        baseurlguacamole (str): The URL used for Guacamole (section type).
     """
     Config = configparser.ConfigParser()
     Config.read(conffile)
@@ -86,10 +94,20 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
 
 def alternativeclusterconnection(conffile, data):
     """
-    This function allow to add a alternative cluster.
+    Add an alternative cluster to the configuration file.
+
     Args:
-        conffile: the configuration file in which we add the alternative cluster
-        data: the informations about the cluster
+        conffile (str): The configuration file to modify.
+        data (list): The information about the alternative cluster.
+
+    Note:
+        The `data` parameter should be a list of tuples, where each tuple contains
+        the IP address, port, JID, and Guacamole base URL for an alternative server.
+
+    Example:
+        alternativeclusterconnection("config.ini", [
+            ("192.168.1.2", 8080, "alternative_server1@domain.com", "http://guac.com")
+        ])
     """
     logger.debug(f"We write the file {conffile} to handle alternative connections")
     with open(conffile, "w") as configfile:
@@ -115,10 +133,16 @@ def alternativeclusterconnection(conffile, data):
 
 def nextalternativeclusterconnectioninformation(conffile):
     """
-    This function allow to add more alternative clusters
+    Retrieve information about the next alternative cluster from the configuration file.
 
     Args:
-        conffile: the configuration file to modify
+        conffile (str): The configuration file containing alternative cluster information.
+
+    Returns:
+        dict: A dictionary containing information about the next alternative cluster.
+
+    Example:
+        nextalternativeclusterconnectioninformation("config.ini")
     """
     if not os.path.isfile(conffile):
         logger.error(f"file alternatif conf missing {conffile}")
@@ -169,10 +193,16 @@ def nextalternativeclusterconnectioninformation(conffile):
 
 def nextalternativeclusterconnection(conffile):
     """
-    This function allow to add more alternative clusters
+    Move to the next alternative cluster and update the configuration file.
 
     Args:
-        conffile: the configuration file to modify
+        conffile (str): The configuration file to modify.
+
+    Returns:
+        list: A list containing information about the next alternative cluster.
+
+    Example:
+        nextalternativeclusterconnection("config.ini")
     """
     if not os.path.isfile(conffile):
         return []
@@ -204,13 +234,48 @@ def nextalternativeclusterconnection(conffile):
     return [serverjid, server, port, guacamole_baseurl, domain, nbserver]
 
 
-# Singleton/SingletonDecorator.py
 class SingletonDecorator:
+    """
+    A decorator class to implement the Singleton pattern.
+
+    Usage:
+        Use this decorator to ensure that a class has only one instance.
+
+    Example:
+        @SingletonDecorator
+        class MyClass:
+            pass
+
+        obj1 = MyClass()
+        obj2 = MyClass()
+
+        print(obj1 is obj2)  # True (obj1 and obj2 refer to the same instance)
+    """
     def __init__(self, klass):
+        """
+        Initialize the SingletonDecorator.
+
+        Args:
+            klass: The class to which the singleton pattern will be applied.
+        """
         self.klass = klass
         self.instance = None
 
     def __call__(self, *args, **kwds):
+        """
+        Call method to create and return the instance of the class.
+
+        Args:
+            *args: Variable length argument list.
+            **kwds: Arbitrary keyword arguments.
+
+        Returns:
+            object: The instance of the class.
+
+        Note:
+            If the instance does not exist, it will be created; otherwise, the existing
+            instance will be returned.
+        """
         if self.instance is None:
             self.instance = self.klass(*args, **kwds)
         return self.instance
@@ -218,12 +283,11 @@ class SingletonDecorator:
 
 def infos_network_packageserver():
     """
-    This function allow to determine the port and the IP of the package Server.
+    Retrieve information about the package server's network configuration.
 
     Returns:
-        the port and the public IP of the packageserver
+        dict: A dictionary containing the port and public IP of the package server.
     """
-
     namefileconfig = os.path.join(
         "etc", "mmc", "pulse2", "package-server", "package-server.ini"
     )
@@ -241,24 +305,41 @@ def infos_network_packageserver():
 
 def loadparameters(namefile, group, key):
     """
-    This function allow to obtain the parameters from group and key
+    Obtain the parameter value from the specified group and key in the configuration file.
 
     Args:
-        namefile: The configuration file where are stored the informations
-        group:    The group in the config file
-        key:      The key where is stored the needed information
+        namefile (str): The configuration file where the information is stored.
+        group (str): The group in the config file.
+        key (str): The key where the needed information is stored.
 
     Returns:
-        the Value defined by the group/key couple.
-    """
+        str: The value defined by the group/key couple.
 
-    Config = configparser.ConfigParser()
+    Example:
+        loadparameters("config.ini", "section1", "key1")
+    """
+     Config = configparser.ConfigParser()
     Config.read(namefile)
     return Config.get("group", "key") if Config.has_option("group", "key") else ""
 
 
 class substitutelist:
+    """
+    A class representing a list of substitute values.
+
+    Attributes:
+        sub_inventory (list): List of substitute values for inventory.
+        sub_subscribe (list): List of substitute values for subscription.
+        sub_registration (list): List of substitute values for registration.
+        sub_assessor (list): List of substitute values for assessor.
+        sub_logger (list): List of substitute values for logger.
+        sub_monitoring (list): List of substitute values for monitoring.
+        sub_updates (list): List of substitute values for updates.
+    """
     def __init__(self):
+        """
+        Initialize the Substitutelist with default and user-defined substitute values.
+        """
         Config = configparser.ConfigParser()
         namefileconfig = conffilename("machine")
         Config.read(namefileconfig)
@@ -305,6 +386,12 @@ class substitutelist:
             self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
 
     def parameterssubtitute(self):
+        """
+        Load user-defined substitute values from the configuration file.
+
+        Args:
+            Config (ConfigParser): The configuration parser object.
+        """
         data = {
             "subscription": self.sub_subscribe,
             "inventory": self.sub_inventory,

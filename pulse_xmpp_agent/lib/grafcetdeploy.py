@@ -2519,8 +2519,19 @@ class grafcet:
 
     def __sauvedatasessionrepriseinterface(self, name, datasession):
         """
-        INFOSTMPrepriseinterface
+        Save the data session for resumption in a file.
 
+        Parameters:
+        - name (str): The name of the file to be created, including the path.
+        - datasession (dict): The data session to be saved.
+
+        Returns:
+        - bool: True if the data session is successfully saved, False otherwise.
+
+        The function attempts to save the provided datasession in a file specified by the given name. If successful,
+        it returns True; otherwise, it logs an error message and removes the file if it exists, then returns False.
+
+        Note: This function is intended for internal use and should not be called directly outside the class.
         """
         namesession = os.path.join(self.__Setdirectorysessionreprise(), name)
 
@@ -2540,26 +2551,19 @@ class grafcet:
 
     def action_loop_question(self):
         """
-        descriptor type
-           {
-                "gototimeout": "",
-                "sizemessage": "10",
-                "gotolookterminate": "",
-                "timeloop": "900",
-                "sizeheader": "15",
-                "textbuttonyes": "Yes",
-                "actionlabel": "918fda21",
-                "loopnumber": "1",
-                "codereturn": "",
-                "action": "action_loop_question",
-                "step": 0,
-                "gotonouser": "",
-                "gotoyes": "",
-                "timeout": "800",
-                "textbuttonno": "No",
-                "message": "c2RzZGQ=",
-                "titlemessage": "YzJSeg=="
-            }
+        Process a loop question action based on the configured parameters.
+
+        This function handles a loop question action, including decoding message and title, displaying notifications,
+        and responding based on user input.
+
+        Note: This function is part of a larger system and is designed for specific use cases. It handles notifications,
+        user interactions, and session resumption.
+
+        Raises:
+        - Exception: Any unexpected error encountered during the execution of the loop question action.
+
+        Returns:
+        - bool: True if the action is successfully processed, False otherwise.
         """
         if "loopnumber" in self.workingstep:
             self.workingstep["loopnumber"] = int(self.workingstep["loopnumber"])
