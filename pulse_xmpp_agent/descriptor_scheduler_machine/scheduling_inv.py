@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-this plugin process inventory from crontab descriptor time
+This plugin processes inventory based on crontab descriptor time.
 """
+
 import logging
 from lib import utils
 
@@ -14,6 +15,18 @@ SCHEDULE = {"schedule": "$[0,59] $[8,17] * * *", "nb": -1}  # nb  -1 infinie
 
 
 def schedule_main(objectxmpp):
+    """
+    Main function for the scheduling inventory plugin.
+
+    Args:
+        objectxmpp: An object representing the XMPP connection.
+
+    Notes:
+        This function is called at specific intervals based on the crontab descriptor.
+        If the inventory_interval in the configuration is not 0, the function does nothing.
+        Otherwise, it sends an inventory request and logs the action.
+
+    """
     if objectxmpp.config.inventory_interval != 0:
         return
     logging.getLogger().debug("###################################################")

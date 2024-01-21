@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-this plugin process inventory from crontab descriptor time
+This plugin processes kiosk launch based on crontab descriptor time.
 """
+
 import logging
 import sys
 import os
@@ -22,6 +23,17 @@ SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # nb  -1 infinie
 
 
 def schedule_main(objectxmpp):
+    """
+    Main function for the scheduling kiosk launch plugin.
+
+    Args:
+        objectxmpp: An object representing the XMPP connection.
+
+    Notes:
+        This function is called at specific intervals based on the crontab descriptor.
+        It checks whether the kiosk should be enabled and launches it if necessary.
+
+    """
     logger.debug("###################################################")
     logger.debug("call %s ", plugin)
     logger.debug("###################################################")
@@ -43,6 +55,17 @@ def schedule_main(objectxmpp):
                 shellcommandtimeout(command, 600).run()
 
 def read_config_plugin_agent(objectxmpp):
+    """
+    Read the configuration file for the kiosk launch plugin.
+
+    Args:
+        objectxmpp: An object representing the XMPP connection.
+
+    Notes:
+        This function reads the configuration file for the kiosk launch plugin.
+        If the configuration file does not exist, it creates one with default settings.
+
+    """
     configfilename = os.path.join(directoryconffile(), f'{plugin["NAME"]}.ini')
     if not os.path.isfile(configfilename):
         logger.warning(f"there is no configuration file : {configfilename}")
