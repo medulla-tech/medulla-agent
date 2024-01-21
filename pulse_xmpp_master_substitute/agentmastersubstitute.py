@@ -44,7 +44,7 @@ def Setdirectorytempinfo():
 
 def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
     """
-    This function create a service/Daemon that will execute a det. task
+    This function creates a service/Daemon that will execute a det. task
     """
     try:
         # Store the Fork PID
@@ -60,6 +60,15 @@ def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
 
 
 def doTask(optsconsoledebug, optsdeamon, optfileconf):
+    """
+    Main function that performs the agent substitute task.
+
+    Args:
+        optsconsoledebug (bool): True if console debug is enabled, False otherwise.
+        optsdeamon (bool): True if the process should be daemonized, False otherwise.
+        optfileconf (str): Path to the configuration file.
+
+    """
     tg = confParameter(optfileconf)
     logdir = os.path.dirname(tg.logfile)
     if not os.path.exists(logdir):
