@@ -9,10 +9,7 @@ This plugin processes kiosk launch based on crontab descriptor time.
 import logging
 import sys
 import os
-from pulse_xmpp_agent.lib.utils import (
-    file_put_contents,
-    shellcommandtimeout
-)
+from pulse_xmpp_agent.lib.utils import file_put_contents, shellcommandtimeout
 from lib.agentconffile import directoryconffile
 import configparser
 
@@ -47,12 +44,11 @@ def schedule_main(objectxmpp):
         else:
             # Run kiosk
             if sys.platform.startswith("win"):
-                command = (
-                    """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 -d py.exe -3 -m kiosk_interface"""
-                )
+                command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 -d py.exe -3 -m kiosk_interface"""
                 logger.debug(f"Starting Kiosk. Command: {command}")
             if command:
                 shellcommandtimeout(command, 600).run()
+
 
 def read_config_plugin_agent(objectxmpp):
     """
@@ -74,11 +70,13 @@ def read_config_plugin_agent(objectxmpp):
             configfilename,
             "[scheduling_launch_kiosk]\n"
             "# Enable execution of kiosk\n"
-            "# enable_kiosk = True\n"
+            "# enable_kiosk = True\n",
         )
     Config = configparser.ConfigParser()
     Config.read(configfilename)
     try:
-        objectxmpp.enable_kiosk = Config.getbool("scheduling_launch_kiosk", "enable_kiosk")
+        objectxmpp.enable_kiosk = Config.getbool(
+            "scheduling_launch_kiosk", "enable_kiosk"
+        )
     except BaseException:
         objectxmpp.enable_kiosk = True
