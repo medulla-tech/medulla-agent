@@ -534,27 +534,34 @@ def isTemplateConfFile(typeconf):
 
 
 def createfingerprintnetwork():
+    """
+    Create a fingerprint of the network configuration based on the platform.
+
+    Returns:
+        str: MD5 hash of the network configuration.
+    """
     md5network = ""
-    if sys.platform.startswith("win"):
-        obj = simplecommandstr("ipconfig")
+    command_mapping = {
+        "win": "ipconfig",
+        "linux": "LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6",
+        "darwin": "ipconfig"
+    }
 
-        if obj["code"] != 0 or obj["result"] == "":
-            logger.error(
-                "A error occured while determining the network. ipconfig failed."
-            )
-            createfingerprintnetwork()
+    platform = sys.platform
+    command = command_mapping.get(platform)
 
-        md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
-    elif sys.platform.startswith("linux"):
-        obj = simplecommandstr(
-            "LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6"
-        )
-        md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
-    elif sys.platform.startswith("darwin"):
-        obj = simplecommandstr("ipconfig")
-        md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
+    if not command:
+        logger.error("Unsupported platform.")
+        return md5network
+
+    obj = simplecommandstr(command)
+
+    if obj["code"] != 0 or obj["result"] == "":
+        logger.error(f"An error occurred while determining the network. {command} failed.")
+    else:
+        md5network = hashlib.md5(obj["result"].encode("utf-8")).hexdigest()
+
     return md5network
-
 
 def createfingerprintconf(typeconf):
     namefileconfig = conffilename(typeconf)
