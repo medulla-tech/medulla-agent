@@ -50,4 +50,3 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 )
                 filename = os.path.join(dirtempinfo, "on_line_ars.ansible")
                 file_put_contents(filename, "boolean for ansible")
-
