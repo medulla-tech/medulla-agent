@@ -1517,6 +1517,19 @@ class grafcet:
             logger.warning("inventory option is forced check option inventory")
             self.workingstep['actioninventory'] = 'forced'
         inventoryfile = ""
+        clear = True
+        if 'clear' in self.workingstep:
+            if isinstance(self.workingstep['clear'], bool):
+                clear = self.workingstep['clear']
+            else:
+                self.workingstep['clear'] = str(self.workingstep['clear'])
+                if self.workingstep['clear'] == "False":
+                    clear = False
+        self.__affiche_message('[%s]-[%s] :<span class="log_ok">Deployment successful<span>' % (self.data['name'], self.workingstep['step']),
+                                        module="Deployment | Error | Execution | Notify")
+        if self.__terminateifcompleted__(self.workingstep):
+            return
+        self.terminate(0, clear, "end success")
         if inventory:
             # genere inventaire et envoi inventaire
             # call plugin inventory pour master.
@@ -1545,19 +1558,6 @@ class grafcet:
             if doinventory:
                 self.__affiche_message('Sending new inventory from %s : (generated in %s s)' % (self.objectxmpp.boundjid.bare, timeinventory),
                                         module="Deployment | Execution | Inventory")
-        clear = True
-        if 'clear' in self.workingstep:
-            if isinstance(self.workingstep['clear'], bool):
-                clear = self.workingstep['clear']
-            else:
-                self.workingstep['clear'] = str(self.workingstep['clear'])
-                if self.workingstep['clear'] == "False":
-                    clear = False
-        self.__affiche_message('[%s]-[%s] :<span class="log_ok">Deployment successful<span>' % (self.data['name'], self.workingstep['step']),
-                                        module="Deployment | Error | Execution | Notify")
-        if self.__terminateifcompleted__(self.workingstep):
-            return
-        self.terminate(0, clear, "end success")
         self.steplog()
 
     def actionerrorcompletedend(self):
