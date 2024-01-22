@@ -544,24 +544,15 @@ def createfingerprintnetwork():
             )
             createfingerprintnetwork()
 
-        if sys.version_info[0] == 3:
-            md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
-        else:
-            md5network = hashlib.md5(obj["result"]).hexdigest()
+        md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
     elif sys.platform.startswith("linux"):
         obj = simplecommandstr(
             "LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6"
         )
-        if sys.version_info[0] == 3:
-            md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
-        else:
-            md5network = hashlib.md5(obj["result"]).hexdigest()
+        md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
     elif sys.platform.startswith("darwin"):
         obj = simplecommandstr("ipconfig")
-        if sys.version_info[0] == 3:
-            md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
-        else:
-            md5network = hashlib.md5(obj["result"]).hexdigest()
+        md5network = hashlib.md5(bytes(obj["result"], "utf-8")).hexdigest()
     return md5network
 
 
