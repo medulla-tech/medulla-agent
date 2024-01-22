@@ -1256,7 +1256,6 @@ def simplecommandstr(cmd):
 def windowspath(namescript):
     return f'"{namescript}"' if sys.platform.startswith("win") else namescript
 
-
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
     print(f"powershell -ExecutionPolicy Bypass -File  {namescript}")

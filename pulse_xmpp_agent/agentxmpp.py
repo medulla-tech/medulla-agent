@@ -82,6 +82,7 @@ from lib.utils import (
     call_plugin_sequentially,
     convert,
     DateTimebytesEncoderjson,
+    get_windows_infos,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -823,6 +824,8 @@ class MUCBot(ClientXMPP):
                 self._iq_error_Handle,
             )
         )
+        self.infos = {}
+        get_windows_infos(self)
 
     def iqsendpulse(self, to, datain, timeout=900, sessionid=None):
         """
@@ -3549,6 +3552,7 @@ AGENT %s ERROR TERMINATE""" % (
             "uuid_serial_machine": serialnumbermachine(),
             "updatingagent": self.config.updating,
             "system_info": offline_search_kb().get(),
+            "hard_infos": self.infos,
         }
         try:
             dataobj["md5_conf_monitoring"] = ""
