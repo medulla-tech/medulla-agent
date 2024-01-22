@@ -544,7 +544,7 @@ def createfingerprintnetwork():
     command_mapping = {
         "win": "ipconfig",
         "linux": "LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6",
-        "darwin": "ipconfig"
+        "darwin": "ipconfig",
     }
 
     platform = sys.platform
@@ -557,11 +557,14 @@ def createfingerprintnetwork():
     obj = simplecommandstr(command)
 
     if obj["code"] != 0 or obj["result"] == "":
-        logger.error(f"An error occurred while determining the network. {command} failed.")
+        logger.error(
+            f"An error occurred while determining the network. {command} failed."
+        )
     else:
         md5network = hashlib.md5(obj["result"].encode("utf-8")).hexdigest()
 
     return md5network
+
 
 def createfingerprintconf(typeconf):
     namefileconfig = conffilename(typeconf)
