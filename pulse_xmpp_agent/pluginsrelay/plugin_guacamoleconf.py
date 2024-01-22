@@ -18,6 +18,15 @@ logger = logging.getLogger()
 
 
 def get_free_tcp_port(objectxmpp):
+    """
+    Get a free TCP port.
+
+    Parameters:
+    - objectxmpp: The XMPP object representing the current agent.
+
+    Returns:
+    int: A free TCP port.
+    """
     port = -1
     try:
         tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,6 +46,16 @@ def get_free_tcp_port(objectxmpp):
 
 
 def insertprotocole(protocole, hostname):
+    """
+    Generate an SQL query to insert a new protocol entry in the Guacamole database.
+
+    Parameters:
+    - protocole (str): The protocol name.
+    - hostname (str): The hostname.
+
+    Returns:
+    str: SQL query for insertion.
+    """
     logger.debug(
         "New connection for machine %s_%s protcol %s"
         % (protocole.upper(), hostname, protocole.lower())
@@ -51,6 +70,16 @@ def insertprotocole(protocole, hostname):
 
 
 def deleteprotocole(protocole, hostname):
+    """
+    Generate an SQL query to delete an existing protocol entry in the Guacamole database.
+
+    Parameters:
+    - protocole (str): The protocol name.
+    - hostname (str): The hostname.
+
+    Returns:
+    str: SQL query for deletion.
+    """
     logger.debug("Deleting old connection for : %s_%s" % (protocole.upper(), hostname))
     return """DELETE FROM `guacamole_connection`
                      WHERE connection_name = '%s_%s';""" % (
@@ -60,6 +89,17 @@ def deleteprotocole(protocole, hostname):
 
 
 def insertparameter(index, parameter, value):
+    """
+    Generate an SQL query to insert new parameters in the Guacamole database.
+
+    Parameters:
+    - index (int): The connection index.
+    - parameter (str): The parameter name.
+    - value (str): The parameter value.
+
+    Returns:
+    str: SQL query for insertion.
+    """
     logger.debug("New parameters in guacamole database: %s = %s" % (parameter, value))
     return """INSERT
                  INTO guacamole_connection_parameter (connection_id,
@@ -73,6 +113,20 @@ def insertparameter(index, parameter, value):
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
+    """
+    Perform Guacamole configuration based on the provided data.
+
+    Parameters:
+    - objectxmpp: The XMPP object representing the current agent.
+    - action: The action to be performed.
+    - sessionid: The session ID associated with the action.
+    - data: The data containing information about the Guacamole configuration.
+    - message: The XMPP message containing the Guacamole configuration request.
+    - dataerreur: Data related to any errors during the Guacamole configuration.
+
+    Returns:
+    None
+    """
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")

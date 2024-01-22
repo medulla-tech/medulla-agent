@@ -18,6 +18,20 @@ DEBUGPULSEPLUGIN = 25
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
+    """
+    Perform the specified action based on the incoming data.
+
+    Parameters:
+    - objectxmpp: The XMPP object representing the current agent.
+    - action: The action to be performed.
+    - sessionid: The session ID associated with the action.
+    - data: The data containing information about the action.
+    - message: The XMPP message containing the action request.
+    - dataerreur: Data related to any errors during the action.
+
+    Returns:
+    None
+    """
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
@@ -213,9 +227,20 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
 def search_action_on_agent_cp_and_del(fromimg, frommachine):
     """
-    return 2 lists
-    list files to copi from img to mach
-    list files to supp in mach
+    Compare files between an image (fromimg) and a machine (frommachine).
+
+    Returns two lists:
+    - List of files to copy from the image to the machine.
+    - List of files to be deleted in the machine.
+
+    Parameters:
+    - fromimg (dict): Dictionary representing files in the image with their checksums.
+    - frommachine (dict): Dictionary representing files in the machine with their checksums.
+
+    Returns:
+    Tuple containing two lists:
+    - List of files to copy from the image to the machine.
+    - List of files to be deleted in the machine.
     """
     replace_file_mach_by_file_img = []
     file_missing_in_mach = []
@@ -241,17 +266,19 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
 
 
 def dump_file_in_img(objectxmpp, namescript, content, typescript):
-    if typescript == "program_agent":
-        # install script program
-        file_mane = os.path.join(objectxmpp.img_agent, namescript)
-        logger.debug("dump file %s to %s" % (namescript, file_mane))
-    elif typescript == "script_agent":
-        # install script program
-        file_mane = os.path.join(objectxmpp.img_agent, "script", namescript)
-        logger.debug("dump file %s to %s" % (namescript, file_mane))
-    elif typescript == "lib_agent":
-        # install script program
-        file_mane = os.path.join(objectxmpp.img_agent, "lib", namescript)
+    """
+    Dump the provided content into a file in the agent's image directory based on the script type.
+
+    Parameters:
+    - objectxmpp: The XMPP object representing the current agent.
+    - namescript (str): The name of the script or file to be dumped.
+    - content: The content to be written to the file.
+    - typescript (str): The type of the script, such as "program_agent," "script_agent," or "lib_agent."
+
+    Returns:
+    None
+    """
+    file_mane = os.path.join(objectxmpp.img_agent, "lib", namescript)
         logger.debug("dump file %s to %s" % (namescript, file_mane))
     if "file_mane" in locals():
         filescript = open(file_mane, "wb")
@@ -269,10 +296,16 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
         logger.error("dump file type missing")
 
 
-def senddescriptormd5(objectxmpp, data):
+def senddescriptormd5(objectxmpp, data): 
     """
-    send the agent's figerprint  descriptor in database to the machine for update
-    Update remote agent
+    Send the MD5 descriptor of the agent's base to the specified machine for an update.
+
+    Parameters:
+    - objectxmpp: The XMPP object representing the current agent.
+    - data (dict): Data containing information about the update request, including the target machine's JID.
+
+    Returns:
+    None
     """
     objectxmpp.Update_Remote_Agentbase = update_remote_agent.Update_Remote_Agent(
         objectxmpp.config.diragentbase
