@@ -318,7 +318,7 @@ def loadparameters(namefile, group, key):
     Example:
         loadparameters("config.ini", "section1", "key1")
     """
-     Config = configparser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(namefile)
     return Config.get("group", "key") if Config.has_option("group", "key") else ""
 
