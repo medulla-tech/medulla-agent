@@ -251,6 +251,7 @@ class SingletonDecorator:
 
         print(obj1 is obj2)  # True (obj1 and obj2 refer to the same instance)
     """
+
     def __init__(self, klass):
         """
         Initialize the SingletonDecorator.
@@ -336,6 +337,7 @@ class substitutelist:
         sub_monitoring (list): List of substitute values for monitoring.
         sub_updates (list): List of substitute values for updates.
     """
+
     def __init__(self):
         """
         Initialize the Substitutelist with default and user-defined substitute values.
