@@ -493,7 +493,8 @@ def adusergroups(user):
     """
     result = []
     if sys.platform.startswith("win"):
-        if indomain := isMachineInDomain():
+        indomain = isMachineInDomain()
+        if indomain:
             result = powershellfinduseradgroups(user)
     return result
 
