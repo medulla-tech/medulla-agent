@@ -13,7 +13,7 @@ from lib import agentconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # nb  -1 infinie
 
@@ -22,7 +22,7 @@ def schedule_main(objectxmpp):
     logger.debug("###################################################")
     logger.debug("call %s ", plugin)
     logger.debug("###################################################")
-    num_compteur = getattr(objectxmpp, f'num_call_{plugin["NAME"]}')
+    num_compteur = getattr(objectxmpp, "num_call_%s" % plugin['NAME'])
     if num_compteur == 0:
         read_config_plugin_agent(objectxmpp)
     if objectxmpp.enable_kiosk:
@@ -40,7 +40,7 @@ def schedule_main(objectxmpp):
                 utils.shellcommandtimeout(command, 600).run()
 
 def read_config_plugin_agent(objectxmpp):
-    configfilename = os.path.join(agentconffile.directoryconffile(), f'{plugin["NAME"]}.ini')
+    configfilename = os.path.join(agentconffile.directoryconffile(), "%s.ini" % plugin['NAME'])
     if not os.path.isfile(configfilename):
         logger.warning("there is no configuration file : %s" % configfilename)
         logger.warning("the missing configuration file is created automatically.")
