@@ -11,6 +11,7 @@
 %define use_git         1
 %define branch integration
 %define filetree_version 0.2
+%define kiosk_version 1.0.0
 
 %global __python %{__python3}
 
@@ -391,10 +392,10 @@ mkdir -p %buildroot%_var/lib/pulse2/clients
 mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 mv  pulse-machine-plugins-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
-mv kiosk-interface kiosk-interface-${VERSION_KIOSK_INTERFACE}
-tar czvf kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz kiosk-interface-${VERSION_KIOSK_INTERFACE}
-rm -fr kiosk-interface-${VERSION_KIOSK_INTERFACE}
-mv kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz %buildroot%_var/lib/pulse2/clients
+mv kiosk-interface kiosk-interface-%{kiosk_version}
+tar czvf kiosk-interface-%{kiosk_version}.tar.gz kiosk-interface-%{kiosk_version}
+rm -fr kiosk-interface-%{kiosk_version}
+mv kiosk-interface-%{kiosk_version}.tar.gz %buildroot%_var/lib/pulse2/clients
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseremoteagent
 cp -frv pulse_xmpp_agent/* %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/
 rm -frv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/config
