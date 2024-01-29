@@ -26,10 +26,26 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 import logging
 from logging.handlers import RotatingFileHandler
 import importlib.util
+import xml.etree.ElementTree as ET
 
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+
+def display_xml(xml_string):
+    root = ET.fromstring(xml_string)
+    xml_formatted = ET.tostring(root, encoding="unicode", method="xml")
+    print("XML correctly formated :")
+    print(xml_formatted)
+
+
+def delete_tag_macaddrpxe(xml_string):
+    root = ET.fromstring(xml_string)
+    for parent in root.findall(".//MACADDRPXE/.."):
+        for element in parent.findall(".//MACADDRPXE"):
+            parent.remove(element)
+    new_xml_string = ET.tostring(root, encoding="unicode", method="xml")
+    return new_xml_string
 
 
 class InventoryFix:
@@ -204,6 +220,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             except AttributeError as e:
                 logger.warn("Could not get any DEVICEID section in inventory")
                 DEVICEID = ""
+            try:
+                expression = re.compile(r'</QUERY>.*?</REQUEST>', re.DOTALL)
+                content = re.sub(expression, '</QUERY></REQUEST>', content)
+            except:
+                pass
+            try:
+                content = delete_tag_macaddrpxe(content)
+            except:
+                pass
+
             if xmppobject.config.inventory_verbose:
                 logger.info(
                     "################################################################"
