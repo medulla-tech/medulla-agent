@@ -376,7 +376,7 @@ rm -fr pulse-machine-plugins-%{version}
 mkdir -p %buildroot%_var/lib/pulse2/clients
 mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 mv  pulse-machine-plugins-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
-GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
+GIT_SSL_NO_VERIFY=true git clone --branch %{branch} https://github.com/pulse-project/kiosk-interface.git
 mv kiosk-interface kiosk-interface-%{kiosk_version}
 tar czvf kiosk-interface-%{kiosk_version}.tar.gz kiosk-interface-%{kiosk_version}
 rm -fr kiosk-interface-%{kiosk_version}
