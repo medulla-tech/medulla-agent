@@ -27,7 +27,11 @@ def schedule_main(objectxmpp):
         read_config_plugin_agent(objectxmpp)
     if objectxmpp.enable_kiosk:
         # Check if kiosk is already running
-        if os.path.exists(os.path.join("c:\\", "tmp", "kiosk.pid")):
+        if sys.platform.startswith("win"):
+            pidfile = os.path.join("c:\\", "windows", "temp", "kiosk.pid")
+        else:
+            pidfile = os.path.join("/", "tmp", "kiosk.pid")
+        if os.path.exists(pidfile):
             logger.debug("Kiosk is already running")
         else:
             # Run kiosk
