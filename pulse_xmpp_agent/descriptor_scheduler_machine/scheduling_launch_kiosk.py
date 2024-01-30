@@ -14,7 +14,7 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # nb  -1 infinie
 
@@ -39,7 +39,11 @@ def schedule_main(objectxmpp):
         read_config_plugin_agent(objectxmpp)
     if objectxmpp.enable_kiosk:
         # Check if kiosk is already running
-        if os.path.exists(os.path.join("c:\\", "tmp", "kiosk.pid")):
+        if sys.platform.startswith("win"):
+            pidfile = os.path.join("c:\\", "windows", "temp", "kiosk.pid")
+        else:
+            pidfile = os.path.join("/", "tmp", "kiosk.pid")
+        if os.path.exists(pidfile):
             logger.debug("Kiosk is already running")
         else:
             # Run kiosk
