@@ -5,9 +5,9 @@ DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' '
 DEB_NOEPOCH_VERSION := $(shell echo $(DEB_VERSION) | cut -d: -f2-)
 DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//')
 VERSION_XMPP_AGENT=2.2.0
-VERSION_KIOSK_INTERFACE=0.3
+VERSION_KIOSK_INTERFACE=1.0.0
 FILETREE_VERSION=0.1
-BRANCH=integration
+BRANCH=cnam-pre
 
 # Used during building to set the version
 export CFLAGS=-DVERSION=\"$(DEB_UPSTREAM_VERSION)\"

@@ -3,7 +3,7 @@
 %define use_git         1
 %define branch cnam-pre
 %define filetree_version 0.2
-%define kiosk_version 0.3
+%define kiosk_version 1.0.0
 
 Summary:	Pulse XMPP Agent
 Name:		medulla-agent

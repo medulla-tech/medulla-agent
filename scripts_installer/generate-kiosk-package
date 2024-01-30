@@ -54,16 +54,14 @@ PACKAGE_NAME="Medulla Kiosk"
 PACKAGE_DESC="Kiosk module for machines managed by Medulla"
 
 KIOSK_VERSION="1.0.0"
-PYTHON_VERSION="3.6.5"
+PYTHON_VERSION="3.11.7"
 PYTHON_MODULES_PACKAGE_VERSION="1.1"
-WIN32_PYTHON_FILENAME="python-${PYTHON_VERSION}.exe"
 WIN64_PYTHON_FILENAME="python-${PYTHON_VERSION}-amd64.exe"
 WIN32_PYWIN32_FILENAME="pywin32-223.win32-py3.6.exe"
 WIN64_PYWIN32_FILENAME="pywin32-223.win-amd64-py3.6.exe"
-WIN32_PYQT5_DEPS_1_FILENAME="sip-4.19.8-cp36-none-win32.whl"
-WIN64_PYQT5_DEPS_1_FILENAME="sip-4.19.8-cp36-none-win_amd64.whl"
-WIN32_PYQT5_FILENAME="PyQt5-5.10.1-5.10.1-cp35.cp36.cp37.cp38-none-win32.whl"
-WIN64_PYQT5_FILENAME="PyQt5-5.10.1-5.10.1-cp35.cp36.cp37.cp38-none-win_amd64.whl"
+WIN64_PYQT6_DEPS_1_FILENAME="sip-6.8.2-py3-none-any.whl"
+WIN64_PYQT6_FILENAME="PyQt6-6.6.1-cp38-abi3-win_amd64.whl"
+WIN64_PYQT6_QT6_FILENAME="PyQt6_Qt6-6.6.1-py3-none-win_amd64.whl"
 PULSE_KIOSK_FILENAME="kiosk-interface-${KIOSK_VERSION}.tar.gz"
 PULSE_KIOSK_PATH="/var/lib/pulse2/clients"
 PULSE_KIOSK_DEPS_PATH="/var/lib/pulse2/clients/win/downloads"
@@ -82,14 +80,8 @@ else
     echo "  Python Package UUID: ${PYTHON_PACKAGE_UUID}"
     mkdir -p /var/lib/pulse2/packages/sharing/global/${PYTHON_PACKAGE_UUID}
     pushd /var/lib/pulse2/packages/sharing/global/${PYTHON_PACKAGE_UUID}
-    cp ${PULSE_KIOSK_DEPS_PATH}/${WIN32_PYTHON_FILENAME} .
     cp ${PULSE_KIOSK_DEPS_PATH}/${WIN64_PYTHON_FILENAME} .
-    PYTHON_INSTALL_COMMAND="echo %PROCESSOR_ARCHITECTURE% | find /i \"x86\" > nul\n
-    if %errorlevel%==0 (\n
-        ${WIN32_PYTHON_FILENAME} /passive InstallAllUsers=1 AssociateFiles=0 PrependPath=1\n
-    ) else (\n
-        ${WIN64_PYTHON_FILENAME} /passive InstallAllUsers=1 AssociateFiles=0 PrependPath=1\n
-    )"
+    PYTHON_INSTALL_COMMAND="${WIN64_PYTHON_FILENAME} /quiet InstallAllUsers=1 Include_pip=0 TargetDir=\"c:\Program Files\Python3\""
     PYTHON_INSTALL_COMMAND_ENCODED=$(echo -e ${PYTHON_INSTALL_COMMAND} | base64 --wrap=0)
     # Generate xmppdeploy.json
     cat <<EOF > xmppdeploy.json
@@ -187,10 +179,9 @@ else
     pushd /var/lib/pulse2/packages/sharing/global/${PYTHON_MODULES_PACKAGE_UUID}
     cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN32_PYWIN32_FILENAME} .
     cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYWIN32_FILENAME} .
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN32_PYQT5_DEPS_1_FILENAME} .
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT5_DEPS_1_FILENAME} .
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN32_PYQT5_FILENAME} .
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT5_FILENAME} .
+    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_DEPS_1_FILENAME} .
+    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_FILENAME} .
+    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_QT6_FILENAME} .
     PYWIN32_INSTALL_COMMAND="echo %PROCESSOR_ARCHITECTURE% | find /i \"x86\" > nul\n
     if %errorlevel%==0 (\n
       py -3 -m easy_install ${WIN32_PYWIN32_FILENAME}\n
@@ -198,13 +189,8 @@ else
       py -3 -m easy_install ${WIN64_PYWIN32_FILENAME}\n
     )"
     PYWIN32_INSTALL_COMMAND_ENCODED=$(echo -e ${PYWIN32_INSTALL_COMMAND} | base64 --wrap=0)
-    PYQT5_INSTALL_COMMAND="echo %PROCESSOR_ARCHITECTURE% | find /i \"x86\" > nul\n
-    if %errorlevel%==0 (\n
-      py -3 -m pip install --upgrade --no-index --find-links=\".\" ${WIN32_PYQT5_FILENAME}\n
-    ) else (\n
-      py -3 -m pip install --upgrade --no-index --find-links=\".\" ${WIN64_PYQT5_FILENAME}\n
-    )"
-    PYQT5_INSTALL_COMMAND_ENCODED=$(echo -e ${PYQT5_INSTALL_COMMAND} | base64 --wrap=0)
+    PYQT6_INSTALL_COMMAND="py -3 -m pip install --upgrade --no-index --find-links=\".\" ${WIN64_PYQT6_FILENAME}"
+    PYQT6_INSTALL_COMMAND_ENCODED=$(echo -e ${PYQT6_INSTALL_COMMAND} | base64 --wrap=0)
     # Generate xmppdeploy.json
     cat <<EOF > xmppdeploy.json
 {
@@ -258,7 +244,7 @@ else
             {
                 "typescript": "Batch",
                 "success": 4,
-                "script": "${PYQT5_INSTALL_COMMAND_ENCODED}",
+                "script": "${PYQT6_INSTALL_COMMAND_ENCODED}",
                 "actionlabel": "f8bd0cd6",
                 "codereturn": "",
                 "step": 3,
@@ -326,7 +312,7 @@ cp ${PULSE_KIOSK_PATH}/${PULSE_KIOSK_FILENAME} .
 # Generate bat file used for running the kiosk at startup
 cat <<EOF > PulseKiosk.bat
 cd %ProgramFiles%\Python36\Lib\site-packages\kiosk_interface
-cmd.exe /K py -3 __init__.py
+cmd.exe /K py -3 __main__.py
 EOF
 
 KIOSK_COPY_BAT_COMMAND="copy PulseKiosk.bat \"%ALLUSERSPROFILE%\Microsoft\Windows\Start Menu\Programs\StartUp\""
