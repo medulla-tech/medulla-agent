@@ -146,7 +146,7 @@ class MUCBot(ClientXMPP):
             self.sub_assessor = self.agentmaster
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
-        # _______________________ Getion connection agent _____________________
+        # _______________________ Gestion connection agent _____________________
         self.add_event_handler("register", self.register)
         self.add_event_handler("connecting", self.handle_connecting)
         self.add_event_handler("connection_failed", self.handle_connection_failed)
