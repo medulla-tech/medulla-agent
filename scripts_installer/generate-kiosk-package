@@ -21,29 +21,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Pulse 2.  If not, see <http://www.gnu.org/licenses/>.
 
-# Files needed
-# https://www.python.org/ftp/python/3.6.5/python-3.6.5.exe
-# https://www.python.org/ftp/python/3.6.5/python-3.6.5-amd64.exe
-# https://github.com/mhammond/pywin32/releases/download/b223/pywin32-223.win32-py3.6.exe
-# https://github.com/mhammond/pywin32/releases/download/b223/pywin32-223.win-amd64-py3.6.exe
-# https://files.pythonhosted.org/packages/7a/49/67cc7955baf2ec5b67e141da2ab2a436cbf0f8d7c9fcab54e35df21d056b/sip-4.19.8-cp36-none-win32.whl
-# https://files.pythonhosted.org/packages/30/fa/90ea79d7b6b21a50e16d2e1214bd4d45390ee1b5393dc09c3785a3dc9c7e/sip-4.19.8-cp36-none-win_amd64.whl
-# https://files.pythonhosted.org/packages/6c/63/89f888968ee0c7e7ffb2ea7604fae3ef85f7bc86f57dd07019805aa78798/PyQt5-5.10.1-5.10.1-cp35.cp36.cp37.cp38-none-win32.whl
-# https://files.pythonhosted.org/packages/a7/22/67cc2bac6ae2cd3a7eabb2a2e91638b94bdc6e0503747e49670ce44bb5b0/PyQt5-5.10.1-5.10.1-cp35.cp36.cp37.cp38-none-win_amd64.whl
-
 echo "INFO: Generating package ${PACKAGE_NAME}..."
 
 # Detect if uuid or uuidgen is available
 if [ -x "$(command -v uuid)" ]; then
     PACKAGE_UUID=$(uuid)
     echo "  Package UUID: ${PACKAGE_UUID}"
-    PYTHON_PACKAGE_UUID=$(uuid)
-    PYTHON_MODULES_PACKAGE_UUID=$(uuid)
 elif [ -x "$(command -v uuidgen)" ]; then
     PACKAGE_UUID=$(uuidgen)
     echo "  Package UUID: ${PACKAGE_UUID}"
-    PYTHON_PACKAGE_UUID=$(uuidgen)
-    PYTHON_MODULES_PACKAGE_UUID=$(uuidgen)
 else
   echo "ERROR: Please install uuid or uuidgen."
   exit 1
@@ -55,246 +41,16 @@ PACKAGE_DESC="Kiosk module for machines managed by Medulla"
 
 KIOSK_VERSION="1.0.0"
 PYTHON_VERSION="3.11.7"
-PYTHON_MODULES_PACKAGE_VERSION="1.1"
 WIN64_PYTHON_FILENAME="python-${PYTHON_VERSION}-amd64.exe"
-WIN32_PYWIN32_FILENAME="pywin32-223.win32-py3.6.exe"
-WIN64_PYWIN32_FILENAME="pywin32-223.win-amd64-py3.6.exe"
-WIN64_PYQT6_DEPS_1_FILENAME="sip-6.8.2-py3-none-any.whl"
+WIN64_PYWIN32_FILENAME="pywin32-306-cp311-cp311-win_amd64.whl"
+WIN64_PYQT6_SIP_DEPS_1_FILENAME="sip-6.8.2-py3-none-any.whl"
 WIN64_PYQT6_FILENAME="PyQt6-6.6.1-cp38-abi3-win_amd64.whl"
 WIN64_PYQT6_QT6_FILENAME="PyQt6_Qt6-6.6.1-py3-none-win_amd64.whl"
+WIN64_PYQT6_SIP_FILENAME="PyQt6_sip-13.6.0-cp311-cp311-win_amd64.whl"
+WIN64_WHEEL_FILENAME="wheel-0.42.0-py3-none-any.whl"
 PULSE_KIOSK_FILENAME="kiosk-interface-${KIOSK_VERSION}.tar.gz"
 PULSE_KIOSK_PATH="/var/lib/pulse2/clients"
 PULSE_KIOSK_DEPS_PATH="/var/lib/pulse2/clients/win/downloads"
-
-
-
-#### CREATE PYTHON PACKAGE
-echo "INFO: Generating Python package..."
-# First check if the package exists. If it is the case, do nothing
-old_python_uuid=$(grep "Python v${PYTHON_VERSION}" /var/lib/pulse2/packages/sharing/global/* -R | grep xmppdeploy.json | grep -P -o '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
-if [[ ${old_python_uuid} != '' ]]; then
-    echo "INFO: Python package ${old_python_uuid} exists..."
-    PYTHON_PACKAGE_UUID=${old_python_uuid}
-else
-    # Create the package
-    echo "  Python Package UUID: ${PYTHON_PACKAGE_UUID}"
-    mkdir -p /var/lib/pulse2/packages/sharing/global/${PYTHON_PACKAGE_UUID}
-    pushd /var/lib/pulse2/packages/sharing/global/${PYTHON_PACKAGE_UUID}
-    cp ${PULSE_KIOSK_DEPS_PATH}/${WIN64_PYTHON_FILENAME} .
-    PYTHON_INSTALL_COMMAND="${WIN64_PYTHON_FILENAME} /quiet InstallAllUsers=1 Include_pip=0 TargetDir=\"c:\Program Files\Python3\""
-    PYTHON_INSTALL_COMMAND_ENCODED=$(echo -e ${PYTHON_INSTALL_COMMAND} | base64 --wrap=0)
-    # Generate xmppdeploy.json
-    cat <<EOF > xmppdeploy.json
-{
-    "info": {
-        "localisation_server": "global",
-        "previous_localisation_server": "global",
-        "description": "Python package for Pulse Kiosk",
-        "name": "Python v${PYTHON_VERSION}",
-        "software": "Python",
-        "transferfile": true,
-        "methodetransfert": "pushrsync",
-        "Dependency": [],
-        "version": "${PYTHON_VERSION}",
-        "metagenerator": "manual"
-    },
-    "win": {
-        "sequence": [
-            {
-                "success": 2,
-                "actionlabel": "3837583a",
-                "codereturn": "",
-                "step": 0,
-                "command": "py -3 -V",
-                "error": 1,
-                "action": "actionprocessscript",
-                "@resultcommand": "@resultcommand"
-            },
-            {
-                "typescript": "Batch",
-                "script": "${PYTHON_INSTALL_COMMAND_ENCODED}",
-                "actionlabel": "5b10d6ae4d7b9",
-                "codereturn": "",
-                "step": 1,
-                "success": 2,
-                "error": 3,
-                "action": "actionprocessscriptfile",
-                "@resultcommand": "@resultcommand"
-            },
-            {
-                "action": "actionsuccescompletedend",
-                "step": 2,
-                "actionlabel": "END_SUCCESS"
-            },
-            {
-                "action": "actionerrorcompletedend",
-                "step": 3,
-                "actionlabel": "END_ERROR"
-            }
-        ]
-    },
-    "metaparameter": {
-        "win": {
-            "label": {
-                "END_SUCCESS": 2,
-                "3837583a": 0,
-                "5b10d6ae4d7b9": 1,
-                "END_ERROR": 3
-            }
-        },
-        "os": [
-            "win"
-        ]
-    }
-}
-EOF
-
-    # Generate conf.json
-    cat <<EOF > conf.json
-{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "Python package for Pulse Kiosk","targetos": "win", "entity_id": "0", "sub_packages": [], "localisation_server": "global", "previous_localisation_server": "global", "reboot": 0, "version": "${PYTHON_VERSION}",
-"inventory": {"associateinventory": "0", "licenses": "", "queries": {"Qversion": "", "Qvendor": "", "boolcnd": "", "Qsoftware": ""}}, "id": "${PYTHON_PACKAGE_UUID}", "name": "Python v${PYTHON_VERSION}", "metagenerator": "manual"}
-EOF
-
-    popd
-fi
-echo "INFO: Generating Python package... Done"
-
-# Change permissions on the package
-chown -R syncthing: /var/lib/pulse2/packages/sharing/global/${PYTHON_PACKAGE_UUID}
-
-
-
-
-#### CREATE PYTHON MODULES PACKAGE
-echo "INFO: Generating Python modules package..."
-# First check if the package exists. If it is the case, do nothing
-old_python_modules_uuid=$(grep "Python modules v${PYTHON_MODULES_PACKAGE_VERSION}" /var/lib/pulse2/packages/sharing/global/* -R | grep xmppdeploy.json | grep -P -o '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
-if [[ ${old_python_modules_uuid} != '' ]]; then
-    echo "INFO: Python modules package ${old_python_modules_uuid} exists..."
-    PYTHON_MODULES_PACKAGE_UUID=${old_python_modules_uuid}
-else
-    # Create the package
-    echo "  Python modules Package UUID: ${PYTHON_MODULES_PACKAGE_UUID}"
-    mkdir -p /var/lib/pulse2/packages/sharing/global/${PYTHON_MODULES_PACKAGE_UUID}
-    pushd /var/lib/pulse2/packages/sharing/global/${PYTHON_MODULES_PACKAGE_UUID}
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN32_PYWIN32_FILENAME} .
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYWIN32_FILENAME} .
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_DEPS_1_FILENAME} .
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_FILENAME} .
-    cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_QT6_FILENAME} .
-    PYWIN32_INSTALL_COMMAND="echo %PROCESSOR_ARCHITECTURE% | find /i \"x86\" > nul\n
-    if %errorlevel%==0 (\n
-      py -3 -m easy_install ${WIN32_PYWIN32_FILENAME}\n
-    ) else (\n
-      py -3 -m easy_install ${WIN64_PYWIN32_FILENAME}\n
-    )"
-    PYWIN32_INSTALL_COMMAND_ENCODED=$(echo -e ${PYWIN32_INSTALL_COMMAND} | base64 --wrap=0)
-    PYQT6_INSTALL_COMMAND="py -3 -m pip install --upgrade --no-index --find-links=\".\" ${WIN64_PYQT6_FILENAME}"
-    PYQT6_INSTALL_COMMAND_ENCODED=$(echo -e ${PYQT6_INSTALL_COMMAND} | base64 --wrap=0)
-    # Generate xmppdeploy.json
-    cat <<EOF > xmppdeploy.json
-{
-    "info": {
-        "localisation_server": "global",
-        "previous_localisation_server": "global",
-        "description": "Python modules package for Medulla Kiosk",
-        "name": "Python modules v${PYTHON_MODULES_PACKAGE_VERSION}",
-        "software": "Python modules",
-        "transferfile": true,
-        "methodetransfert": "pushrsync",
-        "Dependency": [
-            "${PYTHON_PACKAGE_UUID}"
-        ],
-        "version": "${PYTHON_MODULES_PACKAGE_VERSION}",
-        "metagenerator": "manual"
-    },
-    "win": {
-        "sequence": [
-            {
-                "success": 2,
-                "actionlabel": "94825ae3",
-                "codereturn": "",
-                "step": 0,
-                "command": "py -3 -c \"import win32api\"",
-                "error": 1,
-                "action": "actionprocessscript",
-                "@resultcommand": "@resultcommand"
-            },
-            {
-                "typescript": "Batch",
-                "script": "${PYWIN32_INSTALL_COMMAND_ENCODED}",
-                "actionlabel": "f81c3cc2",
-                "step": 1,
-                "codereturn": "",
-                "action": "actionprocessscriptfile",
-                "success": 2,
-                "error": 5,
-                "@resultcommand": "@resultcommand"
-            },
-            {
-                "success": 4,
-                "actionlabel": "95a13aa6",
-                "codereturn": "",
-                "step": 2,
-                "command": "py -3 -c \"import PyQt5\"",
-                "error": 3,
-                "action": "actionprocessscript",
-                "@resultcommand": "@resultcommand"
-            },
-            {
-                "typescript": "Batch",
-                "success": 4,
-                "script": "${PYQT6_INSTALL_COMMAND_ENCODED}",
-                "actionlabel": "f8bd0cd6",
-                "codereturn": "",
-                "step": 3,
-                "error": 5,
-                "action": "actionprocessscriptfile",
-                "@resultcommand": "@resultcommand"
-            },
-            {
-                "action": "actionsuccescompletedend",
-                "step": 4,
-                "actionlabel": "END_SUCCESS"
-            },
-            {
-                "action": "actionerrorcompletedend",
-                "step": 5,
-                "actionlabel": "END_ERROR"
-            }
-        ]
-    },
-    "metaparameter": {
-        "win": {
-            "label": {
-                "END_SUCCESS": 4,
-                "f8bd0cd6": 3,
-                "f81c3cc2": 1,
-                "94825ae3": 0,
-                "95a13aa6": 2,
-                "END_ERROR": 5
-            }
-        },
-        "os": [
-            "win"
-        ]
-    }
-}
-EOF
-
-    # Generate conf.json
-    cat <<EOF > conf.json
-{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "Python modules package for Medulla Kiosk","targetos": "win", "entity_id": "0", "sub_packages": [], "localisation_server": "global", "previous_localisation_server": "global", "reboot": 0, "version": "${PYTHON_MODULES_PACKAGE_VERSION}",
-"inventory": {"associateinventory": "0", "licenses": "", "queries": {"Qversion": "", "Qvendor": "", "boolcnd": "", "Qsoftware": ""}}, "id": "${PYTHON_MODULES_PACKAGE_UUID}", "name": "Python modules v${PYTHON_MODULES_PACKAGE_VERSION}", "metagenerator": "manual"}
-EOF
-
-    popd
-fi
-echo "INFO: Generating Python modules package... Done"
-
-# Change permissions on the package
-chown -R syncthing: /var/lib/pulse2/packages/sharing/global/${PYTHON_MODULES_PACKAGE_UUID}
-
 
 
 #### CREATE KIOSK PACKAGE
@@ -306,17 +62,31 @@ old_uuid=$(grep "${PACKAGE_NAME} v${AGENT_VERSION}" /var/lib/pulse2/packages/sha
 mkdir -p /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
 pushd /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
 
-# Copy the kiosk to the package folder
+# Python
+cp ${PULSE_KIOSK_DEPS_PATH}/${WIN64_PYTHON_FILENAME} .
+PYTHON_INSTALL_COMMAND="${WIN64_PYTHON_FILENAME} /quiet InstallAllUsers=1 Include_pip=0 TargetDir=\"c:\\Program Files\\Python3\"\n
+C:\\Progra~1\\Python3\\python.exe -m ensurepip --upgrade\n"
+PYTHON_INSTALL_COMMAND_ENCODED=$(echo -e ${PYTHON_INSTALL_COMMAND} | base64 --wrap=0)
+
+# Python modules
+cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYWIN32_FILENAME} .
+cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_FILENAME} .
+cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_QT6_FILENAME} .
+cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_SIP_FILENAME} .
+cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_PYQT6_SIP_DEPS_1_FILENAME} .
+cp ${PULSE_KIOSK_DEPS_PATH}/python_modules/${WIN64_WHEEL_FILENAME} .
+PYWIN32_INSTALL_COMMAND="py -3 -m pip install --upgrade --no-index --find-links=\".\" ${WIN64_PYWIN32_FILENAME}"
+PYWIN32_INSTALL_COMMAND_ENCODED=$(echo -e ${PYWIN32_INSTALL_COMMAND} | base64 --wrap=0)
+PYQT6_INSTALL_COMMAND="py -3 -m pip install --upgrade --no-index --find-links=\".\" ${WIN64_PYQT6_FILENAME}"
+PYQT6_INSTALL_COMMAND_ENCODED=$(echo -e ${PYQT6_INSTALL_COMMAND} | base64 --wrap=0)
+WHEEL_INSTALL_COMMAND="py -3 -m pip install --upgrade --no-index --find-links=\".\" ${WIN64_WHEEL_FILENAME}"
+WHEEL_INSTALL_COMMAND_ENCODED=$(echo -e ${WHEEL_INSTALL_COMMAND} | base64 --wrap=0)
+
+# Kiosk
 cp ${PULSE_KIOSK_PATH}/${PULSE_KIOSK_FILENAME} .
+KIOSK_INSTALL_COMMAND="py -3 -m pip install --upgrade --no-index --find-links=\".\" ${PULSE_KIOSK_FILENAME}"
+KIOSK_INSTALL_COMMAND_ENCODED=$(echo -e ${KIOSK_INSTALL_COMMAND} | base64 --wrap=0)
 
-# Generate bat file used for running the kiosk at startup
-cat <<EOF > PulseKiosk.bat
-cd %ProgramFiles%\Python36\Lib\site-packages\kiosk_interface
-cmd.exe /K py -3 __main__.py
-EOF
-
-KIOSK_COPY_BAT_COMMAND="copy PulseKiosk.bat \"%ALLUSERSPROFILE%\Microsoft\Windows\Start Menu\Programs\StartUp\""
-KIOSK_COPY_BAT_COMMAND_ENCODED=$(echo -e ${KIOSK_COPY_BAT_COMMAND} | base64 --wrap=0)
 # Generate xmppdeploy.json
 cat <<EOF > xmppdeploy.json
 {
@@ -328,45 +98,85 @@ cat <<EOF > xmppdeploy.json
         "software": "${PACKAGE_NAME}",
         "transferfile": true,
         "methodetransfert": "pushrsync",
-        "Dependency": [
-            "${PYTHON_PACKAGE_UUID}",
-            "${PYTHON_MODULES_PACKAGE_UUID}"
-        ],
+        "Dependency": [],
         "version": "${KIOSK_VERSION}",
         "metagenerator": "manual"
     },
     "win": {
         "sequence": [
             {
+                "step": 0,
+                "error": 1,
+                "success": 2,
+                "actionlabel": "3837583a",
+                "action": "actionprocessscript",
+                "command": "py -3 -V",
+                "codereturn": "",
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "step": 1,
+                "error": 7,
+                "success": 2,
+                "actionlabel": "5b10d6ae4d7b9",
+                "action": "actionprocessscriptfile",
+                "typescript": "Batch",
+                "script": "${PYTHON_INSTALL_COMMAND_ENCODED}",
+                "codereturn": "",
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "step": 2,
+                "error": 7,
+                "success": 3,
+                "actionlabel": "f81c3cc2",
+                "action": "actionprocessscriptfile",
+                "typescript": "Batch",
+                "script": "${PYWIN32_INSTALL_COMMAND_ENCODED}",
+                "codereturn": "",
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "step": 3,
+                "error": 7,
+                "success": 4,
+                "actionlabel": "f8bd0cd6",
+                "action": "actionprocessscriptfile",
+                "typescript": "Batch",
+                "script": "${PYQT6_INSTALL_COMMAND_ENCODED}",
+                "codereturn": "",
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "step": 4,
+                "error": 7,
+                "success": 5,
+                "actionlabel": "a5f343dd",
+                "action": "actionprocessscriptfile",
+                "typescript": "Batch",
+                "script": "${WHEEL_INSTALL_COMMAND_ENCODED}",
+                "codereturn": "",
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "step": 5,
+                "error": 7,
+                "success": 6,
+                "actionlabel": "e11c5ac2",
+                "action": "actionprocessscriptfile",
                 "typescript": "Batch",
                 "script": "py -3 -m pip install --upgrade --no-index --find-links=\".\" ${PULSE_KIOSK_FILENAME}",
-                "actionlabel": "e11c5ac2",
-                "step": 0,
                 "codereturn": "",
-                "action": "actionprocessscriptfile",
-                "success": 1,
-                "error": 3,
                 "@resultcommand": "@resultcommand"
             },
             {
-                "typescript": "Batch",
-                "script": "${KIOSK_COPY_BAT_COMMAND_ENCODED}",
-                "actionlabel": "e843a25b",
-                "step": 1,
-                "codereturn": "",
-                "action": "actionprocessscriptfile",
-                "success": 2,
-                "error": 3,
-                "@resultcommand": "@resultcommand"
-            },
-            {
+                "step": 6,
                 "action": "actionsuccescompletedend",
-                "step": 2,
                 "actionlabel": "END_SUCCESS"
             },
             {
+                "step": 7,
                 "action": "actionerrorcompletedend",
-                "step": 3,
                 "actionlabel": "END_ERROR"
             }
         ]
@@ -374,10 +184,14 @@ cat <<EOF > xmppdeploy.json
     "metaparameter": {
         "win": {
             "label": {
-                "END_SUCCESS": 2,
-                "e11c5ac2": 0,
-                "e843a25b": 1,
-                "END_ERROR": 3
+                "3837583a": 0,
+                "5b10d6ae4d7b9": 1,
+                "f81c3cc2": 2,
+                "f8bd0cd6": 3,
+                "a5f343dd": 4,
+                "e11c5ac2": 5,
+                "END_SUCCESS": 6,
+                "END_ERROR": 7
             }
         },
         "os": [
