@@ -417,7 +417,6 @@ cp pulse_xmpp_agent/config/updatebackupclient.ini %buildroot%_var/lib/pulse2/cli
 cp pulse_xmpp_agent/config/am___server_tcpip.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
-cp scripts_installer/generate-kiosk-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/HEADER.html %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/style.css %buildroot%_var/lib/pulse2/clients
 mkdir -p %buildroot%_var/lib/pulse2/clients/win
@@ -446,7 +445,6 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork
 cp -fr scripts_installer/win/artwork/* %buildroot%_var/lib/pulse2/clients/win/artwork
 chmod +x %buildroot%_var/lib/pulse2/clients/*.sh
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-package
-chmod +x %buildroot%_var/lib/pulse2/clients/generate-kiosk-package
 cp pulse_xmpp_agent/script/create-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/script/remove-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/

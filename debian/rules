@@ -144,7 +144,6 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/am___server_tcpip.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp scripts_installer/generate-pulse-agent.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
-	cp scripts_installer/generate-kiosk-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/HEADER.html $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/style.css $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
@@ -173,7 +172,6 @@ override_dh_auto_install:
 	cp -fr scripts_installer/win/artwork/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/artwork
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/*.sh
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/generate-agent-package
-	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/generate-kiosk-package
 	cp pulse_xmpp_agent/script/create-profile.ps1 $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp pulse_xmpp_agent/script/remove-profile.ps1 $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/pulse-service.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
