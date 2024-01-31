@@ -769,8 +769,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     with open(filenamejson, 'r') as f:
                         data = json.load(f)
                     datainfo=data['data']
-                    slotdep= time.strftime("%D %H:%M", time.localtime(int(datainfo['stardate'])))
-                    slotend= time.strftime("%D %H:%M", time.localtime(int(datainfo['enddate'])))
+                    slotdep= time.strftime("%d %H:%M", time.localtime(int(datainfo['stardate'])))
+                    slotend= time.strftime("%d %H:%M", time.localtime(int(datainfo['enddate'])))
                     if timecurrent > datainfo['stardate'] and timecurrent < datainfo['enddate']:
                         # on relance le deployement et on quitte
                         grafcet(self, data)
