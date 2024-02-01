@@ -75,14 +75,20 @@ class MsgsignedRSA:
         if self.allkey is None or self.publickey is None:
             if os.path.exists(self.filekeypublic) and os.path.exists(
                     self.fileallkey):
-                f = open(self.fileallkey, 'r')
-                self.allkey = pickle.load(f)
-                f.close()
-                f = open(self.filekeypublic, 'r')
-                self.publickey = pickle.load(f)
-                f.close()
+                try:
+                    f = open(self.fileallkey, 'r')
+                    self.allkey = pickle.load(f)
+                    f.close()
+                    f = open(self.filekeypublic, 'r')
+                    self.publickey = pickle.load(f)
+                    f.close()
+                except KeyError:
+                    # We failed to load the files because malformed
+                    # We need to remove them before the regeneration.
+                    os.remove(self.filekeypublic)
+                    os.remove(self.fileallkey)
+                    self.generateRSAclefagent()
             else:
-                # recherche keyfile si not exist then generate.
                 self.generateRSAclefagent()
 
     def loadkeyall(self):
