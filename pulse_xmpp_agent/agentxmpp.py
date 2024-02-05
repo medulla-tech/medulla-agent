@@ -87,6 +87,7 @@ from lib.utils import (
     call_plugin_sequentially,
     convert,
     DateTimebytesEncoderjson,
+    get_rustdesk_id,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -3596,6 +3597,8 @@ AGENT %s ERROR TERMINATE""" % (
             "uuid_serial_machine": serialnumbermachine(),
             "updatingagent": self.config.updating,
             "system_info": offline_search_kb().get(),
+            if get_rustdesk_id() is not None:
+                "RustDesk ID": get_rustdesk_id(),
         }
         try:
             dataobj["md5_conf_monitoring"] = ""

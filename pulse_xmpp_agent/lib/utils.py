@@ -260,6 +260,58 @@ def get_python_exec():
     return sys.executable
 
 
+def is_rust_installed():
+    """
+    Searches if RustDesk is installed on the system.
+
+    Returns:
+        bool: True if RustDesk is installed, False otherwise.
+    """
+
+    rust_installed = False
+
+    if os.name == "posix":  # Linux or Mac
+        if os.path.exists("/usr/bin/rustdesk"):
+            rust_installed = True
+    elif os.name == "nt":
+        if os.path.exists(
+            "C:\\Program Files\\RustDesk\\RustDesk.exe"
+        ) or os.path.exists("C:\\Program Files (x86)\\RustDesk\\RustDesk.exe"):
+            rust_installed = True
+
+    return rust_installed
+
+
+def get_rustdesk_id():
+    """
+    Retrieves the ID of RustDesk.
+
+    Returns:
+        str: The ID of RustDesk if successful, None otherwise.
+    """
+    system = platform.system()
+    rustdesk_id = None
+
+    if system in ["Windows", "Linux", "Darwin"]:
+        rustdesk_executable = "rustdesk"
+        if system == "Windows":
+            rustdesk_executable = "C:\\Program Files\\RustDesk\\rustdesk.exe"
+        elif system == "Linux"
+            rustdesk_executable = "/usr/bin/rustdesk"
+
+        try:
+            result = subprocess.run([rustdesk_executable, "--get-id"], capture_output=True, text=True)
+            if result.returncode == 0:
+                rustdesk_id = result.stdout.strip()
+        except FileNotFoundError:
+            logger.error("RustDesk not found. If is installed please contact SIVEO support to provide the path")
+
+    else:
+        logger.error("Your OS is not supported yet.")
+
+    return rustdesk_id
+
+
 def os_version():
     """
     Retrieve the name of the real Windows version
