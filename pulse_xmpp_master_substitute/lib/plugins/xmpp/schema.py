@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     Text,
     Enum,
+    Float,
 )
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.ext.declarative import declarative_base
@@ -53,7 +54,8 @@ class DBObj(object):
 
 class XmppMasterDBObj(DBObj):
     # All XmppMaster tables have id colmun as primary key
-    id = Column(Integer, primary_key=True)
+    #id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
 
 class Qa_custom_command(Base):
@@ -933,3 +935,64 @@ class Ban_machine(Base, XmppMasterDBObj):
     date  =  Column(DateTime, default=datetime.datetime.now)
     ars_server     = Column(String(255), nullable=False,default="")
 """
+
+class GreenMachine(Base):
+    # ====== Table name =========================
+    __tablename__ = "green_machine"
+    # ====== Fields =============================
+    uuid_machine = Column(String(36), primary_key=True)
+    hostname = Column(String(45))
+    cpu = Column(String(100))
+    nbr_cpu = Column(Integer)
+    cpu_hertz_max = Column(Integer)
+    cpu_herz = Column(Integer)
+    gpu = Column(String(100))
+    nbr_gpu = Column(Integer)
+    memorytype = Column(String(10), default='DDR4')
+    memorysize = Column(Integer, default=4)
+    formfactor = Column(String(10), default='desktop')
+    nbr_HDD = Column(Integer, default=1)
+    nbr_SSD = Column(Integer, default=0)
+    monitor = Column(String(100))
+    nbr_monitor = Column(Integer, default=1)
+    timeac = Column(Integer, default=300)
+    timedc = Column(Integer, default=180)
+    biosdate=Column(DateTime)
+
+class GreenConso(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = "green_conso"
+    # ====== Fields =============================
+    # Here we define columns for the table organization.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(String(36), ForeignKey('green_machine.uuid_machine'), nullable=True)
+    date_start = Column(DateTime)
+    puissance_total = Column(Float)
+    charge = Column(Float)
+    cpu_freq = Column(Float)
+    temperature = Column(Float)
+    puissance_cpu_gpu = Column(Float)
+    coef_charge = Column(Float)
+    nb_mesure = Column(String(45))
+    date_end = Column(DateTime)
+    energie = Column(Float, default=0)
+    machine = relationship("GreenMachine")  # La relation avec la table green_machine
+
+
+class GreenUserIdle(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = "green_user_idle"
+    # ====== Fields =============================
+    # Here we define columns for the table organization.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid_machine = Column(String(36), ForeignKey('green_machine.uuid_machine'), nullable=True)
+    idle = Column(String(45))
+    has_battery = Column(String(45))
+    sleeping = Column(String(45))
+    date = Column(DateTime, server_default='CURRENT_TIMESTAMP')
+    status_monitors =  Column(String(3),default='ON')
+    machine = relationship("GreenMachine")  # La relation avec la table green_machine

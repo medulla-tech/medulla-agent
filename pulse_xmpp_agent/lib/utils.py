@@ -2,6 +2,9 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+# file : pulse_xmpp_agent/lib/utils.py
+
 """
     This file contains shared functions use in pulse client/server agents.
 """
@@ -33,7 +36,9 @@ import imp
 import requests
 import asyncio
 
-if sys.platform == "win32":
+from collections import defaultdict
+
+if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from concurrent.futures import ThreadPoolExecutor
@@ -76,6 +81,12 @@ if sys.platform.startswith("win"):
     from win32com.client import GetObject
     from ctypes.wintypes import LPCWSTR, LPCSTR
 
+    # Définition de la structure LASTINPUTINFO
+    class LASTINPUTINFO(ctypes.Structure):
+        _fields_ = [("cbSize", ctypes.c_uint),
+                    ("dwTime", ctypes.c_ulong)]
+
+
 if sys.platform.startswith("linux"):
     import pwd
     import grp
@@ -86,9 +97,435 @@ if sys.platform.startswith("darwin"):
     import pwd
     import grp
 
-
 import inspect
 
+def manufacturer_model():
+    """
+    Obtient le fabricant et le modèle de l'ordinateur en utilisant les commandes système appropriées.
+
+    Returns:
+        str: Une chaîne contenant le fabricant et le modèle de l'ordinateur.
+    """
+    system_platform = platform.system()
+    if system_platform == 'Windows':
+        powershell_command = '''
+        $computerInfo = Get-CimInstance -ClassName Win32_ComputerSystem
+        Write-Output "$($computerInfo.Manufacturer) $($computerInfo.Model)"
+        '''
+        result = subprocess.run(['powershell', '-Command', powershell_command], capture_output=True, text=True)
+        if result.returncode == 0:
+            output_lines = result.stdout.strip().split('\n')
+            manufacturer, model = output_lines[0], output_lines[1]
+            return f"{manufacturer} {model}"
+        else:
+            return "Erreur lors de l'obtention des informations système."
+    elif system_platform == 'Darwin':  # macOS
+        result = subprocess.run(['system_profiler', 'SPHardwareDataType'], capture_output=True, text=True)
+        if result.returncode == 0:
+            model_line = [line for line in result.stdout.split('\n') if 'Model Identifier' in line][0]
+            model = model_line.split(':')[-1].strip()
+            return f"{model}"
+        else:
+            return "Erreur lors de l'obtention des informations système."
+    elif system_platform == 'Linux':
+        result = subprocess.run(['uname', '-a'], capture_output=True, text=True)
+
+        if result.returncode == 0:
+            model = result.stdout.strip()
+            return f"{model}"
+        else:
+            return "Erreur lors de l'obtention des informations système."
+    else:
+        return "Système d'exploitation non pris en charge."
+
+
+
+
+def InputIdleTime():
+    if platform.system() == 'Windows':
+
+        # Chargement de la bibliothèque user32.dll
+        user32 = ctypes.windll.user32
+
+        # Définition de la fonction GetLastInputInfo
+        GetLastInputInfo = user32.GetLastInputInfo
+        GetLastInputInfo.argtypes = [ctypes.POINTER(LASTINPUTINFO)]
+        GetLastInputInfo.restype = ctypes.c_bool
+        idle_time = 0
+        last_input_info = LASTINPUTINFO()
+        last_input_info.cbSize = ctypes.sizeof(LASTINPUTINFO)
+
+        env_ticks = ctypes.c_uint32(ctypes.windll.kernel32.GetTickCount())
+
+        if GetLastInputInfo(ctypes.byref(last_input_info)):
+            last_input_tick = last_input_info.dwTime
+            idle_time = env_ticks.value - last_input_tick
+
+        return idle_time
+
+def InputIdleTime_seconde():
+    if platform.system() == 'Windows':
+
+        # Chargement de la bibliothèque user32.dll
+        user32 = ctypes.windll.user32
+
+        # Définition de la fonction GetLastInputInfo
+        GetLastInputInfo = user32.GetLastInputInfo
+        GetLastInputInfo.argtypes = [ctypes.POINTER(LASTINPUTINFO)]
+        GetLastInputInfo.restype = ctypes.c_bool
+        idle_time = 0
+        last_input_info = LASTINPUTINFO()
+        last_input_info.cbSize = ctypes.sizeof(LASTINPUTINFO)
+
+        env_ticks = ctypes.c_uint32(ctypes.windll.kernel32.GetTickCount())
+
+        if GetLastInputInfo(ctypes.byref(last_input_info)):
+            last_input_tick = last_input_info.dwTime
+            idle_time = env_ticks.value - last_input_tick
+
+        return idle_time // 1000
+
+ # # def is_laptop_plugged_in():
+    # Crée une connexion à WMI
+    # # c = wmi.WMI()
+
+    # Récupère les informations sur l'alimentation de l'ordinateur
+    # # battery_info = c.Win32_Battery()
+
+    # Vérifie si la batterie est en charge
+    # # for battery in battery_info:
+        # # if battery.BatteryStatus == 2:
+            # # return True  # L'ordinateur est branché
+    # # return False  # L'ordinateur n'est pas branché
+
+
+# class InputIdleTime:  ##fr.softonic.com
+    # class LASTINPUTINFO(ctypes.Structure):
+        # _fields_ = [("cbSize", ctypes.c_uint),
+                    # ("dwTime", ctypes.c_ulong)]
+
+    # user32 = ctypes.windll.user32
+
+    # GetLastInputInfo = user32.GetLastInputInfo
+    # GetLastInputInfo.argtypes = [ctypes.POINTER(LASTINPUTINFO)]
+    # GetLastInputInfo.restype = ctypes.c_bool
+
+    # @staticmethod
+    # def get_last_input_time():
+        # idle_time = 0
+        # last_input_info = InputIdleTime.LASTINPUTINFO()
+        # last_input_info.cbSize = ctypes.sizeof(InputIdleTime.LASTINPUTINFO)
+
+        # env_ticks = ctypes.c_uint32(ctypes.windll.kernel32.GetTickCount())
+
+        # if InputIdleTime.GetLastInputInfo(ctypes.byref(last_input_info)):
+            # last_input_tick = last_input_info.dwTime
+            # idle_time = env_ticks.value - last_input_tick
+
+        # return idle_time
+
+# class InputIdleTime:
+    # """
+    # Classe pour obtenir le temps d'inactivité de l'entrée utilisateur.
+
+    # Utilise la fonction Windows API GetLastInputInfo pour obtenir le temps écoulé depuis la dernière entrée utilisateur.
+
+    # Attributes:
+        # LASTINPUTINFO: Structure définissant la dernière information d'entrée.
+        # GetLastInputInfo: Fonction pour obtenir la dernière information d'entrée.
+    # """
+    # if platform.system() != 'Windows':
+        # raise OSError("InputIdleTime is only supported on Windows.")
+
+    # class LASTINPUTINFO(ctypes.Structure):
+        # _fields_ = [("cbSize", ctypes.c_uint),
+                    # ("dwTime", ctypes.c_ulong)]
+    # user32 = ctypes.windll.user32
+    # GetLastInputInfo = user32.GetLastInputInfo
+    # GetLastInputInfo.argtypes = [ctypes.POINTER(LASTINPUTINFO)]
+    # GetLastInputInfo.restype = ctypes.c_bool
+
+    # # @staticmethod
+    # # def get_last_input_time():
+        # # """
+        # # Obtient le temps écoulé depuis la dernière entrée utilisateur.
+
+        # # Returns:
+            # # int: Temps écoulé en millisecondes depuis la dernière entrée utilisateur.
+        # # """
+        # # idle_time = 0
+        # # last_input_info = InputIdleTime.LASTINPUTINFO()
+        # # last_input_info.cbSize = ctypes.sizeof(InputIdleTime.LASTINPUTINFO)
+        # # env_ticks = ctypes.c_uint32(ctypes.windll.kernel32.GetTickCount())
+        # # if InputIdleTime.GetLastInputInfo(ctypes.byref(last_input_info)):
+            # # last_input_tick = last_input_info.dwTime
+            # # idle_time = env_ticks.value - last_input_tick
+        # # return idle_time
+
+    # @staticmethod
+    # def get_last_input_time():
+        # """
+        # Obtient le temps écoulé depuis la dernière entrée utilisateur.
+
+        # Returns:
+            # int: Temps écoulé en millisecondes depuis la dernière entrée utilisateur.
+        # """
+        # idle_time = 0
+        # last_input_info = InputIdleTime.LASTINPUTINFO()
+        # last_input_info.cbSize = ctypes.sizeof(InputIdleTime.LASTINPUTINFO)
+
+        # # Appel à la fonction GetLastInputInfo
+        # if InputIdleTime.GetLastInputInfo(ctypes.byref(last_input_info)):
+            # last_input_tick = last_input_info.dwTime
+            # env_ticks = ctypes.c_uint32(ctypes.windll.kernel32.GetTickCount())
+            # idle_time = env_ticks.value - last_input_tick
+
+        # return idle_time
+
+    # @staticmethod
+    # def get_last_input_time_second():
+        # """
+        # Obtient le temps écoulé depuis la dernière entrée utilisateur.
+
+        # Returns:
+            # int: Temps écoulé en millisecondes depuis la dernière entrée utilisateur.
+        # """
+        # return InputIdleTime.get_last_input_time()//1000
+
+
+def get_windows_infos(xmppobject):
+    """
+    Obtient différentes informations système sur un système Windows.
+
+    Args:
+        xmppobject (object): L'objet XMPP pour stocker les informations récupérées.
+
+    Returns:
+        dict: Un dictionnaire contenant les informations.
+    """
+
+    xmppobject.infos = {}
+    system_platform = platform.system()
+
+    if system_platform == 'Windows':
+        command={"uuid" : "Get-CimInstance -ClassName Win32_ComputerSystemProduct | Select-Object -ExpandProperty UUID",
+        "gpu" : "Get-CimInstance -ClassName Win32_VideoController | Select-Object -ExpandProperty VideoProcessor",
+        "hd" : "Get-PhysicalDisk | Where-Object MediaType -in @('HDD', 'SSD') | Select-Object FriendlyName, MediaType -ExpandProperty  MediaType",
+        "cpu" : "Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty Name",
+        "clock" : "Get-CimInstance Win32_Processor | Select-Object -ExpandProperty CurrentClockSpeed",
+        "resolution" : "Get-CimInstance CIM_VideoController | Select-Object -Property VideoModeDescription | Format-Table -HideTableHeaders",
+        "model" : "Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams | Select-Object -Property InstanceName | Format-Table -HideTableHeaders",
+        "memorytaille": "(Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum / 1GB",
+        "typememory" : "(Get-WmiObject Win32_PhysicalMemory | Select-Object -ExpandProperty SMBIOSMemoryType)[0]",
+        "cpu_max_freq" : "(Get-CimInstance CIM_Processor).MaxClockSpeed"
+        }
+        command_latin1={"time_reprise" : "(powercfg /query scheme_current SUB_VIDEO VIDEOIDLE) -split '\r?\n' | Where-Object { $_ -match '\S' } | Select-Object -Last 2"}
+        # typememory  26 DDR4 24 DDR3
+
+        # {'uuid': ['4C4C4544-0050-5110-804E-B6C04F46354A'], 'gpu': ['Intel(R) HD Graphics Family'], 'hd': ['SSD', 'HDD'], 'cpu': ['Intel(R) Core(TM) i5-3570 CPU @ 3.40GHz'], 'clock': ['1600'], 'resolution': ['1920 x 1080 x 4294967296 couleurs'],
+        # 'model': ['DISPLAY\\CTV0030\\4&1e781410&0&UID50729728_0'],
+        # 'memorytaille': ['8'],
+        # 'typememory': ['24'],
+        # 'ehd': 6, 'modeecran': False}
+        for t in command:
+            logger.error(f"command{t}")
+            try:
+                xmppobject.infos[t] = [ x.strip() for x in subprocess.check_output(['powershell.exe', command[t]]).decode('utf-8').split('\r\n') if x != ""]
+                # print(xmppobject.infos[t].decode('utf-8'))
+            except Exception as e:
+                logger.error(f"We obtained the backtrace {traceback.format_exc()}")
+            print("%s  : %s" %(t, xmppobject.infos[t] ))
+        xmppobject.infos['ehd'] = 0
+        logger.error(f"command{xmppobject.infos}")
+        for t in command_latin1:
+            result  = [ x.strip() for x in subprocess.check_output(['powershell.exe', command_latin1[t]]).decode('latin-1').split('\r\n') if x != ""]
+            # resultat = subprocess.check_output(['powershell.exe', commandA[t]]) #.decode('utf-8').split('\r\n')
+        xmppobject.infos['time_reprise']=[]
+        for t in result:
+            xmppobject.infos['time_reprise'].append(int([ x for x in t.split(" ")][-1],16))
+        get_has_battery_infos(xmppobject)
+        xmppobject.infos["maxf"]=get_max_cpu_frequency()
+
+        xmppobject.infos['nbcpu'] = len(xmppobject.infos['cpu'])
+        xmppobject.infos['nbgpu'] = len(xmppobject.infos['gpu'])
+        xmppobject.infos['nbhdd'] = len(xmppobject.infos['hd'])
+        xmppobject.infos['nbmonitor'] = len(xmppobject.infos['model'])
+        xmppobject.infos['hostname'] = str(socket.gethostname())
+        xmppobject.infos['memory'] = get_memory_type(xmppobject.infos['typememory'][0])
+        xmppobject.infos['typememory'] = int(xmppobject.infos['typememory'][0])
+        xmppobject.infos['uuid'] = xmppobject.infos['uuid'][0]
+        xmppobject.infos['cpu_max_freq'] = int(xmppobject.infos['cpu_max_freq'][0])
+        xmppobject.infos['memorytaille'] = int(xmppobject.infos['memorytaille'][0])
+        xmppobject.infos['cpu'] = xmppobject.infos['cpu'][0]
+        xmppobject.infos['gpu']= "|||".join(xmppobject.infos['gpu'])
+        xmppobject.infos['clock'] = int(xmppobject.infos['clock'][0])
+        xmppobject.infos['hd'] = compter_elements(xmppobject.infos['hd'])
+        xmppobject.infos['model'] = "|||".join(extraire_modele(xmppobject.infos['model']))
+    return xmppobject.infos
+
+
+def compter_elements(liste):
+    """
+    Compte le nombre d'occurrences de chaque élément dans une liste.
+
+    Args:
+        liste (list): La liste à traiter.
+
+    Returns:
+        dict: Un dictionnaire contenant les éléments de la liste en tant que clés et leur nombre d'occurrences en tant que valeurs.
+    """
+    # Initialisation d'un dictionnaire par défaut pour stocker les comptes
+    comptes = defaultdict(int)
+    # Comptage des éléments dans la liste
+    for element in liste:
+        comptes[element] += 1
+    # Conversion du dictionnaire en un dictionnaire standard
+    comptes_final = dict(comptes)
+    return comptes_final
+
+def extraire_modele(liste):
+    """
+    Extrait les modèles à partir d'une liste d'éléments.
+
+    Args:
+        liste (list): La liste à parcourir.
+
+    Returns:
+        list: Une liste contenant les modèles extraits.
+    """
+    modeles = []
+    for element in liste:
+        if element.startswith("DISPLAY"):
+            # Si la partie commence par "DISPLAY", le modèle est la partie suivante
+            modele = element.split("\\")
+            if len(modele)>=2:
+                modeles.append(modele[1])
+    return modeles
+
+
+def get_max_cpu_frequency1():
+    """
+    Obtient la fréquence maximale du processeur.
+
+    Returns:
+        str: La fréquence maximale du processeur.
+    """
+    try:
+        max_freq = subprocess.check_output(['wmic', 'cpu', 'get', 'MaxClockSpeed']).decode('utf-8').strip()
+        return max_freq
+    except Exception as e:
+        logger.error(f"Error getting max CPU frequency: {e}")
+        return "Erreur lors de l'obtention de la fréquence maximale du processeur."
+
+def get_has_battery_infos(xmppobject):
+    """
+    Obtient des informations sur la batterie.
+
+    Args:
+        xmppobject (object): L'objet XMPP pour stocker les informations récupérées.
+    """
+    xmppobject.infos['has_battery'] = 0
+    xmppobject.infos['battery_mode'] =  0
+    # Initialiser le thread
+    pythoncom.CoInitialize()
+    try:
+        # Utiliser WMI après l'initialisation
+        c = wmi.WMI()
+        battery = c.Win32_Battery()
+        xmppobject.infos['has_battery'] = (len(battery) > 0)
+        xmppobject.infos['battery_mode'] =  len(battery)
+    finally:
+        # Assurez-vous de libérer les ressources après utilisation
+        pythoncom.CoUninitialize()
+
+def get_max_cpu_frequency():
+    """
+    Obtient la fréquence maximale du processeur.
+
+    Returns:
+        str: La fréquence maximale du processeur.
+    """
+    try:
+        cpu_freq = psutil.cpu_freq()
+        max_cpu_speed = cpu_freq.max / 1000  # Convert to GHz
+        return max_cpu_speed
+    except Exception as e:
+        logger.error(f"Error retrieving max CPU frequency: {e}")
+        return None
+
+def get_memory_type(num):
+    """
+    Obtient le type de mémoire à partir du numéro donné.
+
+    Args:
+        num (int): Le numéro du type de mémoire.
+
+    Returns:
+        str: Le type de mémoire correspondant au numéro donné. Si le numéro n'est pas dans la liste,
+             retourne "Inconnu".
+    """
+    num=int(num)
+    memory_types = {
+        0: "Unknown",
+        1: "Other",
+        2: "DRAM",
+        3: "Synchronous DRAM",
+        4: "Cache DRAM",
+        5: "EDO",
+        6: "EDRAM",
+        7: "VRAM",
+        8: "SRAM",
+        9: "RAM",
+        10: "ROM",
+        11: "Flash",
+        12: "EEPROM",
+        13: "FEPROM",
+        14: "EPROM",
+        15: "CDRAM",
+        16: "3DRAM",
+        17: "SDRAM",
+        18: "SGRAM",
+        19: "RDRAM",
+        20: "DDR",
+        21: "DDR2",
+        22: "DDR2",
+        24: "DDR3",
+        25: "FBD2",
+        26: "DDR4"
+    }
+    return memory_types.get(num, "Unknown")
+
+def date_mise_en_service():
+    """
+    Obtient la date d'installation du système d'exploitation en utilisant PowerShell.
+
+    Returns:
+        str: Une chaîne représentant la date d'installation au format MySQL (YYYY-MM-DD HH:MM:SS).
+    """
+    system_platform = platform.system()
+
+    if system_platform == 'Windows':
+        powershell_command = '''
+        $osInstallDate = (Get-CimInstance Win32_OperatingSystem).InstallDate
+        Write-Output $osInstallDate
+        '''
+        result = subprocess.run(['powershell', '-Command', powershell_command], capture_output=True, text=True)
+
+        if result.returncode == 0:
+            os_install_date_str = result.stdout.strip()
+
+            # Convertir la date en objet datetime
+            os_install_date = datetime.strptime(os_install_date_str, "%Y%m%d%H%M%S.%f")
+
+            # Formater la date au format MySQL
+            mysql_format = os_install_date.strftime("%Y-%m-%d %H:%M:%S")
+
+            return mysql_format
+        else:
+            return "Erreur lors de l'obtention de la date d'installation du système."
+
+    else:
+        return "Système d'exploitation non pris en charge."
 
 def set_logging_level(func):
     """
@@ -117,28 +554,22 @@ def set_logging_level(func):
         Ce décorateur ajuste le niveau de journalisation uniquement sur les systèmes Windows. Sur les autres plateformes,
         ce décorateur ne modifie pas le niveau de journalisation et laisse la fonction inchangée.
     """
-
     def wrapper(*args, **kwargs):
-        if platform.system() == "Windows":
+        if platform.system() == 'Windows':
             if args:
                 arg = args[0]
                 if hasattr(arg, "config"):
                     if hasattr(arg.config, "levellog"):
                         import logging
-
                         logging.getLogger().setLevel(logging.DEBUG)
                 else:
                     import logging
-
                     logging.warning("L'objet n'a pas l'attribut config")
             return func(*args, **kwargs)
         else:
-            return func(
-                *args, **kwargs
-            )  # Ne fait rien sur les autres plateformes, retourne simplement le résultat de la fonction
+            return func(*args, **kwargs)  # Ne fait rien sur les autres plateformes, retourne simplement le résultat de la fonction
 
     return wrapper
-
 
 class Env(object):
     agenttype = None  # Non specified by default
@@ -1162,19 +1593,6 @@ def typelinux():
 
 
 def isprogramme(name):
-    """
-    Get the absolute path of the specified program, then try to execute it.
-    If the execution is successfull : it is a program
-
-    Test if the program `name` exists or not
-
-    Args:
-        name: string of the name of the tested program
-
-    Returns:
-        It returns True if `name` exists on the system.
-                   False otherwise
-    """
     p = subprocess.Popen(
         f"which {name}",
         shell=True,
@@ -1190,19 +1608,6 @@ def isprogramme(name):
 
 
 def simplecommand(cmd, strimresult=False):
-    """
-    Execute the command and return its result
-
-    Param:
-        cmd string of the executed command
-
-    Returns:
-        dict of the result and code.
-        {
-            "code": int command execution code,
-            "result": list of string of the command result
-        }
-    """
     if isinstance(cmd, bytes):
         cmd = decode_strconsole(cmd)
     p = subprocess.Popen(
@@ -1224,20 +1629,6 @@ def simplecommand(cmd, strimresult=False):
 
 
 def simplecommandstr(cmd):
-    """
-    Execute the command and return its result
-
-    Param:
-        cmd string of the executed command
-
-    Returns:
-        dict of the result and code.
-        {
-            "code": int command execution code,
-            "result": string of the command result (instead of list of string for
-                simplecommand function)
-        }
-    """
     if isinstance(cmd, bytes):
         cmd = decode_strconsole(cmd)
     p = subprocess.Popen(
@@ -1255,6 +1646,7 @@ def simplecommandstr(cmd):
 
 def windowspath(namescript):
     return f'"{namescript}"' if sys.platform.startswith("win") else namescript
+
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
@@ -2279,7 +2671,9 @@ def test_kiosk_presence():
         if sys.platform.startswith("win"):
             list = [
                 os.path.join("c:\\", "progra~1", "Python3", "Lib", "site-packages"),
-                os.path.join("c:\\", "progra~1", "Python3-32", "Lib", "site-packages"),
+                os.path.join(
+                    "c:\\", "progra~1", "Python3-32", "Lib", "site-packages"
+                ),
             ]
         elif sys.platform == "darwin":
             list = ["usr", "local", "lib", "python3.6", "dist-packages"]

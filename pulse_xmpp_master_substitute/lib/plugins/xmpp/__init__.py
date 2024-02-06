@@ -18,12 +18,14 @@ from sqlalchemy import (
     distinct,
     not_,
     delete,
+    Float,
 )
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.sql.expression import literal
+from sqlalchemy.exc import IntegrityError
 from datetime import date, datetime, timedelta
 import pprint
 
@@ -79,6 +81,9 @@ from lib.plugins.xmpp.schema import (
     Up_gray_list,
     Up_action_update_packages,
     Up_history,
+    GreenMachine,
+    GreenConso,
+    GreenUserIdle,
 )
 
 # Imported last
@@ -214,6 +219,17 @@ class XmppMasterDatabase(DatabaseHelper):
     is_activated = False
 
     def activate(self):
+        """
+        Active le module XMPP.
+
+        Initialise la connexion à la base de données XMPP en utilisant les paramètres
+        spécifiés dans la configuration. Si les paramètres de la taille et du recyclage
+        du pool de connexion ne sont pas définis pour XMPP, ils sont récupérés à partir
+        des paramètres globaux de la configuration.
+
+        Returns:
+            bool: True si l'activation a réussi, False sinon.
+        """
         if self.is_activated:
             return None
         self.logger = logging.getLogger()
@@ -274,6 +290,155 @@ class XmppMasterDatabase(DatabaseHelper):
             self.logger.error("Please verify your configuration")
             self.is_activated = False
             return False
+
+
+    # Méthode pour insérer ou mettre à jour une entrée dans la table green_machine
+    @DatabaseHelper._sessionm
+    def setup_green_machine(self, session, structure):
+        """
+        Insère ou met à jour une entrée dans la table green_machine.
+
+        Si l'UUID de la machine existe déjà dans la base de données, met à jour
+        les champs de la machine existante avec les nouvelles valeurs. Sinon, crée
+        une nouvelle entrée pour la machine.
+
+        Args:
+            session: Session de base de données.
+            structure (dict): Structure de données contenant les informations de la machine.
+
+        Returns:
+            str or None: UUID de la machine insérée ou mise à jour, ou None en cas d'échec.
+        """
+        try:
+            # Vérifier si l'UUID existe déjà dans la base de données
+            existing_machine = session.query(GreenMachine).filter_by(uuid_machine=structure['uuid']).first()
+
+            if existing_machine:
+                # Mettre à jour les champs de la machine existante
+                existing_machine.gpu = structure['gpu']
+                existing_machine.nbr_gpu = structure['nbgpu']
+                existing_machine.hostname = structure['hostname']
+                existing_machine.nbr_HDD = structure['hd']['HDD']
+                existing_machine.nbr_SSD = structure['hd']['SSD']
+                existing_machine.cpu = structure['cpu']
+                existing_machine.nbr_cpu = structure['nbcpu']
+                existing_machine.cpu_hertz_max = structure['cpu_max_freq']
+                existing_machine.memorytype = structure['memory']
+                existing_machine.memorysize = structure['memorytaille']
+                existing_machine.cpu_herz = structure['clock']
+                existing_machine.timeac = structure['time_reprise'][0]
+                existing_machine.timedc = structure['time_reprise'][1]
+                existing_machine.nbr_monitor = structure['nbmonitor']
+                existing_machine.monitor = structure['model']
+                existing_machine.biosdate = datetime.strptime(structure['biosdate'],"%d/%m/%Y")
+                existing_machine.formfactor = "laptop" if structure['has_battery'] else "desktop"
+                session.merge(existing_machine)
+            else:
+                # Créer une nouvelle entrée pour la machine
+                new_green_machine = GreenMachine(
+                    uuid_machine=structure['uuid'],
+                    gpu=structure['gpu'],
+                    nbr_gpu=structure['nbgpu'],
+                    hostname=structure['hostname'],
+                    nbr_HDD=structure['hd']['HDD'],
+                    nbr_SSD=structure['hd']['SSD'],
+                    cpu=structure['cpu'],
+                    nbr_cpu=structure['nbcpu'],
+                    cpu_hertz_max=structure['cpu_max_freq'],
+                    memorytype=structure['memory'],
+                    memorysize=structure['memorytaille'],
+                    cpu_herz=structure['clock'],
+                    timeac=structure['time_reprise'][0],
+                    timedc=structure['time_reprise'][1],
+                    nbr_monitor=structure['nbmonitor'],
+                    monitor=structure['model'],
+                    biosdate=datetime.strptime(structure['biosdate'],"%d/%m/%Y"),
+                    formfactor="laptop" if structure['has_battery'] else "desktop"
+                )
+                session.add(new_green_machine)
+
+            session.commit()
+            session.flush()
+            return structure['uuid']
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return None
+
+    # Méthode pour insérer une entrée dans la table green_conso
+    @DatabaseHelper._sessionm
+    def set_green_conso(self, session, structure, uuid):
+        """
+        Insère une entrée dans la table green_conso.
+
+        Pour chaque ensemble de données de consommation dans la structure, crée une nouvelle
+        entrée dans la table green_conso avec les informations correspondantes.
+
+        Args:
+            session: Session de base de données.
+            structure (dict): Structure de données contenant les informations de consommation.
+            uuid (str): UUID de la machine associée à la consommation.
+
+        Returns:
+            bool: True si l'insertion a réussi, False sinon.
+        """
+        try:
+            for conso_data in structure['conso']:
+                new_green_conso = GreenConso()
+                new_green_conso.uuid_machine = uuid
+                new_green_conso.date_start = conso_data['start']
+                new_green_conso.date_end = conso_data['end']
+                new_green_conso.puissance_total = conso_data['pui']
+                new_green_conso.charge = conso_data['charg']
+                new_green_conso.cpu_freq = conso_data['fre']
+                new_green_conso.temperature = conso_data['temp']
+                new_green_conso.puissance_cpu_gpu = conso_data['puissance_cpu_gpu']
+                new_green_conso.coef_charge = conso_data['coeff']
+                new_green_conso.nb_mesure = conso_data['nb']
+                new_green_conso.energie = (conso_data['nb'] / 60) * conso_data['pui']
+                session.add(new_green_conso)
+            session.commit()
+            session.flush()
+            return True
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return False
+
+
+    # Méthode pour insérer une entrée dans la table green_user_idle
+    @DatabaseHelper._sessionm
+    def set_green_user_idle(self, session, structure, uuid, date=None):
+        """
+        Insère une entrée dans la table green_user_idle.
+
+        Crée une nouvelle entrée dans la table green_user_idle avec les informations spécifiées
+        dans la structure de données.
+
+        Args:
+            session: Session de base de données.
+            structure (dict): Structure de données contenant les informations d'inactivité de l'utilisateur.
+            uuid (str): UUID de la machine associée à l'inactivité de l'utilisateur.
+            date (datetime, optional): Date de l'entrée. Si non spécifié, utilise la date actuelle.
+
+        Returns:
+            bool: True si l'insertion a réussi, False sinon.
+        """
+        try:
+            new_green_user_idle = GreenUserIdle()
+            new_green_user_idle.uuid_machine = uuid
+            new_green_user_idle.idle = structure['idle']
+            new_green_user_idle.has_battery = structure['has_battery']
+            new_green_user_idle.sleeping = structure['sleeping']
+            new_green_user_idle.status_monitors = structure['monitor']
+            if date is not None:
+                new_green_user_idle.date = date
+            session.add(new_green_user_idle)
+            session.commit()
+            session.flush()
+            return True
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return False
+
 
     @DatabaseHelper._sessionm
     def setagentsubscription(self, session, name):
