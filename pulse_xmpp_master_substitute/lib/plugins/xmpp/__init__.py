@@ -9935,7 +9935,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
         del tout les updates de la machines array id
         """
-        if isinstance(idlist, (basestring, str, unicode, int)):
+        if isinstance(idlist, (str, int)):
             idlist = [int(idlist)]
         if idlist:
             sql = delete(Up_action_update_packages).where(
