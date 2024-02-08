@@ -16,6 +16,7 @@ import hashlib
 import shutil
 import importlib
 import urllib
+import errno
 
 from optparse import OptionParser
 
@@ -24,13 +25,7 @@ if sys.platform.startswith("win"):
 
 
 def copytree2(src, dst, symlinks=False):
-    names = os.listdir(src)
-    try:
-        os.makedirs(dst)
-    except BaseException:
-        pass
-    errors = []
-    ignore1 = [
+    ignore_list = {
         "descriptor_scheduler_relay",
         "fifodeploy",
         "img_agent",
@@ -38,33 +33,36 @@ def copytree2(src, dst, symlinks=False):
         "pluginsmachine",
         "pluginsrelay",
         "sessionsrelayserver",
-    ]
+    }
 
-    for name in names:
-        if name in ignore1:
+    errors = []
+    try:
+        os.makedirs(dst)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+    for name in os.listdir(src):
+        if name in ignore_list:
             continue
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
+        src_path = os.path.join(src, name)
+        dst_path = os.path.join(dst, name)
         try:
-            if symlinks and os.path.islink(srcname):
-                linkto = os.readlink(srcname)
-                os.symlink(linkto, dstname)
-            elif os.path.isdir(srcname):
-                copytree2(srcname, dstname, symlinks)
-            elif not srcname.endswith(".pyc"):
-                shutil.copy2(srcname, dstname)
-                # XXX What about devices, sockets etc.?
-        except IOError as why:
-            errors.append((srcname, dstname, str(why)))
-        except Exception as err:
-            errors.extend(err.args[0])
+            if os.path.isdir(src_path):
+                copytree2(src_path, dst_path, symlinks)
+            elif symlinks and os.path.islink(src_path):
+                linkto = os.readlink(src_path)
+                os.symlink(linkto, dst_path)
+            elif not src_path.endswith(".pyc"):
+                shutil.copy2(src_path, dst_path)
+        except (IOError, OSError) as e:
+            errors.append((src_path, dst_path, str(e)))
+
     try:
         shutil.copystat(src, dst)
-    except shutil.WindowsError:
-        # can't copy file access times on Windows
-        pass
-    except OSError as why:
-        errors.extend((src, dst, str(why)))
+    except OSError as e:
+        errors.append((src, dst, str(e)))
+
     return not errors
 
 
