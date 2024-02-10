@@ -316,16 +316,16 @@ class networkagentinfo:
     @staticmethod
     def get_mac_address_with_netifaces(ip):
         """
-            Retrieve the MAC address associated with the given IP address using netifaces library.
+        Retrieve the MAC address associated with the given IP address using netifaces library.
 
-            Args:
-                ip (str): The IP address for which the MAC address is to be retrieved.
+        Args:
+            ip (str): The IP address for which the MAC address is to be retrieved.
 
-            Returns:
-                str or None: The MAC address corresponding to the provided IP address, or None if not found.
+        Returns:
+            str or None: The MAC address corresponding to the provided IP address, or None if not found.
 
-            Raises:
-                None. Exceptions are caught and logged.
+        Raises:
+            None. Exceptions are caught and logged.
         """
         try:
             for interface in netifaces.interfaces():
