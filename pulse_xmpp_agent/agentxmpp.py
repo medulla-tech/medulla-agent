@@ -414,10 +414,13 @@ class MUCBot(ClientXMPP):
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
 
         if self.config.updating != 1:
-            logging.warning("remote updating disabled")
+            logging.debug("The updating configuration is set to 0")
+            logging.debug("We will not update the agent if a new version is available on the server")
+
 
         if self.config.updatingplugins != 1:
-            logging.warning("remote plugins updating disabled")
+            logging.debug("The updatingplugins configuration is set to 0")
+            logging.debug("We will not update the plugins if new versions are available on the server")
 
         if (
             self.descriptorimage.get_fingerprint_agent_base()
