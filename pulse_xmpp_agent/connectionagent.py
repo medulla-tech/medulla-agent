@@ -162,7 +162,7 @@ class MUCBot(ClientXMPP):
             self.config.syncthing_on = False
 
         if self.config.syncthing_on:
-            logger.info("---initialisation syncthing---")
+            logger.info("We will configure syncthing")
             self.deviceid = ""
             if logger.level <= 10:
                 console = False
@@ -254,8 +254,8 @@ class MUCBot(ClientXMPP):
 
     def stream_error1(self, mesg):
         if mesg.get_text() == "User removed":
-            logger.info(
-                f"compte {self.boundjid.bare} removed by assessor {self.sub_assessor}"
+            logger.debug(
+                f"The {self.boundjid.bare} account have been removed by the assessor: {self.sub_assessor}"
             )
             self.disconnect(wait=5)
 
@@ -398,19 +398,18 @@ class MUCBot(ClientXMPP):
                 if data["ret"] == 0:
                     fromagent = str(msg["from"].bare)
                     if fromagent == self.sub_assessor:
-                        # resultconnectionconf
-                        logger.info(
-                            "Resultat data : %s"
+                        logger.debug(
+                            "Resultat data: %s"
                             % json.dumps(data, indent=4, sort_keys=True)
                         )
                         if len(data["data"]) == 0:
                             logger.error("Verify table cluster : has_cluster_ars")
                             sys.exit(0)
+
                         logger.info(
                             "Start relay server agent configuration\n%s"
                             % json.dumps(data["data"], indent=4, sort_keys=True)
                         )
-                        logger.debug("write new config")
 
                         if self.config.syncthing_on:
                             try:
@@ -462,7 +461,6 @@ class MUCBot(ClientXMPP):
                                     logger.debug(
                                         f"synchro config {self.syncthing.is_config_sync()}"
                                     )
-                                    logger.debug("write new config syncthing")
                                     self.syncthing.validate_chang_config()
                                     time.sleep(2)
                                     filesyncthing = os.path.join(
@@ -791,28 +789,20 @@ class MUCBot(ClientXMPP):
         )
 
     def register(self, iq):
-        logger.info(f"register user {self.boundjid}")
+        logger.debug(f"register user {self.boundjid}")
         resp = self.Iq()
         resp["type"] = "set"
         resp["register"]["username"] = self.boundjid.user
         resp["register"]["password"] = self.password
         try:
             resp.send()
-            logger.info(f"Account created for {self.boundjid}!")
+            logger.info(f"The configuration account {self.boundjid} created")
         except IqError as e:
             logger.error(f'Could not register account: {e.iq["error"]["text"]}')
             self.disconnect()
         except IqTimeout as e:
             logger.error("No response from server.")
             self.disconnect()
-
-    # -----------------------------------------------------------------------
-    # --------------------- END Getion connection agent ---------------------
-    # -----------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------
-    # ------------------------ analyse strophe xmpp -------------------------
-    # -----------------------------------------------------------------------
 
     def _check_message(self, msg):
         try:
