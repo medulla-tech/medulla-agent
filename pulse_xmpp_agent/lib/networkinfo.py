@@ -316,16 +316,16 @@ class networkagentinfo:
     @staticmethod
     def get_mac_address_with_netifaces(ip):
         """
-            Retrieve the MAC address associated with the given IP address using netifaces library.
+        Retrieve the MAC address associated with the given IP address using netifaces library.
 
-            Args:
-                ip (str): The IP address for which the MAC address is to be retrieved.
+        Args:
+            ip (str): The IP address for which the MAC address is to be retrieved.
 
-            Returns:
-                str or None: The MAC address corresponding to the provided IP address, or None if not found.
+        Returns:
+            str or None: The MAC address corresponding to the provided IP address, or None if not found.
 
-            Raises:
-                None. Exceptions are caught and logged.
+        Raises:
+            None. Exceptions are caught and logged.
         """
         try:
             for interface in netifaces.interfaces():
@@ -346,12 +346,16 @@ class networkagentinfo:
 
     def MacAddressToIp(self, ip):
         """
-        Récupère l'adresse MAC associée à une adresse IPv4 en utilisant d'abord la fonction get_mac_address_with_netifaces,
-        puis en utilisant la fonction get_mac_address si la première échoue sous Linux.
+        Converts an IP address to its corresponding MAC address using the networkagentinfo class method and fallback mechanisms.
+
         Args:
-            ip (str): Adresse IPv4 pour laquelle vous souhaitez obtenir l'adresse MAC.
+            ip (str): The IP address to be converted to a MAC address.
+
         Returns:
-            str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
+            str or None: The MAC address corresponding to the provided IP address, or None if not found.
+
+        Raises:
+            None. Logs a warning message if network issues are detected or if the MAC address cannot be found.
         """
         mac = networkagentinfo.get_mac_address_with_netifaces(ip)
         if mac is not None:
