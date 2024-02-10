@@ -415,12 +415,15 @@ class MUCBot(ClientXMPP):
 
         if self.config.updating != 1:
             logging.debug("The updating configuration is set to 0")
-            logging.debug("We will not update the agent if a new version is available on the server")
-
+            logging.debug(
+                "We will not update the agent if a new version is available on the server"
+            )
 
         if self.config.updatingplugins != 1:
             logging.debug("The updatingplugins configuration is set to 0")
-            logging.debug("We will not update the plugins if new versions are available on the server")
+            logging.debug(
+                "We will not update the plugins if new versions are available on the server"
+            )
 
         if (
             self.descriptorimage.get_fingerprint_agent_base()
