@@ -3266,7 +3266,8 @@ class MUCBot(ClientXMPP):
                     ):
                         self.reinstall_agent()
                 else:
-                    logger.warning("ask update but descriptor_agent base missing.")
+                    logger.warning("We have been asked for an update but we are missing the descriptor")
+                    os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
 
     def filtre_message(self, msg):
         pass
