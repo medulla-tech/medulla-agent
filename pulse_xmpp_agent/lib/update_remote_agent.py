@@ -160,7 +160,7 @@ def agentinfoversion(xmppobject):
         (like testmodule , pathagent, agentdescriptor, pathimg,
           imgdescriptor, actiontxt, conf and plugins)
     """
-    cmd = f'"C:\\Program Files\\python311\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
+    cmd = f'"C:\\Program Files\\python3\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
     logger.debug(f"cmd : {cmd}")
     result = simplecommand(cmd)
     resultobj = {}
