@@ -363,65 +363,26 @@ class MUCBot(ClientXMPP):
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
         self.descriptor_master = None
         if len(self.descriptorimage.get_md5_descriptor_agent()["program_agent"]) == 0:
-            # copy agent vers remote agent.
+            # Copy the agent to the img  (backup)
             if sys.platform.startswith("win"):
-                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()[
-                    "program_agent"
-                ]:
-                    if not os.path.isfile(os.path.join(self.img_agent, fichier)):
-                        os.system(
-                            "copy %s %s"
-                            % (
-                                os.path.join(self.pathagent, fichier),
-                                os.path.join(self.img_agent, fichier),
-                            )
-                        )
-                if not os.path.isfile(os.path.join(self.img_agent, "agentversion")):
-                    os.system(
-                        "copy %s %s"
-                        % (
-                            os.path.join(self.pathagent, "agentversion"),
-                            os.path.join(self.img_agent, "agentversion"),
-                        )
-                    )
-                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()[
-                    "lib_agent"
-                ]:
-                    if not os.path.isfile(os.path.join(self.img_agent, "lib", fichier)):
-                        os.system(
-                            "copy %s %s"
-                            % (
-                                os.path.join(self.pathagent, "lib", fichier),
-                                os.path.join(self.img_agent, "lib", fichier),
-                            )
-                        )
-                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()[
-                    "script_agent"
-                ]:
-                    if not os.path.isfile(
-                        os.path.join(self.img_agent, "script", fichier)
-                    ):
-                        os.system(
-                            "copy %s %s"
-                            % (
-                                os.path.join(self.pathagent, "script", fichier),
-                                os.path.join(self.img_agent, "script", fichier),
-                            )
-                        )
+                program_agent_files = self.Update_Remote_Agentlist.get_md5_descriptor_agent()["program_agent"]
+                lib_agent_files = self.Update_Remote_Agentlist.get_md5_descriptor_agent()["lib_agent"]
+                script_agent_files = self.Update_Remote_Agentlist.get_md5_descriptor_agent()["script_agent"]
+                copy_files(self.pathagent, self.img_agent, program_agent_files)
+                copy_files(self.pathagent, self.img_agent, ["agentversion"])
+                copy_files(os.path.join(self.pathagent, "lib"), os.path.join(self.img_agent, "lib"), lib_agent_files)
+                copy_files(os.path.join(self.pathagent, "script"), os.path.join(self.img_agent, "script"), script_agent_files)
             elif sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-                os.system("cp -u %s/*.py %s" % (self.pathagent, self.img_agent))
-                os.system(
-                    "cp -u %s/script/* %s/script/" % (self.pathagent, self.img_agent)
-                )
-                os.system(
-                    "cp -u %s/lib/*.py %s/lib/" % (self.pathagent, self.img_agent)
-                )
-                os.system(
-                    "cp -u %s/agentversion %s/agentversion"
-                    % (self.pathagent, self.img_agent)
-                )
+                try:
+                    shutil.copy(os.path.join(self.pathagent, "*.py"), self.img_agent)
+                    shutil.copy(os.path.join(self.pathagent, "script", "*"), os.path.join(self.img_agent, "script"))
+                    shutil.copy(os.path.join(self.pathagent, "lib", "*.py"), os.path.join(self.img_agent, "lib"))
+                    shutil.copy(os.path.join(self.pathagent, "agentversion"), os.path.join(self.img_agent, "agentversion"))
+                except Exception as e:
+                    logger.error(f"An error occurred while copying files: {str(e)}")
             else:
-                logger.error("The copy has failed")
+                logger.error("Your system is not supported.")
+
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
 
         if self.config.updating != 1:
@@ -828,6 +789,30 @@ class MUCBot(ClientXMPP):
                 self._iq_error_Handle,
             )
         )
+
+    def copy_files(self, source_dir, target_dir, file_list):
+        """
+        Copy files from the source directory to the target directory.
+
+        Args:
+            source_dir (str): The path to the source directory.
+            target_dir (str): The path to the target directory.
+            file_list (list): A list of file names to copy.
+
+        Returns:
+            None
+    
+        Raises:
+        IOError: If an error occurs while copying files.
+        """
+        for file_agent in file_list:
+            source_file = os.path.join(source_dir, file_agent)
+            target_file = os.path.join(target_dir, file_agent)
+            if not os.path.isfile(target_file):
+                try:
+                    shutil.copy(source_file, target_file)
+                except Exception as e:
+                    logger.error(f"An error occurred while copying files: {str(e)}")
 
     def iqsendpulse(self, to, datain, timeout=900, sessionid=None):
         """
