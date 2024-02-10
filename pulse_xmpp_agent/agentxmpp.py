@@ -365,19 +365,46 @@ class MUCBot(ClientXMPP):
         if len(self.descriptorimage.get_md5_descriptor_agent()["program_agent"]) == 0:
             # Copy the agent to the img  (backup)
             if sys.platform.startswith("win"):
-                program_agent_files = self.Update_Remote_Agentlist.get_md5_descriptor_agent()["program_agent"]
-                lib_agent_files = self.Update_Remote_Agentlist.get_md5_descriptor_agent()["lib_agent"]
-                script_agent_files = self.Update_Remote_Agentlist.get_md5_descriptor_agent()["script_agent"]
+                program_agent_files = (
+                    self.Update_Remote_Agentlist.get_md5_descriptor_agent()[
+                        "program_agent"
+                    ]
+                )
+                lib_agent_files = (
+                    self.Update_Remote_Agentlist.get_md5_descriptor_agent()["lib_agent"]
+                )
+                script_agent_files = (
+                    self.Update_Remote_Agentlist.get_md5_descriptor_agent()[
+                        "script_agent"
+                    ]
+                )
                 copy_files(self.pathagent, self.img_agent, program_agent_files)
                 copy_files(self.pathagent, self.img_agent, ["agentversion"])
-                copy_files(os.path.join(self.pathagent, "lib"), os.path.join(self.img_agent, "lib"), lib_agent_files)
-                copy_files(os.path.join(self.pathagent, "script"), os.path.join(self.img_agent, "script"), script_agent_files)
+                copy_files(
+                    os.path.join(self.pathagent, "lib"),
+                    os.path.join(self.img_agent, "lib"),
+                    lib_agent_files,
+                )
+                copy_files(
+                    os.path.join(self.pathagent, "script"),
+                    os.path.join(self.img_agent, "script"),
+                    script_agent_files,
+                )
             elif sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
                 try:
                     shutil.copy(os.path.join(self.pathagent, "*.py"), self.img_agent)
-                    shutil.copy(os.path.join(self.pathagent, "script", "*"), os.path.join(self.img_agent, "script"))
-                    shutil.copy(os.path.join(self.pathagent, "lib", "*.py"), os.path.join(self.img_agent, "lib"))
-                    shutil.copy(os.path.join(self.pathagent, "agentversion"), os.path.join(self.img_agent, "agentversion"))
+                    shutil.copy(
+                        os.path.join(self.pathagent, "script", "*"),
+                        os.path.join(self.img_agent, "script"),
+                    )
+                    shutil.copy(
+                        os.path.join(self.pathagent, "lib", "*.py"),
+                        os.path.join(self.img_agent, "lib"),
+                    )
+                    shutil.copy(
+                        os.path.join(self.pathagent, "agentversion"),
+                        os.path.join(self.img_agent, "agentversion"),
+                    )
                 except Exception as e:
                     logger.error(f"An error occurred while copying files: {str(e)}")
             else:
@@ -801,7 +828,7 @@ class MUCBot(ClientXMPP):
 
         Returns:
             None
-    
+
         Raises:
         IOError: If an error occurs while copying files.
         """
