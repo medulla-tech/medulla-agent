@@ -410,6 +410,7 @@ class MUCBot(ClientXMPP):
             else:
                 logger.error("Your system is not supported.")
 
+        # We update the descriptors now that the image is copied.
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
 
         if self.config.updating != 1:
