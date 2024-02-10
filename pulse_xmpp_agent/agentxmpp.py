@@ -415,12 +415,15 @@ class MUCBot(ClientXMPP):
 
         if self.config.updating != 1:
             logging.debug("The updating configuration is set to 0")
-            logging.debug("We will not update the agent if a new version is available on the server")
-
+            logging.debug(
+                "We will not update the agent if a new version is available on the server"
+            )
 
         if self.config.updatingplugins != 1:
             logging.debug("The updatingplugins configuration is set to 0")
-            logging.debug("We will not update the plugins if new versions are available on the server")
+            logging.debug(
+                "We will not update the plugins if new versions are available on the server"
+            )
 
         if (
             self.descriptorimage.get_fingerprint_agent_base()
@@ -3266,7 +3269,9 @@ class MUCBot(ClientXMPP):
                     ):
                         self.reinstall_agent()
                 else:
-                    logger.warning("We have been asked for an update but we are missing the descriptor")
+                    logger.warning(
+                        "We have been asked for an update but we are missing the descriptor"
+                    )
                     os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
 
     def filtre_message(self, msg):
