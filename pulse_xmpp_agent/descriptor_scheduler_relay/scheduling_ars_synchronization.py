@@ -31,9 +31,9 @@ JSON_NAMES = ["xmppdeploy", "conf"]
 
 
 def schedule_main(xmppobject):
-    logger.info("========scheduling_ars_synchronisation==========")
-    logger.info(plugin)
-    logger.info("=================================================\n")
+    logger.debug("========scheduling_ars_synchronisation==========")
+    logger.debug(plugin)
+    logger.debug("=================================================\n")
     return
 
     # lien_obj = lncreate(
