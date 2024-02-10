@@ -3569,43 +3569,36 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     if sys.platform.startswith("win"):
         authorized_keys_path = os.path.join(getHomedrive(), ".ssh", "authorized_keys")
     else:
-        authorized_keys_path = os.path.join(
-            os.path.expanduser("~%s" % username), ".ssh", "authorized_keys"
-        )
-    if not os.path.isfile(authorized_keys_path):
-        logger.debug("Creating authorized_keys file in %s" % authorized_keys_path)
-        if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-            os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
-        file_put_contents(authorized_keys_path, key)
-    else:
+        authorized_keys_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys")
+
+    # Create directory if it doesn't exist
+    if not os.path.isdir(os.path.dirname(authorized_keys_path)):
+        os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
+
+    # Read existing authorized_keys content
+    authorized_keys_content = ""
+    if os.path.isfile(authorized_keys_path):
         authorized_keys_content = file_get_contents(authorized_keys_path)
-        if not key.strip(" \t\n\r") in authorized_keys_content:
-            logger.debug("Adding key to %s" % authorized_keys_path)
-            file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
-        else:
-            authorized_keys_path = os.path.join(
-                os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys"
-            )
-        if not os.path.isfile(authorized_keys_path):
-            logger.debug(f"Creating authorized_keys file in {authorized_keys_path}")
-            if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
-            file_put_contents(authorized_keys_path, key)
-        else:
-            authorized_keys_content = file_get_contents(authorized_keys_path)
-            if key.strip(" \t\n\r") not in authorized_keys_content:
-                logger.debug(f"Adding key to {authorized_keys_path}")
-                file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
-            else:
-                logger.debug(f"Key is already present in {authorized_keys_path}")
-    # Check if key is present
+
+    # Check if the key is already present
+    if key.strip(" \t\n\r") in authorized_keys_content:
+        logger.debug(f"Key is already present in {authorized_keys_path}")
+        msg = f"Key already present in {authorized_keys_path}"
+        return True, msg
+
+    # Append the key to authorized_keys file
+    logger.debug(f"Adding key to {authorized_keys_path}")
+    file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
+
+    # Check if key is now present
     authorized_keys_content = file_get_contents(authorized_keys_path)
     if key.strip(" \t\n\r") in authorized_keys_content:
         msg = f"Key successfully present in {authorized_keys_path}"
         result, logs = apply_perms_sshkey(authorized_keys_path, False)
         return (False, logs) if result is False else (True, msg)
+
     # Function didn't return earlier, meaning the key is not present
-    msg = "An error occured while adding the public key to the authorized_keys file. The id_rsa.pub key is missing"
+    msg = "An error occurred while adding the public key to the authorized_keys file. The id_rsa.pub key is missing"
     return False, msg
 
 
