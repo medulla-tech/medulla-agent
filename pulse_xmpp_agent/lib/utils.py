@@ -3569,7 +3569,9 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     if sys.platform.startswith("win"):
         authorized_keys_path = os.path.join(getHomedrive(), ".ssh", "authorized_keys")
     else:
-        authorized_keys_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys")
+        authorized_keys_path = os.path.join(
+            os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys"
+        )
 
     # Create directory if it doesn't exist
     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
