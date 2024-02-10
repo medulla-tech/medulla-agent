@@ -316,12 +316,16 @@ class networkagentinfo:
     @staticmethod
     def get_mac_address_with_netifaces(ip):
         """
-        Récupère l'adresse MAC associée à une adresse IPv4 en utilisant la bibliothèque netifaces.
-        Args:
-            ip (str): Adresse IPv4 pour laquelle vous souhaitez obtenir l'adresse MAC.
-        Returns:
-            str or None: L'adresse MAC associée à l'adresse IPv4, ou None si l'adresse MAC n'est pas trouvée.
-        TODO: Add IPV6 support
+            Retrieve the MAC address associated with the given IP address using netifaces library.
+
+            Args:
+                ip (str): The IP address for which the MAC address is to be retrieved.
+
+            Returns:
+                str or None: The MAC address corresponding to the provided IP address, or None if not found.
+
+            Raises:
+                None. Exceptions are caught and logged.
         """
         try:
             for interface in netifaces.interfaces():
