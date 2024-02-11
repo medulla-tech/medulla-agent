@@ -172,7 +172,9 @@ class networkagentinfo:
                                     obj1[ipadress] = ipdhcp
                                 break
                         except ValueError:
-                            logging.getLogger().error(f"The IP {z} is not a valid IP adress")
+                            logging.getLogger().error(
+                                f"The IP {z} is not a valid IP adress"
+                            )
                             # The IP is not valid, we do not want to do anything
                             pass
                     ipdhcp = ""
