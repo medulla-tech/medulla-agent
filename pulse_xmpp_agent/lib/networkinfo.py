@@ -278,6 +278,7 @@ class networkagentinfo:
                                 f"The IP {z} is not a valid IP adress"
                             )
                             # The IP is not valid, we do not want to do anything
+                            pass
                     ipdhcp = ""
                     ipadress = ""
                 else:
