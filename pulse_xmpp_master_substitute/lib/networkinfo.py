@@ -12,6 +12,7 @@ import re
 import socket
 import psutil
 import os
+from ipaddress import ip_address
 from distutils.util import strtobool
 from lib.utils import simplecommand, powerschellscriptps1
 from . import utils
@@ -116,22 +117,6 @@ class networkagentinfo:
             self.messagejson["msg"] = "system %s : not managed yet" % sys.platform
             return self.messagejson
 
-    def isIPValid(self, ipaddress):
-        """
-        This function tests the provided IP Address to see
-        if it is a valid IP or not.
-        Only IPv4 is supported.
-
-        @param ipaddress: The ip address to test
-
-        @rtype: Boolean. True if the ip adress is valid, False otherwise
-        """
-        try:
-            socket.inet_aton(ipaddress)
-            return True
-        except socket.error:
-            return False
-
     def IpDhcp(self):
         """
         This function provide the IP of the dhcp server used on the machine.
@@ -180,11 +165,16 @@ class networkagentinfo:
                     ipdhcp = colonne[-1:][0]
                 elif "bound to" in i:
                     for z in colonne:
-                        if self.isIPValid(z):
-                            ipadress = z
-                            if ipdhcp != "":
-                                obj1[ipadress] = ipdhcp
-                            break
+                        try:
+                            if ip_address(z):
+                                ipadress = z
+                                if ipdhcp != "":
+                                    obj1[ipadress] = ipdhcp
+                                break
+                        except ValueError:
+                            logging.getLogger().error(f"The IP {z} is not a valid IP adress")
+                            # The IP is not valid, we do not want to do anything
+                            pass
                     ipdhcp = ""
                     ipadress = ""
                 else:
