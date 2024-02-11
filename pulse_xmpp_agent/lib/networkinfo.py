@@ -340,7 +340,6 @@ class networkagentinfo:
                             mac_address = addrs[netifaces.AF_LINK][0]["addr"]
                             return mac_address
 
-                return None
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
             return None
