@@ -582,7 +582,7 @@ class MUCBot(ClientXMPP):
             )
             self.tmpfile = "/tmp/confsyncting.txt"
         # TODO: Disable this try if synthing is not activated. Prevent backtraces
-        if os.path.isfile(self.fichierconfsyncthing):
+        if self.config.syncthing_on and os.path.isfile(self.fichierconfsyncthing):
             try:
                 hostnameiddevice = None
                 if self.boundjid.domain == "pulse":
