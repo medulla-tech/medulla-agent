@@ -392,15 +392,20 @@ class MUCBot(ClientXMPP):
                 )
             elif sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
                 try:
-                    shutil.copy(os.path.join(self.pathagent, "*.py"), self.img_agent)
-                    shutil.copy(
-                        os.path.join(self.pathagent, "script", "*"),
-                        os.path.join(self.img_agent, "script"),
-                    )
-                    shutil.copy(
-                        os.path.join(self.pathagent, "lib", "*.py"),
-                        os.path.join(self.img_agent, "lib"),
-                    )
+                    base_py_files = glob.glob(os.path.join(self.pathagent, "*.py"))
+                    for py_file in base_py_files:
+                        shutil.copy(py_file, self.img_agent)
+
+                    source_dir = os.path.join(self.pathagent, "script")
+                    destination_dir = os.path.join(self.img_agent, "script")
+                    script_py_files = glob.glob(os.path.join(source_dir, "*"))
+                    for py_file in script_py_files:
+                        shutil.copy(py_file, destination_dir)
+
+                    lib_py_files = glob.glob(os.path.join(self.pathagent, "lib", "*.py"))
+                    for py_file in lib_py_files:
+                        shutil.copy(py_file, os.path.join(self.img_agent, "lib"))
+
                     shutil.copy(
                         os.path.join(self.pathagent, "agentversion"),
                         os.path.join(self.img_agent, "agentversion"),
