@@ -340,15 +340,15 @@ class networkagentinfo:
             for interface in netifaces.interfaces():
                 addrs = netifaces.ifaddresses(interface)
 
-            if netifaces.AF_INET in addrs:
-                ipv4_info = addrs[netifaces.AF_INET][0]
-                if "addr" in ipv4_info and ipv4_info["addr"] == ip:
-                    # Si l'adresse IP correspond, obtenir l'adresse MAC
-                    if netifaces.AF_LINK in addrs:
-                        mac_address = addrs[netifaces.AF_LINK][0]["addr"]
-                        return mac_address
+                if netifaces.AF_INET in addrs:
+                    ipv4_info = addrs[netifaces.AF_INET][0]
+                    if "addr" in ipv4_info and ipv4_info["addr"] == ip:
+                        # Si l'adresse IP correspond, obtenir l'adresse MAC
+                        if netifaces.AF_LINK in addrs:
+                            mac_address = addrs[netifaces.AF_LINK][0]["addr"]
+                            return mac_address
 
-            return None
+                return None
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
             return None
