@@ -133,6 +133,7 @@ def scheduledeploy(self):
         listobjsupp = []
         try:
             # Searching for deployements to start
+            logger.debug("Waiting for lock for substitute %s" % (self.boundjid.user))
             (
                 nb_machine_select_for_deploy_cycle,
                 resultdeploymachine,
@@ -140,13 +141,19 @@ def scheduledeploy(self):
                 limitnbr=self.deployment_nbr_mach_cycle,
                 textindicator=self.boundjid.bare,
             )
+            logger.debug("Unlock substitute %s" % (self.boundjid.user))
         except Exception as error_while_deploy:
             logger.error(
                 "We encountered the following error while trying to deploy: \n %s"
                 % error_while_deploy
             )
             logger.error("We hit the backtrace: \n %s" % (traceback.format_exc()))
-
+            logger.debug("Unlock substitute %s" % (self.boundjid.user))
+            return
+        except Exception as e:
+            logger.error("We hit the backtrace \n %s" % (traceback.format_exc()))
+            logger.debug("Unlock substitute %s" % (self.boundjid.user))
+            return
         if nb_machine_select_for_deploy_cycle == 0:
             return
 
