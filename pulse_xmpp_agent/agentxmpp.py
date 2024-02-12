@@ -1449,7 +1449,7 @@ class MUCBot(ClientXMPP):
     def reinjection_deploy_protected(self):
         # creation repertoire si probleme
         dir_reprise_session = self.__dirsessionreprise()
-        timecurrent = int(time.time())
+        timecurrent = int(time.mktime(time.localtime()))
         timecurentdatetime = time.strftime(
             "%Y-%m-%d %H:%M:%S", time.localtime(int(timecurrent))
         )
@@ -1469,13 +1469,13 @@ class MUCBot(ClientXMPP):
                         data = json.load(f)
                     datainfo = data["data"]
                     slotdep = time.strftime(
-                        "%Y-%m-%d %H:%M:%S", time.localtime(int(datainfo["stardate"]))
+                        "%Y-%m-%d %H:%M:%S", time.gmtime(int(datainfo["stardate"]))
                     )
                     slotend = time.strftime(
-                        "%Y-%m-%d %H:%M:%S", time.localtime(int(datainfo["enddate"]))
+                        "%Y-%m-%d %H:%M:%S", time.gmtime(int(datainfo["enddate"]))
                     )
-                    if timecurrent >= int(datainfo["stardate"]) and timecurrent <= int(
-                        datainfo["enddate"]
+                    if (timecurrent+60) >= int(time.mktime(time.gmtime(datainfo['stardate']))) and (timecurrent+60) <= int(
+                        time.mktime(time.gmtime(datainfo['enddate']))
                     ):
                         # on est toujours dans le temps de deployements on relance la tache protegee apres 1 shutdown
                         try:
@@ -1526,7 +1526,7 @@ class MUCBot(ClientXMPP):
     def reinjection_deplot_message_box(self):
         # creation repertoire si probleme
         dir_reprise_session = self.__dirsessionreprise()
-        timecurrent = int(time.time())
+        timecurrent = int(time.mktime(time.localtime()))
         # lit repertoire de fichier
         filelist = [
             x
@@ -1543,14 +1543,14 @@ class MUCBot(ClientXMPP):
                         data = json.load(f)
                     datainfo = data["data"]
                     slotdep = time.strftime(
-                        "%D %H:%M", time.localtime(int(datainfo["stardate"]))
+                        "%D %H:%M", time.gmtime(int(datainfo['stardate']))
                     )
                     slotend = time.strftime(
-                        "%D %H:%M", time.localtime(int(datainfo["enddate"]))
+                        "%D %H:%M", time.gmtime(int(datainfo['enddate']))
                     )
                     if (
-                        timecurrent > datainfo["stardate"]
-                        and timecurrent < datainfo["enddate"]
+                        (timecurrent+60) > int(time.mktime(time.gmtime(datainfo['stardate'])))
+                        and (timecurrent+60) < int(time.mktime(time.gmtime(datainfo['enddate'])))
                     ):
                         # on relance le deployement et on quitte
                         grafcet(self, data)
