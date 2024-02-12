@@ -1456,7 +1456,10 @@ def read_conf_loaddeployment(objectxmpp):
     objectxmpp.wolglobal_set = set()  # use group wol
     #clean old folder session
     foldersession = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "sessiondeploysubstitute"))
-    clean_session(foldersession)
+    try:
+        clean_session(foldersession)
+    except Exception as e:
+        pass
     # initialise session object
     objectxmpp.sessiondeploysubstitute = session("sessiondeploysubstitute")
     objectxmpp.machineDeploy = {}
