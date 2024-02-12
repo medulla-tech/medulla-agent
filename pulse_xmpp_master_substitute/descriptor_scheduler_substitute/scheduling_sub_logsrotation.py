@@ -22,9 +22,7 @@ plugin = {"VERSION": "1.0", "NAME": "scheduling_sub_logsrotation", "TYPE": "all"
 # everyday at 12:00
 #SCHEDULE = {"schedule" : "0 */2 * * *", "nb" : -1}
 
-SCHEDULE = {"schedule": "0 */1 * * *", "nb": -1}
-
-
+SCHEDULE = {"schedule": "* */1 * * *", "nb": -1}
 def schedule_main(objectxmpp):
     """
     Rotates agent log file everyday at 12:00
