@@ -709,7 +709,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def reinjection_deploy_protected(self):
         # creation repertoire si probleme
         dir_reprise_session = self.__dirsessionreprise()
-        timecurrent=int(time.time())
+        timecurrent=int(time.mktime(time.localtime()))
         timecurentdatetime= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(timecurrent)))
         # lit repertoire de fichier
         filelist = [ x for x in os.listdir(dir_reprise_session) \
@@ -722,9 +722,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     with open(filenamejson, 'r') as f:
                         data = json.load(f)
                     datainfo=data['data']
-                    slotdep= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(datainfo['stardate'])))
-                    slotend= time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(datainfo['enddate'])))
-                    if timecurrent >= int(datainfo['stardate']) and timecurrent <= int(datainfo['enddate']):
+                    slotdep= time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(int(datainfo['stardate'])))
+                    slotend= time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(int(datainfo['enddate'])))
+                    if (timecurrent+60) >= int(time.mktime(time.gmtime(datainfo['stardate']))) and (timecurrent+60) <= int(time.mktime(time.gmtime(datainfo['enddate']))):
                         # on est toujours dans le temps de deployements on relance la tache protegee apres 1 shutdown
                         try:
                             data['data']['repriseok']="<span class='log_warn'>Resumption deploy session id %s on"\
@@ -757,7 +757,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def reinjection_deplot_message_box(self):
         # creation repertoire si probleme
         dir_reprise_session = self.__dirsessionreprise()
-        timecurrent=int(time.time())
+        timecurrent=int(time.mktime(time.localtime()))
         # lit repertoire de fichier
         filelist = [ x for x in os.listdir(dir_reprise_session) \
                      if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_messagebox')]
@@ -769,9 +769,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     with open(filenamejson, 'r') as f:
                         data = json.load(f)
                     datainfo=data['data']
-                    slotdep= time.strftime("%d %H:%M", time.localtime(int(datainfo['stardate'])))
-                    slotend= time.strftime("%d %H:%M", time.localtime(int(datainfo['enddate'])))
-                    if timecurrent > datainfo['stardate'] and timecurrent < datainfo['enddate']:
+                    slotdep= time.strftime("%d %H:%M", time.gmtime(int(datainfo['stardate'])))
+                    slotend= time.strftime("%d %H:%M", time.gmtime(int(datainfo['enddate'])))
+                    if (timecurrent+60) >= int(time.mktime(time.gmtime(datainfo['stardate']))) and (timecurrent+60) <= int(time.mktime(time.gmtime(datainfo['enddate']))):
                         # on relance le deployement et on quitte
                         grafcet(self, data)
             except:
