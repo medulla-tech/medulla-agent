@@ -403,7 +403,9 @@ class MUCBot(ClientXMPP):
                     for py_file in script_py_files:
                         shutil.copy(py_file, destination_dir)
 
-                    lib_py_files = glob.glob(os.path.join(self.pathagent, "lib", "*.py"))
+                    lib_py_files = glob.glob(
+                        os.path.join(self.pathagent, "lib", "*.py")
+                    )
                     for py_file in lib_py_files:
                         shutil.copy(py_file, os.path.join(self.img_agent, "lib"))
 
@@ -1474,8 +1476,10 @@ class MUCBot(ClientXMPP):
                     slotend = time.strftime(
                         "%Y-%m-%d %H:%M:%S", time.gmtime(int(datainfo["enddate"]))
                     )
-                    if (timecurrent+60) >= int(time.mktime(time.gmtime(datainfo['stardate']))) and (timecurrent+60) <= int(
-                        time.mktime(time.gmtime(datainfo['enddate']))
+                    if (timecurrent + 60) >= int(
+                        time.mktime(time.gmtime(datainfo["stardate"]))
+                    ) and (timecurrent + 60) <= int(
+                        time.mktime(time.gmtime(datainfo["enddate"]))
                     ):
                         # on est toujours dans le temps de deployements on relance la tache protegee apres 1 shutdown
                         try:
@@ -1543,14 +1547,15 @@ class MUCBot(ClientXMPP):
                         data = json.load(f)
                     datainfo = data["data"]
                     slotdep = time.strftime(
-                        "%D %H:%M", time.gmtime(int(datainfo['stardate']))
+                        "%D %H:%M", time.gmtime(int(datainfo["stardate"]))
                     )
                     slotend = time.strftime(
-                        "%D %H:%M", time.gmtime(int(datainfo['enddate']))
+                        "%D %H:%M", time.gmtime(int(datainfo["enddate"]))
                     )
-                    if (
-                        (timecurrent+60) > int(time.mktime(time.gmtime(datainfo['stardate'])))
-                        and (timecurrent+60) < int(time.mktime(time.gmtime(datainfo['enddate'])))
+                    if (timecurrent + 60) > int(
+                        time.mktime(time.gmtime(datainfo["stardate"]))
+                    ) and (timecurrent + 60) < int(
+                        time.mktime(time.gmtime(datainfo["enddate"]))
                     ):
                         # on relance le deployement et on quitte
                         grafcet(self, data)
