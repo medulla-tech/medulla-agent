@@ -443,3 +443,4 @@ cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
 rm -fv %buildroot%{python2_sitelib}/pulse_xmpp_agent/bin/pulse2_update_notification.py
+cp pulse_xmpp_agent/bin/RunMedullaKiosk.bat %buildroot%_var/lib/pulse2/clients/win/
