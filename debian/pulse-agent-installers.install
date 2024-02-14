@@ -54,3 +54,4 @@ var/lib/pulse2/xmpp_baseremoteagent
 var/lib/pulse2/clients/win/pulse2_update_notification.py
 var/lib/pulse2/clients/lin/pulse2_update_notification.py
 var/lib/pulse2/clients/mac/pulse2_update_notification.py
+var/lib/pulse2/clients/win/RunMedullaKiosk.bat
