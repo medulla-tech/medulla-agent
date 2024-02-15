@@ -317,7 +317,8 @@ def get_windows_infos(xmppobject):
         "model" : "Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams | Select-Object -Property InstanceName | Format-Table -HideTableHeaders",
         "memorytaille": "(Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum / 1GB",
         "typememory" : "(Get-WmiObject Win32_PhysicalMemory | Select-Object -ExpandProperty SMBIOSMemoryType)[0]",
-        "cpu_max_freq" : "(Get-CimInstance CIM_Processor).MaxClockSpeed"
+        "cpu_max_freq" : "(Get-CimInstance CIM_Processor).MaxClockSpeed",
+        "biosdate" : "(Get-WmiObject -Class Win32_BIOS).ReleaseDate.Substring(0, 8)"
         }
         command_latin1={"time_reprise" : "(powercfg /query scheme_current SUB_VIDEO VIDEOIDLE) -split '\r?\n' | Where-Object { $_ -match '\S' } | Select-Object -Last 2"}
         # typememory  26 DDR4 24 DDR3
@@ -355,6 +356,9 @@ def get_windows_infos(xmppobject):
         xmppobject.infos['typememory'] = int(xmppobject.infos['typememory'][0])
         xmppobject.infos['uuid'] = xmppobject.infos['uuid'][0]
         xmppobject.infos['cpu_max_freq'] = int(xmppobject.infos['cpu_max_freq'][0])
+        datebios = str(xmppobject.infos['biosdate'][0])
+        # xmppobject.infos['biosdate'] = datebios[4:6]+"/"+datebios[6:8]+"/"+datebios[0:4]
+        xmppobject.infos['biosdate'] = datebios[6:8]+"/"+datebios[4:6]+"/"+datebios[0:4]
         xmppobject.infos['memorytaille'] = int(xmppobject.infos['memorytaille'][0])
         xmppobject.infos['cpu'] = xmppobject.infos['cpu'][0]
         xmppobject.infos['gpu']= "|||".join(xmppobject.infos['gpu'])
