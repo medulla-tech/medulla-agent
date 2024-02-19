@@ -61,9 +61,7 @@ def check_if_binary_ok():
             )
             result = utils.simplecommand(cmd)
             if result["code"] == 0:
-                logger.debug(
-                    "The Medulla kiosk launcher is ready to be reinstalled."
-                )
+                logger.debug("The Medulla kiosk launcher is ready to be reinstalled.")
             else:
                 logger.debug("We failed to reinitialize the registry entry.")
 
@@ -130,10 +128,18 @@ def updatekiosklauncher(xmppobject):
         if os.path.isfile(os.path.join(pulsedir_path, filename)):
             # Copy file to C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp
             src = os.path.join(pulsedir_path, filename)
-            dest = os.path.join("c:\\", "ProgramData", "Microsoft", "Windows", "Start Menu", "Programs", "StartUp")
+            dest = os.path.join(
+                "c:\\",
+                "ProgramData",
+                "Microsoft",
+                "Windows",
+                "Start Menu",
+                "Programs",
+                "StartUp",
+            )
             try:
                 shutil.copy(src, dest)
             except shutil.Error as e:
-                logger.error('Error copying file %s: %s' % (src, e))
+                logger.error("Error copying file %s: %s" % (src, e))
             except IOError as e:
-                logger.error('Error copying file %s: %s' % (src, e.strerror))
+                logger.error("Error copying file %s: %s" % (src, e.strerror))
