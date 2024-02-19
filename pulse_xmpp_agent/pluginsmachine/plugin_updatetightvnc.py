@@ -31,6 +31,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     except Exception:
         pass
 
+
 def check_tightvnc_configuration():
     if sys.platform.startswith("win"):
         # We check the TightVNCServer configuration
@@ -45,9 +46,7 @@ def check_tightvnc_configuration():
             )
             result = utils.simplecommand(cmd)
             if result["code"] == 0:
-                cmd = (
-                    'powershell Restart-Service -Name tvnserver'
-                )
+                cmd = "powershell Restart-Service -Name tvnserver"
                 result = utils.simplecommand(cmd)
                 if result["code"] == 0:
                     logger.debug("TightVNCServer is reconfigured and restarted.")
@@ -56,9 +55,8 @@ def check_tightvnc_configuration():
                     "We failed to reinitialize the registry entry for TightVNCServer LoopbackOnly."
                 )
         else:
-            logger.debug(
-                "TightVNCServer don't need reconfiguration"
-            )
+            logger.debug("TightVNCServer don't need reconfiguration")
+
 
 def checktightvncversion():
     if sys.platform.startswith("win"):
