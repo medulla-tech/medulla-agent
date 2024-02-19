@@ -14,7 +14,7 @@ TIGHTVNC = "2.8.81"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -25,11 +25,40 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checktightvncversion()
+        check_tightvnc_configuration()
         if StrictVersion(installed_version) < StrictVersion(TIGHTVNC):
             updatetightvnc(xmppobject)
     except Exception:
         pass
 
+def check_tightvnc_configuration():
+    if sys.platform.startswith("win"):
+        # We check the TightVNCServer configuration
+        cmd = 'reg query "hklm\\SOFTWARE\\TightVNC\\Server" /s | Find "LoopbackOnly"'
+        result = utils.simplecommand(cmd)
+        loopbackonly = result["result"][0].strip().split()[-1]
+
+        if loopbackonly == "0x0":
+            cmd = (
+                'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" '
+                '/v "LoopbackOnly" /t REG_SZ  /d "0.1" /f'
+            )
+            result = utils.simplecommand(cmd)
+            if result["code"] == 0:
+                cmd = (
+                    'powershell Restart-Service -Name tvnserver'
+                )
+                result = utils.simplecommand(cmd)
+                if result["code"] == 0:
+                    logger.debug("TightVNCServer is reconfigured and restarted.")
+            else:
+                logger.debug(
+                    "We failed to reinitialize the registry entry for TightVNCServer LoopbackOnly."
+                )
+        else:
+            logger.debug(
+                "TightVNCServer don't need reconfiguration"
+            )
 
 def checktightvncversion():
     if sys.platform.startswith("win"):
