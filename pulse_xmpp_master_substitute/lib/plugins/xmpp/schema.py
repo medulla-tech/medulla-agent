@@ -958,6 +958,11 @@ class GreenMachine(Base):
     timeac = Column(Integer, default=300)
     timedc = Column(Integer, default=180)
     biosdate=Column(DateTime)
+    PROC_MIN_DC = Column(Integer, default=180)
+    PROC_MIN_AC = Column(Integer, default=180)
+    PROC_MAX_AC = Column(Integer, default=180)
+    PROC_MAX_DC = Column(Integer, default=180)
+
 
 class GreenConso(Base, XmppMasterDBObj):
     # ====== Table name =========================

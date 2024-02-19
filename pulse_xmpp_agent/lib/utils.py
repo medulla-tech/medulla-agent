@@ -293,6 +293,7 @@ def InputIdleTime_seconde():
         # return InputIdleTime.get_last_input_time()//1000
 
 
+
 def get_windows_infos(xmppobject):
     """
     Obtient différentes informations système sur un système Windows.
@@ -308,6 +309,19 @@ def get_windows_infos(xmppobject):
     system_platform = platform.system()
 
     if system_platform == 'Windows':
+        resul_acpi_cpu=[]
+        result=[ x.strip().split()[-1] for x in subprocess.check_output("powercfg /query scheme_current sub_processor PROCTHROTTLEMIN").decode('latin-1').split('\r\n') if x != ""][-2:]
+        result1=[ x.strip().split()[-1] for x in subprocess.check_output("powercfg /query scheme_current sub_processor PROCTHROTTLEMAX").decode('latin-1').split('\r\n') if x != ""][-2:]
+        result2=[ x.strip().split()[-1] for x in subprocess.check_output("powercfg /query scheme_current SUB_VIDEO VIDEOIDLE").decode('latin-1').split('\r\n') if x != ""][-2:]
+        for t in result + result1 + result2:
+            resul_acpi_cpu.append(int(t,16))
+        xmppobject.infos['PROC_MIN_AC']=resul_acpi_cpu[0]
+        xmppobject.infos['PROC_MIN_DC']=resul_acpi_cpu[1]
+        xmppobject.infos['PROC_MAX_AC']=resul_acpi_cpu[2]
+        xmppobject.infos['PROC_MAX_DC']=resul_acpi_cpu[3]
+        xmppobject.infos['VIDEOIDLE_AC']=resul_acpi_cpu[4]
+        xmppobject.infos['VIDEOIDLE_DC']=resul_acpi_cpu[5]
+
         command={"uuid" : "Get-CimInstance -ClassName Win32_ComputerSystemProduct | Select-Object -ExpandProperty UUID",
         "gpu" : "Get-CimInstance -ClassName Win32_VideoController | Select-Object -ExpandProperty VideoProcessor",
         "hd" : "Get-PhysicalDisk | Where-Object MediaType -in @('HDD', 'SSD') | Select-Object FriendlyName, MediaType -ExpandProperty  MediaType",
@@ -321,13 +335,7 @@ def get_windows_infos(xmppobject):
         "biosdate" : "(Get-WmiObject -Class Win32_BIOS).ReleaseDate.Substring(0, 8)"
         }
         command_latin1={"time_reprise" : "(powercfg /query scheme_current SUB_VIDEO VIDEOIDLE) -split '\r?\n' | Where-Object { $_ -match '\S' } | Select-Object -Last 2"}
-        # typememory  26 DDR4 24 DDR3
 
-        # {'uuid': ['4C4C4544-0050-5110-804E-B6C04F46354A'], 'gpu': ['Intel(R) HD Graphics Family'], 'hd': ['SSD', 'HDD'], 'cpu': ['Intel(R) Core(TM) i5-3570 CPU @ 3.40GHz'], 'clock': ['1600'], 'resolution': ['1920 x 1080 x 4294967296 couleurs'],
-        # 'model': ['DISPLAY\\CTV0030\\4&1e781410&0&UID50729728_0'],
-        # 'memorytaille': ['8'],
-        # 'typememory': ['24'],
-        # 'ehd': 6, 'modeecran': False}
         for t in command:
             logger.error(f"command{t}")
             try:
@@ -346,7 +354,6 @@ def get_windows_infos(xmppobject):
             xmppobject.infos['time_reprise'].append(int([ x for x in t.split(" ")][-1],16))
         get_has_battery_infos(xmppobject)
         xmppobject.infos["maxf"]=get_max_cpu_frequency()
-
         xmppobject.infos['nbcpu'] = len(xmppobject.infos['cpu'])
         xmppobject.infos['nbgpu'] = len(xmppobject.infos['gpu'])
         xmppobject.infos['nbhdd'] = len(xmppobject.infos['hd'])
@@ -357,8 +364,7 @@ def get_windows_infos(xmppobject):
         xmppobject.infos['uuid'] = xmppobject.infos['uuid'][0]
         xmppobject.infos['cpu_max_freq'] = int(xmppobject.infos['cpu_max_freq'][0])
         datebios = str(xmppobject.infos['biosdate'][0])
-        # xmppobject.infos['biosdate'] = datebios[4:6]+"/"+datebios[6:8]+"/"+datebios[0:4]
-        xmppobject.infos['biosdate'] = datebios[6:8]+"/"+datebios[4:6]+"/"+datebios[0:4]
+        xmppobject.infos['biosdate'] = datebios[4:6]+"/"+datebios[6:8]+"/"+datebios[0:4]
         xmppobject.infos['memorytaille'] = int(xmppobject.infos['memorytaille'][0])
         xmppobject.infos['cpu'] = xmppobject.infos['cpu'][0]
         xmppobject.infos['gpu']= "|||".join(xmppobject.infos['gpu'])
@@ -366,6 +372,7 @@ def get_windows_infos(xmppobject):
         xmppobject.infos['hd'] = compter_elements(xmppobject.infos['hd'])
         xmppobject.infos['model'] = "|||".join(extraire_modele(xmppobject.infos['model']))
     return xmppobject.infos
+
 
 
 def compter_elements(liste):

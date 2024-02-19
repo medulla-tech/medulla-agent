@@ -315,6 +315,11 @@ class XmppMasterDatabase(DatabaseHelper):
 
             if existing_machine:
                 # Mettre à jour les champs de la machine existante
+                PROC_MIN_DC = Column(Integer, default=180)
+                existing_machine.PROC_MIN_AC = structure['PROC_MIN_AC']
+                existing_machine.PROC_MIN_AC = structure['PROC_MIN_AC']
+                existing_machine.PROC_MAX_AC = structure['PROC_MAX_AC']
+                existing_machine.PROC_MAX_DC = structure['PROC_MAX_DC']
                 existing_machine.gpu = structure['gpu']
                 existing_machine.nbr_gpu = structure['nbgpu']
                 existing_machine.hostname = structure['hostname']
@@ -353,7 +358,11 @@ class XmppMasterDatabase(DatabaseHelper):
                     nbr_monitor=structure['nbmonitor'],
                     monitor=structure['model'],
                     biosdate=datetime.strptime(structure['biosdate'],"%d/%m/%Y"),
-                    formfactor="laptop" if structure['has_battery'] else "desktop"
+                    formfactor="laptop" if structure['has_battery'] else "desktop",
+                    PROC_MIN_AC = structure['PROC_MIN_AC'],
+                    PROC_MIN_AC = structure['PROC_MIN_AC'],
+                    PROC_MAX_AC = structure['PROC_MAX_AC'],
+                    PROC_MAX_DC = structure['PROC_MAX_DC'],
                 )
                 session.add(new_green_machine)
 
