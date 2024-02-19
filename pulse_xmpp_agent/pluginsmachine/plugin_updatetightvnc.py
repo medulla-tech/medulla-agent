@@ -94,7 +94,7 @@ def updatetightvnc(xmppobject):
             )
             # Allow on all interfaces
             install_options = (
-                install_options + " SET_LOOPBACKONLY=1 VALUE_OF_LOOPBACKONLY=0"
+                install_options + " SET_LOOPBACKONLY=1 VALUE_OF_LOOPBACKONLY=1"
             )
             # Only allow from 127.0.0.1 and query user
             install_options = (
