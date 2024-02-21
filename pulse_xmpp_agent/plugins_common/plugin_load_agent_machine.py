@@ -41,19 +41,17 @@ import time
 import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
-
-
-"""
-    Ce plugin install les plugins de codes necessaire au fonctionnement de l'agent machine dans des boucles événement différente. (Ce plugin doit etre appeler par le plugin start.
-    (voir parametre pluginlist section [plugin] configuration agent)
-    1) install serveur tcp/ip dans boucle événement asynio
-           pugin TCP_IP command in/out
-"""
+plugin = {"VERSION": "1.2", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
+    """
+    This plugin installs plugins containing code mandatory for the agent machine to work in differents events loops. (This plugin must be called by the start plugin).
+    (See pluginlist parameter in section [plugin] from agent configuration)
+    1) Install tcp/ip server in asyncio event loop
+        plugin TCP_IP command in/out
+    """
     try:
         logger.debug("###################################################")
         logger.debug(f'call {plugin} from {msg["from"]}')
