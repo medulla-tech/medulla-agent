@@ -8,6 +8,12 @@ from lib import utils
 import traceback
 import getpass
 from lib.utils import set_logging_level
+import sys
+import asyncio
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+# without this iqsendpulse can't work.
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.8", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
