@@ -367,6 +367,21 @@ def handle_client_connection(self, msg):
             elif result["action"] == "help":
                 # direct action help
                 return helpcmd(self, result)
+            elif result["action"] == "presence":
+                if result["type"] == "ping":
+                    # Send pong message
+                    self.kiosk_presence = "True"
+                    self.send_pong_to_kiosk()
+                    logging.getLogger().info("Sendback pong message to kiosk")
+                elif result["type"] == "pong":
+                    # Set the kiosk_presence variable to True
+                    logging.getLogger().info("Receive pong message from kiosk")
+                    self.kiosk_presence = "True"
+                else:
+                    # Ignore the others messages
+                    pass
+                datasend["data"]["subaction"] = "presence"
+                datasend["data"]["value"] = self.kiosk_presence
             elif result["action"] in ["terminalInformations", "terminalAlert"]:
                 substitute_recv = self.sub_monitoring
                 datasend["action"] = "vectormonitoringagent"

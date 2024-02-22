@@ -246,9 +246,8 @@ async def handle_client(client, xmppobject):
                     logger.warning(f"reception data : __{codeerror}__ __{result}__")
 
                     if not result or result == "":
-                        await loop.sock_sendall(
-                            client, "aucun resultat".encode("utf-8")
-                        )
+                        await loop.sock_sendall(client, "no result".encode("utf-8"))
+
                     if isinstance(result, (list, dict, set, tuple)):
                         try:
                             _result = json.dumps(
