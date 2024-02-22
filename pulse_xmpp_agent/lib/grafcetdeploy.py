@@ -1275,7 +1275,7 @@ class grafcet:
                 "INFOSTMP",
                 "REPRISE")
         filelistprotected = [ os.path.join(dir_reprise_session, x) for x in os.listdir(dir_reprise_session) \
-                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.endswith(self.sessionid)]
+                if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.endswith(self.sessionid) and x.startswith("medulla_protected")]
         for t in filelistprotected:
             if os.path.isfile(t):
                 os.remove(t)
