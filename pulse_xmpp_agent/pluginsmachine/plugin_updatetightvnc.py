@@ -42,7 +42,7 @@ def check_tightvnc_configuration():
         if loopbackonly == "0x0":
             cmd = (
                 'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" '
-                '/v "LoopbackOnly" /t REG_SZ  /d "0.1" /f'
+                '/v "LoopbackOnly" /t REG_DWORD  /d "1" /f'
             )
             result = utils.simplecommand(cmd)
             if result["code"] == 0:
