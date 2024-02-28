@@ -14,7 +14,7 @@ TIGHTVNC = "2.8.81"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
