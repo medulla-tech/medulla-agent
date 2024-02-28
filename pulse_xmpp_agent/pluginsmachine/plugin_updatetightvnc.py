@@ -41,24 +41,21 @@ def check_tightvnc_configuration():
         need_restart = False
 
         for config in configurations:
-            cmd = 'reg query "hklm\\SOFTWARE\\TightVNC\\Server" /v {key} | Find "{key}"'.format(key=config["key"])
+            cmd = f'reg query "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} | Find "{config["key"]}"'
             result = utils.simplecommand(cmd)
 
             if result["code"] == 0:
                 value = result["result"][0].decode('utf-8').strip().split()[-1]
 
                 if value == config["value"]:
-                    cmd = (
-                        'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" '
-                        '/v {key} /t REG_DWORD /d "{set_value}" /f'.format(key=config["key"], set_value=config["set_value"])
-                    )
+                    cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t REG_DWORD /d "{config["set_value"]}" /f'
                     result = utils.simplecommand(cmd)
 
                     if result["code"] == 0:
-                        logger.debug("The registry entry for TightVNCServer {key} is reconfigured.".format(key=config["key"]))
+                        logger.debug(f"The registry entry for TightVNCServer {config["key"]} is reconfigured.")
                         need_restart = True
                     else:
-                        logger.debug("We failed to reinitialize the registry entry for TightVNCServer {key}.".format(key=config["key"]))
+                        logger.debug(f"We failed to reinitialize the registry entry for TightVNCServer {config["key"]}")
 
         if need_restart:
             cmd = "powershell Restart-Service -Name tvnserver"
