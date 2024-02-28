@@ -1,27 +1,7 @@
-# -*- coding: utf-8 -*-
-#
-# (c) 2016-2020 siveo, http://www.siveo.net
-#
-# This file is part of Pulse 2, http://www.siveo.net
-#
-# Pulse 2 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA 02110-1301, USA.
-#
-# plugin register machine dans presence table xmpp.
-# file : plugin___server_tcpip.py
-#
+#!/usr/bin/python3
+# SPDX-FileCopyrightText: 2016-2024 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import base64
 import traceback
 import os
@@ -59,7 +39,7 @@ from lib.utils import (
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code" }  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
 
 
 @set_logging_level
@@ -248,6 +228,7 @@ async def handle_client(client, xmppobject):
                     logger.debug("Receiving a `connexion end` request")
                 else:
                     logger.warning(f"Receiving data: {requestobj}")
+                await loop.sock_sendall(client, "no result".encode("utf-8"))
                 break
 
             if isinstance(requestobj, (dict)):
@@ -258,32 +239,56 @@ async def handle_client(client, xmppobject):
                     )
                     logger.warning(f"reception data : __{codeerror}__ __{result}__")
 
-                    if not result:
+                    if not result or result == "":
                         await loop.sock_sendall(
                             client, "aucun resultat".encode("utf-8")
                         )
                     if isinstance(result, (list, dict, set, tuple)):
-                        await loop.sock_sendall(
-                            client,
-                            json.dumps(
+                        try:
+                            _result = json.dumps(
                                 result, cls=DateTimebytesEncoderjson, indent=4
-                            ).encode("utf-8"),
-                        )
+                            ).encode("utf-8")
+                        except Exception as e:
+                            _result = '{"type":"error", "from":"agent-machine", "message":e}'.encode("utf-8")
+                        finally:
+                            await loop.sock_sendall(
+                                client,
+                                _result
+                            )
                     elif isinstance(result, (str)):
-                        await loop.sock_sendall(client, result.encode("utf-8"))
+                        if result != "":
+                            try:
+                                await loop.sock_sendall(client, result.encode("utf-8"))
+                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
+                                logger.warning("Client disconnected before sending the response.")
+                        else:
+                            try:
+                                await loop.sock_sendall(client,"no result".encode("utf-8"))
+                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
+                                logger.warning("Client disconnected before sending the response.")
+                            
                     elif isinstance(result, (bytes)):
                         await loop.sock_sendall(client, result)
                     else:
                         try:
                             strdata = str(result).encode("utf-8")
-                            await loop.sock_sendall(client, result)
+                            try:
+                                await loop.sock_sendall(client, result)
+                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
+                                logger.warning("Client disconnected before sending the response.")
                         except Exception as e:
-                            await loop.sock_sendall(client, str(e).encode("utf-8"))
+                            try:
+                                await loop.sock_sendall(client, str(e).encode("utf-8"))
+                            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                                logger.warning("Client disconnected before sending the response.")
 
                         logger.warning(f"type reception data {type(result)}")
                     break  # suivant type de connexion desire
                 except Exception as e:
-                    await loop.sock_sendall(client, str(e).encode("utf-8"))
+                    try:
+                        await loop.sock_sendall(client, str(e).encode("utf-8"))
+                    except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                        logger.warning("Client disconnected before sending the response.")
                     break
     except Exception:
         logger.error(
