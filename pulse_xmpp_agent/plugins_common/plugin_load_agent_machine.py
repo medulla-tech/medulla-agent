@@ -29,7 +29,7 @@ import os
 import json
 import logging
 from lib import utils
-from lib.networkinfo import organizationbymachine, organizationbyuser
+from lib.networkinfo import organizationbymachine, organizationbyuser, adusergroups
 
 import psutil
 import zlib
@@ -43,17 +43,14 @@ import types
 logger = logging.getLogger()
 plugin = {"VERSION": "1.1", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
-
-"""
+@utils.set_logging_level
+def action(xmppobject, action, sessionid, data, msg, dataerreur):
+    """
     Ce plugin install les plugins de codes necessaire au fonctionnement de l'agent machine dans des boucles événement différente. (Ce plugin doit etre appeler par le plugin start.
     (voir parametre pluginlist section [plugin] configuration agent)
     1) install serveur tcp/ip dans boucle événement asynio
            pugin TCP_IP command in/out
-"""
-
-
-@utils.set_logging_level
-def action(xmppobject, action, sessionid, data, msg, dataerreur):
+    """
     try:
         logger.debug("###################################################")
         logger.debug(f'call {plugin} from {msg["from"]}')
@@ -301,10 +298,14 @@ def handle_client_connection(self, msg):
                 datasend["data"]["userlist"] = list(
                     {users[0] for users in psutil.users()}
                 )
-                datasend["data"]["ouuser"] = organizationbyuser(
-                    datasend["data"]["userlist"]
-                )
-                datasend["data"]["oumachine"] = organizationbymachine()
+                datasend["data"]["ous"] = {}
+                for user in datasend["data"]["userlist"]:
+                    datasend["data"]["ous"][user] = {
+                        "ou_user" : organizationbyuser(datasend["data"]["userlist"]),
+                        "ou_machine": organizationbymachine(),
+                        "ou_groups" : adusergroups(user)
+                    }
+
             elif result["action"] == "kioskinterfaceInstall":
                 datasend["data"]["subaction"] = "install"
             elif result["action"] == "kioskinterfaceLaunch":
