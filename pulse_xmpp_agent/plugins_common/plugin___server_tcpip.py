@@ -234,6 +234,7 @@ async def handle_client(client, xmppobject):
                     logger.debug("Receiving a `connexion end` request")
                 else:
                     logger.warning(f"Receiving data: {requestobj}")
+                await loop.sock_sendall(client, "no result".encode("utf-8"))
                 break
 
             if isinstance(requestobj, (dict)):
@@ -244,32 +245,56 @@ async def handle_client(client, xmppobject):
                     )
                     logger.warning(f"reception data : __{codeerror}__ __{result}__")
 
-                    if not result:
+                    if not result or result == "":
                         await loop.sock_sendall(
                             client, "aucun resultat".encode("utf-8")
                         )
                     if isinstance(result, (list, dict, set, tuple)):
-                        await loop.sock_sendall(
-                            client,
-                            json.dumps(
+                        try:
+                            _result = json.dumps(
                                 result, cls=DateTimebytesEncoderjson, indent=4
-                            ).encode("utf-8"),
-                        )
+                            ).encode("utf-8")
+                        except Exception as e:
+                            _result = '{"type":"error", "from":"agent-machine", "message":e}'.encode("utf-8")
+                        finally:
+                            await loop.sock_sendall(
+                                client,
+                                _result
+                            )
                     elif isinstance(result, (str)):
-                        await loop.sock_sendall(client, result.encode("utf-8"))
+                        if result != "":
+                            try:
+                                await loop.sock_sendall(client, result.encode("utf-8"))
+                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
+                                logger.warning("Client disconnected before sending the response.")
+                        else:
+                            try:
+                                await loop.sock_sendall(client,"no result".encode("utf-8"))
+                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
+                                logger.warning("Client disconnected before sending the response.")
+                            
                     elif isinstance(result, (bytes)):
                         await loop.sock_sendall(client, result)
                     else:
                         try:
                             strdata = str(result).encode("utf-8")
-                            await loop.sock_sendall(client, result)
+                            try:
+                                await loop.sock_sendall(client, result)
+                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
+                                logger.warning("Client disconnected before sending the response.")
                         except Exception as e:
-                            await loop.sock_sendall(client, str(e).encode("utf-8"))
+                            try:
+                                await loop.sock_sendall(client, str(e).encode("utf-8"))
+                            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                                logger.warning("Client disconnected before sending the response.")
 
                         logger.warning(f"type reception data {type(result)}")
                     break  # suivant type de connexion desire
                 except Exception as e:
-                    await loop.sock_sendall(client, str(e).encode("utf-8"))
+                    try:
+                        await loop.sock_sendall(client, str(e).encode("utf-8"))
+                    except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                        logger.warning("Client disconnected before sending the response.")
                     break
     except Exception:
         logger.error(
