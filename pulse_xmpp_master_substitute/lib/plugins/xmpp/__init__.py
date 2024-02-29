@@ -9188,7 +9188,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             and_(Up_machine_windows.id_machine == id_machine,
                  or_(Up_machine_windows.update_id == update_id, Up_machine_windows.kb == kb ))).count()
         # Si l'objet n'existe pas, l'ajouter à la base de données
-        if objet_existant is None:
+        if objet_existant == 0:
             try:
                 new_Up_machine_windows = Up_machine_windows()
                 new_Up_machine_windows.id_machine = id_machine
