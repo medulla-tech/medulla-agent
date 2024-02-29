@@ -23,6 +23,11 @@ import copy
 import traceback
 import time
 from subprocess import STDOUT, check_output
+import asyncio
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+# without this iqsendpulse can't work.
 
 if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
     import grp
