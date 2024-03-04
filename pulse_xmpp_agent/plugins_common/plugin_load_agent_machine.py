@@ -43,6 +43,7 @@ import types
 logger = logging.getLogger()
 plugin = {"VERSION": "1.1", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
+
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
     """
@@ -301,9 +302,9 @@ def handle_client_connection(self, msg):
                 datasend["data"]["ous"] = {}
                 for user in datasend["data"]["userlist"]:
                     datasend["data"]["ous"][user] = {
-                        "ou_user" : organizationbyuser(datasend["data"]["userlist"]),
+                        "ou_user": organizationbyuser(datasend["data"]["userlist"]),
                         "ou_machine": organizationbymachine(),
-                        "ou_groups" : adusergroups(user)
+                        "ou_groups": adusergroups(user),
                     }
 
             elif result["action"] == "kioskinterfaceInstall":

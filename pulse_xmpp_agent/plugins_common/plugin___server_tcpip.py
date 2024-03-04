@@ -255,24 +255,37 @@ async def handle_client(client, xmppobject):
                                 result, cls=DateTimebytesEncoderjson, indent=4
                             ).encode("utf-8")
                         except Exception as e:
-                            _result = '{"type":"error", "from":"agent-machine", "message":e}'.encode("utf-8")
-                        finally:
-                            await loop.sock_sendall(
-                                client,
-                                _result
+                            _result = '{"type":"error", "from":"agent-machine", "message":e}'.encode(
+                                "utf-8"
                             )
+                        finally:
+                            await loop.sock_sendall(client, _result)
                     elif isinstance(result, (str)):
                         if result != "":
                             try:
                                 await loop.sock_sendall(client, result.encode("utf-8"))
-                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
-                                logger.warning("Client disconnected before sending the response.")
+                            except (
+                                BrokenPipeError,
+                                ConnectionResetError,
+                                ConnectionAbortedError,
+                            ):
+                                logger.warning(
+                                    "Client disconnected before sending the response."
+                                )
                         else:
                             try:
-                                await loop.sock_sendall(client,"no result".encode("utf-8"))
-                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
-                                logger.warning("Client disconnected before sending the response.")
-                            
+                                await loop.sock_sendall(
+                                    client, "no result".encode("utf-8")
+                                )
+                            except (
+                                BrokenPipeError,
+                                ConnectionResetError,
+                                ConnectionAbortedError,
+                            ):
+                                logger.warning(
+                                    "Client disconnected before sending the response."
+                                )
+
                     elif isinstance(result, (bytes)):
                         await loop.sock_sendall(client, result)
                     else:
@@ -280,21 +293,39 @@ async def handle_client(client, xmppobject):
                             strdata = str(result).encode("utf-8")
                             try:
                                 await loop.sock_sendall(client, result)
-                            except (BrokenPipeError, ConnectionResetError,ConnectionAbortedError):
-                                logger.warning("Client disconnected before sending the response.")
+                            except (
+                                BrokenPipeError,
+                                ConnectionResetError,
+                                ConnectionAbortedError,
+                            ):
+                                logger.warning(
+                                    "Client disconnected before sending the response."
+                                )
                         except Exception as e:
                             try:
                                 await loop.sock_sendall(client, str(e).encode("utf-8"))
-                            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
-                                logger.warning("Client disconnected before sending the response.")
+                            except (
+                                BrokenPipeError,
+                                ConnectionResetError,
+                                ConnectionAbortedError,
+                            ):
+                                logger.warning(
+                                    "Client disconnected before sending the response."
+                                )
 
                         logger.warning(f"type reception data {type(result)}")
                     break  # suivant type de connexion desire
                 except Exception as e:
                     try:
                         await loop.sock_sendall(client, str(e).encode("utf-8"))
-                    except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
-                        logger.warning("Client disconnected before sending the response.")
+                    except (
+                        BrokenPipeError,
+                        ConnectionResetError,
+                        ConnectionAbortedError,
+                    ):
+                        logger.warning(
+                            "Client disconnected before sending the response."
+                        )
                     break
     except Exception:
         logger.error(
