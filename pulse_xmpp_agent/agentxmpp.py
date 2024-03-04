@@ -1466,7 +1466,12 @@ class MUCBot(ClientXMPP):
             try:
                 filenamejson = os.path.join(dir_reprise_session, t)
                 detection = t.split("@_@")
-                if len(detection) == 5 and detection[0] == "medulla_protected" and (timecurrent+60) >= int(time.mktime(time.localtime(float(detection[1])))):
+                if (
+                    len(detection) == 5
+                    and detection[0] == "medulla_protected"
+                    and (timecurrent + 60)
+                    >= int(time.mktime(time.localtime(float(detection[1]))))
+                ):
                     with open(filenamejson, "r") as f:
                         data = json.load(f)
                     datainfo = data["data"]
@@ -1528,7 +1533,13 @@ class MUCBot(ClientXMPP):
                 logger.error(
                     "reinjection deploy protected\n%s" % (traceback.format_exc())
                 )
-                os.rename(filenamejson, os.path.join(os.path.dirname(filenamejson),"error_session_grafcet"+os.path.basename(filenamejson)))
+                os.rename(
+                    filenamejson,
+                    os.path.join(
+                        os.path.dirname(filenamejson),
+                        "error_session_grafcet" + os.path.basename(filenamejson),
+                    ),
+                )
         return
 
     def reinjection_deplot_message_box(self):
@@ -1546,7 +1557,12 @@ class MUCBot(ClientXMPP):
             try:
                 filenamejson = os.path.join(dir_reprise_session, t)
                 detection = t.split("@_@")
-                if len(detection) == 5 and detection[0] == "medulla_messagebox" and (timecurrent+60) >= int(time.mktime(time.localtime(float(detection[1])))):
+                if (
+                    len(detection) == 5
+                    and detection[0] == "medulla_messagebox"
+                    and (timecurrent + 60)
+                    >= int(time.mktime(time.localtime(float(detection[1]))))
+                ):
                     with open(filenamejson, "r") as f:
                         data = json.load(f)
                     datainfo = data["data"]
@@ -1571,7 +1587,13 @@ class MUCBot(ClientXMPP):
                 logger.error(
                     "reinjection deploy message box\n%s" % (traceback.format_exc())
                 )
-                os.rename(filenamejson, os.path.join(os.path.dirname(filenamejson),"error_session_grafcet_"+os.path.basename(filenamejson)))
+                os.rename(
+                    filenamejson,
+                    os.path.join(
+                        os.path.dirname(filenamejson),
+                        "error_session_grafcet_" + os.path.basename(filenamejson),
+                    ),
+                )
         return
 
     # syncthing function
