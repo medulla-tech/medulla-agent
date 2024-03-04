@@ -789,7 +789,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         ou.reverse()
                         ou = "/".join(ou)
                         adusergroups.append(ou)
-                XmppMasterDatabase().addadusergroups(data['lastusersession'], adusergroups)
+                XmppMasterDatabase().addadusergroups(
+                    data["lastusersession"], adusergroups
+                )
 
                 if msgret.startswith("Update Machine"):
                     if showinfobool:
