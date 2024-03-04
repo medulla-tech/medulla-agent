@@ -17,12 +17,14 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.glpi import Glpi
 from lib.managepackage import managepackage
-from lib.utils import name_random, \
-    file_get_contents, \
-    file_put_contents, \
-    getRandomName, \
-    call_plugin, \
-    name_randomplus
+from lib.utils import (
+    name_random,
+    file_get_contents,
+    file_put_contents,
+    getRandomName,
+    call_plugin,
+    name_randomplus,
+)
 import base64
 
 import ast
@@ -37,6 +39,7 @@ logger = logging.getLogger()
 plugin = {"VERSION": "1.0", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
 PREFIX_COMMAND = "commandkiosk"
 
+
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug("#################################################")
     logger.debug(plugin)
@@ -46,22 +49,22 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     if compteurcallplugin == 0:
         read_conf_resultkiosk(xmppobject)
 
-    if 'subaction' in data:
-        if data['subaction'] == 'initialization':
+    if "subaction" in data:
+        if data["subaction"] == "initialization":
             # kiosk ==(tcp/ip)==> agent machine
             # {
-            #     "action":"kioskinterface",  
+            #     "action":"kioskinterface",
             #     "subaction":"initialization"
             # }
 
             # == agent machine ==(xmpp)==> substitute master (plugin_resultkiosk) ==
             # {
-            #     'subaction': 'initialization', 
-            #     'userlist': ['vagrant'], 
+            #     'subaction': 'initialization',
+            #     'userlist': ['vagrant'],
             #     'ous': {
             #         'vagrant': {
-            #             'ou_user': '', 
-            #             'ou_machine': '', 
+            #             'ou_user': '',
+            #             'ou_machine': '',
             #             'ou_groups': ''
             #         }
             #     }
@@ -100,14 +103,14 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
             # kiosk ==(tcp/ip)==> agent machine
             # {
             #     "action":"kioskinterfaceInstall",
-            #     "utcdatetime":"(2024, 02, 26, 15, 53)", 
+            #     "utcdatetime":"(2024, 02, 26, 15, 53)",
             #     "uuid": "5c83c5e6-tcp_beab0z5bhgfqxesl3mlcc8h"
             # }
 
             # == agent machine ==(xmpp)==> substitute master (plugin_resultkiosk) ==
             # {
-            #     "subaction":"install", 
-            #     "utcdatetime":"(2024, 02, 26, 15, 53)", 
+            #     "subaction":"install",
+            #     "utcdatetime":"(2024, 02, 26, 15, 53)",
             #     "uuid": "5c83c5e6-tcp_beab0z5bhgfqxesl3mlcc8h"
             # }
             deploypackage(data, message, xmppobject, sessionid)
@@ -154,15 +157,14 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                     OU, data["uuid"], data["askuser"]
                 )
         else:
-            logger.warning("Subaction %s not recognize"%data["subaction"])    
+            logger.warning("Subaction %s not recognize" % data["subaction"])
     else:
         logger.warning("No subaction found in agent machine query")
 
 
-
 def initialisekiosk(data, message, xmppobject):
     try:
-        machine = XmppMasterDatabase().getMachinefromjid(message['from'])
+        machine = XmppMasterDatabase().getMachinefromjid(message["from"])
         # Update ous for the userlist in data["userlist"]
         if "userlist" in data:
             for user in data["userlist"]:
@@ -171,11 +173,14 @@ def initialisekiosk(data, message, xmppobject):
                     ou_machine = data["ous"][user]["ou_machine"]
                     ou_group = data["ous"][user]["ou_groups"]
                     logger.debug("call updatemachineAD from plugin_resultkiosk")
-                    XmppMasterDatabase().updatemachineAD(machine['id'], user, ou_machine, ou_user)
-                    #XmppMasterDatabase().updateAdUserGroups()
+                    XmppMasterDatabase().updatemachineAD(
+                        machine["id"], user, ou_machine, ou_user
+                    )
+                    # XmppMasterDatabase().updateAdUserGroups()
 
-        
-        initializationdatakiosk = handlerkioskpresence(xmppobject, message["from"],
+        initializationdatakiosk = handlerkioskpresence(
+            xmppobject,
+            message["from"],
             machine["id"],
             machine["platform"],
             machine["hostname"],
@@ -191,11 +196,14 @@ def initialisekiosk(data, message, xmppobject):
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
     if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
-    return {'action': action,
-            'data': data,
-            'ret': 0,
-            "base64": False,
-            "sessionid": getRandomName(4,sessionid)}
+    return {
+        "action": action,
+        "data": data,
+        "ret": 0,
+        "base64": False,
+        "sessionid": getRandomName(4, sessionid),
+    }
+
 
 def handlerkioskpresence(
     xmppobject,
@@ -230,6 +238,7 @@ def handlerkioskpresence(
     xmppobject.send_message(mto=jid, mbody=json.dumps(message_to_machine), mtype="chat")
     return datas
 
+
 def get_packages_for_machine(machine, showinfobool=True):
     """Get a list of the packages for the concerned machine.
     Param:
@@ -238,7 +247,7 @@ def get_packages_for_machine(machine, showinfobool=True):
         { "ad_ou_machine":"somethine", "ad_ou_user": "something", "hostname":"machine-name", "uuid_inventorymachine":"UUID1"}
     Returns:
         list of the packages"""
-            
+
     try:
         machine_entity = XmppMasterDatabase().getmachineentityfromjid(machine["jid"])
 
@@ -359,7 +368,6 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
     return structuredatakioskelement
 
 
-
 #### ancine plugin master resultkiosk
 def parsexmppjsonfile(path):
     datastr = file_get_contents(path)
@@ -368,6 +376,7 @@ def parsexmppjsonfile(path):
     datastr = re.sub(r"(?i) *: *true", " : true", datastr)
 
     file_put_contents(path, datastr)
+
 
 def str_to_date_str(date_str):
     # Analyser la chaîne en tant que tuple
@@ -378,45 +387,46 @@ def str_to_date_str(date_str):
     date_str = date_obj.strftime("%Y-%m-%d %H:%M:%S")
     return date_str
 
+
 def str_to_datetime(date_str):
     # Utiliser strptime pour convertir la chaîne en objet datetime
     date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
     return date_obj
 
+
 def deploypackage(data, message, xmppobject, sessionid):
     try:
         machine = XmppMasterDatabase().getMachinefromjid(message["from"])
-        logging.getLogger().error(json.dumps(machine,indent=4))
+        logging.getLogger().error(json.dumps(machine, indent=4))
 
         # Get the actual timestamp in utc format
         current_date = datetime.datetime.now()
-        #current_date = current_date.replace(tzinfo=pytz.UTC)
+        # current_date = current_date.replace(tzinfo=pytz.UTC)
         section = ""
 
         if "utcdatetime" in data:
-            install_date = str_to_datetime(str_to_date_str( data["utcdatetime"]))
-            #date_str = data["utcdatetime"].replace("(", "")
-            #date_str = date_str.replace(")", "")
-            #date_list_tmp = date_str.split(",")
-            #date_list = []
-            #for element in date_list_tmp:
-                #date_list.append(int(element))
+            install_date = str_to_datetime(str_to_date_str(data["utcdatetime"]))
+            # date_str = data["utcdatetime"].replace("(", "")
+            # date_str = date_str.replace(")", "")
+            # date_list_tmp = date_str.split(",")
+            # date_list = []
+            # for element in date_list_tmp:
+            # date_list.append(int(element))
 
-            #sent_datetime = datetime.datetime(
-                #date_list[0],
-                #date_list[1],
-                #date_list[2],
-                #date_list[3],
-                #date_list[4],
-                #0,
-                #0,
-                #pytz.UTC,
-            #)
-            #install_date = utc2local(sent_datetime)
+            # sent_datetime = datetime.datetime(
+            # date_list[0],
+            # date_list[1],
+            # date_list[2],
+            # date_list[3],
+            # date_list[4],
+            # 0,
+            # 0,
+            # pytz.UTC,
+            # )
+            # install_date = utc2local(sent_datetime)
 
         else:
             install_date = current_date
-
 
         # nameuser = "(kiosk):%s/%s" % (machine["lastuser"], machine["hostname"])
         nameuser = machine["lastuser"]
@@ -430,7 +440,7 @@ def deploypackage(data, message, xmppobject, sessionid):
             section = '"section":"install"'
 
         package = json.loads(managepackage.get_xmpp_package(data["uuid"]))
-  
+
         _section = section.split(":")[1]
 
         command = MscDatabase().createcommanddirectxmpp(
@@ -529,7 +539,7 @@ def deploypackage(data, message, xmppobject, sessionid):
             datasend,
             datasession=None,
             encodebase64=False,
-            prefix="commandkiosk"
+            prefix="commandkiosk",
         )
         # add deploy in table.
         XmppMasterDatabase().adddeploy(
@@ -543,7 +553,10 @@ def deploypackage(data, message, xmppobject, sessionid):
             sessionid,  # id session,
             nameuser,  # user
             nameuser,  # login
-            name +"-@kiosk@-"+ " " + commandstart.strftime("%Y/%m/%d/ %H:%M:%S"),  # title,
+            name
+            + "-@kiosk@-"
+            + " "
+            + commandstart.strftime("%Y/%m/%d/ %H:%M:%S"),  # title,
             "",  # group_uuid
             commandstart,  # startcmd
             commandstop,  # endcmd
@@ -567,51 +580,71 @@ def deploypackage(data, message, xmppobject, sessionid):
             touser="",
         )
     except Exception as e:
-        logging.getLogger().error("\n%s"%(traceback.format_exc() ) )
+        logging.getLogger().error("\n%s" % (traceback.format_exc()))
 
 
 def exist_objet(obj, attribut):
     return hasattr(obj, attribut)
 
+
 def read_conf_resultkiosk(xmppobject):
     try:
         logger.debug("#################################################")
-        logger.debug("#######################read_conf_resultkiosk##########################")
+        logger.debug(
+            "#######################read_conf_resultkiosk##########################"
+        )
         logger.debug("#################################################")
-        logger.debug(hasattr(xmppobject, 'send_session_commandkiosk'))
-        logger.debug(hasattr(xmppobject, 'directcallpluginkiosk'))
+        logger.debug(hasattr(xmppobject, "send_session_commandkiosk"))
+        logger.debug(hasattr(xmppobject, "directcallpluginkiosk"))
         # -------------------------- add object dynamique --------------------------
         if not exist_objet(xmppobject, "sessiondeploysubstitute"):
             xmppobject.sessiondeploysubstitute = session("sessiondeploysubstitute")
-        if not exist_objet(xmppobject, "machineDeploy" ):
+        if not exist_objet(xmppobject, "machineDeploy"):
             xmppobject.machineDeploy = {}
-        if not exist_objet(xmppobject, "hastable" ):
+        if not exist_objet(xmppobject, "hastable"):
             xmppobject.hastable = {}
 
         # -------------------------- add code dynamique --------------------------
-        if not hasattr(xmppobject, 'send_session_commandkiosk'):
-            xmppobject.send_session_commandkiosk = types.MethodType(send_session_commandkiosk, xmppobject)
+        if not hasattr(xmppobject, "send_session_commandkiosk"):
+            xmppobject.send_session_commandkiosk = types.MethodType(
+                send_session_commandkiosk, xmppobject
+            )
 
-        if not hasattr(xmppobject, 'directcallpluginkiosk'):
-            xmppobject.directcallpluginkiosk = types.MethodType(directcallpluginkiosk, xmppobject)
+        if not hasattr(xmppobject, "directcallpluginkiosk"):
+            xmppobject.directcallpluginkiosk = types.MethodType(
+                directcallpluginkiosk, xmppobject
+            )
 
-        if not hasattr(xmppobject, 'callpluginsubstitutekiosk'):
-            xmppobject.callpluginsubstitutekiosk = types.MethodType(callpluginsubstitutekiosk, xmppobject)
+        if not hasattr(xmppobject, "callpluginsubstitutekiosk"):
+            xmppobject.callpluginsubstitutekiosk = types.MethodType(
+                callpluginsubstitutekiosk, xmppobject
+            )
 
-        if not hasattr(xmppobject, 'applicationdeployjsonUuidMachineAndUuidPackagekiosk'):
-            xmppobject.applicationdeployjsonUuidMachineAndUuidPackagekiosk = types.MethodType(applicationdeployjsonUuidMachineAndUuidPackagekiosk, xmppobject)
+        if not hasattr(
+            xmppobject, "applicationdeployjsonUuidMachineAndUuidPackagekiosk"
+        ):
+            xmppobject.applicationdeployjsonUuidMachineAndUuidPackagekiosk = (
+                types.MethodType(
+                    applicationdeployjsonUuidMachineAndUuidPackagekiosk, xmppobject
+                )
+            )
 
-        if not hasattr(xmppobject, 'applicationdeployjsonuuidkiosk'):
-            xmppobject.applicationdeployjsonuuidkiosk = types.MethodType(applicationdeployjsonuuidkiosk, xmppobject)
+        if not hasattr(xmppobject, "applicationdeployjsonuuidkiosk"):
+            xmppobject.applicationdeployjsonuuidkiosk = types.MethodType(
+                applicationdeployjsonuuidkiosk, xmppobject
+            )
 
-        if not hasattr(xmppobject, 'applicationdeploymentjsonkiosk'):
-            xmppobject.applicationdeploymentjsonkiosk = types.MethodType(applicationdeploymentjsonkiosk, xmppobject)
+        if not hasattr(xmppobject, "applicationdeploymentjsonkiosk"):
+            xmppobject.applicationdeploymentjsonkiosk = types.MethodType(
+                applicationdeploymentjsonkiosk, xmppobject
+            )
 
-        if not hasattr(xmppobject, 'totimestampkiosk'):
+        if not hasattr(xmppobject, "totimestampkiosk"):
             xmppobject.totimestampkiosk = types.MethodType(totimestampkiosk, xmppobject)
 
     except Exception as e:
         logger.error("%s" % (traceback.format_exc()))
+
 
 def totimestampkiosk(self, dt, epoch=None):
     if epoch is None:
@@ -619,12 +652,14 @@ def totimestampkiosk(self, dt, epoch=None):
     td = dt - epoch
     return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6
 
+
 def str_to_timestamp(date_str):
     # Use strptime to convert the string to datetime object
     date_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
     # Use timestamp() method to get Unix timestamp
     timestamp = date_obj.timestamp()
     return int(timestamp)  # convert to int if needed
+
 
 def applicationdeploymentjsonkiosk(
     self,
@@ -847,31 +882,31 @@ def applicationdeploymentjsonkiosk(
         "transfert": True,
         "nbdeploy": nbdeploy,
     }
-    #data = {
-        #"name": name,
-        #"login": login,
-        #"idcmd": idcommand,
-        #"advanced": objdeployadvanced,
-        #"stardate": self.totimestampkiosk(start_date),
-        #"enddate": self.totimestampkiosk(end_date),
-        #"methodetransfert": "pushrsync",
-        #"path": path,
-        #"packagefile": os.listdir(path),
-        #"jidrelay": jidrelay,
-        #"jidmachine": jidmachine,
-        #"jidmaster": self.boundjid.bare,
-        #"iprelay": iprelay,
-        #"ippackageserver": ippackageserver,
-        #"portpackageserver": portpackageserver,
-        #"ipmachine": XmppMasterDatabase().ipfromjid(jidmachine, None)[0],
-        #"ipmaster": self.config.Server,
-        #"Dtypequery": "TQ",
-        #"Devent": "DEPLOYMENT START",
-        #"uuid": uuidmachine,
-        #"descriptor": descript,
-        #"transfert": True,
-        #"nbdeploy": nbdeploy,
-    #}
+    # data = {
+    # "name": name,
+    # "login": login,
+    # "idcmd": idcommand,
+    # "advanced": objdeployadvanced,
+    # "stardate": self.totimestampkiosk(start_date),
+    # "enddate": self.totimestampkiosk(end_date),
+    # "methodetransfert": "pushrsync",
+    # "path": path,
+    # "packagefile": os.listdir(path),
+    # "jidrelay": jidrelay,
+    # "jidmachine": jidmachine,
+    # "jidmaster": self.boundjid.bare,
+    # "iprelay": iprelay,
+    # "ippackageserver": ippackageserver,
+    # "portpackageserver": portpackageserver,
+    # "ipmachine": XmppMasterDatabase().ipfromjid(jidmachine, None)[0],
+    # "ipmaster": self.config.Server,
+    # "Dtypequery": "TQ",
+    # "Devent": "DEPLOYMENT START",
+    # "uuid": uuidmachine,
+    # "descriptor": descript,
+    # "transfert": True,
+    # "nbdeploy": nbdeploy,
+    # }
     # TODO on verify dans la table syncthing machine
     # si il n'y a pas un partage syncthing en cour pour cette machine
     # si c'est la cas on ignore cette machine car deja en deploy.
@@ -1447,6 +1482,7 @@ def applicationdeployjsonuuidkiosk(
             )
         return False
 
+
 def applicationdeployjsonUuidMachineAndUuidPackagekiosk(
     self,
     uuidmachine,
@@ -1529,8 +1565,6 @@ def applicationdeployjsonUuidMachineAndUuidPackagekiosk(
         return False
 
 
-
-
 def send_session_commandkiosk(
     self,
     jid,
@@ -1582,6 +1616,7 @@ def callpluginsubstitutekiosk(self, plugin, data, sessionid=None):
         {"action": plugin, "ret": 0, "sessionid": sessionid, "data": data}
     )
     self.directcallpluginkiosk(msg)
+
 
 def directcallpluginkiosk(self, msg):
     try:
