@@ -637,9 +637,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         "ret": 0,
                         "sessionid": getRandomName(5, "publickeymaster"),
                     }
-                    xmppobject.send_message(
-                        mto=msg["from"], mbody=json.dumps(datasend), mtype="chat"
-                    )
+                    if datasend['keypublicbase64'] != None:
+                        xmppobject.send_message(
+                            mto=msg["from"], mbody=json.dumps(datasend), mtype="chat"
+                        )
                 useradd, listedatageolocalisation = adduserdatageolocalisation(
                     xmppobject, data, msg, sessionid, showinfobool
                 )
