@@ -38,7 +38,7 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
 
         xmppobject.send_message(
             mto=relayserver["jid"],
-            mbody=json.dumps(senddataplugin, ensure_ascii=False).encode("latin1"),
+            mbody=json.dumps(senddataplugin, ensure_ascii=False),
             mtype="chat",
         )
 
