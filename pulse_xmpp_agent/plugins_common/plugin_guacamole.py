@@ -41,7 +41,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 # We won't need a reversessh connection. We can safely quit and
                 # let guacamole connect directly to machine
                 return
-                # We need to run a reversessh connection
+            # We need to run a reversessh connection
             sql = f""" SELECT parameter_value FROM guacamole_connection_parameter WHERE connection_id = {data["cux_id"]} AND parameter_name = 'port';"""
             cursor.execute(sql)
             results = cursor.fetchall()
