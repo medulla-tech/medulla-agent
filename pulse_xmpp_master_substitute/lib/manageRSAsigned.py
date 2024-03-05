@@ -1,14 +1,16 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-
-from Cryptodome.PublicKey import RSA
-from Cryptodome.Signature import pss
-from Cryptodome.Hash import SHA256
+try:
+    from Cryptodome.PublicKey import RSA
+    from Cryptodome.Signature import pss
+    from Cryptodome.Hash import SHA256
+except:
+    from Crypto.PublicKey import RSA
+    from Crypto.Signature import pss
+    from Crypto.Hash import SHA256
 import os
 import base64
-
 import logging
 import traceback
 
@@ -17,21 +19,21 @@ logger = logging.getLogger()
 
 class MsgsignedRSA:
     """
-        Class use for verify from message xmpp.
-        The message structure pulse xmpp has a session id.
-        Session id is signed with the private key of the sender of the message.
-        The receiver of the message can verify the origin of the message by comparing\
-        the signature of the sessionid with the sessionid.
+    Class use for verify from message xmpp.
+    The message structure pulse xmpp has a session id.
+    Session id is signed with the private key of the sender of the message.
+    The receiver of the message can verify the origin of the message by
+    comparing the signature of the sessionid with the sessionid.
 
-        Examples sender signed  data:
-            master = MsgsignedRSA("master")
-            sig = master.signedmsg(data)
+    Examples sender signed  data:
+        master = MsgsignedRSA("master")
+        sig = master.signedmsg(data)
 
-            receiver verify data:
-            client = MsgsignedRSA("client")
-            key_public_server_String_base = "KGlDcnlwdG8uUHVibGljS.....NTE5OTFMCnNiLg=="
-            object_key_public_server = client.Base64_To_ObjKeyRSA(key_public_server_String_base)
-            client.verifymsg(object_key_public_server,data, sig)
+        receiver verify data:
+        client = MsgsignedRSA("client")
+        key_public_server_String_base = "KGlDcnlwdG8uUHVibGljS.....NTE5OTFMCnNiLg=="
+        object_key_public_server = client.Base64_To_ObjKeyRSA(key_public_server_String_base)
+        client.verifymsg(object_key_public_server,data, sig)
     """
 
     def __init__(self, type):
@@ -42,15 +44,34 @@ class MsgsignedRSA:
         """
         self.type = type
         self.filekeypublic = os.path.join(
-            self.Setdirectorytempinfo(), "%s-public-RSA.key" % self.type
+            self.Setdirectorytempinfo(), f"{self.type}-public-RSA.key"
         )
         self.fileallkey = os.path.join(
-            self.Setdirectorytempinfo(), "%s-all-RSA.key" % self.type
+            self.Setdirectorytempinfo(), f"{self.type}-all-RSA.key"
         )
         # format PEM
         self.filekeyprivate = os.path.join(
-            self.Setdirectorytempinfo(), "%s-private-RSA.key" % self.type
+            self.Setdirectorytempinfo(), f"{self.type}-private-RSA.key"
         )
+
+        if os.path.exists(self.filekeypublic):
+            self.filekeypublicexists = True
+        else:
+            self.filekeypublicexists = False
+            logger.warning(f"public key {self.filekeypublic} no exits")
+
+        if os.path.exists(self.fileallkey):
+            self.fileallkeyexists = True
+        else:
+            self.fileallkeyexists = False
+            logger.warning(f"complete key PEN  {self.fileallkey} no exits")
+
+        if os.path.exists(self.filekeyprivate):
+            self.filekeyprivateexists = True
+        else:
+            self.filekeyprivateexists = False
+            logger.warning(f"public key : {self.filekeypublic} no exist")
+
         self.dirtempinfo = self.Setdirectorytempinfo()
         self.allkey = None
         self.publickey = None
@@ -76,9 +97,7 @@ class MsgsignedRSA:
     def tostr(self, bs):
         if bs is None:
             return None
-        if isinstance(bs, str):
-            return bs
-        return bs.decode("latin-1")
+        return bs if isinstance(bs, str) else bs.decode("latin-1")
 
     def byte_string(self, s):
         return isinstance(s, bytes)
@@ -127,7 +146,7 @@ class MsgsignedRSA:
         return base64.b64encode(self.bprivatekey)
 
     def get_name_key(self):
-        return ["%s-public-RSA.key" % self.type, "%s-private-RSA.key" % self.type]
+        return [f"{self.type}-public-RSA.key", f"{self.type}-private-RSA.key"]
 
     def generateRSAclefagentOpenssh(self):
         """
@@ -138,7 +157,7 @@ class MsgsignedRSA:
         self.bpublickey = self.allkey.export_key("OpenSSH")
         self.bprivatekey = self.allkey.export_key("PEM")
 
-        # write fichier public et private
+        ## writte fichier public et private
         with open(self.filekeypublic, "wb") as file:
             file.write(self.bpublickey)
         with open(self.filekeyprivate, "wb") as file:
@@ -158,7 +177,7 @@ class MsgsignedRSA:
                 out = RSA.import_key(open(filekeypublic).read())
                 return out.export_key()
             else:
-                logger.error("loadkeypublic verify path public key %s" % filekeypublic)
+                logger.error(f"loadkeypublic verify path public key {filekeypublic}")
                 return None
         else:
             filekeypublic = self.filekeypublic
@@ -179,9 +198,7 @@ class MsgsignedRSA:
                 out = RSA.import_key(open(filekeyprivate).read())
                 return out.export_key()
             else:
-                logger.error(
-                    "loadkeypublic verify path private key %s" % filekeyprivate
-                )
+                logger.error(f"loadkeypublic verify path private key {filekeyprivate}")
                 return None
         else:
             filekeyprivate = self.filekeyprivate
@@ -196,12 +213,16 @@ class MsgsignedRSA:
         """
         Function load from file the public key to object RSA key
         """
+        if filekeypublic is None:
+            filekeypublic = self.filekeypublic
         return self.tobytes(self.loadkeypublic(filekeypublic=filekeypublic))
 
     def loadkeyprivatebytes(self, filekeyprivate=None):
         """
         Function load from file the private key to object RSA key
         """
+        if filekeyprivate is None:
+            filekeyprivate = self.filekeyprivate
         return self.tobytes(self.loadkeyprivate(filekeyprivate=filekeyprivate))
 
     def loadkeypublictobase64byte(self, filekeypublic=None):
@@ -209,39 +230,33 @@ class MsgsignedRSA:
         Function load from file the public keys RSA as a base64 string
         """
         if filekeypublic is None:
-            return None
-
+            filekeypublic = self.filekeypublic
         bkespub = self.loadkeypublicbytes(self, filekeypublic=filekeypublic)
-
-        if bkespub is None:
-            return None
-
-        return base64.b64encode(bkespub)
+        return None if bkespub is None else base64.b64encode(bkespub)
 
     def loadkeypublictobase64(self, filekeypublic=None):
         """
         Function load from file the public keys RSA as a base64 string
         """
+        if filekeypublic is None:
+            filekeypublic = self.filekeypublic
         return self.tostr(self.loadkeypublictobase64byte(filekeypublic=filekeypublic))
 
     def loadkeyprivatetobase64byte(self, filekeyprivate=None):
         """
         Function load from file the private keys RSA as a base64 string
         """
-        if filekeypublic is None:
-            return None
-
+        if filekeyprivate is None:
+            filekeyprivate = self.filekeyprivate
         bkespriv = self.loadkeyprivatebytes(self, filekeyprivate=filekeyprivate)
-
-        if bkespriv is None:
-            return None
-
-        return base64.b64encode(bkespriv)
+        return None if bkespriv is None else base64.b64encode(bkespriv)
 
     def loadkeyprivatetobase64(self, filekeyprivate=None):
         """
         Function load from file the private keys RSA as a base64 string
         """
+        if filekeyprivate is None:
+            filekeyprivate = self.filekeyprivate
         return self.tostr(
             self.loadkeyprivatetobase64byte(filekeyprivate=filekeyprivate)
         )
@@ -266,7 +281,7 @@ class MsgsignedRSA:
         else:
             file_private_key = self.filekeyprivate
         if not os.path.exists(file_private_key):
-            logger.error("signed msg impossible read private key %s" % file_private_key)
+            logger.error(f"signed msg impossible read private key {file_private_key}")
             return False
         message = self.tobytes(message)
         key = RSA.import_key(open(file_private_key).read())
@@ -283,7 +298,7 @@ class MsgsignedRSA:
         else:
             file_public_key = self.filekeypublic
         if not os.path.exists(file_public_key):
-            logger.error("verifymsg impossible read public key %s" % file_public_key)
+            logger.error(f"verifymsg impossible read public key {file_public_key}")
             return False
         message = self.tobytes(message)
         b_signed_message = base64.b64decode(self.tobytes(b64_signed_message))
@@ -305,12 +320,9 @@ class MsgsignedRSA:
         :return boolean exist or not exist
         """
         filepublickey = os.path.join(
-            self.Setdirectorytempinfo(), "%s-public-RSA.key" % name
+            self.Setdirectorytempinfo(), f"{name}-public-RSA.key"
         )
-        if os.path.exists(filepublickey):
-            return True
-        else:
-            return False
+        return bool(os.path.exists(filepublickey))
 
 
 def installpublickey(name_or_filepublickey, keybase64, typekey="public"):
@@ -338,9 +350,7 @@ def install_key(name_or_filepublickey, keybase64, typekey):
     def tostr(bs):
         if bs is None:
             return None
-        if isinstance(bs, str):
-            return bs
-        return bs.decode("latin-1")
+        return bs if isinstance(bs, str) else bs.decode("latin-1")
 
     def tobytes(s, encoding="latin-1"):
         if s is None:
@@ -358,10 +368,15 @@ def install_key(name_or_filepublickey, keybase64, typekey):
 
     try:
         if not keybase64:
-            logger.error("[install_key] verifymsg keybase64  =(%s)" % keybase64)
-        keybase64 = install_key.tobytes(keybase64)
+            logger.error(f"[install_key] verifymsg keybase64  =({keybase64})")
+            logger.error(f"[install_key] Issue Installing Empty RSA Key")
+            logger.error(
+                f"[install_key] The installation process is failing due to the absence of valid key data."
+            )
+            return False
+        keybase64 = tobytes(keybase64)
 
-        name_or_filepublickey = install_key.tostr(name_or_filepublickey)
+        name_or_filepublickey = tostr(name_or_filepublickey)
         if name_or_filepublickey:
             dirname = os.path.dirname(name_or_filepublickey)
             if dirname:
@@ -374,12 +389,11 @@ def install_key(name_or_filepublickey, keybase64, typekey):
                     os.path.dirname(os.path.realpath(__file__)),
                     "..",
                     "INFOSTMP",
-                    "%s-%s-RSA.key" % (name_or_filepublickey, typekey),
+                    f"{name_or_filepublickey}-{typekey}-RSA.key",
                 )
         else:
             logger.error(
-                "[install_key %s ] verifymsg name or path key %s"
-                % (typekey, name_or_filepublickey)
+                f"[install_key {typekey} ] verifymsg name or path key {name_or_filepublickey}"
             )
             return False
         try:
