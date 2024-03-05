@@ -231,7 +231,7 @@ class MsgsignedRSA:
         """
         if filekeypublic is None:
             filekeypublic = self.filekeypublic
-        bkespub = self.loadkeypublicbytes(self, filekeypublic=filekeypublic)
+        bkespub = self.loadkeypublicbytes(filekeypublic=filekeypublic)
         return None if bkespub is None else base64.b64encode(bkespub)
 
     def loadkeypublictobase64(self, filekeypublic=None):
@@ -248,7 +248,7 @@ class MsgsignedRSA:
         """
         if filekeyprivate is None:
             filekeyprivate = self.filekeyprivate
-        bkespriv = self.loadkeyprivatebytes(self, filekeyprivate=filekeyprivate)
+        bkespriv = self.loadkeyprivatebytes(filekeyprivate=filekeyprivate)
         return None if bkespriv is None else base64.b64encode(bkespriv)
 
     def loadkeyprivatetobase64(self, filekeyprivate=None):
