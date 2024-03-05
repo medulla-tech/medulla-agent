@@ -637,7 +637,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         "ret": 0,
                         "sessionid": getRandomName(5, "publickeymaster"),
                     }
-                    if datasend['keypublicbase64'] != None:
+                    if datasend["keypublicbase64"] != None:
                         xmppobject.send_message(
                             mto=msg["from"], mbody=json.dumps(datasend), mtype="chat"
                         )
