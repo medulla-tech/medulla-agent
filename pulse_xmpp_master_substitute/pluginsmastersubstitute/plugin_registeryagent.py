@@ -810,6 +810,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         xmppobject.boundjid.bare,
                         xmppobject.boundjid.bare,
                     )
+                # The machine is not yet on the xmppmaster database.
                 if idmachine != -1:
                     if showinfobool:
                         logger.info(
