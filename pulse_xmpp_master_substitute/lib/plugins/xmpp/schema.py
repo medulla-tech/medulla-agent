@@ -958,17 +958,15 @@ class GreenMachine(Base):
     timeac = Column(Integer, default=300)
     timedc = Column(Integer, default=180)
     biosdate=Column(DateTime)
-    PROC_MIN_DC = Column(Integer, default=180)
-    PROC_MIN_AC = Column(Integer, default=180)
-    PROC_MAX_AC = Column(Integer, default=180)
-    PROC_MAX_DC = Column(Integer, default=180)
-    core  = Column(Integer, default=1)
+    PROC_MIN_DC = Column(Integer, default=0)
+    PROC_MIN_AC = Column(Integer, default=0)
+    PROC_MAX_AC = Column(Integer, default=0)
+    PROC_MAX_DC = Column(Integer, default=0)
+    core = Column(Integer, default=1)
     thread = Column(Integer, default=1)
-    TDP = Column(Integer, default=64)
-    osmax = Column(String(20))
-    freq_doccpu = Column(Integer, default=0)
-
-
+    TDP = Column(Integer, default=60)
+    osmax = Column(String(25), default='')
+    freq_doccpu =  Column(Integer, default=0)
 
 class GreenConso(Base, XmppMasterDBObj):
     # ====== Table name =========================
@@ -990,7 +988,6 @@ class GreenConso(Base, XmppMasterDBObj):
     date_end = Column(DateTime)
     energie = Column(Float, default=0)
     machine = relationship("GreenMachine")  # La relation avec la table green_machine
-
 
 class GreenUserIdle(Base, XmppMasterDBObj):
     # ====== Table name =========================

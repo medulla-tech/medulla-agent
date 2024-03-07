@@ -291,6 +291,19 @@ class XmppMasterDatabase(DatabaseHelper):
             self.is_activated = False
             return False
 
+
+    def search_cpu(name_cpu):
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+            self.logger.info("Call the search_computer data: %s" % (name_cpu))
+            cursor = connection.cursor()
+            cursor.callproc( "search_computer", [name_cpu])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+
     def search_cpu(self, name_cpu):
         """
         Searches for CPU information in the database.
@@ -312,7 +325,6 @@ class XmppMasterDatabase(DatabaseHelper):
         resultsprocedure=[]
         connection = self.engine_xmppmmaster_base.raw_connection()
         try:
-
             cursor = connection.cursor()
             cursor.callproc("search_computer", [name_cpu])
             resultsprocedure = list(cursor.fetchall())
@@ -328,6 +340,159 @@ class XmppMasterDatabase(DatabaseHelper):
                 results['TDP']=resultsprocedure[0][5]
                 results['osmax']=resultsprocedure[0][7]
         return results
+
+
+    # Méthode pour insérer ou mettre à jour une entrée dans la table green_machine
+    @DatabaseHelper._sessionm
+    def setup_green_machine(self, session, structure):
+        """
+        Inserts or updates an entry in the 'green_machine' table.
+
+        If the machine's UUID already exists in the database, updates the existing machine's fields
+        with the new values. Otherwise, creates a new entry for the machine.
+
+        Args:
+            session: Database session.
+            structure (dict): Data structure containing machine information.
+
+        Returns:
+            str or None: UUID of the inserted or updated machine, or None if unsuccessful.
+        """
+        try:
+            results=self.search_cpu(structure['cpu'])
+
+            if not results:
+                core = 1
+                thread = 1
+                TDP = 60
+                osmax = ""
+                freq_doccpu = 0
+            else:
+                core = results['core']
+                thread = results['thread']
+                TDP = results['TDP']
+                osmax = results['osmax']
+                freq_doccpu = results['freq_doccpu']
+
+        except Exception:
+            core = 1
+            thread = 1
+            TDP = 60
+            osmax = ""
+            freq_doccpu = 0
+
+
+        PROC_MIN_AC = PROC_MIN_DC=PROC_MAX_AC=PROC_MAX_DC=0
+        if all(key in structure for key in ['PROC_MIN_AC', 'PROC_MIN_DC', 'PROC_MAX_AC', 'PROC_MAX_DC']):
+            PROC_MIN_AC = structure['PROC_MIN_AC']
+            PROC_MIN_AC = structure['PROC_MIN_DC']
+            PROC_MAX_AC = structure['PROC_MAX_AC']
+            PROC_MAX_DC = structure['PROC_MAX_DC']
+
+        if 'HDD' not in structure['hd']:
+            structure['hd']['HDD']=0
+        if 'SSD' not in structure['hd']:
+            structure['hd']['SSD']=0
+        try:
+            # Vérifier si l'UUID existe déjà dans la base de données
+            existing_machine = session.query(GreenMachine).filter_by(uuid_machine=structure['uuid']).first()
+            biosdate = datetime.strptime(structure['biosdate'], "%m/%d/%Y")
+            if existing_machine:
+                self.logger.error("existing_machine %s" % results)
+                # Mettre à jour les champs de la machine existante
+                existing_machine.PROC_MIN_AC = PROC_MIN_AC
+                existing_machine.PROC_MIN_DC = PROC_MIN_DC
+                existing_machine.PROC_MAX_AC = PROC_MAX_AC
+                existing_machine.PROC_MAX_DC = PROC_MAX_DC
+                existing_machine.core = core
+                existing_machine.thread = thread
+                existing_machine.TDP = TDP
+                existing_machine.osmax = osmax
+                existing_machine.freq_doccpu = freq_doccpu
+                existing_machine.gpu = structure['gpu']
+                existing_machine.nbr_gpu = structure['nbgpu']
+                existing_machine.hostname = structure['hostname']
+                existing_machine.nbr_HDD = structure['hd']['HDD']
+                existing_machine.nbr_SSD = structure['hd']['SSD']
+                existing_machine.cpu = structure['cpu']
+                existing_machine.nbr_cpu = structure['nbcpu']
+                existing_machine.cpu_hertz_max = structure['cpu_max_freq']
+                existing_machine.memorytype = structure['memory']
+                existing_machine.memorysize = structure['memorytaille']
+                existing_machine.cpu_herz = structure['clock']
+                existing_machine.timeac = structure['time_reprise'][0]
+                existing_machine.timedc = structure['time_reprise'][1]
+                existing_machine.nbr_monitor = structure['nbmonitor']
+                existing_machine.monitor = structure['model']
+                existing_machine.biosdate = biosdate
+                existing_machine.formfactor = "laptop" if structure['has_battery'] else "desktop"
+                self.logger.error("merge1")
+                session.merge(existing_machine)
+                self.logger.error("merge2")
+            else:
+                # Créer une nouvelle entrée pour la machine
+                new_green_machine = GreenMachine(
+                    uuid_machine=structure['uuid'],
+                    gpu=structure['gpu'],
+                    nbr_gpu=structure['nbgpu'],
+                    hostname=structure['hostname'],
+                    nbr_HDD=structure['hd']['HDD'],
+                    nbr_SSD=structure['hd']['SSD'],
+                    cpu=structure['cpu'],
+                    nbr_cpu=structure['nbcpu'],
+                    cpu_hertz_max=structure['cpu_max_freq'],
+                    memorytype=structure['memory'],
+                    memorysize=structure['memorytaille'],
+                    cpu_herz=structure['clock'],
+                    timeac=structure['time_reprise'][0],
+                    timedc=structure['time_reprise'][1],
+                    nbr_monitor=structure['nbmonitor'],
+                    monitor=structure['model'],
+                    biosdate=biosdate,
+                    formfactor="laptop" if structure['has_battery'] else "desktop",
+                    PROC_MIN_AC = PROC_MIN_AC,
+                    PROC_MIN_DC = PROC_MIN_DC,
+                    PROC_MAX_AC = PROC_MAX_AC,
+                    PROC_MAX_DC = PROC_MAX_DC,
+                    core = core,
+                    thread = thread,
+                    TDP = TDP,
+                    osmax = osmax,
+                    freq_doccpu = freq_doccpu
+                )
+                session.add(new_green_machine)
+            session.commit()
+            session.flush()
+            return structure['uuid']
+        except Exception as e:
+            self.logger.error(str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+            return None
+
+
+    # Méthode pour insérer une entrée dans la table green_conso
+    def set_green_conso(self, structure, uuid):
+        """
+        Insère une entrée dans la table green_conso.
+
+        Pour chaque ensemble de données de consommation dans la structure, crée une nouvelle
+        entrée dans la table green_conso avec les informations correspondantes.
+
+        Args:
+            session: Session de base de données.
+            structure (dict): Structure de données contenant les informations de consommation.
+            uuid (str): UUID de la machine associée à la consommation.
+
+        Returns:
+            bool: True si l'insertion a réussi, False sinon.
+        """
+        try:
+            for conso_data in structure['conso']:
+                self.set_green_mesure( conso_data, uuid)
+        except Exception as e:
+            logger.error(str(e))
+            return False
+
 
     # Méthode pour insérer une entrée dans la table green_conso
     @DatabaseHelper._sessionm
@@ -369,123 +534,6 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception as e:
             logger.error(str(e))
             return False
-
-
-    # Méthode pour insérer ou mettre à jour une entrée dans la table green_machine
-    @DatabaseHelper._sessionm
-    def setup_green_machine(self, session, structure):
-        """
-        Inserts or updates an entry in the 'green_machine' table.
-
-        If the machine's UUID already exists in the database, updates the existing machine's fields
-        with the new values. Otherwise, creates a new entry for the machine.
-
-        Args:
-            session: Database session.
-            structure (dict): Data structure containing machine information.
-
-        Returns:
-            str or None: UUID of the inserted or updated machine, or None if unsuccessful.
-        """
-        try:
-            results=self.search_cpu(structure['cpu'])
-            if not results:
-                core = 1
-                thread = 1
-                TDP = 60
-                osmax = ""
-                freq_doccpu = 0
-            else:
-                core = results['core']
-                thread = results['thread']
-                TDP = results['TDP']
-                osmax = results['osmax']
-                freq_doccpu = results['freq_doccpu']
-        except Exception:
-            core = 1
-            thread = 1
-            TDP = 60
-            osmax = ""
-            freq_doccpu = 0
-
-        PROC_MIN_AC = PROC_MIN_DC=PROC_MAX_AC=PROC_MAX_DC=0
-        if all(key in structure for key in ['PROC_MIN_AC', 'PROC_MIN_DC', 'PROC_MAX_AC', 'PROC_MAX_DC']):
-            PROC_MIN_AC = structure['PROC_MIN_AC']
-            PROC_MIN_AC = structure['PROC_MIN_DC']
-            PROC_MAX_AC = structure['PROC_MAX_AC']
-            PROC_MAX_DC = structure['PROC_MAX_DC']
-        try:
-            # Vérifier si l'UUID existe déjà dans la base de données
-            existing_machine = session.query(GreenMachine).filter_by(uuid_machine=structure['uuid']).first()
-            if existing_machine:
-                # Mettre à jour les champs de la machine existante
-                existing_machine.PROC_MIN_AC = PROC_MIN_AC
-                existing_machine.PROC_MIN_DC = PROC_MIN_DC
-                existing_machine.PROC_MAX_AC = PROC_MAX_AC
-                existing_machine.PROC_MAX_DC = PROC_MAX_DC
-                existing_machine.core = core
-                existing_machine.thread = thread
-                existing_machine.TDP = TDP
-                existing_machine.osmax = osmax
-                existing_machine.freq_doccpu = freq_doccpu
-                existing_machine.gpu = structure['gpu']
-                existing_machine.nbr_gpu = structure['nbgpu']
-                existing_machine.hostname = structure['hostname']
-                existing_machine.nbr_HDD = structure['hd']['HDD']
-                existing_machine.nbr_SSD = structure['hd']['SSD']
-                existing_machine.cpu = structure['cpu']
-                existing_machine.nbr_cpu = structure['nbcpu']
-                existing_machine.cpu_hertz_max = structure['cpu_max_freq']
-                existing_machine.memorytype = structure['memory']
-                existing_machine.memorysize = structure['memorytaille']
-                existing_machine.cpu_herz = structure['clock']
-                existing_machine.timeac = structure['time_reprise'][0]
-                existing_machine.timedc = structure['time_reprise'][1]
-                existing_machine.nbr_monitor = structure['nbmonitor']
-                existing_machine.monitor = structure['model']
-                existing_machine.biosdate = datetime.strptime(structure['biosdate'],"%d/%m/%Y")
-                existing_machine.formfactor = "laptop" if structure['has_battery'] else "desktop"
-                session.merge(existing_machine)
-            else:
-                # Créer une nouvelle entrée pour la machine
-                new_green_machine = GreenMachine(
-                    uuid_machine=structure['uuid'],
-                    gpu=structure['gpu'],
-                    nbr_gpu=structure['nbgpu'],
-                    hostname=structure['hostname'],
-                    nbr_HDD=structure['hd']['HDD'],
-                    nbr_SSD=structure['hd']['SSD'],
-                    cpu=structure['cpu'],
-                    nbr_cpu=structure['nbcpu'],
-                    cpu_hertz_max=structure['cpu_max_freq'],
-                    memorytype=structure['memory'],
-                    memorysize=structure['memorytaille'],
-                    cpu_herz=structure['clock'],
-                    timeac=structure['time_reprise'][0],
-                    timedc=structure['time_reprise'][1],
-                    nbr_monitor=structure['nbmonitor'],
-                    monitor=structure['model'],
-                    biosdate=datetime.strptime(structure['biosdate'],"%d/%m/%Y"),
-                    formfactor="laptop" if structure['has_battery'] else "desktop",
-                    PROC_MIN_AC = PROC_MIN_AC,
-                    PROC_MIN_DC = PROC_MIN_DC,
-                    PROC_MAX_AC = PROC_MAX_AC,
-                    PROC_MAX_DC = PROC_MAX_DC,
-                    core = core,
-                    thread = thread,
-                    TDP = TDP,
-                    osmax = osmax,
-                    freq_doccpu = freq_doccpu
-                )
-                session.add(new_green_machine)
-            session.commit()
-            session.flush()
-            return structure['uuid']
-        except Exception as e:
-            self.logger.error(str(e))
-            self.logger.error("\n%s" % (traceback.format_exc()))
-            return None
-
 
     # Méthode pour insérer une entrée dans la table green_user_idle
     @DatabaseHelper._sessionm
