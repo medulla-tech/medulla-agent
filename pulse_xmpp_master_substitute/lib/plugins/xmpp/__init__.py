@@ -291,35 +291,143 @@ class XmppMasterDatabase(DatabaseHelper):
             self.is_activated = False
             return False
 
+    def search_cpu(self, name_cpu):
+        """
+        Searches for CPU information in the database.
+
+        Args:
+            name_cpu (str): The name of the CPU to search for.
+
+        Returns:
+            dict: A dictionary containing CPU information retrieved from the database.
+                Keys:
+                    - 'freq_doccpu': The documented frequency of the CPU.
+                    - 'core': The number of cores of the CPU.
+                    - 'thread': The number of threads of the CPU.
+                    - 'TDP': The Thermal Design Power (TDP) of the CPU.
+                    - 'osmax': The maximum operating system version supported by the CPU.
+                If no information is found, an empty dictionary is returned.
+        """
+        results={}
+        resultsprocedure=[]
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+
+            cursor = connection.cursor()
+            cursor.callproc("search_computer", [name_cpu])
+            resultsprocedure = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        if resultsprocedure:
+            for t in resultsprocedure:
+                results['freq_doccpu']=resultsprocedure[0][2]
+                results['core']=resultsprocedure[0][3]
+                results['thread']=resultsprocedure[0][4]
+                results['TDP']=resultsprocedure[0][5]
+                results['osmax']=resultsprocedure[0][7]
+        return results
+
+    # Méthode pour insérer une entrée dans la table green_conso
+    @DatabaseHelper._sessionm
+    def set_green_mesure(self, session, conso_data, uuid):
+        """
+        Insère une entrée dans la table green_conso.
+
+        Pour chaque ensemble de données de consommation dans la structure, crée une nouvelle
+        entrée dans la table green_conso avec les informations correspondantes.
+
+        Args:
+            session: Session de base de données.
+            structure (dict): Structure de données contenant les informations de consommation.
+            uuid (str): UUID de la machine associée à la consommation.
+
+        Returns:
+            bool: True si l'insertion a réussi, False sinon.
+        """
+        try:
+            new_green_conso = GreenConso()
+            new_green_conso.uuid = uuid
+            new_green_conso.date_start = conso_data['start']
+            new_green_conso.date_end = conso_data['end']
+            new_green_conso.puissance_total = conso_data['pui']
+            new_green_conso.charge = conso_data['charg']
+            new_green_conso.cpu_freq = conso_data['fre']
+            new_green_conso.temperature = conso_data['temp']
+            new_green_conso.puissance_cpu_gpu = conso_data['puissance_cpu_gpu']
+            new_green_conso.coef_charge = conso_data['coeff']
+            new_green_conso.nb_mesure = conso_data['nb']
+            #new_green_conso.energie = (conso_data['nb'] / 60) * conso_data['pui']
+            session.add(new_green_conso)
+            session.commit()
+            session.flush()
+            return True
+        except IntegrityError as e:
+            logger.warning(f"IntegrityError: {str(e)}")
+            return False
+        except Exception as e:
+            logger.error(str(e))
+            return False
+
 
     # Méthode pour insérer ou mettre à jour une entrée dans la table green_machine
     @DatabaseHelper._sessionm
     def setup_green_machine(self, session, structure):
         """
-        Insère ou met à jour une entrée dans la table green_machine.
+        Inserts or updates an entry in the 'green_machine' table.
 
-        Si l'UUID de la machine existe déjà dans la base de données, met à jour
-        les champs de la machine existante avec les nouvelles valeurs. Sinon, crée
-        une nouvelle entrée pour la machine.
+        If the machine's UUID already exists in the database, updates the existing machine's fields
+        with the new values. Otherwise, creates a new entry for the machine.
 
         Args:
-            session: Session de base de données.
-            structure (dict): Structure de données contenant les informations de la machine.
+            session: Database session.
+            structure (dict): Data structure containing machine information.
 
         Returns:
-            str or None: UUID de la machine insérée ou mise à jour, ou None en cas d'échec.
+            str or None: UUID of the inserted or updated machine, or None if unsuccessful.
         """
+        try:
+            results=self.search_cpu(structure['cpu'])
+            if not results:
+                core = 1
+                thread = 1
+                TDP = 60
+                osmax = ""
+                freq_doccpu = 0
+            else:
+                core = results['core']
+                thread = results['thread']
+                TDP = results['TDP']
+                osmax = results['osmax']
+                freq_doccpu = results['freq_doccpu']
+        except Exception:
+            core = 1
+            thread = 1
+            TDP = 60
+            osmax = ""
+            freq_doccpu = 0
+
+        PROC_MIN_AC = PROC_MIN_DC=PROC_MAX_AC=PROC_MAX_DC=0
+        if all(key in structure for key in ['PROC_MIN_AC', 'PROC_MIN_DC', 'PROC_MAX_AC', 'PROC_MAX_DC']):
+            PROC_MIN_AC = structure['PROC_MIN_AC']
+            PROC_MIN_AC = structure['PROC_MIN_DC']
+            PROC_MAX_AC = structure['PROC_MAX_AC']
+            PROC_MAX_DC = structure['PROC_MAX_DC']
         try:
             # Vérifier si l'UUID existe déjà dans la base de données
             existing_machine = session.query(GreenMachine).filter_by(uuid_machine=structure['uuid']).first()
-
             if existing_machine:
                 # Mettre à jour les champs de la machine existante
-                PROC_MIN_DC = Column(Integer, default=180)
-                existing_machine.PROC_MIN_AC = structure['PROC_MIN_AC']
-                existing_machine.PROC_MIN_AC = structure['PROC_MIN_AC']
-                existing_machine.PROC_MAX_AC = structure['PROC_MAX_AC']
-                existing_machine.PROC_MAX_DC = structure['PROC_MAX_DC']
+                existing_machine.PROC_MIN_AC = PROC_MIN_AC
+                existing_machine.PROC_MIN_DC = PROC_MIN_DC
+                existing_machine.PROC_MAX_AC = PROC_MAX_AC
+                existing_machine.PROC_MAX_DC = PROC_MAX_DC
+                existing_machine.core = core
+                existing_machine.thread = thread
+                existing_machine.TDP = TDP
+                existing_machine.osmax = osmax
+                existing_machine.freq_doccpu = freq_doccpu
                 existing_machine.gpu = structure['gpu']
                 existing_machine.nbr_gpu = structure['nbgpu']
                 existing_machine.hostname = structure['hostname']
@@ -359,58 +467,24 @@ class XmppMasterDatabase(DatabaseHelper):
                     monitor=structure['model'],
                     biosdate=datetime.strptime(structure['biosdate'],"%d/%m/%Y"),
                     formfactor="laptop" if structure['has_battery'] else "desktop",
-                    PROC_MIN_AC = structure['PROC_MIN_AC'],
-                    PROC_MIN_AC = structure['PROC_MIN_AC'],
-                    PROC_MAX_AC = structure['PROC_MAX_AC'],
-                    PROC_MAX_DC = structure['PROC_MAX_DC'],
+                    PROC_MIN_AC = PROC_MIN_AC,
+                    PROC_MIN_DC = PROC_MIN_DC,
+                    PROC_MAX_AC = PROC_MAX_AC,
+                    PROC_MAX_DC = PROC_MAX_DC,
+                    core = core,
+                    thread = thread,
+                    TDP = TDP,
+                    osmax = osmax,
+                    freq_doccpu = freq_doccpu
                 )
                 session.add(new_green_machine)
-
             session.commit()
             session.flush()
             return structure['uuid']
         except Exception as e:
-            logging.getLogger().error(str(e))
+            self.logger.error(str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
             return None
-
-    # Méthode pour insérer une entrée dans la table green_conso
-    @DatabaseHelper._sessionm
-    def set_green_conso(self, session, structure, uuid):
-        """
-        Insère une entrée dans la table green_conso.
-
-        Pour chaque ensemble de données de consommation dans la structure, crée une nouvelle
-        entrée dans la table green_conso avec les informations correspondantes.
-
-        Args:
-            session: Session de base de données.
-            structure (dict): Structure de données contenant les informations de consommation.
-            uuid (str): UUID de la machine associée à la consommation.
-
-        Returns:
-            bool: True si l'insertion a réussi, False sinon.
-        """
-        try:
-            for conso_data in structure['conso']:
-                new_green_conso = GreenConso()
-                new_green_conso.uuid_machine = uuid
-                new_green_conso.date_start = conso_data['start']
-                new_green_conso.date_end = conso_data['end']
-                new_green_conso.puissance_total = conso_data['pui']
-                new_green_conso.charge = conso_data['charg']
-                new_green_conso.cpu_freq = conso_data['fre']
-                new_green_conso.temperature = conso_data['temp']
-                new_green_conso.puissance_cpu_gpu = conso_data['puissance_cpu_gpu']
-                new_green_conso.coef_charge = conso_data['coeff']
-                new_green_conso.nb_mesure = conso_data['nb']
-                new_green_conso.energie = (conso_data['nb'] / 60) * conso_data['pui']
-                session.add(new_green_conso)
-            session.commit()
-            session.flush()
-            return True
-        except Exception as e:
-            logging.getLogger().error(str(e))
-            return False
 
 
     # Méthode pour insérer une entrée dans la table green_user_idle

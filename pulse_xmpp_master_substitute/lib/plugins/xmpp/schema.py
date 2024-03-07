@@ -962,6 +962,12 @@ class GreenMachine(Base):
     PROC_MIN_AC = Column(Integer, default=180)
     PROC_MAX_AC = Column(Integer, default=180)
     PROC_MAX_DC = Column(Integer, default=180)
+    core  = Column(Integer, default=1)
+    thread = Column(Integer, default=1)
+    TDP = Column(Integer, default=64)
+    osmax = Column(String(20))
+    freq_doccpu = Column(Integer, default=0)
+
 
 
 class GreenConso(Base, XmppMasterDBObj):
