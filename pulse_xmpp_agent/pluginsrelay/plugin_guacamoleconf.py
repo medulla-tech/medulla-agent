@@ -191,7 +191,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         logger.error("Error finding a free port for reverse VNC")
                 finally:
                     if proto.upper() == "VNC":
-                        hostname = 'localhost'
+                        hostname = "localhost"
                         # We need additional options for reverse VNC
                         listen_timeout = 50000
                         cursor.execute(
