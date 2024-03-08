@@ -174,6 +174,42 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     # Machine is directly reachable. We will not need a
                     # reversessh connection
                     hostname = data["machine_ip"]
+                except socket.error:
+                    # Machine is not reachable. We will need a reversessh
+                    # connection
+                    hostname = "localhost"
+                    port = get_free_tcp_port(objectxmpp)
+                    if port != -1:
+                        cursor.execute(
+                            insertparameter(
+                                result["data"]["connection"][proto.upper()],
+                                "port",
+                                port,
+                            )
+                        )
+                    else:
+                        logger.error("Error finding a free port for reverse VNC")
+                finally:
+                    if proto.upper() == "VNC":
+                        hostname = 'localhost'
+                        # We need additional options for reverse VNC
+                        listen_timeout = 50000
+                        cursor.execute(
+                            insertparameter(
+                                result["data"]["connection"][proto.upper()],
+                                "listen-timeout",
+                                listen_timeout,
+                            )
+                        )
+                        reverse_connect = "true"
+                        cursor.execute(
+                            insertparameter(
+                                result["data"]["connection"][proto.upper()],
+                                "reverse-connect",
+                                reverse_connect,
+                            )
+                        )
+
                     cursor.execute(
                         insertparameter(
                             result["data"]["connection"][proto.upper()],
@@ -187,47 +223,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             result["data"]["connection"][proto.upper()], "port", port
                         )
                     )
-                except socket.error:
-                    # Machine is not reachable. We will need a reversessh
-                    # connection
-                    hostname = "localhost"
-                    cursor.execute(
-                        insertparameter(
-                            result["data"]["connection"][proto.upper()],
-                            "hostname",
-                            hostname,
-                        )
-                    )
-                    port = get_free_tcp_port(objectxmpp)
-                    if port != -1:
-                        cursor.execute(
-                            insertparameter(
-                                result["data"]["connection"][proto.upper()],
-                                "port",
-                                port,
-                            )
-                        )
-                        if proto.upper() == "VNC":
-                            # We need additional options for reverse VNC
-                            listen_timeout = 50000
-                            cursor.execute(
-                                insertparameter(
-                                    result["data"]["connection"][proto.upper()],
-                                    "listen-timeout",
-                                    listen_timeout,
-                                )
-                            )
-                            reverse_connect = "true"
-                            cursor.execute(
-                                insertparameter(
-                                    result["data"]["connection"][proto.upper()],
-                                    "reverse-connect",
-                                    reverse_connect,
-                                )
-                            )
-                    else:
-                        logger.error("Error finding a free port for reverse VNC")
-                finally:
                     sock.close()
 
                 # Options specific to a protocol
