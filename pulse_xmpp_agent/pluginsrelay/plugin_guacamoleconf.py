@@ -219,6 +219,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         ###################################
         try:
             for proto in protos:
+                port = -1
                 try:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     sock.settimeout(5.0)
@@ -233,7 +234,40 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     # connection
                     hostname = "localhost"
                     port = get_free_tcp_port(objectxmpp)
-                    if port != -1:
+                finally:
+                    try:
+                        if proto.upper() == "VNC":
+                            hostname = "localhost"
+                            port = get_free_tcp_port(objectxmpp)
+                            # We need additional options for reverse VNC
+                            listen_timeout = 50000
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "listen-timeout",
+                                    listen_timeout,
+                                )
+                            )
+                            reverse_connect = "true"
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "reverse-connect",
+                                    reverse_connect,
+                                )
+                            )
+
+                        if port != -1:
+                            port = data["remoteservice"][proto]
+
+                        cursor.execute(
+                            insertparameter(
+                                result["data"]["connection"][proto.upper()],
+                                "hostname",
+                                hostname,
+                            )
+                        )
+
                         cursor.execute(
                             insertparameter(
                                 result["data"]["connection"][proto.upper()],
@@ -241,42 +275,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                 port,
                             )
                         )
-                    else:
-                        logger.error("Error finding a free port for reverse VNC")
-                finally:
-                    if proto.upper() == "VNC":
-                        hostname = "localhost"
-                        # We need additional options for reverse VNC
-                        listen_timeout = 50000
-                        cursor.execute(
-                            insertparameter(
-                                result["data"]["connection"][proto.upper()],
-                                "listen-timeout",
-                                listen_timeout,
-                            )
+                    except Exception as error_connection:
+                        logger.error(
+                            f"An Error occured while trying to insert the guacamole parameters for the {proto} protocol. With the error {error_connection}"
                         )
-                        reverse_connect = "true"
-                        cursor.execute(
-                            insertparameter(
-                                result["data"]["connection"][proto.upper()],
-                                "reverse-connect",
-                                reverse_connect,
-                            )
-                        )
-
-                    cursor.execute(
-                        insertparameter(
-                            result["data"]["connection"][proto.upper()],
-                            "hostname",
-                            hostname,
-                        )
-                    )
-                    port = data["remoteservice"][proto]
-                    cursor.execute(
-                        insertparameter(
-                            result["data"]["connection"][proto.upper()], "port", port
-                        )
-                    )
+                        logger.error(traceback.format_exc())
                     sock.close()
 
                 # Options specific to a protocol
