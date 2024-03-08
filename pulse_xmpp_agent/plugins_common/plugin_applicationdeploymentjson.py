@@ -2470,7 +2470,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
         if datasend['data']['methodetransfert'] == "pullcurl":
             dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
 
-            if('packageUuid' in datasend['data']['descriptor']['info']['packageUuid']):
+            if 'packageUuid' in datasend['data']['descriptor']['info']:
                 packageUuid = str(datasend['data']['descriptor']['info']['packageUuid'])
             else:
                 packageUuid = str(datasend['data']['descriptor']['metaparameters']['uuid'])
