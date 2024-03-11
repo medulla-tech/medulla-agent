@@ -84,8 +84,8 @@ def check_if_service_is_running():
         if is_ssh_started['code'] == 0:
             state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
             if state == "STOPPED":
-		return False
-	    return True
+                return False
+            return True
 
 
 def StartAndFixSshdaemon():
@@ -93,10 +93,10 @@ def StartAndFixSshdaemon():
         if not check_if_service_is_running():
             start_sshdaemon(enable_logs=True)
             if not check_if_service_is_running():
-	        logger.debug("Medulla OpenSSH failed to start")
+                logger.debug("Medulla OpenSSH failed to start")
                 FixPermission()
-	        logger.debug("Medulla OpenSSH permissions has been applied")
-	        start_sshdaemon(enable_logs=True)
+                logger.debug("Medulla OpenSSH permissions has been applied")
+                start_sshdaemon(enable_logs=True)
 
 
 def checkopensshversion():
