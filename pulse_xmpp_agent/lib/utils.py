@@ -566,24 +566,28 @@ def loadModule(filename):
     return module
 
 def call_plugin(name, *args, **kwargs):
-    if args[0].config.plugin_action :
-        if args[1] not in args[0].config.excludedplugins:
-            nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-            logger.debug("Loading plugin %s" % args[1])
-            # Add compteur appel plugins
-            count = 0
-            try:
-                count = getattr(args[0], "num_call%s" % args[1])
-            except AttributeError:
+    try:
+        if args[0].config.plugin_action :
+            if args[1] not in args[0].config.excludedplugins:
+                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+                logger.debug("Loading plugin %s" % args[1])
+                # Add compteur appel plugins
                 count = 0
-                setattr(args[0], "num_call%s"%args[1], count)
-            pluginaction = loadModule(nameplugin)
-            pluginaction.action(*args, **kwargs)
-            setattr(args[0], "num_call%s" % args[1], count + 1)
+                try:
+                    count = getattr(args[0], "num_call%s" % args[1])
+                except AttributeError:
+                    count = 0
+                    setattr(args[0], "num_call%s"%args[1], count)
+                pluginaction = loadModule(nameplugin)
+                pluginaction.action(*args, **kwargs)
+                setattr(args[0], "num_call%s" % args[1], count + 1)
+            else:
+                    logging.getLogger().debug("The scheduled plugin %s is excluded" % args[1])
         else:
-                logging.getLogger().debug("The scheduled plugin %s is excluded" % args[1])
-    else:
-        logging.getLogger().debug("The plugin %s is not allowed due to plugin_action parameter" % args[1])
+            logging.getLogger().debug("The plugin %s is not allowed due to plugin_action parameter" % args[1])
+    except Exception as e:
+        logger.error("%s" % (str(e)))
+        logger.error("Error during loading plugin : \n %s" % (traceback.format_exc()))
 
 def getshortenedmacaddress():
     listmacadress = {}
