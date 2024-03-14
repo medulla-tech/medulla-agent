@@ -588,23 +588,26 @@ class PkgsDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def get_package_summary(self, session, package_id):
-        path = os.path.join("/", "var", "lib", "pulse2", "packages", package_id)
+
+        path = os.path.join(managepackage.packagedir(), package_id)
+
         size = 0
-        files = []
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                size += os.path.getsize(os.path.join(root, file))
 
-        diviser = 1000.0
-        units = ["B", "Kb", "Mb", "Gb", "Tb"]
+        result = {
+            "name": "",
+            "version": "",
+            "Qsoftware": "",
+            "Qversion": "",
+            "Qvendor": "",
+            "description": "",
+            "path": "",
+            "size": size,
+            "Size": "",
+        }
 
-        count = 0
-        next = True
-        while next and count < len(units):
-            if size / (diviser**count) > 1000:
-                count += 1
-            else:
-                next = False
+        if not os.path.exists(path):
+            path = ''
+            return result
 
         query = (
             session.query(
@@ -614,23 +617,15 @@ class PkgsDatabase(DatabaseHelper):
                 Packages.Qversion,
                 Packages.Qvendor,
                 Packages.description,
+                Packages.size,
             )
             .filter(Packages.uuid == package_id)
             .first()
         )
         session.commit()
         session.flush()
-        result = {
-            "name": "",
-            "version": "",
-            "Qsoftware": "",
-            "Qversion": "",
-            "Qvendor": "",
-            "description": "",
-            "files": files,
-            "size": size,
-            "Size": "%s %s" % (round(size / (diviser**count), 2), units[count]),
-        }
+
+        Size = manapackage.convertSizeReadable(query.size)
 
         if query is not None:
             result["name"] = query.label
@@ -639,7 +634,9 @@ class PkgsDatabase(DatabaseHelper):
             result["Qversion"] = query.Qversion
             result["Qvendor"] = query.Qvendor
             result["description"] = query.description
-
+            result["path"] = path
+            result["size"] = size
+            result["Size"] = Size
         return result
 
     @DatabaseHelper._sessionm

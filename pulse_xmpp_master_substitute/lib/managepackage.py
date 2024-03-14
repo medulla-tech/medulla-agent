@@ -200,6 +200,32 @@ class managepackage:
         return None
 
     @staticmethod
+    def convertSizeReadable(size_bytes):
+        """
+        Convert a size in bytes to a human-readable format.
+ 
+        @param size_bytes: Size in bytes to be converted.
+        @type size_bytes: int
+
+        @return: Human-readable representation of the size, with appropriate units (B, KB, MB, GB, TB).
+        @rtype: str
+
+        @example:
+            >>> convertSizeReadable(2048)
+            '2.00 KB'
+            >>> convertSizeReadable(1048576)
+            '1.00 MB'
+            >>> convertSizeReadable(2147483648)
+            '2.00 GB'
+            >>> convertSizeReadable(1099511627776)
+            '1.00 TB'
+        """
+        units = ["B", "KB", "MB", "GB", "TB"]
+        unit_index = min(int(math.log(size_bytes, 1024)), len(units) - 1)
+        size = size_bytes / (1024 ** unit_index)
+        return f"{size:.2f} {units[unit_index]}"
+
+    @staticmethod
     def getnamepackagefromuuidpackage(uuidpackage):
         pathpackage = os.path.join(
             managepackage.packagedir(), uuidpackage, "xmppdeploy.json"
