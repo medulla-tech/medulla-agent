@@ -1,28 +1,26 @@
 # -*- coding: utf-8 -*-
-# SPDX-FileCopyrightText: 2020-2023 Siveo <support@siveo.net>
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
-from lib import utils
-from distutils.version import StrictVersion
-import pycurl
-import logging
-import platform
-import tempfile
 import os
-
-FUSIONVERSION = '2.6'
+from distutils.version import StrictVersion
+import logging
+import shutil
+from lib import utils
+import hashlib
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.6", "NAME": "updatefusion", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatedoublerun", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
+
     try:
-        print("No Plugin Fusion")
-    except Exception as error_plugin:
+        print("No plugin Doublerun")
+    except Exception:
         pass
