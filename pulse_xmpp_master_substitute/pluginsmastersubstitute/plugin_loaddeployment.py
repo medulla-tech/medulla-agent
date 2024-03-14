@@ -15,6 +15,7 @@ import logging
 import hashlib
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
+from lib.plugins.pkgs import PkgsDatabase
 from lib.managepackage import managepackage
 from lib.managesession import session, clean_session
 from lib.utils import (
@@ -1196,10 +1197,10 @@ def applicationdeploymentjson(
         sessiondeployementless = name_random(5, "command")
         prefixcommanddeploy = "command"
 
-    if managepackage.getversionpackageuuid(name) is None:
-        logger.error("Deployment error package name or version missing for %s" % (name))
+    if PkgsDatabase().get_package_summary(name)['name']:
+        logger.error("Deployment error package name missing for %s" % (name))
         msg.append(
-            "<span class='log_err'>Package name or version missing for %s</span>"
+            "<span class='log_err'>Package name missing for %s</span>"
             % (name)
         )
         msg.append("Action : check the package %s" % name)

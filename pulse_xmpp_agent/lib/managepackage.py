@@ -264,49 +264,6 @@ class managepackage:
         return None
 
     @staticmethod
-    def getversionpackageuuid(packageuuid):
-        """
-        This function is used to find the version of the package based
-            on the uuid
-        Args:
-            packageuuid: The uuid of the package we are searching
-        Returns:
-            We return the version of package, it returns None if
-                any error or if the package is not found.
-        """
-        for package in managepackage.listpackages():
-            if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
-                logger.error(
-                    f'The {os.path.join(package, "xmppdeploy.json")} file is missing'
-                )
-                return None
-
-            if not os.path.isfile(os.path.join(package, "conf.json")):
-                logger.error(
-                    f'The file {os.path.join(package, "conf.json")} is missing. It cannot work witout it.'
-                )
-                return None
-
-            try:
-                outputJSONFile = managepackage.loadjsonfile(
-                    os.path.join(package, "conf.json")
-                )
-                if (
-                    "id" in outputJSONFile
-                    and outputJSONFile["id"] == packageuuid
-                    and "version" in outputJSONFile
-                ):
-                    return outputJSONFile["version"]
-            except Exception as e:
-                logger.error(
-                    f"package {packageuuid} verify format descriptor conf.json [{str(e)}]"
-                )
-        logger.error(
-            "package %s verify version" "in descriptor conf.json [%s]" % (packageuuid)
-        )
-        return None
-
-    @staticmethod
     def getnamepackagefromuuidpackage(uuidpackage):
         pathpackage = os.path.join(
             managepackage.packagedir(), uuidpackage, "xmppdeploy.json"
