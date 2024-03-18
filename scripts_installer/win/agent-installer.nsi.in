@@ -17,6 +17,10 @@ Unicode True
 !define AGENT_DEPS_NAME "${PRODUCT_NAME} dependencies"
 !define PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_DEPS_NAME}"
 
+!define OLD_PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent"
+!define OLD_PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent dependencies"
+!define OLD_PRODUCT_NETNOTIF_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse network notify"
+
 ; Variables replaced by the script calling the nsi
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
@@ -282,6 +286,9 @@ SectionEnd
 ; ####################### Installation of Medulla Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
+  DeleteRegKey HKLM "${OLD_PRODUCT_UNINST_KEY}"
+  DeleteRegKey HKLM "${OLD_PRODUCT_DEPS_UNINST_KEY}"
+  DeleteRegKey HKLM "${OLD_PRODUCT_NETNOTIF_UNINST_KEY}"
   File "../${PULSE_AGENT_FILENAME}"
   File "../${AGENT_PLUGINS_FILENAME}"
   File "../${KIOSK_FILENAME}"
