@@ -210,7 +210,6 @@ class networkagentinfo:
             self.messagejson["msg"] = f"system {sys.platform} : not managed yet"
             return self.messagejson
 
-
     def IpDhcp(self):
         """
         This function retrieves the DHCP server IP addresses used on the machine.
