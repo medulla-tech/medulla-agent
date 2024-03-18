@@ -352,9 +352,11 @@ def scheduledeploy(self):
                 % (
                     nb_machine_select_for_deploy_cycle,
                     timef,
-                    (timef / nb_machine_select_for_deploy_cycle)
-                    if nb_machine_select_for_deploy_cycle
-                    else "--",
+                    (
+                        (timef / nb_machine_select_for_deploy_cycle)
+                        if nb_machine_select_for_deploy_cycle
+                        else "--"
+                    ),
                 )
             )
 

@@ -8748,13 +8748,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     resultproxy["mysqlxmpp_dbhost"] = self.config.xmpp_dbhost
                     resultproxy["mysqlxmpp_dbport"] = self.config.xmpp_dbport
                     resultproxy["mysqlxmpp_dbname"] = self.config.xmpp_dbname
-                    resultproxy[
-                        "mysqlxmpp_dbpoolrecycle"
-                    ] = self.config.xmpp_dbpoolrecycle
+                    resultproxy["mysqlxmpp_dbpoolrecycle"] = (
+                        self.config.xmpp_dbpoolrecycle
+                    )
                     resultproxy["mysqlxmpp_dbpoolsize"] = self.config.xmpp_dbpoolsize
-                    resultproxy[
-                        "mysqlxmpp_dbpooltimeout"
-                    ] = self.config.xmpp_dbpooltimeout
+                    resultproxy["mysqlxmpp_dbpooltimeout"] = (
+                        self.config.xmpp_dbpooltimeout
+                    )
                     resultproxy["start_script"] = datetime.now().strftime(
                         "%a_%d%b%Y_%Hh%M"
                     )
@@ -11056,9 +11056,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 tmp = {
                     "idmachine": machine.id,
                     "jidmachine": machine.jid,
-                    "uuid_inventorymachine": machine.uuid_inventorymachine
-                    if machine.uuid_inventorymachine is not None
-                    else "",
+                    "uuid_inventorymachine": (
+                        machine.uuid_inventorymachine
+                        if machine.uuid_inventorymachine is not None
+                        else ""
+                    ),
                     "groupdeploy": machine.groupdeploy,
                     "updateid": update.update_id,
                     "kb": kb,

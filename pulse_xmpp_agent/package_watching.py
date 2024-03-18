@@ -60,9 +60,11 @@ def conf_information(conffile):
     Config.read(conffile)
     Config.read(f"{conffile}.local")
     configdata = {
-        "ip_ars": Config.get("network_agent", "ip_ars")
-        if Config.has_option("network_agent", "ip_ars")
-        else "localhost"
+        "ip_ars": (
+            Config.get("network_agent", "ip_ars")
+            if Config.has_option("network_agent", "ip_ars")
+            else "localhost"
+        )
     }
     if Config.has_option("network_agent", "ip_ars"):
         configdata["port_ars"] = Config.getint("network_agent", "port_ars")
@@ -119,9 +121,9 @@ def conf_information(conffile):
     if Config.has_option("rsynctocdn", "ssh_options"):
         configdata["rsynctocdn_ssh_options"] = Config.get("rsynctocdn", "ssh_options")
     else:
-        configdata[
-            "rsynctocdn_ssh_options"
-        ] = "-oBatchMode=yes -oServerAliveInterval=5 -oCheckHostIP=no -oLogLevel=ERROR -oConnectTimeout=40 -oHostKeyAlgorithms=+ssh-dss"
+        configdata["rsynctocdn_ssh_options"] = (
+            "-oBatchMode=yes -oServerAliveInterval=5 -oCheckHostIP=no -oLogLevel=ERROR -oConnectTimeout=40 -oHostKeyAlgorithms=+ssh-dss"
+        )
     if Config.has_option("rsynctocdn", "ssh_remoteuser"):
         configdata["rsynctocdn_ssh_remoteuser"] = Config.get(
             "rsynctocdn", "ssh_remoteuser"

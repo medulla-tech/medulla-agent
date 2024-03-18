@@ -2683,15 +2683,15 @@ def detectantivirus():
                 except Exception:
                     pass
                 try:
-                    infoprotection[
-                        "pathToSignedProductExe"
-                    ] = i.pathToSignedProductExe.strip()
+                    infoprotection["pathToSignedProductExe"] = (
+                        i.pathToSignedProductExe.strip()
+                    )
                 except Exception:
                     pass
                 try:
-                    infoprotection[
-                        "pathToSignedReportingExe"
-                    ] = i.pathToSignedReportingExe.strip()
+                    infoprotection["pathToSignedReportingExe"] = (
+                        i.pathToSignedReportingExe.strip()
+                    )
                 except Exception:
                     pass
                 try:
@@ -2703,9 +2703,9 @@ def detectantivirus():
                     infoprotection["SECURITY_PRODUCT_STATE"] = SECURITY_PRODUCT_STATE(
                         infoprotection["hex"]
                     )
-                    infoprotection[
-                        "SECURITY_SIGNATURE_STATUS"
-                    ] = SECURITY_SIGNATURE_STATUS(infoprotection["hex"])
+                    infoprotection["SECURITY_SIGNATURE_STATUS"] = (
+                        SECURITY_SIGNATURE_STATUS(infoprotection["hex"])
+                    )
                 except Exception:
                     pass
                 try:
@@ -4492,9 +4492,9 @@ class offline_search_kb:
             logger.error("\n%s" % (traceback.format_exc()))
 
         try:
-            self.info_package[
-                "malicious_software_removal_tool"
-            ] = self.search_malicious_software_removal_tool()
+            self.info_package["malicious_software_removal_tool"] = (
+                self.search_malicious_software_removal_tool()
+            )
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 

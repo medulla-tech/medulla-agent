@@ -10124,7 +10124,6 @@ def md5(fname):
 
 
 class action(Thread):
-
     """Thread chargé simplement d'afficher un mot dans la console."""
 
     def __init__(self, content, HEADER, url):
@@ -10149,7 +10148,6 @@ class action(Thread):
 
 
 class actiontest(Thread):
-
     """Thread chargé simplement d'afficher un mot dans la console."""
 
     def __init__(self, HEADER, url, number=0):

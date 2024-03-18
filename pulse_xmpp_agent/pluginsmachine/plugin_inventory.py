@@ -375,9 +375,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         if hasattr(xmppobject.config, "max_key_index"):
                             result["data"]["reginventory"] = {}
                             result["data"]["reginventory"]["info"] = {}
-                            result["data"]["reginventory"]["info"][
-                                "max_key_index"
-                            ] = int(xmppobject.config.max_key_index)
+                            result["data"]["reginventory"]["info"]["max_key_index"] = (
+                                int(xmppobject.config.max_key_index)
+                            )
                             nb_iter = int(xmppobject.config.max_key_index) + 1
                             # get the value of each key and create the json
                             # file
