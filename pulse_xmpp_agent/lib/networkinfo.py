@@ -231,11 +231,7 @@ class networkagentinfo:
             stderr=subprocess.STDOUT,
         )
         result = p.stdout.readlines()
-        if sys.version_info[0] == 3:
-            system = result[0].decode("utf-8").rstrip("\n")
-        else:
-            system = result[0].rstrip("\n")
-
+        system = result[0].rstrip("\n")
         """ Returns the list of ip gateways for linux interfaces """
 
         if system == "init":
@@ -245,13 +241,11 @@ class networkagentinfo:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-            arrayresult = p.stdout.readlines()
-            if sys.version_info[0] == 3:
-                result = [x.decode("utf-8").rstrip("\n") for x in arrayresult]
-            else:
-                result = [x.rstrip("\n") for x in arrayresult]
-            for item in result:
-                d = item.split("@")
+            result = p.stdout.readlines()
+
+            for i in range(len(result)):
+                result[i] = result[i].rstrip("\n")
+                d = result[i].split("@")
                 obj1[d[0]] = d[1]
         elif system == "systemd":
             p = subprocess.Popen(
@@ -260,12 +254,9 @@ class networkagentinfo:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-            arrayresult = p.stdout.readlines()
-            if sys.version_info[0] == 3:
-                result = [x.decode("utf-8").rstrip("\n") for x in arrayresult]
-            else:
-                result = [x.rstrip("\n") for x in arrayresult]
+            result = p.stdout.readlines()
             for i in result:
+                i = i.rstrip("\n")
                 colonne = i.split(" ")
                 if "DHCPACK" in i:
                     ipdhcp = ""
