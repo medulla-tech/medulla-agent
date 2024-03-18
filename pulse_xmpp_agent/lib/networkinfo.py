@@ -210,14 +210,15 @@ class networkagentinfo:
             self.messagejson["msg"] = f"system {sys.platform} : not managed yet"
             return self.messagejson
 
+
     def IpDhcp(self):
         """
-        This function provide the IP of the dhcp server used on the machine.
+        This function retrieves the DHCP server IP addresses used on the machine.
+        It parses system logs (/var/log/syslog and journal logs) to extract DHCP-related information.
+        Returns a dictionary where keys are IP addresses and values are corresponding DHCP server IP addresses.
         """
         obj1 = {}
         system = ""
-        ipdhcp = ""
-        ipadress = ""
         p = subprocess.Popen(
             "cat /proc/1/comm",
             shell=True,
@@ -230,59 +231,57 @@ class networkagentinfo:
         else:
             system = result[0].rstrip("\n")
 
-        """ Returns the list of ip gateways for linux interfaces """
-
         if system == "init":
             p = subprocess.Popen(
-                "cat /var/log/syslog | grep -e DHCPACK | tail -n10 | awk '{print $(NF-2)\"@\" $NF}'",
+                "grep -e DHCPACK /var/log/syslog | tail -n10 | awk '{print $(NF-2)\"@\" $NF}'",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
             arrayresult = p.stdout.readlines()
-            if sys.version_info[0] == 3:
-                result = [x.decode("utf-8").rstrip("\n") for x in arrayresult]
-            else:
-                result = [x.rstrip("\n") for x in arrayresult]
+            result = [x.decode("utf-8").rstrip("\n") for x in arrayresult]
             for item in result:
                 d = item.split("@")
-                obj1[d[0]] = d[1]
+                try:
+                    ip = ipaddress.ip_address(d[0])
+                    dhcp_ip = ipaddress.ip_address(d[1])
+                    obj1[str(ip)] = str(dhcp_ip)
+                except ValueError:
+                    pass
         elif system == "systemd":
             p = subprocess.Popen(
-                'journalctl | grep "dhclient\\["',
+                "journalctl -t dhclient --no-pager | grep -E 'DHCPACK|bound to'",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
             arrayresult = p.stdout.readlines()
-            if sys.version_info[0] == 3:
-                result = [x.decode("utf-8").rstrip("\n") for x in arrayresult]
-            else:
-                result = [x.rstrip("\n") for x in arrayresult]
-            for i in result:
-                colonne = i.split(" ")
-                if "DHCPACK" in i:
-                    ipdhcp = ""
-                    ipadress = ""
-                    ipdhcp = colonne[-1:][0]
-                elif "bound to" in i:
-                    for z in colonne:
+            result = [x.decode("utf-8").rstrip("\n") for x in arrayresult]
+            for line in result:
+                match = re.search(
+                    r"DHCPACK.*?(\d+\.\d+\.\d+\.\d+|\w{0,4}:\w{0,4}:\w{0,4}:\w{0,4}:\w{0,4}:\w{0,4})",
+                    line,
+                )
+                if match:
+                    ipdhcp = match.group(1)
+                elif "bound to" in line:
+                    match_ip = re.search(
+                        r"bound to (\d+\.\d+\.\d+\.\d+|\w{0,4}:\w{0,4}:\w{0,4}:\w{0,4}:\w{0,4}:\w{0,4})",
+                        line,
+                    )
+                    if match_ip:
+                        ipadress = match_ip.group(1)
                         try:
-                            if ip_address(z):
-                                ipadress = z
-                                if ipdhcp != "":
-                                    obj1[ipadress] = ipdhcp
-                                break
+                            ip = ipaddress.ip_address(ipadress)
+                            dhcp_ip = ipaddress.ip_address(ipdhcp)
+                            obj1[str(ip)] = str(dhcp_ip)
                         except ValueError:
                             logging.getLogger().error(
-                                f"The IP {z} is not a valid IP adress"
+                                f"The IP {ip} is not a valid IP adress"
                             )
                             # The IP is not valid, we do not want to do anything
                             pass
-                    ipdhcp = ""
-                    ipadress = ""
-                else:
-                    continue
+
         return obj1
 
     def get_mac_address(self, ip):
