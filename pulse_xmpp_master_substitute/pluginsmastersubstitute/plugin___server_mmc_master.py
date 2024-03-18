@@ -630,23 +630,31 @@ class Configuration:
 
     def get_parameters(self):
         parameters = {
-            "server_mmc_master_certfile": self.xmppobject.server_mmc_master_certfile
-            if hasattr(self.xmppobject, "server_mmc_master_certfile")
-            else None,
-            "server_mmc_master_keyfile": self.xmppobject.server_mmc_master_keyfile
-            if hasattr(self.xmppobject, "server_mmc_master_keyfile")
-            else None,
+            "server_mmc_master_certfile": (
+                self.xmppobject.server_mmc_master_certfile
+                if hasattr(self.xmppobject, "server_mmc_master_certfile")
+                else None
+            ),
+            "server_mmc_master_keyfile": (
+                self.xmppobject.server_mmc_master_keyfile
+                if hasattr(self.xmppobject, "server_mmc_master_keyfile")
+                else None
+            ),
             "server_mmc_master_server_host_ipv6": self.xmppobject.server_mmc_master_server_host_ipv6,
             "server_mmc_master_server_host_ipv4": self.xmppobject.server_mmc_master_server_host_ipv4,
             "server_mmc_master_server_port_ipv4": self.xmppobject.server_mmc_master_server_port_ipv4,
             "server_mmc_master_server_port_ipv6": self.xmppobject.server_mmc_master_server_port_ipv6,
             "server_mmc_master_active_filter": self.xmppobject.server_mmc_master_active_filter,
-            "server_mmc_master_allowed_ips": self.xmppobject.server_mmc_master_allowed_ips
-            if hasattr(self.xmppobject, "server_mmc_master_allowed_ips")
-            else "",
-            "server_mmc_master_allowed_token": self.xmppobject.server_mmc_master_allowed_token
-            if hasattr(self.xmppobject, "server_mmc_master_allowed_token")
-            else "",
+            "server_mmc_master_allowed_ips": (
+                self.xmppobject.server_mmc_master_allowed_ips
+                if hasattr(self.xmppobject, "server_mmc_master_allowed_ips")
+                else ""
+            ),
+            "server_mmc_master_allowed_token": (
+                self.xmppobject.server_mmc_master_allowed_token
+                if hasattr(self.xmppobject, "server_mmc_master_allowed_token")
+                else ""
+            ),
             "server_mmc_master_max_message_size": self.xmppobject.server_mmc_master_max_message_size,
             "server_mmc_master_compress": self.xmppobject.server_mmc_master_compress,
         }

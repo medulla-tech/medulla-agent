@@ -3533,9 +3533,9 @@ class MUCBot(ClientXMPP):
                     act = dataobj["action"]
                 else:
                     act = ""
-                dataerreur["data"][
-                    "msg"
-                ] = "ERROR : Action ignored : %s\n " "structure msg\n%s" % (act, msgerr)
+                dataerreur["data"]["msg"] = (
+                    "ERROR : Action ignored : %s\n " "structure msg\n%s" % (act, msgerr)
+                )
                 self.send_message(
                     mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
                 )
@@ -4289,16 +4289,16 @@ class process_xmpp_agent:
             xmpp["xep_0077"].force_registration = True
             time.sleep(0.2)
             if xmpp.config.agenttype in ["relayserver"]:
-                self.process_restartbot = (
-                    process_restartbot
-                ) = xmpp.Mode_Marche_Arret_loop(
-                    forever=False, timeout=2, type_machine="relayserver"
+                self.process_restartbot = process_restartbot = (
+                    xmpp.Mode_Marche_Arret_loop(
+                        forever=False, timeout=2, type_machine="relayserver"
+                    )
                 )
             else:
-                self.process_restartbot = (
-                    process_restartbot
-                ) = xmpp.Mode_Marche_Arret_loop(
-                    forever=False, timeout=2, type_machine="machine"
+                self.process_restartbot = process_restartbot = (
+                    xmpp.Mode_Marche_Arret_loop(
+                        forever=False, timeout=2, type_machine="machine"
+                    )
                 )
             self.logger.debug("TERMINATE")
         terminateserver(xmpp)
