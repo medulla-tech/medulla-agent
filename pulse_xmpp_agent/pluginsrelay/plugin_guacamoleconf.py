@@ -219,7 +219,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         ###################################
         try:
             for proto in protos:
-                port = -1
                 try:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     sock.settimeout(5.0)
@@ -229,6 +228,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     # Machine is directly reachable. We will not need a
                     # reversessh connection
                     hostname = data["machine_ip"]
+                    port = data["remoteservice"][proto]
                 except socket.error:
                     # Machine is not reachable. We will need a reversessh
                     # connection
@@ -256,9 +256,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                     reverse_connect,
                                 )
                             )
-
-                        if port != -1:
-                            port = data["remoteservice"][proto]
 
                         cursor.execute(
                             insertparameter(
