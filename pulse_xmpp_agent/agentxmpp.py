@@ -1359,6 +1359,9 @@ class MUCBot(ClientXMPP):
                 "Subscription [%s] status = %s"
                 % (self.sub_subscribe, self.presencectrlsubscribe)
             )
+        else:
+            self.presencectrlsubscribe = "unavailable"
+            self.update_plugin()
 
     def stabilized_start(self):
         """
