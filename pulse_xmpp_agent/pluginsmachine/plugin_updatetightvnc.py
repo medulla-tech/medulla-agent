@@ -52,10 +52,10 @@ def check_tightvnc_configuration():
                     result = utils.simplecommand(cmd)
 
                     if result["code"] == 0:
-                        logger.debug(f"The registry entry for TightVNCServer {config["key"]} is reconfigured.")
+                        logger.debug(f"The registry entry for TightVNCServer {config['key']} is reconfigured.")
                         need_restart = True
                     else:
-                        logger.debug(f"We failed to reinitialize the registry entry for TightVNCServer {config["key"]}")
+                        logger.debug(f"We failed to reinitialize the registry entry for TightVNCServer {config['key']}")
 
         if need_restart:
             cmd = "powershell Restart-Service -Name tvnserver"
