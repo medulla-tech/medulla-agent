@@ -578,8 +578,9 @@ class confParameter:
                         " : parameter set to 900"
                     )
                     self.time_before_reinscription = 900
-        if self.time_before_reinscription < 30:
-            self.time_before_reinscription = 30
+
+            if self.time_before_reinscription < 30:
+                self.time_before_reinscription = 30
 
         self.parametersscriptconnection = {}
 
