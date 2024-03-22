@@ -562,6 +562,25 @@ class confParameter:
         else:
             self.detectiontime = 300
 
+        if self.agenttype == "machine":
+            self.time_before_reinscription = 900
+            if Config.has_option("global", "time_before_reinscription"):
+                try:
+                    self.time_before_reinscription = Config.getint(
+                        "global", "time_before_reinscription"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "parameter [global]  time_before_reinscription :(%s)" % str(e)
+                    )
+                    logger.warning(
+                        "parameter [global]  time_before_reinscription"
+                        " : parameter set to 900"
+                    )
+                    self.time_before_reinscription = 900
+        if self.time_before_reinscription < 30:
+            self.time_before_reinscription = 30
+
         self.parametersscriptconnection = {}
 
         if self.agenttype == "relayserver":
