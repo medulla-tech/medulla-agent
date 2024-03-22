@@ -691,7 +691,10 @@ class MUCBot(ClientXMPP):
             logging.debug("Network Changing disable")
 
         if self.config.agenttype not in ["relayserver"]:
-            self.schedule("check_subscribe", 900, self.check_subscribe, repeat=True)
+            self.schedule("check_subscribe",
+                          self.time_before_reinscription,
+                          self.check_subscribe,
+                          repeat=True)
             if self.config.sched_send_ping_kiosk:
                 self.schedule(
                     "send_ping",
