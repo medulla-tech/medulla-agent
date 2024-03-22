@@ -259,6 +259,7 @@ class MUCBot(ClientXMPP):
 
         self.iq_msg = file_message_iq(dev_mod=True)
         self.pidprogrammprincipal = pidprogrammprincipal
+        self.time_before_reinscription = 30
 
         # create mutex
         self.mutex = threading.Lock()
