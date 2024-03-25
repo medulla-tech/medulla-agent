@@ -244,8 +244,12 @@ def list_produis_on(xmppobject, data, list_produits):
         - L'ajout de nouvelles tables OS peut nécessiter une modification de cette fonction.
 
     """
-    logger.debug('exclud table pas du TYPE =   %s ' % data["system_info"]["platform_info"]["type"])
+    logger.debug(
+        "exclud table pas du TYPE =   %s "
+        % data["system_info"]["platform_info"]["type"]
+    )
     listpack = []
+
     def del_element(x):
         if x in listpack:
             listpack.remove(x)
@@ -267,7 +271,7 @@ def list_produis_on(xmppobject, data, list_produits):
                 del_element("up_packages_Win10_X64_21H1")
                 del_element("up_packages_Win10_X64_21H2")
 
-        elif "windows 11" in  data["system_info"]["platform_info"]["type"]:
+        elif "windows 11" in data["system_info"]["platform_info"]["type"]:
             del_element("up_packages_Win10_X64_21H1")
             del_element("up_packages_Win10_X64_21H2")
             del_element("up_packages_Win10_X64_1903")
