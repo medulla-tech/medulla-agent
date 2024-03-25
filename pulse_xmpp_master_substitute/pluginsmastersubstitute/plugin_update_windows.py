@@ -229,8 +229,23 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
 
 
 def list_produis_on(xmppobject, data, list_produits):
-    listpack = []
+    """
+    Cette fonction filtre la liste des produits en fonction du type de système d'exploitation.
 
+    Args:
+        xmppobject (objet): L'objet XMPP utilisé dans la fonction.
+        data (dict): Un dictionnaire contenant les informations sur le système d'exploitation.
+        list_produits (list): Une liste de produits à filtrer.
+
+    Returns:
+        list: Une liste filtrée de produits.
+
+    Notes Importantes:
+        - L'ajout de nouvelles tables OS peut nécessiter une modification de cette fonction.
+
+    """
+    logger.debug('exclud table pas du TYPE =   %s ' % data["system_info"]["platform_info"]["type"])
+    listpack = []
     def del_element(x):
         if x in listpack:
             listpack.remove(x)
@@ -239,7 +254,7 @@ def list_produis_on(xmppobject, data, list_produits):
         listpack.append(t["name_procedure"])
     logger.debug("listin fonction  selectionne package  %s  " % list_produits)
     if data["system_info"]["platform_info"]["machine"] == "x64":
-        if data["system_info"]["platform_info"]["type"] == "Windows 10":
+        if "Windows 10" in data["system_info"]["platform_info"]["type"]:
             del_element("up_packages_Win11_X64")
             if data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
                 del_element("up_packages_Win10_X64_1903")
@@ -251,10 +266,18 @@ def list_produis_on(xmppobject, data, list_produits):
             else:
                 del_element("up_packages_Win10_X64_21H1")
                 del_element("up_packages_Win10_X64_21H2")
+
+        elif "windows 11" in  data["system_info"]["platform_info"]["type"]:
+            del_element("up_packages_Win10_X64_21H1")
+            del_element("up_packages_Win10_X64_21H2")
+            del_element("up_packages_Win10_X64_1903")
+            del_element("up_packages_Win10_X64_22H2")
         else:
             del_element("up_packages_Win10_X64_21H1")
             del_element("up_packages_Win10_X64_21H2")
             del_element("up_packages_Win10_X64_1903")
+            del_element("up_packages_Win10_X64_22H2")
+            del_element("up_packages_Win11_X64")
     else:
         # on ne regarde pas les update x64
         liste_a_supprimer = [
