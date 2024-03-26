@@ -7,7 +7,12 @@
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.1...v3.1.0)
 
-## [v3.0.1](unreleased)
+## [v3.0.2](unreleased)
+- [FEATURE]  Update to Python 3.11.8
+
+[Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.1...v3.0.2)
+
+## [v3.0.1](https://github.com/medulla-tech/medulla-agent/tree/v3.0.1) (2024-03-22)
 - [FEATURE]  Install python in c:\Program Files\Python3
 - [FEATURE]  Install Kiok interface by default now
 - [BUGFIX]   Fix the exclusion of plugins from the installer
