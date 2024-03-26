@@ -117,7 +117,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     )
     # suivant type de windows exclude list produit
 
-    list_table_product_select = list_produis_on(
+    list_table_product_select = list_products_on(
         xmppobject, data, xmppobject.list_produits
     )
     logger.debug(
@@ -228,7 +228,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         )
 
 
-def list_produis_on(xmppobject, data, list_produits):
+def list_products_on(xmppobject, data, list_produits):
     """
     Cette fonction filtre la liste des produits en fonction du type de système d'exploitation.
 
