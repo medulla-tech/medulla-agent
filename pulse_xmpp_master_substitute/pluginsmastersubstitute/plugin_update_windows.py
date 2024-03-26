@@ -265,7 +265,7 @@ def list_products_on(xmppobject, data, list_produits):
         listpack.append(t["name_procedure"])
     logger.debug("listin fonction  selectionne package  %s  " % list_produits)
     if data["system_info"]["platform_info"]["machine"] == "x64":
-        if "Windows 10" in data["system_info"]["platform_info"]["type"]:
+        if data["system_info"]["platform_info"]["type"]== "Windows 10":
             del_element("up_packages_Win11_X64")
             if data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
                 del_element("up_packages_Win10_X64_1903")
@@ -274,8 +274,13 @@ def list_products_on(xmppobject, data, list_produits):
             elif data["system_info"]["infobuild"]["DisplayVersion"] == "21H1":
                 del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H2")
+            elif data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
+                del_element("up_packages_Win10_X64_1903")
+                del_element("up_packages_Win10_X64_21H1")
+                del_element("up_packages_Win10_X64_21H2")
             else:
                 del_element("up_packages_Win10_X64_21H1")
+                del_element("up_packages_Win10_X64_22H2")
                 del_element("up_packages_Win10_X64_21H2")
 
         elif "windows 11" in data["system_info"]["platform_info"]["type"]:
