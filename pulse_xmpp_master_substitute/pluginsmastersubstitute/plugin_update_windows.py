@@ -33,6 +33,20 @@ plugin = {"VERSION": "2.0", "NAME": "update_windows", "TYPE": "substitute"}  # f
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
+    """
+    This function processes the action.
+
+    Args:
+        xmppobject (object): The XMPP object used in the function.
+        action (str): The action to be performed.
+        sessionid (str): Session ID.
+        data (dict): Data to be processed.
+        msg (object): Message object.
+        ret (str): Return value.
+        dataobj (object): Data object.
+
+    """
+
     try:
         logger.debug("=====================================================")
         logger.debug("call %s from %s" % (plugin, msg["from"]))
@@ -53,31 +67,25 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             xmppobject.list_produits = []
             xmppobject.list_produits = XmppMasterDatabase().list_produits()
 
-            # return
-            # function comment for next feature
-            # this functions will be used later
-            # add function for event change staus des autre agent
-            # function_dynamique_declaration_plugin(xmppobject)
-            # intercepte event change status call function
         showinfobool = True
-        # listupt = [x.upper() for x in xmppobject.registeryagent_showinfomachine]
-        # for x in listupt:
-        # if x in str(msg["from"]).upper():
-        # logger.info(
-        # "** Detailed information for machine %s" % (str(msg["from"]))
-        # )
-        # showinfobool = True
-        # break
-        # else:
-        # showinfobool = False
-        # if "ALL" in listupt:
-        # showinfobool = True
         traitement_update(xmppobject, action, sessionid, data, msg, ret)
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
 
 
 def exclude_update_in_select(msg, exclude_update, list_update):
+    """
+    Exclude updates from selection.
+
+    Args:
+        msg (object): Message object.
+        exclude_update (dict): Excluded updates.
+        list_update (list): List of updates.
+
+    Returns:
+        list: Excluded updates.
+
+    """
     res = []
     for upd in list_update:
         if (
@@ -230,19 +238,18 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
 
 def list_products_on(xmppobject, data, list_produits):
     """
-    Cette fonction filtre la liste des produits en fonction du type de système d'exploitation.
+    Filter the list of products based on the type of operating system.
 
     Args:
-        xmppobject (objet): L'objet XMPP utilisé dans la fonction.
-        data (dict): Un dictionnaire contenant les informations sur le système d'exploitation.
-        list_produits (list): Une liste de produits à filtrer.
+        xmppobject (object): The XMPP object used in the function.
+        data (dict): A dictionary containing information about the operating system.
+        list_produits (list): A list of products to filter.
 
     Returns:
-        list: Une liste filtrée de produits.
+        list: A filtered list of products.
 
-    Notes Importantes:
-        - L'ajout de nouvelles tables OS peut nécessiter une modification de cette fonction.
-
+    Important Notes:
+        - Adding new OS tables may require modification of this function.
     """
     logger.debug(
         "exclud table pas du TYPE =   %s "
@@ -283,7 +290,7 @@ def list_products_on(xmppobject, data, list_produits):
             del_element("up_packages_Win10_X64_22H2")
             del_element("up_packages_Win11_X64")
     else:
-        # on ne regarde pas les update x64
+        # we don't look at x64 updates
         liste_a_supprimer = [
             "up_packages_Win10_X64_21H1",
             "up_packages_Win10_X64_21H2",
@@ -302,6 +309,13 @@ def list_products_on(xmppobject, data, list_produits):
 
 
 def read_conf_remote_update_windows(xmppobject):
+    """
+    Read configuration for remote Windows update.
+
+    Args:
+        xmppobject (object): The XMPP object used in the function.
+
+    """
     xmppobject.exclude_history_list = True
     try:
         logger.debug("Initializing plugin :% s " % plugin["NAME"])
