@@ -154,12 +154,11 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     logger.debug("Installed KB list: %s" % data["system_info"]["kb_list"])
     list_update = exclude_update = res_update = []
     exclude_update = XmppMasterDatabase().test_black_list(msg["from"])
-    for _ in range(10):
-        logger.debug("Excluding updates for %s: %s" % (msg["from"], exclude_update))
+    logger.debug("Excluding updates for %s: %s" % (msg["from"], exclude_update))
     for t in list_table_product_select:
         if t == "up_packages_Win_Malicious_X64":
-            # le traitement de cette mise a jour est dependante de la version revoyer par la machine du logiciel.
-            # le kb n'est pas modifier.
+            # le traitement de cette mise a jour est dependante de la version renvoyee par la machine du logiciel.
+            # le kb n'est pas modifiee.
             continue
         list_update = []
         logger.debug(
