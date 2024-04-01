@@ -542,7 +542,7 @@ def createfingerprintnetwork():
     """
     md5network = ""
     command_mapping = {
-        "win": "ipconfig",
+        "win32": "ipconfig",
         "linux": "LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6",
         "darwin": "ipconfig",
     }
