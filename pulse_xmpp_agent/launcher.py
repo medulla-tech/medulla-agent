@@ -1486,7 +1486,7 @@ if __name__ == "__main__":
                             typeagent=opts.typemachine,
                         )
                     else:
-                        logger.warning(
+                        logger.debug(
                             "BOOL_DISABLE_RESCUE is set. Processes will not be monitored"
                         )
                         logger.warning("Creation of rescue image.")
