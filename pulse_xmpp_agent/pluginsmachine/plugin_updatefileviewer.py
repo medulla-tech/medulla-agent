@@ -16,7 +16,7 @@ MAIN = "1.1"
 list_modules = ["bootstrap", "jquery", "jqueryui", "datatables", "main"]
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.5", "NAME": "updatefileviewer", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "updatefileviewer", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -66,13 +66,13 @@ def fileviewer_path():
         )
     elif sys.platform.startswith("linux"):
         rpm_python_path = os.path.join(
-            "/", "usr", "lib", "python2.7", "site-packages", "pulse_xmpp_agent"
+            "/", "usr", "lib", "python3", "site-packages", "pulse_xmpp_agent"
         )
         pip_python_path = os.path.join(
-            "/", "usr", "local", "lib", "python2.7", "dist-packages", "pulse_xmpp_agent"
+            "/", "usr", "local", "lib", "python3", "dist-packages", "pulse_xmpp_agent"
         )
         deb_python_path = os.path.join(
-            "/", "usr", "lib", "python2.7", "dist-packages", "pulse_xmpp_agent"
+            "/", "usr", "lib", "python3", "dist-packages", "pulse_xmpp_agent"
         )
         if os.path.isdir(pip_python_path):
             destpath = os.path.join(pip_python_path, "lib", "ressources", "fileviewer")
