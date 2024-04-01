@@ -578,7 +578,7 @@ class Update_Remote_Agent:
             if not os.path.exists(path_dir_remoteagent):
                 os.makedirs(path_dir_remoteagent)
                 logging.getLogger().debug(
-                    f"Creating folder for remote base agent : {dir_agent_base}"
+                    f"Launcher: Creating folder for remote base agent : {dir_agent_base}"
                 )
         if os.path.exists(os.path.join(dir_agent_base, "agentversion")):
             self.load_list_md5_agentbase()
