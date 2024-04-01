@@ -1489,7 +1489,6 @@ if __name__ == "__main__":
                         logger.debug(
                             "BOOL_DISABLE_RESCUE is set. Processes will not be monitored"
                         )
-                        logger.warning("Creation of rescue image.")
                         rescue_image = create_rescue_agent().save_rescue_src()
             else:
                 pass
