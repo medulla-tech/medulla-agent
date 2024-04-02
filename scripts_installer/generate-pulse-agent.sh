@@ -289,6 +289,10 @@ generate_agent_win() {
 	COMMAND="./win/generate-pulse-agent-win.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
 	echo "Running "${COMMAND}
 	${COMMAND}
+    if [ ! $? -eq 0 ]; then
+		colored_echo red "### Generation of windows agent failed. Please check Agent Generator script"
+		exit 1
+	fi
 }
 
 generate_agent_lin() {
@@ -297,6 +301,10 @@ generate_agent_lin() {
 	COMMAND="./lin/generate-pulse-agent-linux.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
 	echo "Running "${COMMAND}
 	${COMMAND}
+    if [ ! $? -eq 0 ]; then
+		colored_echo red "### Generation of linux agent failed. Please check Agent Generator script"
+		exit 1
+	fi
 }
 
 generate_agent_mac() {
@@ -305,6 +313,10 @@ generate_agent_mac() {
     COMMAND="./mac/generate-pulse-agent-mac.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
     echo "Running "${COMMAND}
     ${COMMAND}
+    if [ ! $? -eq 0 ]; then
+		colored_echo red "### Generation of mac agent failed. Please check Agent Generator script"
+		exit 1
+	fi
 }
 
 # And finally we run the functions
