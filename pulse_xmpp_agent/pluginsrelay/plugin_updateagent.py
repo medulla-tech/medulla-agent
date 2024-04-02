@@ -296,7 +296,7 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
         logger.error("dump file type missing")
 
 
-def senddescriptormd5(objectxmpp, data): 
+def senddescriptormd5(objectxmpp, data):
     """
     Send the MD5 descriptor of the agent's base to the specified machine for an update.
 
