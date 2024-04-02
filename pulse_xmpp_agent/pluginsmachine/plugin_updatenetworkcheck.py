@@ -12,7 +12,7 @@ from lib import utils
 NETWORKVERSION = "3.1.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.2", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.3", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -153,12 +153,14 @@ def updatenetworkcheckversion(version):
         cmdDisplay = (
            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
            '/v "DisplayName" /t REG_SZ  /d "Medulla network notify" /f'
+           )
 
         utils.simplecommand(cmdDisplay)
 
         cmd = (
            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
            '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+           )
 
         utils.simplecommand(cmd)
 
