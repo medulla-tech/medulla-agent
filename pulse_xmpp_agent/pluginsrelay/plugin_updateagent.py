@@ -279,7 +279,7 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
     None
     """
     file_mane = os.path.join(objectxmpp.img_agent, "lib", namescript)
-        logger.debug("dump file %s to %s" % (namescript, file_mane))
+    logger.debug("dump file %s to %s" % (namescript, file_mane))
     if "file_mane" in locals():
         filescript = open(file_mane, "wb")
         filescript.write(content)
