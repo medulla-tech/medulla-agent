@@ -2470,7 +2470,10 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
         if datasend['data']['methodetransfert'] == "pullcurl":
             dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
 
-            packageUuid = str(datasend['data']['descriptor']['info']['packageUuid'])
+            if 'packageUuid' in datasend['data']['descriptor']['info']:
+                packageUuid = str(datasend['data']['descriptor']['info']['packageUuid'])
+            else:
+                packageUuid = str(datasend['data']['descriptor']['metaparameter']['uuid'])
 
             if ('localisation_server' in datasend['data']['descriptor']['info'] and datasend['data']['descriptor']['info']['localisation_server'] != ""):
                 urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['localisation_server']) + "/" + packageUuid + "/" + str(filepackage)
