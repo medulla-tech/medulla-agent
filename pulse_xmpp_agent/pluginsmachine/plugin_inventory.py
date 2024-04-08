@@ -27,7 +27,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.73", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "3.74", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -110,11 +110,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     dataerreur["sessionid"] = sessionid
     timeoutfusion = 120
     msg = []
-    if "forced" not in data:
+
+    if not len(data):
+        data = {"forced": "forced"}
+    elif "forced" not in data:
         data["forced"] = "forced"
-    if data["forced"] is True:
+    elif data["forced"] is True:
         data["forced"] = "forced"
-    if data["forced"] is False:
+    elif data["forced"] is False:
         data["forced"] = "noforced"
 
     if sys.platform.startswith("linux"):
