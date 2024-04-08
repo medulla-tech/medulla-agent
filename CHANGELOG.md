@@ -9,6 +9,7 @@
 
 ## [v3.0.2](unreleased)
 - [FEATURE]  Update to Python 3.11.8
+- [BUGFIX]   Fix the inventory Quick Action
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.1...v3.0.2)
 
