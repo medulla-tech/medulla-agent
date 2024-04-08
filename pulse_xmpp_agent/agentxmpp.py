@@ -400,7 +400,7 @@ class MUCBot(ClientXMPP):
 
                     source_dir = os.path.join(self.pathagent, "script")
                     destination_dir = os.path.join(self.img_agent, "script")
-                    script_py_files = glob.glob(os.path.join(source_dir, "*"))
+                    script_py_files = glob.glob(os.path.join(source_dir, "*.py"))
                     for py_file in script_py_files:
                         shutil.copy(py_file, destination_dir)
 
