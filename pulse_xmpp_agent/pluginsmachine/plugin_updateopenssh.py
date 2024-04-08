@@ -13,9 +13,11 @@ import time
 import shutil
 import psutil
 from lib import utils
-import win32file
-import win32security
 import re
+
+if sys.platform.startswith("win"):
+    import win32file
+    import win32security
 
 OPENSSHVERSION = "9.4"
 
