@@ -329,21 +329,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         )
 
             for nbcmd in range(3):
-                try:
-                    if os.path.exists(namefilexml):
-                        cmd = """\"%s\" %s %s """ """--additional-content=%s """ % (
-                            program,
-                            general_options,
-                            location_option,
-                            namefilexml,
-                        )
-                    else:
-                        cmd = """\"%s\" %s %s""" % (
-                            program,
-                            general_options,
-                            location_option,
-                        )
-                except Exception:
+                if os.path.exists(namefilexml):
+                    cmd = """\"%s\" %s %s """ """--additional-content=%s """ % (
+                        program,
+                        general_options,
+                        location_option,
+                        namefilexml,
+                    )
+                else:
                     cmd = """\"%s\" %s %s""" % (
                         program,
                         general_options,
