@@ -88,7 +88,7 @@ def checkfusionversion():
             # Fusion is not installed. We will force installation by returning
             # version 0.1
             fusionversion = "0.1"
-    return fusionversion
+        return fusionversion
 
 
 def check_if_binary_ok():
