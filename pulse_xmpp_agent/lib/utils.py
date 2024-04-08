@@ -3522,15 +3522,11 @@ def apply_perms_sshkey(path, private=True):
             msg = f"Error setting permissions on {path} for user {user}: {str(e)}"
             return False, msg
     else:
-        if private is True:
-            # We are using id_rsa. The owner must be the user running the Agent
-            uid = os.geteuid()
-            gid = os.getegid()
-        else:
-            # The owner must be pulseuser
-            username = "pulseuser"
-            uid = pwd.getpwnam(username).pw_uid
-            gid = grp.getgrnam(username).gr_gid
+        # The owner must be pulseuser
+        username = "pulseuser"
+        uid = pwd.getpwnam(username).pw_uid
+        gid = grp.getgrnam(username).gr_gid
+
         try:
             os.chown(os.path.dirname(path), uid, gid)
             os.chown(path, uid, gid)
@@ -3539,6 +3535,7 @@ def apply_perms_sshkey(path, private=True):
         except Exception as e:
             msg = f"Error setting permissions on {path} for user {pwd.getpwuid(uid).pw_name}: {str(e)}"
             return False, msg
+
     if sys.platform.startswith("win"):
         list_perms_cmd = (
             'powershell "(get-acl %s).access '
