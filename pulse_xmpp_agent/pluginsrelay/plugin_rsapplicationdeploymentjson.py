@@ -55,9 +55,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         datasend["data"]["packagefile"] = os.listdir(datasend["data"]["path"])
         datasend["data"]["Dtypequery"] = "TQ"
         datasend["data"]["Devent"] = "DEPLOYMENT START"
-        datasend["data"]["name"] = (
-            managepackage.managepackage.getnamepackagefromuuidpackage(data["deploy"])
-        )
+        datasend["data"][
+            "name"
+        ] = managepackage.managepackage.getnamepackagefromuuidpackage(data["deploy"])
 
         if (
             "localisation_server" in datasend["data"]["descriptor"]["info"]

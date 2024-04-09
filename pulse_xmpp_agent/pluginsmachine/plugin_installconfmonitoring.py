@@ -38,15 +38,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         logger.debug("Plugin %s : %s" % (plugin["NAME"], str(e)))
         logger.error("\n%s" % (traceback.format_exc()))
 
-        dataerreur["data"]["msg"] = (
-            "Error %s [plugin %s ] on machine %s"
-            "\nTRACEBACK INFORMATION\n%s"
-            % (
-                str(e),
-                plugin["Name"],
-                strjidagent,
-                traceback.format_exc(),
-            )
+        dataerreur["data"][
+            "msg"
+        ] = "Error %s [plugin %s ] on machine %s" "\nTRACEBACK INFORMATION\n%s" % (
+            str(e),
+            plugin["Name"],
+            strjidagent,
+            traceback.format_exc(),
         )
 
         objectxmpp.send_message(
