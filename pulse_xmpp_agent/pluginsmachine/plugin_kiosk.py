@@ -26,9 +26,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.send_message(mto=message['from'],
                                     mbody=json.dumps(datasend, sort_keys=True, indent=4),
                                     mtype='chat')
-        elif data['subaction'] == 'listpackage':
-            # todo
-            pass
+
         elif data['subaction'] == 'initialisation_kiosk':
             logging.getLogger().info("send initialization datas to kiosk")
 
@@ -43,9 +41,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         elif data['subaction'] == "profiles_updated":
             logging.getLogger().info("send updated profiles to kiosk")
             data["data"] = associate_launchers_to_datas(data["data"])
-            data["data"]["action"] = "update_profile"
-
-            strjson = json.dumps(data['data'])
+            tosend = {"action":"update_profile", "packages_list": data["data"]}
+            strjson = json.dumps(tosend)
             send_kiosk_data(strjson, objectxmpp.config.kiosk_local_port, objectxmpp, dataerreur, message)
             pass
         elif data['subaction'] == "update_launcher":
