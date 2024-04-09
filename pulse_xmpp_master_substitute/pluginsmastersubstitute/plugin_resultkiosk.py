@@ -33,6 +33,10 @@ import random
 from slixmpp import jid
 import threading
 from lib.managesession import session, clean_session
+from distutils.version import LooseVersion, StrictVersion
+
+if sys.version_info >= (3, 0, 0):
+    basestring = (str, bytes)
 
 logger = logging.getLogger()
 
@@ -176,7 +180,6 @@ def initialisekiosk(data, message, xmppobject):
                     XmppMasterDatabase().updatemachineAD(
                         machine["id"], user, ou_machine, ou_user
                     )
-                    # XmppMasterDatabase().updateAdUserGroups()
 
         initializationdatakiosk = handlerkioskpresence(
             xmppobject,
@@ -224,8 +227,15 @@ def handlerkioskpresence(
         logger.info("kiosk handled")
     # print jid, id, os, hostname, uuid_inventorymachine, agenttype, classutil
     # get the profiles from the table machine.
-    machine = XmppMasterDatabase().getMachinefromjid(jid)
-    structuredatakiosk = get_packages_for_machine(machine, showinfobool=showinfobool)
+    try:
+        machine = XmppMasterDatabase().getMachinefromjid(jid)
+    except:
+        logger.error("Impossible to find the machine")
+
+    try:
+        structuredatakiosk = get_packages_for_machine(machine, showinfobool=showinfobool)
+    except:
+        logger.error("impossible to find packages for the machine %s"%jid)
 
     datas = {"subaction": "initialisation_kiosk", "data": structuredatakiosk}
     message_to_machine = data_struct_message(
@@ -314,11 +324,10 @@ def get_packages_for_machine(machine, showinfobool=True):
 
     # Create structuredatakiosk for initialization
     for packageprofile in list_profile_packages:
-        structuredatakiosk.append(
-            __search_software_in_glpi(
-                list_software_glpi, granted_packages, packageprofile, structuredatakiosk
+        toappend = __search_software_in_glpi(
+                list_software_glpi, granted_packages, packageprofile
             )
-        )
+        structuredatakiosk.append(toappend)
     logger.debug(
         "initialisation kiosk %s on machine %s"
         % (structuredatakiosk, machine["hostname"])
@@ -327,20 +336,30 @@ def get_packages_for_machine(machine, showinfobool=True):
     return structuredatakiosk
 
 
-def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatakiosk):
+def __search_software_in_glpi(list_software_glpi, list_granted_packages, packageprofile):
     structuredatakioskelement = {
         "name": packageprofile[0],
         "action": [],
         "uuid": packageprofile[6],
         "description": packageprofile[2],
         "version": packageprofile[3],
+        "profile": packageprofile[1],
     }
-    patternname = re.compile("(?i)" + packageprofile[0])
+    patternname = re.compile(
+        "(?i)"
+        + packageprofile[4]
+        .replace("+", "\+")
+        .replace("*", "\*")
+        .replace("(", "\(")
+        .replace(")", "\)")
+        .replace(".", "\.")
+    )
     for soft_glpi in list_software_glpi:
-        # TODO
-        # Into the pulse package provide Vendor information for the software name
-        # For now we use the package name which must match with glpi name
-        if patternname.match(str(soft_glpi[0])) or patternname.match(str(soft_glpi[1])):
+        if (
+            patternname.match(str(soft_glpi[0]))
+            or patternname.match(str(soft_glpi[1]))
+            or (soft_glpi[1] == packageprofile[4] and soft_glpi[2] == packageprofile[5])
+        ):
             # Process with this package which is installed on the machine
             # The package could be deleted
             structuredatakioskelement["icon"] = "kiosk.png"
@@ -349,12 +368,11 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
             # verification if update
             # compare the version
             # TODO
-            # For now we use the package version.
-            # Later the software version will be needed into the pulse package
+            # For now we use the package version. Later the software version will be needed into the pulse package
             if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
                 structuredatakioskelement["action"].append("Update")
                 logger.debug(
-                    "The software version is superior "
+                    "the software version is superior "
                     "to that installed on the machine %s : %s < %s"
                     % (packageprofile[0], soft_glpi[2], LooseVersion(packageprofile[3]))
                 )
@@ -364,7 +382,23 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
         if packageprofile[8] == "allowed":
             structuredatakioskelement["action"].append("Install")
         else:
-            structuredatakioskelement["action"].append("Ask")
+            trigger = False
+            for ack in list_granted_packages:
+                if ack["package_uuid"] == structuredatakioskelement["uuid"]:
+                    if ack["id_package_has_profil"] != packageprofile[9]:
+                        continue
+                    else:
+                        if ack["status"] == "allowed":
+                            structuredatakioskelement["action"].append("Install")
+                        elif ack["status"] == "waiting":
+                            trigger = True
+                        elif ack["status"] == "rejected":
+                            trigger = True
+                else:
+                    continue
+
+            if len(structuredatakioskelement["action"]) == 0 and trigger is False:
+                structuredatakioskelement["action"].append("Ask")
     return structuredatakioskelement
 
 

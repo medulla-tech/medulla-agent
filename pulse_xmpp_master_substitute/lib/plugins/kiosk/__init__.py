@@ -6,7 +6,7 @@
 kiosk database handler
 """
 # SqlAlchemy
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import DBAPIError
 
@@ -18,6 +18,7 @@ from lib.plugins.kiosk.schema import (
     Packages,
     Profile_has_package,
     Profile_has_ou,
+    Acknowledgements
 )
 
 # Imported last
@@ -25,7 +26,7 @@ import logging
 import time
 from lib.configuration import confParameter
 import functools
-
+from datetime import datetime
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:
@@ -691,9 +692,70 @@ class KioskDatabase(DatabaseHelper):
             result = session.execute(sql)
             session.commit()
             session.flush()
-            l = [x for x in result]
+            l = [x.decode("utf-8") if isinstance(x, bytes) else x for x in result]
             return l
         except Exception as e:
             logging.getLogger().error("get_profile_list_for_profiles_list")
             logging.getLogger().error(str(e))
             return []
+
+    @DatabaseHelper._sessionm
+    def get_acknowledges_for_package_profile(self, session, id_package_profil, uuid_package, user):
+        today = datetime.now()
+        try:
+            query = (
+            session.query(Acknowledgements)
+            .add_column(Profile_has_package.package_uuid)
+            .filter(
+                and_(
+                    Acknowledgements.id_package_has_profil == id_package_profil,
+                    Acknowledgements.askuser == user,
+                ),
+                Acknowledgements.startdate <= today.strftime("%Y-%m-%d %H:%M:%S"),
+                or_(
+                    Acknowledgements.enddate > today.strftime("%Y-%m-%d %H:%M:%S"),
+                    Acknowledgements.enddate == None,
+                    Acknowledgements.enddate == "",
+                ),
+            )
+            .join(
+                Profile_has_package,
+                Profile_has_package.id == Acknowledgements.id_package_has_profil,
+            )
+            )
+            query = query.all()
+        except Exception as e:
+            self.logger.error(e)
+        result = []
+
+        if query is not None:
+            for element, package_uuid in query:
+                self.logger.error(23)
+                askdate = ""
+                startdate = ""
+                enddate = ""
+                if element.askdate is not None:
+                    askdate = element.askdate.strftime("%Y-%m-%d %H:%M:%S")
+                if element.startdate is not None:
+                    startdate = element.startdate.strftime("%Y-%m-%d %H:%M:%S")
+                if element.enddate is not None:
+                    enddate = element.enddate.strftime("%Y-%m-%d %H:%M:%S")
+
+                result.append(
+                    {
+                        "askuser": element.askuser
+                        if element.askuser is not None
+                        else "",
+                        "askdate": askdate,
+                        "acknowledgedbyuser": element.acknowledgedbyuser
+                        if element.acknowledgedbyuser is not None
+                        else "",
+                        "startdate": startdate,
+                        "enddate": enddate,
+                        "status": element.status if element.status is not None else "",
+                        "id": element.id if element.id is not None else "",
+                        "id_package_has_profil": element.id_package_has_profil,
+                        "package_uuid": package_uuid,
+                    }
+                )
+        return result
