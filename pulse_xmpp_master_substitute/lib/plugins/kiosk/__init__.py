@@ -18,7 +18,7 @@ from lib.plugins.kiosk.schema import (
     Packages,
     Profile_has_package,
     Profile_has_ou,
-    Acknowledgements
+    Acknowledgements,
 )
 
 # Imported last
@@ -27,6 +27,7 @@ import time
 from lib.configuration import confParameter
 import functools
 from datetime import datetime
+
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:
@@ -700,28 +701,30 @@ class KioskDatabase(DatabaseHelper):
             return []
 
     @DatabaseHelper._sessionm
-    def get_acknowledges_for_package_profile(self, session, id_package_profil, uuid_package, user):
+    def get_acknowledges_for_package_profile(
+        self, session, id_package_profil, uuid_package, user
+    ):
         today = datetime.now()
         try:
             query = (
-            session.query(Acknowledgements)
-            .add_column(Profile_has_package.package_uuid)
-            .filter(
-                and_(
-                    Acknowledgements.id_package_has_profil == id_package_profil,
-                    Acknowledgements.askuser == user,
-                ),
-                Acknowledgements.startdate <= today.strftime("%Y-%m-%d %H:%M:%S"),
-                or_(
-                    Acknowledgements.enddate > today.strftime("%Y-%m-%d %H:%M:%S"),
-                    Acknowledgements.enddate == None,
-                    Acknowledgements.enddate == "",
-                ),
-            )
-            .join(
-                Profile_has_package,
-                Profile_has_package.id == Acknowledgements.id_package_has_profil,
-            )
+                session.query(Acknowledgements)
+                .add_column(Profile_has_package.package_uuid)
+                .filter(
+                    and_(
+                        Acknowledgements.id_package_has_profil == id_package_profil,
+                        Acknowledgements.askuser == user,
+                    ),
+                    Acknowledgements.startdate <= today.strftime("%Y-%m-%d %H:%M:%S"),
+                    or_(
+                        Acknowledgements.enddate > today.strftime("%Y-%m-%d %H:%M:%S"),
+                        Acknowledgements.enddate == None,
+                        Acknowledgements.enddate == "",
+                    ),
+                )
+                .join(
+                    Profile_has_package,
+                    Profile_has_package.id == Acknowledgements.id_package_has_profil,
+                )
             )
             query = query.all()
         except Exception as e:
@@ -743,13 +746,15 @@ class KioskDatabase(DatabaseHelper):
 
                 result.append(
                     {
-                        "askuser": element.askuser
-                        if element.askuser is not None
-                        else "",
+                        "askuser": (
+                            element.askuser if element.askuser is not None else ""
+                        ),
                         "askdate": askdate,
-                        "acknowledgedbyuser": element.acknowledgedbyuser
-                        if element.acknowledgedbyuser is not None
-                        else "",
+                        "acknowledgedbyuser": (
+                            element.acknowledgedbyuser
+                            if element.acknowledgedbyuser is not None
+                            else ""
+                        ),
                         "startdate": startdate,
                         "enddate": enddate,
                         "status": element.status if element.status is not None else "",
