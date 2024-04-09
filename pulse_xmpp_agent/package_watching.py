@@ -121,9 +121,9 @@ def conf_information(conffile):
     if Config.has_option("rsynctocdn", "ssh_options"):
         configdata["rsynctocdn_ssh_options"] = Config.get("rsynctocdn", "ssh_options")
     else:
-        configdata[
-            "rsynctocdn_ssh_options"
-        ] = "-oBatchMode=yes -oServerAliveInterval=5 -oCheckHostIP=no -oLogLevel=ERROR -oConnectTimeout=40 -oHostKeyAlgorithms=+ssh-dss"
+        configdata["rsynctocdn_ssh_options"] = (
+            "-oBatchMode=yes -oServerAliveInterval=5 -oCheckHostIP=no -oLogLevel=ERROR -oConnectTimeout=40 -oHostKeyAlgorithms=+ssh-dss"
+        )
     if Config.has_option("rsynctocdn", "ssh_remoteuser"):
         configdata["rsynctocdn_ssh_remoteuser"] = Config.get(
             "rsynctocdn", "ssh_remoteuser"

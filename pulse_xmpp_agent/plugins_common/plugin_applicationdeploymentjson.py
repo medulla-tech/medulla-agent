@@ -1134,9 +1134,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     else:
                         try:
                             objectxmpp.mutex.acquire()
-                            objectxmpp.concurrentquickdeployments[
-                                sessionid
-                            ] = time.time()
+                            objectxmpp.concurrentquickdeployments[sessionid] = (
+                                time.time()
+                            )
                         finally:
                             objectxmpp.mutex.release()
                         objectxmpp.xmpplog(
@@ -1575,9 +1575,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             "pullrsync",
                             "pullscp",
                         ]:
-                            data[
-                                "methodetransfert"
-                            ] = objectxmpp.config.pushsubstitutionmethod
+                            data["methodetransfert"] = (
+                                objectxmpp.config.pushsubstitutionmethod
+                            )
                         else:
                             data["methodetransfert"] = "pulldirect"
                             logger.warning(
@@ -1843,13 +1843,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             data_in_session["rsyncpath"] = "rsync"
                         elif data_in_session["os"].startswith("win"):
                             if data_in_session["cpu_arch"].endswith("64"):
-                                data_in_session[
-                                    "rsyncpath"
-                                ] = "C:\\\\Windows\\\\SysWOW64\\\\rsync.exe"
+                                data_in_session["rsyncpath"] = (
+                                    "C:\\\\Windows\\\\SysWOW64\\\\rsync.exe"
+                                )
                             else:
-                                data_in_session[
-                                    "rsyncpath"
-                                ] = "C:\\\\Windows\\\\System32\\\\rsync.exe"
+                                data_in_session["rsyncpath"] = (
+                                    "C:\\\\Windows\\\\System32\\\\rsync.exe"
+                                )
                         elif data_in_session["os"].startswith("darwin"):
                             data_in_session["rsyncpath"] = "rsync"
                     # information set in session data
