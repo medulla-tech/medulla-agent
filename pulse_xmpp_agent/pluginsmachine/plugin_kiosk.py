@@ -35,18 +35,15 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 mbody=json.dumps(datasend, sort_keys=True, indent=4),
                 mtype="chat",
             )
-        elif data["subaction"] == "listpackage":
-            # todo
-            pass
+
         elif data["subaction"] == "initialisation_kiosk":
             logger.info("send initialization datas to kiosk")
-
             # When the data are initialized for the kiosk, the launchers founded
             # are added for each package. If the package has no launcher, the
             # Lunch button is removed for this package
             data["data"] = associate_launchers_to_datas(data["data"])
-
-            strjson = json.dumps(data["data"])
+            tosend = {"action":"packages", "packages_list": data["data"]}
+            strjson = json.dumps(tosend)
             send_kiosk_data(
                 strjson,
                 objectxmpp.config.kiosk_local_port,
@@ -57,10 +54,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             pass
         elif data["subaction"] == "profiles_updated":
             logger.info("send updated profiles to kiosk")
-            data["data"] = associate_launchers_to_datas(data["data"])
-            data["data"]["action"] = "update_profile"
 
-            strjson = json.dumps(data["data"])
+            data["data"] = associate_launchers_to_datas(data["data"])
+            tosend = {"action":"update_profile", "packages_list": data["data"]}
+            strjson = json.dumps(tosend)
             send_kiosk_data(
                 strjson,
                 objectxmpp.config.kiosk_local_port,
