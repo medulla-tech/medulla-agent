@@ -233,9 +233,11 @@ def handlerkioskpresence(
         logger.error("Impossible to find the machine")
 
     try:
-        structuredatakiosk = get_packages_for_machine(machine, showinfobool=showinfobool)
+        structuredatakiosk = get_packages_for_machine(
+            machine, showinfobool=showinfobool
+        )
     except:
-        logger.error("impossible to find packages for the machine %s"%jid)
+        logger.error("impossible to find packages for the machine %s" % jid)
 
     datas = {"subaction": "initialisation_kiosk", "data": structuredatakiosk}
     message_to_machine = data_struct_message(
@@ -325,8 +327,8 @@ def get_packages_for_machine(machine, showinfobool=True):
     # Create structuredatakiosk for initialization
     for packageprofile in list_profile_packages:
         toappend = __search_software_in_glpi(
-                list_software_glpi, granted_packages, packageprofile
-            )
+            list_software_glpi, granted_packages, packageprofile
+        )
         structuredatakiosk.append(toappend)
     logger.debug(
         "initialisation kiosk %s on machine %s"
@@ -336,7 +338,9 @@ def get_packages_for_machine(machine, showinfobool=True):
     return structuredatakiosk
 
 
-def __search_software_in_glpi(list_software_glpi, list_granted_packages, packageprofile):
+def __search_software_in_glpi(
+    list_software_glpi, list_granted_packages, packageprofile
+):
     structuredatakioskelement = {
         "name": packageprofile[0],
         "action": [],

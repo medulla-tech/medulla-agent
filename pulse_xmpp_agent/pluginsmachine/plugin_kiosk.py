@@ -42,7 +42,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             # are added for each package. If the package has no launcher, the
             # Lunch button is removed for this package
             data["data"] = associate_launchers_to_datas(data["data"])
-            tosend = {"action":"packages", "packages_list": data["data"]}
+            tosend = {"action": "packages", "packages_list": data["data"]}
             strjson = json.dumps(tosend)
             send_kiosk_data(
                 strjson,
@@ -56,7 +56,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             logger.info("send updated profiles to kiosk")
 
             data["data"] = associate_launchers_to_datas(data["data"])
-            tosend = {"action":"update_profile", "packages_list": data["data"]}
+            tosend = {"action": "update_profile", "packages_list": data["data"]}
             strjson = json.dumps(tosend)
             send_kiosk_data(
                 strjson,
