@@ -485,7 +485,7 @@ def deploypackage(data, message, xmppobject, sessionid):
                 % (data["uuid"], machine["hostname"])
             )
             return None
-        name = package['info']['name']
+        name = package["info"]["name"]
 
         _section = section.split(":")[1]
 
