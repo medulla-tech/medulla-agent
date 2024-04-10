@@ -76,7 +76,7 @@ install_agent() {
         ;;
         debian)
             if [[ ${VERSION} == "12" ]]; then
-                apt install -y python3-setuptools python3-pycryptodome python3-wheel python3-croniter python3-lxml python3-netifaces python3-psutil python3-pycurl python3-slixmpp python3-pip pulse-agent-linux python3-cherrypy3 python3-lmdb python3-posix-ipc python3-xmltodict python3-typing-extensions python3-netifaces python3-netaddr
+                apt install -y python3-setuptools python3-pycryptodome python3-wheel python3-croniter python3-lxml python3-netifaces python3-psutil python3-pycurl python3-slixmpp python3-pip pulse-agent-linux python3-cherrypy3 python3-lmdb python3-posix-ipc python3-xmltodict python3-typing-extensions python3-netifaces python3-netaddr sysstat
             fi
         ;;
         ubuntu)
