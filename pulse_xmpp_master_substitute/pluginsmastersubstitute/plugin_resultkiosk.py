@@ -473,7 +473,15 @@ def deploypackage(data, message, xmppobject, sessionid):
         else:
             section = '"section":"install"'
 
-        package = json.loads(managepackage.get_xmpp_package(data["uuid"]))
+        package = managepackage.getdescriptorpackageuuid(data["uuid"])
+        path = managepackage.getpathpackagebyuuid(data["uuid"])
+        if package is None:
+            logger.error(
+                "deploy %s on %s  error : xmppdeploy.json missing"
+                % (data["uuid"], machine["hostname"])
+            )
+            return None
+        name = package['info']['name']
 
         _section = section.split(":")[1]
 
@@ -525,18 +533,8 @@ def deploypackage(data, message, xmppobject, sessionid):
         )
 
         sessionid = name_random(5, "deploykiosk_")
-        name = managepackage.getnamepackagefromuuidpackage(data["uuid"])
 
-        path = managepackage.getpathpackagename(name)
-
-        descript = managepackage.loadjsonfile(os.path.join(path, "xmppdeploy.json"))
-        parsexmppjsonfile(os.path.join(path, "xmppdeploy.json"))
-        if descript is None:
-            logger.error(
-                "deploy %s on %s  error : xmppdeploy.json missing"
-                % (data["uuid"], machine["hostname"])
-            )
-            return None
+        descript = package
         objdeployadvanced = XmppMasterDatabase().datacmddeploy(commandid)
         if not objdeployadvanced:
             logger.error(
