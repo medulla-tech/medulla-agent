@@ -13,7 +13,7 @@ import socket
 import psutil
 import os
 import sys
-from ipaddress import ip_address
+import ipaddress
 
 from lib.utils import simplecommand, powerschellscript1ps1
 from . import utils
