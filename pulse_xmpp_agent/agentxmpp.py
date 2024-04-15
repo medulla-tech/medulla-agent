@@ -2551,6 +2551,7 @@ class MUCBot(ClientXMPP):
         if frommsg.bare == self.boundjid.bare and presence["type"] == "available":
             logger.debug("Machine available for registration")
             self.update_plugin()
+            self.presencectrlsubscribe = "available"
             logger.debug("Machine available for registration")
             self.subscribe_initialisation()
         elif frommsg.bare == self.sub_subscribe:
