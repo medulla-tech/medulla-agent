@@ -638,7 +638,7 @@ def refreshfingerprint():
 def file_get_contents(
     filename, use_include_path=0, context=None, offset=-1, maxlen=-1, encoding=None
 ):
-    if filename.find("://") > 0:
+    if "://" in filename:
         ret = urllib.request.urlopen(filename).read()
         if offset > 0:
             ret = ret[offset:]
