@@ -138,7 +138,7 @@ class Update_Remote_Agent:
             if x[-4:] == ".ps1"
         ]:
             self.directory["script_agent"][filename] = hashlib.md5(
-                file_get_binarycontents(
+                file_get_contents(
                     os.path.join(self.dir_agent_base, "script", filename).encode(
                         "utf-8"
                     )
