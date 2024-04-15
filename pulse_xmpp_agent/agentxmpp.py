@@ -4134,7 +4134,7 @@ def doTask(
                         logger.debug("Alive %s (%s)" % (p.name, p.pid))
                         if p.name == "xmppagent":
                             cmd = (
-                                'ps ax | grep "$(pgrep --parent %s)" | grep "defunct" | grep -v reversessh'
+                                'ps ax | grep "$(pgrep --parent %s)" | grep "defunct" | grep -v reversessh | grep -v grep'
                                 % p.pid
                             )
                             result = simplecommand(cmd)
