@@ -1362,8 +1362,12 @@ class MUCBot(ClientXMPP):
     def check_subscribe(self):
         if self.presencectrlsubscribe != "available":
             logger.warning(
-                "Subscription [%s] status = %s"
+                "no Subscription [%s] Status control variable = [%s]"
                 % (self.sub_subscribe, self.presencectrlsubscribe)
+            )
+            logger.debug(
+                "no subscribe change received. we do not start 1 recording [%s]"
+                % (self.sub_subscribe)
             )
         else:
             self.presencectrlsubscribe = "unavailable"
