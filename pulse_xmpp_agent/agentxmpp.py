@@ -4129,23 +4129,12 @@ def doTask(
             programrun = True
             while True:
                 time.sleep(120)
-                for p in processes:
-                    if p.is_alive():
-                        logger.debug("Alive %s (%s)" % (p.name, p.pid))
-                        if p.name == "xmppagent":
-                            cmd = (
-                                'ps ax | grep "$(pgrep --parent %s)" | grep "defunct" | grep -v reversessh | grep -v grep'
-                                % p.pid
-                            )
-                            result = simplecommand(cmd)
-                            if result["code"] == 0:
-                                if result["result"]:
-                                    programrun = False
-                                    break
-                    else:
-                        logger.error("Not ALIVE %s (%s) " % (p.name, p.pid))
-                        programrun = False
-                        break
+                try:
+                    process = psutil.Process(processes[0].pid)
+                    # Vérifier si le processus est en cours d'exécution
+                    continue
+                except psutil.NoSuchProcess:
+                    programrun = False
                 if not programrun:
                     logging.debug("END PROGRAMM")
                     for p in processes:
