@@ -756,16 +756,11 @@ def organizationbymachine():
     AD information for machine
     search fqdn for machine windows from activedirectory
     """
-    fqdnwindows = ""
-    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-        return ""
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         if indomain := isMachineInDomain():
             return powershellfqdnwindowscommand()
-        else:
-            return ""
-    else:
-        return ""
+
+    return ""
 
 
 def organizationbyuser(user):
@@ -773,16 +768,11 @@ def organizationbyuser(user):
     AD information for user
     search fqdn for machine windows from activedirectory
     """
-    fqdnwindows = ""
-    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-        return ""
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         if indomain := isMachineInDomain():
             return powershellfqdnwindowscommandbyuser(user)
-        else:
-            return ""
-    else:
-        return ""
+
+    return ""
 
 
 def adusergroups(user):
@@ -791,15 +781,11 @@ def adusergroups(user):
     find groups to which user belongs in AD
     This function returns an array containing the groups
     """
-    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-        return ""
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         if indomain := isMachineInDomain():
             return powershellfinduseradgroups(user)
-        else:
-            return ""
-    else:
-        return ""
+
+    return ""
 
 
 def interfacename(mac):
