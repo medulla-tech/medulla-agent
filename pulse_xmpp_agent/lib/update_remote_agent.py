@@ -139,8 +139,8 @@ class Update_Remote_Agent:
         ]:
             self.directory["script_agent"][filename] = hashlib.md5(
                 file_get_contents(
-                    os.path.join(self.dir_agent_base, "script", filename)).encode(
-                        "utf-8")
+                    os.path.join(self.dir_agent_base, "script", filename)
+                ).encode("utf-8")
             ).hexdigest()
             listmd5.append(self.directory["script_agent"][filename])
         listmd5.sort()
