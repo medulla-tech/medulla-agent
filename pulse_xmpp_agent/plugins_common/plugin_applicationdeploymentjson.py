@@ -2167,7 +2167,7 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
                 'descriptor' in datasend['data'] and \
                 'path' in datasend['data'] and \
                 "info" in datasend['data']['descriptor'] and \
-                "launcher" in  datasend['data']['descriptor']['info']:
+                "launcher" in  datasend['data']['descriptor']['info'] and datasend["data"]["descriptor"]["info"]["launcher"]:
         try:
             id_package = os.path.basename(datasend['data']['path'])
             if id_package != "":
