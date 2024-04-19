@@ -567,7 +567,7 @@ def deploypackage(data, message, xmppobject, sessionid):
 
         sessionid = xmppobject.send_session_commandkiosk(
             jidrelay,
-            "applicationdeploymentjsonkiosk",
+            "applicationdeploymentjson",
             datasend,
             datasession=None,
             encodebase64=False,
@@ -1160,7 +1160,7 @@ def applicationdeploymentjsonkiosk(
             if state != "ERROR HASH MISSING":
                 sessionid = self.send_session_commandkiosk(
                     jidrelay,
-                    "applicationdeploymentjsonkiosk",
+                    "applicationdeploymentjson",
                     data,
                     datasession=None,
                     encodebase64=False,
