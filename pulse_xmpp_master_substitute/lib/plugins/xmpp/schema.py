@@ -986,7 +986,12 @@ class GreenConso(Base, XmppMasterDBObj):
     coef_charge = Column(Float)
     nb_mesure = Column(String(45))
     date_end = Column(DateTime)
+    max_charge= Column(Float)
+    max_puissance= Column(Float)
+    max_frequence= Column(Float)
+    max_temperature= Column(Float)
     energie = Column(Float, default=0)
+
     machine = relationship("GreenMachine")  # La relation avec la table green_machine
 
 class GreenUserIdle(Base, XmppMasterDBObj):

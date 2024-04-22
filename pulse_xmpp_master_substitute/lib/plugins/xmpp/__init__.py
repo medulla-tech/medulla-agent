@@ -523,6 +523,10 @@ class XmppMasterDatabase(DatabaseHelper):
             new_green_conso.puissance_cpu_gpu = conso_data['puissance_cpu_gpu']
             new_green_conso.coef_charge = conso_data['coeff']
             new_green_conso.nb_mesure = conso_data['nb']
+            new_green_conso.max_charge = conso_data['max_charge']
+            new_green_conso.max_puissance = conso_data['max_puissance']
+            new_green_conso.max_frequence = conso_data['max_frequence']
+            new_green_conso.max_temperature = conso_data['max_temperature']
             #new_green_conso.energie = (conso_data['nb'] / 60) * conso_data['pui']
             session.add(new_green_conso)
             session.commit()
