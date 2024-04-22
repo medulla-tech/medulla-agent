@@ -156,7 +156,7 @@ class PulseAgentService(SMWinservice):
                 )
             )
             os.system(
-                'python.exe "' + os.path.join(program_dir, "networkevents.py") + '"'
+                    os.path.join("c:\\", "progra~1", "Python3", "python.exe") + os.path.join(program_dir, "networkevents.py") + '"'
             )
 
 
