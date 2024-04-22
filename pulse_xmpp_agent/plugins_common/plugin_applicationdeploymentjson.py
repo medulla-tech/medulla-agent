@@ -2678,33 +2678,28 @@ def takeresource(datasend, objectxmpp, sessionid):
         datasendl = datasend
 
     logger.debug("Taking resource : %s" % datasendl["data"]["jidrelay"])
-    msgresource = {
-        "action": "cluster",
-        "sessionid": sessionid,
-        "data": {
-            "subaction": "takeresource",
-            "data": {
-                "user": datasendl["data"]["advanced"]["login"],
-                "machinejid": datasendl["data"]["jidmachine"],
-            },
-        },
-        "ret": 0,
-        "base64": False,
-    }
-    objectxmpp.send_message(
-        mto=datasendl["data"]["jidrelay"], mbody=json.dumps(msgresource), mtype="chat"
-    )
-    objectxmpp.xmpplog(
-        "Taking resource : %s" % datasendl["data"]["jidrelay"],
-        type="deploy",
-        sessionname=sessionid,
-        priority=-1,
-        action="xmpplog",
-        who=objectxmpp.boundjid.bare,
-        module="Deployment| Notify | Cluster",
-        date=None,
-        fromuser=datasendl["data"]["advanced"]["login"],
-    )
+
+    msgresource = {'action': "cluster",
+                    'sessionid': sessionid,
+                    'data':  {"subaction" : "takeresource",
+                                "data" : {'user': datasendl['data']['login'],
+                                        'machinejid': datasendl['data']['jidmachine']
+                                }
+                    },
+                    'ret': 0,
+                    'base64': False}
+    objectxmpp.send_message(mto = datasendl['data']['jidrelay'],
+                            mbody = json.dumps(msgresource),
+                            mtype = 'chat')
+    objectxmpp.xmpplog('Taking resource : %s'%datasendl['data']['jidrelay'],
+                       type = 'deploy',
+                       sessionname = sessionid,
+                       priority = -1,
+                       action = "xmpplog",
+                       who = objectxmpp.boundjid.bare,
+                       module = "Deployment| Notify | Cluster",
+                       date=None,
+                       fromuser = datasendl['data']['login'])
     return datasend
 
 
@@ -2721,7 +2716,7 @@ def removeresource(datasend, objectxmpp, sessionid):
         "data": {
             "subaction": "removeresource",
             "data": {
-                "user": datasendl["data"]["advanced"]["login"],
+                "user": datasendl["data"]["login"],
                 "machinejid": datasendl["data"]["jidmachine"],
             },
         },
@@ -2740,7 +2735,7 @@ def removeresource(datasend, objectxmpp, sessionid):
         who=objectxmpp.boundjid.bare,
         module="Deployment| Notify | Cluster",
         date=None,
-        fromuser=datasendl["data"]["advanced"]["login"],
+        fromuser=datasendl["data"]["login"],
     )
     return datasend
 
@@ -2764,7 +2759,7 @@ def initialisesequence(datasend, objectxmpp, sessionid):
         who=strjidagent,
         module="Deployment| Notify | Execution | Scheduled",
         date=None,
-        fromuser=datasend["data"]["advanced"]["login"],
+        fromuser=datasend["data"]["login"],
     )
 
     logger.debug("start call grafcet (initiation)")
@@ -2798,7 +2793,7 @@ def initialisesequence(datasend, objectxmpp, sessionid):
                         who=strjidagent,
                         module="Deployment | Kiosk",
                         date=None,
-                        fromuser=str(datasend["data"]["advanced"]["login"]),
+                        fromuser=str(datasend["data"]["login"]),
                     )
                 else:
                     logger.warning("nanme missing for info launcher command of kiosk")
@@ -2944,7 +2939,7 @@ def pull_package_transfert_rsync(
             who=strjidagent,
             module="Deployment | Download | Transfer",
             date=None,
-            fromuser=datasend["data"]["advanced"]["login"],
+            fromuser=datasend["data"]["login"],
         )
         obj = utils.simplecommand(cmdexec)
 
@@ -2958,7 +2953,7 @@ def pull_package_transfert_rsync(
                 who=strjidagent,
                 module="Deployment | Download | Transfer",
                 date=None,
-                fromuser=datasend["data"]["advanced"]["login"],
+                fromuser=datasend["data"]["login"],
             )
             error = True
             return False
@@ -2979,7 +2974,7 @@ def pull_package_transfert_rsync(
                 who=strjidagent,
                 module="Deployment | Download | Transfer",
                 date=None,
-                fromuser=datasend["data"]["advanced"]["login"],
+                fromuser=datasend["data"]["login"],
             )
         error = False
         return True
@@ -3012,7 +3007,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
         who=strjidagent,
         module="Deployment | Download | Transfer",
         date=None,
-        fromuser=datasend["data"]["advanced"]["login"],
+        fromuser=datasend["data"]["login"],
     )
 
     for filepackage in datasend["data"]["packagefile"]:
@@ -3052,7 +3047,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
                     who=strjidagent,
                     module="Deployment | Download | Transfer",
                     date=None,
-                    fromuser=datasend["data"]["advanced"]["login"],
+                    fromuser=datasend["data"]["login"],
                 )
                 curlgetdownloadfile(
                     dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko
@@ -3151,7 +3146,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
         who=strjidagent,
         module="Deployment | Download | Transfer",
         date=None,
-        fromuser=datasend["data"]["advanced"]["login"],
+        fromuser=datasend["data"]["login"],
     )
 
     for filepackage in datasend["data"]["packagefile"]:
@@ -3270,7 +3265,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                     who=strjidagent,
                     module="Deployment | Download | Transfer",
                     date=None,
-                    fromuser=datasend["data"]["advanced"]["login"],
+                    fromuser=datasend["data"]["login"],
                 )
 
                 if token is not None:
@@ -3302,7 +3297,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                         who=strjidagent,
                         module="Deployment | Download | Transfer",
                         date=None,
-                        fromuser=datasend["data"]["advanced"]["login"],
+                        fromuser=datasend["data"]["login"],
                     )
                     objectxmpp.xmpplog(
                         "DEPLOYMENT TERMINATE",
@@ -3329,7 +3324,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                         who=strjidagent,
                         module="Deployment | Download | Transfer",
                         date=None,
-                        fromuser=datasend["data"]["advanced"]["login"],
+                        fromuser=datasend["data"]["login"],
                     )
                 changown_dir_of_file(dest)  # owner pulseuser.
             except Exception as e:
