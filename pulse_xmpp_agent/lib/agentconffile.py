@@ -11,6 +11,22 @@ import logging
 logger = logging.getLogger()
 
 
+def medullaPath():
+    """
+    Provides the path to the medulla install
+
+    Returns:
+        str: The path to the medulla install
+    """
+    if sys.platform.startswith("linux"):
+        fileconf = os.path.join("/", "etc", "medulla-agent")
+    elif sys.platform.startswith("win"):
+        fileconf = os.path.join("c:\\", "progra~1", "Medulla")
+    elif sys.platform.startswith("darwin"):
+        fileconf = os.path.join("/opt", "Medulla")
+    return fileconf if os.path.isdir(fileconf) else None
+
+
 def directoryconffile():
     """
     Provides the path to the configuration files of pulse-xmpp-agent.
