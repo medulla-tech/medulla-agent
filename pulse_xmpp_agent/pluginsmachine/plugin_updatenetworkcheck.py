@@ -219,7 +219,7 @@ def updatenetworkcheck(xmppobject):
             # We need to have a copy of pythonservices named based on _exe_name_
             if not os.path.isfile(os.path.join(win32_path, "medullanetnotify.exe")):
                 shutil.copyfile(
-                    os.path.join(win32_path, "pythonservices.exe"),
+                    os.path.join(win32_path, "pythonservice.exe"),
                     os.path.join(win32_path, "medullanetnotify.exe"),
                 )
 
