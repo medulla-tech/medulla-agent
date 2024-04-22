@@ -13,7 +13,7 @@ from lib.utils import set_logging_level
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.33", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.34", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
 
 
 @set_logging_level
@@ -55,7 +55,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         elif data["subaction"] == "profiles_updated":
             logger.info("send updated profiles to kiosk")
 
-            data["data"] = associate_launchers_to_datas(data["data"])
+            if "packages_list" in data:
+                data["data"] = associate_launchers_to_datas(data["packages_list"])
             tosend = {"action": "update_profile", "packages_list": data["data"]}
             strjson = json.dumps(tosend)
             send_kiosk_data(
