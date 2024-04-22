@@ -218,10 +218,13 @@ def updatenetworkcheck(xmppobject):
             querycmd_result = utils.simplecommand(querycmd)
             # We need to have a copy of pythonservices named based on _exe_name_
             if not os.path.isfile(os.path.join(win32_path, "medullanetnotify.exe")):
-                shutil.copyfile(
-                    os.path.join(win32_path, "pythonservice.exe"),
-                    os.path.join(win32_path, "medullanetnotify.exe"),
-                )
+                try:
+                    shutil.copyfile(
+                        os.path.join(win32_path, "pythonservice.exe"),
+                        os.path.join(win32_path, "medullanetnotify.exe"),
+                    )
+                except IOError as error_copy:
+                    logger.error(f"The error {error_copy} \n occured while copying files")
 
             if querycmd_result["code"] != 0:
                 servicecmd = '%s "%s\\%s" --startup=auto install' % (
