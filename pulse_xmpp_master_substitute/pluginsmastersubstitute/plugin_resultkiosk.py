@@ -323,13 +323,29 @@ def get_packages_for_machine(machine, showinfobool=True):
         list_software_glpi.append([x[0][1], x[1][1], x[2][1]])
 
     structuredatakiosk = []
-
+    indexed = {}
     # Create structuredatakiosk for initialization
     for packageprofile in list_profile_packages:
-        toappend = __search_software_in_glpi(
-            list_software_glpi, granted_packages, packageprofile
-        )
-        structuredatakiosk.append(toappend)
+        spkg = __search_software_in_glpi(list_software_glpi, granted_packages, packageprofile)
+
+        if spkg['name'] not in indexed:
+            structuredatakiosk.append(spkg)
+            indexed[spkg['name']] = {
+                "action": spkg['action'],
+                "id": len(structuredatakiosk)-1
+            }
+        else:
+            #ask < install < delete
+            # check if indexed has more rights than spkg
+            if "Delete" in indexed[spkg['name']]["action"] and "Delete" not in spkg["action"]:
+                # spkg["name"]][id] = id of spkg in structuredatakiosk
+                #change the action of the package stored in structuredatakiosk
+                structuredatakiosk[indexed[spkg["name"]][id]]["action"] = ["Delete"]
+                if "Launch" in indexed[spkg["name"]]["action"]:
+                    structuredatakiosk[indexed[spkg["name"]][id]]["action"].append("Launch")
+
+            elif "Install" in indexed[spkg["name"]] and "Ask" in indexed[spkg["action"]]:
+                continue
     logger.debug(
         "initialisation kiosk %s on machine %s"
         % (structuredatakiosk, machine["hostname"])
