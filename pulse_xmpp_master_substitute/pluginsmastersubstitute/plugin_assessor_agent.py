@@ -844,7 +844,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
             return
         z = [listars[x] for x in listars]
         z1 = sorted(z, key=operator.itemgetter(4))
-        arsjid = XmppMasterDatabase().getRelayServerfromjid("rspulse@pulse")
+        arsjid = XmppMasterDatabase().getRelayServerfromjid("rsmedulla@medulla")
         # Start relay server agent configuration
         # we order the ARS from the least used to the most used.
         response = {
@@ -880,7 +880,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
             sendErrorConnectionConf(objectxmpp, sessionid, msg)
             return
 
-        agentsubscription = "master@pulse"
+        agentsubscription = "master@medulla"
         if (
             "substitute" in data
             and "conflist" in data["substitute"]

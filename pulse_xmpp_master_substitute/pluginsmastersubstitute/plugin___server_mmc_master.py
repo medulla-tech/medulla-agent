@@ -9,7 +9,7 @@
  Ce serveur est implementer par plugin
  Il permet les conexion ipv6/ipv4
  son fichier de configuration s'auto genere au premier lancement si il n'existe pas.
- file /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini
+ file /etc/medulla-agent-substitute/__server_mmc_master.ini
  ce serveur sera l'interface entre les instances de mmcs et les different acteur xmppmaster.(Extensible Messaging and Presence Protocol)
 """
 
@@ -382,8 +382,8 @@ def mast_serv_recv_dict(self, ssl_connect=None, message_dict=None, tocken=""):
         }
         module = "%s/plugin_%s.py" % (self.modulepath, message_dict["action"])
         msg = {
-            "from": "master@pulse/MASTER",
-            "to": "master@pulse/MASTER",
+            "from": "master@medulla/MASTER",
+            "to": "master@medulla/MASTER",
             "type": "chat",
         }
         call_plugin(
@@ -477,8 +477,8 @@ class Configuration:
         port_default_serveur = 57040
         taille_mac_message = 2097152  # bytes
         self.xmppobject = xmppobject
-        xmppobject.server_mmc_master_certfile = "/var/lib/pulse2/masterkey/cert.pem"
-        xmppobject.server_mmc_master_keyfile = "/var/lib/pulse2/masterkey/key.pem"
+        xmppobject.server_mmc_master_certfile = "/var/lib/medulla/masterkey/cert.pem"
+        xmppobject.server_mmc_master_keyfile = "/var/lib/medulla/masterkey/key.pem"
         xmppobject.server_mmc_master_server_host_ipv6 = "::"
         xmppobject.server_mmc_master_server_host_ipv4 = "0.0.0.0"
         xmppobject.server_mmc_master_server_port_ipv4 = port_default_serveur
@@ -504,10 +504,10 @@ class Configuration:
                 self.config.read(config_file + ".local")
             # SSL parameters
             xmppobject.server_mmc_master_certfile = self.config.get(
-                "ssl", "certfile", fallback="/var/lib/pulse2/masterkey/cert.pem"
+                "ssl", "certfile", fallback="/var/lib/medulla/masterkey/cert.pem"
             )
             xmppobject.server_mmc_master_keyfile = self.config.get(
-                "ssl", "keyfile", fallback="/var/lib/pulse2/masterkey/key.pem"
+                "ssl", "keyfile", fallback="/var/lib/medulla/masterkey/key.pem"
             )
             # Server parameters
             xmppobject.server_mmc_master_server_host_ipv6 = self.config.get(
@@ -661,7 +661,7 @@ class Configuration:
         return parameters
 
     def creation_or_validite_key_certificat(
-        self, xmppobject, path_file_cert_pam="/var/lib/pulse2/masterkey", valid_days=365
+        self, xmppobject, path_file_cert_pam="/var/lib/medulla/masterkey", valid_days=365
     ):
         script = """#!/bin/bash
         create_certificate() {

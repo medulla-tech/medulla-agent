@@ -907,7 +907,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         uuid = ""
                         btestfindcomputer = False
                         jidrs = ""
-                        # Si pulse inject inventory glpi: il faut 1 certain temps pour que celui-ci soit injecter.
+                        # Si medulla inject inventory glpi: il faut 1 certain temps pour que celui-ci soit injecter.
                         # par substitute subinv
                         # plugin_resultinventory.py est charge de la mise a jour de uuid_inventory
 
@@ -1535,7 +1535,7 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
     patternname = re.compile("(?i)" + packageprofile[0])
     for soft_glpi in list_software_glpi:
         # TODO
-        # Into the pulse package provide Vendor information for the software name
+        # Into the medulla package provide Vendor information for the software name
         # For now we use the package name which must match with glpi name
         if patternname.match(str(soft_glpi[0])) or patternname.match(str(soft_glpi[1])):
             # Process with this package which is installed on the machine
@@ -1547,7 +1547,7 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
             # compare the version
             # TODO
             # For now we use the package version.
-            # Later the software version will be needed into the pulse package
+            # Later the software version will be needed into the medulla package
             if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
                 structuredatakioskelement["action"].append("Update")
                 logger.debug(

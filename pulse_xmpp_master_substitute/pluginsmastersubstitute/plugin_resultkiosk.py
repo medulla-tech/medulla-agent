@@ -388,7 +388,7 @@ def __search_software_in_glpi(
             # verification if update
             # compare the version
             # TODO
-            # For now we use the package version. Later the software version will be needed into the pulse package
+            # For now we use the package version. Later the software version will be needed into the medulla package
             if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
                 structuredatakioskelement["action"].append("Update")
                 logger.debug(
@@ -1073,13 +1073,13 @@ def applicationdeploymentjsonkiosk(
                             localisation_server = "global"
 
                         dest_not_hash = (
-                            "/var/lib/pulse2/packages/sharing/"
+                            "/var/lib/medulla/packages/sharing/"
                             + localisation_server
                             + "/"
                             + data["name"]
                         )
                         dest = (
-                            "/var/lib/pulse2/packages/hash/"
+                            "/var/lib/medulla/packages/hash/"
                             + localisation_server
                             + "/"
                             + data["name"]
@@ -1167,11 +1167,11 @@ def applicationdeploymentjsonkiosk(
 
                 except Exception as e:
                     logger.error(
-                        "Pulse is configured to check integrity of packages but the hashes have not been generated"
+                        "Medulla is configured to check integrity of packages but the hashes have not been generated"
                     )
                     logger.error(str(e))
                     msg.append(
-                        "<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>"
+                        "<span class='log_err'>Medulla is configured to check integrity of packages but the hashes have not been generated</span>"
                     )
                     sessiondeployementless = name_random(5, "hashmissing")
                     sessionid = sessiondeployementless

@@ -119,7 +119,7 @@ def send_iq_message(xmppobject, msg):
     destinataire = obj["mto"]
     del obj["mto"]
     del obj["mtimeout"]
-    result = xmppobject.iqsendpulse1(destinataire, obj, mtimeout)
+    result = xmppobject.iqsendmedulla1(destinataire, obj, mtimeout)
 
 
 def send_message_file(xmppobject, *args, **kwargs):

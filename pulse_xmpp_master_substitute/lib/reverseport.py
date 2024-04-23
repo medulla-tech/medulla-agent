@@ -14,7 +14,7 @@ logger = logging.getLogger()
 class reverse_port_ssh:
     def __init__(self):
         # Create folder in /var/run if non existing
-        self.directoryreverseport = "/var/run/reverse_port_pulse"
+        self.directoryreverseport = "/var/run/reverse_port_medulla"
         if not os.path.exists(self.directoryreverseport):
             os.makedirs(self.directoryreverseport)
 

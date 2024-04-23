@@ -655,7 +655,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 asyncio.set_event_loop(loop)
                 return asyncio.get_event_loop()
 
-    def iqsendpulse1(self, to, datain, timeout):
+    def iqsendmedulla1(self, to, datain, timeout):
         tempo = time.time()
         datafile = {
             "sesssioniq": "",
@@ -666,7 +666,7 @@ class MUCBot(slixmpp.ClientXMPP):
             try:
                 data = json.dumps(datain)
             except Exception as e:
-                logging.error("iqsendpulse : encode json : %s" % str(e))
+                logging.error("iqsendmedulla : encode json : %s" % str(e))
                 return '{"err" : "%s"}' % str(e).replace('"', "'")
         elif type(datain) is str:
             data = str(datain)
@@ -675,7 +675,7 @@ class MUCBot(slixmpp.ClientXMPP):
         try:
             data = base64.b64encode(bytes(data, "utf-8")).decode("utf8")
         except Exception as e:
-            logging.error("iqsendpulse : encode base64 : %s" % str(e))
+            logging.error("iqsendmedulla : encode base64 : %s" % str(e))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         try:
             iq = self.make_iq_get(queryxmlns="custom_xep", ito=to)
@@ -692,20 +692,20 @@ class MUCBot(slixmpp.ClientXMPP):
             except IqError as e:
                 err_resp = e.iq
                 logging.error(
-                    "iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'")
+                    "iqsendmedulla : Iq error %s" % str(err_resp).replace('"', "'")
                 )
                 logger.error("\n%s" % (traceback.format_exc()))
                 ret = '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
             except IqTimeout:
-                logging.error("iqsendpulse : Timeout Error")
+                logging.error("iqsendmedulla : Timeout Error")
                 ret = '{"err" : "Timeout Error"}'
         except Exception as e:
-            logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
+            logging.error("iqsendmedulla : error %s" % str(e).replace('"', "'"))
             logger.error("\n%s" % (traceback.format_exc()))
             ret = '{"err" : "%s"}' % str(e).replace('"', "'")
 
-    def iqsendpulse(self, destinataire, msg, mtimeout):
+    def iqsendmedulla(self, destinataire, msg, mtimeout):
         def close_posix_queue(name):
             # Keep result and remove datafile['name_iq_queue']
             logger.debug("close queue msg %s" % (name))
@@ -727,7 +727,7 @@ class MUCBot(slixmpp.ClientXMPP):
         try:
             data = base64.b64encode(bytes(msg, "utf-8")).decode("utf8")
         except Exception as e:
-            logging.error("iqsendpulse : encode base64 : %s" % str(e))
+            logging.error("iqsendmedulla : encode base64 : %s" % str(e))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         try:
             iq = self.make_iq_get(queryxmlns="custom_xep", ito=destinataire)
@@ -741,7 +741,7 @@ class MUCBot(slixmpp.ClientXMPP):
             result = iq.send(timeout=mtimeout)
         except IqError as e:
             err_resp = e.iq
-            logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
+            logging.error("iqsendmedulla : Iq error %s" % str(err_resp).replace('"', "'"))
             logger.error("\n%s" % (traceback.format_exc()))
             ret = '{"err" : "%s"}' % str(err_resp).replace('"', "'")
             return ret
@@ -783,7 +783,7 @@ class MUCBot(slixmpp.ClientXMPP):
             ret = '{"err" : "timeout %s" % }'
             return ret
 
-    # def iqsendpulseasync(self, to, datain, timeout):
+    # def iqsendmedullaasync(self, to, datain, timeout):
     # iq = self.make_iq_get(queryxmlns='custom_xep', ito=to)
     # logging.debug("iq id=%s" % iq['id'])
     # event_loop = asyncio.get_event_loop()
@@ -800,7 +800,7 @@ class MUCBot(slixmpp.ClientXMPP):
     # try:
     # data = json.dumps(datain)
     # except Exception as e:
-    # logging.error("iqsendpulse : encode json : %s" % str(e))
+    # logging.error("iqsendmedulla : encode json : %s" % str(e))
     # return '{"err" : "%s"}' % str(e).replace('"', "'")
     # elif type(datain) == str:
     # data = str(datain)
@@ -810,7 +810,7 @@ class MUCBot(slixmpp.ClientXMPP):
     ##data = data.encode("base64")
     # data = base64.b64encode(bytes(data, "utf-8")).decode('utf8')
     # except Exception as e:
-    # logging.error("iqsendpulse : encode base64 : %s" % str(e))
+    # logging.error("iqsendmedulla : encode base64 : %s" % str(e))
     # return '{"err" : "%s"}' % str(e).replace('"', "'")
     # try:
     # iq = self.make_iq_get(queryxmlns='custom_xep', ito=to)
@@ -836,7 +836,7 @@ class MUCBot(slixmpp.ClientXMPP):
     # priority= 9)
     # return
     # except Exception as e:
-    # logging.error("iqsendpulse : %s" % str(e))
+    # logging.error("iqsendmedulla : %s" % str(e))
     # logger.error("\n%s"%(traceback.format_exc()))
     # ret =  '{"err" : "%s"}' % str(e).replace('"', "'")
     # mq.sendbytes(iq['id'],
@@ -845,10 +845,10 @@ class MUCBot(slixmpp.ClientXMPP):
     # priority= 9)
 
     # except IqTimeout:
-    # logging.error("iqsendpulse : Timeout Error")
+    # logging.error("iqsendmedulla : Timeout Error")
     # ret='{"err" : "Timeout Error"}'
     # except Exception as e:
-    # logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
+    # logging.error("iqsendmedulla : error %s" % str(e).replace('"', "'"))
     # logger.error("\n%s"%(traceback.format_exc()))
     # ret='{"err" : "%s"}' % str(e).replace('"', "'")
     # mq.sendbytes(iq['id'],

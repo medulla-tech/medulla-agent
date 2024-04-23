@@ -82,7 +82,7 @@ class ComputerLocationManager(Singleton):
             else:
                 raise Exception(
                     "Can't auto-select a computer "
-                    "location manager, please configure one in pulse2.ini."
+                    "location manager, please configure one in medulla.ini."
                 )
         self.logger.info("Selecting computer location manager: %s" % name)
         self.main = name
@@ -562,7 +562,7 @@ class MscDatabase(DatabaseHelper):
         self,
         target_uuid,
         target_name,
-        mirrors="file:///var/lib/pulse2/packages",
+        mirrors="file:///var/lib/medulla/packages",
         target_macaddr="",
         target_bcast="",
         target_ipaddr="",

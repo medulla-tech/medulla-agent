@@ -27,7 +27,7 @@ from tempfile import mkstemp
 import zipfile
 import base64
 import time
-from .agentconffile import pulseTempDir
+from .agentconffile import medullaTempDir
 
 if sys.platform.startswith("win"):
     from lib.registerwindows import constantregisterwindows
@@ -355,7 +355,7 @@ class grafcet:
             "@@@MAC_ADRESS_MACHINE_XMPP@@@", MacAdressToIp(self.data["ipmachine"])
         )
 
-        cmd = cmd.replace("@@@TMP_DIR@@@", pulseTempDir())
+        cmd = cmd.replace("@@@TMP_DIR@@@", medullaTempDir())
         # recherche variable environnement
         for t in re.findall("@_@.*?@_@", cmd):
             z = t.replace("@_@", "")
@@ -544,7 +544,7 @@ class grafcet:
                 self.datasend["data"]["msgstate"] = msgstate
             self.datasend["data"]["uname"] = [x for x in platform.uname()]
             self.objectxmpp.send_message(
-                mto="log@pulse", mbody=json.dumps(self.datasend), mtype="chat"
+                mto="log@medulla", mbody=json.dumps(self.datasend), mtype="chat"
             )
             try:
                 del datas["data"]["descriptor"]["sequence"]
@@ -598,7 +598,7 @@ class grafcet:
             self.datasend["ret"] = 255
             self.datas["ret"] = 255
             self.objectxmpp.send_message(
-                mto="log@pulse", mbody=json.dumps(self.datasend), mtype="chat"
+                mto="log@medulla", mbody=json.dumps(self.datasend), mtype="chat"
             )
             self.objectxmpp.send_message(
                 mto=self.datasend["data"]["jidmaster"],
@@ -1811,10 +1811,10 @@ class grafcet:
                 inventoryfile = os.path.join("/", "tmp", "inventory.txt")
             elif sys.platform.startswith("win"):
                 inventoryfile = os.path.join(
-                    "c:\\", "progra~1", "Pulse", "tmp", "inventory.txt"
+                    "c:\\", "progra~1", "Medulla", "tmp", "inventory.txt"
                 )
             elif sys.platform.startswith("darwin"):
-                inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
+                inventoryfile = os.path.join("/opt", "Medulla", "tmp", "inventory.txt")
             if inventoryfile != "" and os.path.isfile(inventoryfile):
                 os.remove(inventoryfile)
             # call plugin inventory pour master.
@@ -1991,7 +1991,7 @@ class grafcet:
                 logging.debug("linux avec serveur X  %s" % os.environ["DISPLAY"])
                 logging.debug("############################################")
                 logging.debug("linux avec serveur X")
-                linux_executable_dlg_confirm = "dlg_comfirm_pulse"
+                linux_executable_dlg_confirm = "dlg_comfirm_medulla"
                 command = (
                     linux_executable_dlg_confirm
                     + " -T "
@@ -2022,7 +2022,7 @@ class grafcet:
 
         elif sys.platform.startswith("win"):
             logging.debug("command on windows")
-            win_executable_dlg_confirm = "dlg_comfirm_pulse"
+            win_executable_dlg_confirm = "dlg_comfirm_medulla"
             command = (
                 win_executable_dlg_confirm
                 + " -T "
@@ -2036,7 +2036,7 @@ class grafcet:
             )
         elif sys.platform.startswith("darwin"):
             logging.debug("command on windows")
-            Macos_executable_dlg_confirm = "dlg_comfirm_pulse"
+            Macos_executable_dlg_confirm = "dlg_comfirm_medulla"
             command = (
                 Macos_executable_dlg_confirm
                 + " -T "

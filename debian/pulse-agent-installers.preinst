@@ -5,19 +5,19 @@
 
 set -e
 
-rm -fv /var/lib/pulse2/imaging/postinst/winutils/Medulla-Agent*latest* 
+rm -fv /var/lib/medulla/imaging/postinst/winutils/Medulla-Agent*latest* 
 
-if [ ! -d "/var/lib/pulse2/clients/win" ]; then
-    mkdir /var/lib/pulse2/clients/win
+if [ ! -d "/var/lib/medulla/clients/win" ]; then
+    mkdir /var/lib/medulla/clients/win
 fi
 
-if [ -d "/var/lib/pulse2/clients/win32" ]; then
-    mv /var/lib/pulse2/clients/win32/*.exe /var/lib/pulse2/clients/win/
-    rm -fr /var/lib/pulse2/clients/win32/
+if [ -d "/var/lib/medulla/clients/win32" ]; then
+    mv /var/lib/medulla/clients/win32/*.exe /var/lib/medulla/clients/win/
+    rm -fr /var/lib/medulla/clients/win32/
 fi
 
-if [ -d "/var/lib/pulse2/clients/linux" ]; then
-    rm -fr /var/lib/pulse2/clients/linux/
+if [ -d "/var/lib/medulla/clients/linux" ]; then
+    rm -fr /var/lib/medulla/clients/linux/
 fi
 
 #DEBHELPER#

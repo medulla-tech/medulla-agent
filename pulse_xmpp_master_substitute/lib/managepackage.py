@@ -23,13 +23,13 @@ class managepackage:
         """
         if sys.platform.startswith("linux"):
             if managepackage.agenttype == "relayserver":
-                return os.path.join("/", "var", "lib", "pulse2", "packages")
+                return os.path.join("/", "var", "lib", "medulla", "packages")
             else:
-                return os.path.join(os.path.expanduser("~pulseuser"), "packages")
+                return os.path.join(os.path.expanduser("~medulla"), "packages")
         elif sys.platform.startswith("win"):
-            return os.path.join("c:\\", "progra~1", "Pulse", "var", "tmp", "packages")
+            return os.path.join("c:\\", "progra~1", "Medulla", "var", "tmp", "packages")
         elif sys.platform.startswith("darwin"):
-            return os.path.join("/opt", "Pulse", "var", "tmp", "packages")
+            return os.path.join("/opt", "Medulla", "var", "tmp", "packages")
         else:
             return None
 

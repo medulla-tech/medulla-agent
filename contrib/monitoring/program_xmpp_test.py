@@ -15,7 +15,7 @@ import traceback
 from datetime import date, datetime
 
 # global variable
-LOGFILE = "/var/lib/pulse2/script_monitoring/logfilescriptxmpp.log"
+LOGFILE = "/var/lib/medulla/script_monitoring/logfilescriptxmpp.log"
 logger = logging.getLogger()
 ERROR_TEST = "ERROR_MESSAGE_XMPP"  # To be analysed submon side
 

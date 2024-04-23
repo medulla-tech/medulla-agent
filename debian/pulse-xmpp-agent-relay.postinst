@@ -3,8 +3,8 @@ set -e
 
 systemctl daemon-reload
 
-if [ -f "/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]; then
-    rm -f /usr/lib/python2.7/dist-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT
+if [ -f "/usr/lib/python2.7/dist-packages/medulla_agent/BOOL_UPDATE_AGENT" ]; then
+    rm -f /usr/lib/python2.7/dist-packages/medulla_agent/BOOL_UPDATE_AGENT
 fi
 
 case "$1" in
@@ -12,30 +12,30 @@ case "$1" in
         if ! getent passwd | grep -q "^reversessh:"; then
             echo -n "Adding user reversessh..."
             adduser --system --quiet \
-                    --home /var/lib/pulse2/clients/reversessh \
+                    --home /var/lib/medulla/clients/reversessh \
                     --shell /bin/rbash \
                     --disabled-password \
                     reversessh
             echo "..done"
         fi
-        if [ ! -f "/var/lib/pulse2/clients/reversessh/.ssh/id_rsa" ]; then
+        if [ ! -f "/var/lib/medulla/clients/reversessh/.ssh/id_rsa" ]; then
             echo -n "Generating ssh key..."
-            mkdir -p /var/lib/pulse2/clients/reversessh/.ssh
-            ssh-keygen -q -N "" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa
-            cp -a /var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys
-            chown -R reversessh: /var/lib/pulse2/clients/reversessh/.ssh
-            chmod 700 /var/lib/pulse2/clients/reversessh/.ssh
-            chmod 600 /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys
+            mkdir -p /var/lib/medulla/clients/reversessh/.ssh
+            ssh-keygen -q -N "" -b 2048 -t rsa -f /var/lib/medulla/clients/reversessh/.ssh/id_rsa
+            cp -a /var/lib/medulla/clients/reversessh/.ssh/id_rsa.pub /var/lib/medulla/clients/reversessh/.ssh/authorized_keys
+            chown -R reversessh: /var/lib/medulla/clients/reversessh/.ssh
+            chmod 700 /var/lib/medulla/clients/reversessh/.ssh
+            chmod 600 /var/lib/medulla/clients/reversessh/.ssh/authorized_keys
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-agent-relay ; then
-            echo -n "Restarting pulse-xmpp-agent-relay service..."
-            systemctl restart pulse-xmpp-agent-relay
+        if systemctl -q is-enabled medulla-agent-relay ; then
+            echo -n "Restarting medulla-agent-relay service..."
+            systemctl restart medulla-agent-relay
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-package-watching ; then
-            echo -n "Restarting pulse-package-watching service..."
-            systemctl restart pulse-package-watching
+        if systemctl -q is-enabled medulla-package-watching ; then
+            echo -n "Restarting medulla-package-watching service..."
+            systemctl restart medulla-package-watching
             echo "..done"
         fi
         ;;

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-    This file contains shared functions use in pulse client/server agents.
+    This file contains shared functions use in medulla client/server agents.
 """
 
 import netifaces
@@ -150,7 +150,7 @@ class Locker:
     """
     Cette class permet de verrouiller 1 partie de code entre application sur 1 même machine
     les fichiers de lock et temoin sont mis dans :
-       /usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/lib/INFOSTMP
+       /usr/lib/python2.7/dist-packages/medulla_master_substitute/lib/INFOSTMP
     """
 
     def __init__(
@@ -213,9 +213,9 @@ class Env(object):
                 "The class attribute aggenttype need to be initialized\neg:  Env.agenttype = 'machine'"
             )
         if Env.agenttype == "relayserver":
-            return os.path.join("/", "var", "lib", "pulse2")
+            return os.path.join("/", "var", "lib", "medulla")
 
-        return os.path.expanduser("~pulseuser")
+        return os.path.expanduser("~medulla")
 
 
 # debug decorator
@@ -1903,7 +1903,7 @@ def utc2local(utc):
     return utc + offset
 
 
-def getHomedrive(username="pulseuser"):
+def getHomedrive(username="medulla"):
     """
     Retrieve the path to the home of the user `username`
     Args:
@@ -2255,11 +2255,11 @@ def protoandport():
     return protodef.protoandport()
 
 
-def pulseuser_useraccount_mustexist(username="pulseuser"):
+def medulla_useraccount_mustexist(username="medulla"):
     """
     This function checks if the a given user exists.
     Args:
-        username: This is the username we need to check ( default is pulseuser )
+        username: This is the username we need to check ( default is medulla )
 
     Returns:
         It returns True if the account has been correctly created or if the
@@ -2274,7 +2274,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         except Exception:
             adduser_cmd = (
                 "adduser --system --quiet --group "
-                "--home /var/lib/pulse2 --shell /bin/rbash "
+                "--home /var/lib/medulla --shell /bin/rbash "
                 "--disabled-password %s" % username
             )
     elif sys.platform.startswith("win"):
@@ -2286,7 +2286,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             passwdchars = string.hexdigits + "-" + "$" + "#" + "," + "_"
             userpassword = "".join(random.sample(list(passwdchars), 14))
             adduser_cmd = (
-                'net user "%s" "%s" /ADD /COMMENT:"Pulse '
+                'net user "%s" "%s" /ADD /COMMENT:"Medulla '
                 'user with admin rights on the system"' % (username, userpassword)
             )
     elif sys.platform.startswith("darwin"):
@@ -2349,11 +2349,11 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         return False, msg
 
 
-def pulseuser_profile_mustexist(username="pulseuser"):
+def medulla_profile_mustexist(username="medulla"):
     """
     This function checks if the a given profile exists.
     Args:
-        username: This is the username we need to check ( default is pulseuser )
+        username: This is the username we need to check ( default is medulla )
 
     Returns:
         It returns True if the profile has been correctly created or if the
@@ -2442,7 +2442,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         return True, msg
 
 
-def get_user_profile(username="pulseuser"):
+def get_user_profile(username="medulla"):
     usersid = get_user_sid(username)
     if not usersid:
         return ""
@@ -2459,7 +2459,7 @@ def get_user_profile(username="pulseuser"):
     return ""
 
 
-def get_user_sid(username="pulseuser"):
+def get_user_sid(username="medulla"):
     try:
         usersid = win32security.ConvertSidToStringSid(
             win32security.LookupAccountName(None, username)[0]
@@ -2469,7 +2469,7 @@ def get_user_sid(username="pulseuser"):
         return False
 
 
-def delete_profile(username="pulseuser"):
+def delete_profile(username="medulla"):
     if sys.platform.startswith("win"):
         # Delete profile folder in C:\\Users if any
         try:
@@ -2494,7 +2494,7 @@ def delete_profile(username="pulseuser"):
     return True
 
 
-def create_idrsa_on_client(username="pulseuser", key=""):
+def create_idrsa_on_client(username="medulla", key=""):
     """
     Used on client machine for connecting to relay server
     """
@@ -2521,7 +2521,7 @@ def apply_perms_sshkey(path, private=True):
     """
     Apply permissions on ssh key.
     If private = True, the permissions are based on the user that is executing Medulla Agent
-    If private = False, the permissions are based on pulseuser
+    If private = False, the permissions are based on medulla
     """
     if not os.path.isfile(path):
         msg = "Error: File %s does not exist" % path
@@ -2531,8 +2531,8 @@ def apply_perms_sshkey(path, private=True):
             # We are using id_rsa. The owner must be the user running the Agent
             username = win32api.GetUserName().lower()
         else:
-            # The owner must be pulseuser
-            username = "pulseuser"
+            # The owner must be medulla
+            username = "medulla"
         try:
             sd = win32security.GetFileSecurity(
                 path, win32security.DACL_SECURITY_INFORMATION
@@ -2568,8 +2568,8 @@ def apply_perms_sshkey(path, private=True):
             uid = os.geteuid()
             gid = os.getegid()
         else:
-            # The owner must be pulseuser
-            username = "pulseuser"
+            # The owner must be medulla
+            username = "medulla"
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
         try:
@@ -2600,7 +2600,7 @@ def apply_perms_sshkey(path, private=True):
     return True, msg
 
 
-def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
+def add_key_to_authorizedkeys_on_client(username="medulla", key=""):
     """
     Used on client machine for allowing connections from relay server
 
@@ -2650,7 +2650,7 @@ def reversessh_useraccount_mustexist_on_relay(username="reversessh"):
     except Exception:
         adduser_cmd = (
             "adduser --system --quiet --group "
-            "--home /var/lib/pulse2/clients/reversessh "
+            "--home /var/lib/medulla/clients/reversessh "
             "--shell /bin/rbash --disabled-password %s" % username
         )
     result = simplecommand(encode_strconsole(adduser_cmd))
@@ -3169,10 +3169,10 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
             logging.getLogger().error("incorrect url [%s]" % (url))
             return False
         if outdir is None:
-            base_file = os.path.join("/", "var", "lib", "pulse2", "base_file_update")
+            base_file = os.path.join("/", "var", "lib", "medulla", "base_file_update")
         else:
-            base_file = os.path.join("/", "var", "lib", "pulse2", outdirname)
-        if os.path.dirname(base_file) != os.path.join("/", "var", "lib", "pulse2"):
+            base_file = os.path.join("/", "var", "lib", "medulla", outdirname)
+        if os.path.dirname(base_file) != os.path.join("/", "var", "lib", "medulla"):
             # name repertoire non conforme
             logging.getLogger().error(
                 "download_file_windows_update incorrect path [%s]" % (base_file)

@@ -23,7 +23,7 @@ if sys.platform.startswith("win"):
 
 # To define a log file uncomment the last 2 line of this block.
 # The LOGFILE global variable depend of the OS.
-# LOGFILE ="/var/lib/pulse2/script_monitoring/log_file_script_remote_python.log"
+# LOGFILE ="/var/lib/medulla/script_monitoring/log_file_script_remote_python.log"
 # logger = logging.getLogger()
 
 

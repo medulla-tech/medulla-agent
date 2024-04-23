@@ -36,37 +36,37 @@ service_logger = logging.getLogger()
 
 SUBSCRIPTION_NETALIVE = (
     "{cd1dcbd6-a14d-4823-a0d2-8473afde360f}",
-    "pulse Network Alive",
+    "medulla Network Alive",
     "ConnectionMade",
 )
 
 SUBSCRIPTION_NETALIVE_NOQOC = (
     "{a82f0e80-1305-400c-ba56-375ae04264a1}",
-    "pulse Net Alive No Info",
+    "medulla Net Alive No Info",
     "ConnectionMadeNoQOCInfo",
 )
 
 SUBSCRIPTION_NETLOST = (
     "{45233130-b6c3-44fb-a6af-487c47cee611}",
-    "pulse Network Lost",
+    "medulla Network Lost",
     "ConnectionLost",
 )
 
 SUBSCRIPTION_REACH = (
     "{4c6b2afa-3235-4185-8558-57a7a922ac7b}",
-    "pulse Network Reach",
+    "medulla Network Reach",
     "ConnectionMade",
 )
 
 SUBSCRIPTION_REACH_NOQOC = (
     "{db62fa23-4c3e-47a3-aef2-b843016177cf}",
-    "pulse Network Reach No Info",
+    "medulla Network Reach No Info",
     "ConnectionMadeNoQOCInfo",
 )
 
 SUBSCRIPTION_REACH_NOQOC2 = (
     "{d4d8097a-60c6-440d-a6da-918b619ae4b7}",
-    "pulse Network Reach No Info 2",
+    "medulla Network Reach No Info 2",
     "ConnectionMadeNoQOCInfo",
 )
 

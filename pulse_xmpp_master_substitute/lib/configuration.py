@@ -58,7 +58,7 @@ class confParameter:
         if Config.has_option("connection", "port"):
             self.Port = Config.get("connection", "port")
 
-        self.Server = "pulse"
+        self.Server = "medulla"
         if Config.has_option("connection", "server"):
             self.Server = ipfromdns(Config.get("connection", "server"))
 
@@ -66,11 +66,11 @@ class confParameter:
         if Config.has_option("connection", "password"):
             self.passwordconnection = Config.get("connection", "password")
 
-        self.jidmaster = "master@pulse"
+        self.jidmaster = "master@medulla"
         if Config.has_option("connection", "jidmaster"):
             self.jidmaster = Config.get("connection", "jidmaster")
 
-        self.sub_logger = "log@pulse"
+        self.sub_logger = "log@medulla"
         if Config.has_option("connection", "logger"):
             self.sub_logger = Config.get("connection", "logger")
 
@@ -84,7 +84,7 @@ class confParameter:
             )
             sys.exit(1)
 
-        self.jidmasterreg = "master_reg@pulse"
+        self.jidmasterreg = "master_reg@medulla"
         if Config.has_option("connection", "jidreg"):
             self.jidmasterreg = Config.get("connection", "jidreg")
 
@@ -384,7 +384,7 @@ class confParameter:
         if confiobject.has_option("glpi", "user_agent"):
             self.user_agent = confiobject.get("glpi", "user_agent")
 
-        self.xmlfixplugindir = "/var/lib/pulse2/xml_fix"
+        self.xmlfixplugindir = "/var/lib/medulla/xml_fix"
         if confiobject.has_option("glpi", "xml_fix"):
             self.xmlfixplugindir = confiobject.get("glpi", "xml_fix")
 

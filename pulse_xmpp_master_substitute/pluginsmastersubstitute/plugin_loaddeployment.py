@@ -1084,8 +1084,8 @@ def applicationdeployjsonuuid(
 
 
 def generate_hash(path, package_id, hash_type, packages, keyAES32):
-    source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
-    dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
+    source = "/var/lib/medulla/packages/sharing/" + path + "/" + package_id
+    dest = "/var/lib/medulla/packages/hash/" + path + "/" + package_id
     BLOCK_SIZE = 65535
 
     if os.path.exists(dest):
@@ -1479,13 +1479,13 @@ def applicationdeploymentjson(
                             localisation_server = "global"
 
                         dest_not_hash = (
-                            "/var/lib/pulse2/packages/sharing/"
+                            "/var/lib/medulla/packages/sharing/"
                             + localisation_server
                             + "/"
                             + data["name"]
                         )
                         dest = (
-                            "/var/lib/pulse2/packages/hash/"
+                            "/var/lib/medulla/packages/hash/"
                             + localisation_server
                             + "/"
                             + data["name"]
@@ -1573,11 +1573,11 @@ def applicationdeploymentjson(
 
                 except Exception as e:
                     logger.error(
-                        "Pulse is configured to check integrity of packages but the hashes have not been generated"
+                        "Medulla is configured to check integrity of packages but the hashes have not been generated"
                     )
                     logger.error(str(e))
                     msg.append(
-                        "<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>"
+                        "<span class='log_err'>Medulla is configured to check integrity of packages but the hashes have not been generated</span>"
                     )
                     sessiondeployementless = name_random(5, "hashmissing")
                     sessionid = sessiondeployementless

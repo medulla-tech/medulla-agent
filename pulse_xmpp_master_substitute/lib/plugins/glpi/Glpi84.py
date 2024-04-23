@@ -4579,7 +4579,7 @@ class Glpi84(DatabaseHelper):
         return ret
 
     def _machineobject(self, ret):
-        """result view glpi_computers_pulse"""
+        """result view glpi_computers_medulla"""
         if ret:
             try:
                 return {

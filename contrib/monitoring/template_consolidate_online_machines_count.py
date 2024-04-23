@@ -8,7 +8,7 @@ import MySQLdb
 import traceback
 import logging
 
-LOGFILE = "/var/lib/pulse2/script_monitoring/logfilescriptpython.log"
+LOGFILE = "/var/lib/medulla/script_monitoring/logfilescriptpython.log"
 logger = logging.getLogger()
 
 
@@ -191,7 +191,7 @@ def main():
 
     # Send a ack message if the sums do not match within the error margin
     if sum_from_monitoring < sum_from_db_low or sum_from_monitoring > sum_from_db_high:
-        sql = """ SELECT id, hostname FROM machines WHERE jid = 'rspulse@pulse/mainrelay'; """
+        sql = """ SELECT id, hostname FROM machines WHERE jid = 'rsmedulla@medulla/mainrelay'; """
         result = xmppmaster.fetching(sql)
         sql = f""" INSERT INTO mon_machine (machines_id, hostname) VALUES ({result[0]["id"]}, '{result[0]["hostname"]}');"""
         machines_id = xmppmaster.commit(sql)

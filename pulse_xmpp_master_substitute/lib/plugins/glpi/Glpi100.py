@@ -323,7 +323,7 @@ class Glpi100(DatabaseHelper):
                 Table(
                     "glpi_items_%s" % i,
                     self.metadata,
-                    Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                    Column("items_id", Integer, ForeignKey("glpi_computers_medulla.id")),
                     Column("%s_id" % i, Integer, ForeignKey("glpi_%s.id" % i)),
                     autoload=True,
                 ),
@@ -355,7 +355,7 @@ class Glpi100(DatabaseHelper):
         self.logs = Table(
             "glpi_logs",
             self.metadata,
-            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            Column("items_id", Integer, ForeignKey("glpi_computers_medulla.id")),
             autoload=True,
         )
         mapper(Logs, self.logs)
@@ -367,7 +367,7 @@ class Glpi100(DatabaseHelper):
         self.computerProcessor = Table(
             "glpi_items_deviceprocessors",
             self.metadata,
-            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            Column("items_id", Integer, ForeignKey("glpi_computers_medulla.id")),
             Column(
                 "deviceprocessors_id", Integer, ForeignKey("glpi_deviceprocessors.id")
             ),
@@ -392,7 +392,7 @@ class Glpi100(DatabaseHelper):
         self.computerMemory = Table(
             "glpi_items_devicememories",
             self.metadata,
-            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            Column("items_id", Integer, ForeignKey("glpi_computers_medulla.id")),
             Column("devicememories_id", Integer, ForeignKey("glpi_devicememories.id")),
             autoload=True,
         )
@@ -424,7 +424,7 @@ class Glpi100(DatabaseHelper):
             "glpi_infocoms",
             self.metadata,
             Column("suppliers_id", Integer, ForeignKey("glpi_suppliers.id")),
-            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            Column("items_id", Integer, ForeignKey("glpi_computers_medulla.id")),
             autoload=True,
         )
         mapper(Infocoms, self.infocoms)
@@ -451,7 +451,7 @@ class Glpi100(DatabaseHelper):
             self.fusionantivirus = Table(
                 "glpi_computerantiviruses",
                 self.metadata,
-                Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                Column("computers_id", Integer, ForeignKey("glpi_computers_medulla.id")),
                 Column(
                     "manufacturers_id", Integer, ForeignKey("glpi_manufacturers.id")
                 ),
@@ -477,7 +477,7 @@ class Glpi100(DatabaseHelper):
                 self.fusionlocks = Table(
                     "glpi_plugin_fusioninventory_locks",
                     self.metadata,
-                    Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                    Column("items_id", Integer, ForeignKey("glpi_computers_medulla.id")),
                     autoload=True,
                 )
                 mapper(FusionLocks, self.fusionlocks)
@@ -486,7 +486,7 @@ class Glpi100(DatabaseHelper):
                     "glpi_plugin_fusioninventory_agents",
                     self.metadata,
                     Column(
-                        "computers_id", Integer, ForeignKey("glpi_computers_pulse.id")
+                        "computers_id", Integer, ForeignKey("glpi_computers_medulla.id")
                     ),
                     autoload=True,
                 )
@@ -497,7 +497,7 @@ class Glpi100(DatabaseHelper):
                     "glpi_agents",
                     self.metadata,
                     Column(
-                        "entities_id", Integer, ForeignKey("glpi_computers_pulse.id")
+                        "entities_id", Integer, ForeignKey("glpi_computers_medulla.id")
                     ),
                     autoload=True,
                 )
@@ -507,7 +507,7 @@ class Glpi100(DatabaseHelper):
         self.disk = Table(
             "glpi_items_disks",
             self.metadata,
-            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            Column("items_id", Integer, ForeignKey("glpi_computers_medulla.id")),
             Column("filesystems_id", Integer, ForeignKey("glpi_filesystems.id")),
             autoload=True,
         )
@@ -596,7 +596,7 @@ class Glpi100(DatabaseHelper):
         # machine (we need the foreign key, so we need to declare the table by hand ...
         #          as we don't need all columns, we don't declare them all)
         self.machine = Table(
-            "glpi_computers_pulse",
+            "glpi_computers_medulla",
             self.metadata,
             Column("id", Integer, primary_key=True),
             Column("entities_id", Integer, ForeignKey("glpi_entities.id")),
@@ -714,7 +714,7 @@ class Glpi100(DatabaseHelper):
         self.inst_software = Table(
             "glpi_items_softwareversions",
             self.metadata,
-            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            Column("items_id", Integer, ForeignKey("glpi_computers_medulla.id")),
             Column(
                 "softwareversions_id", Integer, ForeignKey("glpi_softwareversions.id")
             ),
@@ -794,7 +794,7 @@ class Glpi100(DatabaseHelper):
             self.regcontents = Table(
                 "glpi_plugin_fusioninventory_collects_registries_contents",
                 self.metadata,
-                Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                Column("computers_id", Integer, ForeignKey("glpi_computers_medulla.id")),
                 Column(
                     "plugin_fusioninventory_collects_registries_id",
                     Integer,
@@ -807,7 +807,7 @@ class Glpi100(DatabaseHelper):
             self.regcontents = Table(
                 "glpi_plugin_glpiinventory_collects_registries_contents",
                 self.metadata,
-                Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                Column("computers_id", Integer, ForeignKey("glpi_computers_medulla.id")),
                 Column(
                     "plugin_glpiinventory_collects_registries_id",
                     Integer,
@@ -1674,7 +1674,7 @@ class Glpi100(DatabaseHelper):
 
         # When search field is used on main computer's list page,
         # Pagination PHP Widget must know total machine result
-        # So, set displayList to True to count on glpi_computers_pulse
+        # So, set displayList to True to count on glpi_computers_medulla
         # and all needed joined tables
         if "hostname" in filt:
             if len(filt["hostname"]) > 0:
@@ -2034,7 +2034,7 @@ class Glpi100(DatabaseHelper):
         @param machine: computer's instance
         @type machine: Machine
 
-        @return: owner (glpi_computers_pulse.user_id -> name)
+        @return: owner (glpi_computers_medulla.user_id -> name)
         @rtype: str
         """
 
@@ -4515,7 +4515,7 @@ class Glpi100(DatabaseHelper):
         return resultrecord
 
     def _machineobject(self, ret):
-        """result view glpi_computers_pulse"""
+        """result view glpi_computers_medulla"""
         if ret:
             try:
                 return {
@@ -5566,7 +5566,7 @@ class Glpi100(DatabaseHelper):
 
     def moveComputerToEntity(self, uuid, entity_id):
         pass
-        # UPDATE `glpi_computers_pulse`
+        # UPDATE `glpi_computers_medulla`
         # SET `entities_id` = '5' WHERE `id` ='3'
 
     @DatabaseHelper._sessionm
@@ -5663,7 +5663,7 @@ class Glpi100(DatabaseHelper):
         try:
             collects_id = (
                 session.query(Collects)
-                .filter_by(name="PulseRegistryCollects")
+                .filter_by(name="MedullaRegistryCollects")
                 .first()
                 .id
             )
@@ -5703,7 +5703,7 @@ class Glpi100(DatabaseHelper):
         """
         Add registry collect content
 
-        @param computers_id: the computer_id from glpi_computers_pulse
+        @param computers_id: the computer_id from glpi_computers_medulla
         @type computers_id: str
 
         @param registry_id: the registry_id from plugin_fusioninventory_collects_registries
@@ -5776,7 +5776,7 @@ class Glpi100(DatabaseHelper):
   glpi_operatingsystems.name as os,
   glpi_operatingsystemversions.name as version_name
 FROM
-  glpi_computers_pulse
+  glpi_computers_medulla
 INNER JOIN
   glpi_operatingsystems
 ON
@@ -5856,10 +5856,10 @@ ON
             criterion = 'glpi.glpi_operatingsystemversions.name like "%%%s%%"' % version
 
         sql = """SELECT
-    glpi.glpi_computers_pulse.id,
-    glpi.glpi_computers_pulse.name
+    glpi.glpi_computers_medulla.id,
+    glpi.glpi_computers_medulla.name
 FROM
-    glpi.glpi_computers_pulse
+    glpi.glpi_computers_medulla
 INNER JOIN
     glpi.glpi_operatingsystems
 ON
@@ -5884,7 +5884,7 @@ AND
 
 # Class for SQLalchemy mapping
 class Machine(object):
-    __tablename__ = "glpi_computers_pulse"
+    __tablename__ = "glpi_computers_medulla"
 
     def getUUID(self):
         return toUUID(self.id)

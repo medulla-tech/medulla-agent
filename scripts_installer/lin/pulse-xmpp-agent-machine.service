@@ -5,10 +5,10 @@ Requires=ejabberd.service
 
 [Service]
 #PIDFile=/var/run/machine.pid
-#User=pulse
-#Group=pulse
+#User=medulla
+#Group=medulla
 Type=exec
-ExecStart=/usr/lib/python3/site-packages/pulse_xmpp_agent/launcher.py -t machine
+ExecStart=/usr/lib/python3/site-packages/medulla_agent/launcher.py -t machine
 Restart=always
 RestartSec=1
 

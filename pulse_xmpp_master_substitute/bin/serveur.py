@@ -8,8 +8,8 @@ import threading
 HOST = "localhost"
 PORT = 5822
 
-certfile = "/var/lib/pulse2/masterkey/cert.pem"
-keyfile = "/var/lib/pulse2/masterkey/key.pem"
+certfile = "/var/lib/medulla/masterkey/cert.pem"
+keyfile = "/var/lib/medulla/masterkey/key.pem"
 
 
 # Fonction de gestion de la connexion

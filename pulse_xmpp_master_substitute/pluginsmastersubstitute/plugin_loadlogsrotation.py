@@ -46,15 +46,15 @@ def read_conf_logsrotation(objectxmpp):
         )
 
         logger.warning(
-            "default value for dirplugins is /var/lib/pulse2/xmpp_baseplugin/"
+            "default value for dirplugins is /var/lib/medulla/xmpp_baseplugin/"
         )
-        objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
+        objectxmpp.dirpluginlist = "/var/lib/medulla/xmpp_baseplugin/"
     else:
         Config = configparser.ConfigParser()
         Config.read(pathconffile)
         if os.path.exists(pathconffile + ".local"):
             Config.read(pathconffile + ".local")
-        objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
+        objectxmpp.dirpluginlist = "/var/lib/medulla/xmpp_baseplugin/"
         if Config.has_option("parameters", "rotation_time"):
             objectxmpp.rotation_time = Config.get("parameters", "rotation_time")
         else:

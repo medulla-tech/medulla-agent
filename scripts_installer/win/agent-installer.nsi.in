@@ -263,25 +263,25 @@ Section "Python" sec_py
 
   ; ####################### Prevent from previous Medulla installation #######################
   ; Previously stop service
-  nsExec::Exec 'sc stop pulseagent'
-  nsExec::Exec 'sc delete pulseagent'
+  nsExec::Exec 'sc stop medullaagent'
+  nsExec::Exec 'sc delete medullaagent'
 
-  nsExec::Exec 'sc stop pulsenetworknotify'
-  nsExec::Exec 'sc delete pulsenetworknotify'
+  nsExec::Exec 'sc stop medullanetworknotify'
+  nsExec::Exec 'sc delete medullanetworknotify'
 
   nsExec::Exec 'sc stop medullaagent'
   nsExec::Exec 'sc stop medullanetnotify'
 
   ; Delete previous rescue folder if any
-  RMDir /r C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\agentrescue
-  RMDir /r C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\img_agent
+  RMDir /r C:\progra~1\Python3\Lib\site-packages\medulla_xmpp_agent\agentrescue
+  RMDir /r C:\progra~1\Python3\Lib\site-packages\medulla_xmpp_agent\img_agent
 
   ; Prevent agentrescue to be run at first launcher execution
-  FileOpen $0 "C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
+  FileOpen $0 "C:\progra~1\Python3\Lib\site-packages\medulla_xmpp_agent\BOOL_FILE_INSTALL" w
   FileClose $0
 
   ; Remove old three random characters for unicity
-  Delete C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
+  Delete C:\progra~1\Python3\Lib\site-packages\medulla_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
 SectionEnd
 ; ####################### Installation of Medulla Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
@@ -305,7 +305,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ClearErrors
   ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString"
   ${IfNot} ${Errors}
-    ; Remove pulse parameters Folder
+    ; Remove medulla parameters Folder
     Delete "$INSTDIR\etc\*.*"
     ; Remove files from bin
     Delete "$INSTDIR\bin\*.py*"

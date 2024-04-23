@@ -1,2 +1,2 @@
-recursive-include pulse_xmpp_agent *.ps1
-include pulse_xmpp_agent/agentversion
+recursive-include medulla_agent *.ps1
+include medulla_agent/agentversion

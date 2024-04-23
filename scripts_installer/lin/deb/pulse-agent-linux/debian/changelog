@@ -1,3 +1,9 @@
+medulla-agent-linux (3.0.0-1) unstable; urgency=medium
+  
+ * New release 3.0.0
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Wed, 22 Mar 2023 13:54:04 +0100
+
 pulse-agent-linux (2.2.0-1) unstable; urgency=medium
   
  * New release 2.2.0

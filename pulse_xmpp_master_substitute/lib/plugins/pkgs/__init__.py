@@ -570,7 +570,7 @@ class PkgsDatabase(DatabaseHelper):
         )
         for jid in list_server_relay:
             # exclude local package server
-            if jid[0].startswith("rspulse@pulse/"):
+            if jid[0].startswith("rsmedulla@medulla/"):
                 continue
             self.setSyncthingsync(uuidpackage, jid[0], typesynchro, watching="yes")
 
@@ -588,7 +588,7 @@ class PkgsDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def get_package_summary(self, session, package_id):
-        path = os.path.join("/", "var", "lib", "pulse2", "packages", package_id)
+        path = os.path.join("/", "var", "lib", "medulla", "packages", package_id)
         size = 0
         files = []
         for root, dirs, files in os.walk(path):

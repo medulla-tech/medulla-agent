@@ -126,30 +126,30 @@ if [[ ! -f /bin/rbash ]]; then
   xattr -d com.apple.quarantine /usr/local/bin/rbash
 fi
 
-# Create pulse user account
-if id pulseuser 2>/dev/null; then
-  echo "WARN: pulse user already exists on the system"
+# Create medulla user account
+if id medulla 2>/dev/null; then
+  echo "WARN: medulla user already exists on the system"
 else
   USER_PASSWORD=$(openssl rand -base64 24)
-  dscl . -create /Users/pulseuser UserShell /usr/local/bin/rbash
-  dscl . -passwd /Users/pulseuser ${USER_PASSWORD}
+  dscl . -create /Users/medulla UserShell /usr/local/bin/rbash
+  dscl . -passwd /Users/medulla ${USER_PASSWORD}
   if [[ ${?} -eq 0 ]]; then
-    echo "INFO: pulse user account created"
+    echo "INFO: medulla user account created"
   else
-    echo "ERROR: Something went wrong while creating pulse user account"
+    echo "ERROR: Something went wrong while creating medulla user account"
   fi
   MAX_USERID=$(dscl . -list /Users UniqueID | sort -nr -k 2 | head -1 | awk '{print $2}')
-  dscl . -create /Users/pulseuser UniqueID $(expr ${MAX_USERID} + 1)
-  dscl . -create /Users/pulseuser PrimaryGroupID 20
+  dscl . -create /Users/medulla UniqueID $(expr ${MAX_USERID} + 1)
+  dscl . -create /Users/medulla PrimaryGroupID 20
 fi
 
 # Hide the account
-dscl . -create /Users/pulseuser IsHidden 1
+dscl . -create /Users/medulla IsHidden 1
 dscl . -delete "/SharePoints/Pulseuser's Public Folder"
 
-# Create pulse homedir
-dscl . -create /Users/pulseuser NFSHomeDirectory /var/lib/pulse2
-createhomedir -c -u pulseuser 2>&1
+# Create medulla homedir
+dscl . -create /Users/medulla NFSHomeDirectory /var/lib/medulla2
+createhomedir -c -u medulla 2>&1
 
 # Allow remote login
 systemsetup -setremotelogin on
@@ -157,15 +157,15 @@ systemsetup -setremotelogin on
 # Change port number
 sed -i -E "/ssh/s/[0-9]+/${SSH_PORT}/" /etc/services
 
-# Add pulse user to list of users allowed to ssh
+# Add medulla user to list of users allowed to ssh
 dseditgroup com.apple.access_ssh
 if [[ ${?} -ne 0 ]]; then
   dseditgroup -o create -q com.apple.access_ssh
 fi
-dseditgroup -o edit -a pulseuser -t user com.apple.access_ssh
+dseditgroup -o edit -a medulla -t user com.apple.access_ssh
 
-# Allow pulse user to sudo rsync without password for backuppc
-echo "pulseuser ALL = NOPASSWD:/usr/bin/rsync" > /private/etc/sudoers.d/pulse
+# Allow medulla user to sudo rsync without password for backuppc
+echo "medulla ALL = NOPASSWD:/usr/bin/rsync" > /private/etc/sudoers.d/medulla
 
 ### SSH Key
 
@@ -177,13 +177,13 @@ echo
 
 # Add server's public key
 if [[ -e ${SSH_PUB_KEY} ]]; then
-  if [[ ! -d /var/lib/pulse2/.ssh/ ]]; then
-    mkdir -p /var/lib/pulse2/.ssh/
+  if [[ ! -d /var/lib/medulla2/.ssh/ ]]; then
+    mkdir -p /var/lib/medulla2/.ssh/
   fi
-  cat ${SSH_PUB_KEY} > /var/lib/pulse2/.ssh/authorized_keys
-  chown -R pulseuser: /var/lib/pulse2
-  chmod -R 700 /var/lib/pulse2
-  chmod 600 /var/lib/pulse2/.ssh/authorized_keys
+  cat ${SSH_PUB_KEY} > /var/lib/medulla2/.ssh/authorized_keys
+  chown -R medulla: /var/lib/medulla2
+  chmod -R 700 /var/lib/medulla2
+  chmod 600 /var/lib/medulla2/.ssh/authorized_keys
 fi
 
 
@@ -305,14 +305,14 @@ if [[ ! -d "${INSTALL_PATH}/var/tmp/packages/" ]]; then
 fi
 
 # Copy launcher
-cp "${PREFIX}/runpulseagent" "${INSTALL_PATH}/bin"
-chmod +x "${INSTALL_PATH}/bin/runpulseagent"
-xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/runpulseagent"
+cp "${PREFIX}/runmedullaagent" "${INSTALL_PATH}/bin"
+chmod +x "${INSTALL_PATH}/bin/runmedullaagent"
+xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/runmedullaagent"
 
-# Copy pulse filetree generator
-cp "${PREFIX}/pulse-filetree-generator" "${INSTALL_PATH}/bin"
-chmod +x "${INSTALL_PATH}/bin/pulse-filetree-generator"
-xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/pulse-filetree-generator"
+# Copy medulla filetree generator
+cp "${PREFIX}/medulla-filetree-generator" "${INSTALL_PATH}/bin"
+chmod +x "${INSTALL_PATH}/bin/medulla-filetree-generator"
+xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/medulla-filetree-generator"
 
 # Download, extract and copy syncthing
 curl -O ${BASE_URL}/mac/downloads/${SYNCTHING_FILENAME}
@@ -333,15 +333,15 @@ if [ -e ${SYNCTHING_FILENAME%.*} ];then
 fi
 
 # Copy service descriptor
-cp "${PREFIX}/net.siveo.pulse_xmpp_agent.plist" /Library/LaunchDaemons/
-xattr -d com.apple.quarantine /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
-chown root:wheel /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
-chmod 644 /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
+cp "${PREFIX}/net.siveo.medulla_agent.plist" /Library/LaunchDaemons/
+xattr -d com.apple.quarantine /Library/LaunchDaemons/net.siveo.medulla_agent.plist
+chown root:wheel /Library/LaunchDaemons/net.siveo.medulla_agent.plist
+chmod 644 /Library/LaunchDaemons/net.siveo.medulla_agent.plist
 
 # Load the service
 echo 'Loading Medulla Agent Service'
-launchctl unload /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
-launchctl load /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
+launchctl unload /Library/LaunchDaemons/net.siveo.medulla_agent.plist
+launchctl load /Library/LaunchDaemons/net.siveo.medulla_agent.plist
 
 
 ### Enable VNC server

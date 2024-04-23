@@ -15,13 +15,13 @@ import datetime
 
 # ORM mappings
 # TODO: PORT PYTHON3
-# from pulse2.database.msc.orm.commands_on_host import CommandsOnHost, stopCommandOnHost
-# from pulse2.database.msc.orm.commands_on_host import CoHManager
-# from pulse2.database.msc.orm.target import Target
+# from medulla.database.msc.orm.commands_on_host import CommandsOnHost, stopCommandOnHost
+# from medulla.database.msc.orm.commands_on_host import CoHManager
+# from medulla.database.msc.orm.target import Target
 
-# Pulse 2 stuff
+# Medulla 2 stuff
 # TODO: PORT PYTHON3
-# from pulse2.scheduler.timeaxis import LaunchTimeResolver
+# from medulla.scheduler.timeaxis import LaunchTimeResolver
 
 
 class Commands(object):

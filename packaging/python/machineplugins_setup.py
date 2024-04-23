@@ -10,25 +10,25 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 for scheme in list(INSTALL_SCHEMES.values()):
-    scheme["data"] = os.path.join(scheme["purelib"], "pulse_xmpp_agent")
+    scheme["data"] = os.path.join(scheme["purelib"], "medulla_agent")
 
 setup(
-    name="pulse_machine_plugins",
+    name="medulla_machine_plugins",
     version="3.1.0",
     author="SIVEO",
     author_email="support@siveo.net",
-    description="XMPP Machine agent plugins for pulse",
+    description="XMPP Machine agent plugins for medulla",
     long_description=long_description,
     url="https://www.siveo.net/",
     include_package_data=True,
     packages=[
-        "pulse_xmpp_agent.pluginsmachine",
-        "pulse_xmpp_agent.descriptor_scheduler_machine",
+        "medulla_agent.pluginsmachine",
+        "medulla_agent.descriptor_scheduler_machine",
     ],
     classifiers=[
         "Programming Language :: Python :: 2.7",
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
         "Operating System :: OS Independent",
     ],
-    install_requires=["pulse_xmpp_agent"],
+    install_requires=["medulla_agent"],
 )
