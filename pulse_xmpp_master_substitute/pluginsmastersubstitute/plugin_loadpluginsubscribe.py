@@ -64,13 +64,13 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
 def clean_roster(self):
     """
     This function does several actions:
-        - removes master@pulse from the roster
+        - removes master@medulla from the roster
         - removes all the unactive machines from the roster ( none none )
         - count how many contacts are in the roster
     """
     try:
         cmd = [
-            "ejabberdctl process_rosteritems delete any any %s master@pulse"
+            "ejabberdctl process_rosteritems delete any any %s master@medulla"
             % self.boundjid.bare,
             "ejabberdctl process_rosteritems delete none:to none %s any"
             % str(self.boundjid.bare),
@@ -334,7 +334,7 @@ async def changed_status(self, presence):
             if "type" in result and result["type"] == "machine":
                 try:
                     if "reconf" in result and result["reconf"] == 1:
-                        result1 = self.iqsendpulse(
+                        result1 = self.iqsendmedulla(
                             presence["from"],
                             {
                                 "action": "information",

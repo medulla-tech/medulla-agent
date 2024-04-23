@@ -95,7 +95,7 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
     tg = confParameter(optfileconf)
 
     configuration_file = (
-        "/etc/pulse-xmpp-agent-substitute/agent_master_substitute_reg.ini.local"
+        "/etc/medulla-agent-substitute/agent_master_substitute_reg.ini.local"
     )
     # activate module.
     if "glpi" in tg.plugins_list:
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         )
         sys.exit(0)
     namefileconfigdefault = os.path.join(
-        "/", "etc", "pulse-xmpp-agent_substitute", "agent_master_substitute.ini"
+        "/", "etc", "medulla-agent_substitute", "agent_master_substitute.ini"
     )
     optp = OptionParser()
     optp.add_option(

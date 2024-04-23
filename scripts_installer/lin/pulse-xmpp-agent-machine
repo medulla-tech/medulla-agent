@@ -3,13 +3,13 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 ### BEGIN INIT INFO
-# Provides:          pulse-xmpp-agent-machine 
+# Provides:          medulla-xmpp-agent-machine 
 # Required-Start:    $network
 # Required-Stop:     $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Start and stop pulse2 XMPP Agent
-# Description:       Start and stop pulse2 XMPP Agent
+# Short-Description: Start and stop medulla XMPP Agent
+# Description:       Start and stop medulla XMPP Agent
 ### END INIT INFO
 
 # Redhat based distributions specific
@@ -19,10 +19,10 @@
 # Variables
 DESC="Pulse2 XMPP Agent"
 
-if [ -e "/usr/share/pyshared/pulse_xmpp_agent/launcher.py" ]; then
-       DAEMON="/usr/share/pyshared/pulse_xmpp_agent/launcher.py"
+if [ -e "/usr/share/pyshared/medulla_xmpp_agent/launcher.py" ]; then
+       DAEMON="/usr/share/pyshared/medulla_xmpp_agent/launcher.py"
 else
-       DAEMON="/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/launcher.py"
+       DAEMON="/usr/lib/python3/dist-packages/medulla_xmpp_agent/launcher.py"
 fi
 
 # Function to start daemon

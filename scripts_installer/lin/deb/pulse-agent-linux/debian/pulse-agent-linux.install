@@ -1,4 +1,4 @@
-etc/pulse-xmpp-agent/
-home/pulseuser/.ssh/
-usr/sbin/pulse-filetree-generator
+etc/medulla-xmpp-agent/
+home/medullauser/.ssh/
+usr/sbin/medulla-filetree-generator
 /usr/local/share/ca-certificates/

@@ -277,7 +277,7 @@ def read_conf_loadarscheck(objectxmpp):
         objectxmpp.update_table = True
         objectxmpp.action_reconf_ars_machines = True
         objectxmpp.monitoring_message_on_machine_no_presence = True
-        objectxmpp.monitor_agent = "master_mon@pulse"
+        objectxmpp.monitor_agent = "master_mon@medulla"
     else:
         ars_config = configparser.ConfigParser()
         ars_config.read(pathfileconf)
@@ -341,7 +341,7 @@ def read_conf_loadarscheck(objectxmpp):
             objectxmpp.monitor_agent = ars_config.get("parameters", "monitor_agent")
         else:
             # default values parameters
-            objectxmpp.monitor_agent = "master_mon@pulse"
+            objectxmpp.monitor_agent = "master_mon@medulla"
 
     logger.debug(
         "parameter loadarscheck : check_ars_scan_interval = %s"

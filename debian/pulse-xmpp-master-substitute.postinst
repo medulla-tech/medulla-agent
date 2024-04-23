@@ -5,49 +5,49 @@ systemctl daemon-reload
 
 case "$1" in
     configure)
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-inventory ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-inventory service..."
-            systemctl restart pulse-xmpp-master-substitute-inventory
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-inventory ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-inventory service..."
+            systemctl restart medulla-xmpp-master-substitute-inventory
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-registration ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-registration service..."
-            systemctl restart pulse-xmpp-master-substitute-registration
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-registration ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-registration service..."
+            systemctl restart medulla-xmpp-master-substitute-registration
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-assessor ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-assessor service..."
-            systemctl restart pulse-xmpp-master-substitute-assessor
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-assessor ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-assessor service..."
+            systemctl restart medulla-xmpp-master-substitute-assessor
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-deployment ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-deployment service..."
-            systemctl restart pulse-xmpp-master-substitute-deployment
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-deployment ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-deployment service..."
+            systemctl restart medulla-xmpp-master-substitute-deployment
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-subscription ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-subscription service..."
-            systemctl restart pulse-xmpp-master-substitute-subscription
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-subscription ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-subscription service..."
+            systemctl restart medulla-xmpp-master-substitute-subscription
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-logger ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-logger service..."
-            systemctl restart pulse-xmpp-master-substitute-logger
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-logger ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-logger service..."
+            systemctl restart medulla-xmpp-master-substitute-logger
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-reconfigurator ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-reconfigurator service..."
-            systemctl restart pulse-xmpp-master-substitute-reconfigurator
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-reconfigurator ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-reconfigurator service..."
+            systemctl restart medulla-xmpp-master-substitute-reconfigurator
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-monitoring ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-monitoring service..."
-            systemctl restart pulse-xmpp-master-substitute-monitoring
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-monitoring ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-monitoring service..."
+            systemctl restart medulla-xmpp-master-substitute-monitoring
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-master-substitute-updates ; then
-            echo -n "Restarting pulse-xmpp-master-substitute-updates service..."
-            systemctl restart pulse-xmpp-master-substitute-updates
+        if systemctl -q is-enabled medulla-xmpp-master-substitute-updates ; then
+            echo -n "Restarting medulla-xmpp-master-substitute-updates service..."
+            systemctl restart medulla-xmpp-master-substitute-updates
             echo "..done"
         fi
         ;;

@@ -14,7 +14,7 @@ import os
 import logging
 import logging.handlers
 import urllib.request
-from pulse_xmpp_agent.lib import utils
+from medulla_xmpp_agent.lib import utils
 
 
 # to had event log, do not remove
@@ -36,11 +36,11 @@ from pulse_xmpp_agent.lib import utils
 
 # GLOBAL DATA
 
-log_file = os.path.join("c:\\", "progra~1", "Pulse", "var", "log", "service.log")
+log_file = os.path.join("c:\\", "progra~1", "Medulla", "var", "log", "service.log")
 
-program_dir = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+program_dir = os.path.join("c:\\", "progra~1", "Medulla", "bin")
 
-logger = logging.getLogger("pulseagentservice")
+logger = logging.getLogger("medullaagentservice")
 
 logger.setLevel(logging.DEBUG)
 
@@ -117,7 +117,7 @@ class SMWinservice(win32serviceutil.ServiceFramework):
         pass
 
 
-class PulseAgentService(SMWinservice):
+class MedullaAgentService(SMWinservice):
     _svc_name_ = "medullanetnotify"
     _svc_display_name_ = "Medulla network notify"
     _svc_description_ = "Network events monitoring for Medulla Agent"
@@ -161,4 +161,4 @@ class PulseAgentService(SMWinservice):
 
 
 if __name__ == "__main__":
-    PulseAgentService.parse_command_line()
+    MedullaAgentService.parse_command_line()

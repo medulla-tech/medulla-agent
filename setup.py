@@ -15,13 +15,13 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
     ],
-    keywords="pulse-xmpp-agent",
-    name="pulse_xmpp_agent",
+    keywords="medulla-agent",
+    name="medulla_agent",
     version='3.1.0', # fmt: skip
     debian_distro='stretch',  # fmt: skip
-    description="pulse-xmpp-agent",
+    description="medulla-agent",
     url="https://www.siveo.net/",
-    packages=["pulse_xmpp_agent"],
+    packages=["medulla_agent"],
     test_suite="",
     package_data={},
     entry_points={},

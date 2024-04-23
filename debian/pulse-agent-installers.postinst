@@ -5,7 +5,7 @@
 
 set -e
 
-chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent/
+chown -R syncthing: /var/lib/medulla/xmpp_baseremoteagent/
 
 systemctl daemon-reload
 

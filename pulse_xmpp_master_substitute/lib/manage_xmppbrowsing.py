@@ -38,23 +38,23 @@ class xmppbrowsing:
         if sys.platform.startswith("linux"):
             self.jsonfile = os.path.join("/", "tmp", "treejson.json")
             self.programmetreejson = os.path.join(
-                "/", "usr", "sbin", "pulse-filetree-generator"
+                "/", "usr", "sbin", "medulla-filetree-generator"
             )
         elif sys.platform.startswith("win"):
             self.jsonfile = os.path.join(
-                "c:\\", "progra~1", "Pulse", "tmp", "treejson.json"
+                "c:\\", "progra~1", "Medulla", "tmp", "treejson.json"
             )
             self.programmetreejson = os.path.join(
                 "c:\\",
                 "progra~1",
-                "Pulse",
+                "Medulla",
                 "bin",
-                "pulse-filetree-generator.exe",
+                "medulla-filetree-generator.exe",
             )
         elif sys.platform.startswith("darwin"):
-            self.jsonfile = os.path.join("/opt", "Pulse", "tmp", "treejson.json")
+            self.jsonfile = os.path.join("/opt", "Medulla", "tmp", "treejson.json")
             self.programmetreejson = os.path.join(
-                "/opt", "Pulse", "bin", "pulse-filetree-generator"
+                "/opt", "Medulla", "bin", "medulla-filetree-generator"
             )
 
         if defaultdir is not None:
@@ -66,7 +66,7 @@ class xmppbrowsing:
         try:
             if sys.platform.startswith("win"):
                 cont = file_get_content(
-                    os.path.join("c:\\", "progra~1", "Pulse", "tmp", "treejson.json")
+                    os.path.join("c:\\", "progra~1", "Medulla", "tmp", "treejson.json")
                 )
                 l = decode_strconsole(cont)
                 return l

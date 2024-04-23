@@ -8,7 +8,7 @@ import MySQLdb
 import traceback
 import logging
 
-LOGFILE = "/var/lib/pulse2/script_monitoring/logfilescriptpython.log"
+LOGFILE = "/var/lib/medulla/script_monitoring/logfilescriptpython.log"
 logger = logging.getLogger()
 
 

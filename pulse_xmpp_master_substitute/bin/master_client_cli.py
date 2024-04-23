@@ -73,7 +73,7 @@ def get_cli_parameter():
     )
     parser.add_argument(
         "--config_file",
-        default="/etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini",
+        default="/etc/medulla-agent-substitute/__server_mmc_master.ini",
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=57040)

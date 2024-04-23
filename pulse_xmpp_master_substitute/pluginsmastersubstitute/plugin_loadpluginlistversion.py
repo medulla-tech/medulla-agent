@@ -51,18 +51,18 @@ def read_conf_load_plugin_list_version(objectxmpp):
     if not os.path.isfile(pathfileconf):
         logger.error(
             "The configuration file for the plugin %s is missing in %s \n"
-            "it may contains [parameters]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/"
+            "it may contains [parameters]\ndirpluginlist = /var/lib/medulla/xmpp_baseplugin/"
             % (plugin["NAME"], pathfileconf)
         )
 
-        objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
+        objectxmpp.dirpluginlist = "/var/lib/medulla/xmpp_baseplugin/"
         objectxmpp.reload_plugins_interval = 1000
     else:
         Config = configparser.ConfigParser()
         Config.read(pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
-        objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
+        objectxmpp.dirpluginlist = "/var/lib/medulla/xmpp_baseplugin/"
         if Config.has_option("parameters", "dirpluginlist"):
             objectxmpp.dirpluginlist = Config.get("parameters", "dirpluginlist")
 

@@ -18,8 +18,8 @@ from .utils import (
     encode_strconsole,
     keypub,
     restartsshd,
-    pulseuser_useraccount_mustexist,
-    pulseuser_profile_mustexist,
+    medulla_useraccount_mustexist,
+    medulla_profile_mustexist,
     create_idrsa_on_client,
     add_key_to_authorizedkeys_on_client,
 )
@@ -140,9 +140,9 @@ class functionsynchroxmpp:
         remoteport = datareverse["remoteport"]
 
         private_key_ars = datareverse["private_key_ars"].strip(" \t\n\r")
-        create_idrsa_on_client("pulseuser", private_key_ars)
+        create_idrsa_on_client("medulla", private_key_ars)
         if sys.platform.startswith("linux"):
-            filekey = os.path.join(os.path.expanduser("~pulseuser"), ".ssh", "id_rsa")
+            filekey = os.path.join(os.path.expanduser("~medulla"), ".ssh", "id_rsa")
             dd = """#!/bin/bash
             /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
             """ % (
@@ -154,25 +154,25 @@ class functionsynchroxmpp:
                 datareverse["port_ssh_ars"],
             )
             reversesshsh = os.path.join(
-                os.path.expanduser("~pulseuser"), "reversessh.sh"
+                os.path.expanduser("~medulla"), "reversessh.sh"
             )
             file_put_contents(reversesshsh, dd)
             os.chmod(reversesshsh, 0o700)
             args = shlex.split(reversesshsh)
             result = subprocess.Popen(args)
             logger.debug("Command reversessh %s" % dd)
-            # /usr/bin/ssh -t -t -R 36591:localhost:22 -o StrictHostKeyChecking=no -i /var/lib/pulse2/.ssh/id_rsa -l reversessh 212.83.136.107 -p 22
+            # /usr/bin/ssh -t -t -R 36591:localhost:22 -o StrictHostKeyChecking=no -i /var/lib/medulla/.ssh/id_rsa -l reversessh 212.83.136.107 -p 22
         elif sys.platform.startswith("win"):
             ################# win reverse #################
             try:
-                win32net.NetUserGetInfo("", "pulseuser", 0)
+                win32net.NetUserGetInfo("", "medulla", 0)
                 filekey = os.path.join(getHomedrive(), ".ssh", "id_rsa")
             except Exception:
-                filekey = os.path.join("c:\\", "progra~1", "pulse", ".ssh", "id_rsa")
+                filekey = os.path.join("c:\\", "progra~1", "medulla", ".ssh", "id_rsa")
 
             sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
             reversesshbat = os.path.join(
-                "c:\\", "progra~1", "Pulse", "bin", "reversessh.bat"
+                "c:\\", "progra~1", "Medulla", "bin", "reversessh.bat"
             )
             linecmd = []
             cmd = (
@@ -193,16 +193,16 @@ class functionsynchroxmpp:
                 % cmd
             )
             linecmd.append("""echo %$PID%""")
-            linecmd.append("""echo %$PID% > C:\\progra~1\\Pulse\\bin\\%$PID%.pid""")
+            linecmd.append("""echo %$PID% > C:\\progra~1\\Medulla\\bin\\%$PID%.pid""")
             cmd = "\r\n".join(linecmd)
 
-            if not os.path.exists(os.path.join("c:\\", "progra~1", "Pulse", "bin")):
-                os.makedirs(os.path.join("c:\\", "progra~1", "Pulse", "bin"))
+            if not os.path.exists(os.path.join("c:\\", "progra~1", "Medulla", "bin")):
+                os.makedirs(os.path.join("c:\\", "progra~1", "Medulla", "bin"))
             file_put_contents(reversesshbat, cmd)
             result = subprocess.Popen(reversesshbat)
             time.sleep(2)
         elif sys.platform.startswith("darwin"):
-            filekey = os.path.join(os.path.expanduser("~pulseuser"), ".ssh", "id_rsa")
+            filekey = os.path.join(os.path.expanduser("~medulla"), ".ssh", "id_rsa")
             cmd = """#!/bin/bash
             /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
             """ % (
@@ -214,7 +214,7 @@ class functionsynchroxmpp:
                 datareverse["port_ssh_ars"],
             )
             reversesshsh = os.path.join(
-                os.path.expanduser("~pulseuser"), "reversessh.sh"
+                os.path.expanduser("~medulla"), "reversessh.sh"
             )
             file_put_contents(reversesshsh, cmd)
             os.chmod(reversesshsh, 0o700)
@@ -299,17 +299,17 @@ class functionsynchroxmpp:
                 return json.dumps(data, indent=4)
 
             # Make sure user account and profile exists
-            username = "pulseuser"
-            result, msglog = pulseuser_useraccount_mustexist(username)
+            username = "medulla"
+            result, msglog = medulla_useraccount_mustexist(username)
             if result is False:
                 logger.error(msglog)
             msgaction.append(msglog)
-            result, msglog = pulseuser_profile_mustexist(username)
+            result, msglog = medulla_profile_mustexist(username)
             if result is False:
                 logger.error(msglog)
             msgaction.append(msglog)
 
-            # Add the keys to pulseuser account
+            # Add the keys to medulla account
             if "keyreverseprivatssh" in data["data"]:
                 result, msglog = create_idrsa_on_client(
                     username, data["data"]["keyreverseprivatssh"]
@@ -449,8 +449,8 @@ class functionsynchroxmpp:
                     result["result"]["informationresult"][info_ask] = decode_strconsole(
                         netstat()
                     )
-                if info_ask == "profiluserpulse":
-                    profilname = "pulseuser"
+                if info_ask == "profilusermedulla":
+                    profilname = "medulla"
                     result["result"]["informationresult"][info_ask] = profilname
             except Exception:
                 result["result"]["informationresult"][info_ask] = ""
@@ -615,7 +615,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def packageslist(xmppobject, data):
-        packages_path = os.path.join("/", "var", "lib", "pulse2", "packages")
+        packages_path = os.path.join("/", "var", "lib", "medulla", "packages")
         packages_list = {"total": 0, "datas": []}
         total = 0
         for folder, sub_folders, files in os.walk(packages_path):

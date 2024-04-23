@@ -100,7 +100,7 @@ import asyncio
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-# without this iqsendpulse can't work.
+# without this iqsendmedulla can't work.
 
 from lib.configuration import confParameter
 from lib.utils import (
@@ -5951,7 +5951,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     # Topology
     @DatabaseHelper._sessionm
-    def topologypulse(self, session):
+    def topologymedulla(self, session):
         # listrs = self.listRS()
         # select liste des RS
         # list des machines pour un relayserver
@@ -5988,7 +5988,7 @@ class XmppMasterDatabase(DatabaseHelper):
         # creation topology file.
         filename = "topology.json"
         pathfile = os.path.join(directoryjson, filename)
-        builddatajson = {"name": "Pulse", "type": "AMR", "parent": None, "children": []}
+        builddatajson = {"name": "Medulla", "type": "AMR", "parent": None, "children": []}
         for i in topology:
             listmachines = topology[i]
 
@@ -5996,7 +5996,7 @@ class XmppMasterDatabase(DatabaseHelper):
             ARS["name"] = i
             ARS["display_name"] = i.split("/")[1]
             ARS["type"] = "ARS"
-            ARS["parent"] = "Pulse"
+            ARS["parent"] = "Medulla"
             ARS["children"] = []
 
             listmachinesstring = []
@@ -7162,7 +7162,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     # reinitialise les lists
                     listconfsubstitute[listconfsubstituteitem] = []
                 for x in resultproxy:
-                    if str(x[2]).startswith("master@pulse"):
+                    if str(x[2]).startswith("master@medulla"):
                         continue
                     if x[2] not in listconfsubstitute:
                         listconfsubstitute["conflist"].append(x[2])
@@ -8712,12 +8712,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 )
                 # traitement event
                 script_monitoring = os.path.join(
-                    "/", "var", "lib", "pulse2", "script_monitoring"
+                    "/", "var", "lib", "medulla", "script_monitoring"
                 )
                 if not os.path.exists(script_monitoring):
                     os.makedirs(script_monitoring)
                 tmpprocessmonitoring = os.path.join(
-                    "/", "var", "lib", "pulse2", "tmpprocessmonitoring"
+                    "/", "var", "lib", "medulla", "tmpprocessmonitoring"
                 )
                 if not os.path.exists(tmpprocessmonitoring):
                     os.makedirs(tmpprocessmonitoring)
@@ -9191,7 +9191,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                 "command : %s\n" % (resultproxy["jid"], idevent, cmd)
                             )
                             try:
-                                result1 = xmppobject.iqsendpulse(
+                                result1 = xmppobject.iqsendmedulla(
                                     resultproxy["jid"],
                                     {
                                         "action": "remotecommandshell",
@@ -10851,7 +10851,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             element.end_date = datetime.strftime(end_date, "%Y-%m-%d %H:%M:%S")
 
             folderpackage = os.path.join(
-                "/", "var", "lib", "pulse2", "packages", element.update_id
+                "/", "var", "lib", "medulla", "packages", element.update_id
             )
             files = []
 
@@ -10948,7 +10948,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 except Exception as e:
                     self.logger.error(e)
                 folderpackage = os.path.join(
-                    "/", "var", "lib", "pulse2", "packages", element.update_id
+                    "/", "var", "lib", "medulla", "packages", element.update_id
                 )
                 files = []
 

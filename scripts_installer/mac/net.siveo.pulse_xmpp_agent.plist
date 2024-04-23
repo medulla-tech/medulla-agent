@@ -3,18 +3,18 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>net.siveo.pulse_xmpp_agent</string>
+	<string>net.siveo.medulla_agent</string>
 	<key>ProgramArguments</key>
 		<array>
-			<string>/opt/Pulse/bin/runpulseagent</string>
+			<string>/opt/Medulla/bin/runmedullaagent</string>
 		</array>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>UserName</key>
 	<string>root</string>
 	<key>StandardOutPath</key>
-	<string>/opt/Pulse/tmp/net.siveo.pulse_xmpp_agent.log</string>
+	<string>/opt/Medulla/tmp/net.siveo.medulla_agent.log</string>
 	<key>StandardErrorPath</key>
-	<string>/opt/Pulse/tmp/net.siveo.pulse_xmpp_agent.log</string>
+	<string>/opt/Medulla/tmp/net.siveo.medulla_agent.log</string>
 </dict>
 </plist>

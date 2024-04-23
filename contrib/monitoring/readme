@@ -1,4 +1,4 @@
 The template files are used to generate on fly the monitoring's scripts.
-The template scripts MUST be installed in /var/lib/pulse/script_monitoring
+The template scripts MUST be installed in /var/lib/medulla/script_monitoring
 
-The scripts are generated on fly in the /var/lib/pulse/script_monitoring folder.
+The scripts are generated on fly in the /var/lib/medulla/script_monitoring folder.

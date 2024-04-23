@@ -85,7 +85,7 @@ class sessiondatainfo:
     def sauvesession(self):
         """
         Create file with the sessionid in the name.
-        It saves the file in the python pulse_xmpp_master_substitute folder.
+        It saves the file in the python medulla_master_substitute folder.
         Return:
             It returns True if the file is well created.
             False, otherwise

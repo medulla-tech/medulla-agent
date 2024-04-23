@@ -24,10 +24,10 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
         "============ test appelle plugin agent_test_iq sur ars  ================"
     )
     logger.debug(
-        "le plugin  agent_test_iq sur ars devra faire 1 iq vers rspulse@pulse/mainrelay"
+        "le plugin  agent_test_iq sur ars devra faire 1 iq vers rsmedulla@medulla/mainrelay"
     )
     logger.debug(
-        "APPEL FROM SUBSTITUT %s : to rspulse@pulse/mainrelay "
+        "APPEL FROM SUBSTITUT %s : to rsmedulla@medulla/mainrelay "
         % xmppobject.boundjid.bare
     )
     # JFKJFK test_plugin_master
@@ -41,7 +41,7 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
         }
         logger.debug("START SEND")
         xmppobject.send_message(
-            mto="rspulse@pulse/mainrelay", mbody=json.dumps(datasend), mtype="chat"
+            mto="rsmedulla@medulla/mainrelay", mbody=json.dumps(datasend), mtype="chat"
         )
     except Exception as e:
         errorstr = "%s" % traceback.format_exc()

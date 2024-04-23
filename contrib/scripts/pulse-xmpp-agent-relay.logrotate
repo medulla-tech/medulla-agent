@@ -1,4 +1,4 @@
-/var/log/pulse/xmpp-agent-machine.log /var/log/pulse/xmpp-agent-relay.log /var/log/pulse/xmpp-agent-log.log /var/log/pulse/pulse-package-watching.log
+/var/log/medulla/xmpp-agent-machine.log /var/log/medulla/xmpp-agent-relay.log /var/log/medulla/xmpp-agent-log.log /var/log/medulla/medulla-package-watching.log
 {
     missingok
     daily

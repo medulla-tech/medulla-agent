@@ -1,2 +1,2 @@
-var/lib/pulse2/xmpp_baseplugin
-var/lib/pulse2/xmpp_basepluginscheduler
+var/lib/medulla/xmpp_baseplugin
+var/lib/medulla/xmpp_basepluginscheduler

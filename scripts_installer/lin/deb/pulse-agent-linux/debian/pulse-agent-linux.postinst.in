@@ -10,11 +10,11 @@ echo "1. CREATING PULSE ACCOUNT"
 echo "#########################"
 echo
 
-# Create pulse user
-adduser --system --group --home /home/pulseuser --shell /bin/rbash --disabled-password pulseuser
-if ! [ -d "/home/pulseuser/.ssh" ]; then
+# Create medulla user
+adduser --system --group --home /home/medulla --shell /bin/rbash --disabled-password medulla
+if ! [ -d "/home/medulla/.ssh" ]; then
     echo "Create missing SSH profile ..."
-    mkdir -p /home/pulseuser/.ssh
+    mkdir -p /home/medulla/.ssh
 fi
 
 
@@ -28,9 +28,9 @@ echo "############"
 echo
 
 # Copy SSH keys
-chown -R pulseuser: /home/pulseuser
-chmod -R 700 /home/pulseuser
-chmod 600 /home/pulseuser/.ssh/authorized_keys
+chown -R medulla: /home/medulla
+chmod -R 700 /home/medulla
+chmod 600 /home/medulla/.ssh/authorized_keys
 
 sed -i "s/^#?Port .*$/Port ${SSH_PORT}/" /etc/ssh/sshd_config
 
@@ -47,10 +47,10 @@ sed -i "s/^#?Port .*$/Port ${SSH_PORT}/" /etc/ssh/sshd_config
 
 echo
 echo "###########################"
-echo "3. SETUP SUDO for pulseuser"
+echo "3. SETUP SUDO for medulla"
 echo "###########################"
 echo
-echo "pulseuser ALL=(ALL) NOPASSWD: /usr/bin/rsync" > /etc/sudoers.d/pulseuser
+echo "medulla ALL=(ALL) NOPASSWD: /usr/bin/rsync" > /etc/sudoers.d/medulla
 
 
 
