@@ -40,7 +40,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             pass
         elif data['subaction'] == "profiles_updated":
             logging.getLogger().info("send updated profiles to kiosk")
-            data["data"] = associate_launchers_to_datas(data["data"])
+            if "packages_list" in data:
+                data["data"] = associate_launchers_to_datas(data["packages_list"])
             tosend = {"action":"update_profile", "packages_list": data["data"]}
             strjson = json.dumps(tosend)
             send_kiosk_data(strjson, objectxmpp.config.kiosk_local_port, objectxmpp, dataerreur, message)
