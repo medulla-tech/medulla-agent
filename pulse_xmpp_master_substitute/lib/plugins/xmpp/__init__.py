@@ -5988,7 +5988,12 @@ class XmppMasterDatabase(DatabaseHelper):
         # creation topology file.
         filename = "topology.json"
         pathfile = os.path.join(directoryjson, filename)
-        builddatajson = {"name": "Medulla", "type": "AMR", "parent": None, "children": []}
+        builddatajson = {
+            "name": "Medulla",
+            "type": "AMR",
+            "parent": None,
+            "children": [],
+        }
         for i in topology:
             listmachines = topology[i]
 

@@ -2808,7 +2808,9 @@ def pull_package_transfert_rsync(
                 win32net.NetUserGetInfo("", "medulla", 0)
                 path_key_priv = os.path.join("c:\\Users\\medulla", ".ssh", "id_rsa")
             except BaseException:
-                path_key_priv = os.path.join("c:\\progra~1", "medulla", ".ssh", "id_rsa")
+                path_key_priv = os.path.join(
+                    "c:\\progra~1", "medulla", ".ssh", "id_rsa"
+                )
             localdest = ' "%s/%s"' % (
                 managepackage.managepackage.packagedir(),
                 packagename,

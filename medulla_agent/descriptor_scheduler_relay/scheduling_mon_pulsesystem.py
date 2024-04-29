@@ -1056,13 +1056,17 @@ def __read_conf_scheduling_mon_medullasystem(xmppobject):
                 "medulla_main", "enable"
             )
         if Config.has_option("medulla_main", "db_host"):
-            xmppobject.config.medulla_main_db_host = Config.get("medulla_main", "db_host")
+            xmppobject.config.medulla_main_db_host = Config.get(
+                "medulla_main", "db_host"
+            )
         if Config.has_option("medulla_main", "db_port"):
             xmppobject.config.medulla_main_db_port = Config.getint(
                 "medulla_main", "db_port"
             )
         if Config.has_option("medulla_main", "db_user"):
-            xmppobject.config.medulla_main_db_user = Config.get("medulla_main", "db_user")
+            xmppobject.config.medulla_main_db_user = Config.get(
+                "medulla_main", "db_user"
+            )
         if Config.has_option("medulla_main", "db_password"):
             xmppobject.config.medulla_main_db_password = Config.get(
                 "medulla_main", "db_password"

@@ -69,7 +69,12 @@ def conffilename(agenttype):
         )
     elif sys.platform.startswith("darwin"):
         fileconf = os.path.join(
-            "/", "Library", "Application Support", "Medulla", "etc", conffilenameparameter
+            "/",
+            "Library",
+            "Application Support",
+            "Medulla",
+            "etc",
+            conffilenameparameter,
         )
     else:
         fileconf = conffilenameparameter

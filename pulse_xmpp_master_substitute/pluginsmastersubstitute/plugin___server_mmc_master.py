@@ -661,7 +661,10 @@ class Configuration:
         return parameters
 
     def creation_or_validite_key_certificat(
-        self, xmppobject, path_file_cert_pam="/var/lib/medulla/masterkey", valid_days=365
+        self,
+        xmppobject,
+        path_file_cert_pam="/var/lib/medulla/masterkey",
+        valid_days=365,
     ):
         script = """#!/bin/bash
         create_certificate() {

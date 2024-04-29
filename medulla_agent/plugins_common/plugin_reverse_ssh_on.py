@@ -210,9 +210,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             )
 
             if sys.platform.startswith("linux"):
-                filekey = os.path.join(
-                    os.path.expanduser("~medulla"), ".ssh", "id_rsa"
-                )
+                filekey = os.path.join(os.path.expanduser("~medulla"), ".ssh", "id_rsa")
                 dd = """#!/bin/bash
                 /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
                 """ % (
@@ -315,10 +313,14 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     % cmd
                 )
                 linecmd.append("""echo %$PID%""")
-                linecmd.append("""echo %$PID% > C:\\progra~1\\Medulla\\bin\\%$PID%.pid""")
+                linecmd.append(
+                    """echo %$PID% > C:\\progra~1\\Medulla\\bin\\%$PID%.pid"""
+                )
                 dd = "\r\n".join(linecmd)
 
-                if not os.path.exists(os.path.join("c:\\", "progra~1", "Medulla", "bin")):
+                if not os.path.exists(
+                    os.path.join("c:\\", "progra~1", "Medulla", "bin")
+                ):
                     os.makedirs(os.path.join("c:\\", "progra~1", "Medulla", "bin"))
                 utils.file_put_contents(reversesshbat, dd)
                 if "persistence" not in data:
@@ -389,9 +391,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         touser="",
                     )
             elif sys.platform.startswith("darwin"):
-                filekey = os.path.join(
-                    os.path.expanduser("~medulla"), ".ssh", "id_rsa"
-                )
+                filekey = os.path.join(os.path.expanduser("~medulla"), ".ssh", "id_rsa")
                 dd = """#!/bin/bash
                 /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
                 """ % (

@@ -741,7 +741,9 @@ class MUCBot(slixmpp.ClientXMPP):
             result = iq.send(timeout=mtimeout)
         except IqError as e:
             err_resp = e.iq
-            logging.error("iqsendmedulla : Iq error %s" % str(err_resp).replace('"', "'"))
+            logging.error(
+                "iqsendmedulla : Iq error %s" % str(err_resp).replace('"', "'")
+            )
             logger.error("\n%s" % (traceback.format_exc()))
             ret = '{"err" : "%s"}' % str(err_resp).replace('"', "'")
             return ret

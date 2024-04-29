@@ -158,9 +158,7 @@ class functionsynchroxmpp:
                 datareverse["ipARS"],
                 datareverse["port_ssh_ars"],
             )
-            reversesshsh = os.path.join(
-                os.path.expanduser("~medulla"), "reversessh.sh"
-            )
+            reversesshsh = os.path.join(os.path.expanduser("~medulla"), "reversessh.sh")
             file_put_contents(reversesshsh, dd)
             os.chmod(reversesshsh, 0o700)
             args = shlex.split(reversesshsh)
@@ -219,9 +217,7 @@ class functionsynchroxmpp:
                 datareverse["ipARS"],
                 datareverse["port_ssh_ars"],
             )
-            reversesshsh = os.path.join(
-                os.path.expanduser("~medulla"), "reversessh.sh"
-            )
+            reversesshsh = os.path.join(os.path.expanduser("~medulla"), "reversessh.sh")
             file_put_contents(reversesshsh, cmd)
             os.chmod(reversesshsh, 0o700)
             args = shlex.split(reversesshsh)
