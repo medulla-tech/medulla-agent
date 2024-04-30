@@ -90,7 +90,7 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the binary is available
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
         servicefilename = "netcheck-service.py"
 
         if os.path.isfile(os.path.join(pulsedir_path, servicefilename)):
@@ -176,7 +176,7 @@ def updatenetworkcheck(xmppobject):
             "pywintypes%s.dll" % version_info.version,
         )
         win32_path = os.path.join(version_info.get_path_packages_python(), "win32")
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
 
         filename = "networkevents.py"
         dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)

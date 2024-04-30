@@ -2365,7 +2365,7 @@ def keypub():
             win32net.NetUserGetInfo("", "pulseuser", 0)
             pathkey = os.path.join(getHomedrive(), ".ssh")
         except:
-            pathkey = os.path.join("c:\\", "progra~1", "pulse", ".ssh")
+            pathkey = os.path.join("c:\\", "progra~1", "Medulla", ".ssh")
         if not os.path.isfile(os.path.join(pathkey, "id_rsa")):
             obj = simplecommand(
                 '"C:\\progra~1\\OpenSSH\\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'

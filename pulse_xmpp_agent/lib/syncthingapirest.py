@@ -1385,20 +1385,20 @@ class syncthingprogram(Program):
                 os.system("systemctl restart syncthing@pulseuser.service")
         elif sys.platform.startswith("win"):
             if self.home == "":
-                self.home = "c:\\progra~1\\pulse\\etc\\syncthing\\"
+                self.home = "c:\\progra~1\\Medulla\\etc\\syncthing\\"
             if self.logfile == "":
-                self.logfile = "c:\\progra~1\\pulse\\var\\log\\syncthing.log"
+                self.logfile = "c:\\progra~1\\Medulla\\var\\log\\syncthing.log"
 
             self.stop_syncthing()
 
             agentconf = os.path.join(
-                "c:\\", "progra~1", "Pulse", "etc", "agentconf.ini"
+                "c:\\", "progra~1", "Medulla", "etc", "agentconf.ini"
             )
             Config = configparser.ConfigParser()
             Config.read(agentconf)
 
             syncthing_bin = os.path.join(
-                "c:\\", "progra~1", "Pulse", "bin", "syncthing.exe"
+                "c:\\", "progra~1", "Medulla", "bin", "syncthing.exe"
             )
 
             if not os.path.isfile(syncthing_bin):

@@ -126,7 +126,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
     elif sys.platform.startswith("win"):
         inventoryfile = os.path.join(
-            "c:\\", "progra~1", "Pulse", "tmp", "inventory.txt"
+            "c:\\", "progra~1", "Medulla", "tmp", "inventory.txt"
         )
     else:
         logger.error("undefined OS")

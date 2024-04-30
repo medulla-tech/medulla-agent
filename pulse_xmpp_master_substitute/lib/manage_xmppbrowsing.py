@@ -42,7 +42,7 @@ class xmppbrowsing:
             )
         elif sys.platform.startswith("win"):
             self.jsonfile = os.path.join(
-                "c:\\", "progra~1", "Pulse", "tmp", "treejson.json"
+                "c:\\", "progra~1", "Medulla", "tmp", "treejson.json"
             )
             self.programmetreejson = os.path.join(
                 "c:\\",
@@ -66,7 +66,7 @@ class xmppbrowsing:
         try:
             if sys.platform.startswith("win"):
                 cont = file_get_content(
-                    os.path.join("c:\\", "progra~1", "Pulse", "tmp", "treejson.json")
+                    os.path.join("c:\\", "progra~1", "Medulla", "tmp", "treejson.json")
                 )
                 l = decode_strconsole(cont)
                 return l

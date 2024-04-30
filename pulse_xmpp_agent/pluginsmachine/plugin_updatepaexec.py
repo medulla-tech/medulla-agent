@@ -49,7 +49,7 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the binary is available
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
         filename = "paexec.exe"
 
         if os.path.isfile(os.path.join(pulsedir_path, filename)):
@@ -114,7 +114,7 @@ def updateapp(xmppobject, installed_version):
         % (APPNAME, installed_version, APPVERSION)
     )
     if sys.platform.startswith("win"):
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
 
         filename = "paexec_1_29.exe"
         dl_url = "http://%s/downloads/win/downloads/%s" % (

@@ -271,7 +271,7 @@ def updateopenssh(xmppobject, installed_version):
             architecture = "Win32"
             windows_system = "System32"
 
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Pulse", "bin")
+        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
         opensshdir_path = os.path.join("c:\\", "progra~1", "OpenSSH")
         sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
         mandriva_sshdir_path = os.path.join(

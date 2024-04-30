@@ -3017,7 +3017,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 def check_hash(objectxmpp, data):
     hash_type = data["hash"]["type"]
     dest = os.path.join(
-        "c:\\", "progra~1", "Pulse", "var", "tmp", "packages", data["name"]
+        "c:\\", "progra~1", "Medulla", "var", "tmp", "packages", data["name"]
     )
     dest += "\\"
     concat_hash = ""

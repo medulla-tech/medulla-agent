@@ -2887,7 +2887,7 @@ def pull_package_transfert_rsync(
                 path_key_priv = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
             except:
                 path_key_priv = os.path.join(
-                    "c:\\", "progra~1", "pulse", ".ssh", "id_rsa"
+                    "c:\\", "progra~1", "Medulla", ".ssh", "id_rsa"
                 )
             localdest = ' "%s/%s"' % (
                 managepackage.managepackage.packagedir(),

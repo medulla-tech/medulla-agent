@@ -36,7 +36,7 @@ def schedule_main(objectxmpp):
             # Run kiosk
             if sys.platform.startswith("win"):
                 command = (
-                    """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 -d py.exe -3 -m kiosk_interface"""
+                    """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 -d py.exe -3 -m kiosk_interface"""
                 )
                 logger.debug(f"Starting Kiosk. Command: {command}")
             if command:

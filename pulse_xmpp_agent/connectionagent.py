@@ -182,9 +182,9 @@ class MUCBot(ClientXMPP):
                 tmpfile = "/tmp/confsyncting.txt"
             elif sys.platform.startswith("win"):
                 self.fichierconfsyncthing = (
-                    "c:\\progra~1\\pulse\\etc\\syncthing\\config.xml"
+                    "c:\\progra~1\\Medulla\\etc\\syncthing\\config.xml"
                 )
-                tmpfile = "c:\\progra~1\\Pulse\\tmp\\confsyncting.txt"
+                tmpfile = "c:\\progra~1\\Medulla\\tmp\\confsyncting.txt"
             elif sys.platform.startswith("darwin"):
                 self.fichierconfsyncthing = os.path.join(
                     "/opt", "Pulse", "etc", "syncthing", "config.xml"
@@ -426,7 +426,7 @@ class MUCBot(ClientXMPP):
                                     self.syncthing.del_folder("default")
                                     if sys.platform.startswith("win"):
                                         defaultFolderPath = (
-                                            "c:\\progra~1\\pulse\\var\\syncthing"
+                                            "c:\\progra~1\\Medulla\\var\\syncthing"
                                         )
                                     elif sys.platform.startswith("linux"):
                                         defaultFolderPath = os.path.join(
