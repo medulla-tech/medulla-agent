@@ -19,7 +19,7 @@ def medullaPath():
         str: The path to the medulla install
     """
     if sys.platform.startswith("linux"):
-        fileconf = os.path.join("/", "etc", "medulla-agent")
+        fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
     elif sys.platform.startswith("win"):
         fileconf = os.path.join("c:\\", "progra~1", "Medulla")
     elif sys.platform.startswith("darwin"):
@@ -35,12 +35,9 @@ def directoryconffile():
         str: The path to the configuration files if it exists, None otherwise.
     """
     if sys.platform.startswith("linux"):
-        fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
-    elif sys.platform.startswith("win"):
-        fileconf = os.path.join("c:\\", "progra~1", "Medulla", "etc")
-    elif sys.platform.startswith("darwin"):
-        fileconf = os.path.join("/opt", "Pulse", "etc")
-    return fileconf if os.path.isdir(fileconf) else None
+        fileconf = medullaPath()
+    else:
+        fileconf = os.path.join(medullaPath(), "etc")
 
 
 def pulseTempDir():
@@ -52,10 +49,8 @@ def pulseTempDir():
     """
     if sys.platform.startswith("linux"):
         tempdir = os.path.join("/", "tmp")
-    elif sys.platform.startswith("win"):
-        tempdir = os.path.join("c:\\", "progra~1", "Medulla", "tmp")
-    elif sys.platform.startswith("darwin"):
-        tempdir = os.path.join("/opt", "Pulse", "tmp")
+    else:
+        tempdir = os.path.join(medullaPath(), "tmp")
     return tempdir
 
 
