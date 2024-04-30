@@ -224,7 +224,9 @@ def updatenetworkcheck(xmppobject):
                         os.path.join(win32_path, "medullanetnotify.exe"),
                     )
                 except IOError as error_copy:
-                    logger.error(f"The error {error_copy} \n occured while copying files")
+                    logger.error(
+                        f"The error {error_copy} \n occured while copying files"
+                    )
 
             if querycmd_result["code"] != 0:
                 servicecmd = '%s "%s\\%s" --startup=auto install' % (
