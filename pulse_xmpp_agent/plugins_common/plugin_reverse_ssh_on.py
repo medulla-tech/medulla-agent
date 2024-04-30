@@ -315,10 +315,14 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     % cmd
                 )
                 linecmd.append("""echo %$PID%""")
-                linecmd.append("""echo %$PID% > C:\\progra~1\\Medulla\\bin\\%$PID%.pid""")
+                linecmd.append(
+                    """echo %$PID% > C:\\progra~1\\Medulla\\bin\\%$PID%.pid"""
+                )
                 dd = "\r\n".join(linecmd)
 
-                if not os.path.exists(os.path.join("c:\\", "progra~1", "Medulla", "bin")):
+                if not os.path.exists(
+                    os.path.join("c:\\", "progra~1", "Medulla", "bin")
+                ):
                     os.makedirs(os.path.join("c:\\", "progra~1", "Medulla", "bin"))
                 utils.file_put_contents(reversesshbat, dd)
                 if "persistence" not in data:
