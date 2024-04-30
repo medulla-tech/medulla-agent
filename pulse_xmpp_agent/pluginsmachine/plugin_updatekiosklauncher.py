@@ -8,6 +8,7 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 KIOSKLAUNCHERVERSION = "1.0.0"
 
@@ -45,7 +46,7 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the binary is available
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
         filename = "RunMedullaKiosk.bat"
 
         if os.path.isfile(os.path.join(pulsedir_path, filename)):
@@ -111,7 +112,7 @@ def updatekiosklauncherversion(version):
 def updatekiosklauncher(xmppobject):
     logger.info("Updating Medulla kiosk launcher to version %s" % KIOSKLAUNCHERVERSION)
     if sys.platform.startswith("win"):
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "RunMedullaKiosk.bat"
         dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)

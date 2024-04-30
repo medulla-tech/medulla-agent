@@ -24,7 +24,7 @@ from .utils import (
     add_key_to_authorizedkeys_on_client,
 )
 
-from .agentconffile import directoryconffile
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 import zlib
 import re
 import base64
@@ -168,11 +168,11 @@ class functionsynchroxmpp:
                 win32net.NetUserGetInfo("", "pulseuser", 0)
                 filekey = os.path.join(getHomedrive(), ".ssh", "id_rsa")
             except Exception:
-                filekey = os.path.join("c:\\", "progra~1", "Medulla", ".ssh", "id_rsa")
+                filekey = os.path.join(medullaPath , ".ssh", "id_rsa")
 
             sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
             reversesshbat = os.path.join(
-                "c:\\", "progra~1", "Medulla", "bin", "reversessh.bat"
+                medullaPath(), "bin", "reversessh.bat"
             )
             linecmd = []
             cmd = (

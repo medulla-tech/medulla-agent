@@ -6,6 +6,7 @@
 import sys
 import os
 import logging
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 if sys.platform.startswith("darwin"):
     import plyvel
@@ -54,7 +55,7 @@ class manageschedulerdeploy:
         if sys.platform.startswith("linux"):
             return os.path.join(Env.user_dir(), "BDDeploy")
         elif sys.platform.startswith("win"):
-            return os.path.join("c:\\", "progra~1", "Medulla", "var", "tmp", "BDDeploy")
+            return os.path.join(medullaPath(), "var", "tmp", "BDDeploy")
         elif sys.platform.startswith("darwin"):
             return os.path.join("/opt", "Pulse", "var", "tmp", "BDDeploy")
         else:

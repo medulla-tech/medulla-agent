@@ -839,23 +839,32 @@ def add_coloring_to_emit_ansi(fn):
 
     return new
 
-
-def directoryconffile():
+def medullaPath():
     """
-    This function provide the path to the configuration files of pulse-xmpp-agent.
+    Provides the path to the medulla install
 
-    Return:
-        it returns the path to the configuration files if it exists
-        it returns None if the path does not exist
+    Returns:
+        str: The path to the medulla install
     """
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
     elif sys.platform.startswith("win"):
-        fileconf = os.path.join("c:\\", "progra~1", "Medulla", "etc")
+        fileconf = os.path.join("c:\\", "progra~1", "Medulla")
     elif sys.platform.startswith("darwin"):
-        fileconf = os.path.join("/opt", "Pulse", "etc")
+        fileconf = os.path.join("/opt", "Medulla")
     return fileconf if os.path.isdir(fileconf) else None
 
+def directoryconffile():
+    """
+    Provides the path to the configuration files of pulse-xmpp-agent.
+
+    Returns:
+        str: The path to the configuration files if it exists, None otherwise.
+    """
+    if sys.platform.startswith("linux"):
+        fileconf = medullaPath()
+    else:
+        fileconf = os.path.join(medullaPath(), "etc")
 
 def refreshfingerprint():
     fp = createfingerprintnetwork()
@@ -1244,14 +1253,10 @@ if __name__ == "__main__":
     else:
         defaultnamelogfile = "xmpp-agent-relay.log"
 
-    if sys.platform.startswith("win"):
-        logfile = os.path.join(
-            "c:\\", "progra~1", "Medulla", "var", "log", defaultnamelogfile
-        )
-    elif sys.platform.startswith("darwin"):
-        logfile = os.path.join("/opt", "Pulse", "var", "log", defaultnamelogfile)
-    else:
+    if sys.platform.startswith("lin"):
         logfile = os.path.join("/", "var", "log", "pulse", defaultnamelogfile)
+    else:
+        logfile = os.path.join(medullaPath(), "var", "log", defaultnamelogfile )
 
     format = "%(asctime)s - %(levelname)s -(LAUNCHER)%(message)s"
     formatter = logging.Formatter(format)

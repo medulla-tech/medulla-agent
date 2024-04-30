@@ -25,7 +25,7 @@ from lib.manageresourceplugin import resource_plugin
 import imp
 import cherrypy
 from lib.reverseport import reverse_port_ssh
-from lib.agentconffile import conffilename
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
 from lib.networkinfo import (
@@ -580,14 +580,14 @@ class MUCBot(ClientXMPP):
                     "config.xml",
                 )
             self.tmpfile = "/tmp/confsyncting.txt"
+        else:
+            self.fichierconfsyncthing = os.path.join(directoryconffile()
         elif sys.platform.startswith("win"):
-            self.fichierconfsyncthing = (
-                "c:\\progra~1\\Medulla\\etc\\syncthing\\config.xml"
-            )
-            self.tmpfile = "c:\\progra~1\\Medulla\\tmp\\confsyncting.txt"
+            self.fichierconfsyncthing = os.path.join(directoryconffile(), "syncthing", "config.xml")
+            self.tmpfile = os.path.join(pulseTempDir(), "confsyncting.txt")
         elif sys.platform.startswith("darwin"):
             self.fichierconfsyncthing = os.path.join(
-                "/opt", "Pulse", "etc", "syncthing", "config.xml"
+                directoryconffile(), "syncthing", "config.xml"
             )
             self.tmpfile = "/tmp/confsyncting.txt"
         # TODO: Disable this try if synthing is not activated. Prevent backtraces
@@ -1814,11 +1814,11 @@ class MUCBot(ClientXMPP):
         if self.config.agenttype in ["relayserver"]:
             return self.config.syncthing_share
         if sys.platform.startswith("win"):
-            syncthingroot = "c:\\progra~1\\Medulla\\var\\syncthing"
+            syncthingroot = os.path.join(medullaPath(), "var", "syncthing")
         elif sys.platform.startswith("linux"):
             syncthingroot = os.path.join(os.path.expanduser("~pulseuser"), "syncthing")
         elif sys.platform.startswith("darwin"):
-            syncthingroot = os.path.join("/opt", "Pulse", "var", "syncthing")
+            syncthingroot = os.path.join(medullaPath(), "var", "syncthing")
 
         return syncthingroot
 
@@ -4461,9 +4461,9 @@ if __name__ == "__main__":
 
     # termine ssh reverse
     if sys.platform.startswith("win"):
-        searchreversesshprocess = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        searchreversesshprocess = os.path.join(medullaPath(), "bin")
         for f in [
-            os.path.join("c:\\", "progra~1", "Medulla", "bin", x)
+            os.path.join(medullaPath(), "bin", x)
             for x in os.listdir(searchreversesshprocess)
             if x[-4:] == ".pid"
         ]:

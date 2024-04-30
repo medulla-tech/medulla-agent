@@ -8,6 +8,7 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 NETWORKVERSION = "3.1.0"
 
@@ -90,7 +91,7 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the binary is available
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
         servicefilename = "netcheck-service.py"
 
         if os.path.isfile(os.path.join(pulsedir_path, servicefilename)):
@@ -176,7 +177,7 @@ def updatenetworkcheck(xmppobject):
             "pywintypes%s.dll" % version_info.version,
         )
         win32_path = os.path.join(version_info.get_path_packages_python(), "win32")
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "networkevents.py"
         dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)

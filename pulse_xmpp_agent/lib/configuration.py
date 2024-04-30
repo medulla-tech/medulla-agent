@@ -13,9 +13,7 @@ import os
 import logging
 from . import utils
 import random
-from .agentconffile import conffilename
-
-from .agentconffile import directoryconffile
+from .agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 from .utils import ipfromdns
 import re
 
@@ -778,23 +776,14 @@ class confParameter:
         try:
             self.logfile = Config.get("global", "logfile")
         except BaseException:
-            if sys.platform.startswith("win"):
-                self.logfile = os.path.join(
-                    "c:\\",
-                    "progra~1",
-                    "Pulse",
-                    "var",
-                    "log",
-                    defaultnamelogfile,
-                )
-            elif sys.platform.startswith("darwin"):
-                self.logfile = os.path.join(
-                    "/opt", "Pulse", "var", "log", defaultnamelogfile
-                )
-            else:
+            if sys.platform.startswith("lin"):
                 self.logfile = os.path.join(
                     "/", "var", "log", "pulse", defaultnamelogfile
                 )
+            else:
+                self.logfile = os.path.join(medullaPath(), "var", "log", defaultnamelogfile)
+            
+
 
         if Config.has_option("configuration_server", "confserver"):
             self.confserver = Config.get("configuration_server", "confserver")

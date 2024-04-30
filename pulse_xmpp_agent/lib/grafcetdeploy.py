@@ -1723,12 +1723,8 @@ class grafcet:
             # call plugin inventory pour master.
             if sys.platform.startswith("linux"):
                 inventoryfile = os.path.join("/", "tmp", "inventory.txt")
-            elif sys.platform.startswith("win"):
-                inventoryfile = os.path.join(
-                    "c:\\", "progra~1", "Medulla", "tmp", "inventory.txt"
-                )
-            elif sys.platform.startswith("darwin"):
-                inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
+            else:
+                inventoryfile = os.path.join(pulseTempDir(), "inventory.txt")
             self.__affiche_message(
                 "Starting inventory", module="Deployment | Execution | Inventory"
             )

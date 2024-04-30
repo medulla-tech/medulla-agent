@@ -37,6 +37,7 @@ import traceback
 import time
 import os
 import sys
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 import configparser
 
@@ -1385,20 +1386,20 @@ class syncthingprogram(Program):
                 os.system("systemctl restart syncthing@pulseuser.service")
         elif sys.platform.startswith("win"):
             if self.home == "":
-                self.home = "c:\\progra~1\\Medulla\\etc\\syncthing\\"
+                self.home = os.path.join(directoryconffile(), "syncthing")
             if self.logfile == "":
-                self.logfile = "c:\\progra~1\\Medulla\\var\\log\\syncthing.log"
+                self.logfile = os.path.join(medullaPath(), "var","log", "syncthing.log")
 
             self.stop_syncthing()
 
             agentconf = os.path.join(
-                "c:\\", "progra~1", "Medulla", "etc", "agentconf.ini"
+                directoryconffile(), "agentconf.ini"
             )
             Config = configparser.ConfigParser()
             Config.read(agentconf)
 
             syncthing_bin = os.path.join(
-                "c:\\", "progra~1", "Medulla", "bin", "syncthing.exe"
+                medullaPath(), "bin", "syncthing.exe"
             )
 
             if not os.path.isfile(syncthing_bin):
