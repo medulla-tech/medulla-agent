@@ -7,7 +7,14 @@ import os
 from distutils.version import StrictVersion
 import logging
 from lib import utils
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 
 FILETREEVERSION = "0.1"
 

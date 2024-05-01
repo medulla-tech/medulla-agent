@@ -24,7 +24,14 @@ from pprint import pprint
 import hashlib
 import base64
 import pickle
-from .agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from .agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 import socket
 import psutil
 import time

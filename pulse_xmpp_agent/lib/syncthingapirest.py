@@ -37,7 +37,14 @@ import traceback
 import time
 import os
 import sys
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 
 import configparser
 
@@ -1388,19 +1395,17 @@ class syncthingprogram(Program):
             if self.home == "":
                 self.home = os.path.join(directoryconffile(), "syncthing")
             if self.logfile == "":
-                self.logfile = os.path.join(medullaPath(), "var","log", "syncthing.log")
+                self.logfile = os.path.join(
+                    medullaPath(), "var", "log", "syncthing.log"
+                )
 
             self.stop_syncthing()
 
-            agentconf = os.path.join(
-                directoryconffile(), "agentconf.ini"
-            )
+            agentconf = os.path.join(directoryconffile(), "agentconf.ini")
             Config = configparser.ConfigParser()
             Config.read(agentconf)
 
-            syncthing_bin = os.path.join(
-                medullaPath(), "bin", "syncthing.exe"
-            )
+            syncthing_bin = os.path.join(medullaPath(), "bin", "syncthing.exe")
 
             if not os.path.isfile(syncthing_bin):
                 logger.error(

@@ -839,6 +839,7 @@ def add_coloring_to_emit_ansi(fn):
 
     return new
 
+
 def medullaPath():
     """
     Provides the path to the medulla install
@@ -854,6 +855,7 @@ def medullaPath():
         fileconf = os.path.join("/opt", "Medulla")
     return fileconf if os.path.isdir(fileconf) else None
 
+
 def directoryconffile():
     """
     Provides the path to the configuration files of pulse-xmpp-agent.
@@ -865,6 +867,7 @@ def directoryconffile():
         fileconf = medullaPath()
     else:
         fileconf = os.path.join(medullaPath(), "etc")
+
 
 def refreshfingerprint():
     fp = createfingerprintnetwork()
@@ -1256,7 +1259,7 @@ if __name__ == "__main__":
     if sys.platform.startswith("lin"):
         logfile = os.path.join("/", "var", "log", "pulse", defaultnamelogfile)
     else:
-        logfile = os.path.join(medullaPath(), "var", "log", defaultnamelogfile )
+        logfile = os.path.join(medullaPath(), "var", "log", defaultnamelogfile)
 
     format = "%(asctime)s - %(levelname)s -(LAUNCHER)%(message)s"
     formatter = logging.Formatter(format)

@@ -8,7 +8,14 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 
 NETWORKVERSION = "3.1.0"
 

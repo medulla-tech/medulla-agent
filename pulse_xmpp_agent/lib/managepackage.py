@@ -8,7 +8,14 @@ import os
 import os.path
 import json
 import logging
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 
 logger = logging.getLogger()
 
