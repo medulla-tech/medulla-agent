@@ -8,6 +8,7 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 NOTIFICATIONVERSION = "2.2.0"
 
@@ -45,7 +46,7 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the binary is available
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
         filename = "pulse2_update_notification.py"
 
         if os.path.isfile(os.path.join(pulsedir_path, filename)):
@@ -113,7 +114,7 @@ def updatenotificationversion(version):
 def updatenotification(xmppobject):
     logger.info("Updating Pulse Notification to version %s" % NOTIFICATIONVERSION)
     if sys.platform.startswith("win"):
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "pulse2_update_notification.py"
         dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)

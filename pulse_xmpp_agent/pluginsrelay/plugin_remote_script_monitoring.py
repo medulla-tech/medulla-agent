@@ -69,7 +69,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 tempdir = "/tmp"
             elif sys.platform.startswith("win"):
                 tempdir = os.getenv("temp")
-                tmpdir = os.path.join("c:\progra~1", "pulse", "tmp")
+                tmpdir = pulseTempDir()
             elif sys.platform.startswith("darwin"):
                 tempdir = "/tmp"
             else:

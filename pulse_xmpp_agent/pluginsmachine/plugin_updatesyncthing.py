@@ -12,6 +12,7 @@ import tempfile
 import shutil
 import configparser
 from lib import utils
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 from xml.etree import ElementTree
 
 SYNCTHINGVERSION = "1.23.4"
@@ -34,7 +35,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
             # Configure syncthing
             syncthingconfig_path = os.path.join(
-                "c:\\", "progra~1", "Medulla", "etc", "syncthing"
+                directoryconffile(), "syncthing"
             )
             syncthing_configfile = os.path.join(syncthingconfig_path, "config.xml")
             if os.path.isfile(syncthing_configfile):
@@ -108,10 +109,10 @@ def updatesyncthing(xmppobject, installed_version):
             architecture = "amd64"
         else:
             architecture = "386"
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
-        pulseconfig_path = os.path.join("c:\\", "progra~1", "Medulla", "etc")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
+        pulseconfig_path = directoryconffile()
         syncthingconfig_path = os.path.join(
-            "c:\\", "progra~1", "Medulla", "etc", "syncthing"
+            directoryconffile(), "syncthing"
         )
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
 

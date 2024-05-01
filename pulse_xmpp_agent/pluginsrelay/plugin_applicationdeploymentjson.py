@@ -15,6 +15,7 @@ import urllib.request
 import shutil
 from urllib.parse import urlparse
 from lib import utils, managepackage, grafcetdeploy
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 import copy
 import traceback
 import time
@@ -2808,7 +2809,7 @@ def pull_package_transfert_rsync(
                 win32net.NetUserGetInfo("", "pulseuser", 0)
                 path_key_priv = os.path.join("c:\\Users\\pulseuser", ".ssh", "id_rsa")
             except BaseException:
-                path_key_priv = os.path.join("c:\\progra~1", "pulse", ".ssh", "id_rsa")
+                path_key_priv = os.path.join("medullaPath(), ".ssh", "id_rsa")
             localdest = ' "%s/%s"' % (
                 managepackage.managepackage.packagedir(),
                 packagename,
@@ -3017,7 +3018,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 def check_hash(objectxmpp, data):
     hash_type = data["hash"]["type"]
     dest = os.path.join(
-        "c:\\", "progra~1", "Medulla", "var", "tmp", "packages", data["name"]
+        medullaPath(), "var", "tmp", "packages", data["name"]
     )
     dest += "\\"
     concat_hash = ""
@@ -3255,9 +3256,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
     if _check_hash != datasend["data"]["hash"]["global"]:
         shutil.rmtree(
             os.path.join(
-                "c:\\",
-                "progra~1",
-                "Pulse",
+                medullaPath(),
                 "var",
                 "tmp",
                 "packages",

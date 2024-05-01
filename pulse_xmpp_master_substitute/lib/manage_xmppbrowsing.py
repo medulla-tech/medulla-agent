@@ -8,6 +8,7 @@ import logging
 from lib.utils import file_get_content, simplecommand, decode_strconsole
 import math
 import traceback
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 logger = logging.getLogger()
 
@@ -42,12 +43,10 @@ class xmppbrowsing:
             )
         elif sys.platform.startswith("win"):
             self.jsonfile = os.path.join(
-                "c:\\", "progra~1", "Medulla", "tmp", "treejson.json"
+                medullaPath(), "tmp", "treejson.json"
             )
             self.programmetreejson = os.path.join(
-                "c:\\",
-                "progra~1",
-                "Pulse",
+                medullaPath()
                 "bin",
                 "pulse-filetree-generator.exe",
             )
@@ -66,7 +65,7 @@ class xmppbrowsing:
         try:
             if sys.platform.startswith("win"):
                 cont = file_get_content(
-                    os.path.join("c:\\", "progra~1", "Medulla", "tmp", "treejson.json")
+                    os.path.join(pulseTempDir(), "treejson.json")
                 )
                 l = decode_strconsole(cont)
                 return l

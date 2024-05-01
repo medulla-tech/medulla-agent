@@ -8,6 +8,7 @@ import os
 import json
 import logging
 from lib.utils import Env
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 import traceback
 
 if sys.platform.startswith("darwin"):
@@ -58,7 +59,7 @@ class manageskioskdb:
         if sys.platform.startswith("linux"):
             return os.path.join(Env.user_dir(), "BDKiosk")
         elif sys.platform.startswith("win"):
-            return os.path.join("c:\\", "progra~1", "Medulla", "var", "tmp", "BDKiosk")
+            return os.path.join(medullaPath(), "var", "tmp", "BDKiosk")
         elif sys.platform.startswith("darwin"):
             return os.path.join("/opt", "Pulse", "BDKiosk")
         else:

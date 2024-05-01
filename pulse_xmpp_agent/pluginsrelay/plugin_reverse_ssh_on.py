@@ -9,6 +9,7 @@ import shlex
 import json
 import subprocess
 from lib import utils
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 import logging
 import time
 
@@ -287,7 +288,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     )
                 except BaseException:
                     filekey = os.path.join(
-                        "c:\\", "progra~1", "Medulla", ".ssh", "id_rsa"
+                        medullaPath(), ".ssh", "id_rsa"
                     )
                 # Define the permissions depending on the user running the
                 # agent (admin or system)
@@ -295,7 +296,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
                 sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
                 reversesshbat = os.path.join(
-                    "c:\\", "progra~1", "Medulla", "bin", "reversessh.bat"
+                    medullaPath(), "bin", "reversessh.bat"
                 )
 
                 linecmd = []
@@ -322,19 +323,17 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 )
                 dd = "\r\n".join(linecmd)
 
-                if not os.path.exists(
-                    os.path.join("c:\\", "progra~1", "Medulla", "bin")
-                ):
-                    os.makedirs(os.path.join("c:\\", "progra~1", "Medulla", "bin"))
+                if not os.path.exists(os.path.join(medullaPath(), "bin")):
+                    os.makedirs(os.path.join(medullaPath(), "bin"))
                 utils.file_put_contents(reversesshbat, dd)
                 if "persistence" not in data:
                     data["persistence"] = "no"
                 # clear tout les reverse ssh
                 searchreversesshprocess = os.path.join(
-                    "c:\\", "progra~1", "Medulla", "bin"
+                    medullaPath(), "bin"
                 )
                 for f in [
-                    os.path.join("c:\\", "progra~1", "Medulla", "bin", x)
+                    os.path.join(medullaPath(), "bin", x)
                     for x in os.listdir(searchreversesshprocess)
                     if x[-4:] == ".pid"
                 ]:
@@ -360,7 +359,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 result = subprocess.Popen(reversesshbat)
                 time.sleep(2)
                 for f in [
-                    os.path.join("c:\\", "progra~1", "Medulla", "bin", x)
+                    os.path.join(medullaPath(), "bin", x)
                     for x in os.listdir(searchreversesshprocess)
                     if x[-4:] == ".pid"
                 ]:

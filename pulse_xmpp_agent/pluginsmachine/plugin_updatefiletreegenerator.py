@@ -7,6 +7,7 @@ import os
 from distutils.version import StrictVersion
 import logging
 from lib import utils
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 FILETREEVERSION = "0.1"
 
@@ -76,7 +77,7 @@ def updatefiletreegenerator(xmppobject, installed_version):
         % (installed_version, FILETREEVERSION)
     )
     if sys.platform.startswith("win"):
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "pulse-filetree-generator.exe"
         dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)

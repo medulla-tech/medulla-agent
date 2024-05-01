@@ -8,6 +8,7 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 import hashlib
 
 APPVERSION = "1.29"
@@ -49,7 +50,7 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the binary is available
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
         filename = "paexec.exe"
 
         if os.path.isfile(os.path.join(pulsedir_path, filename)):
@@ -114,7 +115,7 @@ def updateapp(xmppobject, installed_version):
         % (APPNAME, installed_version, APPVERSION)
     )
     if sys.platform.startswith("win"):
-        pulsedir_path = os.path.join("c:\\", "progra~1", "Medulla", "bin")
+        pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "paexec_1_29.exe"
         dl_url = "http://%s/downloads/win/downloads/%s" % (

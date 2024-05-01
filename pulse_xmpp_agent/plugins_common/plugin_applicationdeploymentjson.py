@@ -19,6 +19,7 @@ from lib.utils import file_get_contents
 from distutils.util import strtobool
 from urllib.parse import urlparse
 from lib import utils, managepackage, grafcetdeploy
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 import copy
 import traceback
 import time
@@ -2887,7 +2888,7 @@ def pull_package_transfert_rsync(
                 path_key_priv = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
             except:
                 path_key_priv = os.path.join(
-                    "c:\\", "progra~1", "Medulla", ".ssh", "id_rsa"
+                    medullaPath(), ".ssh", "id_rsa"
                 )
             localdest = ' "%s/%s"' % (
                 managepackage.managepackage.packagedir(),

@@ -8,8 +8,11 @@ this plugin process inventory from crontab descriptor time
 import logging
 import sys
 import os
-from pulse_xmpp_agent.lib.utils import file_put_contents, shellcommandtimeout
-from lib.agentconffile import directoryconffile
+from pulse_xmpp_agent.lib.utils import (
+    file_put_contents,
+    shellcommandtimeout
+)
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 import configparser
 
 logger = logging.getLogger()
@@ -32,7 +35,9 @@ def schedule_main(objectxmpp):
         else:
             # Run kiosk
             if sys.platform.startswith("win"):
-                command = """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 -d py.exe -3 -m kiosk_interface"""
+                command = (
+                    f"{os.path.join(medullaPath(), 'bin', 'paexec.exe')} -accepteula -s -i 1 -d py.exe -3 -m kiosk_interface"
+                )
                 logger.debug(f"Starting Kiosk. Command: {command}")
             if command:
                 shellcommandtimeout(command, 600).run()
