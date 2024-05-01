@@ -43,7 +43,14 @@ from lib.configuration import (
     substitutelist,
     changeconfigurationsubtitute,
 )
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 from lib.utils import (
     DEBUGPULSE,
     getIpXmppInterface,
@@ -181,7 +188,9 @@ class MUCBot(ClientXMPP):
 
                 tmpfile = "/tmp/confsyncting.txt"
             else:
-                self.fichierconfsyncthing = os.path.join(directoryconffile(), "syncthing", "config.xml")
+                self.fichierconfsyncthing = os.path.join(
+                    directoryconffile(), "syncthing", "config.xml"
+                )
                 tempdir = os.path.join(pulseTempDir(), "confsyncting.txt")
 
             # Before reinitialisation we remove the config.xml file
@@ -418,7 +427,9 @@ class MUCBot(ClientXMPP):
                                     ] = False
                                     self.syncthing.del_folder("default")
                                     if sys.platform.startswith("win"):
-                                        defaultFolderPath = os.path.join(medullaPath(), "var", "syncthing")
+                                        defaultFolderPath = os.path.join(
+                                            medullaPath(), "var", "syncthing"
+                                        )
                                     elif sys.platform.startswith("linux"):
                                         defaultFolderPath = os.path.join(
                                             os.path.expanduser("~pulseuser"),

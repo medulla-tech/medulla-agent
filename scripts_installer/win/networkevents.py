@@ -20,7 +20,14 @@ import socket
 import struct
 from ctypes import windll
 import os
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 
 # from EventSys.h
 PROGID_EventSystem = "EventSystem.EventSystem"
@@ -300,9 +307,7 @@ class NetworkManager(DesignatedWrapPolicy):
 
 
 if __name__ == "__main__":
-    logfile = os.path.join(
-        medullaPath(), "var", "log", "networkevents.log"
-    )
+    logfile = os.path.join(medullaPath(), "var", "log", "networkevents.log")
 
     program_dir = os.path.join(medullaPath(), "bin")
     pidfile = os.path.join(program_dir, ".PID_NETWORKS_ENVENTS")

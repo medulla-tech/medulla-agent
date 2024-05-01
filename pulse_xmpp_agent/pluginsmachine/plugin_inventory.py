@@ -125,9 +125,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     elif sys.platform.startswith("darwin"):
         inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
     elif sys.platform.startswith("win"):
-        inventoryfile = os.path.join(
-            pulseTempDir(), "inventory.txt"
-        )
+        inventoryfile = os.path.join(pulseTempDir(), "inventory.txt")
     else:
         logger.error("undefined OS")
         xmppobject.xmpplog(

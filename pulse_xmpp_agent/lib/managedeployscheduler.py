@@ -8,7 +8,14 @@ import sys
 import os
 import logging
 from lib.utils import Env
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 import lmdb
 
 logger = logging.getLogger()

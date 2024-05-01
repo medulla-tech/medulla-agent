@@ -9,7 +9,14 @@ import shlex
 import json
 import subprocess
 from lib import utils
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 import logging
 import time
 
@@ -287,17 +294,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         "C:\\", "Users", "pulseuser", ".ssh", "id_rsa"
                     )
                 except BaseException:
-                    filekey = os.path.join(
-                        medullaPath(), ".ssh", "id_rsa"
-                    )
+                    filekey = os.path.join(medullaPath(), ".ssh", "id_rsa")
                 # Define the permissions depending on the user running the
                 # agent (admin or system)
                 utils.apply_perms_sshkey(filekey, private=True)
 
                 sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
-                reversesshbat = os.path.join(
-                    medullaPath(), "bin", "reversessh.bat"
-                )
+                reversesshbat = os.path.join(medullaPath(), "bin", "reversessh.bat")
 
                 linecmd = []
                 cmd = (
@@ -329,9 +332,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 if "persistence" not in data:
                     data["persistence"] = "no"
                 # clear tout les reverse ssh
-                searchreversesshprocess = os.path.join(
-                    medullaPath(), "bin"
-                )
+                searchreversesshprocess = os.path.join(medullaPath(), "bin")
                 for f in [
                     os.path.join(medullaPath(), "bin", x)
                     for x in os.listdir(searchreversesshprocess)

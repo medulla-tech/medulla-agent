@@ -24,7 +24,14 @@ from .utils import (
     add_key_to_authorizedkeys_on_client,
 )
 import socket
-from .agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from .agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 import zlib
 import re
 import base64
@@ -176,9 +183,7 @@ class functionsynchroxmpp:
                 filekey = os.path.join(medullaPath(), ".ssh", "id_rsa")
 
             sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
-            reversesshbat = os.path.join(
-                medullaPath(), "bin", "reversessh.bat"
-            )
+            reversesshbat = os.path.join(medullaPath(), "bin", "reversessh.bat")
             cmd = (
                 """\\"%s\\" -t -t -%s 0.0.0.0:%s:%s:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
                 % (
