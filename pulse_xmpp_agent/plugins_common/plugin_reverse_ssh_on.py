@@ -11,7 +11,14 @@ import subprocess
 from lib import utils
 import logging
 import time
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 
 if sys.platform.startswith("win"):
     import win32security
@@ -286,16 +293,12 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     win32net.NetUserGetInfo("", "pulseuser", 0)
                     filekey = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
                 except:
-                    filekey = os.path.join(
-                        medullaPath(), ".ssh", "id_rsa"
-                    )
+                    filekey = os.path.join(medullaPath(), ".ssh", "id_rsa")
                 # Define the permissions depending on the user running the agent (admin or system)
                 utils.apply_perms_sshkey(filekey, private=True)
 
                 sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
-                reversesshbat = os.path.join(
-                    medullaPath(), "bin", "reversessh.bat"
-                )
+                reversesshbat = os.path.join(medullaPath(), "bin", "reversessh.bat")
 
                 linecmd = []
                 cmd = (
@@ -327,9 +330,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 if "persistence" not in data:
                     data["persistence"] = "no"
                 # clear tout les reverse ssh
-                searchreversesshprocess = os.path.join(
-                    medullaPath(), "bin"
-                )
+                searchreversesshprocess = os.path.join(medullaPath(), "bin")
                 for f in [
                     os.path.join(medullaPath(), "bin", x)
                     for x in os.listdir(searchreversesshprocess)

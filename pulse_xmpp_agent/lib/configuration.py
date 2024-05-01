@@ -13,7 +13,14 @@ import os
 import logging
 from . import utils
 import random
-from .agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from .agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 from .utils import ipfromdns
 import re
 
@@ -781,9 +788,9 @@ class confParameter:
                     "/", "var", "log", "pulse", defaultnamelogfile
                 )
             else:
-                self.logfile = os.path.join(medullaPath(), "var", "log", defaultnamelogfile)
-            
-
+                self.logfile = os.path.join(
+                    medullaPath(), "var", "log", defaultnamelogfile
+                )
 
         if Config.has_option("configuration_server", "confserver"):
             self.confserver = Config.get("configuration_server", "confserver")

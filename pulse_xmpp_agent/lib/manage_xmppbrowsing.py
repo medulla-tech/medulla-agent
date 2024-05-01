@@ -62,9 +62,7 @@ class xmppbrowsing:
         try:
             if not sys.platform.startswith("win"):
                 return {}
-            cont = file_get_content(
-                os.path.join(pulseTempDir(), "treejson.json")
-            )
+            cont = file_get_content(os.path.join(pulseTempDir(), "treejson.json"))
             return decode_strconsole(cont)
         except Exception as e:
             logger.error(traceback.format_exc())

@@ -13,7 +13,14 @@ import time
 import shutil
 import psutil
 from lib import utils
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 import re
 
 if sys.platform.startswith("win"):

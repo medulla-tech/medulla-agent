@@ -15,7 +15,14 @@ import logging
 import logging.handlers
 import urllib.request
 from pulse_xmpp_agent.lib import utils
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 
 # to had event log, do not remove
 # https://stackoverflow.com/questions/51385195/writing-to-windows-event-log-using-win32evtlog-from-pywin32-library
@@ -156,7 +163,9 @@ class PulseAgentService(SMWinservice):
                 )
             )
             os.system(
-                    os.path.join("c:\\", "progra~1", "Python3", "python.exe") + os.path.join(program_dir, "networkevents.py") + '"'
+                os.path.join("c:\\", "progra~1", "Python3", "python.exe")
+                + os.path.join(program_dir, "networkevents.py")
+                + '"'
             )
 
 

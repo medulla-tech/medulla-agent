@@ -19,7 +19,14 @@ from lib.utils import file_get_contents
 from distutils.util import strtobool
 from urllib.parse import urlparse
 from lib import utils, managepackage, grafcetdeploy
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 import copy
 import traceback
 import time
@@ -2887,9 +2894,7 @@ def pull_package_transfert_rsync(
                 win32net.NetUserGetInfo("", "pulseuser", 0)
                 path_key_priv = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
             except:
-                path_key_priv = os.path.join(
-                    medullaPath(), ".ssh", "id_rsa"
-                )
+                path_key_priv = os.path.join(medullaPath(), ".ssh", "id_rsa")
             localdest = ' "%s/%s"' % (
                 managepackage.managepackage.packagedir(),
                 packagename,

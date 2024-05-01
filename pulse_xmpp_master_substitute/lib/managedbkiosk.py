@@ -8,7 +8,14 @@ import os
 import json
 import logging
 from lib.utils import Env
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 import traceback
 
 if sys.platform.startswith("darwin"):
