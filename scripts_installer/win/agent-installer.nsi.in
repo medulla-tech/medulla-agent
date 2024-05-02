@@ -17,9 +17,9 @@ Unicode True
 !define AGENT_DEPS_NAME "${PRODUCT_NAME} dependencies"
 !define PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_DEPS_NAME}"
 
-!define OLD_PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent"
-!define OLD_PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent dependencies"
-!define OLD_PRODUCT_NETNOTIF_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse network notify"
+!define OLD_PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Agent"
+!define OLD_PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Agent dependencies"
+!define OLD_PRODUCT_NETNOTIF_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla network notify"
 
 ; Variables replaced by the script calling the nsi
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
@@ -111,9 +111,9 @@ Name "${PRODUCT_NAME} ${AGENT_VERSION}"
   OutFile "Medulla-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}-${INVENTORY_TAG}.exe"
 !EndIf
 !If "$PROGRAMFILES64" != ""
-  InstallDir "$PROGRAMFILES64\Pulse"
+  InstallDir "$PROGRAMFILES64\Medulla"
 !Else
-  InstallDir "$PROGRAMFILES\Pulse"
+  InstallDir "$PROGRAMFILES\Medulla"
 !EndIf
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -301,7 +301,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} "Medulla Agent Installation...."
   ${LogString} "------------------------------------------------------"
 
-  ; Remove Pulse folder if present
+  ; Remove Medulla folder if present
   ClearErrors
   ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString"
   ${IfNot} ${Errors}
@@ -425,7 +425,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create log folder to hold agent logs
   CreateDirectory $INSTDIR\var\log
 
-  ; Create Pulse service
+  ; Create Medulla service
   SetOutPath "$INSTDIR\bin"
   File "${PULSE_SERVICE_FILENAME}"
   StrCpy $0 `SCHTASKS /Delete /TN "${PRODUCT_NAME}" /F`
@@ -555,7 +555,7 @@ Section "!${PRODUCT_NAME}" sec_app
   @@DELETE_PY_MODULES_FILENAMES@@
 
   ${If} ${RunningX64}
-    RMDir /r "$PROGRAMFILES\Pulse"
+    RMDir /r "$PROGRAMFILES\Medulla"
   ${EndIf}
 
   Sleep 20000
@@ -582,8 +582,8 @@ Section "Uninstall"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
   DeleteRegKey HKLM "${PAEXEC_UNINST_KEY}"
 
-  ; Stop all Pulse services
-  Call un.StopPulseServices
+  ; Stop all Medulla services
+  Call un.StopMedullaServices
 SectionEnd
 
 ; Functions
@@ -619,9 +619,9 @@ Function .onInit
 
   ; Install log initialization
   !If "$PROGRAMFILES64" != ""
-    StrCpy $INSTDIR "$PROGRAMFILES64\Pulse"
+    StrCpy $INSTDIR "$PROGRAMFILES64\Medulla"
   !Else
-    StrCpy $INSTDIR "$PROGRAMFILES\Pulse"
+    StrCpy $INSTDIR "$PROGRAMFILES\Medulla"
   !EndIf
   CreateDirectory "$INSTDIR\tmp"
   ${LogInit} "$INSTDIR\tmp\install.log"
@@ -671,9 +671,9 @@ Function .onMouseOverSection
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
 FunctionEnd
 
-; Macro Stop all Pulse services
-!macro StopPulseServices UN
-  Function ${UN}StopPulseServices
+; Macro Stop all Medulla services
+!macro StopMedullaServices UN
+  Function ${UN}StopMedullaServices
 
   StrCpy $0 `sc query sshd`
   nsExec::ExecToLog $0
@@ -861,4 +861,4 @@ FunctionEnd
   FunctionEnd
 
 !macroend
-!insertmacro StopPulseServices "un."
+!insertmacro StopMedullaServices "un."

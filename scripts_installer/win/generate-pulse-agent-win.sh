@@ -4,24 +4,24 @@
 # (c) 2015 siveo, http://www.siveo.net
 # $Id$
 #
-# This file is part of Pulse 2, http://www.siveo.net
+# This file is part of Medulla 2, http://www.siveo.net
 #
-# Pulse 2 is free software; you can redistribute it and/or modify
+# Medulla 2 is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
-# Pulse 2 is distributed in the hope that it will be useful,
+# Medulla 2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Pulse 2. If not, see <http://www.gnu.org/licenses/>.
+# along with Medulla 2. If not, see <http://www.gnu.org/licenses/>.
 #
 
 # """
-# This script is designed to generate Pulse XMPP agent for Windows
+# This script is designed to generate Medulla XMPP agent for Windows
 # It downloads the necessary dependencies, modifies the nsi file and finally
 # runs makensis to generate the agent
 # """
@@ -116,7 +116,7 @@ WHEEL_FILENAME="wheel-0.42.0-py3-none-any.whl"
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwrsync_6.2.8_x64_free.zip"
 RSYNC_FILENAME="rsync.zip"
-OPENSSH_NAME="Pulse SSH"
+OPENSSH_NAME="Medulla SSH"
 OPENSSH_VERSION="8.9"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 DOWNLOADS_DIR="downloads"
@@ -139,12 +139,12 @@ PULSE_AGENT_TASK_XML_FILENAME="pulse-agent-task.xml"
 DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
-CHERRYPY_NAME="Pulse CherryPy"
+CHERRYPY_NAME="Medulla CherryPy"
 CHERRYPY_VERSION="18.8.0"
 NETWORK_NAME="Medulla network notify"
-RDP_NAME="Pulse RDP"
-SYNCTHING_NAME="Pulse Syncthing"
-FILETREE_NAME="Pulse Filetree Generator"
+RDP_NAME="Medulla RDP"
+SYNCTHING_NAME="Medulla Syncthing"
+FILETREE_NAME="Medulla Filetree Generator"
 PAEXEC_NAME="PAExec"
 ROOTCERTIFICATE_FILENAME="medulla-rootca.cert.pem"
 CACERTIFICATE_FILENAME="medulla-ca-chain.cert.pem"
