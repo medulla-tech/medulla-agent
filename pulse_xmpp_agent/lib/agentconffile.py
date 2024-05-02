@@ -39,6 +39,8 @@ def directoryconffile():
     else:
         fileconf = os.path.join(medullaPath(), "etc")
 
+    return fileconf if os.path.isdir(fileconf) else None
+
 
 def pulseTempDir():
     """
