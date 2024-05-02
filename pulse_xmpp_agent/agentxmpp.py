@@ -581,7 +581,9 @@ class MUCBot(ClientXMPP):
                 )
             self.tmpfile = "/tmp/confsyncting.txt"
         elif sys.platform.startswith("win"):
-            self.fichierconfsyncthing = os.path.join(directoryconffile(), "syncthing", "config.xml")
+            self.fichierconfsyncthing = os.path.join(
+                directoryconffile(), "syncthing", "config.xml"
+            )
             self.tmpfile = os.path.join(pulseTempDir(), "confsyncting.txt")
         elif sys.platform.startswith("darwin"):
             self.fichierconfsyncthing = os.path.join(
