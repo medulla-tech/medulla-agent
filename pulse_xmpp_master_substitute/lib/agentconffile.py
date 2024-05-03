@@ -5,55 +5,66 @@
 
 import sys
 import os
+import shutil
+import logging
+
+logger = logging.getLogger()
 
 
-def directoryconffile():
+def medullaPath():
     """
-    This function permits to obtain the configuration folder.
+    Provides the path to the medulla install
 
     Returns:
-        It returns the path of pulse configuration folder
+        str: The path to the medulla install
     """
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
     elif sys.platform.startswith("win"):
-        fileconf = os.path.join("c:\\", "progra~1", "Medulla", "etc")
+        fileconf = os.path.join("c:\\", "progra~1", "Medulla")
     elif sys.platform.startswith("darwin"):
-        fileconf = os.path.join("/opt", "Pulse", "etc")
-    if os.path.isdir(fileconf):
-        return fileconf
+        fileconf = os.path.join("/opt", "Medulla")
+    return fileconf if os.path.isdir(fileconf) else None
+
+
+def directoryconffile():
+    """
+    Provides the path to the configuration files of pulse-xmpp-agent.
+
+    Returns:
+        str: The path to the configuration files if it exists, None otherwise.
+    """
+    if sys.platform.startswith("linux"):
+        fileconf = medullaPath()
     else:
-        return None
+        fileconf = os.path.join(medullaPath(), "etc")
+
+    return fileconf if os.path.isdir(fileconf) else None
 
 
 def pulseTempDir():
     """
-    This function permits to obtain the temporary folder.
+    Obtains the temporary folder used by Pulse.
 
     Returns:
-        It returns the path of pulse temporary folder
+        str: The path of the pulse temporary folder.
     """
     if sys.platform.startswith("linux"):
         tempdir = os.path.join("/", "tmp")
-    elif sys.platform.startswith("win"):
-        tempdir = os.path.join("c:\\", "progra~1", "Medulla", "tmp")
-    elif sys.platform.startswith("darwin"):
-        tempdir = os.path.join("/opt", "Pulse", "tmp")
-
+    else:
+        tempdir = os.path.join(medullaPath(), "tmp")
     return tempdir
 
 
 def conffilename(agenttype):
     """
-    Function defining where the configuration file is located.
-    configuration file for the type of machine and the Operating System
+    Defines the location of the configuration file.
 
     Args:
-    agenttype: type of the agent, relay or machine or (cluster for ARS)
+        agenttype (str): Type of the agent, relay or machine or cluster for RelayServer.
 
     Returns:
-    Return the config file path
-
+        str: The config file path.
     """
     if agenttype in ["machine"]:
         conffilenameparameter = "agentconf.ini"
@@ -61,21 +72,37 @@ def conffilename(agenttype):
         conffilenameparameter = "cluster.ini"
     else:
         conffilenameparameter = "relayconf.ini"
-    if sys.platform.startswith("linux"):
-        fileconf = os.path.join("/", "etc", "pulse-xmpp-agent", conffilenameparameter)
-    elif sys.platform.startswith("win"):
-        fileconf = os.path.join(
-            "c:\\", "progra~1", "Medulla", "etc", conffilenameparameter
-        )
-    elif sys.platform.startswith("darwin"):
-        fileconf = os.path.join(
-            "/", "Library", "Application Support", "Pulse", "etc", conffilenameparameter
-        )
+
+    if directoryconffile() is not None:
+        fileconf = os.path.join(directoryconffile(), conffilenameparameter)
     else:
         fileconf = conffilenameparameter
+
     if conffilenameparameter == "cluster.ini":
         return fileconf
-    if os.path.isfile(fileconf):
-        return fileconf
+
+    return fileconf if os.path.isfile(fileconf) else conffilenameparameter
+
+
+def conffilenametmp(agenttype):
+    """
+    Defines the location of the temporary configuration file.
+
+    Args:
+        agenttype (str): Type of the agent, relay or machine or cluster for RelayServer.
+
+    Returns:
+        str: The temporary config file path.
+    """
+    if agenttype in ["machine"]:
+        conffilenameparameter = "agentconftmp.ini"
+    elif agenttype in ["cluster"]:
+        conffilenameparameter = "clustertmp.ini"
     else:
-        return conffilenameparameter
+        conffilenameparameter = "relayconftmp.ini"
+
+    return (
+        os.path.join(pulseTempDir(), conffilenameparameter)
+        if directoryconffile() is not None
+        else conffilenameparameter
+    )
