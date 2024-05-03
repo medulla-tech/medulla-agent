@@ -106,3 +106,22 @@ def conffilenametmp(agenttype):
         if directoryconffile() is not None
         else conffilenameparameter
     )
+
+
+def rotation_file(namefile, suffixe=""):
+    """
+    Executes file rotation.
+
+    Args:
+        namefile (str): Name of the file to rotate.
+        suffixe (str): Suffix to be added to the rotated file names.
+    """
+    if suffixe != "":
+        suffixe = f"_{suffixe}"
+    for x in range(5, 0, -1):
+        src = f"{namefile}{suffixe}_{x}"
+        dest = f"{namefile}{suffixe}_{x + 1}"
+        if os.path.isfile(src):
+            shutil.copyfile(src, dest)
+        if x == 1:
+            shutil.copyfile(namefile, dest)
