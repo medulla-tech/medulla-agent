@@ -15,7 +15,14 @@ import urllib.request
 import shutil
 from urllib.parse import urlparse
 from lib import utils, managepackage, grafcetdeploy
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 import copy
 import traceback
 import time
@@ -3017,9 +3024,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 
 def check_hash(objectxmpp, data):
     hash_type = data["hash"]["type"]
-    dest = os.path.join(
-        medullaPath(), "var", "tmp", "packages", data["name"]
-    )
+    dest = os.path.join(medullaPath(), "var", "tmp", "packages", data["name"])
     dest += "\\"
     concat_hash = ""
 
