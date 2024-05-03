@@ -2809,7 +2809,7 @@ def pull_package_transfert_rsync(
                 win32net.NetUserGetInfo("", "pulseuser", 0)
                 path_key_priv = os.path.join("c:\\Users\\pulseuser", ".ssh", "id_rsa")
             except BaseException:
-                path_key_priv = os.path.join("medullaPath(), ".ssh", "id_rsa")
+                path_key_priv = os.path.join(medullaPath(), ".ssh", "id_rsa")
             localdest = ' "%s/%s"' % (
                 managepackage.managepackage.packagedir(),
                 packagename,
