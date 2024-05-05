@@ -15,6 +15,7 @@ import json
 import logging
 import subprocess
 import lxml.etree as ET
+from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 import hashlib
 
@@ -121,10 +122,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         data["forced"] = "noforced"
 
     if sys.platform.startswith("linux"):
-        inventoryfile = os.path.join("/", "tmp", "inventory.txt")
-    elif sys.platform.startswith("darwin"):
-        inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
-    elif sys.platform.startswith("win"):
+        inventoryfile = os.path.join("/tmp", "inventory.txt")
+    elif sys.platform.startswith("win") or sys.platform.startswith("darwin"):
         inventoryfile = os.path.join(pulseTempDir(), "inventory.txt")
     else:
         logger.error("undefined OS")
@@ -139,6 +138,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             date=None,
         )
         return
+
     if os.path.exists(inventoryfile):
         if os.path.exists("%s.back" % inventoryfile):
             os.remove("%s.back" % inventoryfile)
