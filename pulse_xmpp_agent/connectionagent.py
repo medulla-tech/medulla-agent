@@ -185,13 +185,16 @@ class MUCBot(ClientXMPP):
                     "syncthing",
                     "config.xml",
                 )
-
-                tmpfile = "/tmp/confsyncting.txt"
-            else:
+            else sys.platform.startswith("win"):
                 self.fichierconfsyncthing = os.path.join(
                     directoryconffile(), "syncthing", "config.xml"
                 )
-                tempdir = os.path.join(pulseTempDir(), "confsyncting.txt")
+
+
+            if sys.platform.startswith("linux") or if sys.platform.startswith("darwin"):
+                tmpfile = "/tmp/confsyncting.txt"
+            else:
+                tmpfile = os.path.join(pulseTempDir(), "confsyncting.txt") 
 
             # Before reinitialisation we remove the config.xml file
             try:
