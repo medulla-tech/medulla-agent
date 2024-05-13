@@ -835,6 +835,7 @@ def call_plugin(name, *args, **kwargs):
     :rtype: Any
     """
     loop = aio.new_event_loop()
+    time.sleep(0.0001)
     count = 0
     time.sleep(0.0001) # 0,1 milliseconde permet au thread de monter
     try:
