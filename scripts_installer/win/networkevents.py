@@ -20,7 +20,7 @@ import socket
 import struct
 from ctypes import windll
 import os
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,
