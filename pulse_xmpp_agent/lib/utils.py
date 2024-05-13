@@ -36,7 +36,7 @@ import socket
 import psutil
 import time
 from datetime import datetime, timedelta
-import imp
+import importlib.util
 import requests
 import asyncio
 
@@ -808,33 +808,32 @@ def md5(fname):
 
 
 def loadModule(filename):
+    """
+    Charge un module Python à partir d'un fichier spécifié.
+
+    :param filename: Le chemin d'accès au fichier du module à charger.
+    :type filename: str
+    :return: Le module chargé ou None en cas d'échec.
+    :rtype: module
+    """
     module = None
     try:
         if filename == "":
             raise RuntimeError("Empty filename cannot be loaded")
-        searchPath, file = os.path.split(filename)
-        if searchPath not in sys.path:
-            sys.path.append(searchPath)
-            sys.path.append(os.path.normpath(f"{searchPath}/../"))
-        moduleName, ext = os.path.splitext(file)
+        search_path, file = os.path.split(filename)
+        if search_path not in sys.path:
+            sys.path.append(search_path)
+            sys.path.append(os.path.normpath(f"{search_path}/../"))
+        module_name, ext = os.path.splitext(file)
 
         try:
-            fp, pathName, description = imp.find_module(
-                moduleName,
-                [
-                    searchPath,
-                ],
-            )
-
+            spec = importlib.util.spec_from_file_location(module_name, filename)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
         except Exception:
-            logger.error("We hit a backtrace when searching for Modules")
-            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+            logging.getLogger().error("We hit a backtrace when loading Modules")
+            logging.getLogger().error("We got the backtrace\n%s" % (traceback.format_exc()))
             return None
-        try:
-            module = imp.load_module(moduleName, fp, pathName, description)
-        finally:
-            if fp:
-                fp.close()
     except:
         logging.getLogger().error(f"{traceback.format_exc()}")
     return module
@@ -918,22 +917,30 @@ def call_mon_plugin(name, *args, **kwargs):
     except:
         logging.getLogger().error(f"{traceback.format_exc()}")
 
-
 def call_plugin(name, *args, **kwargs):
+    """
+    Appelle la fonction d'action d'un plugin spécifié par son nom.
+
+    :param name: Le nom du plugin à appeler.
+    :type name: str
+    :param args: Les arguments à passer à la fonction d'action du plugin.
+    :type args: tuple
+    :param kwargs: Les arguments nommés à passer à la fonction d'action du plugin.
+    :type kwargs: dict
+    """
     try:
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
                 logger.debug(f"Loading plugin {args[1]}")
-
                 if not os.path.exists(f"{nameplugin}.py"):
                     logging.getLogger().error(
                         f"The file plugin {args[1]} does not exit"
                     )
                     return
-
                 loop = asyncio.new_event_loop()
+                time.sleep(0.0001) # 0,1 milliseconde permet au thread de monter
                 count = 0
                 try:
                     count = getattr(args[0], f"num_call{args[1]}")
