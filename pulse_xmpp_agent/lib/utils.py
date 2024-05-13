@@ -807,6 +807,8 @@ def md5(fname):
     return hash.hexdigest()
 
 
+
+
 def loadModule(filename):
     """
     Charge un module Python à partir d'un fichier spécifié.
@@ -917,9 +919,19 @@ def call_mon_plugin(name, *args, **kwargs):
     except:
         logging.getLogger().error(f"{traceback.format_exc()}")
 
+
 def call_plugin(name, *args, **kwargs):
     """
     Appelle la fonction d'action d'un plugin spécifié par son nom.
+
+    Cette fonction crée un nouveau compteur d'appels pour chaque plugin appelé et
+    l'enregistre dans l'objet passé en premier argument. Le compteur est stocké
+    dans un attribut nommé "num_call<nom_du_plugin>", où <nom_du_plugin> est le
+    nom du plugin passé en argument.
+
+    Cette fonction utilise un thread indépendant pour exécuter la fonction
+    d'action du plugin, ce qui permet de ne pas bloquer la boucle d'événements
+    asyncio en cours.
 
     :param name: Le nom du plugin à appeler.
     :type name: str
@@ -927,6 +939,8 @@ def call_plugin(name, *args, **kwargs):
     :type args: tuple
     :param kwargs: Les arguments nommés à passer à la fonction d'action du plugin.
     :type kwargs: dict
+    :return: Le résultat de l'appel à la fonction d'action du plugin.
+    :rtype: Any
     """
     try:
         nameplugin = name
@@ -934,6 +948,7 @@ def call_plugin(name, *args, **kwargs):
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
                 logger.debug(f"Loading plugin {args[1]}")
+
                 if not os.path.exists(f"{nameplugin}.py"):
                     logging.getLogger().error(
                         f"The file plugin {args[1]} does not exit"
@@ -946,13 +961,10 @@ def call_plugin(name, *args, **kwargs):
                     count = getattr(args[0], f"num_call{args[1]}")
                     setattr(args[0], f"num_call{args[1]}", count + 1)
                 except AttributeError:
-                    count = 0
-                    setattr(args[0], f"num_call{args[1]}", count)
-
+                    setattr(args[0], f"num_call{args[1]}", 0)
                 pluginaction = loadModule(nameplugin)
-                result = loop.run_in_executor(
-                    None, pluginaction.action, *args, **kwargs
-                )
+                result = loop.run_in_executor(None, pluginaction.action, *args, **kwargs)
+                return result
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
         else:
