@@ -814,8 +814,27 @@ def call_plugin_separate(name, *args, **kwargs):
 
 
 def call_plugin(name, *args, **kwargs):
-    # util only asyncio
-    # add compteur appel plugins
+    """
+    Appelle la fonction d'action d'un plugin spécifié par son nom.
+
+    Cette fonction crée un nouveau compteur d'appels pour chaque plugin appelé et
+    l'enregistre dans l'objet passé en premier argument. Le compteur est stocké
+    dans un attribut nommé "num_call<nom_du_plugin>", où <nom_du_plugin> est le
+    nom du plugin passé en argument.
+
+    Cette fonction utilise un thread indépendant pour exécuter la fonction
+    d'action du plugin, ce qui permet de ne pas bloquer la boucle d'événements
+    asyncio en cours.
+
+    :param name: Le nom du plugin à appeler.
+    :type name: str
+    :param args: Les arguments à passer à la fonction d'action du plugin.
+    :type args: tuple
+    :param kwargs: Les arguments nommés à passer à la fonction d'action du plugin.
+    :type kwargs: dict
+    :return: Le résultat de l'appel à la fonction d'action du plugin.
+    :rtype: Any
+    """
     loop = aio.new_event_loop()
     time.sleep(0.0001)
     count = 0
