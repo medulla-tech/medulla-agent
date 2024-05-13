@@ -812,7 +812,6 @@ def call_plugin_separate(name, *args, **kwargs):
     pluginaction = loadModule(name)
     loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
 
-
 def call_plugin(name, *args, **kwargs):
     """
     Appelle la fonction d'action d'un plugin spécifié par son nom.
@@ -836,15 +835,21 @@ def call_plugin(name, *args, **kwargs):
     :rtype: Any
     """
     loop = aio.new_event_loop()
-    time.sleep(0.0001)
     count = 0
+    time.sleep(0.0001) # 0,1 milliseconde permet au thread de monter
     try:
         count = getattr(args[0], "num_call%s" % args[1])
         setattr(args[0], "num_call%s" % args[1], count + 1)
     except AttributeError:
         setattr(args[0], "num_call%s" % args[1], 0)
+        count = getattr(args[0], "num_call%s" % args[1])
     pluginaction = loadModule(name)
-    result = loop.run_in_executor(None, pluginaction.action, *args, **kwargs)
+
+    try:
+        result = loop.run_in_executor(None, pluginaction.action, *args, **kwargs)
+        return result
+    except Exception:
+        logging.getLogger().error("call_plugin %s" % traceback.format_exc())
 
 
 def call_plugin_sequentially(name, *args, **kwargs):
