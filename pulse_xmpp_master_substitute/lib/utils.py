@@ -29,7 +29,6 @@ import socket
 import psutil
 import time
 from datetime import datetime, timedelta
-import imp
 import requests
 from requests.exceptions import Timeout
 from functools import wraps  # This convenience func preserves name and docstring
@@ -40,6 +39,7 @@ import tarfile
 import string
 import asyncio as aio
 
+import importlib.util
 if sys.platform == "win32":
     aio.set_event_loop_policy(aio.WindowsSelectorEventLoopPolicy())
 
@@ -759,9 +759,27 @@ def md5(fname):
 
 
 def loadModule(filename):
+    """
+    Charge un module Python à partir d'un fichier spécifié.
+
+    Args:
+        filename (str): Le chemin complet du fichier à charger.
+
+    Returns:
+        module: Le module chargé, ou None en cas d'échec.
+
+    Raises:
+        RuntimeError: Si le nom de fichier est vide.
+
+    Note:
+        - La fonction ajoute le répertoire parent du fichier au chemin de recherche des modules, ainsi que le répertoire parent du répertoire parent.
+        - La fonction utilise la bibliothèque standard importlib pour charger le module.
+        - En cas d'échec du chargement du module, la fonction renvoie None et enregistre une trace d'erreur dans le journal.
+    """
     module = None
     if filename == "":
         raise RuntimeError("Empty filename cannot be loaded")
+    logger = logging.getLogger(__name__)
     logger.debug("Loading module %s" % (filename))
     searchPath, file = os.path.split(filename)
     logger.debug("Loading module %s %s" % (searchPath, file))
@@ -771,25 +789,13 @@ def loadModule(filename):
     moduleName, ext = os.path.splitext(file)
 
     try:
-        fp, pathName, description = imp.find_module(
-            moduleName,
-            [
-                searchPath,
-            ],
-        )
-    except Exception:
-        logger.error("We hit a backtrace when searching for Modules")
-        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
-        return None
-
-    try:
-        module = imp.load_module(moduleName, fp, pathName, description)
+        spec = importlib.util.spec_from_file_location(moduleName, filename)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
     except Exception:
         logger.error("We hit a backtrace when loading Modules")
         logger.error("We got the backtrace \n%s" % (traceback.format_exc()))
-    finally:
-        if fp:
-            fp.close()
+        return None
     return module
 
 
@@ -811,6 +817,7 @@ def call_plugin(name, *args, **kwargs):
     # util only asyncio
     # add compteur appel plugins
     loop = aio.new_event_loop()
+    time.sleep(0.0001)
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
