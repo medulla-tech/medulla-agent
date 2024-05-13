@@ -309,6 +309,9 @@ Section "!${PRODUCT_NAME}" sec_app
     Delete "$INSTDIR\etc\*.*"
     ; Remove files from bin
     Delete "$INSTDIR\bin\*.py*"
+    ; Delete previous install folder ( when it was called pulse )
+    IfFileExists "C:\Progra~1\Pulse\*.*" 0 +2
+       RMDir /r "C:\Progra~1\Pulse"
   ${EndIf}
 
   ; Install of Medulla agent
