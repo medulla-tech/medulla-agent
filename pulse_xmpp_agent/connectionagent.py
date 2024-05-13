@@ -191,7 +191,7 @@ class MUCBot(ClientXMPP):
                 )
 
 
-            if sys.platform.startswith("linux") or if sys.platform.startswith("darwin"):
+            if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
                 tmpfile = "/tmp/confsyncting.txt"
             else:
                 tmpfile = os.path.join(pulseTempDir(), "confsyncting.txt") 
