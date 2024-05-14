@@ -807,8 +807,6 @@ def md5(fname):
     return hash.hexdigest()
 
 
-
-
 def loadModule(filename):
     """
     Charge un module Python à partir d'un fichier spécifié.
@@ -846,7 +844,7 @@ def call_plugin_separate(name, *args, **kwargs):
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
-                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
+                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
                 # add compteur appel plugins
                 loop = asyncio.get_event_loop()
                 count = 0
@@ -895,7 +893,7 @@ def call_mon_plugin(name, *args, **kwargs):
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
-                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
+                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
                 logger.debug(f"Loading plugin {args[1]}")
 
                 loop = asyncio.new_event_loop()
@@ -946,10 +944,10 @@ def call_plugin(name, *args, **kwargs):
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
-                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
+                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
                 logger.debug(f"Loading plugin {args[1]}")
 
-                if not os.path.exists(f"{nameplugin}.py"):
+                if not os.path.exists(nameplugin):
                     logging.getLogger().error(
                         f"The file plugin {args[1]} does not exit"
                     )
@@ -980,7 +978,7 @@ def call_plugin_sequentially(name, *args, **kwargs):
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
-                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}")
+                nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
                 # add compteur appel plugins
                 count = 0
                 try:
@@ -999,6 +997,8 @@ def call_plugin_sequentially(name, *args, **kwargs):
             )
     except:
         logging.getLogger().error(f"{traceback.format_exc()}")
+
+
 
 
 def getshortenedmacaddress():
