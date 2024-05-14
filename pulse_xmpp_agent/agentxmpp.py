@@ -23,7 +23,7 @@ import hashlib
 import configparser
 from lib.manageresourceplugin import resource_plugin
 import zlib
-import imp
+import importlib
 import cherrypy
 from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir
@@ -3774,8 +3774,8 @@ AGENT %s ERROR TERMINATE""" % (
             if element.endswith(".py") and element.startswith("plugin_"):
                 try:
                     mod = __import__(element[:-3])
-                    imp.reload(mod)
-                    module = __import__(element[:-3]).plugin
+                    importlib.reload(mod)
+                    module = getattr(mod, "plugin")
                     dataobj["plugin"][module["NAME"]] = module["VERSION"]
                 except Exception as e:
                     logger.error(
