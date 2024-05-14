@@ -840,11 +840,34 @@ def loadModule(filename):
 
 
 def call_plugin_separate(name, *args, **kwargs):
+    """
+    Exécute un plugin spécifié de manière sécurisée et dans un thread séparé.
+
+    Cette fonction détermine dynamiquement le script du plugin à exécuter en fonction des
+    arguments fournis et des paramètres de configuration. Elle vérifie si les actions des
+    plugins sont activées et si le plugin spécifié n'est pas exclu de l'exécution. Si ces
+    conditions sont remplies, la fonction charge et exécute l'action du plugin dans la boucle
+    d'événements, tout en suivant le nombre de fois que chaque plugin est appelé.
+
+    Args:
+        name (str): Le nom de base du plugin.
+        *args: Liste d'arguments de longueur variable où :
+            - args[0]: Un objet contenant la configuration et le chemin des modules.
+            - args[1]: L'identifiant spécifique du plugin.
+        **kwargs: Arguments nommés arbitraires à passer à l'action du plugin.
+
+    Raises:
+        None: Les erreurs et les informations de débogage sont enregistrées au lieu d'être levées.
+    """
+
     try:
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
+                if not os.path.exists(nameplugin):
+                    logging.getLogger().error(f"call_plugin_sequentially The file plugin {nameplugin} does not exist")
+                    return
                 # add compteur appel plugins
                 loop = asyncio.get_event_loop()
                 count = 0
@@ -854,7 +877,7 @@ def call_plugin_separate(name, *args, **kwargs):
                 except AttributeError:
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
-                pluginaction = loadModule(name)
+                pluginaction = loadModule(nameplugin)
                 loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
@@ -889,11 +912,35 @@ class FunctionThread(threading.Thread):
 
 
 def call_mon_plugin(name, *args, **kwargs):
+    """
+    Exécute un plugin spécifié de manière sécurisée et dans un thread séparé.
+
+    Cette fonction détermine dynamiquement le script du plugin à exécuter en fonction des
+    arguments fournis et des paramètres de configuration. Elle vérifie si les actions des
+    plugins sont activées et si le plugin spécifié n'est pas exclu de l'exécution. Si ces
+    conditions sont remplies, la fonction charge et exécute l'action du plugin dans une
+    nouvelle boucle d'événements, tout en suivant le nombre de fois que chaque plugin est
+    appelé.
+
+    Args:
+        name (str): Le nom de base du plugin.
+        *args: Liste d'arguments de longueur variable où :
+            - args[0]: Un objet contenant la configuration et le chemin des modules.
+            - args[1]: L'identifiant spécifique du plugin.
+        **kwargs: Arguments nommés arbitraires à passer à l'action du plugin.
+
+    Raises:
+        None: Les erreurs et les informations de débogage sont enregistrées au lieu d'être levées.
+
+    """
     try:
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
+                if not os.path.exists(nameplugin):
+                    logging.getLogger().error(f"call_plugin_sequentially The file plugin {nameplugin} does not exist")
+                    return
                 logger.debug(f"Loading plugin {args[1]}")
 
                 loop = asyncio.new_event_loop()
@@ -945,15 +992,12 @@ def call_plugin(name, *args, **kwargs):
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
-                logger.debug(f"Loading plugin {args[1]}")
-
                 if not os.path.exists(nameplugin):
-                    logging.getLogger().error(
-                        f"The file plugin {args[1]} does not exit"
-                    )
+                    logging.getLogger().error(f"call_plugin The file plugin {nameplugin} does not exist")
                     return
+                logger.debug(f"Loading plugin {args[1]}")
                 loop = asyncio.new_event_loop()
-                time.sleep(0.0001) # 0,1 milliseconde permet au thread de monter
+                time.sleep(0.0002) # 0,2 milliseconde permet au thread de monter
                 count = 0
                 try:
                     count = getattr(args[0], f"num_call{args[1]}")
@@ -974,11 +1018,33 @@ def call_plugin(name, *args, **kwargs):
 
 
 def call_plugin_sequentially(name, *args, **kwargs):
+    """
+    Exécute un plugin spécifié de manière séquentielle.
+
+    Cette fonction détermine dynamiquement le script du plugin à exécuter en fonction des
+    arguments fournis et des paramètres de configuration. Elle vérifie si les actions des
+    plugins sont activées et si le plugin spécifié n'est pas exclu de l'exécution. Si ces
+    conditions sont remplies, la fonction charge et exécute l'action du plugin de manière
+    séquentielle, tout en suivant le nombre de fois que chaque plugin est appelé.
+
+    Args:
+        name (str): Le nom de base du plugin.
+        *args: Liste d'arguments de longueur variable où :
+            - args[0]: Un objet contenant la configuration et le chemin des modules.
+            - args[1]: L'identifiant spécifique du plugin.
+        **kwargs: Arguments nommés arbitraires à passer à l'action du plugin.
+
+    Raises:
+        None: Les erreurs et les informations de débogage sont enregistrées au lieu d'être levées.
+    """
     try:
         nameplugin = name
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
+                if not os.path.exists(nameplugin):
+                    logging.getLogger().error(f"call_plugin_sequentially The file plugin {nameplugin} does not exist")
+                    return
                 # add compteur appel plugins
                 count = 0
                 try:
