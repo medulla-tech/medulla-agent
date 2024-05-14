@@ -22,6 +22,7 @@ import random
 import hashlib
 import configparser
 from lib.manageresourceplugin import resource_plugin
+import zlib
 import imp
 import cherrypy
 from lib.reverseport import reverse_port_ssh
@@ -837,6 +838,48 @@ class MUCBot(ClientXMPP):
                 self._iq_error_Handle,
             )
         )
+
+    def sendbigdatatoagent(self, jid_receiver, data_utf8_json, segment_size=65535):
+        """
+        Envoie de gros volumes de données à un agent XMPP en plusieurs segments.
+
+        Args:
+            jid_receiver (str): Le JID du destinataire.
+            data_utf8_json (str): Les données JSON à envoyer, en format UTF-8.
+            segment_size (int, optional): La taille maximale de chaque segment (par défaut: 65535).
+
+        Returns:
+            None
+        """
+        # Vérification si le message est assez gros pour nécessiter un découpage en segments
+        if len(data_utf8_json) > segment_size:
+            # Génération d'un identifiant de session
+            sessionid = getRandomName(6, "big_data")
+            # Compression et encodage en base64
+            data_compressed = zlib.compress(data_utf8_json.encode('utf-8'))
+            data_base64 = base64.b64encode(data_compressed).decode('utf-8')
+
+            # Calcul du nombre total de segments nécessaires
+            nb_segments_total = (len(data_base64) + segment_size - 1) // segment_size
+
+            # Envoi des segments
+            for i in range(nb_segments_total):
+                # Découpage des données en segments de taille segment_size
+                segment = data_base64[i * segment_size:(i + 1) * segment_size]
+                # Construction du message
+                message = {
+                    "action": "big_data",  # Action spécifiée pour le plugin à appeler
+                    "sessionid": sessionid,  # Identifiant de session
+                    "data":{ "segment" :  segment,  # Données de ce segment
+                             "nb_segment": i + 1,  # Numéro du segment actuel
+                             "nb_segment_total": nb_segments_total,  # Nombre total de segments
+                             "from": self.boundjid.full,}  # JID de l'expéditeur
+                }
+                # Envoi du message à jid_receiver
+                self.send_message(mto=jid_receiver, mbody=json.dumps(message), mtype='chat')
+        else:
+            # Envoi direct du message sans découpage
+            self.send_message(mto=jid_receiver, mbody=data_utf8_json, mtype='chat')
 
     def copy_files(self, source_dir, target_dir, file_list):
         """

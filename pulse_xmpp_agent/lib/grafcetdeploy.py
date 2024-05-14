@@ -624,11 +624,12 @@ class grafcet:
             logstruct["action"] = "xmpplog"
             logstruct["data"]["ret"] = ret
             logstruct["data"]["sessionid"] = self.sessionid
-            self.objectxmpp.send_message(
-                mto=self.objectxmpp.sub_logger,
-                mbody=json.dumps(logstruct),
-                mtype="chat",
-            )
+            #self.objectxmpp.send_message(
+                #mto=self.objectxmpp.sub_logger,
+                #mbody=json.dumps(logstruct),
+                #mtype="chat",
+            #)
+            self.objectxmpp.sendbigdatatoagent(self.objectxmpp.sub_logger,mbody, segment_size=65535)
         except Exception as e:
             logging.getLogger().error(str(e))
             err = str(traceback.format_exc())
