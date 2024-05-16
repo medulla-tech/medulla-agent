@@ -190,11 +190,10 @@ class MUCBot(ClientXMPP):
                     directoryconffile(), "syncthing", "config.xml"
                 )
 
-
             if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
                 tmpfile = "/tmp/confsyncting.txt"
             else:
-                tmpfile = os.path.join(pulseTempDir(), "confsyncting.txt") 
+                tmpfile = os.path.join(pulseTempDir(), "confsyncting.txt")
 
             # Before reinitialisation we remove the config.xml file
             try:
