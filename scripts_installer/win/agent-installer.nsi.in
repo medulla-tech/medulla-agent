@@ -151,38 +151,6 @@ Section "Python" sec_py
   ${LogString} "Python Installation...."
   ${LogString} "------------------------------------------------------"
 
-  ; On win32 clean old python if installed
-  ${If} ${RunningX64}
-    ClearErrors
-    ExecWait '"python" -V'
-    ${IfNot} ${Errors}
-        ; Seems Python is installed. We'll try to uninstall the 32bit version
-        ${LogString} "Uninstalling 32bit python if found..."
-        StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813232} /qn /norestart`
-        ${LogString} "Running $0"
-        nsExec::ExecToLog $0
-        Pop $1 # return value/error/timeout
-        ${Switch} $1
-          ${Case} "0"
-              StrCpy $0 `Return code was: $1`
-              ${Break}
-          ${Case} "1605"
-              ;1605 This error is returned when you attempted to uninstall an application that isn't actually installed on a target system.
-              StrCpy $0 `No previous installation`
-              ${Break}
-          ${Default}
-              ${LogString} `Something else happened : $1`
-              ${IfNot} ${Silent}
-                  MessageBox MB_OK|MB_ICONSTOP "Uninstalling 32bit python failed. $\n\
-                  Please check the logs in $INSTDIR\tmp\install.log"
-              ${EndIf}
-              SetErrorLevel 102
-              Quit
-        ${EndSwitch}
-        ${LogString} $0
-    ${EndIf}
-  ${EndIf}
-
   ; Install of Python
   ; Get location
   Var /GLOBAL PYTHON_FILENAME
