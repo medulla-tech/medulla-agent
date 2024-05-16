@@ -185,7 +185,7 @@ class MUCBot(ClientXMPP):
                     "syncthing",
                     "config.xml",
                 )
-            else sys.platform.startswith("win"):
+            elif sys.platform.startswith("win"):
                 self.fichierconfsyncthing = os.path.join(
                     directoryconffile(), "syncthing", "config.xml"
                 )
