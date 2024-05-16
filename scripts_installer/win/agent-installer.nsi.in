@@ -23,6 +23,7 @@ Unicode True
 
 ; Variables replaced by the script calling the nsi
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
+!define PYTHON_VERSION "@@PYTHON_VERSION@@"
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
 
 !define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
@@ -155,6 +156,15 @@ Section "Python" sec_py
   ; Get location
   Var /GLOBAL PYTHON_FILENAME
   StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
+
+  ; Check Python version
+  Var /GLOBAL PYTHON_INSTALLED_VERSION
+  StrCpy $PYTHON_INSTALLED_VERSION "0"
+  nsExec::ExecToStack "c:\Program Files\Python3\python.exe -VV 2>&1"
+  Pop $PYTHON_INSTALLED_VERSION
+  ${GetSubStr} $PYTHON_INSTALLED_VERSION 0 3
+  IntCmp $PYTHON_INSTALLED_VERSION > $PYTHON_VERSION done SkipPythonInstall
+
   ; Install Python
   InstallPython:
   StrCpy $0 `"$INSTDIR\tmp\$PYTHON_FILENAME" /quiet InstallAllUsers=1 Include_pip=0 TargetDir="c:\Program Files\Python3"`
@@ -179,6 +189,7 @@ Section "Python" sec_py
         Quit
   ${EndSwitch}
   ${LogString} $0
+  SkipPythonInstall:
 
   ; Install pip
   StrCpy $0 `$PROGRAMFILES64\Python3\python.exe -m ensurepip --upgrade`
