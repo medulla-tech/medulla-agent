@@ -46,6 +46,7 @@ PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
 KIOSK_FILENAME="kiosk-interface-${KIOSK_VERSION}.tar.gz"
 PYTHON64_FILENAME="python-3.11.8-amd64.exe"
+PYTHON_VERSION="3.11.8"
 LIBCURL_DL_FILENAME="libcurl4-8.0.1-1.tar.xz"
 LIBCURL_FILENAME="cygcurl-4.dll"
 PY_MODULES_64_FILENAMES="CherryPy-18.8.0-py2.py3-none-any.whl \
@@ -348,6 +349,7 @@ update_nsi_script() {
 	sed -e "s/@@AGENT_VERSION@@/${AGENT_VERSION}/" \
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOADS_DIR}/" \
 		-e "s/@@PYTHON64_FILENAME@@/${PYTHON64_FILENAME}/" \
+		-e "s/@@PYTHON_VERSION@@/${PYTHON_VERSION}/" \
 		-e "s/@@FULL_OR_DL_PYTHON64@@/${FULL_OR_DL_PYTHON64}/" \
 		-e "s/@@LIBCURL_FILENAME@@/${LIBCURL_FILENAME}/" \
         -e "s/@@FULL_OR_DL_LIBCURL@@/${FULL_OR_DL_LIBCURL}/" \
