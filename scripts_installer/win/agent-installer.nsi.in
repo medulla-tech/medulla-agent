@@ -23,6 +23,7 @@ Unicode True
 
 ; Variables replaced by the script calling the nsi
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
+!define PYTHON_VERSION "@@PYTHON_VERSION@@"
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
 
 !define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
@@ -151,42 +152,24 @@ Section "Python" sec_py
   ${LogString} "Python Installation...."
   ${LogString} "------------------------------------------------------"
 
-  ; On win32 clean old python if installed
-  ${If} ${RunningX64}
-    ClearErrors
-    ExecWait '"python" -V'
-    ${IfNot} ${Errors}
-        ; Seems Python is installed. We'll try to uninstall the 32bit version
-        ${LogString} "Uninstalling 32bit python if found..."
-        StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813232} /qn /norestart`
-        ${LogString} "Running $0"
-        nsExec::ExecToLog $0
-        Pop $1 # return value/error/timeout
-        ${Switch} $1
-          ${Case} "0"
-              StrCpy $0 `Return code was: $1`
-              ${Break}
-          ${Case} "1605"
-              ;1605 This error is returned when you attempted to uninstall an application that isn't actually installed on a target system.
-              StrCpy $0 `No previous installation`
-              ${Break}
-          ${Default}
-              ${LogString} `Something else happened : $1`
-              ${IfNot} ${Silent}
-                  MessageBox MB_OK|MB_ICONSTOP "Uninstalling 32bit python failed. $\n\
-                  Please check the logs in $INSTDIR\tmp\install.log"
-              ${EndIf}
-              SetErrorLevel 102
-              Quit
-        ${EndSwitch}
-        ${LogString} $0
-    ${EndIf}
-  ${EndIf}
-
   ; Install of Python
   ; Get location
   Var /GLOBAL PYTHON_FILENAME
   StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
+
+  ; Check Python version
+  Var /GLOBAL PYTHON_INSTALLED_VERSION
+  Var /GLOBAL PYTHON_VERSION
+  StrCpy $PYTHON_INSTALLED_VERSION "0"
+  StrCpy $PYTHON_VERSION "0"
+  nsExec::ExecToStack "c:\Program Files\Python3\python.exe -V"
+  Pop $0
+  Pop $1
+  StrCpy $0 $1 "" -8
+  ${LogString} "Python installed version is $0" 
+  IntCmp $0 $PYTHON_VERSION SkipPythonInstall done SkipPythonInstall 
+  done:
+
   ; Install Python
   InstallPython:
   StrCpy $0 `"$INSTDIR\tmp\$PYTHON_FILENAME" /quiet InstallAllUsers=1 Include_pip=0 TargetDir="c:\Program Files\Python3"`
@@ -211,6 +194,7 @@ Section "Python" sec_py
         Quit
   ${EndSwitch}
   ${LogString} $0
+  SkipPythonInstall:
 
   ; Install pip
   StrCpy $0 `$PROGRAMFILES64\Python3\python.exe -m ensurepip --upgrade`
@@ -301,15 +285,18 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} "Medulla Agent Installation...."
   ${LogString} "------------------------------------------------------"
 
-  ; Remove Medulla folder if present
+  ; Remove previous Medulla configuration if present
   ClearErrors
-  ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString"
-  ${IfNot} ${Errors}
-    ; Remove pulse parameters Folder
+  IfFileExists "C:\Progra~1\Pulse" 0 +2
+    ; Delete previous install folder ( when it was called pulse )
+     RMDir /r "C:\Progra~1\Pulse"
+  IfFileExists "C:\Progra~1\Medulla" 0 +7
+    ; Delete previous Medulla configuration parameters
     Delete "$INSTDIR\etc\*.*"
-    ; Remove files from bin
+    ; Delete previous Medulla binaries
     Delete "$INSTDIR\bin\*.py*"
-  ${EndIf}
+    ; Delete previous Medulla log files
+    Delete "$INSTDIR\var\log\*.*"
 
   ; Install of Medulla agent
   StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${WHEEL_FILENAME}`
