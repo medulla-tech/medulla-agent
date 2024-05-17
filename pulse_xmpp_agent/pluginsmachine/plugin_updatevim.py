@@ -27,6 +27,14 @@ import logging
 import shutil
 from lib import utils
 import hashlib
+from lib.agentconffile import (
+    conffilename,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+    conffilenametmp,
+    rotation_file,
+)
 
 APPVERSION = "9.0"
 SHA1SUM = "C22CEAF166D10BDF094D78FD997FC30F02DFC238"
@@ -35,7 +43,7 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatevim", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatevim", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -66,12 +74,12 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the binary is available
-        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        medulla_dir_path = os.path.join(medullaPath(), "bin")
         filename = "vim.exe"
 
-        if os.path.isfile(os.path.join(pulsedir_path, filename)):
+        if os.path.isfile(os.path.join(medulla_dir_path, filename)):
             sha1_hash = hashlib.sha1()
-            with open(os.path.join(pulsedir_path, filename), "rb") as f:
+            with open(os.path.join(medulla_dir_path, filename), "rb") as f:
                 for byte_block in iter(lambda: f.read(4096), b""):
                     sha1_hash.update(byte_block)
             if sha1_hash.hexdigest().upper() == SHA1SUM:
@@ -131,8 +139,7 @@ def updateapp(xmppobject, installed_version):
         % (APPNAME, installed_version, APPVERSION)
     )
     if sys.platform.startswith("win"):
-        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
-
+        medulla_dir_path = os.path.join(medullaPath(), "bin")
         filename = "vim.exe"
         dl_url = "http://%s/downloads/win/downloads/%s" % (
             xmppobject.config.Server,
@@ -140,7 +147,7 @@ def updateapp(xmppobject, installed_version):
         )
         logger.debug("Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
-            dl_url, os.path.join(pulsedir_path, "vim.exe")
+            dl_url, os.path.join(medulla_dir_path, "vim.exe")
         ).downloadurl()
         if result:
             # Download success
