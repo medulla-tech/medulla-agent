@@ -47,9 +47,9 @@ plugin = {"VERSION": "1.1", "NAME": "updatevim", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
-    logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message["from"]))
-    logger.debug("###################################################")
+    logger.debug("PL-VIM ###################################################")
+    logger.debug("PL-VIM call %s from %s" % (plugin, message["from"]))
+    logger.debug("PL-VIM ###################################################")
 
     try:
         check_if_binary_ok()
@@ -92,9 +92,9 @@ def check_if_binary_ok():
             cmd = 'REG ADD "%s" /v "DisplayVersion" /t REG_SZ  /d "0.0" /f' % REGKEY
             result = utils.simplecommand(cmd)
             if result["code"] == 0:
-                logger.debug("%s is ready to be reinstalled." % APPNAME)
+                logger.debug("PL-VIM %s is ready to be reinstalled." % APPNAME)
             else:
-                logger.debug("We failed to reinitialize the registry entry.")
+                logger.debug("PL-VIM We failed to reinitialize the registry entry.")
 
 
 def checkversion():
@@ -120,7 +120,7 @@ def updateversion(version):
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             logger.info(
-                "we successfully updated %s to version %s" % (APPNAME, APPVERSION)
+                "PL-VIM We successfully updated %s to version %s" % (APPNAME, APPVERSION)
             )
 
         if version == "0.0":
@@ -135,7 +135,7 @@ def updateversion(version):
 
 def updateapp(xmppobject, installed_version):
     logger.info(
-        "Updating %s from version %s to version %s"
+        "PL-VIM Updating %s from version %s to version %s"
         % (APPNAME, installed_version, APPVERSION)
     )
     if sys.platform.startswith("win"):
@@ -145,7 +145,7 @@ def updateapp(xmppobject, installed_version):
             xmppobject.config.Server,
             filename,
         )
-        logger.debug("Downloading %s" % dl_url)
+        logger.debug("PL-VIM Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
             dl_url, os.path.join(medulla_dir_path, "vim.exe")
         ).downloadurl()
@@ -155,8 +155,8 @@ def updateapp(xmppobject, installed_version):
                 updateversion(installed_version)
             except IOError as errorcopy:
                 logger.error(
-                    "Error while copying the file with the error: %s" % errorcopy
+                    "PL-VIM Error while copying the file with the error: %s" % errorcopy
                 )
         else:
             # Download error
-            logger.error("%s" % txtmsg)
+            logger.error("PL-VIM %s" % txtmsg)
