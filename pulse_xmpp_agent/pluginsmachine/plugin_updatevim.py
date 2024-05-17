@@ -120,7 +120,8 @@ def updateversion(version):
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             logger.info(
-                "PL-VIM We successfully updated %s to version %s" % (APPNAME, APPVERSION)
+                "PL-VIM We successfully updated %s to version %s"
+                % (APPNAME, APPVERSION)
             )
 
         if version == "0.0":
