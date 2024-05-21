@@ -155,18 +155,16 @@ class PulseAgentService(SMWinservice):
 
     def main(self):
         i = 0
+
+        command = os.path.join("c:\\", "progra~1", "Python3", "python.exe") + " " +os.path.join(program_dir, "networkevents.py")
+
         while self.isrunning:
             print(
                 (
-                    "lancement de : %s" % "python.exe "
-                    + os.path.join(program_dir, "networkevents.py")
+                    "lancement de : %s" % command
                 )
             )
-            os.system(
-                os.path.join("c:\\", "progra~1", "Python3", "python.exe")
-                + os.path.join(program_dir, "networkevents.py")
-                + '"'
-            )
+            os.system(command)
 
 
 if __name__ == "__main__":
