@@ -184,6 +184,7 @@ def updatenetworkcheck(xmppobject):
             "pywintypes%s.dll" % version_info.version,
         )
         win32_path = os.path.join(version_info.get_path_packages_python(), "win32")
+        python3_path = os.path.join("c:\\", "progra~1", "Python3")
         pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "networkevents.py"
@@ -229,7 +230,7 @@ def updatenetworkcheck(xmppobject):
                 try:
                     shutil.copyfile(
                         os.path.join(win32_path, "pythonservice.exe"),
-                        os.path.join(win32_path, "medullanetnotify.exe"),
+                        os.path.join(python3_path, "medullanetnotify.exe"),
                     )
                 except IOError as error_copy:
                     logger.error(
