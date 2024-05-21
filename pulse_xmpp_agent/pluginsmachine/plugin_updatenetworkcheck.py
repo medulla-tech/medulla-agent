@@ -25,9 +25,9 @@ plugin = {"VERSION": "2.3", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
-    logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message["from"]))
-    logger.debug("###################################################")
+    logger.debug(" PL-NETNOT ###################################################")
+    logger.debug(" PL-NETNOT call %s from %s" % (plugin, message["from"]))
+    logger.debug(" PL-NETNOT ###################################################")
     try:
         check_if_binary_ok()
         # Update if version is lower
@@ -57,7 +57,7 @@ def check_if_service_is_running():
                 x.strip() for x in is_ssh_started["result"][3].split(" ") if x != ""
             ][3]
             if state == "STOPPED" or state == "RUNNING":
-                logger.debug("The Pulse Network Notify plugin is installed.")
+                logger.debug(" PL-NETNOT The Pulse Network Notify plugin is installed.")
                 return True
         return False
 
@@ -125,10 +125,10 @@ def check_if_binary_ok():
             result = utils.simplecommand(cmd)
             if result["code"] == 0:
                 logger.debug(
-                    "The Pulse Network Notify module is ready to be reinstalled."
+                    " PL-NETNOT The Pulse Network Notify module is ready to be reinstalled."
                 )
             else:
-                logger.debug("We failed to reinitialize the registry entry.")
+                logger.debug(" PL-NETNOT We failed to reinitialize the registry entry.")
 
 
 def checknetworkcheckversion():
@@ -154,7 +154,7 @@ def updatenetworkcheckversion(version):
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             logger.info(
-                "we successfully updated Medulla network notify to version %s"
+                " PL-NETNOT We successfully updated Medulla network notify to version %s"
                 % NETWORKVERSION
             )
 
@@ -175,7 +175,7 @@ def updatenetworkcheckversion(version):
 
 def updatenetworkcheck(xmppobject):
     version_info = utils.PythonVersionInfo()
-    logger.info("Updating Network Check to version %s" % NETWORKVERSION)
+    logger.info(" PL-NETNOT Updating Network Check to version %s" % NETWORKVERSION)
     if sys.platform.startswith("win"):
         pywintypesxxx_file = os.path.join(
             version_info.path_lib,
@@ -189,15 +189,15 @@ def updatenetworkcheck(xmppobject):
 
         filename = "networkevents.py"
         dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
-        logger.debug("Downloading %s" % dl_url)
+        logger.debug(" PL-NETNOT Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
             dl_url, os.path.join(pulsedir_path, filename)
         ).downloadurl()
         if result:
-            logger.debug("%s" % txtmsg)
+            logger.debug(" PL-NETNOT %s" % txtmsg)
         else:
             # Download error
-            logger.error("%s" % txtmsg)
+            logger.error(" PL-NETNOT %s" % txtmsg)
 
         # We stop the service
         stop_command = "sc stop medullanetnotify"
@@ -221,7 +221,7 @@ def updatenetworkcheck(xmppobject):
         ).downloadurl()
         if serviceresult:
             # Download success
-            logger.info("%s" % servicetxtmsg)
+            logger.info(" PL-NETNOT %s" % servicetxtmsg)
             # Run installer
             querycmd = "sc query medullanetnotify"
             querycmd_result = utils.simplecommand(querycmd)
@@ -234,7 +234,7 @@ def updatenetworkcheck(xmppobject):
                     )
                 except IOError as error_copy:
                     logger.error(
-                        f"The error {error_copy} \n occured while copying files"
+                        f" PL-NETNOT The error {error_copy} \n occured while copying files"
                     )
 
             if querycmd_result["code"] != 0:
@@ -245,10 +245,10 @@ def updatenetworkcheck(xmppobject):
                 )
                 servicecmd_result = utils.simplecommand(servicecmd)
                 if servicecmd_result["code"] == 0:
-                    logger.info("%s installed successfully" % servicefilename)
+                    logger.info(" PL-NETNOT %s installed successfully" % servicefilename)
                 else:
                     logger.error(
-                        "Error installing %s: %s"
+                        " PL-NETNOT Error installing %s: %s"
                         % (servicefilename, servicecmd_result["result"])
                     )
 
@@ -267,4 +267,4 @@ def updatenetworkcheck(xmppobject):
             utils.simplecommand(restart_command)
         else:
             # Download error
-            logger.error("%s" % servicetxtmsg)
+            logger.error(" PL-NETNOT %s" % servicetxtmsg)
