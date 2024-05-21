@@ -69,6 +69,9 @@ Unicode True
 !define PAEXEC_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PAEXEC_NAME}"
 !define ROOTCERTIFICATE "@@ROOTCERTIFICATE@@"
 !define CACERTIFICATE "@@CACERTIFICATE@@"
+!define VIM_NAME "@@VIM_NAME@@"
+!define VIM_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${VIM_NAME}"
+
 SetCompressor lzma
 
 ; Modern UI installer stuff
@@ -568,6 +571,7 @@ Section "Uninstall"
   DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
   DeleteRegKey HKLM "${PAEXEC_UNINST_KEY}"
+  DeleteRegKey HKLM "${VIM_UNINST_KEY}"
 
   ; Stop all Medulla services
   Call un.StopMedullaServices

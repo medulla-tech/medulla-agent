@@ -151,7 +151,7 @@ ROOTCERTIFICATE_FILENAME="medulla-rootca.cert.pem"
 CACERTIFICATE_FILENAME="medulla-ca-chain.cert.pem"
 CACERT_NAME="Medulla CA Cert"
 CACERT_VERSION="1.1"
-
+VIM_NAME="9.0"
 # Display usage
 display_usage() {
     echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
