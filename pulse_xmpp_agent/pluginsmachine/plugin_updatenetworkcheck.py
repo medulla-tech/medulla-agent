@@ -245,7 +245,9 @@ def updatenetworkcheck(xmppobject):
                 )
                 servicecmd_result = utils.simplecommand(servicecmd)
                 if servicecmd_result["code"] == 0:
-                    logger.info(" PL-NETNOT %s installed successfully" % servicefilename)
+                    logger.info(
+                        " PL-NETNOT %s installed successfully" % servicefilename
+                    )
                 else:
                     logger.error(
                         " PL-NETNOT Error installing %s: %s"
