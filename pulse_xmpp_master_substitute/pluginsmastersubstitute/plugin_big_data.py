@@ -46,16 +46,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("call %s from %s" % (plugin, msg["from"]))
         logger.debug("=======================================================")
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
-        if not hasattr(xmppobject, 'received_data'):
+        if not hasattr(xmppobject, "received_data"):
             xmppobject.received_data = {}
             xmppobject.dating = {}
-        if hasattr(xmppobject, 'received_data'):
+        if hasattr(xmppobject, "received_data"):
             big_data(xmppobject, action, sessionid, data, msg, ret, dataobj)
 
     except Exception as e:
-        logger.error(
-            "The %s. We encountered the error %s" % (plugin["NAME"], str(e)))
+        logger.error("The %s. We encountered the error %s" % (plugin["NAME"], str(e)))
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
+
 
 def big_data(xmppobject, action, sessionid, data, msg, ret, dataobj):
     """
@@ -74,13 +74,17 @@ def big_data(xmppobject, action, sessionid, data, msg, ret, dataobj):
         None
     """
     valuedata = int(time.time())  # Obtient le temps actuel en secondes
-    subsessionid = []  # Initialise une liste pour stocker les identifiants de session à supprimer
+    subsessionid = (
+        []
+    )  # Initialise une liste pour stocker les identifiants de session à supprimer
 
     # Si la fonction de datation est activée
     if xmppobject.dating:
         for sessionidvalue in xmppobject.received_data.keys():
-            if sessionidvalue in xmppobject.dating and \
-                (valuedata - xmppobject.dating[sessionidvalue]) > 1800:
+            if (
+                sessionidvalue in xmppobject.dating
+                and (valuedata - xmppobject.dating[sessionidvalue]) > 1800
+            ):
                 # Supprime la session dans received_data et dating si elle est périmée
                 subsessionid.append(sessionidvalue)
 
@@ -103,23 +107,31 @@ def big_data(xmppobject, action, sessionid, data, msg, ret, dataobj):
     # Vérifie si tous les segments ont été reçus
     if len(xmppobject.received_data[sessionid]) == nb_segments_total:
         # Concatène les segments pour reconstruire les données complètes
-        full_data_base64 = ''.join([xmppobject.received_data[sessionid][i] for i in range(1, nb_segments_total + 1)])
+        full_data_base64 = "".join(
+            [
+                xmppobject.received_data[sessionid][i]
+                for i in range(1, nb_segments_total + 1)
+            ]
+        )
         full_data_compressed = base64.b64decode(full_data_base64)
-        full_data_utf8 = zlib.decompress(full_data_compressed).decode('utf-8')
+        full_data_utf8 = zlib.decompress(full_data_compressed).decode("utf-8")
         del xmppobject.received_data[sessionid]
-        logger.debug("count received_data %s" %  len(xmppobject.received_data))
+        logger.debug("count received_data %s" % len(xmppobject.received_data))
         # Convertit les données en JSON
         full_message = json.loads(full_data_utf8)
 
         # Injecte le message dans le plugin
-        path_module = "%s/plugin_%s.py" % (xmppobject.modulepath, full_message["action"])
+        path_module = "%s/plugin_%s.py" % (
+            xmppobject.modulepath,
+            full_message["action"],
+        )
         call_plugin(
-                        path_module,
-                        xmppobject,
-                        full_message["action"],
-                        full_message["sessionid"],
-                        full_message["data"],
-                        msg,
-                        full_message["ret"],
-                        {},
-                    )
+            path_module,
+            xmppobject,
+            full_message["action"],
+            full_message["sessionid"],
+            full_message["data"],
+            msg,
+            full_message["ret"],
+            {},
+        )

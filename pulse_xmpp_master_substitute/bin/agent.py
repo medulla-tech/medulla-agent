@@ -147,8 +147,8 @@ class MUCBot(slixmpp.ClientXMPP):
             # Génération d'un identifiant de session
             sessionid = getRandomName(6, "big_data")
             # Compression et encodage en base64
-            data_compressed = zlib.compress(data_utf8_json.encode('utf-8'))
-            data_base64 = base64.b64encode(data_compressed).decode('utf-8')
+            data_compressed = zlib.compress(data_utf8_json.encode("utf-8"))
+            data_base64 = base64.b64encode(data_compressed).decode("utf-8")
 
             # Calcul du nombre total de segments nécessaires
             nb_segments_total = (len(data_base64) + segment_size - 1) // segment_size
@@ -156,21 +156,25 @@ class MUCBot(slixmpp.ClientXMPP):
             # Envoi des segments
             for i in range(nb_segments_total):
                 # Découpage des données en segments de taille segment_size
-                segment = data_base64[i * segment_size:(i + 1) * segment_size]
+                segment = data_base64[i * segment_size : (i + 1) * segment_size]
                 # Construction du message
                 message = {
                     "action": "big_data",  # Action spécifiée pour le plugin à appeler
                     "sessionid": sessionid,  # Identifiant de session
-                    "data":{ "segment" :  segment,  # Données de ce segment
-                             "nb_segment": i + 1,  # Numéro du segment actuel
-                             "nb_segment_total": nb_segments_total,  # Nombre total de segments
-                             "from": self.boundjid.full,}  # JID de l'expéditeur
+                    "data": {
+                        "segment": segment,  # Données de ce segment
+                        "nb_segment": i + 1,  # Numéro du segment actuel
+                        "nb_segment_total": nb_segments_total,  # Nombre total de segments
+                        "from": self.boundjid.full,
+                    },  # JID de l'expéditeur
                 }
                 # Envoi du message à jid_receiver
-                self.send_message(mto=jid_receiver, mbody=json.dumps(message), mtype='chat')
+                self.send_message(
+                    mto=jid_receiver, mbody=json.dumps(message), mtype="chat"
+                )
         else:
             # Envoi direct du message sans découpage
-            self.send_message(mto=jid_receiver, mbody=data_utf8_json, mtype='chat')
+            self.send_message(mto=jid_receiver, mbody=data_utf8_json, mtype="chat")
 
     def Clean_old_queue(self, nbsecond):
         """
