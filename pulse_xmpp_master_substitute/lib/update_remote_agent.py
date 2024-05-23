@@ -97,7 +97,7 @@ class Update_Remote_Agent:
         ]:
             self.directory["script_agent"][filename] = hashlib.md5(
                 file_get_binarycontents(
-                    os.path.join(self.dir_agent_base, "script", filename)).hexdigest()
+                    os.path.join(self.dir_agent_base, "script", filename))).hexdigest()
             listmd5.append(self.directory["script_agent"][filename])
         listmd5.sort()
         self.directory["fingerprint"] = hashlib.md5(
