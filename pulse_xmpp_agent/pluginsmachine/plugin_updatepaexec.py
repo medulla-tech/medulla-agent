@@ -103,7 +103,8 @@ def updateversion(version):
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             logger.info(
-                " PL-PAEXEC We successfully updated %s to version %s" % (APPNAME, APPVERSION)
+                " PL-PAEXEC We successfully updated %s to version %s"
+                % (APPNAME, APPVERSION)
             )
 
         if version == "0.0":
@@ -139,7 +140,8 @@ def updateapp(xmppobject, installed_version):
                 updateversion(installed_version)
             except IOError as errorcopy:
                 logger.error(
-                    " PL-PAEXEC Error while copying the file with the error: %s" % errorcopy
+                    " PL-PAEXEC Error while copying the file with the error: %s"
+                    % errorcopy
                 )
         else:
             # Download error
