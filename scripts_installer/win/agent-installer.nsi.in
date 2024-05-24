@@ -23,6 +23,7 @@ Unicode True
 
 !define PULSE_PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent"
 !define PULSE_PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent dependencies"
+!define PULSE_PAEXEC_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PAExec"
 
 ; Variables replaced by the script calling the nsi
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
@@ -282,6 +283,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Remove old Pulse key
   DeleteRegKey HKLM "${PULSE_PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PULSE_PRODUCT_DEPS_UNINST_KEY}"
+  DeleteRegKey HKLM "${PULSE_PAEXEC_UNINST_KEY}"
   File "../${PULSE_AGENT_FILENAME}"
   File "../${AGENT_PLUGINS_FILENAME}"
   File "../${KIOSK_FILENAME}"
