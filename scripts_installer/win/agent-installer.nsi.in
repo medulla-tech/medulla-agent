@@ -21,6 +21,9 @@ Unicode True
 !define OLD_PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Agent dependencies"
 !define OLD_PRODUCT_NETNOTIF_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla network notify"
 
+!define PULSE_PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent"
+!define PULSE_PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent dependencies"
+
 ; Variables replaced by the script calling the nsi
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
 !define PYTHON_VERSION "@@PYTHON_VERSION@@"
@@ -276,6 +279,9 @@ Section "!${PRODUCT_NAME}" sec_app
   DeleteRegKey HKLM "${OLD_PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${OLD_PRODUCT_DEPS_UNINST_KEY}"
   DeleteRegKey HKLM "${OLD_PRODUCT_NETNOTIF_UNINST_KEY}"
+  ; Remove old Pulse key
+  DeleteRegKey HKLM "${PULSE_PRODUCT_UNINST_KEY}"
+  DeleteRegKey HKLM "${PULSE_PRODUCT_DEPS_UNINST_KEY}"
   File "../${PULSE_AGENT_FILENAME}"
   File "../${AGENT_PLUGINS_FILENAME}"
   File "../${KIOSK_FILENAME}"
