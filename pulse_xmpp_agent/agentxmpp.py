@@ -253,9 +253,7 @@ class MUCBot(ClientXMPP):
         eventkillpipe,
         pidprogrammprincipal,
     ):
-        logging.log(
-            DEBUGPULSE, "start machine  %s Type %s" % (conf.jidagent, conf.agenttype)
-        )
+        logger.debug("start machine  %s Type %s" % (conf.jidagent, conf.agenttype))
 
         self.iq_msg = file_message_iq(dev_mod=True)
         self.pidprogrammprincipal = pidprogrammprincipal
@@ -283,7 +281,7 @@ class MUCBot(ClientXMPP):
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
         laps_time_send_ping_to_kiosk = 350
-        logging.debug(
+        logger.debug(
             "check connexion xmpp %ss" % laps_time_check_established_connection
         )
         self.back_to_deploy = {}
@@ -314,14 +312,14 @@ class MUCBot(ClientXMPP):
             "INFOSTMP",
             "fingerprintnetwork",
         )
-        logging.debug("filename: %s" % filetempinfolibfingerprint)
+        logger.debug("filename: %s" % filetempinfolibfingerprint)
         if os.path.exists(filetempinfolibfingerprint):
-            logging.debug(
+            logger.debug(
                 "current fingerprint file %s"
                 % file_get_contents(filetempinfolibfingerprint)
             )
             if netfingerprintstart != file_get_contents(filetempinfolibfingerprint):
-                logging.warning(
+                logger.warning(
                     "after start : registration must update the information in the xmpp tables."
                 )
                 self.force_full_registration()
@@ -334,7 +332,7 @@ class MUCBot(ClientXMPP):
         # inventaire suite a 1 changement de reseau.
         # inventaire sera demander quand l'agent sera dans 1 mode moins transitoire.
         # CREATE MANAGE SCHEDULER
-        logging.debug("CREATION MANAGER PLUGINSCHEDULING")
+        logger.debug("CREATION MANAGER PLUGINSCHEDULING")
         self.manage_scheduler = manage_scheduler(self)
         # Definition path directory plugin
         namelibplugins = "pluginsmachine"
@@ -353,11 +351,11 @@ class MUCBot(ClientXMPP):
             os.path.dirname(os.path.realpath(__file__)), "img_agent"
         )
         if os.path.isdir(self.img_agent):
-            logging.debug("deleting directory %s" % self.img_agent)
+            logger.debug("deleting directory %s" % self.img_agent)
             try:
                 shutil.rmtree(self.img_agent)
             except Exception as e:
-                logging.error(
+                logger.error(
                     "Cannot delete the directory %s : %s" % (self.img_agent, str(e))
                 )
 
@@ -423,14 +421,14 @@ class MUCBot(ClientXMPP):
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
 
         if self.config.updating != 1:
-            logging.debug("The updating configuration is set to 0")
-            logging.debug(
+            logger.debug("The updating configuration is set to 0")
+            logger.debug(
                 "We will not update the agent if a new version is available on the server"
             )
 
         if self.config.updatingplugins != 1:
-            logging.debug("The updatingplugins configuration is set to 0")
-            logging.debug(
+            logger.debug("The updatingplugins configuration is set to 0")
+            logger.debug(
                 "We will not update the plugins if new versions are available on the server"
             )
 
@@ -439,7 +437,7 @@ class MUCBot(ClientXMPP):
             != self.Update_Remote_Agentlist.get_fingerprint_agent_base()
         ):
             self.agentupdating = True
-            logging.warning("Agent installed is different from agent on master.")
+            logger.warning("Agent installed is different from agent on master.")
 
         if self.config.agenttype in ["machine"]:
             # on appelle cette fonction toutes les 30 seconde
@@ -689,7 +687,7 @@ class MUCBot(ClientXMPP):
         self.schedule("check reconf file", 300, self.checkreconf, repeat=True)
 
         if self.config.netchanging == 1:
-            logging.debug("Network Changing enable")
+            logger.debug("Network Changing enable")
             if self.config.sched_check_network:
                 self.schedule(
                     "check network",
@@ -698,7 +696,7 @@ class MUCBot(ClientXMPP):
                     repeat=True,
                 )
         else:
-            logging.debug("Network Changing disable")
+            logger.debug("Network Changing disable")
 
         if self.config.agenttype not in ["relayserver"]:
             self.schedule(
@@ -740,8 +738,8 @@ class MUCBot(ClientXMPP):
         if self.config.inventory_interval != 0:
             if self.config.inventory_interval < 3600:
                 self.config.inventory_interval = 3600
-                logging.warning("change minimun time cyclic inventory : 3600")
-                logging.warning(
+                logger.warning("change minimun time cyclic inventory : 3600")
+                logger.warning(
                     "we make sure that the time for "
                     " the inventories is greater than or equal to 1 hour."
                 )
@@ -753,7 +751,7 @@ class MUCBot(ClientXMPP):
                     repeat=True,
                 )
         else:
-            logging.debug("The cyclic inventory feature is disabled")
+            logger.debug("The cyclic inventory feature is disabled")
 
         if self.config.agenttype not in ["relayserver"]:
             if self.config.sched_session_reload:
@@ -1082,14 +1080,14 @@ class MUCBot(ClientXMPP):
 
     def Mode_Marche_Arret_complet_arret_program(self, pidprogrammprincipal):
         if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-            logging.debug("END PROGRAMM")
+            logger.debug("END PROGRAMM")
             for p in processes:
                 p.terminate()
             cmd = "kill -s kill %s" % pidprogrammprincipal
             result = simplecommand(cmd)
         elif sys.platform.startswith("win"):
-            logging.debug("CTRL+C have been asked.")
-            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
+            logger.debug("CTRL+C have been asked.")
+            logger.debug("The Pulse Xmpp Agent Relay is now stopped")
             for p in processes:
                 p.terminate()
             cmd = "taskkill /F /PID %s" % pidprogrammprincipal
@@ -1131,10 +1129,7 @@ class MUCBot(ClientXMPP):
         il relit la conf...
         """
         self.brestartbot = True  # boucle reinitialise.
-        logging.log(
-            DEBUGPULSE,
-            "We restart the medulla agent for the machine %s" % self.boundjid.user,
-        )
+        logger.debug("We restart the medulla agent for the machine %s" % self.boundjid.user,)
         self.disconnect(wait=wait)  # on provoque 1 connection default
 
     def quit_application(self, wait=2):
@@ -1152,7 +1147,7 @@ class MUCBot(ClientXMPP):
         Returns:
             None
         """
-        logging.log(DEBUGPULSE, "Quit Application")
+        logger.debug( "Quit Application")
         setgetrestart(0)
         self.disconnect(wait=wait)
 
@@ -1350,13 +1345,13 @@ class MUCBot(ClientXMPP):
         resp["register"]["password"] = self.password
         try:
             resp.send()
-            logging.info("Account created for %s!" % self.boundjid)
+            logger.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.debug("Could not register account: %s" % e.iq["error"]["text"])
+            logger.debug("Could not register account: %s" % e.iq["error"]["text"])
             self.disconnect(wait=10)
 
         except IqTimeout:
-            logging.error("No response from server.")
+            logger.error("No response from server.")
             self.disconnect(wait=10)
 
     def check_subscribe(self):
@@ -1741,7 +1736,7 @@ class MUCBot(ClientXMPP):
                         newfolder = self.syncthing.create_template_struct_folder(
                             devicefolder["label"], path_folder, id=devicefolder["id"]
                         )
-                        logging.debug("add shared folder %s" % path_folder)
+                        logger.debug("add shared folder %s" % path_folder)
                         logger.info("add device in folder %s" % devicefolder["id"])
                         self.add_folder_dict_if_not_exist_id(newfolder, config)
                         self.add_device_in_folder_if_not_exist(
@@ -1848,7 +1843,7 @@ class MUCBot(ClientXMPP):
                 )
                 # verify le contenue de namesearch
                 if os.path.isdir(namesearch):
-                    logging.debug("deploy transfert syncthing : %s" % namesearch)
+                    logger.debug("deploy transfert syncthing : %s" % namesearch)
                     # Get the deploy json
                     filedeploy = os.path.join("%s.descriptor" % filears[:-4])
                     deploytojson = managepackage.loadjsonfile(filedeploy)
@@ -1861,13 +1856,13 @@ class MUCBot(ClientXMPP):
                     # We need to copy the content of namesearch into the tmp
                     # package dirl
                     packagedir = managepackage.packagedir()
-                    logging.warning(packagedir)
+                    logger.warning(packagedir)
                     for dirname in os.listdir(namesearch):
                         if dirname != ".stfolder":
                             # clean the dest package to be sure
                             try:
                                 shutil.rmtree(os.path.join(packagedir, dirname))
-                                logging.debug(
+                                logger.debug(
                                     "clean package before copy %s"
                                     % (os.path.join(packagedir, dirname))
                                 )
@@ -1894,7 +1889,7 @@ class MUCBot(ClientXMPP):
                                     os.path.join(packagedir, dirname),
                                 )
 
-                                logging.debug(
+                                logger.debug(
                                     "copy %s to %s"
                                     % (
                                         os.path.join(namesearch, dirname),
@@ -1902,15 +1897,15 @@ class MUCBot(ClientXMPP):
                                     )
                                 )
                                 try:
-                                    logging.debug("Delete %s" % filears)
+                                    logger.debug("Delete %s" % filears)
                                     os.remove(filears)
                                 except Exception:
-                                    logging.warning("%s no exist" % filears)
+                                    logger.warning("%s no exist" % filears)
                                 try:
-                                    logging.debug("delete %s" % filedeploy)
+                                    logger.debug("delete %s" % filedeploy)
                                     os.remove(filedeploy)
                                 except Exception:
-                                    logging.warning("%s does no exist" % filedeploy)
+                                    logger.warning("%s does no exist" % filedeploy)
 
                                 dataerreur = {
                                     "action": "resultapplicationdeploymentjson",
@@ -1934,8 +1929,8 @@ class MUCBot(ClientXMPP):
                                     "to": self.boundjid.bare,
                                     "type": "chat",
                                 }
-                                logging.debug("call  applicationdeploymentjson")
-                                logging.debug(
+                                logger.debug("call  applicationdeploymentjson")
+                                logger.debug(
                                     "%s " % json.dumps(transfertdeploy, indent=4)
                                 )
                                 call_plugin(
@@ -1947,7 +1942,7 @@ class MUCBot(ClientXMPP):
                                     msg,
                                     dataerreur,
                                 )
-                                logging.warning("SEND MASTER")
+                                logger.warning("SEND MASTER")
                                 datasend = {
                                     "action": "deploysyncthing",
                                     "sessionid": syncthingtojson["sessionid"],
@@ -1961,15 +1956,15 @@ class MUCBot(ClientXMPP):
                                     "base64": False,
                                 }
                                 strr = json.dumps(datasend)
-                                logging.warning("SEND MASTER %s : " % strr)
-                                logging.error("send to master")
-                                logging.error("%s " % strr)
+                                logger.warning("SEND MASTER %s : " % strr)
+                                logger.error("send to master")
+                                logger.error("%s " % strr)
 
                                 self.send_message(
                                     mto=self.agentmaster, mbody=strr, mtype="chat"
                                 )
                             except Exception:
-                                logging.error(
+                                logger.error(
                                     "The package's copy %s to %s failed"
                                     % (dirname, packagedir)
                                 )
@@ -1978,7 +1973,7 @@ class MUCBot(ClientXMPP):
                     # we look if we have informations about the transfert
                     # print
                     # self.syncthing.get_db_status(syncthingtojson['id_deploy'])
-                    logging.debug(
+                    logger.debug(
                         "Recherche la completion de transfert %s" % namesearch
                     )
                     result = self.syncthing.get_db_completion(
@@ -2207,7 +2202,7 @@ class MUCBot(ClientXMPP):
                     # call plugin on master
                     self.send_message_to_master(datasend)
         except Exception as e:
-            logging.error("message to kiosk server : %s" % str(e))
+            logger.error("message to kiosk server : %s" % str(e))
             logger.error("\n%s" % (traceback.format_exc()))
         finally:
             client_socket.close()
@@ -2228,7 +2223,7 @@ class MUCBot(ClientXMPP):
             # on supprime cette session des fifo
             # le deploiement est treminée pour cette session.
             self.managefifo.delsessionfifo(sessionid)
-            logging.warning(
+            logger.warning(
                 "stop deploy session %s " "(deployment slot has passed)" % sessionid
             )
             self.xmpplog(
@@ -2334,7 +2329,7 @@ class MUCBot(ClientXMPP):
         self.levelcharge["charge"] = len(self.levelcharge["machinelist"])
 
     def signal_handler(self, signal, frame):
-        logging.log(DEBUGPULSE, "CTRL-C EVENT")
+        logger.debug( "CTRL-C EVENT")
         global signalint
         signalint = True
         msgevt = {
@@ -2372,28 +2367,28 @@ class MUCBot(ClientXMPP):
             if evt == win32con.CTRL_SHUTDOWN_EVENT:
                 msgevt["data"]["event"] = "SHUTDOWN_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL_SHUTDOWN EVENT")
+                logger.debug( "CTRL_SHUTDOWN EVENT")
                 signalint = True
                 return True
             if evt == win32con.CTRL_LOGOFF_EVENT:
                 msgevt["data"]["event"] = "LOGOFF_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL_LOGOFF EVENT")
+                logger.debug( "CTRL_LOGOFF EVENT")
                 return True
             if evt == win32con.CTRL_BREAK_EVENT:
                 msgevt["data"]["event"] = "BREAK_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL_BREAK EVENT")
+                logger.debug( "CTRL_BREAK EVENT")
                 return True
             if evt == win32con.CTRL_CLOSE_EVENT:
                 msgevt["data"]["event"] = "CLOSE_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL_CLOSE EVENT")
+                logger.debug( "CTRL_CLOSE EVENT")
                 return True
             if evt == win32con.CTRL_C_EVENT:
                 msgevt["data"]["event"] = "CTRL_C_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL-C EVENT")
+                logger.debug( "CTRL-C EVENT")
                 signalint = True
                 self.quit_application(wait=3)
                 return True
@@ -2427,7 +2422,7 @@ class MUCBot(ClientXMPP):
         try:
             dataobj = json.loads(event)
         except Exception as e:
-            logging.error("bad struct jsopn Message console %s : %s " % (event, str(e)))
+            logger.error("bad struct jsopn Message console %s : %s " % (event, str(e)))
             q.put("bad struct jsopn Message console %s : %s " % (event, str(e)))
         # cette liste contient les function directement appelable depuis
         # console.
@@ -2469,7 +2464,7 @@ class MUCBot(ClientXMPP):
                     dataerreur,
                 )
         else:
-            logging.error("action missing in json Message console %s" % (dataobj))
+            logger.error("action missing in json Message console %s" % (dataobj))
             q.put("action missing in jsopn Message console %s" % (dataobj))
             return
 
@@ -2624,11 +2619,8 @@ class MUCBot(ClientXMPP):
         if self.config.agenttype in ["relayserver"]:
             try:
                 if self.config.public_ip_relayserver != "":
-                    logging.log(
-                        DEBUGPULSE,
-                        "Attribution ip public by configuration for ipconnexion: [%s]"
-                        % self.config.public_ip_relayserver,
-                    )
+                    logger.debug("Attribution ip public by configuration for ipconnexion: [%s]"
+                        % self.config.public_ip_relayserver)
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
@@ -2805,18 +2797,18 @@ class MUCBot(ClientXMPP):
                         try:
                             os.remove(self.tmpfile)
                         except OSError:
-                            logging.error(
+                            logger.error(
                                 "We failed to remove the file %s" % self.tmpfile
                             )
                             pass
 
             except KeyError as keyerror:
-                logging.error(
+                logger.error(
                     "The %s key is missing in your syncthing config file" % keyerror
                 )
 
             except Exception as e:
-                logging.error(
+                logger.error(
                     "The initialisation of syncthing failed with the error %s: "
                     % str(e)
                 )
@@ -2975,9 +2967,7 @@ class MUCBot(ClientXMPP):
         # Send plugin and machine informations to Master
         try:
             dataobj = self.seachInfoMachine()
-            logging.log(
-                DEBUGPULSE,
-                "SEND REGISTRATION XMPP to %s \n%s"
+            logger.debug("SEND REGISTRATION XMPP to %s \n%s"
                 % (self.sub_registration, json.dumps(dataobj, indent=4)),
             )
 
@@ -3097,7 +3087,7 @@ class MUCBot(ClientXMPP):
                 mtype="chat",
             )
         except Exception as e:
-            logging.error(
+            logger.error(
                 "message log to '%s/MASTER': %s " % (self.agentmaster, str(e))
             )
             logger.error("\n%s" % (traceback.format_exc()))
@@ -3156,9 +3146,7 @@ class MUCBot(ClientXMPP):
             if os.path.isfile(namefilebool):
                 break
             time.sleep(2)
-        logging.log(
-            DEBUGPULSE,
-            "A new configuration has been detected on %s. We will reconfigure it."
+        logger.debug("A new configuration has been detected on %s. We will reconfigure it."
             % self.boundjid.user,
         )
 
@@ -3177,7 +3165,7 @@ class MUCBot(ClientXMPP):
 
     def networkMonitor(self):
         try:
-            logging.debug(
+            logger.debug(
                 "network monitor time  "
                 "%ss %s!" % (self.laps_time_networkMonitor, self.boundjid.user)
             )
@@ -3191,9 +3179,7 @@ class MUCBot(ClientXMPP):
                 # il y a 1 changement dans le reseau
                 # on verify si on connecte
                 if self.state.ensure("connected"):
-                    logging.log(
-                        DEBUGPULSE, "AGENT MACHINE ALWAY CONNECTED ON CHANG RESEAU"
-                    )
+                    logger.debug("AGENT MACHINE ALWAY CONNECTED ON CHANG RESEAU")
                     # toujours connected.
                     self.md5reseau = refreshfingerprint()
                     # il y a changement d interface. il faut remettre a jour la table pour network.
@@ -3203,15 +3189,11 @@ class MUCBot(ClientXMPP):
                     return
                 if not os.path.isfile(force_reconfiguration):
                     refreshfingerprint()
-                    logging.log(
-                        DEBUGPULSE,
-                        "by network changed. The reconfiguration of the agent [%s] will be executed."
+                    logger.debug("by network changed. The reconfiguration of the agent [%s] will be executed."
                         % self.boundjid.user,
                     )
                 else:
-                    logging.log(
-                        DEBUGPULSE,
-                        "by request. The reconfiguration of the agent [%s] will be executed."
+                    logger.debug("by request. The reconfiguration of the agent [%s] will be executed."
                         % self.boundjid.user,
                     )
                     os.remove(force_reconfiguration)
@@ -3226,12 +3208,11 @@ class MUCBot(ClientXMPP):
                 if os.path.isfile(BOOLFILEINVENTORYONCHANGINTERFACE):
                     # if on a ce fichier alors on genere 1 nouveau inventaire
                     os.remove(BOOLFILEINVENTORYONCHANGINTERFACE)
-                    logging.log(
-                        DEBUGPULSE, "The network changed. We will send a new inventory"
+                    logger.debug("The network changed. We will send a new inventory"
                     )
                     self.handleinventory()
         except Exception as e:
-            logging.error(" %s " % (str(e)))
+            logger.error(" %s " % (str(e)))
             logger.error("\n%s" % (traceback.format_exc()))
 
     def reinstall_agent(self):
@@ -3346,7 +3327,7 @@ class MUCBot(ClientXMPP):
             dataobj = json.loads(msg["body"])
 
         except Exception as e:
-            logging.error("bad struct Message %s %s " % (msg, str(e)))
+            logger.error("bad struct Message %s %s " % (msg, str(e)))
             dataerreur = {
                 "action": "resultmsginfoerror",
                 "sessionid": "",
@@ -3367,7 +3348,7 @@ class MUCBot(ClientXMPP):
                 # les messages venant d'une machine sont filtré sauf si une
                 # session message existe dans le gestionnaire de session.
                 if self.config.ordreallagent:
-                    logging.warning(
+                    logger.warning(
                         "filtre message from %s eg possible client" % (msg["from"].bare)
                     )
                     return
@@ -3381,7 +3362,7 @@ class MUCBot(ClientXMPP):
         }
 
         if "action" not in dataobj:
-            logging.error("warning message action missing %s" % (msg))
+            logger.error("warning message action missing %s" % (msg))
             return
 
         if dataobj["action"] == "restarfrommaster":
@@ -3418,7 +3399,7 @@ class MUCBot(ClientXMPP):
             return
 
         if dataobj["action"] == "resultmsginfoerror":
-            logging.warning(
+            logger.warning(
                 "filtre message from %s for action %s"
                 % (msg["from"].bare, dataobj["action"])
             )
@@ -3440,7 +3421,7 @@ class MUCBot(ClientXMPP):
 
                 if "sessionid" not in dataobj:
                     dataobj["sessionid"] = getRandomName(6, "xmpp")
-                    logging.warning(
+                    logger.warning(
                         "sessionid missing in message from %s : attributed sessionid %s "
                         % (msg["from"], dataobj["sessionid"])
                     )
@@ -3519,14 +3500,14 @@ class MUCBot(ClientXMPP):
                         self.send_message(
                             mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
                         )
-                    logging.error(
+                    logger.error(
                         "TypeError execution plugin %s : [ERROR : plugin Missing] %s"
                         % (dataobj["action"], sys.exc_info()[0])
                     )
                     logger.error("\n%s" % (traceback.format_exc()))
 
                 except Exception as e:
-                    logging.error(
+                    logger.error(
                         "execution plugin [%s]  : %s " % (dataobj["action"], str(e))
                     )
                     if dataobj["action"].startswith("result"):
@@ -3554,7 +3535,7 @@ class MUCBot(ClientXMPP):
                     mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
                 )
         except Exception as e:
-            logging.error("bad struct Message %s %s " % (msg, str(e)))
+            logger.error("bad struct Message %s %s " % (msg, str(e)))
             dataerreur["data"]["msg"] = "ERROR : Message structure"
             self.send_message(
                 mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
@@ -3686,9 +3667,9 @@ AGENT %s ERROR TERMINATE""" % (
                     file_get_contents(self.config.monitoring_agent_config_file)
                 ).hexdigest()
         except AttributeError:
-            logging.debug("The monitoring configuration file is missing")
+            logger.debug("The monitoring configuration file is missing")
         except Exception as e:
-            logging.error("%s error on file config monitoring" % str(e))
+            logger.error("%s error on file config monitoring" % str(e))
 
         if self.config.agenttype in ["relayserver"]:
             try:
@@ -3698,7 +3679,7 @@ AGENT %s ERROR TERMINATE""" % (
         if self.geodata is not None:
             dataobj["geolocalisation"] = self.geodata.localisation
         else:
-            logging.debug("The geolocalisation is disabled")
+            logger.debug("The geolocalisation is disabled")
         try:
             if self.config.agenttype in ["relayserver"]:
                 dataobj["moderelayserver"] = self.config.moderelayserver
@@ -3774,7 +3755,7 @@ AGENT %s ERROR TERMINATE""" % (
                 try:
                     __import__(name.split(".", 1)[0])
                 except ImportError:
-                    logging.warning(
+                    logger.warning(
                         "The following python module needs to be installed first: %s"
                         % (name)
                     )
@@ -3785,7 +3766,7 @@ AGENT %s ERROR TERMINATE""" % (
                 try:
                     __import__(name.split(".", 1)[0])
                 except ImportError:
-                    logging.warning(
+                    logger.warning(
                         "The following python module needs to be installed first: %s"
                         % (name)
                     )
@@ -3880,8 +3861,8 @@ def createDaemon(
                 tglogfile,
             )
     except OSError as error:
-        logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
-        logging.error("\n%s" % (traceback.format_exc()))
+        logger.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
+        self.logger.error("\n%s" % (traceback.format_exc()))
         sys.exit(1)
 
 
@@ -3911,14 +3892,12 @@ def tgconf(optstypemachine):
             ipfromdns(tg.Server), tg.Port
         ):
             break
-        logging.log(
-            DEBUGPULSE,
-            "Unable to connect. (%s : %s) on xmpp server."
+        logger.debug("Unable to connect. (%s : %s) on xmpp server."
             " Check that %s can be resolved" % (tg.Server, tg.Port, tg.Server),
         )
-        logging.log(DEBUGPULSE, "verify a information ip or dns for connection AM")
+        logger.debug( "verify a information ip or dns for connection AM")
         if ipfromdns(tg.Server) == "":
-            logging.log(DEBUGPULSE, "not resolution adresse : %s " % tg.Server)
+            logger.debug( "not resolution adresse : %s " % tg.Server)
         time.sleep(2)
     return tg
 
@@ -4141,15 +4120,15 @@ def doTask(
                 except psutil.NoSuchProcess:
                     programrun = False
                 if not programrun:
-                    logging.debug("END PROGRAMM")
+                    logger.debug("END PROGRAMM")
                     for p in processes:
                         p.terminate()
                     cmd = "kill -s kill %s" % os.getpid()
                     result = simplecommand(cmd)
                     break
         except KeyboardInterrupt:
-            logging.debug("CTRL+C have been asked.")
-            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
+            logger.debug("CTRL+C have been asked.")
+            logger.debug("The Pulse Xmpp Agent Relay is now stopped")
             for p in processes:
                 p.terminate()
             cmd = "kill -s kill %s" % os.getpid()
@@ -4165,35 +4144,35 @@ def doTask(
             dd = process_agent_search(os.getpid())
             processwin = json.dumps(dd.pidlist(), indent=4)
             file_put_contents(windowfilepid, "%s" % processwin)
-            logging.debug("Process agent list : %s" % processwin)
+            logger.debug("Process agent list : %s" % processwin)
             while True:
                 time.sleep(120)
                 dd = process_agent_search(os.getpid())
                 processwin = json.dumps(dd.pidlist(), indent=4)
                 file_put_contents(windowfilepid, "%s" % processwin)
-                logging.debug("Process agent list : %s" % processwin)
+                logger.debug("Process agent list : %s" % processwin)
                 # list python process
                 lpidsearch = []
                 for k, v in dd.get_pid().items():
                     if "python.exe" in v:
                         lpidsearch.append(int(k))
-                logging.debug("Process python list : %s" % lpidsearch)
+                logger.debug("Process python list : %s" % lpidsearch)
                 for pr in processes:
-                    logging.debug("search %s in %s" % (pr.pid, lpidsearch))
+                    logger.debug("search %s in %s" % (pr.pid, lpidsearch))
                     if pr.pid not in lpidsearch:
-                        logging.debug(
+                        logger.debug(
                             "Process %s pid %s is missing %s"
                             % (pr.name, pr.pid, lpidsearch)
                         )
                         for p in processes:
                             p.terminate()
-                        logging.debug("END PROGRAMM")
+                        logger.debug("END PROGRAMM")
                         cmd = "taskkill /F /PID %s" % os.getpid()
                         result = simplecommand(cmd)
                         break
         except KeyboardInterrupt:
-            logging.debug("CTRL+C have been asked.")
-            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
+            logger.debug("CTRL+C have been asked.")
+            logger.debug("The Pulse Xmpp Agent Relay is now stopped")
             for p in processes:
                 p.terminate()
             cmd = "taskkill /F /PID %s" % os.getpid()
@@ -4204,12 +4183,12 @@ def doTask(
             for p in processes:
                 p.join()
         except KeyboardInterrupt:
-            logging.debug("CTRL+C have been asked.")
+            logger.debug("CTRL+C have been asked.")
             sys.exit(1)
         except Exception as e:
-            logging.error("An error occured while trying to stop the agent with CTRL+C")
-            logging.error("The error is %s" % str(e))
-    logging.debug("The Pulse Xmpp Agent Relay is now stopped")
+            self.logger.error("An error occured while trying to stop the agent with CTRL+C")
+            self.logger.error("The error is %s" % str(e))
+    logger.debug("The Pulse Xmpp Agent Relay is now stopped")
     sys.exit(0)
 
 
@@ -4230,30 +4209,6 @@ class process_xmpp_agent:
         # parameter permet arret programme complet  ICI PASSER PARAMETRE DANS XMPPBOT
 
         self.pidprogrammprincipal = pidprogrammprincipal
-
-        format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
-        formatter = logging.Formatter(format)
-
-        logger = logging.getLogger()  # either the given logger or the root logger
-        logger.setLevel(tglevellog)
-        # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
-        if logger.handlers:
-            console = logger.handlers[
-                0
-            ]  # we assume the first handler is the one we want to configure
-        else:
-            console = logging.StreamHandler()
-            logger.addHandler(console)
-        console.setFormatter(formatter)
-        console.setLevel(tglevellog)
-
-        file_handler = logging.FileHandler(tglogfile)
-        file_handler.setLevel(tglevellog)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-        self.logger = logger
-
         self.logger = logging.getLogger()
         self.process_restartbot = True
         while self.process_restartbot:
@@ -4347,7 +4302,7 @@ class process_agent_search:
 
 def terminateserver(xmpp):
     # event for quit loop server tcpserver for kiosk
-    logging.log(DEBUGPULSE, "terminateserver")
+    logger.debug( "terminateserver")
     if xmpp.config.agenttype in ["relayserver"]:
         xmpp.qin.put("quit")
     xmpp.queue_read_event_from_command.put("quit")
@@ -4375,13 +4330,13 @@ def terminateserver(xmpp):
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             pass
-    logging.log(DEBUGPULSE, "wait 2s end thread event loop")
-    logging.log(DEBUGPULSE, "terminate manage data sharing")
+    logger.debug( "wait 2s end thread event loop")
+    logger.debug( "terminate manage data sharing")
     time.sleep(2)
-    logging.log(DEBUGPULSE, "terminate scheduler")
-    logging.log(DEBUGPULSE, "Waiting to stop kiosk server")
-    logging.log(DEBUGPULSE, "QUIT")
-    logging.log(DEBUGPULSE, "bye bye Agent")
+    logger.debug( "terminate scheduler")
+    logger.debug( "Waiting to stop kiosk server")
+    logger.debug( "QUIT")
+    logger.debug( "bye bye Agent")
     if sys.platform.startswith("win"):
         windowfilepid = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintree"
@@ -4394,16 +4349,55 @@ def terminateserver(xmpp):
             if "pythonmainproces" in data_dict[pidprocess]:
                 pythonmainproces = pidprocess
         if pythonmainproces != "":
-            logging.log(DEBUGPULSE, "TERMINE process pid %s" % pythonmainproces)
+            logger.debug( "TERMINE process pid %s" % pythonmainproces)
             pidfile = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"
             )
             aa = file_get_contents(pidfile).strip()
-            logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa)
+            logger.debug( "process pid file pidagent is %s" % aa)
             cmd = "TASKKILL /F /PID %s /T" % pythonmainproces
             os.system(cmd)
     os._exit(0)
 
+def setup_logging(tg, opts):
+    # Define the log format
+    format = "%(asctime)s - %(levelname)s - (AG)%(message)s"
+    formatter = logging.Formatter(format)
+
+    # Get the root logger
+    loggeragent = logging.getLogger()
+    loggeragent.setLevel(tg.levellog)
+
+    # Function to check if a handler with a given name exists
+    def handler_exists(logger, handler_name):
+        for handler in logger.handlers:
+            if hasattr(handler, 'name') and handler.name == handler_name:
+                return True
+        return False
+
+    # Add console handler if it doesn't already exist and opts.consoledebug is True
+    if opts.consoledebug and not handler_exists(loggeragent, 'console'):
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        console_handler.setLevel(tg.levellog)
+        console_handler.name = 'console'  # Assign a name to the handler
+        loggeragent.addHandler(console_handler)
+
+    # Add file handler if it doesn't already exist
+    if not handler_exists(loggeragent, 'file'):
+        file_handler = logging.FileHandler(tg.logfile)
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(tg.levellog)
+        file_handler.name = 'file'  # Assign a name to the handler
+        loggeragent.addHandler(file_handler)
+
+    # Log some initial messages to verify the setup
+    if tg.agenttype in ["relayserver"]:
+        loggeragent.info("START AGENT RELAYSERVER")
+    else:
+        loggeragent.info("START AGENT MACHINE")
+    loggeragent.info("log (level %s) (file %s) " % (tg.levellog, tg.logfile))
+    loggeragent.info("opts.consoledebug (%s) " % (opts.consoledebug))
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
@@ -4475,29 +4469,7 @@ if __name__ == "__main__":
     mfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "DEBUG_AGENT")
     if opts.consoledebug or os.path.isfile(mfile) or os.path.isfile(f"{mfile}.txt"):
         tg.levellog = logging.DEBUG
-
-    format = "%(asctime)s - %(levelname)s - (AGENT)%(message)s"
-    formatter = logging.Formatter(format)
-    logging.basicConfig(level=tg.levellog, format=format)
-    logger = logging.getLogger()  # either the given logger or the root logger
-    logger.setLevel(tg.levellog)
-    # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
-    if logger.handlers:
-        console = logger.handlers[
-            0
-        ]  # we assume the first handler is the one we want to configure
-    else:
-        console = logging.StreamHandler()
-        logger.addHandler(console)
-    console.setFormatter(formatter)
-    console.setLevel(tg.levellog)
-    file_handler = logging.FileHandler(tg.logfile)
-    file_handler.setLevel(tg.levellog)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    logger.info("file_handler (%s) %s " % (tg.levellog, tg.logfile))
-    logger.info("opts.consoledebug (%s) " % (opts.consoledebug))
-
+    setup_logging(tg, opts)
     if not opts.deamon:
         doTask(
             opts.typemachine,
