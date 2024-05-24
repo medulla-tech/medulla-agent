@@ -832,7 +832,9 @@ def loadModule(filename):
             spec.loader.exec_module(module)
         except Exception:
             logging.getLogger().error("We hit a backtrace when loading Modules")
-            logging.getLogger().error("We got the backtrace\n%s" % (traceback.format_exc()))
+            logging.getLogger().error(
+                "We got the backtrace\n%s" % (traceback.format_exc())
+            )
             return None
     except:
         logging.getLogger().error(f"{traceback.format_exc()}")
@@ -866,7 +868,9 @@ def call_plugin_separate(name, *args, **kwargs):
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
                 if not os.path.exists(nameplugin):
-                    logging.getLogger().error(f"call_plugin_sequentially The file plugin {nameplugin} does not exist")
+                    logging.getLogger().error(
+                        f"call_plugin_sequentially The file plugin {nameplugin} does not exist"
+                    )
                     return
                 # add compteur appel plugins
                 loop = asyncio.get_event_loop()
@@ -939,7 +943,9 @@ def call_mon_plugin(name, *args, **kwargs):
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
                 if not os.path.exists(nameplugin):
-                    logging.getLogger().error(f"call_plugin_sequentially The file plugin {nameplugin} does not exist")
+                    logging.getLogger().error(
+                        f"call_plugin_sequentially The file plugin {nameplugin} does not exist"
+                    )
                     return
                 logger.debug(f"Loading plugin {args[1]}")
 
@@ -993,11 +999,13 @@ def call_plugin(name, *args, **kwargs):
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
                 if not os.path.exists(nameplugin):
-                    logging.getLogger().error(f"call_plugin The file plugin {nameplugin} does not exist")
+                    logging.getLogger().error(
+                        f"call_plugin The file plugin {nameplugin} does not exist"
+                    )
                     return
                 logger.debug(f"Loading plugin {args[1]}")
                 loop = asyncio.new_event_loop()
-                time.sleep(0.0002) # 0,2 milliseconde permet au thread de monter
+                time.sleep(0.0002)  # 0,2 milliseconde permet au thread de monter
                 count = 0
                 try:
                     count = getattr(args[0], f"num_call{args[1]}")
@@ -1005,7 +1013,9 @@ def call_plugin(name, *args, **kwargs):
                 except AttributeError:
                     setattr(args[0], f"num_call{args[1]}", 0)
                 pluginaction = loadModule(nameplugin)
-                result = loop.run_in_executor(None, pluginaction.action, *args, **kwargs)
+                result = loop.run_in_executor(
+                    None, pluginaction.action, *args, **kwargs
+                )
                 return result
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
@@ -1043,7 +1053,9 @@ def call_plugin_sequentially(name, *args, **kwargs):
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, f"plugin_{args[1]}.py")
                 if not os.path.exists(nameplugin):
-                    logging.getLogger().error(f"call_plugin_sequentially The file plugin {nameplugin} does not exist")
+                    logging.getLogger().error(
+                        f"call_plugin_sequentially The file plugin {nameplugin} does not exist"
+                    )
                     return
                 # add compteur appel plugins
                 count = 0
@@ -1063,8 +1075,6 @@ def call_plugin_sequentially(name, *args, **kwargs):
             )
     except:
         logging.getLogger().error(f"{traceback.format_exc()}")
-
-
 
 
 def getshortenedmacaddress():
