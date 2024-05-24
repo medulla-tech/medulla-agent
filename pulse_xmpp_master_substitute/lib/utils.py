@@ -40,6 +40,7 @@ import string
 import asyncio as aio
 
 import importlib.util
+
 if sys.platform == "win32":
     aio.set_event_loop_policy(aio.WindowsSelectorEventLoopPolicy())
 
@@ -812,6 +813,7 @@ def call_plugin_separate(name, *args, **kwargs):
     pluginaction = loadModule(name)
     loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
 
+
 def call_plugin(name, *args, **kwargs):
     """
     Appelle la fonction d'action d'un plugin spécifié par son nom.
@@ -837,7 +839,7 @@ def call_plugin(name, *args, **kwargs):
     loop = aio.new_event_loop()
     time.sleep(0.0001)
     count = 0
-    time.sleep(0.0001) # 0,1 milliseconde permet au thread de monter
+    time.sleep(0.0001)  # 0,1 milliseconde permet au thread de monter
     try:
         count = getattr(args[0], "num_call%s" % args[1])
         setattr(args[0], "num_call%s" % args[1], count + 1)
