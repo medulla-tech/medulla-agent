@@ -254,6 +254,7 @@ class MUCBot(ClientXMPP):
         eventkillpipe,
         pidprogrammprincipal,
     ):
+        self.logger=logging.getLogger("xmpp_agent")
         logger.debug("start machine  %s Type %s" % (conf.jidagent, conf.agenttype))
 
         self.iq_msg = file_message_iq(dev_mod=True)
@@ -290,20 +291,11 @@ class MUCBot(ClientXMPP):
 
         self.ipconnection = self.config.Server
 
-        format = "%(asctime)s - %(levelname)s - (XMPP)%(message)s"
-        formatter = logging.Formatter(format)
 
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
         logger.debug("slixmpp log level is %s" % self.config.log_level_slixmpp)
         handler_slixmpp.setLevel(self.config.log_level_slixmpp)
-
-        if handler_slixmpp.handlers:
-            hslixmpp = logger.handlers[
-                0
-            ]  # we assume the first handler is the one we want to configure
-            hslixmpp.setFormatter(formatter)
-
         # _____________ verify network interface _____________
         # verifi si on a changer les interface pendant l'arret de l'agent.
         netfingerprintstart = createfingerprintnetwork()
