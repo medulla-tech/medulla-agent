@@ -52,7 +52,8 @@ def updatecherrypyversion(version):
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             logger.info(
-                " PL-CHERRYP We successfully updated Medulla CherryPy to version %s" % CHERRYPYVERSION
+                " PL-CHERRYP We successfully updated Medulla CherryPy to version %s"
+                % CHERRYPYVERSION
             )
 
         if version == "0.0":
