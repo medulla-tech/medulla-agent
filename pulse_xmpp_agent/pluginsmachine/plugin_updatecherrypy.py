@@ -12,14 +12,14 @@ from lib import utils
 CHERRYPYVERSION = "18.8.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.1", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.2", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
-    logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message["from"]))
-    logger.debug("###################################################")
+    logger.debug(" PL-CHERRYP ###################################################")
+    logger.debug(" PL-CHERRYP call %s from %s" % (plugin, message["from"]))
+    logger.debug(" PL-CHERRYP ###################################################")
     try:
         # Update if version is lower
         installed_version = checkcherrypyversion()
@@ -31,7 +31,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 def checkcherrypyversion():
     if sys.platform.startswith("win"):
-        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse CherryPy" /s | Find "DisplayVersion"'
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CherryPy" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             cherrypyversion = result["result"][0].strip().split()[-1]
@@ -45,25 +45,25 @@ def checkcherrypyversion():
 def updatecherrypyversion(version):
     if sys.platform.startswith("win"):
         cmd = (
-            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse CherryPy" '
+            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CherryPy" '
             '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % CHERRYPYVERSION
         )
 
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             logger.info(
-                "we successfully updated Pulse CherryPy to version %s" % CHERRYPYVERSION
+                " PL-CHERRYP We successfully updated Medulla CherryPy to version %s" % CHERRYPYVERSION
             )
 
         if version == "0.0":
             cmdDisplay = (
-                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse CherryPy" '
-                '/v "DisplayName" /t REG_SZ  /d "Pulse CherryPy" /f'
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Medulla CherryPy" '
+                '/v "DisplayName" /t REG_SZ  /d "Medulla CherryPy" /f'
             )
             utils.simplecommand(cmdDisplay)
 
             cmd = (
-                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse CherryPy" '
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Medulla CherryPy" '
                 '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
             )
 
@@ -71,7 +71,7 @@ def updatecherrypyversion(version):
 
 
 def updatecherrypy(xmppobject, installed_version):
-    logger.info("Updating CherryPy to version %s" % CHERRYPYVERSION)
+    logger.info(" PL-CHERRYP Updating CherryPy to version %s" % CHERRYPYVERSION)
     version_info = utils.PythonVersionInfo()
     if sys.platform.startswith("win"):
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
@@ -90,7 +90,7 @@ def updatecherrypy(xmppobject, installed_version):
                 xmppobject.config.Server,
                 module_to_dl,
             )
-            logger.debug("Downloading %s" % dl_url)
+            logger.debug(" PL-CHERRYP Downloading %s" % dl_url)
             result, txtmsg = utils.downloadfile(
                 dl_url, os.path.join(install_tempdir, module_to_dl)
             ).downloadurl()
@@ -99,7 +99,7 @@ def updatecherrypy(xmppobject, installed_version):
             xmppobject.config.Server,
             cherrypy_filename,
         )
-        logger.debug("Downloading %s" % dl_url)
+        logger.debug(" PL-CHERRYP Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
             dl_url, os.path.join(install_tempdir, cherrypy_filename)
         ).downloadurl()
@@ -120,4 +120,4 @@ def updatecherrypy(xmppobject, installed_version):
             updatecherrypyversion(installed_version)
         else:
             # Download error
-            logger.error("%s" % txtmsg)
+            logger.error(" PL-CHERRYP %s" % txtmsg)
