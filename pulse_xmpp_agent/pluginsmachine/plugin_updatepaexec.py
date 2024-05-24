@@ -25,7 +25,7 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.51", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.52", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
