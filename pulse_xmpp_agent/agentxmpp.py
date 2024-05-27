@@ -3357,9 +3357,7 @@ class MUCBot(ClientXMPP):
         pythonexec = self.programfilepath(psutil.Process().exe())
         replicatorfunction = os.path.join(self.pathagent, "replicator.py")
         if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-            logger.debug(
-                f"Replicator for os system  {pythonexec} {replicatorfunction}"
-            )
+            logger.debug(f"Replicator for os system  {pythonexec} {replicatorfunction}")
         else:
             logger.debug(
                 f"Replicator for os windows system {pythonexec} {replicatorfunction}"
