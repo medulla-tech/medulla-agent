@@ -31,15 +31,15 @@ OPENSSHVERSION = "9.4"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.9", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "2.0", "NAME": "updateopenssh", "TYPE": "machine"}
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
-    logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message["from"]))
-    logger.debug("###################################################")
+    logger.debug(" PL-SSH ###################################################")
+    logger.debug(" PL-SSH call %s from %s" % (plugin, message["from"]))
+    logger.debug(" PL-SSH ###################################################")
     try:
         # Update if version is lower
         check_medulla_conformity()
@@ -62,10 +62,10 @@ def check_medulla_conformity():
 
         if current_ssh_version == OPENSSHVERSION:
             if check_if_service_is_running():
-                logger.debug("Medulla OpenSSH is correctly installed, nothing to do")
+                logger.debug(" PL-SSH Medulla OpenSSH is correctly installed, nothing to do")
             else:
                 logger.info(
-                    "Medulla OpenSSH is not correctly installed, we need to install the component."
+                    " PL-SSH Medulla OpenSSH is not correctly installed, we need to install the component."
                 )
 
                 cmd = (
@@ -74,10 +74,10 @@ def check_medulla_conformity():
                 )
                 result = utils.simplecommand(cmd)
                 if result["code"] == 0:
-                    logger.debug("Medulla OpenSSH module is ready to be reinstalled.")
+                    logger.debug(" PL-SSH Medulla OpenSSH module is ready to be reinstalled.")
                 else:
                     logger.debug(
-                        "We failed to reinitialize the registry entry for Medulla OpenSSH."
+                        " PL-SSH We failed to reinitialize the registry entry for Medulla OpenSSH."
                     )
         else:
             cmd = 'REG DELETE "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" /f'
@@ -89,7 +89,7 @@ def check_medulla_conformity():
 
             result = utils.simplecommand(cmd)
             logger.debug(
-                "Medulla OpenSSH module is ready to be reinstalled with Medulla version."
+                " PL-SSH Medulla OpenSSH module is ready to be reinstalled with Medulla version."
             )
 
 
@@ -99,7 +99,7 @@ def start_sshdaemon(enable_logs=False):
         time.sleep(5)
         if check_if_service_is_running():
             if enable_logs:
-                logger.debug("Medulla OpenSSH is correctly started.")
+                logger.debug(" PL-SSH Medulla OpenSSH is correctly started.")
 
 
 def check_if_service_is_running():
@@ -119,9 +119,9 @@ def StartAndFixSshdaemon():
         if not check_if_service_is_running():
             start_sshdaemon(enable_logs=True)
             if not check_if_service_is_running():
-                logger.debug("Medulla OpenSSH failed to start")
+                logger.debug(" PL-SSH Medulla OpenSSH failed to start")
                 FixPermission()
-                logger.debug("Medulla OpenSSH permissions has been applied")
+                logger.debug(" PL-SSH Medulla OpenSSH permissions has been applied")
                 start_sshdaemon(enable_logs=True)
 
 
@@ -154,7 +154,7 @@ def updateopensshversion(version):
 
         if result["code"] == 0:
             logger.info(
-                "we successfully changed the version of OpenSSH to version %s"
+                " PL-SSH We successfully changed the version of OpenSSH to version %s"
                 % OPENSSHVERSION
             )
 
@@ -261,7 +261,7 @@ def configure_ssh(xmppobject):
     if restart_service:
         utils.simplecommand("sc stop sshdaemon")
         start_sshdaemon()
-        logger.info("Medulla OpenSSH new configuration has been applied")
+        logger.info(" PL-SSH Medulla OpenSSH new configuration has been applied")
 
 
 def updateopenssh(xmppobject, installed_version):
@@ -269,7 +269,7 @@ def updateopenssh(xmppobject, installed_version):
     if hasattr(xmppobject.config, "sshport"):
         Used_ssh_port = xmppobject.config.sshport
 
-    logger.info("Updating OpenSSH to version %s" % OPENSSHVERSION)
+    logger.info(" PL-SSH Updating OpenSSH to version %s" % OPENSSHVERSION)
 
     if sys.platform.startswith("win"):
         if platform.architecture()[0] == "64bit":
@@ -328,7 +328,7 @@ def updateopenssh(xmppobject, installed_version):
                 uninstall_mandriva_ssh = utils.simplecommand("uninst.exe /S")
                 if uninstall_mandriva_ssh["code"] == 0:
                     logger.debug(
-                        "Uninstallation successful of the old Mandriva ssh agent."
+                        " PL-SSH Uninstallation successful of the old Mandriva ssh agent."
                     )
 
                 os.chdir(current_dir)
@@ -341,7 +341,7 @@ def updateopenssh(xmppobject, installed_version):
                     shutil.rmtree(opensshdir_path)
                 except OSError as e:
                     logger.error(
-                        "Deletion of the directory %s failed, with the error: %s"
+                        " PL-SSH Deletion of the directory %s failed, with the error: %s"
                         % (opensshdir_path, e)
                     )
                     return
@@ -356,7 +356,7 @@ def updateopenssh(xmppobject, installed_version):
                     os.path.join(install_tempdir, extracted_path), opensshdir_path
                 )
             except Exception as e:
-                logger.debug("Failed to copy the files:  %s" % e)
+                logger.debug(" PL-SSH Failed to copy the files:  %s" % e)
                 return
 
             os.chdir(current_dir)
@@ -380,7 +380,7 @@ def updateopenssh(xmppobject, installed_version):
                     os.path.join(programdata_path, "sshd_config"),
                 )
             except Exception as e:
-                logger.debug("Failed to copy the files:  %s" % e)
+                logger.debug(" PL-SSH Failed to copy the files:  %s" % e)
                 return
 
             configure_ssh(xmppobject)
@@ -391,7 +391,7 @@ def updateopenssh(xmppobject, installed_version):
             )
         else:
             # Download error
-            logger.error("%s" % txtmsg)
+            logger.error(" PL-SSH %s" % txtmsg)
             return
 
         if not os.path.isdir(nytrio_sshdir_path):
@@ -425,7 +425,7 @@ def updateopenssh(xmppobject, installed_version):
                                 os.path.join(rsync_dest_folder, rsync_file),
                             )
                         except Exception as e:
-                            logger.debug("Failed to copy the files:  %s" % e)
+                            logger.debug(" PL-SSH Failed to copy the files:  %s" % e)
                             return
 
             os.chdir(current_dir)
