@@ -11,7 +11,7 @@ import base64
 import traceback
 from lib import utils, update_remote_agent
 
-plugin = {"VERSION": "2.2", "VERSIONAGENT": "2.0", "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}  # fmt: skip
+plugin = {"VERSION": "2.3", "VERSIONAGENT": "2.0", "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}  # fmt: skip
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -19,6 +19,20 @@ DEBUGPULSEPLUGIN = 25
 
 @utils.set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
+    """
+    Perform the specified action based on the incoming data.
+
+    Parameters:
+    - objectxmpp: The XMPP object representing the current agent.
+    - action: The action to be performed.
+    - sessionid: The session ID associated with the action.
+    - data: The data containing information about the action.
+    - message: The XMPP message containing the action request.
+    - dataerreur: Data related to any errors during the action.
+
+    Returns:
+    None
+    """
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
@@ -214,9 +228,20 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
 def search_action_on_agent_cp_and_del(fromimg, frommachine):
     """
-    return 2 lists
-    list files to copi from img to mach
-    list files to supp in mach
+    Compare files between an image (fromimg) and a machine (frommachine).
+
+    Returns two lists:
+    - List of files to copy from the image to the machine.
+    - List of files to be deleted in the machine.
+
+    Parameters:
+    - fromimg (dict): Dictionary representing files in the image with their checksums.
+    - frommachine (dict): Dictionary representing files in the machine with their checksums.
+
+    Returns:
+    Tuple containing two lists:
+    - List of files to copy from the image to the machine.
+    - List of files to be deleted in the machine.
     """
     replace_file_mach_by_file_img = []
     file_missing_in_mach = []
@@ -242,38 +267,67 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
 
 
 def dump_file_in_img(objectxmpp, namescript, content, typescript):
-    if typescript == "program_agent":
-        # install script program
-        file_mane = os.path.join(objectxmpp.img_agent, namescript)
-        logger.debug("dump file %s to %s" % (namescript, file_mane))
-    elif typescript == "script_agent":
-        # install script program
-        file_mane = os.path.join(objectxmpp.img_agent, "script", namescript)
-        logger.debug("dump file %s to %s" % (namescript, file_mane))
-    elif typescript == "lib_agent":
-        # install script program
-        file_mane = os.path.join(objectxmpp.img_agent, "lib", namescript)
-        logger.debug("dump file %s to %s" % (namescript, file_mane))
-    if "file_mane" in locals():
-        filescript = open(file_mane, "wb")
-        filescript.write(content)
-        filescript.close()
-        newobjdescriptorimage = update_remote_agent.Update_Remote_Agent(
-            objectxmpp.img_agent
-        )
-        if (
-            newobjdescriptorimage.get_fingerprint_agent_base()
-            == objectxmpp.descriptor_master["fingerprint"]
-        ):
-            objectxmpp.reinstall_agent()
+    """
+    Dumps the given script content into the appropriate directory based on its type.
+
+    Parameters:
+    objectxmpp (object): The XMPP object containing information about the agent and its image directory.
+    namescript (str): The name of the script file to be dumped.
+    content (bytes): The binary content of the script file to be written.
+    typescript (str): The type of the script, which determines the subdirectory where the file will be saved.
+                      Valid types are "program_agent", "script_agent", and "lib_agent".
+
+    Behavior:
+    - Determines the correct directory based on the `typescript`.
+    - Writes the `content` to the file named `namescript` in the determined directory.
+    - Logs the operation details.
+    - Updates the remote agent if the fingerprint matches the descriptor master fingerprint.
+    - Logs an error if the `typescript` is invalid or if there is a failure in writing the file.
+
+    Raises:
+    - Logs an error if the file cannot be written due to any exception.
+    """
+
+    valid_types = {
+        "program_agent": objectxmpp.img_agent,
+        "script_agent": os.path.join(objectxmpp.img_agent, "script"),
+        "lib_agent": os.path.join(objectxmpp.img_agent, "lib")
+    }
+
+    if typescript in valid_types:
+        file_name = os.path.join(valid_types[typescript], namescript)
+        logger.debug("dump file %s to %s" % (namescript, file_name))
+
+        # Write the content to the file
+        try:
+            with open(file_name, "wb") as filescript:
+                filescript.write(content)
+            
+            # Update the remote agent
+            newobjdescriptorimage = update_remote_agent.Update_Remote_Agent(
+                objectxmpp.img_agent
+            )
+            if (
+                newobjdescriptorimage.get_fingerprint_agent_base()
+                == objectxmpp.descriptor_master["fingerprint"]
+            ):
+                objectxmpp.reinstall_agent()
+        except Exception as e:
+            logger.error("Failed to write file %s: %s" % (file_name, str(e)))
     else:
-        logger.error("dump file type missing")
+        logger.error("Invalid file type: %s" % typescript)
 
 
 def senddescriptormd5(objectxmpp, data):
     """
-    send the agent's figerprint  descriptor in database to the machine for update
-    Update remote agent
+    Send the MD5 descriptor of the agent's base to the specified machine for an update.
+
+    Parameters:
+    - objectxmpp: The XMPP object representing the current agent.
+    - data (dict): Data containing information about the update request, including the target machine's JID.
+
+    Returns:
+    None
     """
     objectxmpp.Update_Remote_Agentbase = update_remote_agent.Update_Remote_Agent(
         objectxmpp.config.diragentbase

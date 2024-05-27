@@ -3281,6 +3281,51 @@ class MUCBot(ClientXMPP):
             logging.error(" %s " % (str(e)))
             logger.error("\n%s" % (traceback.format_exc()))
 
+    def programfilepath(self, pathwindows):
+        """
+        Normalise le chemin de fichier `pathwindows` pour le système d'exploitation Windows.
+
+        Arguments:
+            pathwindows (str): Le chemin de fichier à normaliser.
+
+        Returns:
+            str: Le chemin de fichier normalisé pour Windows.
+
+        Remarque:
+            La fonction prend un chemin de fichier `pathwindows` en entrée et le normalise pour
+            le système d'exploitation Windows en remplaçant les barres obliques inverses par des
+            doubles barres obliques et en encadrant les noms de répertoires contenant des espaces par des guillemets.
+
+            Cette normalisation est particulièrement utile lorsque vous devez manipuler des chemins de fichiers avec
+            des espaces dans les noms de répertoires sur Windows.
+
+        Exemple:
+            >>> programfilepath("C:/chemin avec des espaces/fichier.txt")
+            'C:\\chemin avec des espaces\\fichier.txt'
+            >>> programfilepath("C:/chemin/sans/espaces/fichier.txt")
+            'C:\\chemin\\sans\\espaces\\fichier.txt'
+            >>> programfilepath("D:/répertoire avec espace/")
+            'D:\\répertoire avec espace'
+            >>> programfilepath("D:/répertoire_sans_espaces/")
+            'D:\\répertoire_sans_espaces'
+        """
+        if not sys.platform.startswith("win"):
+            return pathwindows
+        pathwindows = os.path.normpath(pathwindows)
+        disk_path = pathwindows.split(":")
+        if len(disk_path) < 2:
+            return pathwindows
+        disk = f"{disk_path.pop(0)}:" + "\\\\"
+        pathdir = "".join(disk_path)
+        t = [x.strip('" ') for x in pathdir.split("\\") if x.strip('" ') != ""]
+        result = []
+        for x in t:
+            if " " in x:
+                result.append(f'"{x}"')
+            else:
+                result.append(x)
+        return disk + "\\\\".join(result)
+
     def reinstall_agent(self):
         file_put_contents(
             os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"),
@@ -3309,10 +3354,19 @@ class MUCBot(ClientXMPP):
                 % (os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"), remove_error)
             )
             pass
-
-        replycatorcmd = "python3 %s" % (os.path.join(self.pathagent, "replicator.py"))
-        logger.debug("cmd : %s" % (replycatorcmd))
-        result = simplecommand(replycatorcmd)
+        pythonexec = self.programfilepath(psutil.Process().exe())
+        replicatorfunction = os.path.join(self.pathagent, "replicator.py")
+        if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
+            logger.debug(
+                f"Replicator for os system  {pythonexec} {replicatorfunction}"
+            )
+        else:
+            logger.debug(
+                f"Replicator for os windows system {pythonexec} {replicatorfunction}"
+            )
+        replicatorcmd = f'"{pythonexec}" "{replicatorfunction}"'
+        logger.debug("cmd : %s" % (replicatorcmd))
+        result = simplecommand(replicatorcmd)
         if result["code"] == 0:
             logger.warning(
                 "the agent is already installed for version  %s" % (versiondata)
