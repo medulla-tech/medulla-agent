@@ -4601,7 +4601,7 @@ class offline_search_kb:
             logger.error("\n%s" % (traceback.format_exc()))
 
         try:
-            self.info_package["history_package_uuid"] = self.search_history_update()
+            self.info_package["history_package_uuid"] = []
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
@@ -4717,47 +4717,6 @@ class offline_search_kb:
             except:
                 logging.getLogger().error(("%s" % (traceback.format_exc())))
         return Versionedge
-
-    def search_history_update(self):
-        ret = []
-        if sys.platform.startswith("win"):
-            script = os.path.abspath(
-                os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)),
-                    "..",
-                    "script",
-                    "history_update.ps1",
-                )
-            )
-            result = powerschellscript1ps1(script)
-            try:
-                if result["code"] == 0:
-                    line = [
-                        decode_strconsole(x.strip())
-                        for x in result["result"]
-                        if x.strip()
-                    ]
-                    if line:
-                        line.pop(0)
-                        line.pop(0)
-                        retdict = {}
-                        for t in set(line):
-                            t = t.split()
-                            retdict[t[1]] = t[0]
-                            ret.append(t[1])
-                        strt = (
-                            ("%s" % retdict.keys())
-                            .replace("[", "")
-                            .replace("]", "")
-                            .replace("dict_keys", "")
-                        )
-            except IndexError as e:
-                logger.error(
-                    "An error occured while trying to get the history update. \n We obtained this error:%s"
-                    % e
-                )
-                logger.error("We hit this backtrace: \n %s" % traceback.format_exc())
-        return ret
 
     def search_net_info_reg(self):
         result_cmd = {}
