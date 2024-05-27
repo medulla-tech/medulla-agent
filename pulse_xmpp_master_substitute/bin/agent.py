@@ -84,8 +84,10 @@ class MUCBot(slixmpp.ClientXMPP):
             self.config.passwordconnection,
         )
 
+        # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
-        handler_slixmpp.setLevel(logging.DEBUG)
+        logger.debug("slixmpp log level is %s" % self.config.log_level_slixmpp)
+        handler_slixmpp.setLevel(self.config.log_level_slixmpp)
 
         msgkey = manageRSAsigned.MsgsignedRSA(self.boundjid.user)
 
@@ -122,8 +124,6 @@ class MUCBot(slixmpp.ClientXMPP):
             )
         )
 
-        handler_slixmpp = logging.getLogger("slixmpp")
-        handler_slixmpp.setLevel(logging.DEBUG)
         logging.log(
             DEBUGPULSE, "Starting Master sub (%s)" % (self.config.jidmastersubstitute)
         )
