@@ -291,7 +291,7 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
     valid_types = {
         "program_agent": objectxmpp.img_agent,
         "script_agent": os.path.join(objectxmpp.img_agent, "script"),
-        "lib_agent": os.path.join(objectxmpp.img_agent, "lib")
+        "lib_agent": os.path.join(objectxmpp.img_agent, "lib"),
     }
 
     if typescript in valid_types:
@@ -302,7 +302,7 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
         try:
             with open(file_name, "wb") as filescript:
                 filescript.write(content)
-            
+
             # Update the remote agent
             newobjdescriptorimage = update_remote_agent.Update_Remote_Agent(
                 objectxmpp.img_agent
