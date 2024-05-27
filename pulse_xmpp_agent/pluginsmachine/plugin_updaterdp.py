@@ -7,7 +7,7 @@ from distutils.version import StrictVersion
 import logging
 from lib import utils
 
-RDPVERSION = "0.2"
+RDPVERSION = "0.3"
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.3", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
@@ -46,25 +46,22 @@ def updaterdpversion(version):
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
             '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % RDPVERSION
         )
-
         result = utils.simplecommand(cmd)
+
+        cmdDisplay = (
+            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
+            '/v "DisplayName" /t REG_SZ  /d "Medulla RDP" /f'
+        )
+        utils.simplecommand(cmdDisplay)
+
+        cmdEditor = (
+            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
+            '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+        )
+        utils.simplecommand(cmdiEditor)
         if result["code"] == 0:
             logger.info(" PL-RDP We successfully updated Medulla RDP to version " % RDPVERSION)
 
-        if version == "0.0":
-            cmdDisplay = (
-                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
-                '/v "DisplayName" /t REG_SZ  /d "Medulla RDP" /f'
-            )
-            utils.simplecommand(cmdDisplay)
-
-            cmd = (
-                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
-            )
-
-            utils.simplecommand(cmd)
-            logger.info(" PL-RDP RDP Configuration updated.")
 
 
 def updaterdp(xmppobject, installed_version):
