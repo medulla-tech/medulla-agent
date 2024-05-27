@@ -10,14 +10,14 @@ from lib import utils
 RDPVERSION = "0.2"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.2", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
-    logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message["from"]))
-    logger.debug("###################################################")
+    logger.debug(" PL-RDP ###################################################")
+    logger.debug(" PL-RDP call %s from %s" % (plugin, message["from"]))
+    logger.debug(" PL-RDP ###################################################")
     try:
         # Update if version is lower
         installed_version = checkrdpversion()
@@ -29,7 +29,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 def checkrdpversion():
     if sys.platform.startswith("win"):
-        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RDP" /s | Find "DisplayVersion"'
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             rdpversion = result["result"][0].strip().split()[-1]
@@ -43,32 +43,32 @@ def checkrdpversion():
 def updaterdpversion(version):
     if sys.platform.startswith("win"):
         cmd = (
-            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RDP" '
+            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
             '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % RDPVERSION
         )
 
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
-            logger.info("we successfully updated Pulse RDP to version " % RDPVERSION)
+            logger.info(" PL-RDP We successfully updated Medulla RDP to version " % RDPVERSION)
 
         if version == "0.0":
             cmdDisplay = (
-                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RDP" '
-                '/v "DisplayName" /t REG_SZ  /d "Pulse RDP" /f'
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
+                '/v "DisplayName" /t REG_SZ  /d "Medulla RDP" /f'
             )
             utils.simplecommand(cmdDisplay)
 
             cmd = (
-                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RDP" '
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
                 '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
             )
 
             utils.simplecommand(cmd)
-            logger.info("RDP Configuration updated.")
+            logger.info(" PL-RDP RDP Configuration updated.")
 
 
 def updaterdp(xmppobject, installed_version):
-    logger.info("Updating RDP Configuration.")
+    logger.info(" PL-RDP Updating RDP Configuration.")
     if sys.platform.startswith("win"):
         cmd = (
             'REG ADD "hklm\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server" '
@@ -96,7 +96,7 @@ def updaterdp(xmppobject, installed_version):
         utils.simplecommand(cmd)
 
         utils.simplecommand(
-            'netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389'
+            'netsh advfirewall firewall add rule name="Remote Desktop for Medulla RDP" dir=in action=allow protocol=TCP localport=3389'
         )
 
         updaterdpversion(RDPVERSION)
