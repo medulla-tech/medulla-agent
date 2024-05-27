@@ -62,7 +62,9 @@ def check_medulla_conformity():
 
         if current_ssh_version == OPENSSHVERSION:
             if check_if_service_is_running():
-                logger.debug(" PL-SSH Medulla OpenSSH is correctly installed, nothing to do")
+                logger.debug(
+                    " PL-SSH Medulla OpenSSH is correctly installed, nothing to do"
+                )
             else:
                 logger.info(
                     " PL-SSH Medulla OpenSSH is not correctly installed, we need to install the component."
@@ -74,7 +76,9 @@ def check_medulla_conformity():
                 )
                 result = utils.simplecommand(cmd)
                 if result["code"] == 0:
-                    logger.debug(" PL-SSH Medulla OpenSSH module is ready to be reinstalled.")
+                    logger.debug(
+                        " PL-SSH Medulla OpenSSH module is ready to be reinstalled."
+                    )
                 else:
                     logger.debug(
                         " PL-SSH We failed to reinitialize the registry entry for Medulla OpenSSH."

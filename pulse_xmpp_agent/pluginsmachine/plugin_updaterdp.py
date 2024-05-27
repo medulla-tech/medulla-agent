@@ -60,8 +60,9 @@ def updaterdpversion(version):
         )
         utils.simplecommand(cmdiEditor)
         if result["code"] == 0:
-            logger.info(" PL-RDP We successfully updated Medulla RDP to version " % RDPVERSION)
-
+            logger.info(
+                " PL-RDP We successfully updated Medulla RDP to version " % RDPVERSION
+            )
 
 
 def updaterdp(xmppobject, installed_version):
