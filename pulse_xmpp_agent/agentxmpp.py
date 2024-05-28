@@ -1176,7 +1176,9 @@ class MUCBot(ClientXMPP):
         il relit la conf...
         """
         self.brestartbot = True  # boucle reinitialise.
-        logger.debug("We restart the medulla agent for the machine %s" % self.boundjid.user,)
+        logger.debug(
+            "We restart the medulla agent for the machine %s" % self.boundjid.user,
+        )
         self.disconnect(wait=wait)  # on provoque 1 connection default
 
     def quit_application(self, wait=2):
@@ -1194,7 +1196,7 @@ class MUCBot(ClientXMPP):
         Returns:
             None
         """
-        logger.debug( "Quit Application")
+        logger.debug("Quit Application")
         setgetrestart(0)
         self.disconnect(wait=wait)
 
@@ -2020,9 +2022,7 @@ class MUCBot(ClientXMPP):
                     # we look if we have informations about the transfert
                     # print
                     # self.syncthing.get_db_status(syncthingtojson['id_deploy'])
-                    logger.debug(
-                        "Recherche la completion de transfert %s" % namesearch
-                    )
+                    logger.debug("Recherche la completion de transfert %s" % namesearch)
                     result = self.syncthing.get_db_completion(
                         syncthingtojson["objpartage"]["repertoiredeploy"],
                         self.syncthing.device_id,
@@ -2376,7 +2376,7 @@ class MUCBot(ClientXMPP):
         self.levelcharge["charge"] = len(self.levelcharge["machinelist"])
 
     def signal_handler(self, signal, frame):
-        logger.debug( "CTRL-C EVENT")
+        logger.debug("CTRL-C EVENT")
         global signalint
         signalint = True
         msgevt = {
@@ -2414,28 +2414,28 @@ class MUCBot(ClientXMPP):
             if evt == win32con.CTRL_SHUTDOWN_EVENT:
                 msgevt["data"]["event"] = "SHUTDOWN_EVENT"
                 self.send_message_to_master(msgevt)
-                logger.debug( "CTRL_SHUTDOWN EVENT")
+                logger.debug("CTRL_SHUTDOWN EVENT")
                 signalint = True
                 return True
             if evt == win32con.CTRL_LOGOFF_EVENT:
                 msgevt["data"]["event"] = "LOGOFF_EVENT"
                 self.send_message_to_master(msgevt)
-                logger.debug( "CTRL_LOGOFF EVENT")
+                logger.debug("CTRL_LOGOFF EVENT")
                 return True
             if evt == win32con.CTRL_BREAK_EVENT:
                 msgevt["data"]["event"] = "BREAK_EVENT"
                 self.send_message_to_master(msgevt)
-                logger.debug( "CTRL_BREAK EVENT")
+                logger.debug("CTRL_BREAK EVENT")
                 return True
             if evt == win32con.CTRL_CLOSE_EVENT:
                 msgevt["data"]["event"] = "CLOSE_EVENT"
                 self.send_message_to_master(msgevt)
-                logger.debug( "CTRL_CLOSE EVENT")
+                logger.debug("CTRL_CLOSE EVENT")
                 return True
             if evt == win32con.CTRL_C_EVENT:
                 msgevt["data"]["event"] = "CTRL_C_EVENT"
                 self.send_message_to_master(msgevt)
-                logger.debug( "CTRL-C EVENT")
+                logger.debug("CTRL-C EVENT")
                 signalint = True
                 self.quit_application(wait=3)
                 return True
@@ -2666,8 +2666,10 @@ class MUCBot(ClientXMPP):
         if self.config.agenttype in ["relayserver"]:
             try:
                 if self.config.public_ip_relayserver != "":
-                    logger.debug("Attribution ip public by configuration for ipconnexion: [%s]"
-                        % self.config.public_ip_relayserver)
+                    logger.debug(
+                        "Attribution ip public by configuration for ipconnexion: [%s]"
+                        % self.config.public_ip_relayserver
+                    )
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
@@ -3014,7 +3016,8 @@ class MUCBot(ClientXMPP):
         # Send plugin and machine informations to Master
         try:
             dataobj = self.seachInfoMachine()
-            logger.debug("SEND REGISTRATION XMPP to %s \n%s"
+            logger.debug(
+                "SEND REGISTRATION XMPP to %s \n%s"
                 % (self.sub_registration, json.dumps(dataobj, indent=4)),
             )
 
@@ -3134,9 +3137,7 @@ class MUCBot(ClientXMPP):
                 mtype="chat",
             )
         except Exception as e:
-            logger.error(
-                "message log to '%s/MASTER': %s " % (self.agentmaster, str(e))
-            )
+            logger.error("message log to '%s/MASTER': %s " % (self.agentmaster, str(e)))
             logger.error("\n%s" % (traceback.format_exc()))
             return
 
@@ -3193,7 +3194,8 @@ class MUCBot(ClientXMPP):
             if os.path.isfile(namefilebool):
                 break
             time.sleep(2)
-        logger.debug("A new configuration has been detected on %s. We will reconfigure it."
+        logger.debug(
+            "A new configuration has been detected on %s. We will reconfigure it."
             % self.boundjid.user,
         )
 
@@ -3236,11 +3238,13 @@ class MUCBot(ClientXMPP):
                     return
                 if not os.path.isfile(force_reconfiguration):
                     refreshfingerprint()
-                    logger.debug("by network changed. The reconfiguration of the agent [%s] will be executed."
+                    logger.debug(
+                        "by network changed. The reconfiguration of the agent [%s] will be executed."
                         % self.boundjid.user,
                     )
                 else:
-                    logger.debug("by request. The reconfiguration of the agent [%s] will be executed."
+                    logger.debug(
+                        "by request. The reconfiguration of the agent [%s] will be executed."
                         % self.boundjid.user,
                     )
                     os.remove(force_reconfiguration)
@@ -3255,8 +3259,7 @@ class MUCBot(ClientXMPP):
                 if os.path.isfile(BOOLFILEINVENTORYONCHANGINTERFACE):
                     # if on a ce fichier alors on genere 1 nouveau inventaire
                     os.remove(BOOLFILEINVENTORYONCHANGINTERFACE)
-                    logger.debug("The network changed. We will send a new inventory"
-                    )
+                    logger.debug("The network changed. We will send a new inventory")
                     self.handleinventory()
         except Exception as e:
             logger.error(" %s " % (str(e)))
@@ -3991,12 +3994,13 @@ def tgconf(optstypemachine):
             ipfromdns(tg.Server), tg.Port
         ):
             break
-        logger.debug("Unable to connect. (%s : %s) on xmpp server."
+        logger.debug(
+            "Unable to connect. (%s : %s) on xmpp server."
             " Check that %s can be resolved" % (tg.Server, tg.Port, tg.Server),
         )
-        logger.debug( "verify a information ip or dns for connection AM")
+        logger.debug("verify a information ip or dns for connection AM")
         if ipfromdns(tg.Server) == "":
-            logger.debug( "not resolution adresse : %s " % tg.Server)
+            logger.debug("not resolution adresse : %s " % tg.Server)
         time.sleep(2)
     return tg
 
@@ -4285,7 +4289,9 @@ def doTask(
             logger.debug("CTRL+C have been asked.")
             sys.exit(1)
         except Exception as e:
-            self.logger.error("An error occured while trying to stop the agent with CTRL+C")
+            self.logger.error(
+                "An error occured while trying to stop the agent with CTRL+C"
+            )
             self.logger.error("The error is %s" % str(e))
     logger.debug("The Pulse Xmpp Agent Relay is now stopped")
     sys.exit(0)
@@ -4401,7 +4407,7 @@ class process_agent_search:
 
 def terminateserver(xmpp):
     # event for quit loop server tcpserver for kiosk
-    logger.debug( "terminateserver")
+    logger.debug("terminateserver")
     if xmpp.config.agenttype in ["relayserver"]:
         xmpp.qin.put("quit")
     xmpp.queue_read_event_from_command.put("quit")
@@ -4429,13 +4435,13 @@ def terminateserver(xmpp):
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             pass
-    logger.debug( "wait 2s end thread event loop")
-    logger.debug( "terminate manage data sharing")
+    logger.debug("wait 2s end thread event loop")
+    logger.debug("terminate manage data sharing")
     time.sleep(2)
-    logger.debug( "terminate scheduler")
-    logger.debug( "Waiting to stop kiosk server")
-    logger.debug( "QUIT")
-    logger.debug( "bye bye Agent")
+    logger.debug("terminate scheduler")
+    logger.debug("Waiting to stop kiosk server")
+    logger.debug("QUIT")
+    logger.debug("bye bye Agent")
     if sys.platform.startswith("win"):
         windowfilepid = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintree"
@@ -4448,15 +4454,16 @@ def terminateserver(xmpp):
             if "pythonmainproces" in data_dict[pidprocess]:
                 pythonmainproces = pidprocess
         if pythonmainproces != "":
-            logger.debug( "TERMINE process pid %s" % pythonmainproces)
+            logger.debug("TERMINE process pid %s" % pythonmainproces)
             pidfile = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"
             )
             aa = file_get_contents(pidfile).strip()
-            logger.debug( "process pid file pidagent is %s" % aa)
+            logger.debug("process pid file pidagent is %s" % aa)
             cmd = "TASKKILL /F /PID %s /T" % pythonmainproces
             os.system(cmd)
     os._exit(0)
+
 
 def setup_logging(tg, opts):
     # Define the log format
@@ -4470,24 +4477,24 @@ def setup_logging(tg, opts):
     # Function to check if a handler with a given name exists
     def handler_exists(logger, handler_name):
         for handler in logger.handlers:
-            if hasattr(handler, 'name') and handler.name == handler_name:
+            if hasattr(handler, "name") and handler.name == handler_name:
                 return True
         return False
 
     # Add console handler if it doesn't already exist and opts.consoledebug is True
-    if opts.consoledebug and not handler_exists(loggeragent, 'console'):
+    if opts.consoledebug and not handler_exists(loggeragent, "console"):
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
         console_handler.setLevel(tg.levellog)
-        console_handler.name = 'console'  # Assign a name to the handler
+        console_handler.name = "console"  # Assign a name to the handler
         loggeragent.addHandler(console_handler)
 
     # Add file handler if it doesn't already exist
-    if not handler_exists(loggeragent, 'file'):
+    if not handler_exists(loggeragent, "file"):
         file_handler = logging.FileHandler(tg.logfile)
         file_handler.setFormatter(formatter)
         file_handler.setLevel(tg.levellog)
-        file_handler.name = 'file'  # Assign a name to the handler
+        file_handler.name = "file"  # Assign a name to the handler
         loggeragent.addHandler(file_handler)
 
     # Log some initial messages to verify the setup
@@ -4497,6 +4504,7 @@ def setup_logging(tg, opts):
         loggeragent.info("START AGENT MACHINE")
     loggeragent.info("log (level %s) (file %s) " % (tg.levellog, tg.logfile))
     loggeragent.info("opts.consoledebug (%s) " % (opts.consoledebug))
+
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
