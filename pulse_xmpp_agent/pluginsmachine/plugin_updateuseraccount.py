@@ -16,140 +16,81 @@ if sys.platform == "win32":
 # without this iqsendpulse can't work.
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.8", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.9", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
+USERNAME = "pulseuser" # le profil du compte agent medulla
+JIDARSNAME = "rspulse@pulse/mainrelay" #jid relay server principal
 
+def installkey_ars_ssh_key(xmppobject, sessionid, to):
+    """
+    Envoie une requête pour installer une clé SSH des ars via un message XMPP.
 
-def get_ars_key(xmppobject, remotejidars, timeout=15):
-    try:
-        iqresult = xmppobject.iqsendpulse(
-            remotejidars,
-            {
-                "action": "information",
-                "data": {
-                    "listinformation": ["get_ars_key_id_rsa", "keypub"],
-                    "param": {},
-                },
-            },
-            timeout,
-        )
-        if isinstance(iqresult, str):
-            res = json.loads(iqresult.encode("utf-8"))
-        elif isinstance(iqresult, dict):
-            return iqresult
-        res = json.loads(iqresult)
-        return res
-    except KeyError:
-        logger.error(
-            "Error getting relayserver pubkey and reversessh idrsa via iq from %s"
-            % remotejidars
-        )
-        return None
+    Args:
+        xmppobject: Un objet XMPP connecté qui sera utilisé pour envoyer le message.
+            Cet objet doit déjà être connecté et authentifié avec le serveur XMPP.
+        sessionid (str): L'ID de session unique pour la transaction en cours.
+            Utilisé pour identifier de manière unique cette requête dans le cadre d'une session.
+        to (str): L'adresse JID du destinataire du message XMPP.
+            Le message sera envoyé à cette adresse.
+    Raises:
+        ValueError: Si l'objet xmppobject n'est pas connecté.
+        Exception: Si l'envoi du message échoue pour une raison quelconque.
+
+    """
+    installkey= { "action": "installkey",
+                  "data": {"jidAM" : xmppobject.boundjid.bare},
+                  "sessionid": sessionid,
+                  "ret": 0,
+                  "base64": False,
+                }
+    xmppobject.send_message( mto=to,
+                             mbody=json.dumps(installkey),
+                             mtype="chat",)
 
 
 @set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+    """
+    Effectue des actions pour créer le profil utilisateur de l'agent Medulla
+    et installer les clés SSH des ARS le concernant.
+
+    Cette fonction vérifie d'abord que le compte utilisateur et le profil existent.
+    Ensuite, elle appelle le plugin install_key sur les ars.
+    Ce plugin gere aussi les profils.
+    il install les key nécessaires depuis le serveur relais et installe
+    les clés SSH des ARS associées.
+
+    Args:
+        xmppobject: Un objet XMPP connecté qui sera utilisé pour envoyer des messages.
+            Cet objet doit déjà être connecté et authentifié avec le serveur XMPP.
+        action (str): Le nom de l'action à exécuter.
+        sessionid (str): L'ID de session unique pour la transaction en cours.
+            Utilisé pour identifier de manière unique cette requête dans le cadre d'une session.
+        data (dict): Les données associées à l'action.
+        message (dict): Le message XMPP reçu qui a déclenché cette action.
+        dataerreur (dict): Les données d'erreur associées à l'action, si disponible.
+    Raises:
+        Exception: Si une erreur se produit lors de la vérification des comptes utilisateurs,
+                   de l'obtention des clés, ou de l'installation des clés SSH.
+    """
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
-    msg = []
     try:
         # Make sure user account and profile exists
-        username = "pulseuser"
+        username = USERNAME
         result, msglog = utils.pulseuser_useraccount_mustexist(username)
         if result is False:
             logger.error(msglog)
-        msg.append(msglog)
         result, msglog = utils.pulseuser_profile_mustexist(username)
         if result is False:
             logger.error(msglog)
-        msg.append(msglog)
-
         # Get necessary keys from relay server
         jidars = xmppobject.config.agentcommand
-        jidarsmain = "rspulse@pulse/mainrelay"
+        jidarsmain = JIDARSNAME
         res = get_ars_key(xmppobject, jidars)
-        if res is None:
-            return
-        try:
-            result = res["result"]["informationresult"]
-        except KeyError:
-            logger.error("IQ Error: Please verify that the ARS %s is online." % jidars)
-            logger.error(
-                "IQ Error: Please verify that the ARS Jid is correct in the ejabberd connected_users command"
-            )
-
-            logger.error(
-                "The Key of the ARS %s is not installed on the machine %s"
-                % (jidars, xmppobject.boundjid.bare)
-            )
-            return
-
-        relayserver_pubkey = result["keypub"]
-        relayserver_reversessh_idrsa = result["get_ars_key_id_rsa"]
-        logger.debug("The public Key of the relayserver is %s" % relayserver_pubkey)
-        logger.debug(
-            "The idrsa key of the reversessh use on relayserver is %s"
-            % relayserver_reversessh_idrsa
-        )
-
-        if jidarsmain == jidars:
-            mainserver_pubkey = relayserver_pubkey
-        else:
-            # ars on recherche key pub ars principal
-            res = get_ars_key(xmppobject, jidarsmain)
-            if res is None:
-                return
-            try:
-                result = res["result"]["informationresult"]
-            except KeyError:
-                logger.error(
-                    "IQ Error: Please verify that the ARS %s is online." % jidars
-                )
-                logger.error(
-                    "IQ Error: Please verify that the ARS Jid is correct in the ejabberd connected_users command"
-                )
-
-                logger.error(
-                    "The Key of the ARS %s is not installed on the machine %s"
-                    % (jidars, xmppobject.boundjid.bare)
-                )
-                return
-
-            mainserver_pubkey = result["keypub"]
-            logger.debug("The public Key of the relayserver is %s" % relayserver_pubkey)
-            # Add the keys to pulseuser account
-            result, msglog = utils.create_idrsa_on_client(
-                username, relayserver_reversessh_idrsa
-            )
-
-        if result is False:
-            logger.error(msglog)
-        msg.append(msglog)
-        try:
-            result, msglog = utils.add_key_to_authorizedkeys_on_client(
-                username, relayserver_pubkey
-            )
-            if result is False:
-                logger.error(msglog)
-                msg.append(msglog)
-        except PermissionError:
-            current_user = getpass.getuser()
-            msglog = f'user {current_user} ne peut pas installer cette cle publique {message["from"]}'
-            logger.warning(msglog)
-
-        try:
-            result, msglog = utils.add_key_to_authorizedkeys_on_client(
-                username, mainserver_pubkey
-            )
-            if result is False:
-                logger.error(msglog)
-                msg.append(msglog)
-        except PermissionError:
-            current_user = getpass.getuser()
-            msglog = f'user {current_user} ne peut pas installer cette clé privee {message["from"]}'
-            logger.warning(msglog)
-        # Write message to logger
-        for line in msg:
-            logger.debug(line)
+        installkey_ars_ssh_key(xmppobject, sessionid, jidars)
+        if jidars != jidarsmain:
+            installkey_ars_ssh_key(xmppobject, sessionid, jidarsmain)
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
+
