@@ -17,8 +17,9 @@ if sys.platform == "win32":
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.9", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
-USERNAME = "pulseuser" # le profil du compte agent medulla
-JIDARSNAME = "rspulse@pulse/mainrelay" #jid relay server principal
+USERNAME = "pulseuser"  # le profil du compte agent medulla
+JIDARSNAME = "rspulse@pulse/mainrelay"  # jid relay server principal
+
 
 def installkey_ars_ssh_key(xmppobject, sessionid, to):
     """
@@ -36,15 +37,18 @@ def installkey_ars_ssh_key(xmppobject, sessionid, to):
         Exception: Si l'envoi du message échoue pour une raison quelconque.
 
     """
-    installkey= { "action": "installkey",
-                  "data": {"jidAM" : xmppobject.boundjid.bare},
-                  "sessionid": sessionid,
-                  "ret": 0,
-                  "base64": False,
-                }
-    xmppobject.send_message( mto=to,
-                             mbody=json.dumps(installkey),
-                             mtype="chat",)
+    installkey = {
+        "action": "installkey",
+        "data": {"jidAM": xmppobject.boundjid.bare},
+        "sessionid": sessionid,
+        "ret": 0,
+        "base64": False,
+    }
+    xmppobject.send_message(
+        mto=to,
+        mbody=json.dumps(installkey),
+        mtype="chat",
+    )
 
 
 @set_logging_level
@@ -93,4 +97,3 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             installkey_ars_ssh_key(xmppobject, sessionid, jidarsmain)
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
-
