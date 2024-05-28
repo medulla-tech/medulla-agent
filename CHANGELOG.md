@@ -1,17 +1,23 @@
 # Change Log
 
-## [v3.1.0](unreleased)
+## [v3.1.1](unreleased)
+- [FEATURE]  Improve installer
+- [FEATURE]  Rename install folder on windows from c:\program Files\Pulse to Medulla
+- [BUGFIX]   Fix Network Notify service start
+- [BUGFIX]   Fix the way plugins are called
+- [BUGFIX]   Fix replicator ( update tool of the agent ).
+- [BUGFIX]   Set slixmpp log level to FATAL and improve a few logs
+
+[Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.0...v3.1.1)
+
+## [v3.1.0](https://github.com/medulla-tech/medulla-agent/tree/v3.1.0) (2024-04-22)
 - [FEATURE]  Create agentconfig.ini.tpl ( to fix broken agent )
 - [FEATURE]  Create kiosk profiles based on AD groups
-- [BUGFIX]   Fix creation of the img_agent (#397)
-
-[Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.1...v3.1.0)
-
-## [v3.0.2](unreleased)
 - [FEATURE]  Update to Python 3.11.8
+- [BUGFIX]   Fix creation of the img_agent (#397)
 - [BUGFIX]   Fix the inventory Quick Action
 
-[Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.1...v3.0.2)
+[Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.0.1...v3.1.0)
 
 ## [v3.0.1](https://github.com/medulla-tech/medulla-agent/tree/v3.0.1) (2024-03-22)
 - [FEATURE]  Install python in c:\Program Files\Python3
