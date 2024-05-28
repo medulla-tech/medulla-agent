@@ -14,7 +14,7 @@ for scheme in list(INSTALL_SCHEMES.values()):
 
 setup(
     name="pulse_machine_plugins",
-    version="3.1.0",
+    version="3.1.1",
     author="SIVEO",
     author_email="support@siveo.net",
     description="XMPP Machine agent plugins for pulse",

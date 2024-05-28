@@ -17,10 +17,10 @@ from lib.agentconffile import (
     rotation_file,
 )
 
-NETWORKVERSION = "3.1.0"
+NETWORKVERSION = "3.1.1"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.3", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.4", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
