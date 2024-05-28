@@ -290,20 +290,20 @@ def process_connection_ssl(self, connection):
 
             try:
                 data = convert.convert_json_to_dict(data)
-                logger.error("data est 1 json")
+                logger.debug("Data is in json format")
             except json.decoder.JSONDecodeError as e:
                 # type n est pas 1 json.
-                logger.error("data pas 1 json ")
+                logger.debug("Data is not in json format")
                 try:
                     data = convert.yaml_string_to_dict(data)
-                    logger.error("data est 1 yam")
+                    logger.debug("Data is in yaml format")
                 except:
-                    logger.error("data pas 1 yam ")
+                    logger.debug("Data is not in yaml format")
                     try:
                         data = convert.xml_to_dict(data)
-                        logger.error("data est 1 xml")
+                        logger.debug("Data is in xml format")
                     except:
-                        logger.error("data pas 1 xml")
+                        logger.debug("Data is not in xml format")
 
             logger.debug("process_connection_ssl  ******* data %s" % type(data))
             if isinstance(data, (str, bytes)):
