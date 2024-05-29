@@ -20,7 +20,7 @@ from lib.agentconffile import (
 NETWORKVERSION = "3.1.1"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.4", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.5", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -226,7 +226,7 @@ def updatenetworkcheck(xmppobject):
             querycmd = "sc query medullanetnotify"
             querycmd_result = utils.simplecommand(querycmd)
             # We need to have a copy of pythonservices named based on _exe_name_
-            if not os.path.isfile(os.path.join(win32_path, "medullanetnotify.exe")):
+            if not os.path.isfile(os.path.join(python3_path, "medullanetnotify.exe")):
                 try:
                     shutil.copyfile(
                         os.path.join(win32_path, "pythonservice.exe"),
