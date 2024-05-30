@@ -207,7 +207,7 @@ class KioskDatabase(DatabaseHelper):
             FROM
                 kiosk.package
                   inner join
-                kiosk.package_has_profil on kiosk.package.id = kiosk.package_has_profil.package_id
+                kiosk.package_has_profil on kiosk.package.id = kiosk.package_has_profil.package_uuid
                   inner join
                 kiosk.profiles on profiles.id = kiosk.package_has_profil.profil_id
 
@@ -485,7 +485,7 @@ class KioskDatabase(DatabaseHelper):
         package.package_uuid,
         package_status
         from package \
-        left join package_has_profil on package.id = package_has_profil.package_id \
+        left join package_has_profil on package.id = package_has_profil.package_uuid \
         left join profiles on profiles.id = package_has_profil.profil_id\
         WHERE profiles.id = '%s';""" % (
             id
