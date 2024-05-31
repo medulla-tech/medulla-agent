@@ -384,7 +384,7 @@ class functionsynchroxmpp:
                 if info_ask == "invent_xmpp":
                     result["result"]["informationresult"][
                         info_ask
-                    ] = xmppobject.seachInfoMachine()
+                    ] = xmppobject.searchInfoMachine()
                 if info_ask == "battery":
                     result["result"]["informationresult"][info_ask] = decode_strconsole(
                         sensors_battery()
