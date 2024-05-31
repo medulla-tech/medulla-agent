@@ -1033,15 +1033,27 @@ def networkinfoexist():
 
 
 def networkchanged():
-    if not networkinfoexist():
-        return True
-    fingerprintnetwork = file_get_contents(
-        os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
-    )
-    newfingerprint = createfingerprintnetwork()
-    if fingerprintnetwork == newfingerprint:
-        return False
+    """
+    This function is used to know if the network changed.
 
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the network changed.
+
+    A network change means that the interfaces changed ( new or deleted )
+
+    Returns:
+        True if we consider that the network changed
+        False if we consider that the network has not changed
+    """
+    if networkinfoexist():
+        fingerprintnetwork = file_get_contents(
+            os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
+        )
+        newfingerprint = createfingerprintnetwork()
+        if fingerprintnetwork == newfingerprint:
+            return False
+
+    return True
 
 def conffilename(agenttype):
     """

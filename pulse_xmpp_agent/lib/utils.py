@@ -626,15 +626,15 @@ def networkchanged():
         True if we consider that the network changed
         False if we consider that the network has not changed
     """
-    if not networkinfoexist():
-        return True
-    fingerprintnetwork = file_get_contents(
-        os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
-    )
-    newfingerprint = createfingerprintnetwork()
-    if fingerprintnetwork == newfingerprint:
-        return False
+    if networkinfoexist():
+        fingerprintnetwork = file_get_contents(
+            os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
+        )
+        newfingerprint = createfingerprintnetwork()
+        if fingerprintnetwork == newfingerprint:
+            return False
 
+    return True
 
 def refreshfingerprint():
     fp = createfingerprintnetwork()
