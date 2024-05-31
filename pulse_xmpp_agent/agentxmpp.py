@@ -3692,7 +3692,9 @@ class MUCBot(ClientXMPP):
                 "We failed to calculate the subnetnetwork, we hit this backtrace\n"
             )
             logger.error(f"\n {traceback.format_exc()}")
-            logger.error(f"The variable xmppmask comes from {er.messagejson['listipinfo']}")
+            logger.error(
+                f"The variable xmppmask comes from {er.messagejson['listipinfo']}"
+            )
             logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
 Check if ip [%s] is correct:
