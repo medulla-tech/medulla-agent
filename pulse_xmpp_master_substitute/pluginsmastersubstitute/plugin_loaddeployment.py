@@ -150,10 +150,6 @@ def scheduledeploy(self):
             logger.error("We hit the backtrace: \n %s" % (traceback.format_exc()))
             logger.debug("Unlock substitute %s" % (self.boundjid.user))
             return
-        except Exception as e:
-            logger.error("We hit the backtrace \n %s" % (traceback.format_exc()))
-            logger.debug("Unlock substitute %s" % (self.boundjid.user))
-            return
         if nb_machine_select_for_deploy_cycle == 0:
             return
 
