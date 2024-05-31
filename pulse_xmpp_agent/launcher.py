@@ -1055,6 +1055,7 @@ def networkchanged():
 
     return True
 
+
 def conffilename(agenttype):
     """
     This function define where the configuration file is located.

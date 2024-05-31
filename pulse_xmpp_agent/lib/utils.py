@@ -636,6 +636,7 @@ def networkchanged():
 
     return True
 
+
 def refreshfingerprint():
     fp = createfingerprintnetwork()
     file_put_contents(os.path.join(Setdirectorytempinfo(), "fingerprintnetwork"), fp)
