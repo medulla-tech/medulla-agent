@@ -603,7 +603,7 @@ class MUCBot(ClientXMPP):
 
     def infos_machine_assessor(self):
         # envoi information
-        dataobj = self.seachInfoMachine()
+        dataobj = self.searchInfoMachine()
         self.session = getRandomName(10, "session")
         dataobj["sessionid"] = self.session
         dataobj["base64"] = False
@@ -627,7 +627,7 @@ class MUCBot(ClientXMPP):
             mto=self.sub_assessor, mbody=json.dumps(msginfo), mtype="chat"
         )
 
-    def seachInfoMachine(self):
+    def searchInfoMachine(self):
         er = networkagentinfo("config", "inforegle")
         er.messagejson["info"] = self.config.information
         for t in er.messagejson["listipinfo"]:

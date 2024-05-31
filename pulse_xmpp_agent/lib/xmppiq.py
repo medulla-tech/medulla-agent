@@ -437,7 +437,7 @@ class functionsynchroxmpp:
                 elif info_ask == "invent_xmpp":
                     result["result"]["informationresult"][
                         info_ask
-                    ] = xmppobject.seachInfoMachine()
+                    ] = xmppobject.searchInfoMachine()
                 elif info_ask == "keypub":
                     result["result"]["informationresult"][info_ask] = keypub()
                 elif info_ask == "mmemory":

@@ -3000,7 +3000,7 @@ class MUCBot(ClientXMPP):
         """
         Updates the plugin by sending plugin and machine information to the Master.
 
-        This function attempts to gather machine information using the `seachInfoMachine` method,
+        This function attempts to gather machine information using the `searchInfoMachine` method,
         then logs the registration information and sends it to the specified registration address using XMPP.
 
         If successful, it logs the registration details and sends the information as a chat message.
@@ -3021,7 +3021,7 @@ class MUCBot(ClientXMPP):
         """
         # Send plugin and machine informations to Master
         try:
-            dataobj = self.seachInfoMachine()
+            dataobj = self.searchInfoMachine()
             logging.log(
                 DEBUGPULSE,
                 "SEND REGISTRATION XMPP to %s \n%s"
@@ -3660,7 +3660,7 @@ class MUCBot(ClientXMPP):
             )
             logger.error("\n%s" % (traceback.format_exc()))
 
-    def seachInfoMachine(self):
+    def searchInfoMachine(self):
         er = networkagentinfo("master", "infomachine")
         er.messagejson["info"] = self.config.information
 
