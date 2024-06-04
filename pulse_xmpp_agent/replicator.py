@@ -24,6 +24,9 @@ if sys.platform.startswith("win"):
 
 
 def copytree2(src, dst, symlinks=False):
+    BOOL_DISABLE_IMG = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOL_DISABLE_IMG")
+    if os.path.exists(BOOL_DISABLE_IMG):
+        return
     names = os.listdir(src)
     try:
         os.makedirs(dst)
