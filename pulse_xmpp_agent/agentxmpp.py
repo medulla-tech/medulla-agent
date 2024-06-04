@@ -3327,6 +3327,9 @@ class MUCBot(ClientXMPP):
         return disk + "\\\\".join(result)
 
     def reinstall_agent(self):
+        BOOL_DISABLE_IMG = os.path.join(self.pathagent, "BOOL_DISABLE_IMG")
+        if os.path.exists(BOOL_DISABLE_IMG):
+            return
         file_put_contents(
             os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"),
             "use file boolean update. enable verify update.",
