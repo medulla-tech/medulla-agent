@@ -1328,9 +1328,14 @@ if __name__ == "__main__":
 
     # This bool file allow to enable the rescue client
     BOOL_ENABLE_RESCUE = os.path.join(filePath, "BOOL_ENABLE_RESCUE")
+    BOOL_DISABLE_RESCUE = os.path.join(filePath, "BOOL_DISABLE_RESCUE")
 
     if os.path.exists(BOOL_ENABLE_RESCUE):
         opts.check_agent = True
+
+    if os.path.exists(BOOL_DISABLE_RESCUE):
+        opts.check_agent = False
+
 
     namefileconfig = conffilename(opts.typemachine)
 
