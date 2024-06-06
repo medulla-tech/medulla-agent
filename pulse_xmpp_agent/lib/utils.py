@@ -1814,7 +1814,7 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
                 resultip = b[3].split(":")[0]
     elif sys.platform.startswith("win"):
         obj = simplecommand(
-            f'netstat -an | findstr {Port} | findstr "ESTABLISHED SYN_SENT SYN_RECV"'
+            f'netstat -an | findstr {Port} | findstr "ESTABLISHED"'
         )
         if len(obj["result"]) != 0:
             for i in range(len(obj["result"])):
