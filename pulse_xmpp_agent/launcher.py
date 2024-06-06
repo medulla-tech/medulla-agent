@@ -1336,7 +1336,6 @@ if __name__ == "__main__":
     if os.path.exists(BOOL_DISABLE_RESCUE):
         opts.check_agent = False
 
-
     namefileconfig = conffilename(opts.typemachine)
 
     if not os.path.isfile(namefileconfig):
