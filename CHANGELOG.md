@@ -3,8 +3,12 @@
 ## [v3.2.0](https://github.com/medulla-tech/medulla-agent/tree/v3.2.0) (unreleased)
 - [FEATURE]  If the file BOOL_DISABLE_IMG exists, disable the replicator
 - [FEATURE]  If the file BOOL_DISABLE_IMG exists, we do not remove the img_agent folder.
+- [FEATURE]  If the file BOOL_DISABLE_RESCUE exists, the Rescue agent is disabled
+
+[Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.1...v3.2.0)
 
 ## [v3.1.1](https://github.com/medulla-tech/medulla-agent/tree/v3.1.1) (unreleased)
+
 - [FEATURE]  Improve installer
 - [FEATURE]  Rename install folder on windows from c:\program Files\Pulse to Medulla
 - [BUGFIX]   Fix Network Notify service start
