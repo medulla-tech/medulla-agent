@@ -1,6 +1,9 @@
 # Change Log
 
-## [v3.1.1](unreleased)
+## [v3.2.0](https://github.com/medulla-tech/medulla-agent/tree/v3.2.0) (unreleased)
+- [FEATURE]  If the file BOOL_DISABLE_IMG exists, disable the replicator
+
+## [v3.1.1](https://github.com/medulla-tech/medulla-agent/tree/v3.1.1) (unreleased)
 - [FEATURE]  Improve installer
 - [FEATURE]  Rename install folder on windows from c:\program Files\Pulse to Medulla
 - [BUGFIX]   Fix Network Notify service start
