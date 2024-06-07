@@ -10,11 +10,7 @@ import logging
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {
-    "VERSION": "2.5",
-    "NAME": "rsapplicationdeploymentjson",
-    "TYPE": "relayserver",
-}
+plugin = { "VERSION": "2.5", "NAME": "rsapplicationdeploymentjson", "TYPE": "relayserver" } # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
