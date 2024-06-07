@@ -1813,9 +1813,7 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
             if b := [x for x in a.split(" ") if x != ""]:
                 resultip = b[3].split(":")[0]
     elif sys.platform.startswith("win"):
-        obj = simplecommand(
-            f'netstat -an | findstr {Port} | findstr "ESTABLISHED"'
-        )
+        obj = simplecommand(f'netstat -an | findstr {Port} | findstr "ESTABLISHED"')
         if len(obj["result"]) != 0:
             for i in range(len(obj["result"])):
                 obj["result"][i] = obj["result"][i].rstrip("\n")
