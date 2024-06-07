@@ -7,6 +7,7 @@
 - [BUGFIX]   Fix the way plugins are called
 - [BUGFIX]   Fix replicator ( update tool of the agent ).
 - [BUGFIX]   Set slixmpp log level to FATAL and improve a few logs
+- [BUGFIX]   Fix reconnection of the agent after network hiccup
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.0...v3.1.1)
 
