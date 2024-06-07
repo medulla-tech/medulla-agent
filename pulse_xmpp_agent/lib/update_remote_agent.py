@@ -8,6 +8,7 @@ import logging
 from .utils import file_get_contents, simplecommand, file_get_binarycontents
 import json
 
+import sys
 logger = logging.getLogger()
 
 
@@ -156,7 +157,12 @@ def agentinfoversion(xmppobject):
         (like testmodule , pathagent, agentdescriptor, pathimg,
           imgdescriptor, actiontxt, conf and plugins)
     """
-    cmd = f'"C:\\Program Files\\python3\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
+    if sys.platform.startswith("linux"):
+        cmd = f'/usr/bin/python3 /usr/lib/python3/dist-packages/pulse_xmpp_agent/replicator.py -i -v'
+    elif sys.platform.startswith("win"):
+        cmd = f'"C:\\Program Files\\python3\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
+    elif sys.platform.startswith("darwin"):
+        pass
     logger.debug(f"cmd : {cmd}")
     result = simplecommand(cmd)
     resultobj = {}
