@@ -31,7 +31,7 @@ OPENSSHVERSION = "9.4"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.0", "NAME": "updateopenssh", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
