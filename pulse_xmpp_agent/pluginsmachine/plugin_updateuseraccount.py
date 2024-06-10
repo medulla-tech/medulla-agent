@@ -18,6 +18,7 @@ if sys.platform == "win32":
 logger = logging.getLogger()
 plugin = {"VERSION": "1.10", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
 
+
 def installkey_ars_ssh_key(xmppobject, sessionid, to):
     """
     Envoie une requete pour installer une cle SSH des ars via un message XMPP.
@@ -34,15 +35,18 @@ def installkey_ars_ssh_key(xmppobject, sessionid, to):
         Exception: Si l'envoi du message echoue pour une raison quelconque.
 
     """
-    installkey= { "action": "installkey",
-                  "data": {"jidAM" : xmppobject.boundjid.bare},
-                  "sessionid": sessionid,
-                  "ret": 0,
-                  "base64": False,
-                }
-    xmppobject.send_message( mto=to,
-                             mbody=json.dumps(installkey),
-                             mtype="chat",)
+    installkey = {
+        "action": "installkey",
+        "data": {"jidAM": xmppobject.boundjid.bare},
+        "sessionid": sessionid,
+        "ret": 0,
+        "base64": False,
+    }
+    xmppobject.send_message(
+        mto=to,
+        mbody=json.dumps(installkey),
+        mtype="chat",
+    )
 
 
 @set_logging_level
