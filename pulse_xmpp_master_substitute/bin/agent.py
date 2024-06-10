@@ -1078,6 +1078,7 @@ class MUCBot(slixmpp.ClientXMPP):
     def info_xmppmachinebyuuid(self, uuid):
         return XmppMasterDatabase().getGuacamoleRelayServerMachineUuid("UUID%s" % uuid)
 
+
 class DateTimebytesEncoderjson(json.JSONEncoder):
     """
     Used to handle datetime in json files.

@@ -129,7 +129,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     cmd = """\"%s\" -controlservice -connect localhost""" % (program)
                     logger.debug("VNC Listener Command: %s" % cmd)
                     simplecommand(cmd)
-                    obj = simplecommandstr(f"netstat -an | findstr 5500 | findstr LISTENING")
+                    obj = simplecommandstr(
+                        f"netstat -an | findstr 5500 | findstr LISTENING"
+                    )
                     if "LISTENING" in obj["result"]:
                         logger.info(f"VNC Listener listening on port 5500")
                 except Exception as e:
