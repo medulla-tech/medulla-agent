@@ -1075,6 +1075,8 @@ class MUCBot(slixmpp.ClientXMPP):
         # StanzaPath('iq@type=result/custom_xep'),
         # self._handle_custom_iq_get))
 
+    def info_xmppmachinebyuuid(self, uuid):
+        return XmppMasterDatabase().getGuacamoleRelayServerMachineUuid("UUID%s" % uuid)
 
 class DateTimebytesEncoderjson(json.JSONEncoder):
     """
