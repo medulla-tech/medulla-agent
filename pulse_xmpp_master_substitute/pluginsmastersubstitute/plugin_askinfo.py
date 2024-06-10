@@ -11,21 +11,19 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "plugin_askinfo", "TYPE": "submaster"}  # fmt: skip
 
+
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug("#################################################")
     logger.debug(plugin)
     logger.debug(json.dumps(data, indent=4))
     logger.debug("#################################################")
 
-
     if not data:
         return
     if "fromplugin" in data:
         # If item exists, redirects to the plugin named by the action
         data["action"] = data["fromplugin"]
-        logger.debug(
-            "Response action is calling the plugin %s" % data["action"]
-        )
+        logger.debug("Response action is calling the plugin %s" % data["action"])
         logger.debug(json.dumps(data, indent=4))
     else:
         logger.warn(
@@ -48,9 +46,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         try:
             integerid = int(data["host"])
         except ValueError:
-            logger.error(
-                "The inventory uuid is missing for info_xmppmachinebyuuid"
-            )
+            logger.error("The inventory uuid is missing for info_xmppmachinebyuuid")
             return True
 
         # #####WORKING info_xmppmachinebyuuid######
@@ -61,7 +57,12 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         if "sendother" in data and data["sendother"] != "":
             searchjid = data["sendother"].split("@")
             jidmachine = dict(data)
-            datasend = {"action": data["fromplugin"], "sessionid": sessionid, "data": data, "base64": False}
+            datasend = {
+                "action": data["fromplugin"],
+                "sessionid": sessionid,
+                "data": data,
+                "base64": False,
+            }
             for key in searchjid[1:]:
                 try:
                     jidmachine = jidmachine[key]
@@ -75,9 +76,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                     break
             jidmachine = str(jidmachine)
             if jidmachine != "":
-                logger.debug(
-                    "Sending data to machine %s" % jidmachine
-                )
+                logger.debug("Sending data to machine %s" % jidmachine)
                 logger.debug(json.dumps(datasend, indent=4))
                 xmppobject.send_message(
                     mto=jidmachine, mbody=json.dumps(datasend), mtype="chat"
@@ -85,9 +84,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         if not "sendemettor" in data:
             data["sendemettor"] = True
         if data["sendemettor"] == True:
-            logger.debug(
-                "Sending data to emittor %s" % jidmachine
-            )
+            logger.debug("Sending data to emittor %s" % jidmachine)
             logger.debug(json.dumps(datasend, indent=4))
             xmppobject.send_message(
                 mto=message["from"], mbody=json.dumps(datasend), mtype="chat"
