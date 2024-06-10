@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-FileCopyrightText: 2016-2024 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
@@ -10,7 +10,7 @@ import logging
 import os
 from lib.utils import set_logging_level
 
-plugin = {"VERSION": "1.14", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.20", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
 
 
 logger = logging.getLogger()
@@ -59,10 +59,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             elif data["cux_type"] == "VNC":
                 # Specific VNC case. We will use a listener
                 remoteport = localport
-                if hasattr(xmppobject.config, "clients_vnc_port"):
-                    localport = int(xmppobject.config.clients_vnc_port)
-                else:
-                    localport = 5900
+                localport = 5500
                 reversetype = "L"
 
         except Exception as e:
@@ -113,24 +110,30 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     else:
         # Machine plugin
 
-        from lib.utils import simplecommand
+        from lib.utils import simplecommand, simplecommandstr
 
         if data["options"] == "vnclistenmode":
             if sys.platform.startswith("win"):
                 try:
-                    logger.info("start VNC listener")
+                    logger.info("Start VNC listener")
                     program = os.path.join(
                         "c:\\", "progra~1", "TightVNC", "tvnserver.exe"
                     )
                     # select display for vnc
                     cmd = """\"%s\" -controlservice -disconnectall""" % (program)
+                    logger.debug("VNC Listener Command: %s" % cmd)
                     simplecommand(cmd)
                     cmd = """\"%s\" -controlservice -shareprimary""" % (program)
+                    logger.debug("VNC Listener Command: %s" % cmd)
                     simplecommand(cmd)
                     cmd = """\"%s\" -controlservice -connect localhost""" % (program)
+                    logger.debug("VNC Listener Command: %s" % cmd)
                     simplecommand(cmd)
+                    obj = simplecommandstr(f"netstat -an | findstr 5500 | findstr LISTENING")
+                    if "LISTENING" in obj["result"]:
+                        logger.info(f"VNC Listener listening on port 5500")
                 except Exception as e:
-                    logger.error(f"Error start VNC listener TightVNC: {str(e)}")
+                    logger.error(f"Error starting VNC listener TightVNC: {str(e)}")
                     logger.error("\n%s" % (traceback.format_exc()))
                     raise
             if sys.platform.startswith("darwin"):

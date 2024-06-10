@@ -10,12 +10,14 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "plugin_guacamole", "TYPE": "submaster"}
-# plugin run guacamole
+plugin = {"VERSION": "1.0", "NAME": "plugin_guacamole", "TYPE": "submaster"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataobj):
+    logger.debug("#################################################")
     logger.debug(plugin)
+    logger.debug(json.dumps(data, indent=4))
+    logger.debug("#################################################")
     try:
         relayserver = XmppMasterDatabase().getRelayServerForMachineUuid(data["uuid"])
         jidmachine = XmppMasterDatabase().getjidMachinefromuuid(data["uuid"])
