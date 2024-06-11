@@ -274,6 +274,20 @@ class XmppMasterDatabase(DatabaseHelper):
                 convert_unicode=True,
             )
             self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
+
+            Base = automap_base()
+            Base.prepare(self.engine_xmppmmaster_base, reflect=True)
+
+            # Only federated tables (beginning by local_) are automatically mapped
+            # If needed, excludes tables from this list
+            exclude_table = []
+            # Dynamically add attributes to the object for each mapped class
+            for table_name, mapped_class in Base.classes.items():
+                if table_name in exclude_table:
+                    continue
+                if table_name.startswith("local"):
+                    setattr(self, table_name.capitalize(), mapped_class)
+
             self.is_activated = True
             self.logger.debug("Xmpp activation done.")
             return True

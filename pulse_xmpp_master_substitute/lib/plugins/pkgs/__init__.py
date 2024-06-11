@@ -24,6 +24,7 @@ from sqlalchemy.orm import create_session, mapper
 from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
+from sqlalchemy.ext.automap import automap_base
 
 # ORM mappings
 from lib.plugins.pkgs.orm.dependencies import Dependencies
@@ -202,6 +203,20 @@ class PkgsDatabase(DatabaseHelper):
         """
         Initialize all SQLalchemy mappers needed for the Pkgs database
         """
+
+        Base = automap_base()
+        Base.prepare(self.engine_pkgsmmaster_base, reflect=True)
+
+        # Only federated tables (beginning by local_) are automatically mapped
+        # If needed, excludes tables from this list
+        exclude_table = []
+        # Dynamically add attributes to the object for each mapped class
+        for table_name, mapped_class in Base.classes.items():
+            if table_name in exclude_table:
+                continue
+            if table_name.startswith("local"):
+                setattr(self, table_name.capitalize(), mapped_class)
+
         mapper(Packages, self.package)
         mapper(Extensions, self.extensions)
         mapper(Dependencies, self.dependencies)
