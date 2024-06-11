@@ -110,6 +110,7 @@ class AdminDatabase(DatabaseHelper):
 
             self.metadata = MetaData(self.engine_admin_base)
             self.Sessionadmin = sessionmaker(bind=self.engine_admin_base)
+
             self.is_activated = True
             self.logger.debug("Admin activation done")
             if self.map() is True:
@@ -126,6 +127,17 @@ class AdminDatabase(DatabaseHelper):
 
     def map(self):
         self.base.prepare(self.engine_admin_base, reflect=True)
+
+        # Federated tables
+        # If needed, excludes tables from this list
+        exclude_table = []
+        # Dynamically add attributes to the object for each mapped class
+        for table_name, mapped_class in self.base.classes.items():
+            if table_name in exclude_table:
+                continue
+            if table_name.startswith("local"):
+                setattr(self, table_name.capitalize(), mapped_class)
+
         try:
             # automap table
             self.upd_list = self.base.classes.upd_list

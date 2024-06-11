@@ -53,6 +53,7 @@ try:
 except ImportError:
     from sqlalchemy.sql.operators import ColumnOperators
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.automap import automap_base
 
 # TODO rename location into entity (and locations in location)
 
@@ -299,6 +300,19 @@ class Glpi84(DatabaseHelper):
         """
         Initialize all SQLalchemy mappers needed for the inventory database
         """
+
+        Base = automap_base()
+        Base.prepare(self.engine_glpi, reflect=True)
+
+        # Only federated tables (beginning by local_) are automatically mapped
+        # If needed, excludes tables from this list
+        exclude_table = []
+        # Dynamically add attributes to the object for each mapped class
+        for table_name, mapped_class in Base.classes.items():
+            if table_name in exclude_table:
+                continue
+            if table_name.startswith("local"):
+                setattr(self, table_name.capitalize(), mapped_class)
 
         self.klass = {}
 
