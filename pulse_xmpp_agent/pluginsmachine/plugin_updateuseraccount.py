@@ -17,7 +17,8 @@ if sys.platform == "win32":
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.11", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
-JIDARSNAME = 'rspulse@pulse/mainrelay'
+JIDARSNAME = "rspulse@pulse/mainrelay"
+
 
 def installkey_ars_ssh_key(xmppobject, sessionid, to):
     """
@@ -35,15 +36,18 @@ def installkey_ars_ssh_key(xmppobject, sessionid, to):
         Exception: Si l'envoi du message echoue pour une raison quelconque.
 
     """
-    installkey= { "action": "installkey",
-                  "data": {"jidAM" : xmppobject.boundjid.bare},
-                  "sessionid": sessionid,
-                  "ret": 0,
-                  "base64": False,
-                }
-    xmppobject.send_message( mto=to,
-                             mbody=json.dumps(installkey),
-                             mtype="chat",)
+    installkey = {
+        "action": "installkey",
+        "data": {"jidAM": xmppobject.boundjid.bare},
+        "sessionid": sessionid,
+        "ret": 0,
+        "base64": False,
+    }
+    xmppobject.send_message(
+        mto=to,
+        mbody=json.dumps(installkey),
+        mtype="chat",
+    )
 
 
 @set_logging_level
