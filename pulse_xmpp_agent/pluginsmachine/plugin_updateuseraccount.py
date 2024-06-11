@@ -16,7 +16,8 @@ if sys.platform == "win32":
 # without this iqsendpulse can't work.
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.10", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.11", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
+JIDARSNAME = 'rspulse@pulse/mainrelay'
 
 def installkey_ars_ssh_key(xmppobject, sessionid, to):
     """
