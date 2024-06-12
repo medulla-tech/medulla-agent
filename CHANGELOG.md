@@ -16,6 +16,8 @@
 - [BUGFIX]   Fix replicator ( update tool of the agent ).
 - [BUGFIX]   Set slixmpp log level to FATAL and improve a few logs
 - [BUGFIX]   Fix reconnection of the agent after network hiccup
+- [BUGFIX]   Fix creation of pulseuser account
+- [BUGFIX]   Fix remote desktop for VNC where the reversessh was not created
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.0...v3.1.1)
 
