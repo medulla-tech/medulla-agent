@@ -1304,7 +1304,6 @@ if __name__ == "__main__":
         console_handler.setFormatter(formatter)
         logger = logging.getLogger()
         logger.addHandler(console_handler)
-        logger.info("flux des logs vers console")
 
     if sys.platform.startswith("win"):
         result = win32api.SetConsoleCtrlHandler(ProcessData._CtrlHandler, 1)
@@ -1359,6 +1358,7 @@ if __name__ == "__main__":
         )
         logger.debug("We need to reconfigure")
         testconfigurable = isTemplateConfFile(opts.typemachine)
+
         if testconfigurable:
             needreconfiguration = True
         else:
