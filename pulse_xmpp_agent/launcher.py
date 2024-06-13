@@ -1335,7 +1335,18 @@ if __name__ == "__main__":
     if os.path.exists(BOOL_DISABLE_RESCUE):
         opts.check_agent = False
 
-    namefileconfig = conffilename(opts.typemachine)
+
+    namefileconfig = os.path.join(directoryconffile(),conffilename(opts.typemachine))
+    templatefileconfig = os.path.join(directoryconffile(), namefileconfig) + ".tpl"
+
+    if not os.path.isfile(namefileconfig):
+        if os.path.isfile(templatefileconfig) and opts.typemachine.lower() in ["machine"]:
+            try:
+                shutil.copy(templatefileconfig, namefileconfig)
+            except Exception as e:
+                logger.error(f"An error {e} occured")
+        else:
+            logger.errorf"The template file does not exist. We won't be able to use the autofix feature")
 
     if not os.path.isfile(namefileconfig):
         # The Medulla agent config file is missing. We need to reinstall the rescue.
