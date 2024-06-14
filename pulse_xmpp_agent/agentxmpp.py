@@ -2454,12 +2454,6 @@ class MUCBot(ClientXMPP):
     def sizeoutARS(self):
         return self.__sizeout(self.qoutARS)
 
-    def __setin(self, data, q):
-        self.qin.put(data)
-
-    def setinARS(self, data):
-        self.__setin(data, self.qoutARS)
-
     def __getout(self, timeq, q):
         try:
             valeur = q.get(True, timeq)
@@ -4347,12 +4341,6 @@ class process_agent_search:
 def terminateserver(xmpp):
     # event for quit loop server tcpserver for kiosk
     logging.log(DEBUGPULSE, "terminateserver")
-    if xmpp.config.agenttype in ["relayserver"]:
-        xmpp.qin.put("quit")
-    xmpp.queue_read_event_from_command.put("quit")
-
-    if xmpp.config.agenttype in ["relayserver"]:
-        xmpp.managerQueue.shutdown()
     # termine server kiosk
     xmpp.eventkiosk.quit()
     xmpp.eventkilltcp.set()
