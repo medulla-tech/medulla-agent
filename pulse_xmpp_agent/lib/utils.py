@@ -2613,6 +2613,167 @@ class Program:
         self.programlist.clear()
 
 
+def check_socket_status(port):
+    """
+    Vérifie l'état d'un port socket.
+
+    Cette fonction utilise la commande `netstat` pour vérifier l'état d'un port
+    spécifié sur Windows, Linux ou macOS.
+
+    Args:
+        port (int): Le port à vérifier.
+
+    Returns:
+        str: Le statut du port (e.g., 'LISTEN', 'ESTABLISHED').
+        None: Si le port n'est pas trouvé.
+
+    Raises:
+        OSError: Si le système d'exploitation n'est pas supporté.
+    """
+    # Déterminer la commande appropriée pour le système d'exploitation
+    system = platform.system().lower()
+    if system in ['windows', 'linux', 'darwin']:
+        # Commande netstat pour les systèmes Windows, Linux et macOS
+        if system == 'windows':
+            result = subprocess.run(['netstat', '-an'], capture_output=True, text=True)
+        else:
+            result = subprocess.run(['netstat', '-tan'], capture_output=True, text=True)
+
+        # Filtrer les lignes contenant le port
+        lines = result.stdout.splitlines()
+        port_line = [line for line in lines if f":{port} " in line]
+
+        if port_line:
+            # Extraire le statut de la ligne
+            status = port_line[0].split()[-1]
+            return status
+        else:
+            return None
+    else:
+        raise OSError(f"Système d'exploitation non supporté : {system}")
+
+def get_process_using_port(port):
+    """
+    Obtient le processus utilisant un port spécifié.
+
+    Cette fonction utilise `lsof` sur Unix-like et `netstat` sur Windows
+    pour trouver le processus qui utilise un port donné.
+
+    Args:
+        port (int): Le port à vérifier.
+
+    Returns:
+        str: Les informations du processus utilisant le port ou un message d'erreur.
+    """
+    system = platform.system()
+
+    if system in ['Linux', 'Darwin']:
+        command = ['lsof', '-i', f':{port}']
+    elif system == 'Windows':
+        command = ['netstat', '-ano']
+    else:
+        return f"Système d'exploitation non supporté : {system}"
+
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        if system == 'Windows':
+            # Filtrer la sortie pour trouver le port spécifique
+            lines = result.stdout.splitlines()
+            for line in lines:
+                if f':{port} ' in line:  # espace après le port pour éviter les mauvaises correspondances
+                    return line
+            return f"Aucun processus n'utilise le port {port}."
+        else:
+            return result.stdout
+    except subprocess.CalledProcessError as e:
+        return f"Erreur : {e}"
+
+def process_exists(pid):
+    """
+    Vérifie si un processus existe.
+
+    Args:
+        pid (int): L'identifiant du processus à vérifier.
+
+    Returns:
+        bool: True si le processus existe, False sinon.
+    """
+    try:
+        process = psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        return False
+    else:
+        return True
+
+def kill_process(pid):
+    """
+    Tue un processus par son PID.
+
+    Cette fonction tente de tuer un processus donné par son PID sur Windows,
+    Linux et macOS.
+
+    Args:
+        pid (int): L'identifiant du processus à tuer.
+
+    Returns:
+        bool: True si le processus a été tué avec succès, False sinon.
+    """
+    system = platform.system()
+    if system == 'Windows':
+        try:
+            subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], check=True)
+            logger.debug(f"Le processus avec le PID {pid} a été tué sur Windows.")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Échec de la tentative de tuer le processus avec le PID {pid} sur Windows : {e}")
+            return False
+    elif system in ['Linux', 'Darwin']:
+        try:
+            subprocess.run(['kill', '-9', str(pid)], check=True)
+            logger.debug(f"Le processus avec le PID {pid} a été tué sur un système Unix-like.")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Échec de la tentative de tuer le processus avec le PID {pid} sur un système Unix-like : {e}")
+            return False
+    else:
+        logger.error(f"Système d'exploitation non supporté : {system}")
+        return False
+
+def kill_process_tree(pid, parentprocess=False):
+    """
+    Tue un processus et tous ses processus enfants.
+
+    Args:
+        pid (int): L'identifiant du processus parent à tuer.
+        parentprocess (bool): Indique si le processus parent doit également être tué.
+
+    Returns:
+        None
+    """
+    try:
+        # Trouver tous les processus enfants du processus parent donné
+        parent = psutil.Process(pid)
+        children = parent.children(recursive=True)
+
+        # Tuer chaque processus enfant récursivement
+        for child in children:
+            kill_process_tree(child.pid)
+
+        # Tuer le processus enfant lui-même
+        for child in children:
+            child.terminate()
+            child.wait(timeout=5)  # Attendre que le processus soit terminé
+        if parentprocess:
+            # Tuer le processus parent lui-même
+            parent.terminate()
+            parent.wait(timeout=5)  # Attendre que le processus soit terminé
+    except psutil.NoSuchProcess:
+        pass
+    except psutil.AccessDenied:
+        logger.error(f"Permission refusée pour terminer le processus {pid}")
+    except psutil.TimeoutExpired:
+        logger.error(f"Délai d'attente expiré lors de la tentative de terminer le processus {pid}")
+
 class AESCipher:
     def __init__(self, key, BS=32):
         self.key = key.encode("utf-8") if isinstance(key, str) else key
