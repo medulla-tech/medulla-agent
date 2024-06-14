@@ -17,7 +17,8 @@ if sys.platform == "win32":
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.11", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
-JIDARSNAME = 'rspulse@pulse/mainrelay'
+JIDARSNAME = "rspulse@pulse/mainrelay"
+
 
 
 def installkey_ars_ssh_key(xmppobject, sessionid, to):
