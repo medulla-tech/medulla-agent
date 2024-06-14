@@ -20,7 +20,6 @@ plugin = {"VERSION": "1.11", "NAME": "updateuseraccount", "TYPE": "machine"}  # 
 JIDARSNAME = "rspulse@pulse/mainrelay"
 
 
-
 def installkey_ars_ssh_key(xmppobject, sessionid, to):
     """
     Envoie une requete pour installer une cle SSH des ars via un message XMPP.
