@@ -4027,102 +4027,6 @@ def tgconf(optstypemachine):
         time.sleep(2)
     return tg
 
-    # ==========================
-    # = cherrypy server config =
-    # ==========================
-
-
-def servercherrypy(
-    optstypemachine,
-    optsconsoledebug,
-    optsdeamon,
-    tgnamefileconfig,
-    tglevellog,
-    tglogfile,
-):
-    config = confParameter(optstypemachine)
-    if config.agenttype in ["machine"]:
-        port = 52044
-        root_path = os.path.dirname(os.path.realpath(__file__))
-        server_path = os.path.join(root_path, "lib")
-        server_ressources_path = os.path.join(root_path, "lib", "ressources")
-
-        Controller.config = config
-        # Generate cherrypy server conf
-        server_conf = {
-            # Root access
-            "global": {
-                "server.socket_host": config.fv_host,
-                "server.socket_port": config.fv_port,
-            },
-            "/": {
-                # 'tools.staticdir.on': True,
-                "tools.staticdir.dir": server_path
-            },
-            # Sharing css ...
-            "/css": {
-                "tools.staticdir.on": True,
-                "tools.staticdir.dir": os.path.join(
-                    server_ressources_path, "fileviewer", "css"
-                ),
-            },
-            # Sharing js ...
-            "/js": {
-                "tools.staticdir.on": True,
-                "tools.staticdir.dir": os.path.join(
-                    server_ressources_path, "fileviewer", "js"
-                ),
-            },
-            # Sharing images ...
-            "/images": {
-                "tools.staticdir.on": True,
-                "tools.staticdir.dir": os.path.join(
-                    server_ressources_path, "fileviewer", "images"
-                ),
-            },
-            # Alias to images for datatables js lib
-            "/DataTables-1.10.21/images": {
-                "tools.staticdir.on": True,
-                "tools.staticdir.dir": os.path.join(
-                    server_ressources_path, "fileviewer", "images"
-                ),
-            },
-            # Sharing fonts
-            "/fonts": {
-                "tools.staticdir.on": True,
-                "tools.staticdir.dir": os.path.join(
-                    server_ressources_path, "fileviewer", "fonts"
-                ),
-            },
-        }
-        count = 0
-        for path in config.paths:
-            name = config.names[count]
-            # Here we know the name and the path, we can add the access for
-            # each folders
-            server_conf["/%s" % str(name)] = {
-                "tools.staticdir.on": True,
-                "tools.staticdir.dir": str(path),
-            }
-            count += 1
-        cherrypy.tree.mount(Controller(), "/", server_conf)
-        # We will create our own server so we don't need the
-        # default one
-
-        cherrypy.server.unsubscribe()
-        server1 = cherrypy._cpserver.Server()
-        server1.socket_port = config.fv_port
-        server1._socket_host = config.fv_host
-
-        # ===
-        # Do not remove the following lines
-        # They can be usefull to configure the server
-        # ===
-
-        server1.subscribe()
-        cherrypy.engine.start()
-
-
 def doTask(
     optstypemachine,
     optsconsoledebug,
@@ -4222,17 +4126,6 @@ def doTask(
         "%s -> %s : [Process Alive %s (%s)]" % (os.getpid(), p.pid, p.name, p.pid)
     )
 
-    # ==========================
-    # = cherrypy server config =
-    # ==========================
-    servercherrypy(
-        optstypemachine,
-        optsconsoledebug,
-        optsdeamon,
-        tgnamefileconfig,
-        tglevellog,
-        tglogfile,
-    )
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         # completing process
         try:
