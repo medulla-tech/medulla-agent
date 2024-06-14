@@ -1348,7 +1348,7 @@ if __name__ == "__main__":
             except Exception as e:
                 logger.error(f"An error {e} occured")
         else:
-            logger.errorf"The template file does not exist. We won't be able to use the autofix feature")
+            logger.error(f"The template file does not exist. We won't be able to use the autofix feature")
 
     if not os.path.isfile(namefileconfig):
         # The Medulla agent config file is missing. We need to reinstall the rescue.
