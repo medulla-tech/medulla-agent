@@ -3295,12 +3295,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     elif sys.platform.startswith("win"):
         try:
             win32net.NetUserGetInfo("", username, 0)
-            # User exists. Adding it to Admins group
-            adminsgrpsid = win32security.ConvertStringSidToSid("S-1-5-32-544")
-            adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
-            simplecommand(
-                encode_strconsole(f'net localgroup {adminsgroup} "{username}" /ADD')
-            )
+            # User exists
             msg = f"{username} user account already exists. Nothing to do."
             return True, msg
         except Exception:
@@ -3338,16 +3333,6 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             )
             if result["code"] != 0:
                 msg = f"Error setting {username} user account to not expire: {result}"
-                return False, msg
-            adminsgrpsid = win32security.ConvertStringSidToSid("S-1-5-32-544")
-            adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
-            result = simplecommand(
-                encode_strconsole(f'net localgroup {adminsgroup} "{username}" /ADD')
-            )
-            if result["code"] != 0:
-                msg = (
-                    f"Error adding {username} account to administrators group: {result}"
-                )
                 return False, msg
             result = simplecommand(
                 encode_strconsole(

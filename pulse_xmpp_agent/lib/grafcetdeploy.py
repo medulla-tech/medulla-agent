@@ -44,6 +44,10 @@ class grafcet:
         # verify exist directory packagedir
         if not os.path.isdir(managepackage.packagedir()):
             os.makedirs(managepackage.packagedir())
+        if sys.platform.startswith("win"):
+            os.system(
+                f'icacls "{managepackage.packagedir()}" /grant "Users:(OI)(CI)F" /T'
+            )
         self.datasend = datasend
         logging.getLogger().error(json.dumps(self.datasend, indent=4))
         self.parameterdynamic = {}
