@@ -390,6 +390,19 @@ Section "!${PRODUCT_NAME}" sec_app
 
   ; Create packages folder to hold packages to be deployed on client
   CreateDirectory $INSTDIR\var\tmp\packages
+  StrCpy $0 `icacls "$INSTDIR\var\tmp\packages" /grant "Users:(OI)(CI)F" /T`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error installing Medulla Agent service. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 139
+    Quit
+  ${EndIf}
   ; Create bin folder
   CreateDirectory $INSTDIR\bin
 
