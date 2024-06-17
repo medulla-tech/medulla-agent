@@ -4027,6 +4027,7 @@ def tgconf(optstypemachine):
         time.sleep(2)
     return tg
 
+
 def doTask(
     optstypemachine,
     optsconsoledebug,
