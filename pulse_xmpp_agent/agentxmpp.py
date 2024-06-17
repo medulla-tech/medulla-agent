@@ -254,10 +254,11 @@ class MUCBot(ClientXMPP):
         eventkillpipe,
         pidprogrammprincipal,
         lockrestart,
-        PROCESS_RESTART
+        PROCESS_RESTART,
     ):
         logging.log(
-            DEBUGPULSE, "initialise agent xmpp  %s Type %s" % (conf.jidagent, conf.agenttype)
+            DEBUGPULSE,
+            "initialise agent xmpp  %s Type %s" % (conf.jidagent, conf.agenttype),
         )
         self.lockrestart = lockrestart
         self.PROCESS_RESTART = PROCESS_RESTART
@@ -771,7 +772,7 @@ class MUCBot(ClientXMPP):
         # Parameters for the agent connexion
         self.add_event_handler("register", self.register)
         self.add_event_handler("connecting", self.handle_connecting)
-        self.add_event_handler("connected",  self.handle_connected)
+        self.add_event_handler("connected", self.handle_connected)
         self.add_event_handler("connection_failed", self.handle_connection_failed)
         self.add_event_handler("disconnected", self.handle_disconnected)
 
@@ -1168,7 +1169,10 @@ class MUCBot(ClientXMPP):
                 self.address = (ipfromdns(self.config.Server), int(self.config.Port))
                 ctrlC = self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
                 if self.connectcount > 2:
-                    logger.debug("attente avant tentative de reconection %s s " % self.reconnect_time_wait)
+                    logger.debug(
+                        "attente avant tentative de reconection %s s "
+                        % self.reconnect_time_wait
+                    )
                     time.sleep(self.reconnect_time_wait)
                 else:
                     # 3 seconde avant reconnection
@@ -1228,16 +1232,19 @@ class MUCBot(ClientXMPP):
         logger.error("CONNECTION FAILED %s " % self.connectcount)
         self.connectcount = self.connectcount + 1
         self.set_connect_loop_wait(3)
-        if self.connectcount%5 == 0:
+        if self.connectcount % 5 == 0:
             logger.warning("tentative de connection failed %s " % self.connectcount)
         if self.connectcount >= 5 and self.connectcount < 10:
             self.set_connect_loop_wait(5)
-        if self.connectcount >=11 and self.connectcount <= 15:
+        if self.connectcount >= 11 and self.connectcount <= 15:
             self.set_connect_loop_wait(10)
         if self.connectcount >= 15:
             self.set_connect_loop_wait(15)
             # Terminer le processus courant
-            logger.error("%s Tentatives de connexion échouées dans ce processus." % self.connectcount)
+            logger.error(
+                "%s Tentatives de connexion échouées dans ce processus."
+                % self.connectcount
+            )
             logger.error("Veuillez vérifier vos paramètres réseau.")
             logger.error("Re-création du processus agent XMPP en cours.")
             try:
@@ -1390,7 +1397,9 @@ class MUCBot(ClientXMPP):
         """
         ctrlC = False
         try:
-            logger.debug(f"Tentative de connexion en cours. Tentative numéro {self.connectcount}.")
+            logger.debug(
+                f"Tentative de connexion en cours. Tentative numéro {self.connectcount}."
+            )
             self.connect(address=self.address, force_starttls=None)
             self.process(forever=False)
             ctrlC = False
@@ -3965,14 +3974,15 @@ AGENT %s ERROR TERMINATE""" % (
         return False
 
 
-def createDaemon( optstypemachine,
-                 optsconsoledebug,
-                 optsdeamon,
-                 tgfichierconf,
-                 tglevellog,
-                 tglogfile,
-                 lockrestart,
-                 PROCESS_RESTART
+def createDaemon(
+    optstypemachine,
+    optsconsoledebug,
+    optsdeamon,
+    tgfichierconf,
+    tglevellog,
+    tglogfile,
+    lockrestart,
+    PROCESS_RESTART,
 ):
     """
     This function create a service/Daemon that will execute a det. task
@@ -3990,7 +4000,7 @@ def createDaemon( optstypemachine,
                     tglevellog,
                     tglogfile,
                     lockrestart,
-                    PROCESS_RESTART
+                    PROCESS_RESTART,
                 ),
             )
             p.daemon = True
@@ -4059,7 +4069,7 @@ def createDaemon( optstypemachine,
                 tglevellog,
                 tglogfile,
                 lockrestart,
-                PROCESS_RESTART
+                PROCESS_RESTART,
             )
     except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
@@ -4113,24 +4123,24 @@ def doTask(
     tglevellog,
     tglogfile,
     lockrestart,
-    PROCESS_RESTART
+    PROCESS_RESTART,
 ):
-
 
     while PROCESS_RESTART.value:
         with lockrestart:  # Verrouillage pour éviter les conflits d'accès
             PROCESS_RESTART.value = 0
             logger.debug("START CLIENT AGENT XMPP")
         doTask1(
-                optstypemachine,
-                optsconsoledebug,
-                optsdeamon,
-                tgnamefileconfig,
-                tglevellog,
-                tglogfile,
-                lockrestart,
-                PROCESS_RESTART
-                )
+            optstypemachine,
+            optsconsoledebug,
+            optsdeamon,
+            tgnamefileconfig,
+            tglevellog,
+            tglogfile,
+            lockrestart,
+            PROCESS_RESTART,
+        )
+
 
 def doTask1(
     optstypemachine,
@@ -4140,7 +4150,7 @@ def doTask1(
     tglevellog,
     tglogfile,
     lockrestart,
-    PROCESS_RESTART
+    PROCESS_RESTART,
 ):
     processes = []
     listpid = []
@@ -4219,7 +4229,7 @@ def doTask1(
             eventkillpipe,
             os.getpid(),
             lockrestart,
-            PROCESS_RESTART
+            PROCESS_RESTART,
         ),
     )
     processes.append(p)
@@ -4297,7 +4307,7 @@ class process_xmpp_agent:
         eventkillpipe,
         pidprogrammprincipal,
         lockrestart,
-        PROCESS_RESTART
+        PROCESS_RESTART,
     ):
         # parameter permet arret programme complet  ICI PASSER PARAMETRE DANS XMPPBOT
 
@@ -4351,7 +4361,7 @@ class process_xmpp_agent:
                 eventkillpipe,
                 self.pidprogrammprincipal,
                 lockrestart,
-                PROCESS_RESTART
+                PROCESS_RESTART,
             )
             xmpp.auto_reconnect = False
             xmpp.register_plugin("xep_0030")  # Service Discovery
@@ -4480,7 +4490,7 @@ if __name__ == "__main__":
     # Création d'un lock pour synchroniser l'accès à la valeur partagée
     lockrestart = multiprocessing.Lock()
     # Création d'une valeur partagée (initialisée à 0)
-    PROCESS_RESTART = Value('i', 1)  # 'i' pour entier (int)
+    PROCESS_RESTART = Value("i", 1)  # 'i' pour entier (int)
 
     if sys.platform.startswith("linux") and os.getuid() != 0:
         print("Agent must be running as root")
@@ -4583,7 +4593,7 @@ if __name__ == "__main__":
             tg.levellog,
             tg.logfile,
             lockrestart,
-            PROCESS_RESTART
+            PROCESS_RESTART,
         )
     else:
         createDaemon(
@@ -4594,5 +4604,5 @@ if __name__ == "__main__":
             tg.levellog,
             tg.logfile,
             lockrestart,
-            PROCESS_RESTART
+            PROCESS_RESTART,
         )
