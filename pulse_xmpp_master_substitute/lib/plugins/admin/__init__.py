@@ -128,7 +128,7 @@ class AdminDatabase(DatabaseHelper):
     def map(self):
         self.base.prepare(self.engine_admin_base, reflect=True)
 
-        # Federated tables
+        # Federated tables
         # If needed, excludes tables from this list
         exclude_table = []
         # Dynamically add attributes to the object for each mapped class
