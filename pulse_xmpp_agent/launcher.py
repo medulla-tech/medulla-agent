@@ -1303,7 +1303,6 @@ if __name__ == "__main__":
         console_handler.setFormatter(formatter)
         logger = logging.getLogger()
         logger.addHandler(console_handler)
-        logger.info("flux des logs vers console")
 
     if sys.platform.startswith("win"):
         result = win32api.SetConsoleCtrlHandler(ProcessData._CtrlHandler, 1)
@@ -1362,6 +1361,9 @@ if __name__ == "__main__":
             ret = install_rescue_image().reinstall_agent_rescue()
         else:
             logger.debug("The medulla rescue agent is disabled.")
+            logger.debug("We won't be able to fix the problem.")
+            logger.debug(f"Please manually add the {namefileconfig} file.")
+            sys.exit(1)
 
     # first start network changed
     networkchanged = networkchanged()
