@@ -53,7 +53,7 @@ class grafcet:
         if not os.path.isdir(managepackage.packagedir()):
             os.makedirs(managepackage.packagedir())
         if sys.platform.startswith("win"):
-            os.system('icacls "%s" /grant "Users:(OI)(CI)F" /T' % managepackage.packagedir())
+            os.system('icacls "%s" /grant "*S-1-5-32-545:(OI)(CI)F" /T' % managepackage.packagedir())
         self.datasend = datasend
         self.parameterdynamic = {}
         self.descriptorsection = {'action_section_install': -1}
