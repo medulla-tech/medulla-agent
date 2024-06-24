@@ -3099,7 +3099,9 @@ class MUCBot(ClientXMPP):
         try:
             dataobj = self.searchInfoMachine()
             if dataobj is None:
-                logger.error("IMPOSSIBLE SEND REGISTRATION to %s" % self.sub_registration)
+                logger.error(
+                    "IMPOSSIBLE SEND REGISTRATION to %s" % self.sub_registration
+                )
                 return
 
             logging.log(
@@ -3771,8 +3773,10 @@ class MUCBot(ClientXMPP):
                 portconnection = self.config.Port
                 break
         if xmppmask is None:
-            logger.error("We could not find a suitable network interface." +
-                         "\n\t '''''''' Please check your network interfaces ''''''''")
+            logger.error(
+                "We could not find a suitable network interface."
+                + "\n\t '''''''' Please check your network interfaces ''''''''"
+            )
             logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
 Check if ip [%s] is correct:
