@@ -468,7 +468,7 @@ Section "!${PRODUCT_NAME}" sec_app
 
   ; Create packages folder to hold packages to be deployed on client
   CreateDirectory $INSTDIR\var\tmp\packages
-  StrCpy $0 `icacls "$INSTDIR\var\tmp\packages" /grant "Users:(OI)(CI)F" /T`
+  StrCpy $0 `icacls "$INSTDIR\var\tmp\packages" /grant "*S-1-5-32-545:(OI)(CI)F" /T`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
