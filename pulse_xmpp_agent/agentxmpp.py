@@ -3098,6 +3098,10 @@ class MUCBot(ClientXMPP):
         # Send plugin and machine informations to Master
         try:
             dataobj = self.searchInfoMachine()
+            if dataobj is None:
+                logger.error("IMPOSSIBLE SEND REGISTRATION to %s" % self.sub_registration)
+                return
+
             logging.log(
                 DEBUGPULSE,
                 "SEND REGISTRATION XMPP to %s \n%s"
@@ -3740,6 +3744,8 @@ class MUCBot(ClientXMPP):
             logger.error("\n%s" % (traceback.format_exc()))
 
     def searchInfoMachine(self):
+
+        xmppmask = None
         er = networkagentinfo("master", "infomachine")
         er.messagejson["info"] = self.config.information
 
@@ -3764,6 +3770,30 @@ class MUCBot(ClientXMPP):
                 xmppmacnotshortened = t["macnotshortened"]
                 portconnection = self.config.Port
                 break
+        if xmppmask is None:
+            logger.error("We could not find a suitable network interface." +
+                         "\n\t '''''''' Please check your network interfaces ''''''''")
+            logreception = """
+Imposible calculate subnetnetwork verify the configuration of %s [%s]
+Check if ip [%s] is correct:
+check if interface exist with ip %s
+
+Warning Configuration machine %s
+[connection]
+server = It must be expressed in ip notation.
+
+server = 127.0.0.1  correct
+server = localhost in not correct
+AGENT %s ERROR """ % (
+                self.boundjid.bare,
+                er.messagejson["info"]["hostname"],
+                self.config.ipxmpp,
+                self.config.ipxmpp,
+                er.messagejson["info"]["hostname"],
+                self.boundjid.bare,
+            )
+            logger.error(logreception)
+            return None
         try:
             subnetreseauxmpp = subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
