@@ -3,6 +3,7 @@
 ## [v3.1.1](unreleased)
 - [FEATURE]  Improve installer
 - [FEATURE]  Rename install folder on windows from c:\program Files\Pulse to Medulla
+- [FEATURE]  Improve security of pulseuser account by removing it from administrators group
 - [BUGFIX]   Fix Network Notify service start
 - [BUGFIX]   Fix the way plugins are called
 - [BUGFIX]   Fix replicator ( update tool of the agent ).
