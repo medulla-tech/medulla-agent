@@ -4,7 +4,6 @@
 - [FEATURE]  If the file BOOL_DISABLE_IMG exists, disable the replicator
 - [FEATURE]  If the file BOOL_DISABLE_IMG exists, we do not remove the img_agent folder.
 - [FEATURE]  If the file BOOL_DISABLE_RESCUE exists, the Rescue agent is disabled
-- [FEATURE]  Improve security of pulseuser account by removing it from administrators group
 - [BUGFIX]   Fix the config file when missing by using the tpl one
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.1...v3.2.0)
@@ -13,6 +12,7 @@
 
 - [FEATURE]  Improve installer
 - [FEATURE]  Rename install folder on windows from c:\program Files\Pulse to Medulla
+- [FEATURE]  Improve security of pulseuser account by removing it from administrators group
 - [BUGFIX]   Fix Network Notify service start
 - [BUGFIX]   Fix the way plugins are called
 - [BUGFIX]   Fix replicator ( update tool of the agent ).
