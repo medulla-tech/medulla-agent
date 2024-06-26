@@ -3748,12 +3748,12 @@ class MUCBot(ClientXMPP):
 
     def searchInfoMachine(self):
         xmppmask = ""
-        xmppdhcp =""
+        xmppdhcp = ""
         xmppdhcpserver = ""
         xmppgateway = ""
         xmppmacaddress = ""
         xmppmacnotshortened = ""
-        xmppbroadcast=""
+        xmppbroadcast = ""
 
         er = networkagentinfo("master", "infomachine")
         er.messagejson["info"] = self.config.information
@@ -3770,19 +3770,49 @@ class MUCBot(ClientXMPP):
         if NetworkInfos.ip_address and NetworkInfos.details:
             if not self.config.ipxmpp:
                 self.config.ipxmpp = NetworkInfos.ip_address
-            xmppmask = "" if NetworkInfos.details['netmask'] is None else NetworkInfos.details['netmask']
-            xmppdhcp = "" if NetworkInfos.details['dhcp_client'] is None else NetworkInfos.details['dhcp_client']
-            xmppdhcpserver = "" if NetworkInfos.details['dhcp_server'] is None else NetworkInfos.details['dhcp_server']
-            xmppgateway = "" if NetworkInfos.details['gateway'] is None else NetworkInfos.details['gateway']
-            xmppmacaddress =  "" if NetworkInfos.details['macaddress'] is None else NetworkInfos.details['macaddress']
-            xmppmacnotshortened  =  "" if NetworkInfos.details['macnotshortened'] is None else NetworkInfos.details['macnotshortened']
-            xmppbroadcast  =  "" if NetworkInfos.details['broadcast'] is None else NetworkInfos.details['broadcast']
+            xmppmask = (
+                ""
+                if NetworkInfos.details["netmask"] is None
+                else NetworkInfos.details["netmask"]
+            )
+            xmppdhcp = (
+                ""
+                if NetworkInfos.details["dhcp_client"] is None
+                else NetworkInfos.details["dhcp_client"]
+            )
+            xmppdhcpserver = (
+                ""
+                if NetworkInfos.details["dhcp_server"] is None
+                else NetworkInfos.details["dhcp_server"]
+            )
+            xmppgateway = (
+                ""
+                if NetworkInfos.details["gateway"] is None
+                else NetworkInfos.details["gateway"]
+            )
+            xmppmacaddress = (
+                ""
+                if NetworkInfos.details["macaddress"] is None
+                else NetworkInfos.details["macaddress"]
+            )
+            xmppmacnotshortened = (
+                ""
+                if NetworkInfos.details["macnotshortened"] is None
+                else NetworkInfos.details["macnotshortened"]
+            )
+            xmppbroadcast = (
+                ""
+                if NetworkInfos.details["broadcast"] is None
+                else NetworkInfos.details["broadcast"]
+            )
         else:
             return None
 
         if not xmppmask:
-            logger.error("We could not find a suitable network interface." +
-                         "\n\t '''''''' Please check your network interfaces ''''''''")
+            logger.error(
+                "We could not find a suitable network interface."
+                + "\n\t '''''''' Please check your network interfaces ''''''''"
+            )
             logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
 Check if ip [%s] is correct:
