@@ -13,7 +13,7 @@ class GuacamoleError(Exception):
     pass
 
 
-plugin = {"VERSION": "2.21", "NAME": "guacamoleconf", "TYPE": "relayserver"}  # fmt: skip
+plugin = {"VERSION": "2.22", "NAME": "guacamoleconf", "TYPE": "relayserver"}  # fmt: skip
 logger = logging.getLogger()
 
 
@@ -36,7 +36,7 @@ def get_free_tcp_port(objectxmpp):
         errorstr = "%s" % traceback.format_exc()
         logger.error("\n%s" % (errorstr))
         errorstr = (
-            "Error finding a free port for reverse VNC : %s\n"
+            "Error finding a free port for reverse connection : %s\n"
             "REMOTE traceback on %s\n"
             "%s" % (str(e), objectxmpp.boundjid.bare, errorstr)
         )
@@ -236,27 +236,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     port = get_free_tcp_port(objectxmpp)
                 finally:
                     try:
-                        if proto.upper() == "VNC":
-                            hostname = "localhost"
-                            port = get_free_tcp_port(objectxmpp)
-                            # We need additional options for reverse VNC
-                            listen_timeout = 50000
-                            cursor.execute(
-                                insertparameter(
-                                    result["data"]["connection"][proto.upper()],
-                                    "listen-timeout",
-                                    listen_timeout,
-                                )
-                            )
-                            reverse_connect = "true"
-                            cursor.execute(
-                                insertparameter(
-                                    result["data"]["connection"][proto.upper()],
-                                    "reverse-connect",
-                                    reverse_connect,
-                                )
-                            )
-
                         cursor.execute(
                             insertparameter(
                                 result["data"]["connection"][proto.upper()],
