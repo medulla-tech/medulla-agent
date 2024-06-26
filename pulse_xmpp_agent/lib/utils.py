@@ -5994,3 +5994,90 @@ class convert:
         dom = parseString(xml_string)
         formatted_xml = dom.toprettyxml(indent="  ")
         return formatted_xml
+
+
+
+class NetworkInfoxmpp:
+    def __init__(self, port):
+        self.port = port
+        self.ip_address = self._get_established_ipv4_connection_on_port()
+        if self.ip_address:
+            self.details = self._get_interface_details()
+        else:
+            self.details = None
+
+    def _get_established_ipv4_connection_on_port(self):
+        connections = psutil.net_connections(kind='inet')
+        for conn in connections:
+            if (conn.family == socket.AF_INET and
+                conn.status == psutil.CONN_ESTABLISHED and
+                conn.raddr and conn.raddr.port == self.port):
+                return conn.laddr.ip
+        return None
+
+    def _get_interface_details(self):
+        details = {}
+        interface_name = None
+
+        # Find the interface for the given IPv4 address
+        for interface, addrs in psutil.net_if_addrs().items():
+            for addr in addrs:
+                if (addr.family == socket.AF_INET and
+                    addr.address == self.ip_address):
+                    interface_name = interface
+                    details['ip_address'] = self.ip_address
+                    details['netmask'] = addr.netmask
+                    details['broadcast'] = addr.broadcast
+                    break
+            if interface_name:
+                break
+
+        if not interface_name:
+            return None
+
+        # Calculate network address
+        if 'ip_address' in details and 'netmask' in details:
+            ip = int.from_bytes(socket.inet_aton(details['ip_address']), 'big')
+            netmask = int.from_bytes(socket.inet_aton(details['netmask']), 'big')
+            network = socket.inet_ntoa((ip & netmask).to_bytes(4, 'big'))
+            details['network'] = network
+
+        # Get the gateway
+        gateway = self._get_gateway()
+        details['gateway'] = gateway
+
+        # Get the DHCP server and client addresses
+        details['dhcp_server'] = None  # Update this for your environment
+        details['dhcp_client'] = None  # Update this for your environment
+        # Get the MAC address
+        details['macnotshortened'] = self._get_mac_address(interface_name)
+        details['macaddress'] = self.reduction_mac(details['macnotshortened'])
+        return details
+
+    def _get_gateway(self):
+        system = platform.system()
+        if system == 'Windows':
+            gateway = os.popen("ipconfig | findstr /C:\"Default Gateway\"").read().strip().split(":")[-1].strip()
+        elif system == 'Linux':
+            gateway = os.popen("ip route | grep default | awk '{print $3}'").read().strip()
+        elif system == 'Darwin':  # macOS
+            gateway = os.popen("netstat -nr | grep default | awk '{print $2}'").read().strip()
+        else:
+            gateway = None
+        return gateway
+
+    def _get_mac_address(self, interface):
+        try:
+            mac_address = psutil.net_if_addrs()[interface][0].address
+            return mac_address
+        except KeyError:
+            return None
+
+    def reduction_mac(self, mac):
+        mac = mac.lower()
+        mac = mac.replace(":", "")
+        mac = mac.replace("-", "")
+        mac = mac.replace(" ", "")
+        return mac
+
+
