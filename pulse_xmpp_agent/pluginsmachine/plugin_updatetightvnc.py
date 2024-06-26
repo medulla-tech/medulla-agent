@@ -35,8 +35,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 def check_tightvnc_configuration():
     if sys.platform.startswith("win"):
         configurations = [
-            {"key": "LoopbackOnly", "value": "0x0", "set_value": "0"},
-            {"key": "AcceptHttpConnections", "value": "0x1", "set_value": "0"},
+            {"key": "AllowLoopback", "type": "REG_DWORD", "value": "0x0", "set_value": "0"},
+            {"key": "LoopbackOnly", "type": "REG_DWORD", "value": "0x0", "set_value": "0"},
+            {"key": "AcceptHttpConnections", "type": "REG_DWORD", "value": "0x0", "set_value": "0"},
         ]
         need_restart = False
 
@@ -48,7 +49,7 @@ def check_tightvnc_configuration():
                 value = result["result"][0].decode("utf-8").strip().split()[-1]
 
                 if value == config["value"]:
-                    cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t REG_DWORD /d "{config["set_value"]}" /f'
+                    cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
                     result = utils.simplecommand(cmd)
 
                     if result["code"] == 0:
@@ -132,7 +133,7 @@ def updatetightvnc(xmppobject):
             )
             # Enable loopback connection
             install_options = (
-                install_options + " SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1"
+                install_options + " SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=0"
             )
             # Allow on all interfaces
             install_options = (
