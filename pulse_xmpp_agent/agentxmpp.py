@@ -50,6 +50,7 @@ from lib.iq_custom import iq_custom_xep, iq_value, Myiq
 from lib.utils import (
     DEBUGPULSE,
     getIpXmppInterface,
+    NetworkInfoxmpp,
     refreshfingerprint,
     getRandomName,
     load_back_to_deploy,
@@ -3732,8 +3733,14 @@ class MUCBot(ClientXMPP):
             logger.error("\n%s" % (traceback.format_exc()))
 
     def searchInfoMachine(self):
+        xmppmask = ""
+        xmppdhcp =""
+        xmppdhcpserver = ""
+        xmppgateway = ""
+        xmppmacaddress = ""
+        xmppmacnotshortened = ""
+        xmppbroadcast=""
 
-        xmppmask = None
         er = networkagentinfo("master", "infomachine")
         er.messagejson["info"] = self.config.information
 
@@ -3742,23 +3749,24 @@ class MUCBot(ClientXMPP):
         er.messagejson["privatekeyname"] = self.RSA.get_name_key()[1]
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
+
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        for t in er.messagejson["listipinfo"]:
-            # search network info used for xmpp
-            if t["ipaddress"] == self.config.ipxmpp:
-                xmppmask = t["mask"]
-                try:
-                    xmppbroadcast = t["broadcast"]
-                except Exception:
-                    xmppbroadcast = ""
-                xmppdhcp = t["dhcp"]
-                xmppdhcpserver = t["dhcpserver"]
-                xmppgateway = t["gateway"]
-                xmppmacaddress = t["macaddress"]
-                xmppmacnotshortened = t["macnotshortened"]
-                portconnection = self.config.Port
-                break
-        if xmppmask is None:
+        NetworkInfos = NetworkInfoxmpp(self.config.Port)
+        portconnection = self.config.Port
+        if NetworkInfos.ip_address and NetworkInfos.details:
+            if not self.config.ipxmpp:
+                self.config.ipxmpp = NetworkInfos.ip_address
+            xmppmask = "" if NetworkInfos.details['netmask'] is None else NetworkInfos.details['netmask']
+            xmppdhcp = "" if NetworkInfos.details['dhcp_client'] is None else NetworkInfos.details['dhcp_client']
+            xmppdhcpserver = "" if NetworkInfos.details['dhcp_server'] is None else NetworkInfos.details['dhcp_server']
+            xmppgateway = "" if NetworkInfos.details['gateway'] is None else NetworkInfos.details['gateway']
+            xmppmacaddress =  "" if NetworkInfos.details['macaddress'] is None else NetworkInfos.details['macaddress']
+            xmppmacnotshortened  =  "" if NetworkInfos.details['macnotshortened'] is None else NetworkInfos.details['macnotshortened']
+            xmppbroadcast  =  "" if NetworkInfos.details['broadcast'] is None else NetworkInfos.details['broadcast']
+        else:
+            return None
+
+        if not xmppmask:
             logger.error("We could not find a suitable network interface." +
                          "\n\t '''''''' Please check your network interfaces ''''''''")
             logreception = """
