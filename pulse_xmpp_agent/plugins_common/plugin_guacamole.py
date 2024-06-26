@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# SPDX-FileCopyrightText: 2016-2024 Siveo <support@siveo.net>
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
@@ -10,7 +10,7 @@ import logging
 import os
 from lib.utils import set_logging_level
 
-plugin = {"VERSION": "1.20", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.21", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
 
 
 logger = logging.getLogger()
@@ -57,10 +57,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 remoteport = 3389
                 reversetype = "R"
             elif data["cux_type"] == "VNC":
-                # Specific VNC case. We will use a listener
-                remoteport = localport
-                localport = 5500
-                reversetype = "L"
+                remoteport = (
+                    int(xmppobject.config.clients_vnc_port)
+                    if hasattr(xmppobject.config, "clients_vnc_port")
+                    else 5900
+                )
+                reversetype = "R"
 
         except Exception as e:
             db.close()
@@ -87,76 +89,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             mto=message["to"], mbody=json.dumps(datareversessh), mtype="chat"
         )
 
-        if data["cux_type"] == "VNC" and hostname == "localhost":
-            # Wait x seconds until tunnel is established and guacamole is ready
-            # 5 seconds for the reversessh connection + 2 seconds for the
-            # guacamole connection
-            time.sleep(10)
-
-            # Ask machine plugin to start VNC connection
-            datavnc = {
-                "action": "guacamole",
-                "sessionid": sessionid,
-                "data": {"options": "vnclistenmode"},
-                "ret": 0,
-                "base64": False,
-            }
-            xmppobject.send_message(
-                mto=data["jidmachine"], mbody=json.dumps(datavnc), mtype="chat"
-            )
-
         return
 
     else:
         # Machine plugin
 
-        from lib.utils import simplecommand, simplecommandstr
-
-        if data["options"] == "vnclistenmode":
-            if sys.platform.startswith("win"):
-                try:
-                    logger.info("Start VNC listener")
-                    program = os.path.join(
-                        "c:\\", "progra~1", "TightVNC", "tvnserver.exe"
-                    )
-                    # select display for vnc
-                    cmd = """\"%s\" -controlservice -disconnectall""" % (program)
-                    logger.debug("VNC Listener Command: %s" % cmd)
-                    simplecommand(cmd)
-                    cmd = """\"%s\" -controlservice -shareprimary""" % (program)
-                    logger.debug("VNC Listener Command: %s" % cmd)
-                    simplecommand(cmd)
-                    cmd = """\"%s\" -controlservice -connect localhost""" % (program)
-                    logger.debug("VNC Listener Command: %s" % cmd)
-                    simplecommand(cmd)
-                    obj = simplecommandstr(
-                        f"netstat -an | findstr 5500 | findstr LISTENING"
-                    )
-                    if "LISTENING" in obj["result"]:
-                        logger.info(f"VNC Listener listening on port 5500")
-                except Exception as e:
-                    logger.error(f"Error starting VNC listener TightVNC: {str(e)}")
-                    logger.error("\n%s" % (traceback.format_exc()))
-                    raise
-            if sys.platform.startswith("darwin"):
-                try:
-                    simplecommand("pkill OSXvnc-server -connecthost localhost")
-                    simplecommand(
-                        '"/Applications/Vine Server.app/Contents/MacOS/OSXvnc-server" -connectHost localhost'
-                    )
-                except Exception as e:
-                    logger.error(f"Error start VNC listener OSXvnc-server: {str(e)}")
-                    logger.error("\n%s" % (traceback.format_exc()))
-                    raise
-            else:
-                try:
-                    simplecommand("vncconfig -nowin -connect localhost")
-                except Exception as e:
-                    logging.getLogger().error(
-                        f"Error start VNC listener vncconfig: {str(e)}"
-                    )
-                    logger.error("\n%s" % (traceback.format_exc()))
-                    raise
+        from lib.utils import simplecommand
 
         returnmessage = dataerreur
         returnmessage["data"] = data
