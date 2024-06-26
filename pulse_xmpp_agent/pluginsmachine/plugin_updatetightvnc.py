@@ -14,7 +14,7 @@ TIGHTVNC = "2.8.81"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -35,7 +35,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 def check_tightvnc_configuration():
     if sys.platform.startswith("win"):
         configurations = [
-            {"key": "LoopbackOnly", "value": "0x0", "set_value": "1"},
+            {"key": "LoopbackOnly", "value": "0x0", "set_value": "0"},
             {"key": "AcceptHttpConnections", "value": "0x1", "set_value": "0"},
         ]
         need_restart = False
@@ -136,7 +136,7 @@ def updatetightvnc(xmppobject):
             )
             # Allow on all interfaces
             install_options = (
-                install_options + " SET_LOOPBACKONLY=1 VALUE_OF_LOOPBACKONLY=1"
+                install_options + " SET_LOOPBACKONLY=1 VALUE_OF_LOOPBACKONLY=0"
             )
             # Only allow from 127.0.0.1 and query user
             install_options = (
