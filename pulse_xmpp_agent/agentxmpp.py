@@ -1848,6 +1848,16 @@ class MUCBot(ClientXMPP):
         try:
             config = self.syncthing.get_config()  # content all config
         except Exception:
+            # code pas encore tester
+            #logger.error("il faut restart sycthing reinitialisation de syncthing")
+            ## on supprime les evenement programmer pour syncthing.
+            #if self.config.agenttype not in ["relayserver"]:
+            #    if self.config.sched_check_syncthing_deployment:
+            #        self.cancel_schedule("scan_syncthing_deploy")
+            #if self.config.sched_check_synthing_config:
+            #    self.cancel_schedule("synchro_synthing")
+            #self.Ctrlsyncthingprogram.stop_syncthing()
+            #self.initialise_syncthing()
             return
         if len(config) == 0:
             return

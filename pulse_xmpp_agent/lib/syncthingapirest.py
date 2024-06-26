@@ -169,9 +169,7 @@ class syncthingapi:
         self.mutex = Lock()
         self.readingconf = 0
         self.urlweb = urlweb
-        self.port = port
-        self.urlbase = f"{self.urlweb}:{port}/"
-        self.urlbaserest = f"{self.urlbase}rest"
+
         self.device_id = None
         self.cleansharesyncthinglist = []
         self.tailleconf = self.taille_config_xml()
@@ -183,11 +181,30 @@ class syncthingapi:
             self.idapirest = idapirest
 
         self.headers = {"X-API-KEY": f"{self.idapirest}"}
+
+        # Extract the API address from the XML configuration
+        self.adressefileapi = self.tree.xpath("/configuration/gui/address")[0].text
+
+        # Split the address string on the ':' character
+        address_parts = self.adressefileapi.split(':')
+
+        # Check that address_parts has exactly two items
+        if len(address_parts) == 2:
+            # Convert the second element of the resulting list to an integer
+            self.port = int(address_parts[1])
+        else:
+            # Handle the error here
+            self.port = port
+            logger.warning("pas trouver port dans fichier.")
+        self.urlbase = f"{self.urlweb}:{self.port}/"
+        self.urlbaserest = f"{self.urlbase}rest"
+
         time.sleep(5)
         self.reload_config()
         try:
             logger.debug(f"Syncthing  Version {self.version}")
             logger.debug(f"Device id {self.device_id}")
+            logger.debug(f"url base rest {self.urlbaserest}")
             logger.debug(f"config file {configfile}")
         except BaseException:
             logger.error("An error occured while trying to configure syncthing.")
@@ -281,6 +298,8 @@ class syncthingapi:
                 logger.info(f"try again after {nbwaitting} seconds of waiting.")
                 time.sleep(3)
                 return self.get_config()
+            else :
+               raise e
         return {}
 
     def post_config(self, config=None):
@@ -882,7 +901,10 @@ class syncthingapi:
             rest = requests.get(geturl, headers=self.headers)
         except Exception as e:
             logger.error(
-                "syncthingapirest.py __getAPIREST__ verify syncthing running and ready"
+                f'__getAPIREST__ url command api: {geturl} header deviceid {self.headers}'
+            )
+            logger.error(
+                f'syncthingapirest.py __getAPIREST__ verify syncthing running and ready : {e}'
             )
             time.sleep(1)
             self.errornb = self.errornb + 1
@@ -1291,6 +1313,10 @@ class syncthingapi:
 
 
 class syncthing(syncthingapi):
+
+    def __init__(self):
+        super().__init__()
+
     def delete_folder_id_pulsedeploy(self, id):
         self.clean_pending()
         self.clean_remoteIgnoredDevices()
