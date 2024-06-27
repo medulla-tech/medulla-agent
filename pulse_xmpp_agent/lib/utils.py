@@ -3456,6 +3456,10 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         It returns True if the account has been correctly created or if the
         account already exists, it return False otherwise.
     """
+    Config = ConfigParser()
+    namefileconfig = conffilename('machine')
+    Config.read(namefileconfig)
+
     if sys.platform.startswith("linux"):
         try:
             uid = pwd.getpwnam(username).pw_uid
@@ -3471,6 +3475,12 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     elif sys.platform.startswith("win"):
         try:
             win32net.NetUserGetInfo("", username, 0)
+            if Config.has_option("type", "sshuser_isadmin") and Config.getboolean("type", "sshuser_isadmin"):
+                adminsgrpsid = win32security.ConvertStringSidToSid("S-1-5-32-544")
+                adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
+                simplecommand(
+                    encode_strconsole(f'net localgroup {adminsgroup} "{username}" /ADD')
+                )
             # User exists
             msg = f"{username} user account already exists. Nothing to do."
             return True, msg
