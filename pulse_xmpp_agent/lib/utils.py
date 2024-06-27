@@ -3457,7 +3457,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         account already exists, it return False otherwise.
     """
     Config = ConfigParser()
-    namefileconfig = conffilename('machine')
+    namefileconfig = conffilename("machine")
     Config.read(namefileconfig)
 
     if sys.platform.startswith("linux"):
@@ -3475,7 +3475,9 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     elif sys.platform.startswith("win"):
         try:
             win32net.NetUserGetInfo("", username, 0)
-            if Config.has_option("type", "sshuser_isadmin") and Config.getboolean("type", "sshuser_isadmin"):
+            if Config.has_option("type", "sshuser_isadmin") and Config.getboolean(
+                "type", "sshuser_isadmin"
+            ):
                 adminsgrpsid = win32security.ConvertStringSidToSid("S-1-5-32-544")
                 adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
                 simplecommand(
