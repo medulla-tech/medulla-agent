@@ -11,11 +11,11 @@ import tempfile
 import os
 import winreg
 
-TIGHTVNC = "2.8.81"
+TIGHTVNC = "2.8.84"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.6", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -106,11 +106,14 @@ def check_tightvnc_configuration():
 
 def checktightvncversion():
     if sys.platform.startswith("win"):
-        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{20B44B5F-5DDC-4261-BA3E-3EE3D3F2B106} /s | Find "DisplayVersion"'
+        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{5AE9C1FB-F4F8-44A7-8550-F0592F56A1F2} /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             tightvncversion = result["result"][0].strip().split()[-1]
         else:
+            logger.debug(
+                    "PL-TIGHT TightVNCServer is not installed or not the corrresponding version."
+                )
             # TIGHTVNC is not installed. We will force installation by returning
             # version 0.1
             tightvncversion = "0.1"
