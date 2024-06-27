@@ -35,4 +35,4 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         # Handle Last Scan field
         last_scan = antivirus['Last Scan']
 
-        XmppMasterDatabase().update_antivirus_check(uuid_machine, antivirus_name, u_status, rt_status, active_status, unix_time, last_scan, firewall_status) #insert the antivirus 
+        XmppMasterDatabase().updateAntivirusFirewallStatus(uuid_machine, antivirus_name, u_status, rt_status, active_status, unix_time, last_scan, firewall_status) #insert the antivirus 

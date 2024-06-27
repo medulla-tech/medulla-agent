@@ -11279,6 +11279,55 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 session.add(toAdd)
             session.commit()
 
+    @DatabaseHelper._sessionm
+    def getUuidSerialMachineFromJid(self, session, jid):
+        """return machine uuid_serial_machine for machines"""
+        user = str(jid).split("@")[0]
+        uuid_serial_machine = (
+            session.query(Machines.uuid_serial_machine)
+            .filter(Machines.jid.like(user + "%"))
+            .first()
+        )
+        session.commit()
+        session.flush()
+        result = {}
+        if uuid_serial_machine:
+            result = {
+                "uuid_serial": uuid_serial_machine.uuid_serial_machine,
+            }
+        return result
+
+    @DatabaseHelper._sessionm
+    def updateAntivirusFirewallStatus(self, session, uuid_machine, name_antivirus, update_status, real_time, active_status, unix_time, last_scan, firewall):
+        """
+        Inserts the updated list of antiviruses for the machine with the details for each antivirus. 
+        """
+        try:
+            sql = """INSERT INTO
+                        `xmppmaster`.`antivirus`(uuid, name, update_status, real_time, active, date, last_scan, firewall)
+                    VALUES
+                        ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');""" % (
+                uuid_machine,
+                name_antivirus,
+                update_status,
+                real_time,
+                active_status,
+                unix_time,
+                last_scan,
+                firewall,
+            )
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        
+        except Exception as e:
+            logging.getLogger().error(
+                "An error occured while inserting the new list of antiviruses."
+            )
+            logging.getLogger().error("We got the error:\n %s" % str(e))
+            return False
+
     # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [rowproxy._asdict() for rowproxy in resultproxy]
