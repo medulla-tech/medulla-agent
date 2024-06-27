@@ -21,6 +21,7 @@
 - [BUGFIX]   Fix creation of pulseuser account
 - [BUGFIX]   Fix remote desktop for VNC where the reversessh was not created
 - [BUGFIX]   Make sure permissions on packages folder is granted to Users group on all Windows independent of the OS language
+- [BUGFIX]   Remove use of reverssh for the VNC. Fixes the use of VNC in Guacamole.
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.0...v3.1.1)
 
