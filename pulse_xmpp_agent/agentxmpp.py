@@ -266,7 +266,6 @@ class MUCBot(ClientXMPP):
         self.connectcount = 0
         self.iq_msg = file_message_iq(dev_mod=True)
         self.pidprogrammprincipal = pidprogrammprincipal
-        self.time_before_reinscription = 30
         self.reconnect_time_wait = 3
         # create mutex
         self.mutex = threading.Lock()
@@ -710,7 +709,7 @@ class MUCBot(ClientXMPP):
         if self.config.agenttype not in ["relayserver"]:
             self.schedule(
                 "check_subscribe",
-                self.time_before_reinscription,
+                self.config.time_before_reinscription,
                 self.check_subscribe,
                 repeat=True,
             )
@@ -1491,10 +1490,6 @@ class MUCBot(ClientXMPP):
 
     def check_subscribe(self):
         if self.presencectrlsubscribe != "available":
-            logger.warning(
-                "no Subscription [%s] Status control variable = [%s]"
-                % (self.sub_subscribe, self.presencectrlsubscribe)
-            )
             logger.debug(
                 "no subscribe change received. we do not start 1 recording [%s]"
                 % (self.sub_subscribe)
