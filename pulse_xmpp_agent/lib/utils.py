@@ -1378,7 +1378,7 @@ def powerschellscript1ps1(namescript):
         logger.error("\n%s" % (traceback.format_exc()))
     return obj
 
-def runcommand(command):
+def runpowershellcommand(command):
     """
     Runs a command using powershell and returns the result with stdout.strip() pre-applied.
     """

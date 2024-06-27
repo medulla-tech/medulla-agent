@@ -7,7 +7,7 @@ This scheduling plugin checks all the installed antiviruses on the computer, che
 """
 
 import json
-from lib.utils import runcommand, name_random
+from lib.utils import runpowershellcommand, name_random
 import configparser
 
 plugin = {"VERSION": "1.0", "NAME": "scheduling_antivirus", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
@@ -62,12 +62,12 @@ def get_status(product_state, product_name):
 
 def schedule_main(objectxmpp):
     # query to retrieve antviruses
-    antivirus_products_output = runcommand(
+    antivirus_products_output = runpowershellcommand(
         'Get-WmiObject -Namespace "root\SecurityCenter2" -Class AntiVirusProduct | Select-Object -Property DisplayName, ProductState'
     )
     antivirus_products = []
 
-    firewall_bool = runcommand(
+    firewall_bool = runpowershellcommand(
         'if ((Get-NetFirewallProfile | Where-Object { $_.Name -eq "Private" }).Enabled -eq $true -and (Get-NetFirewallProfile | Where-Object { $_.Name -eq "Public" }).Enabled -eq $true) { return 1 } else { return 0 }'
     )
 
@@ -109,7 +109,7 @@ def schedule_main(objectxmpp):
             product["Name"] == "AVG Antivirus"
             and product["Real-time Protection Status"] == "Enabled"
         ):
-            last_scan = runcommand(
+            last_scan = runpowershellcommand(
                 '(Get-ItemProperty -Path "HKLM:\SOFTWARE\AVG\Antivirus\properties\settings\SmartScan" -Name "LastRun").LastRun'
             )
 
@@ -117,7 +117,7 @@ def schedule_main(objectxmpp):
             product["Name"] == "Windows Defender"
             and product["Real-time Protection Status"] == "Enabled"
         ):
-            last_scan = runcommand(
+            last_scan = runpowershellcommand(
                 "$mpStatus = Get-MpComputerStatus; $scanEndTime = $mpStatus.QuickScanEndTime; if ($mpStatus.FullScanEndTime -gt $scanEndTime) { $scanEndTime = $mpStatus.FullScanEndTime }; [int][double]::Parse((Get-Date $scanEndTime -UFormat %s))"
             )
 
