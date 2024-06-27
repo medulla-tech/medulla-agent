@@ -35,9 +35,24 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 def check_tightvnc_configuration():
     if sys.platform.startswith("win"):
         configurations = [
-            {"key": "AllowLoopback", "type": "REG_DWORD", "value": "0x0", "set_value": "0"},
-            {"key": "LoopbackOnly", "type": "REG_DWORD", "value": "0x0", "set_value": "0"},
-            {"key": "AcceptHttpConnections", "type": "REG_DWORD", "value": "0x0", "set_value": "0"},
+            {
+                "key": "AllowLoopback",
+                "type": "REG_DWORD",
+                "value": "0x0",
+                "set_value": "0",
+            },
+            {
+                "key": "LoopbackOnly",
+                "type": "REG_DWORD",
+                "value": "0x0",
+                "set_value": "0",
+            },
+            {
+                "key": "AcceptHttpConnections",
+                "type": "REG_DWORD",
+                "value": "0x0",
+                "set_value": "0",
+            },
         ]
         need_restart = False
 
