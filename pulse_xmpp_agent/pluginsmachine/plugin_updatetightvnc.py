@@ -77,17 +77,12 @@ def check_tightvnc_configuration():
                 value, _ = winreg.QueryValueEx(key, config["key"])
                 if value == config["value"]:
                     # Modify the key
-                    winreg.SetValueEx(
-                        key, config["key"], 0, winreg.REG_DWORD, config["set_value"]
-                    )
-                    logger.debug(
-                        f"PL-TIGHT The registry entry for TightVNCServer {config['key']} is reconfigured."
-                    )
+                    winreg.SetValueEx(key, config["key"], 0, config["type"], config["set_value"])
+                    logger.debug(f"PL-TIGHT  The registry entry for TightVNCServer {config['key']} is reconfigured.")
                     need_restart = True
             except FileNotFoundError:
-                logger.debug(
-                    f"PL-TIGHT TightVNC Server registry key {config['key']} not found."
-                )
+                logger.debug(f"PL-TIGHT TightVNC Server registry key {config['key']} not found.")
+
 
         if need_restart:
             try:
