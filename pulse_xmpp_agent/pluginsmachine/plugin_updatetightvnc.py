@@ -10,17 +10,17 @@ import platform
 import tempfile
 import os
 
-TIGHTVNC = "2.8.81"
+TIGHTVNC = "2.8.84"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message["from"]))
+    logger.debug("PL-TIGHT call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
     try:
         # Update if version is lower
@@ -53,12 +53,12 @@ def check_tightvnc_configuration():
 
                     if result["code"] == 0:
                         logger.debug(
-                            f"The registry entry for TightVNCServer {config['key']} is reconfigured."
+                            f"PL-TIGHT The registry entry for TightVNCServer {config['key']} is reconfigured."
                         )
                         need_restart = True
                     else:
                         logger.debug(
-                            f"We failed to reinitialize the registry entry for TightVNCServer {config['key']}"
+                            f"PL-TIGHT We failed to reinitialize the registry entry for TightVNCServer {config['key']}"
                         )
 
         if need_restart:
@@ -66,16 +66,16 @@ def check_tightvnc_configuration():
             result = utils.simplecommand(cmd)
 
             if result["code"] == 0:
-                logger.debug("TightVNCServer is reconfigured and restarted.")
+                logger.debug("PL-TIGHT TightVNCServer is reconfigured and restarted.")
             else:
                 logger.debug(
-                    "We failed to reinitialize the registry entry for TightVNCServer."
+                    "PL-TIGHT We failed to reinitialize the registry entry for TightVNCServer."
                 )
 
 
 def checktightvncversion():
     if sys.platform.startswith("win"):
-        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{20B44B5F-5DDC-4261-BA3E-3EE3D3F2B106} /s | Find "DisplayVersion"'
+        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{5AE9C1FB-F4F8-44A7-8550-F0592F56A1F2} /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             tightvncversion = result["result"][0].strip().split()[-1]
@@ -87,7 +87,7 @@ def checktightvncversion():
 
 
 def updatetightvnc(xmppobject):
-    logger.info("Updating TightVNC Agent to version %s" % TIGHTVNC)
+    logger.info("PL-TIGHT Updating TightVNC Agent to version %s" % TIGHTVNC)
 
     windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
     install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
@@ -106,13 +106,13 @@ def updatetightvnc(xmppobject):
             xmppobject.config.Server,
             filename,
         )
-        logger.debug("Downloading %s" % dl_url)
+        logger.debug("PL-TIGHT Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
             dl_url, os.path.join(install_tempdir, filename)
         ).downloadurl()
         if result:
             # Download success
-            logger.info("%s" % txtmsg)
+            logger.info("PL-TIGHT %s" % txtmsg)
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
             install_options = "/quiet /qn /norestart"
@@ -189,12 +189,12 @@ def updatetightvnc(xmppobject):
             cmd_result = utils.simplecommand(cmd)
             if cmd_result["code"] == 0:
                 logger.info(
-                    "%s installed successfully to version %s" % (filename, TIGHTVNC)
+                    "PL-TIGHT %s installed successfully to version %s" % (filename, TIGHTVNC)
                 )
 
             else:
                 logger.error(
-                    "Error installing %s: %s" % (filename, cmd_result["result"])
+                    "PL-TIGHT Error installing %s: %s" % (filename, cmd_result["result"])
                 )
 
             utils.simplecommand(
@@ -203,4 +203,4 @@ def updatetightvnc(xmppobject):
             )
         else:
             # Download error
-            logger.error("%s" % txtmsg)
+            logger.error("PL-TIGHT %s" % txtmsg)
