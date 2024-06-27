@@ -5985,7 +5985,7 @@ class convert:
 
 class NetworkInfoxmpp:
     def __init__(self, port):
-        self.port = port
+        self.port = int(port)
         self.ip_address = self._get_established_ipv4_connection_on_port()
         if self.ip_address:
             self.details = self._get_interface_details()
