@@ -11265,6 +11265,45 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 session.add(toAdd)
             session.commit()
 
+
+    @DatabaseHelper._sessionm
+    def check_password_strength(self, session, user_name, password_required, password_complexity, password_history):
+        """
+        Insert the update info of password strength for each user of the computer.
+        """
+        try:
+            #check_time = str(time.time())
+
+            user_name_str = str(user_name)
+            password_required
+            password_complexity_str = str(password_complexity)
+            password_history_str = str(password_history)
+
+            
+            sql = """INSERT INTO xmppmaster.check_password_strength
+                     (user_name, password_required, password_complexity, password_history)
+                     VALUES ('%s', %s, '%s', '%s')""" % (
+                    user_name_str, 
+                    password_required, 
+                    password_complexity_str, 
+                    password_history_str
+            )
+
+            # Execute the query with parameters
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+
+        except Exception as e:
+            logger.error(
+                "An error occurred while inserting the info of password strength for each user of the computer '%s'",
+                user_name,
+            )
+            logger.error("We got the error: %s", str(e))
+            session.rollback()
+            return False               
+
     # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [rowproxy._asdict() for rowproxy in resultproxy]
