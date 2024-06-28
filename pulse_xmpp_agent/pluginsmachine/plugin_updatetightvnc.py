@@ -112,8 +112,8 @@ def checktightvncversion():
             tightvncversion = result["result"][0].strip().split()[-1]
         else:
             logger.debug(
-                    "PL-TIGHT TightVNCServer is not installed or not the corrresponding version."
-                )
+                "PL-TIGHT TightVNCServer is not installed or not the corrresponding version."
+            )
             # TIGHTVNC is not installed. We will force installation by returning
             # version 0.1
             tightvncversion = "0.1"
