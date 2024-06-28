@@ -1,5 +1,6 @@
 #!/bin/bash
 VNC_PORT="@@VNC_PORT@@"
+VNC_PASSWORD="@@VNC_PASSWORD@@"
 SSH_PORT="@@SSH_PORT@@"
 
 ### Pulse account

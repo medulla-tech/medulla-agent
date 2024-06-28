@@ -52,6 +52,7 @@ display_usage() {
 	echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
     echo -e "\t [--minimal [--base-url=<URL for downloading agent and dependencies from>]]\n"
     echo -e "\t [--vnc-port=<Default port 5900>]\n"
+    echo -e "\t [--vnc-password=<DES-encrypted VNC password>]"
     echo -e "\t [--ssh-port=<Default port 22>]\n"
 }
 
@@ -76,6 +77,10 @@ check_arguments() {
                 ;;
             --vnc-port*)
                 VNC_PORT="${i#*=}"
+                shift
+                ;;
+            --vnc-password*)
+                VNC_PASSWORD="${i#*=}"
                 shift
                 ;;
             --ssh-port*)
@@ -162,6 +167,7 @@ update_installer_scripts() {
 		-e "s/@@PULSE_SCHEDULER_CONFFILE_FILENAME@@/${PULSE_SCHEDULER_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_INVENTORY_CONFFILE_FILENAME@@/${PULSE_INVENTORY_CONFFILE_FILENAME}/" \
         -e "s/@@VNC_PORT@@/${VNC_PORT}/" \
+        -e "s/@@VNC_PASSWORD@@/${VNC_PASSWORD}/" \
         -e "s/@@SSH_PORT@@/${SSH_PORT}/" \
 		deb/pulse-agent-linux/debian/pulse-agent-linux.postinst.in \
 		> deb/pulse-agent-linux/debian/pulse-agent-linux.postinst
