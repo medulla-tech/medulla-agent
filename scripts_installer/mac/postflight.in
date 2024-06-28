@@ -4,6 +4,7 @@ MACOS_VERSION=$(sw_vers |grep ProductVersion|awk '{print $2}'|awk -F "." '{print
 INSTALL_PATH="/opt/Pulse"
 VNC_PASSWORD=$(uuidgen | sed 's/-//g')
 VNC_PORT="@@VNC_PORT@@"
+VNC_PASSWORD="@@VNC_PASSWORD@@"
 BASE_URL="@@BASE_URL@@"
 INVENTORY_TAG="@@INVENTORY_TAG@@"
 CLT_FILENAME="Command_Line_Tools_${MACOS_VERSION}.pkg"

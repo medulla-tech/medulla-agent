@@ -158,6 +158,7 @@ display_usage() {
     echo -e "\t [--minimal [--base-url=<URL for downloading agent and dependencies from>]]\n"
     echo -e "\t [--disable-vnc [Disable VNC Server]\n"
     echo -e "\t [--vnc-port=<Default port 5900>]\n"
+    echo -e "\t [--vnc-password=<DES-encrypted VNC password>]"
     echo -e "\t [--ssh-port=<Default port 22>]\n"
     echo -e "\t [--disable-rdp [Disable RDP setup]\n"
     echo -e "\t [--disable-inventory [Disable Fusion Inventory]\n"
@@ -184,6 +185,10 @@ check_arguments() {
                 ;;
             --vnc-port*)
                 [ ! -z ${i} ] && VNC_PORT="${i#*=}"
+                shift
+                ;;
+            --vnc-password*)
+                VNC_PASSWORD="${i#*=}"
                 shift
                 ;;
             --ssh-port*)
@@ -328,6 +333,7 @@ enable_and_configure_vnc_plugin() {
         crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatetightvnc
     else
         crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters rfbport ${VNC_PORT}
+        crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters password_rw ${VNC_PASSWORD}
     fi
 }
 

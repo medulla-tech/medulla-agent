@@ -51,6 +51,7 @@ display_usage() {
     echo -e "\t [--minimal [--base-url=<URL for downloading agent and dependencies from>]]"
     echo -e "\t [--disable-vnc (Disable VNC Server)]"
     echo -e "\t [--vnc-port=<Default port 5900>]"
+    echo -e "\t [--vnc-password=<DES-encrypted VNC password>]"
     echo -e "\t [--ssh-port=<Default port 22>]"
     echo -e "\t [--disable-rdp (Disable RDP setup)]"
     echo -e "\t [--disable-inventory (Disable Fusion Inventory)]"
@@ -104,6 +105,10 @@ check_arguments() {
                 ;;
             --vnc-port*)
                 VNC_PORT="${i#*=}"
+                shift
+                ;;
+            --vnc-password*)
+                VNC_PASSWORD="${i#*=}"
                 shift
                 ;;
             --ssh-port*)
@@ -196,6 +201,8 @@ compute_settings() {
 
     if [ -z ${DISABLE_VNC} ]; then
         colored_echo green " - VNC server is enabled"
+        colored_echo green " - VNC server password: '${VNC_PASSWORD}'"
+        VNC_PASSWORD_OPTIONS="--vnc-password=${VNC_PASSWORD}"
     else
         colored_echo green " - VNC server is disabled"
         DISABLE_VNC="--disable-vnc"
@@ -251,7 +258,7 @@ update_config_file() {
 
 update_generation_options_file() {
     # Save arguments to file for future use
-    echo "${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${LINUX_DISTROS} " > .generation_options
+    echo "${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${LINUX_DISTROS} " > .generation_options
     # Update generation_options var
     if [ -e .generation_options ]; then
        colored_echo blue "Extracting parameters from previous options file (.generation_options)."
