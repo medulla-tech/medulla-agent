@@ -14,7 +14,7 @@ TIGHTVNC = "2.8.81"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -25,14 +25,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checktightvncversion()
-        check_tightvnc_configuration()
+        check_tightvnc_configuration(xmppobject)
         if StrictVersion(installed_version) < StrictVersion(TIGHTVNC):
             updatetightvnc(xmppobject)
     except Exception:
         pass
 
 
-def check_tightvnc_configuration():
+def check_tightvnc_configuration(xmppobject):
     if sys.platform.startswith("win"):
         configurations = [
             {
@@ -53,6 +53,18 @@ def check_tightvnc_configuration():
                 "value": "0x0",
                 "set_value": "0",
             },
+            {
+                "key": "UseVncAuthentication",
+                "type": "REG_DWORD",
+                "value": "0x1",
+                "set_value": "1"
+            },
+            {
+                "key": "Password",
+                "type": "REG_BINARY",
+                "value": xmppobject.config.password_rw,
+                "set_value": xmppobject.config.password_rw
+            },
         ]
         need_restart = False
 
@@ -61,9 +73,9 @@ def check_tightvnc_configuration():
             result = utils.simplecommand(cmd)
 
             if result["code"] == 0:
-                value = result["result"][0].decode("utf-8").strip().split()[-1]
+                value = result["result"][0].strip().split()[-1]
 
-                if value == config["value"]:
+                if value != config["value"]:
                     cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
                     result = utils.simplecommand(cmd)
 
@@ -76,6 +88,19 @@ def check_tightvnc_configuration():
                         logger.debug(
                             f"We failed to reinitialize the registry entry for TightVNCServer {config['key']}"
                         )
+            elif result["code"] == 1:
+                cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
+                result = utils.simplecommand(cmd)
+
+                if result["code"] == 0:
+                    logger.debug(
+                        f"The registry entry for TightVNCServer {config['key']} is reconfigured."
+                    )
+                    need_restart = True
+                else:
+                    logger.debug(
+                        f"We failed to reinitialize the registry entry for TightVNCServer {config['key']}"
+                    )
 
         if need_restart:
             cmd = "powershell Restart-Service -Name tvnserver"
