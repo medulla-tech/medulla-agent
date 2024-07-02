@@ -1,10 +1,10 @@
-# What is Pulse XMPP Agent?
+# What is Medulla XMPP Agent?
 
-Pulse XMPP Agent is a project that provides a smart and multi-plateform agent to Pulse IT automation and lifecycle management tool. 
+Medulla XMPP Agent is a project that provides a realtime, smart and multi-platform agent to Medulla RMM solution. 
 
-Pulse XMPP Agent relies on open source technologies like python, ejabberd ssh and even more.
+Medulla XMPP Agent relies on open source technologies like python, ejabberd ssh and even more.
 
-With Pulse XMPP Agent you are be able to:
+With Medulla XMPP Agent you are be able to:
 
 * Provides real time the states of nodes
 * Receive real time commands
@@ -13,19 +13,20 @@ With Pulse XMPP Agent you are be able to:
 * Interact with user
 * And so much more to come!
 
+## Community
 
-# Get help
-
+* Discord Channel: https://discord.gg/Mj8wGGp4yH
+* Discuss on IRC chanel [irc://irc.libera.chat](https://web.libera.chat/)
+  * Channel : #medulla-fr
+  * Channel : #medulla-en
 * Website : <http://www.siveo.net>
-* Nighty Builds : <http://git.siveo.net>
-* IRC : <irc://irc.freenode.net/#pulse-en > <irc://irc.freenode.net/#pulse-fr >
-* Sources : <https://github.com/pulse-project/pulse-xmpp-agent>
-* Bugtracker : <https://github.com/pulse-project/pulse-xmpp-agent/issues>
+* Bugtracker : <https://github.com/medulla-tech/medulla-agent/issues>
 
+## Installation
 
-# Installation
+Installation had been simplified to easily try and use, just [download](https://medulla-tech.io/telecharger-medulla/)
 
-The complete installation procedure can be found at <https://github.com/pulse-project/pulse2/blob/xmppmaster/INSTALL>.
+For large and complex installation, follow this [links](https://github.com/medulla-tech/integration//blob/main/README.md)
 
 If you find some errors, please feel free to contribute.
 
@@ -33,6 +34,6 @@ Thanks
    
 # License
 
-Pulse XMPP Agent is distributed under GPL v3. 
+Medulla XMPP Agent is distributed under GPL v3. 
 
 --
