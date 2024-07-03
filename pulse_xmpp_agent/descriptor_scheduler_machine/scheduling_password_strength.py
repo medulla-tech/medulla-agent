@@ -6,6 +6,7 @@
     This plugin is created to check if all users have a strong password
 """
 
+from lib.agentconffile import directoryconffile
 import configparser
 import json
 import os
@@ -24,8 +25,11 @@ plugin = {"VERSION": "1.0", "NAME": "scheduling_password_check", "TYPE": "all", 
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 
 # parse the config file
+configfilename = os.path.join(directoryconffile(), "agentconf.ini")
 config = configparser.ConfigParser()
-config.read("C:\\Program Files\\Pulse\\etc\\agentconf.ini")
+if os.path.isfile(configfilename):
+    Config = configparser.ConfigParser()
+    Config.read(configfilename)
 
 # get depl sub
 mto_address = config.get('substitute', 'deployment')
@@ -71,7 +75,7 @@ def export_security_cfg(user):
 
          # Ensure the user directory exists
         if not os.path.exists(user_dir):
-            print(f"User directory {user_dir} does not exist.")
+            logger.error(f"User directory {user_dir} does not exist.")
             return
         
         # Run the secedit command to export the security policy
@@ -82,7 +86,7 @@ def export_security_cfg(user):
         else:
          logger.error(f"Error exporting security policy: {result.stderr}")
     except Exception as e:
-      print(f"An error occurred: {e}")
+      logger.error(f"An error occurred: {e}")
 
 def add_userprofile_path(user):
     try:     
@@ -91,7 +95,7 @@ def add_userprofile_path(user):
       if not os.path.exists(user_directory_path):
         export_security_cfg(user)     
     except Exception as e:
-      print(f"An error occurred: {e}") 
+      logger.error(f"An error occurred: {e}") 
 
 def check_password_complexity(user):
     try:
@@ -157,7 +161,7 @@ def check_password_history(user):
                return f"Error checking password history size for {user}"
         else:
             logger.error(f"Invalid userprofile path for {user}")            
-            print(f"Invalid userprofile path for {user}")    
+           
 
     except Exception as e:
         logger.error(f"Error checking password history size for {user}: {e}")
@@ -246,4 +250,4 @@ def schedule_main(objectxmpp):
 if __name__ == "__main__":
     check_users_password_results = check_local_admin_password_strength()
     if check_users_password_results:
-        print(check_users_password_results)    
+        logger.info(check_users_password_results)    
