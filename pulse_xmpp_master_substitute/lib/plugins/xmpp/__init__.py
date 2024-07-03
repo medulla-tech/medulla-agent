@@ -11298,9 +11298,20 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return result
 
     @DatabaseHelper._sessionm
-    def updateAntivirusFirewallStatus(self, session, uuid_machine, name_antivirus, update_status, real_time, active_status, unix_time, last_scan, firewall):
+    def updateAntivirusFirewallStatus(
+        self,
+        session,
+        uuid_machine,
+        name_antivirus,
+        update_status,
+        real_time,
+        active_status,
+        unix_time,
+        last_scan,
+        firewall,
+    ):
         """
-        Inserts the updated list of antiviruses for the machine with the details for each antivirus. 
+        Inserts the updated list of antiviruses for the machine with the details for each antivirus.
         """
         try:
             sql = """INSERT INTO
@@ -11320,7 +11331,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.commit()
             session.flush()
             return True
-        
+
         except Exception as e:
             logging.getLogger().error(
                 "An error occured while inserting the new list of antiviruses."

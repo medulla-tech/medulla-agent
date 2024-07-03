@@ -1378,26 +1378,34 @@ def powerschellscript1ps1(namescript):
         logger.error("\n%s" % (traceback.format_exc()))
     return obj
 
+
 def runpowershellcommand(command):
     """
     Runs a command using powershell and returns the result with stdout.strip() pre-applied.
     """
-    # Explicitly call PowerShell with the command 
-    powershell_command = ['powershell.exe', '-Command', command]
-    
+    # Explicitly call PowerShell with the command
+    powershell_command = ["powershell.exe", "-Command", command]
+
     # Use subprocess.Popen to execute the PowerShell command
-    process = subprocess.Popen(powershell_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    
+    process = subprocess.Popen(
+        powershell_command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
     # Wait for the process to finish and capture the output
     stdout, stderr = process.communicate()
-    
+
     # Check for errors
     if process.returncode != 0:
         print("Error executing command:", stderr)
         return None
-    
+
     # Return the output
     return stdout.strip()
+
 
 class shellcommandtimeout:
     """
