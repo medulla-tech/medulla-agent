@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -7,8 +8,10 @@ This scheduling plugin checks all the installed antiviruses on the computer, che
 """
 
 import json
-from lib.utils import runpowershellcommand, name_random
+from lib.utils import (runpowershellcommand, name_random)
+from lib.agentconffile import directoryconffile
 import configparser
+import os
 
 plugin = {"VERSION": "1.0", "NAME": "scheduling_antivirus", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
@@ -18,12 +21,13 @@ SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 sessionid = name_random(8, "update_")
 
 # parse the config file
-config = configparser.ConfigParser()
-config.read("C:/Program Files/Medulla/etc/agentconf.ini")
+configfilename = os.path.join(directoryconffile(), "agentconf.ini")
+if os.path.isfile(configfilename):
+    config = configparser.ConfigParser()
+    config.read(configfilename)
 
 # get depl sub
-mto_address = config.get("substitute", "deployment")
-
+mto_address = config.get('substitute', 'deployment')
 
 def get_status(product_state, product_name):
     # logic to determine update status and real-time protection based on prodstate
@@ -40,21 +44,13 @@ def get_status(product_state, product_name):
         if product_state == 262144 or product_state == 393216:
             defstatus = "Up to date"
             rtstatus = "Disabled"
-        elif (
-            product_state == 262160
-            or product_state == 393232
-            or product_state == 393488
-        ):
+        elif product_state == 262160 or product_state == 393232 or product_state == 393488:
             defstatus = "Out of date"
             rtstatus = "Disabled"
         elif product_state == 266240 or product_state == 397312:
             defstatus = "Up to date"
             rtstatus = "Enabled"
-        elif (
-            product_state == 266256
-            or product_state == 397328
-            or product_state == 397584
-        ):
+        elif product_state == 266256 or product_state == 397328 or product_state == 397584:
             defstatus = "Out of date"
             rtstatus = "Enabled"
     return defstatus, rtstatus
@@ -62,14 +58,10 @@ def get_status(product_state, product_name):
 
 def schedule_main(objectxmpp):
     # query to retrieve antviruses
-    antivirus_products_output = runpowershellcommand(
-        'Get-WmiObject -Namespace "root\SecurityCenter2" -Class AntiVirusProduct | Select-Object -Property DisplayName, ProductState'
-    )
+    antivirus_products_output = runpowershellcommand('Get-WmiObject -Namespace "root\SecurityCenter2" -Class AntiVirusProduct | Select-Object -Property DisplayName, ProductState')
     antivirus_products = []
 
-    firewall_bool = runpowershellcommand(
-        'if ((Get-NetFirewallProfile | Where-Object { $_.Name -eq "Private" }).Enabled -eq $true -and (Get-NetFirewallProfile | Where-Object { $_.Name -eq "Public" }).Enabled -eq $true) { return 1 } else { return 0 }'
-    )
+    firewall_bool = runpowershellcommand('if ((Get-NetFirewallProfile | Where-Object { $_.Name -eq "Private" }).Enabled -eq $true -and (Get-NetFirewallProfile | Where-Object { $_.Name -eq "Public" }).Enabled -eq $true) { return 1 } else { return 0 }')
 
     if antivirus_products_output:
         # split into lines
@@ -83,50 +75,38 @@ def schedule_main(objectxmpp):
             parts = line.split()
             if len(parts) >= 2:
                 # make full name if name contains spaces
-                name = " ".join(parts[:-1])
+                name = ' '.join(parts[:-1])
                 # prod state
                 product_state_str = parts[-1]
                 # check if not empty
                 if product_state_str.isdigit():
                     product_state = int(product_state_str)
                     defstatus, rtstatus = get_status(product_state, name)
-                    antivirus_products.append(
-                        {
-                            "Name": name,
-                            "Product State": product_state,
-                            "Definition Status": defstatus,
-                            "Real-time Protection Status": rtstatus,
-                            "Firewall": firewall_bool,
-                        }
-                    )
-
+                    antivirus_products.append({
+                        'Name': name,
+                        'Product State': product_state,
+                        'Definition Status': defstatus,
+                        'Real-time Protection Status': rtstatus,
+                        'Firewall': firewall_bool,
+                    })
+    
     antivirus_products_json = []
 
     for product in antivirus_products:
         last_scan = None
 
-        if (
-            product["Name"] == "AVG Antivirus"
-            and product["Real-time Protection Status"] == "Enabled"
-        ):
-            last_scan = runpowershellcommand(
-                '(Get-ItemProperty -Path "HKLM:\SOFTWARE\AVG\Antivirus\properties\settings\SmartScan" -Name "LastRun").LastRun'
-            )
+        if product['Name'] == "AVG Antivirus" and product['Real-time Protection Status'] == "Enabled":
+            last_scan = runpowershellcommand('(Get-ItemProperty -Path "HKLM:\SOFTWARE\AVG\Antivirus\properties\settings\SmartScan" -Name "LastRun").LastRun')
 
-        if (
-            product["Name"] == "Windows Defender"
-            and product["Real-time Protection Status"] == "Enabled"
-        ):
-            last_scan = runpowershellcommand(
-                "$mpStatus = Get-MpComputerStatus; $scanEndTime = $mpStatus.QuickScanEndTime; if ($mpStatus.FullScanEndTime -gt $scanEndTime) { $scanEndTime = $mpStatus.FullScanEndTime }; [int][double]::Parse((Get-Date $scanEndTime -UFormat %s))"
-            )
+        if product['Name'] == "Windows Defender" and product['Real-time Protection Status'] == "Enabled":
+            last_scan = runpowershellcommand('$mpStatus = Get-MpComputerStatus; $scanEndTime = $mpStatus.QuickScanEndTime; if ($mpStatus.FullScanEndTime -gt $scanEndTime) { $scanEndTime = $mpStatus.FullScanEndTime }; [int][double]::Parse((Get-Date $scanEndTime -UFormat %s))')
 
         antivirus_product_json = {
-            "Name": product["Name"],
-            "Update Status": product["Definition Status"],
-            "Real-time Protection Status": product["Real-time Protection Status"],
+            "Name": product['Name'],
+            "Update Status": product['Definition Status'],
+            "Real-time Protection Status": product['Real-time Protection Status'],
             "Last Scan": last_scan,
-            "Firewall": product["Firewall"],
+            "Firewall": product['Firewall']
         }
         # append each antivirus product directly to the JSON array
         antivirus_products_json.append(antivirus_product_json)
