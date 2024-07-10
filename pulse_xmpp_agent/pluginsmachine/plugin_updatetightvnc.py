@@ -25,7 +25,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     try:
         # Update if version is lower
-        installed_version = checktightvncversion()
+        installed_version = checktightvncversion(xmppobject)
         check_tightvnc_configuration(xmppobject)
         if StrictVersion(installed_version) < StrictVersion(TIGHTVNC):
             updatetightvnc(xmppobject)
@@ -33,7 +33,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         pass
 
 
-def check_tightvnc_configuration():
+def check_tightvnc_configuration(xmppobject):
     """
     Check and modify TightVNC Server registry keys as necessary, and restart the service if any changes are made.
     """
