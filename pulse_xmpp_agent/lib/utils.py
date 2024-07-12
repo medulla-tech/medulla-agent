@@ -6186,3 +6186,315 @@ class convert:
         dom = parseString(xml_string)
         formatted_xml = dom.toprettyxml(indent="  ")
         return formatted_xml
+
+
+def get_antivirus_info():
+    """
+    Récupère les informations sur les antivirus installés, y compris Windows Defender,
+    et retourne une liste de dictionnaires contenant le nom, la version, l'état et
+    l'état de la mise à jour de chaque antivirus.
+
+    Pour l'état de la mise à jour de Windows Defender, si aucune mise à jour récente
+    n'est trouvée, 'False' est indiqué, ce qui signifie qu'aucune mise à jour n'est
+    nécessaire.
+
+    Returns:
+        list: Liste de dictionnaires contenant les informations sur les antivirus.
+    """
+    # Vérifie si le système d'exploitation est Windows
+    if platform.system() != 'Windows':
+        return []
+
+    # Connexion au service WMI
+    c = wmi.WMI()
+
+    # Liste des antivirus
+    antivirus_list = []
+
+    # Interrogation des produits antivirus installés
+    for product in c.Win32_Product():
+        try:
+            caption = product.Caption
+            if not isinstance(caption, str):
+                continue
+            encoded_message = caption.encode('utf-8', errors='ignore')
+            decoded_message = encoded_message.decode('utf-8', errors='ignore')
+            if 'antivirus' in decoded_message.lower():
+                antivirus_info = {
+                    'Name': decoded_message,
+                    'Version': product.Version,
+                    'State': 'Active' if product.InstallState == 5 else 'Inactive',
+                    'UpdateStatus': product.InstallDate  # Mettre ici la propriété qui indique la date de dernière mise à jour
+                }
+                antivirus_list.append(antivirus_info)
+        except Exception as e:
+            logger.error(f"Error search antivirus {e}")
+
+    # Ajout de Windows Defender
+    for defender in c.Win32_Service(Name="WinDefend"):
+        defender_info = {
+            'Name': 'Windows Defender',
+            'State': 'Running' if defender.State == 'Running' else 'Stopped'
+        }
+
+        # Recherche de la dernière mise à jour de Windows Defender
+        latest_update_date = None
+        for update in c.Win32_QuickFixEngineering():
+            if 'Definition Update for Windows Defender' in update.Caption:
+                if not latest_update_date or update.InstallDate > latest_update_date:
+                    latest_update_date = update.InstallDate
+
+        # Mise à jour de l'état de la mise à jour de Windows Defender
+        if latest_update_date:
+            defender_info['UpdateStatus'] = latest_update_date
+        else:
+            defender_info['UpdateStatus'] = 'False'  # Pas besoin de mise à jour
+
+        antivirus_list.append(defender_info)
+
+    return antivirus_list
+
+def get_windows_infos(xmppobject):
+    """
+    Obtient différentes informations système sur un système Windows.
+
+    Args:
+        xmppobject (object): L'objet XMPP pour stocker les informations récupérées.
+
+    Returns:
+        dict: Un dictionnaire contenant les informations.
+    """
+    if not hasattr(xmppobject, 'infos'):
+        xmppobject.infos = {}
+    system_platform = platform.system()
+
+    if system_platform == 'Windows':
+        resul_acpi_cpu=[]
+        result=[ x.strip().split()[-1] for x in subprocess.check_output("powercfg /query scheme_current sub_processor PROCTHROTTLEMIN").decode('latin-1').split('\r\n') if x != ""][-2:]
+        result1=[ x.strip().split()[-1] for x in subprocess.check_output("powercfg /query scheme_current sub_processor PROCTHROTTLEMAX").decode('latin-1').split('\r\n') if x != ""][-2:]
+        result2=[ x.strip().split()[-1] for x in subprocess.check_output("powercfg /query scheme_current SUB_VIDEO VIDEOIDLE").decode('latin-1').split('\r\n') if x != ""][-2:]
+        for t in result + result1 + result2:
+            resul_acpi_cpu.append(int(t,16))
+        xmppobject.infos['PROC_MIN_AC']=resul_acpi_cpu[0]
+        xmppobject.infos['PROC_MIN_DC']=resul_acpi_cpu[1]
+        xmppobject.infos['PROC_MAX_AC']=resul_acpi_cpu[2]
+        xmppobject.infos['PROC_MAX_DC']=resul_acpi_cpu[3]
+        xmppobject.infos['VIDEOIDLE_AC']=resul_acpi_cpu[4]
+        xmppobject.infos['VIDEOIDLE_DC']=resul_acpi_cpu[5]
+
+        command={"uuid" : "Get-CimInstance -ClassName Win32_ComputerSystemProduct | Select-Object -ExpandProperty UUID",
+        "gpu" : "Get-CimInstance -ClassName Win32_VideoController | Select-Object -ExpandProperty VideoProcessor",
+        "hd" : "Get-PhysicalDisk | Where-Object MediaType -in @('HDD', 'SSD') | Select-Object FriendlyName, MediaType -ExpandProperty  MediaType",
+        "cpu" : "Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty Name",
+        "clock" : "Get-CimInstance Win32_Processor | Select-Object -ExpandProperty CurrentClockSpeed",
+        "resolution" : "Get-CimInstance CIM_VideoController | Select-Object -Property VideoModeDescription | Format-Table -HideTableHeaders",
+        "model" : "Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams | Select-Object -Property InstanceName | Format-Table -HideTableHeaders",
+        "memorytaille": "(Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum / 1GB",
+        "typememory" : "(Get-WmiObject Win32_PhysicalMemory | Select-Object -ExpandProperty SMBIOSMemoryType)[0]",
+        "cpu_max_freq" : "(Get-CimInstance CIM_Processor).MaxClockSpeed",
+        "biosdate" : "(Get-WmiObject -Class Win32_BIOS).ReleaseDate.Substring(0, 8)"
+        }
+        command_latin1={"time_reprise" : "(powercfg /query scheme_current SUB_VIDEO VIDEOIDLE) -split '\r?\n' | Where-Object { $_ -match '\S' } | Select-Object -Last 2"}
+
+        for t in command:
+            logger.error(f"command{t}")
+            try:
+                xmppobject.infos[t] = [ x.strip() for x in subprocess.check_output(['powershell.exe', command[t]]).decode('utf-8').split('\r\n') if x != ""]
+                # print(xmppobject.infos[t].decode('utf-8'))
+            except Exception as e:
+                logger.error(f"We obtained the backtrace {traceback.format_exc()}")
+            print("%s  : %s" %(t, xmppobject.infos[t] ))
+        xmppobject.infos['ehd'] = 0
+        logger.error(f"command{xmppobject.infos}")
+        for t in command_latin1:
+            result  = [ x.strip() for x in subprocess.check_output(['powershell.exe', command_latin1[t]]).decode('latin-1').split('\r\n') if x != ""]
+            # resultat = subprocess.check_output(['powershell.exe', commandA[t]]) #.decode('utf-8').split('\r\n')
+        xmppobject.infos['time_reprise']=[]
+        for t in result:
+            xmppobject.infos['time_reprise'].append(int([ x for x in t.split(" ")][-1],16))
+        get_has_battery_infos(xmppobject)
+        xmppobject.infos["maxf"]=get_max_cpu_frequency()
+        xmppobject.infos['nbcpu'] = len(xmppobject.infos['cpu'])
+        xmppobject.infos['nbgpu'] = len(xmppobject.infos['gpu'])
+        xmppobject.infos['nbhdd'] = len(xmppobject.infos['hd'])
+        xmppobject.infos['nbmonitor'] = len(xmppobject.infos['model'])
+        xmppobject.infos['hostname'] = str(socket.gethostname())
+        xmppobject.infos['memory'] = get_memory_type(xmppobject.infos['typememory'][0])
+        xmppobject.infos['typememory'] = int(xmppobject.infos['typememory'][0])
+        xmppobject.infos['uuid'] = xmppobject.infos['uuid'][0]
+        xmppobject.infos['cpu_max_freq'] = int(xmppobject.infos['cpu_max_freq'][0])
+        datebios = str(xmppobject.infos['biosdate'][0])
+        xmppobject.infos['biosdate'] = datebios[4:6]+"/"+datebios[6:8]+"/"+datebios[0:4]
+        xmppobject.infos['memorytaille'] = int(xmppobject.infos['memorytaille'][0])
+        xmppobject.infos['cpu'] = xmppobject.infos['cpu'][0]
+        xmppobject.infos['gpu']= "|||".join(xmppobject.infos['gpu'])
+        xmppobject.infos['clock'] = int(xmppobject.infos['clock'][0])
+        xmppobject.infos['hd'] = compter_elements(xmppobject.infos['hd'])
+        xmppobject.infos['model'] = "|||".join(extraire_modele(xmppobject.infos['model']))
+    return xmppobject.infos
+
+
+def compter_elements(liste):
+    """
+    Compte le nombre d'occurrences de chaque élément dans une liste.
+
+    Args:
+        liste (list): La liste à traiter.
+
+    Returns:
+        dict: Un dictionnaire contenant les éléments de la liste en tant que clés et leur nombre d'occurrences en tant que valeurs.
+    """
+    # Initialisation d'un dictionnaire par défaut pour stocker les comptes
+    comptes = defaultdict(int)
+    # Comptage des éléments dans la liste
+    for element in liste:
+        comptes[element] += 1
+    # Conversion du dictionnaire en un dictionnaire standard
+    comptes_final = dict(comptes)
+    return comptes_final
+
+def extraire_modele(liste):
+    """
+    Extrait les modèles à partir d'une liste d'éléments.
+
+    Args:
+        liste (list): La liste à parcourir.
+
+    Returns:
+        list: Une liste contenant les modèles extraits.
+    """
+    modeles = []
+    for element in liste:
+        if element.startswith("DISPLAY"):
+            # Si la partie commence par "DISPLAY", le modèle est la partie suivante
+            modele = element.split("\\")
+            if len(modele)>=2:
+                modeles.append(modele[1])
+    return modeles
+
+
+def get_max_cpu_frequency1():
+    """
+    Obtient la fréquence maximale du processeur.
+
+    Returns:
+        str: La fréquence maximale du processeur.
+    """
+    try:
+        max_freq = subprocess.check_output(['wmic', 'cpu', 'get', 'MaxClockSpeed']).decode('utf-8').strip()
+        return max_freq
+    except Exception as e:
+        logger.error(f"Error getting max CPU frequency: {e}")
+        return "Erreur lors de l'obtention de la fréquence maximale du processeur."
+
+def get_has_battery_infos(xmppobject):
+    """
+    Obtient des informations sur la batterie.
+
+    Args:
+        xmppobject (object): L'objet XMPP pour stocker les informations récupérées.
+    """
+    xmppobject.infos['has_battery'] = 0
+    xmppobject.infos['battery_mode'] =  0
+    # Initialiser le thread
+    pythoncom.CoInitialize()
+    try:
+        # Utiliser WMI après l'initialisation
+        c = wmi.WMI()
+        battery = c.Win32_Battery()
+        xmppobject.infos['has_battery'] = (len(battery) > 0)
+        xmppobject.infos['battery_mode'] =  len(battery)
+    finally:
+        # Assurez-vous de libérer les ressources après utilisation
+        pythoncom.CoUninitialize()
+
+def get_max_cpu_frequency():
+    """
+    Obtient la fréquence maximale du processeur.
+
+    Returns:
+        str: La fréquence maximale du processeur.
+    """
+    try:
+        cpu_freq = psutil.cpu_freq()
+        max_cpu_speed = cpu_freq.max / 1000  # Convert to GHz
+        return max_cpu_speed
+    except Exception as e:
+        logger.error(f"Error retrieving max CPU frequency: {e}")
+        return None
+
+def get_memory_type(num):
+    """
+    Obtient le type de mémoire à partir du numéro donné.
+
+    Args:
+        num (int): Le numéro du type de mémoire.
+
+    Returns:
+        str: Le type de mémoire correspondant au numéro donné. Si le numéro n'est pas dans la liste,
+             retourne "Inconnu".
+    """
+    num=int(num)
+    memory_types = {
+        0: "Unknown",
+        1: "Other",
+        2: "DRAM",
+        3: "Synchronous DRAM",
+        4: "Cache DRAM",
+        5: "EDO",
+        6: "EDRAM",
+        7: "VRAM",
+        8: "SRAM",
+        9: "RAM",
+        10: "ROM",
+        11: "Flash",
+        12: "EEPROM",
+        13: "FEPROM",
+        14: "EPROM",
+        15: "CDRAM",
+        16: "3DRAM",
+        17: "SDRAM",
+        18: "SGRAM",
+        19: "RDRAM",
+        20: "DDR",
+        21: "DDR2",
+        22: "DDR2",
+        24: "DDR3",
+        25: "FBD2",
+        26: "DDR4"
+    }
+    return memory_types.get(num, "Unknown")
+
+def date_mise_en_service():
+    """
+    Obtient la date d'installation du système d'exploitation en utilisant PowerShell.
+
+    Returns:
+        str: Une chaîne représentant la date d'installation au format MySQL (YYYY-MM-DD HH:MM:SS).
+    """
+    system_platform = platform.system()
+
+    if system_platform == 'Windows':
+        powershell_command = '''
+        $osInstallDate = (Get-CimInstance Win32_OperatingSystem).InstallDate
+        Write-Output $osInstallDate
+        '''
+        result = subprocess.run(['powershell', '-Command', powershell_command], capture_output=True, text=True)
+
+        if result.returncode == 0:
+            os_install_date_str = result.stdout.strip()
+
+            # Convertir la date en objet datetime
+            os_install_date = datetime.strptime(os_install_date_str, "%Y%m%d%H%M%S.%f")
+
+            # Formater la date au format MySQL
+            mysql_format = os_install_date.strftime("%Y-%m-%d %H:%M:%S")
+
+            return mysql_format
+        else:
+            return "Erreur lors de l'obtention de la date d'installation du système."
+
+    else:
+        return "Système d'exploitation non pris en charge."
+
+

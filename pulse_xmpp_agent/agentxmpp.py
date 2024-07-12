@@ -83,6 +83,7 @@ from lib.utils import (
     convert,
     DateTimebytesEncoderjson,
     get_windows_infos,
+    get_antivirus_info,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -3553,6 +3554,7 @@ AGENT %s ERROR TERMINATE""" % (
             "updatingagent": self.config.updating,
             "system_info": offline_search_kb().get(),
             "hard_infos": self.infos,
+            "antivireu" : get_antivirus_info(),
         }
         try:
             dataobj["md5_conf_monitoring"] = ""

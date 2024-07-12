@@ -51,31 +51,74 @@ class networkagentinfo:
         return userlist
 
     def networkobjet(self, sessionid, action):
-        self.messagejson = {}
-        self.messagejson["action"] = action
-        self.messagejson["sessionid"] = sessionid
-        self.messagejson["listdns"] = []
-        self.messagejson["listipinfo"] = []
-        self.messagejson["dhcp"] = "False"
-        self.messagejson["dnshostname"] = ""
-        self.messagejson["msg"] = platform.system()
+        """
+        Collecte des informations sur la configuration réseau de l'ordinateur.
+
+        Args:
+            sessionid (str): Identifiant de session pour l'action en cours.
+            action (str): Action à entreprendre.
+
+        Returns:
+            dict: Un dictionnaire contenant des informations sur la configuration réseau.
+                Les clés comprennent :
+                - "action": Action spécifiée en argument.
+                - "sessionid": Identifiant de session spécifié en argument.
+                - "listdns": Liste des serveurs DNS configurés.
+                - "listipinfo": Liste des informations sur les adresses IP et les interfaces réseau.
+                - "dhcp": Indique si DHCP est activé (True/False).
+                - 'dhcpinfo' est présent seulement si dhcp est True
+                - "dnshostname": Nom de l'hôte DNS.
+                - "msg": Système d'exploitation en cours d'exécution.
+
+        Note:
+            Cette fonction collecte des informations sur la configuration réseau de l'ordinateur
+            en fonction du système d'exploitation en cours d'exécution.
+            - Sur Linux, elle vérifie la configuration DHCP et collecte les informations des interfaces réseau.
+            - Sur Windows, elle collecte les informations des interfaces réseau, y compris les adresses IP, les passerelles, etc.
+            - Sur macOS, elle appelle la fonction MacOsNetworkInfo pour collecter des informations spécifiques.
+            - Pour d'autres systèmes d'exploitation, un message indiquant qu'ils ne sont pas encore gérés est renvoyé.
+        """
+        self.messagejson = {
+            "action": action,
+            "sessionid": sessionid,
+            "listdns": [],
+            "listipinfo": [],
+            "dhcp": "False",
+            "dnshostname": "",
+            "msg": platform.system(),
+        }
         try:
             self.messagejson["users"] = self.getuser()
         except BaseException:
             self.messagejson["users"] = ["system"]
-
         if sys.platform.startswith("linux"):
             p = subprocess.Popen(
-                "ps aux | grep dhclient | grep -v leases | grep -v grep | awk '{print $NF}'",
+                "ip addr show | grep dynamic",
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-            result = p.stdout.readlines()
-            if len(result) > 0:
-                self.messagejson["dhcp"] = "True"
-            else:
-                self.messagejson["dhcp"] = "False"
+            result = [x.decode("utf-8").strip() for x in p.stdout.readlines()]
+            self.messagejson["dhcp"] = "True" if len(result) > 0 else "False"
+            if self.messagejson["dhcp"]:
+                pattern = (
+                    r"inet (\S+)\/(\d+) metric (\d+) brd (\S+) scope global (\S+) (\S+)"
+                )
+                self.messagejson["dhcpinfo"] = []
+                for info_line in result:
+                    match = re.match(pattern, info_line)
+                    if match:
+                        # Créez un dictionnaire avec les informations extraites
+                        info_dict = {
+                            "ip_address": match.group(1),
+                            "subnet_mask": match.group(2),
+                            "metric": match.group(3),
+                            "broadcast_address": match.group(4),
+                            "scope": match.group(5),
+                            "interface": match.group(6),
+                        }
+                        self.messagejson["dhcpinfo"].append(info_dict)
+
             self.messagejson["listdns"] = self.listdnslinux()
             self.messagejson["listipinfo"] = self.getLocalIipAddress()
             self.messagejson["dnshostname"] = platform.node()
@@ -83,38 +126,82 @@ class networkagentinfo:
 
         elif sys.platform.startswith("win"):
             """revoit objet reseau windows"""
+            # interface active only
+            # pythoncom.CoInitialize()
+            # try:
+            # wmi_obj = wmi.WMI()
+            # wmi_sql = "select * from Win32_NetworkAdapterConfiguration where IPEnabled=TRUE"
+            # wmi_out = wmi_obj.query(wmi_sql)
+            # finally:
+            # pythoncom.CoUninitialize()
+            # for dev in wmi_out:
+            # objnet = {}
+            # objnet['macaddress'] = dev.MACAddress
+            # objnet['ipaddress'] = dev.IPAddress[0]
+            # try:
+            # objnet['gateway'] = dev.DefaultIPGateway[0]
+            # except BaseException:
+            # objnet['gateway'] = ""
+            # objnet['mask'] = dev.IPSubnet[0]
+            # objnet['dhcp'] = dev.DHCPEnabled
+            # objnet['dhcpserver'] = dev.DHCPServer
+            # self.messagejson['listipinfo'].append(objnet)
+            # try:
+            # self.messagejson['listdns'].append(
+            # dev.DNSServerSearchOrder[0])
+            # except BaseException:
+            # pass
+            # self.messagejson['dnshostname'] = dev.DNSHostName
+            # self.messagejson['msg'] = platform.system()
+            # all interface
             pythoncom.CoInitialize()
             try:
                 wmi_obj = wmi.WMI()
-                wmi_sql = "select * from Win32_NetworkAdapterConfiguration where IPEnabled=TRUE"
+                wmi_sql = "select * from Win32_NetworkAdapterConfiguration"
                 wmi_out = wmi_obj.query(wmi_sql)
+                for dev in wmi_out:
+                    if dev.MACAddress is None:
+                        continue
+                    objnet = {"macaddress": dev.MACAddress, "Description": dev.Description}
+                    try:
+                        objnet["ipaddress"] = dev.IPAddress[0]
+                    except BaseException:
+                        objnet["ipaddress"] = None
+                    try:
+                        objnet["gateway"] = dev.DefaultIPGateway[0]
+                    except BaseException:
+                        objnet["gateway"] = ""
+                    try:
+                        objnet["mask"] = dev.IPSubnet[0]
+                    except BaseException:
+                        objnet["mask"] = None
+                    try:
+                        objnet["dhcp"] = dev.DHCPEnabled
+                    except BaseException:
+                        objnet["dhcp"] = None
+                    try:
+                        objnet["dhcpserver"] = dev.DHCPServer
+                    except BaseException:
+                        objnet["dhcpserver"] = None
+                    self.messagejson["listipinfo"].append(objnet)
+                    try:
+                        self.messagejson["listdns"].append(dev.DNSServerSearchOrder[0])
+                    except BaseException:
+                        pass
+                    try:
+                        self.messagejson["dnshostname"] = dev.DNSHostName
+                    except BaseException:
+                        pass
             finally:
+                # Assurez-vous de libérer les ressources après utilisation
                 pythoncom.CoUninitialize()
-            for dev in wmi_out:
-                objnet = {}
-                objnet["macaddress"] = dev.MACAddress
-                objnet["ipaddress"] = dev.IPAddress[0]
-                try:
-                    objnet["gateway"] = dev.DefaultIPGateway[0]
-                except BaseException:
-                    objnet["gateway"] = ""
-                objnet["mask"] = dev.IPSubnet[0]
-                objnet["dhcp"] = dev.DHCPEnabled
-                objnet["dhcpserver"] = dev.DHCPServer
-                self.messagejson["listipinfo"].append(objnet)
-                try:
-                    self.messagejson["listdns"].append(dev.DNSServerSearchOrder[0])
-                except BaseException:
-                    pass
-                self.messagejson["dnshostname"] = dev.DNSHostName
-            self.messagejson["msg"] = platform.system()
             return self.messagejson
-
         elif sys.platform.startswith("darwin"):
             return self.MacOsNetworkInfo()
         else:
-            self.messagejson["msg"] = "system %s : not managed yet" % sys.platform
+            self.messagejson["msg"] = f"system {sys.platform} : not managed yet"
             return self.messagejson
+
 
     def isIPValid(self, ipaddress):
         """
