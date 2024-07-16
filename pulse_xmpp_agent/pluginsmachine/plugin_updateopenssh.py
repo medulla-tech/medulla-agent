@@ -449,13 +449,10 @@ def FixPermission():
 
     # Initialize an ACL with only SYSTEM and Administrators
     acl = win32security.ACL()
-    sid = win32security.LookupAccountName(None, "NT AUTHORITY\\SYSTEM")[0]
-    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, sid)
-    try:
-        sid = win32security.LookupAccountName(None, "BUILTIN\\Administrators")[0]
-    except:
-        sid = win32security.LookupAccountName(None, "BUILTIN\\Administrateurs")[0]
-    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, sid)
+    # APPLY NT AUTHORITY\\SYSTEM ACL
+    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, "S-1-5-18")
+    # APPLY BUILTIN\\Administrat... depending on installed language ACL
+    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, "S-1-5-32-544")
 
     # Set the ACL on the security descriptor
     sd.SetSecurityDescriptorDacl(1, acl, 0)
