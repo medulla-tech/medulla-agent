@@ -6009,7 +6009,7 @@ class convert:
 
 
 class NetworkInfoxmpp:
-    def __init__(self, port):
+    def __init__(self, port: int):
         self.port = int(port)
         self.ip_address = self._get_established_ipv4_connection_on_port()
         if self.ip_address:
@@ -6017,7 +6017,7 @@ class NetworkInfoxmpp:
         else:
             self.details = None
 
-    def _get_established_ipv4_connection_on_port(self):
+    def _get_established_ipv4_connection_on_port(self) -> str:
         connections = psutil.net_connections(kind="inet")
         for conn in connections:
             if (
