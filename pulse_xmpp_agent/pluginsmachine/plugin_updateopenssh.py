@@ -31,7 +31,7 @@ OPENSSHVERSION = "9.4"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.0", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.1", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
@@ -451,7 +451,10 @@ def FixPermission():
     acl = win32security.ACL()
     sid = win32security.LookupAccountName(None, "NT AUTHORITY\\SYSTEM")[0]
     acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, sid)
-    sid = win32security.LookupAccountName(None, "BUILTIN\\Administrators")[0]
+    try:
+        sid = win32security.LookupAccountName(None, "BUILTIN\\Administrators")[0]
+    except:
+        sid = win32security.LookupAccountName(None, "BUILTIN\\Administrateurs")[0]
     acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, sid)
 
     # Set the ACL on the security descriptor
