@@ -46,7 +46,7 @@ class grafcet:
             os.makedirs(managepackage.packagedir())
         if sys.platform.startswith("win"):
             os.system(
-                f'icacls "{managepackage.packagedir()}" /grant "*S-1-5-32-545:(OI)(CI)F" /T'
+                f'icacls "{managepackage.packagedir()}" /grant "*S-1-5-32-545:(OI)(CI)F" /T /C'
             )
         self.datasend = datasend
         logging.getLogger().error(json.dumps(self.datasend, indent=4))
