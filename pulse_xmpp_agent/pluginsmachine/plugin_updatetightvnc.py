@@ -61,7 +61,12 @@ def check_tightvnc_configuration():
         need_restart = False
 
         # Open the registry key and assign it to a variable
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\TightVNC\Server", 0, winreg.KEY_ALL_ACCESS)
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\TightVNC\Server",
+            0,
+            winreg.KEY_ALL_ACCESS,
+        )
 
         for config in configurations:
             try:
@@ -69,14 +74,21 @@ def check_tightvnc_configuration():
                 value, _ = winreg.QueryValueEx(key, config["key"])
                 if value != config["value"]:
                     # Modify the key
-                    winreg.SetValueEx(key, config["key"], 0, config["type"], config["set_value"])
-                    logger.debug(f"PL-TIGHT TightVNCServer registry {config['key']} with value {value} is reconfigured.")
+                    winreg.SetValueEx(
+                        key, config["key"], 0, config["type"], config["set_value"]
+                    )
+                    logger.debug(
+                        f"PL-TIGHT TightVNCServer registry {config['key']} with value {value} is reconfigured."
+                    )
                     need_restart = True
                 else:
-                    logger.debug(f"PL-TIGHT TightVNC Server registry key {config['key']} is correctly configured.")
+                    logger.debug(
+                        f"PL-TIGHT TightVNC Server registry key {config['key']} is correctly configured."
+                    )
             except FileNotFoundError:
-                logger.debug(f"PL-TIGHT TightVNC Server registry key {config['key']} not found.")
-
+                logger.debug(
+                    f"PL-TIGHT TightVNC Server registry key {config['key']} not found."
+                )
 
         if need_restart:
             try:
@@ -98,12 +110,19 @@ def checktightvncversion():
     if sys.platform.startswith("win"):
         try:
             # Open the registry key for TightVNC
-            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{5AE9C1FB-F4F8-44A7-8550-F0592F56A1F2}", 0, winreg.KEY_READ)
+            key = winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{5AE9C1FB-F4F8-44A7-8550-F0592F56A1F2}",
+                0,
+                winreg.KEY_READ,
+            )
             # Query the DisplayVersion value
             value, _ = winreg.QueryValueEx(key, "DisplayVersion")
             tightvncversion = value
         except FileNotFoundError:
-            logger.debug("PL-TIGHT TightVNCServer is not installed or not the corresponding version.")
+            logger.debug(
+                "PL-TIGHT TightVNCServer is not installed or not the corresponding version."
+            )
 
     return tightvncversion
 
