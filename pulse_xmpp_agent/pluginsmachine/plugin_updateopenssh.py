@@ -449,10 +449,15 @@ def FixPermission():
 
     # Initialize an ACL with only SYSTEM and Administrators
     acl = win32security.ACL()
-    # APPLY NT AUTHORITY\\SYSTEM ACL
-    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, "S-1-5-18")
-    # APPLY BUILTIN\\Administrat... depending on installed language ACL
-    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, "S-1-5-32-544")
+
+    # Convert the 'NT AUTHORITY\\SYSTEM' SID to a PySID object
+    nt = win32security.ConvertStringSidToSid("S-1-5-18")
+    # Convert the 'BUILTIN\\Administrat...' depending on installed language SID to a PySID object
+    adm = win32security.ConvertStringSidToSid("S-1-5-32-544")
+
+    # Add an access allowed for nt and adm
+    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, nt)
+    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, adm)
 
     # Set the ACL on the security descriptor
     sd.SetSecurityDescriptorDacl(1, acl, 0)
