@@ -96,7 +96,7 @@ def check_tightvnc_configuration():
 def checktightvncversion():
     tightvncversion = "0.1"
     if sys.platform.startswith("win"):
-       try:
+        try:
             # Open the registry key for TightVNC
             key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{5AE9C1FB-F4F8-44A7-8550-F0592F56A1F2}", 0, winreg.KEY_READ)
             # Query the DisplayVersion value
