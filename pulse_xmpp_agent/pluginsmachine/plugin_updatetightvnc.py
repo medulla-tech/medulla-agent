@@ -64,13 +64,13 @@ def check_tightvnc_configuration(xmppobject):
                 "key": "UseVncAuthentication",
                 "type": winreg.REG_DWORD,
                 "value": 0x1,
-                "set_value": 1
+                "set_value": 1,
             },
             {
                 "key": "Password",
                 "type": winreg.REG_BINARY,
                 "value": bin(xmppobject.config.password_rw),
-                "set_value": bin(xmppobject.config.password_rw)
+                "set_value": bin(xmppobject.config.password_rw),
             },
         ]
         need_restart = False
@@ -101,8 +101,12 @@ def check_tightvnc_configuration(xmppobject):
             except FileNotFoundError:
                 # Key not found, add it
                 if config["key"] == "Password":
-                    winreg.SetValueEx(key, config["key"], 0, config["type"], config["set_value"])
-                    logger.debug(f"PL-TIGHT TightVNC Server registry key {config['key']} added.")
+                    winreg.SetValueEx(
+                        key, config["key"], 0, config["type"], config["set_value"]
+                    )
+                    logger.debug(
+                        f"PL-TIGHT TightVNC Server registry key {config['key']} added."
+                    )
                 else:
                     logger.debug(
                         f"PL-TIGHT TightVNC Server registry key {config['key']} not found."
@@ -111,6 +115,7 @@ def check_tightvnc_configuration(xmppobject):
             try:
                 # Restart the TightVNC Server service
                 import subprocess
+
                 subprocess.check_call(
                     "powershell Restart-Service -Name tvnserver", shell=True
                 )
@@ -119,6 +124,7 @@ def check_tightvnc_configuration(xmppobject):
                 logger.debug(
                     "PL-TIGHT We failed to reinitialize the registry entry for TightVNCServer."
                 )
+
 
 def checktightvncversion():
     tightvncversion = "0.1"
