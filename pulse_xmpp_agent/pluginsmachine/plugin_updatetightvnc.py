@@ -25,11 +25,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     try:
         # Update if version is lower
-        installed_version = checktightvncversion(xmppobject)
+        installed_version = checktightvncversion()
         check_tightvnc_configuration(xmppobject)
         if StrictVersion(installed_version) < StrictVersion(TIGHTVNC):
             updatetightvnc(xmppobject)
-    except Exception:
+    except Exception as error_plugin:
+        logger.error(f"PL-TIGHT The plugin failed with the error {error_plugin}")
         pass
 
 
