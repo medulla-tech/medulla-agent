@@ -15,7 +15,7 @@ TIGHTVNC = "2.8.84"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -25,15 +25,15 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     try:
         # Update if version is lower
-        installed_version = checktightvncversion()
-        check_tightvnc_configuration()
+        installed_version = checktightvncversion(xmppobject)
+        check_tightvnc_configuration(xmppobject)
         if StrictVersion(installed_version) < StrictVersion(TIGHTVNC):
             updatetightvnc(xmppobject)
     except Exception:
         pass
 
 
-def check_tightvnc_configuration():
+def check_tightvnc_configuration(xmppobject):
     """
     Check and modify TightVNC Server registry keys as necessary, and restart the service if any changes are made.
     """
@@ -56,6 +56,18 @@ def check_tightvnc_configuration():
                 "type": "REG_DWORD",
                 "value": "0x0",
                 "set_value": "0",
+            },
+            {
+                "key": "UseVncAuthentication",
+                "type": "REG_DWORD",
+                "value": "0x1",
+                "set_value": "1"
+            },
+            {
+                "key": "Password",
+                "type": "REG_BINARY",
+                "value": xmppobject.config.password_rw,
+                "set_value": xmppobject.config.password_rw
             },
         ]
         need_restart = False
