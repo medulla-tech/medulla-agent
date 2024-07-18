@@ -10,12 +10,13 @@ import platform
 import tempfile
 import os
 import winreg
+import traceback
 
 TIGHTVNC = "2.8.84"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.7", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.71", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -26,11 +27,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checktightvncversion()
-        check_tightvnc_configuration(xmppobject)
         if StrictVersion(installed_version) < StrictVersion(TIGHTVNC):
             updatetightvnc(xmppobject)
+        check_tightvnc_configuration(xmppobject)
     except Exception as error_plugin:
-        logger.error(f"PL-TIGHT The plugin failed with the error {error_plugin}")
+        logger.debug(f"PL-TIGHT failed with the error {error_plugin}")
+        logger.error(f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}")
         pass
 
 
@@ -42,37 +44,36 @@ def check_tightvnc_configuration(xmppobject):
         configurations = [
             {
                 "key": "AllowLoopback",
-                "type": "REG_DWORD",
-                "value": "0x0",
-                "set_value": "0",
+                "type": winreg.REG_DWORD,
+                "value": 0x0,
+                "set_value": 0,
             },
             {
                 "key": "LoopbackOnly",
-                "type": "REG_DWORD",
-                "value": "0x0",
-                "set_value": "0",
+                "type": winreg.REG_DWORD,
+                "value": 0x0,
+                "set_value": 0,
             },
             {
                 "key": "AcceptHttpConnections",
-                "type": "REG_DWORD",
-                "value": "0x0",
-                "set_value": "0",
+                "type": winreg.REG_DWORD,
+                "value": 0x0,
+                "set_value": 0,
             },
             {
                 "key": "UseVncAuthentication",
-                "type": "REG_DWORD",
-                "value": "0x1",
-                "set_value": "1",
+                "type": winreg.REG_DWORD,
+                "value": 0x1,
+                "set_value": 1
             },
             {
                 "key": "Password",
-                "type": "REG_BINARY",
-                "value": xmppobject.config.password_rw,
-                "set_value": xmppobject.config.password_rw,
+                "type": winreg.REG_BINARY,
+                "value": bin(xmppobject.config.password_rw),
+                "set_value": bin(xmppobject.config.password_rw)
             },
         ]
         need_restart = False
-
         # Open the registry key and assign it to a variable
         key = winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE,
@@ -80,7 +81,6 @@ def check_tightvnc_configuration(xmppobject):
             0,
             winreg.KEY_ALL_ACCESS,
         )
-
         for config in configurations:
             try:
                 # Query the current value of the key
@@ -99,15 +99,18 @@ def check_tightvnc_configuration(xmppobject):
                         f"PL-TIGHT TightVNC Server registry key {config['key']} is correctly configured."
                     )
             except FileNotFoundError:
-                logger.debug(
-                    f"PL-TIGHT TightVNC Server registry key {config['key']} not found."
-                )
-
+                # Key not found, add it
+                if config["key"] == "Password":
+                    winreg.SetValueEx(key, config["key"], 0, config["type"], config["set_value"])
+                    logger.debug(f"PL-TIGHT TightVNC Server registry key {config['key']} added.")
+                else:
+                    logger.debug(
+                        f"PL-TIGHT TightVNC Server registry key {config['key']} not found."
+                    )
         if need_restart:
             try:
                 # Restart the TightVNC Server service
                 import subprocess
-
                 subprocess.check_call(
                     "powershell Restart-Service -Name tvnserver", shell=True
                 )
@@ -117,9 +120,10 @@ def check_tightvnc_configuration(xmppobject):
                     "PL-TIGHT We failed to reinitialize the registry entry for TightVNCServer."
                 )
 
-
 def checktightvncversion():
     tightvncversion = "0.1"
+    key = None
+
     if sys.platform.startswith("win"):
         try:
             # Open the registry key for TightVNC
