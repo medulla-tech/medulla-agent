@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import sys
-from lib import utils
 from distutils.version import StrictVersion
 import logging
 import platform
@@ -11,6 +10,7 @@ import tempfile
 import os
 import winreg
 import traceback
+from lib import utils
 
 TIGHTVNC = "2.8.84"
 
