@@ -47,6 +47,7 @@ setup(
         "lmdb",
         "PyYAML",
         "netaddr",
+        "packaging",
     ]
     + (
         [
