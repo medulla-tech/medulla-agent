@@ -8,7 +8,7 @@ Requires=ejabberd.service
 #User=pulse
 #Group=pulse
 Type=forking
-ExecStart=/usr/lib/python3/site-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py -d -f /etc/pulse-xmpp-agent-substitute/agent_master_substitute_mon.ini
+ExecStart=PATH/pulse_xmpp_master_substitute/agentmastersubstitute.py -d -f /etc/pulse-xmpp-agent-substitute/agent_master_substitute_mon.ini
 Restart=always
 RestartSec=1
 

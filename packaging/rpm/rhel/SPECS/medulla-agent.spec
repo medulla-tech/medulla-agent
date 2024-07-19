@@ -465,6 +465,20 @@ cp -fv contrib/monitoring/template_script_remote_python_test.py %buildroot%_var/
 #cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
 #cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
 
+
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-package-watching.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-assessor.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-deployment.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-inventory.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-logger.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-master.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-monitoring.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-reconfigurator.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-registration.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-subscription.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
+
 # Not needed in the server
 rm -fv %buildroot%{python3_sitelib}/pulse_xmpp_agent/bin/pulse2_update_notification.py
 rm -fv %buildroot%{python3_sitelib}/pulse_xmpp_agent/bin/RunMedullaKiosk.bat
