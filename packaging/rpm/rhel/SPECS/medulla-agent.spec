@@ -24,13 +24,15 @@ Release:        1%{?dist}
 Release:        0.%git.1%{?dist}
 %endif
 
-Source0:        %name-%version.tar.gz
+Source0:        %name-%version.tar.bz2
 License:	MIT
 
 Group:		Development/Python
 Url:		http://www.siveo.net
 
-BuildRequires:	python3-setuptools
+BuildArch:	noarch
+
+BuildRequires:	python3.11-setuptools
 BuildRequires:  git
 
 %description
@@ -45,22 +47,22 @@ BuildArch:      noarch
 
 Requires(pre):  shadow-utils
 
-Requires:       python3-netifaces
-Requires:       python3-slixmpp
-Requires:       python3-croniter
-Requires:       python3-requests
-Requires:       python3-inotify
-Requires:       python3-dateutil
-Requires:       python3-psutil
-Requires:       python3-wakeonlan
-Requires:       python3-cryptodome
-Requires:       python3-cherrypy
+Requires:       python3.11-netifaces
+Requires:       python3.11-slixmpp
+Requires:       python3.11-croniter
+Requires:       python3.11-requests
+Requires:       python3.11-inotify
+Requires:       python3.11-dateutil
+Requires:       python3.11-psutil
+Requires:       python3.11-wakeonlan
+Requires:       python3.11-cryptodome
+Requires:       python3.11-cherrypy
 Requires:       net-tools
 Requires:       jq
-Requires:       python3-distro
-Requires:       python3-lmdb
-Requires:       python3-xmltodict
-Requires:       python3-netaddr
+Requires:       python3.11-distro
+Requires:       python3.11-lmdb
+Requires:       python3.11-xmltodict
+Requires:       python3.11-netaddr
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -178,14 +180,13 @@ fi
 %{python3_sitelib}/pulse_xmpp_agent/agentversion
 %{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
 %{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
-%{python3_sitelib}/pulse_xmpp_agent/__pycache__/
 
 #--------------------------------------------------------------------
 
 %package -n     pulse-xmpp-master-substitute
 Summary:        Pulse 2 common files
 Group:          System/Servers
-Requires:       python3-xmltodict
+Requires:       python3.11-xmltodict
 Requires:       jq
 BuildArch:      noarch
 
@@ -217,19 +218,19 @@ systemctl daemon-reload
 Summary:    Files to create pulse windows installer
 Group:      System/Servers
 
-Requires:   pulse-xmpp-agent-deps >= 1.8
+Requires:   medulla-agent-deps >= 1.8
 
 Requires:   dos2unix
 Requires:   unzip
 Requires:   zip
 Requires:   crudini
-Requires:   dpkg-dev
+#Requires:  dpkg-dev
 
-Requires:   nsis-plugins-ZipDLL
-Requires:   nsis-plugins-Pwgen
-Requires:   nsis-plugins-AccessControl
-Requires:   nsis-plugins-Inetc
-Requires:   nsis-plugins-TextReplace
+#Requires:   nsis-plugins-ZipDLL
+#Requires:   nsis-plugins-Pwgen
+#Requires:   nsis-plugins-AccessControl
+#Requires:   nsis-plugins-Inetc
+#Requires:   nsis-plugins-TextReplace
 Requires(pre): pulse-filetree-generator
 
 %description -n pulse-agent-installers
@@ -270,8 +271,8 @@ fi
 %package -n pulse-xmppmaster-agentplugins
 Summary:    Console agent
 Group:      System/Servers
-Requires:   python3-netifaces
-Requires:   python3-slixmpp
+Requires:   python3.11-netifaces
+Requires:   python3.11-slixmpp
 
 %description -n pulse-xmppmaster-agentplugins
 plugins for pulse xmppmaster
@@ -300,7 +301,7 @@ plugins for pulse xmppmaster
 #--------------------------------------------------------------------
 
 %prep
-%setup -q
+%setup -q -n %name
 
 # Remove bundled egg-info
 rm -rf %{tarname}.egg-info
@@ -358,7 +359,7 @@ cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python3_sitelib}/pulse_xmpp
 cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
 mkdir -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute/
-touch -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute/EMPTY
+touch %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute/EMPTY
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp -fr pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system
@@ -463,4 +464,7 @@ cp -fv contrib/monitoring/template_script_remote_python_test.py %buildroot%_var/
 #cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
 #cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
 #cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
-cp pulse_xmpp_agent/bin/RunMedullaKiosk.bat %buildroot%_var/lib/pulse2/clients/win/
+
+# Not needed in the server
+rm -fv %buildroot%{python3_sitelib}/pulse_xmpp_agent/bin/pulse2_update_notification.py
+rm -fv %buildroot%{python3_sitelib}/pulse_xmpp_agent/bin/RunMedullaKiosk.bat
