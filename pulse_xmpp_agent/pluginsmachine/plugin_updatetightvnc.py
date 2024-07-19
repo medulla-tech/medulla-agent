@@ -196,7 +196,7 @@ def updatetightvnc(xmppobject):
         ).downloadurl()
         if result:
             # Download success
-            logger.info("PL-TIGHT {txtmsg}")
+            logger.info(f"PL-TIGHT {txtmsg}")
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
             install_options = "/quiet /qn /norestart"
