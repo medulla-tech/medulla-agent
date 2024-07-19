@@ -286,9 +286,9 @@ plugins for pulse xmppmaster
 %package -n pulseagent-plugins-relay
 Summary:    Console agent
 Group:      System/Servers
-Requires:   python3-wakeonlan
-Requires:   python3-netifaces
-Requires:   python3-slixmpp
+Requires:   python3.11-wakeonlan
+Requires:   python3.11-netifaces
+Requires:   python3.11-slixmpp
 Requires:   lsof
 
 %description -n pulseagent-plugins-relay
@@ -468,15 +468,15 @@ cp -fv contrib/monitoring/template_script_remote_python_test.py %buildroot%_var/
 
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-package-watching.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-assessor.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-deployment.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-inventory.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-logger.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-master.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-monitoring.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-reconfigurator.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-registration.service
-sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/pulse-xmpp-master-substitute-subscription.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-assessor.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-master.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 
 # Not needed in the server
