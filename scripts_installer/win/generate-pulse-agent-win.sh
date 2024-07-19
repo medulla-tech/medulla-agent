@@ -147,12 +147,12 @@ NETWORK_NAME="Medulla network notify"
 RDP_NAME="Medulla RDP"
 SYNCTHING_NAME="Medulla Syncthing"
 FILETREE_NAME="Medulla Filetree Generator"
-PAEXEC_NAME="PAExec"
+PAEXEC_NAME="Medulla PAExec"
 ROOTCERTIFICATE_FILENAME="medulla-rootca.cert.pem"
 CACERTIFICATE_FILENAME="medulla-ca-chain.cert.pem"
 CACERT_NAME="Medulla CA Cert"
 CACERT_VERSION="1.1"
-VIM_NAME="9.0"
+VIM_NAME="Medulla Vim"
 # Display usage
 display_usage() {
     echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
@@ -396,6 +396,7 @@ update_nsi_script() {
         -e "s/@@SYNCTHING_NAME@@/${SYNCTHING_NAME}/" \
         -e "s/@@FILETREE_NAME@@/${FILETREE_NAME}/" \
         -e "s/@@PAEXEC_NAME@@/${PAEXEC_NAME}/" \
+        -e "s/@@VIM_NAME@@/${VIM_NAME}/" \
         -e "s/@@CACERTIFICATE@@/${CACERTIFICATE_FILENAME}/" \
         -e "s/@@ROOTCERTIFICATE@@/${ROOTCERTIFICATE_FILENAME}/" \
 		agent-installer.nsi.in \
