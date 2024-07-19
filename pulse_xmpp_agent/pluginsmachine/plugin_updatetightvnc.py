@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import sys
-from distutils.version import StrictVersion
+from packaging.version import Version
 import logging
 import platform
 import tempfile
@@ -13,7 +13,7 @@ import traceback
 from lib import utils
 
 TIGHTVNC = "2.8.84"
-
+COMPLETETIGHTVNC = "2.8.84.0"
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.71", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
@@ -27,7 +27,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checktightvncversion()
-        if StrictVersion(installed_version) < StrictVersion(TIGHTVNC):
+        if Version(installed_version) < Version(COMPLETETIGHTVNC):
             updatetightvnc(xmppobject)
         check_tightvnc_configuration(xmppobject)
     except Exception as error_plugin:
