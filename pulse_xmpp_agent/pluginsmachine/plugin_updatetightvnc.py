@@ -42,7 +42,7 @@ def check_tightvnc_configuration(xmppobject):
     and restart the service if any changes are made.
     """
     if sys.platform.startswith("win"):
-        password_tight = bytes(xmppobject.config.password_rw, 'utf-8')
+        password_tight = bytes(xmppobject.config.password_rw, "utf-8")
         configurations = [
             {
                 "key": "AllowLoopback",
@@ -72,7 +72,7 @@ def check_tightvnc_configuration(xmppobject):
                 "key": "Password",
                 "type": winreg.REG_BINARY,
                 "value": password_tight,
-                "set_value":password_tight, 
+                "set_value": password_tight,
             },
             {
                 "key": "RepeatControlAuthentication",
@@ -90,7 +90,7 @@ def check_tightvnc_configuration(xmppobject):
                 "key": "ControlPassword",
                 "type": winreg.REG_BINARY,
                 "value": password_tight,
-                "set_value":password_tight, 
+                "set_value": password_tight,
             },
         ]
         need_restart = False
