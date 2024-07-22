@@ -35,7 +35,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         logger.error(f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}")
         pass
 
-
 def check_tightvnc_configuration(xmppobject):
     """
     Check and modify TightVNC Server registry keys as necessary
@@ -93,6 +92,7 @@ def check_tightvnc_configuration(xmppobject):
                 "set_value": password_tight,
             },
         ]
+        necessary_keys = [config["key"] for config in configurations]
         need_restart = False
         # Open the registry key and assign it to a variable
         key = winreg.OpenKey(
@@ -119,14 +119,15 @@ def check_tightvnc_configuration(xmppobject):
                         f"PL-TIGHT TightVNC Server registry key {config['key']} is correctly configured."
                     )
             except FileNotFoundError:
-                # Key not found, add it
-                if config["key"] == "Password":
+                # Key not found, add it if necessary
+                if config["key"] in necessary_keys:
                     winreg.SetValueEx(
                         key, config["key"], 0, config["type"], config["set_value"]
                     )
                     logger.debug(
                         f"PL-TIGHT TightVNC Server registry key {config['key']} added."
                     )
+                    need_restart = True
                 else:
                     logger.debug(
                         f"PL-TIGHT TightVNC Server registry key {config['key']} not found."
@@ -144,7 +145,6 @@ def check_tightvnc_configuration(xmppobject):
                 logger.debug(
                     "PL-TIGHT We failed to reinitialize the registry entry for TightVNCServer."
                 )
-
 
 def checktightvncversion():
     tightvncversion = "0.1"
