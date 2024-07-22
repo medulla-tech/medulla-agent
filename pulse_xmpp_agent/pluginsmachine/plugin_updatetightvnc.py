@@ -270,6 +270,8 @@ def updatetightvnc(xmppobject):
                 install_options + " SET_RFBPORT=1 VALUE_OF_RFBPORT=%s" % Used_rfb_port
             )
 
+            isMsiExecRunning()
+
             # Run installer
             cmd = "msiexec /i %s %s REBOOT=R" % (filename, install_options)
             cmd_result = utils.simplecommand(cmd)
