@@ -63,7 +63,17 @@ Requires:       python3.11-distro
 Requires:       python3.11-lmdb
 Requires:       python3.11-xmltodict
 Requires:       python3.11-netaddr
-
+Requires:       python3.11-more-itertools
+Requires:       python3.11-jaraco-collections
+Requires:       python3.11-jaraco-classes
+Requires:       python3.11-jaraco-text
+Requires:       python3.11-jaraco-context
+Requires:       python3.11-jaraco-functools
+Requires:       python3.11-backports-tarfile
+Requires:       python3.11-zc-lockfile
+Requires:       python3.11-cheroot
+Requires:       python3.11-portend
+Requires:       python3.11-tempora
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
 
