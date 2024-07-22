@@ -35,6 +35,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         logger.error(f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}")
         pass
 
+
 def check_tightvnc_configuration(xmppobject):
     """
     Check and modify TightVNC Server registry keys as necessary
@@ -145,6 +146,7 @@ def check_tightvnc_configuration(xmppobject):
                 logger.debug(
                     "PL-TIGHT We failed to reinitialize the registry entry for TightVNCServer."
                 )
+
 
 def checktightvncversion():
     tightvncversion = "0.1"
