@@ -98,7 +98,7 @@ def updateGlpiAgent(xmppobject):
             # Run installer
             cmd = "msiexec /i %s /quiet" % filename
 
-            isMsiExecRunning()
+            utils.isMsiExecRunning()
 
             cmd_result = utils.simplecommand(cmd)
             if cmd_result["code"] == 0:
