@@ -93,7 +93,6 @@ def check_tightvnc_configuration(xmppobject):
                 "set_value": password_tight,
             },
         ]
-        necessary_keys = [config["key"] for config in configurations]
         need_restart = False
         # Open the registry key and assign it to a variable
         key = winreg.OpenKey(
@@ -121,18 +120,14 @@ def check_tightvnc_configuration(xmppobject):
                     )
             except FileNotFoundError:
                 # Key not found, add it if necessary
-                if config["key"] in necessary_keys:
-                    winreg.SetValueEx(
-                        key, config["key"], 0, config["type"], config["set_value"]
-                    )
-                    logger.debug(
-                        f"PL-TIGHT TightVNC Server registry key {config['key']} added."
-                    )
-                    need_restart = True
-                else:
-                    logger.debug(
-                        f"PL-TIGHT TightVNC Server registry key {config['key']} not found."
-                    )
+                winreg.SetValueEx(
+                    key, config["key"], 0, config["type"], config["set_value"]
+                )
+                logger.debug(
+                    f"PL-TIGHT TightVNC Server registry key {config['key']} added."
+                )
+                need_restart = True
+
         if need_restart:
             try:
                 # Restart the TightVNC Server service
