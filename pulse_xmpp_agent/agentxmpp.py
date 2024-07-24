@@ -4029,25 +4029,25 @@ def doTask(
             pass
     global signalint
 
-    format = "%(asctime)s - %(levelname)s - (AGENT_TASK)%(message)s"
-    formatter = logging.Formatter(format)
+    #format = "%(asctime)s - %(levelname)s - (AGENT_TASK)%(message)s"
+    #formatter = logging.Formatter(format)
 
-    logger = logging.getLogger()  # either the given logger or the root logger
-    # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
-    if logger.handlers:
-        console = logger.handlers[
-            0
-        ]  # we assume the first handler is the one we want to configure
-    else:
-        console = logging.StreamHandler()
-        logger.addHandler(console)
-    console.setFormatter(formatter)
-    console.setLevel(tglevellog)
+    #logger = logging.getLogger()  # either the given logger or the root logger
+    ## If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
+    #if logger.handlers:
+        #console = logger.handlers[
+            #0
+        #]  # we assume the first handler is the one we want to configure
+    #else:
+        #console = logging.StreamHandler()
+        #logger.addHandler(console)
+    #console.setFormatter(formatter)
+    #console.setLevel(tglevellog)
 
-    file_handler = logging.FileHandler(tglogfile)
-    file_handler.setLevel(tglevellog)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    #file_handler = logging.FileHandler(tglogfile)
+    #file_handler.setLevel(tglevellog)
+    #file_handler.setFormatter(formatter)
+    #logger.addHandler(file_handler)
 
     if optstypemachine.lower() in ["machine"]:
         sys.path.append(
