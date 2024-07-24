@@ -4284,7 +4284,7 @@ class Glpi95(DatabaseHelper):
                     "operatingsystemservicepacks_id": ret.operatingsystemservicepacks_id,
                     "operatingsystemarchitectures_id": ret.operatingsystemarchitectures_id,
                     "license_number": ret.license_number,
-                    "license_id": ret.licenseid,
+                    "licenseid": ret.licenseid,
                     "operatingsystemkernelversions_id": ret.operatingsystemkernelversions_id,
                 }
             except Exception:
@@ -4440,7 +4440,7 @@ class Glpi95(DatabaseHelper):
                 "operatingsystemservicepacks_id",
                 "operatingsystemarchitectures_id",
                 "license_number",
-                "license_id",
+                "licenseid",
                 "operatingsystemkernelversions_id",
             ]
             for addcolunm in listcolumaddforinfo:
