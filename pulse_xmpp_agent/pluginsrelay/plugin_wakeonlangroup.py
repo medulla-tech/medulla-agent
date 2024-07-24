@@ -13,7 +13,7 @@ import traceback
 from netifaces import interfaces, ifaddresses, AF_INET
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.3", "NAME": "wakeonlangroup", "TYPE": "relayserver"}  # fmt: skip
+plugin = {"VERSION": "2.4", "NAME": "wakeonlangroup", "TYPE": "relayserver"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

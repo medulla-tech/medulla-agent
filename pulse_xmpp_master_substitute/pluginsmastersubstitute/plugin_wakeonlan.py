@@ -17,7 +17,7 @@ try:
 except ModuleNotFoundError:
     import wakeonlan as wol
 logger = logging.getLogger()
-plugin = {"VERSION": "1.2", "NAME": "wakeonlan", "TYPE": "master"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "wakeonlan", "TYPE": "master"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

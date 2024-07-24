@@ -20,7 +20,7 @@ import configparser
 from netifaces import interfaces, ifaddresses, AF_INET
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.2", "NAME": "wakeonlangroup", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "wakeonlangroup", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret):

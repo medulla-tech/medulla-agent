@@ -8,7 +8,7 @@ try:
 except ModuleNotFoundError:
     import wakeonlan as wol
 
-plugin = {"VERSION": "2.1", "NAME": "wakeonlan", "TYPE": "relayserver"}  # fmt: skip
+plugin = {"VERSION": "2.2", "NAME": "wakeonlan", "TYPE": "relayserver"}  # fmt: skip
 
 
 @utils.pluginprocess
