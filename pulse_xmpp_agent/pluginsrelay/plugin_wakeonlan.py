@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from lib import utils
-import wakeonlan3 as wol
+try:
+    import wakeonlan3 as wol
+except ModuleNotFoundError:
+    import wakeonlan as wol
 
 plugin = {"VERSION": "2.1", "NAME": "wakeonlan", "TYPE": "relayserver"}  # fmt: skip
 

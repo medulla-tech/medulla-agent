@@ -11,8 +11,10 @@ from lib.utils import name_random
 import logging
 import os
 import configparser
-import wakeonlan3 as wol
-
+try:
+    import wakeonlan3 as wol
+except ModuleNotFoundError:
+    import wakeonlan as wol
 logger = logging.getLogger()
 plugin = {"VERSION": "1.2", "NAME": "wakeonlan", "TYPE": "master"}  # fmt: skip
 

@@ -4,7 +4,10 @@
 
 # file: pulse_xmpp_agent/pluginsrelay/plugin_wakeonlangroup.py
 
-import wakeonlan3 as wol
+try:
+    import wakeonlan3 as wol
+except ModuleNotFoundError:
+    import wakeonlan as wol
 import logging
 import traceback
 from netifaces import interfaces, ifaddresses, AF_INET

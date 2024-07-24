@@ -11,7 +11,10 @@ import traceback
 from lib.utils import name_random
 import logging
 import os
-import wakeonlan3 as wol
+try:
+    import wakeonlan3 as wol
+except ModuleNotFoundError:
+    import wakeonlan as wol
 import configparser
 from netifaces import interfaces, ifaddresses, AF_INET
 
