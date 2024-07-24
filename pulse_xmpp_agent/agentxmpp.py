@@ -4249,26 +4249,6 @@ def doTask1(
             pass
     global signalint
 
-    format = "%(asctime)s - %(levelname)s - (AGENT_TASK)%(message)s"
-    formatter = logging.Formatter(format)
-
-    logger = logging.getLogger()  # either the given logger or the root logger
-    # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
-    if logger.handlers:
-        console = logger.handlers[
-            0
-        ]  # we assume the first handler is the one we want to configure
-    else:
-        console = logging.StreamHandler()
-        logger.addHandler(console)
-    console.setFormatter(formatter)
-    console.setLevel(tglevellog)
-
-    file_handler = logging.FileHandler(tglogfile)
-    file_handler.setLevel(tglevellog)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
     if optstypemachine.lower() in ["machine"]:
         sys.path.append(
             os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
@@ -4377,29 +4357,6 @@ class process_xmpp_agent:
         # parameter permet arret programme complet  ICI PASSER PARAMETRE DANS XMPPBOT
 
         self.pidprogrammprincipal = pidprogrammprincipal
-
-        format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
-        formatter = logging.Formatter(format)
-
-        logger = logging.getLogger()  # either the given logger or the root logger
-        logger.setLevel(tglevellog)
-        # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
-        if logger.handlers:
-            console = logger.handlers[
-                0
-            ]  # we assume the first handler is the one we want to configure
-        else:
-            console = logging.StreamHandler()
-            logger.addHandler(console)
-        console.setFormatter(formatter)
-        console.setLevel(tglevellog)
-
-        file_handler = logging.FileHandler(tglogfile)
-        file_handler.setLevel(tglevellog)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-        self.logger = logger
 
         self.logger = logging.getLogger()
         self.process_restartbot = True
