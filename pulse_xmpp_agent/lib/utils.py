@@ -905,8 +905,11 @@ def isMsiExecRunning() -> None:
     once it creates 2 processes but after the use it keeps one.
     This is the normal msiexec behaviour
     """
+
+    c = wmi.WMI()
+
     while True:
-        msiexecProcess = wmi.WMI().Win32_Process(name="msiexec.exe")
+        msiexecProcess = c.Win32_Process(name="msiexec.exe")
         if len(msiexecProcess) > 1:
             logger.info(
                 "We need to wait, an other instance of msiexec is already running"
