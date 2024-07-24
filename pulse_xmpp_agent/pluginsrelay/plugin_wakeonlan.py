@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from lib import utils
+
 try:
     import wakeonlan3 as wol
 except ModuleNotFoundError:

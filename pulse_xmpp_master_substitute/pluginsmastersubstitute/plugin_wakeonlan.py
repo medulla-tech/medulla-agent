@@ -11,6 +11,7 @@ from lib.utils import name_random
 import logging
 import os
 import configparser
+
 try:
     import wakeonlan3 as wol
 except ModuleNotFoundError:
