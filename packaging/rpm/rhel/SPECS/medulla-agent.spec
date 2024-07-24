@@ -57,6 +57,7 @@ Requires:       python3.11-psutil
 Requires:       python3.11-wakeonlan
 Requires:       python3.11-cryptodome
 Requires:       python3.11-cherrypy
+Requires:       python3.11-pycurl
 Requires:       net-tools
 Requires:       jq
 Requires:       python3.11-distro
