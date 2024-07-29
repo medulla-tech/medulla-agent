@@ -1185,6 +1185,27 @@ def applicationdeploymentjson(
     logger.debug("PARAMETER wol (%s)" % (wol))
     logger.debug("PARAMETER msg (%s)" % (msg))
 
+    start_date_str = start_date.isoformat()
+    package_name = managepackage.getnamepackagefromuuidpackage(name)
+
+    if GUID == '':
+        self.send_message(
+            mto=f"notify@pulse/{login}",
+            mbody=base64.b64encode(
+                json.dumps(
+                    {
+                        "type": "DEPLOYMENT",  # LOGGER
+                        "machine": jidmachine,
+                        "paquet": package_name,
+                        "start_date": start_date_str,
+                    }
+                ).encode()
+            ).decode(),
+            mtype="chat",
+        )
+    else:
+        pass
+
     deploymenttype = "deploy"
     if "-@upd@-" in title:
         sessiondeployementless = name_random(5, "arsdeployupdate")
