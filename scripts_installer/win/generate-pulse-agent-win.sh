@@ -51,7 +51,7 @@ LIBCURL_DL_FILENAME="libcurl4-8.0.1-1.tar.xz"
 LIBCURL_FILENAME="cygcurl-4.dll"
 PY_MODULES_64_FILENAMES="CherryPy-18.8.0-py2.py3-none-any.whl \
 cheroot-9.0.0-py2.py3-none-any.whl \
-packaging-23.1-py3-none-any.whl \
+packaging-24.1-py3-none-any.whl \
 python_dateutil-2.8.2-py2.py3-none-any.whl \
 PyNaCl-1.5.0-cp36-abi3-win_amd64.whl \
 comtypes-1.1.14-py2.py3-none-any.whl \
