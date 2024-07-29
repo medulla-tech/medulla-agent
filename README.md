@@ -24,7 +24,7 @@ With Medulla XMPP Agent you are be able to:
 
 ## Installation
 
-Installation had been simplified to easily try and use, just [download](https://medulla-tech.io/telecharger-medulla/)
+Installation had been simplified to easily try and use, just [download](https://medulla-tech.io/dl/)
 
 For large and complex installation, follow this [links](https://github.com/medulla-tech/integration//blob/main/README.md)
 
