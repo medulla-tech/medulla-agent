@@ -178,14 +178,13 @@ class dialogboxnotification:
             wraplength=400,
         ).pack()
 
-        # Create a photoimage object of the image in the path
-        medullaLogoLocation = Image.open("Image3.png")
-        medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
-
-        Medullalabel = tk.Label(image=medullaLogo, bg="#25607d")
-        Medullalabel.image = medullaLogo
-
-        Medullalabel.place(x=15, y=12)
+        # To be fixed
+        # # Create a photoimage object of the image in the path
+        # medullaLogoLocation = Image.open("Image3.png")
+        # medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
+        # Medullalabel = tk.Label(image=medullaLogo, bg="#25607d")
+        # Medullalabel.image = medullaLogo
+        # Medullalabel.place(x=15, y=12)
 
         self.root.update_idletasks()
         # Remove window decorations
