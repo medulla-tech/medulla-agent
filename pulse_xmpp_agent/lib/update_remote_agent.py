@@ -158,8 +158,10 @@ def agentinfoversion(xmppobject):
         (like testmodule , pathagent, agentdescriptor, pathimg,
           imgdescriptor, actiontxt, conf and plugins)
     """
+    pythonModulesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+
     if sys.platform.startswith("linux"):
-        cmd = f"/usr/bin/python3 /usr/lib/python3/dist-packages/pulse_xmpp_agent/replicator.py -i -v"
+        cmd = f"/usr/bin/python3 {pythonModulesPath}/../replicator.py -i -v"
     elif sys.platform.startswith("win"):
         cmd = f'"C:\\Program Files\\python3\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
     elif sys.platform.startswith("darwin"):
