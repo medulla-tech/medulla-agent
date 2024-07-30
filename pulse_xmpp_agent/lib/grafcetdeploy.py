@@ -634,7 +634,7 @@ class grafcet:
             # mtype="chat",
             # )
             self.objectxmpp.sendbigdatatoagent(
-                self.objectxmpp.sub_logger, mbody, segment_size=65535
+                self.objectxmpp.sub_logger, json.dumps(logstruct), segment_size=65535
             )
         except Exception as e:
             logging.getLogger().error(str(e))
