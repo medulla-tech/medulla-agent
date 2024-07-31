@@ -15,6 +15,7 @@ import subprocess
 
 from pulse_xmpp_agent.lib.agentconffile import medullaPath
 
+
 def simplecommand(cmd):
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
@@ -179,7 +180,6 @@ class dialogboxnotification:
             font=("Open Sans Soft Regular", self.sizenotification),
             wraplength=400,
         ).pack()
-
 
         iconPath = os.path.join(medullaPath(), "bin", "medulla_logo.png")
         if os.path.exists(iconPath):
