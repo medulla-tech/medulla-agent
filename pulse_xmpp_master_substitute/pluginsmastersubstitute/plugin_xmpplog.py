@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import base64
 import traceback
 import os
 import json
@@ -10,6 +11,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.utils import file_put_contents, call_plugin
 import re
 import configparser
+from datetime import datetime
 
 # this import will be used later
 # import types
@@ -213,6 +215,20 @@ def xmpplogdeploy(xmppobject, data):
                         "DEPLOYMENT SUCCESS",
                         json.dumps(data, indent=4, sort_keys=True),
                     )
+
+                    if data['advanced']['grp'] is None:
+                        xmppobject.send_message(
+                            mto=f"notify@pulse/{data['login']}",
+                            mbody=base64.b64encode(json.dumps({
+                                "type": "SUCCESS",
+                                "machine": data['jidmachine'],
+                                "paquet": data['descriptor']['info']['name'],
+                                "end_date": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            }).encode()).decode(),
+                            mtype="chat",
+                        )
+                    else:
+                        pass
                 else:
                     XmppMasterDatabase().updatedeployresultandstate(
                         data["sessionid"],

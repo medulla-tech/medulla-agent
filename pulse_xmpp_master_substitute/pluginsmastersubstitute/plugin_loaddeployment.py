@@ -1194,7 +1194,7 @@ def applicationdeploymentjson(
             mbody=base64.b64encode(
                 json.dumps(
                     {
-                        "type": "DEPLOYMENT",  # LOGGER
+                        "type": "INFO",
                         "machine": jidmachine,
                         "paquet": package_name,
                         "start_date": start_date_str,
@@ -1240,6 +1240,21 @@ def applicationdeploymentjson(
             macadress=macadress,
             result="",
             syncthing=0,
+        )
+        self.send_message(
+            mto=f"notify@pulse/{login}",
+            mbody=base64.b64encode(
+                json.dumps(
+                    {
+                        "type": "WARNING",
+                        "machine": jidmachine,
+                        "paquet": package_name,
+                        "start_date": start_date_str,
+                        "message": "ABORT PACKAGE VERSION MISSING"
+                    }
+                ).encode()
+            ).decode(),
+            mtype="chat",
         )
         for logmsg in msg:
             self.xmpplog(
