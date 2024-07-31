@@ -2287,6 +2287,12 @@ class grafcet:
                 # START query user /MIN /B
                 # command = """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """\
 
+                if isinstance(message, bytes):
+                    message = message.decode("utf-8")
+
+                if isinstance(titlemessage, bytes):
+                    titlemessage = titlemessage.decode("utf-8")
+
                 command = (
                     """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py"""
