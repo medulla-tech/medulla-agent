@@ -12,6 +12,7 @@ from PIL import Image, ImageTk
 
 import subprocess
 
+from pulse_xmpp_agent.lib.agentconffile import medullaPath
 
 def simplecommand(cmd):
     p = subprocess.Popen(
@@ -178,12 +179,17 @@ class dialogboxnotification:
             wraplength=400,
         ).pack()
 
-        # Create a photoimage object of the image in the path
-        medullaLogoLocation = Image.open("medulla_logo.png")
-        medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
-        Medullalabel = tk.Label(image=medullaLogo, bg="#25607d")
-        Medullalabel.image = medullaLogo
-        Medullalabel.place(x=15, y=12)
+
+        iconPath = os.path.join(medullaPath(), "bin", "medulla_logo.png")
+        if os.path.exists(iconPath):
+            try:
+                medullaLogoLocation = Image.open(iconPath)
+                medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
+                Medullalabel = tk.Label(image=medullaLogo, bg="#25607d")
+                Medullalabel.image = medullaLogo
+                Medullalabel.place(x=15, y=12)
+            except:
+                pass
 
         self.root.update_idletasks()
         # Remove window decorations
