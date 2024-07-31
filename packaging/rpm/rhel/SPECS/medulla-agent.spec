@@ -9,7 +9,7 @@
 %define tarname		medulla-agent
 %define git                    SHA
 %define use_git         1
-%define branch integration
+%define branch hotfixes-py3
 %define filetree_version 0.2
 %define kiosk_version 1.0.0
 
