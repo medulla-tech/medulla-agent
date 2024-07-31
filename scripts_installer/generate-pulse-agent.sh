@@ -55,6 +55,7 @@ display_usage() {
     echo -e "\t [--ssh-port=<Default port 22>]"
     echo -e "\t [--disable-rdp (Disable RDP setup)]"
     echo -e "\t [--disable-inventory (Disable Fusion Inventory)]"
+    echo -e "\t [--disable-geoloc (Disable geolocalisation for example on machines which do not access internet)]"
     echo -e "\t [--linux-distros (Used linux distros)]"
 }
 
@@ -121,6 +122,10 @@ check_arguments() {
                 ;;
             --disable-inventory*)
                 DISABLE_INVENTORY=1
+                shift
+                ;;
+            --disable-geoloc*)
+                DISABLE_GEOLOC=1
                 shift
                 ;;
             --linux-distros*)
@@ -238,6 +243,13 @@ compute_settings() {
         DISABLE_INVENTORY="--disable-inventory"
     fi
 
+    if [ -z ${DISABLE_GEOLOC} ]; then
+        colored_echo green " - Geolocalisation is enabled"
+    else
+        colored_echo green " - Geolocalisation is disabled"
+        DISABLE_GEOLOC="--disable-geoloc"
+    fi
+
 }
 
 update_config_file() {
@@ -253,12 +265,15 @@ update_config_file() {
     crudini --set ${CONFIG_FILE} configuration_server keyAES32 ${AES_KEY}
     crudini --set ${CONFIG_FILE} connection password ${XMPP_SERVER_PASSWORD}
     crudini --set ${CONFIG_FILE} chat domain ${CHAT_DOMAIN}
+    if [ ! -z ${DISABLE_GEOLOC} ]; then
+        crudini --set ${CONFIG_FILE} type geolocalisation False
+    fi
 	unix2dos ${CONFIG_FILE}
 }
 
 update_generation_options_file() {
     # Save arguments to file for future use
-    echo "${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${LINUX_DISTROS} " > .generation_options
+    echo "${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${DISABLE_GEOLOC} ${LINUX_DISTROS} " > .generation_options
     # Update generation_options var
     if [ -e .generation_options ]; then
        colored_echo blue "Extracting parameters from previous options file (.generation_options)."

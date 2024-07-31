@@ -204,6 +204,10 @@ check_arguments() {
                 DISABLE_INVENTORY=1
                 shift
                 ;;
+            --disable-geoloc*)
+                DISABLE_GEOLOC=1
+                shift
+                ;;
             --linux-distros*)
                 shift
                 ;;
