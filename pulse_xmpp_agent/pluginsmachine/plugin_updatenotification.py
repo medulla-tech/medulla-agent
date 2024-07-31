@@ -21,7 +21,7 @@ NOTIFICATIONVERSION = "2.2.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -45,6 +45,7 @@ def check_if_binary_ok():
         regedit = False
         binary = False
         reinstall = False
+        logo = False
 
         # We check if we have the Regedit entry
         cmd_reg = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" /s | Find "DisplayVersion"'
@@ -55,12 +56,15 @@ def check_if_binary_ok():
         # We check if the binary is available
         pulsedir_path = os.path.join(medullaPath(), "bin")
         filename = "pulse2_update_notification.py"
+        image = "medulla_logo.png"
 
         if os.path.isfile(os.path.join(pulsedir_path, filename)):
             binary = True
 
-        if regedit is False or binary is False:
-            reinstall = True
+        if os.path.isfile(os.path.join(pulsedir_path, image)):
+            logo = True
+
+        reinstall = not (regedit and binary and logo)
 
         if reinstall:
             cmd = (
@@ -123,14 +127,16 @@ def updatenotification(xmppobject):
     if sys.platform.startswith("win"):
         pulsedir_path = os.path.join(medullaPath(), "bin")
 
-        filename = "pulse2_update_notification.py"
-        dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
-        logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(
-            dl_url, os.path.join(pulsedir_path, filename)
-        ).downloadurl()
-        if result:
-            logger.debug("%s" % txtmsg)
-        else:
-            # Download error
-            logger.error("%s" % txtmsg)
+        filenames = ["pulse2_update_notification.py", "medulla_logo.png"]
+        for filename in filenames:
+            dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
+            logger.debug("Downloading %s" % dl_url)
+            result, txtmsg = utils.downloadfile(
+                dl_url, os.path.join(pulsedir_path, filename)
+            ).downloadurl()
+
+            if result:
+                logger.debug("%s" % txtmsg)
+            else:
+                # Download error
+                logger.error("%s" % txtmsg)
