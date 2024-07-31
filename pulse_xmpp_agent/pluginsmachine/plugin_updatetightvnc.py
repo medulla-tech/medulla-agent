@@ -8,15 +8,15 @@ import logging
 import platform
 import tempfile
 import os
-import winreg
 import traceback
 from lib import utils
+
 
 TIGHTVNC = "2.8.84"
 COMPLETETIGHTVNC = "2.8.84.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.71", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -42,74 +42,83 @@ def check_tightvnc_configuration(xmppobject):
     and restart the service if any changes are made.
     """
     if sys.platform.startswith("win"):
-        password_tight = bytes(xmppobject.config.password_rw, "utf-8")
         configurations = [
             {
                 "key": "AllowLoopback",
-                "type": winreg.REG_DWORD,
-                "value": 0x0,
-                "set_value": 0,
+                "type": "REG_DWORD",
+                "value": "0x0",
+                "set_value": "0",
             },
             {
                 "key": "LoopbackOnly",
-                "type": winreg.REG_DWORD,
-                "value": 0x0,
-                "set_value": 0,
+                "type": "REG_DWORD",
+                "value": "0x0",
+                "set_value": "0",
             },
             {
                 "key": "AcceptHttpConnections",
-                "type": winreg.REG_DWORD,
-                "value": 0x0,
-                "set_value": 0,
+                "type": "REG_DWORD",
+                "value": "0x0",
+                "set_value": "0",
             },
             {
                 "key": "UseVncAuthentication",
-                "type": winreg.REG_DWORD,
-                "value": 0x1,
-                "set_value": 1,
+                "type": "REG_DWORD",
+                "value": "0x1",
+                "set_value": "1"
             },
             {
                 "key": "Password",
-                "type": winreg.REG_BINARY,
-                "value": password_tight,
-                "set_value": password_tight,
+                "type": "REG_BINARY",
+                "value": xmppobject.config.password_rw,
+                "set_value": xmppobject.config.password_rw
             },
             {
                 "key": "RepeatControlAuthentication",
-                "type": winreg.REG_DWORD,
-                "value": 0x1,
-                "set_value": 1,
+                "type": "REG_DWORD",
+                "value": "0x1",
+                "set_value": "1"
             },
             {
                 "key": "UseControlAuthentication",
-                "type": winreg.REG_DWORD,
-                "value": 0x1,
-                "set_value": 1,
+                "type": "REG_DWORD",
+                "value": "0x1",
+                "set_value": "1"
             },
             {
                 "key": "ControlPassword",
-                "type": winreg.REG_BINARY,
-                "value": password_tight,
-                "set_value": password_tight,
+                "type": "REG_BINARY",
+                "value": xmppobject.config.password_rw,
+                "set_value": xmppobject.config.password_rw
             },
         ]
         need_restart = False
-        # Open the registry key and assign it to a variable
-        key = winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE,
-            r"SOFTWARE\TightVNC\Server",
-            0,
-            winreg.KEY_ALL_ACCESS,
-        )
+
         for config in configurations:
-            try:
-                # Query the current value of the key
-                value, _ = winreg.QueryValueEx(key, config["key"])
+            cmd = f'reg query "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} | Find "{config["key"]}"'
+            result = utils.simplecommand(cmd)
+
+            if result["code"] == 0:
+                value = result["result"][0].strip().split()[-1]
+
                 if value != config["value"]:
-                    # Modify the key
-                    winreg.SetValueEx(
-                        key, config["key"], 0, config["type"], config["set_value"]
-                    )
+                    cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
+                    result = utils.simplecommand(cmd)
+
+                    if result["code"] == 0:
+                        logger.debug(
+                            f"The registry entry for TightVNCServer {config['key']} is reconfigured."
+                        )
+                        need_restart = True
+                    else:
+                        logger.debug(
+                            f"We failed to reinitialize the registry entry for TightVNCServer {config['key']}"
+                        )
+            elif result["code"] == 1:
+                cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
+                result = utils.simplecommand(cmd)
+
+                if result["code"] == 0:
                     logger.debug(
                         f"PL-TIGHT TightVNCServer registry {config['key']} with value {value} is reconfigured."
                     )
@@ -118,52 +127,29 @@ def check_tightvnc_configuration(xmppobject):
                     logger.debug(
                         f"PL-TIGHT TightVNC Server registry key {config['key']} is correctly configured."
                     )
-            except FileNotFoundError:
-                # Key not found, add it if necessary
-                winreg.SetValueEx(
-                    key, config["key"], 0, config["type"], config["set_value"]
-                )
-                logger.debug(
-                    f"PL-TIGHT TightVNC Server registry key {config['key']} added."
-                )
-                need_restart = True
 
         if need_restart:
-            try:
-                # Restart the TightVNC Server service
-                import subprocess
+            cmd = "powershell Restart-Service -Name tvnserver"
+            result = utils.simplecommand(cmd)
 
-                subprocess.check_call(
-                    "powershell Restart-Service -Name tvnserver", shell=True
-                )
+            if result["code"] == 0:
                 logger.debug("PL-TIGHT TightVNCServer is reconfigured and restarted.")
-            except subprocess.CalledProcessError:
+            else:
                 logger.debug(
                     "PL-TIGHT We failed to reinitialize the registry entry for TightVNCServer."
                 )
 
 
 def checktightvncversion():
-    tightvncversion = "0.1"
-    key = None
-
     if sys.platform.startswith("win"):
-        try:
-            # Open the registry key for TightVNC
-            key = winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{5AE9C1FB-F4F8-44A7-8550-F0592F56A1F2}",
-                0,
-                winreg.KEY_READ,
-            )
-            # Query the DisplayVersion value
-            value, _ = winreg.QueryValueEx(key, "DisplayVersion")
-            tightvncversion = value
-        except FileNotFoundError:
-            logger.debug(
-                "PL-TIGHT TightVNCServer is not installed or not the corresponding version."
-            )
-
+        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{20B44B5F-5DDC-4261-BA3E-3EE3D3F2B106} /s | Find "DisplayVersion"'
+        result = utils.simplecommand(cmd)
+        if result["code"] == 0:
+            tightvncversion = result["result"][0].strip().split()[-1]
+        else:
+            # TIGHTVNC is not installed. We will force installation by returning
+            # version 0.1
+            tightvncversion = "0.1"
     return tightvncversion
 
 
@@ -265,9 +251,6 @@ def updatetightvnc(xmppobject):
                 install_options + " SET_RFBPORT=1 VALUE_OF_RFBPORT=%s" % Used_rfb_port
             )
 
-            # FIXME: Broken function, add back when fixed
-            # utils.isMsiExecRunning()
-
             # Run installer
             cmd = "msiexec /i %s %s REBOOT=R" % (filename, install_options)
             cmd_result = utils.simplecommand(cmd)
@@ -275,6 +258,7 @@ def updatetightvnc(xmppobject):
                 logger.info(
                     f"PL-TIGHT {filename} installed successfully to version {TIGHTVNC}"
                 )
+
             else:
                 logger.error(
                     f"PL-TIGHT Error installing {filename}: {cmd_result['result']}"
