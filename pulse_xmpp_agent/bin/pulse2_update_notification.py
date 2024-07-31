@@ -6,6 +6,7 @@
 import sys
 import signal
 from optparse import OptionParser
+import os
 
 import tkinter as tk
 from PIL import Image, ImageTk
