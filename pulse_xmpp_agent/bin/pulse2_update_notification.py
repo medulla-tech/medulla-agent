@@ -188,7 +188,9 @@ class dialogboxnotification:
                 Medullalabel = tk.Label(image=medullaLogo, bg="#25607d")
                 Medullalabel.image = medullaLogo
                 Medullalabel.place(x=15, y=12)
-            except:
+            except Exception as error_loading:
+                print("Failed to load the icon.")
+                print(f"We got the error \n: {error_loading}")
                 pass
 
         self.root.update_idletasks()
