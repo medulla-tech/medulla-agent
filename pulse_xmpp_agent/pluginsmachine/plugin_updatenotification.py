@@ -36,7 +36,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         if StrictVersion(installed_version) < StrictVersion(NOTIFICATIONVERSION):
             updatenotification(xmppobject)
             updatenotificationversion(installed_version)
-    except Exception:
+    except Exception as error_loading:
+        logger.error("An error occured while loading the plugin")
+        logger.error(f"We have the error \n {error_loading}")
         pass
 
 
