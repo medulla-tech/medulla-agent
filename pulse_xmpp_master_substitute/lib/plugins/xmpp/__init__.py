@@ -10429,6 +10429,10 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 [str(tableproduct["name_procedure"]), str(str_kb_list).strip('"() ')],
             )
             results = list(cursor.fetchall())
+
+            if results is None:
+                return result
+
             for lineresult in results:
                 dictline = {}
                 dictline["tableproduct"] = tableproduct["name_procedure"]
