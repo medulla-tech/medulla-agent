@@ -65,31 +65,31 @@ def check_tightvnc_configuration(xmppobject):
                 "key": "UseVncAuthentication",
                 "type": "REG_DWORD",
                 "value": "0x1",
-                "set_value": "1"
+                "set_value": "1",
             },
             {
                 "key": "Password",
                 "type": "REG_BINARY",
                 "value": xmppobject.config.password_rw,
-                "set_value": xmppobject.config.password_rw
+                "set_value": xmppobject.config.password_rw,
             },
             {
                 "key": "RepeatControlAuthentication",
                 "type": "REG_DWORD",
                 "value": "0x1",
-                "set_value": "1"
+                "set_value": "1",
             },
             {
                 "key": "UseControlAuthentication",
                 "type": "REG_DWORD",
                 "value": "0x1",
-                "set_value": "1"
+                "set_value": "1",
             },
             {
                 "key": "ControlPassword",
                 "type": "REG_BINARY",
                 "value": xmppobject.config.password_rw,
-                "set_value": xmppobject.config.password_rw
+                "set_value": xmppobject.config.password_rw,
             },
         ]
         need_restart = False
