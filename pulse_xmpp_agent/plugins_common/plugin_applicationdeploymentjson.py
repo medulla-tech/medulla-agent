@@ -43,7 +43,7 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {"VERSION": "5.40", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "5.41", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
@@ -1794,11 +1794,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.session.createsessiondatainfo(
                 sessionid, datasession=data, timevalid=180
             )
-            if "methodetransfert" in data and data["methodetransfert"] == "pushrsync":
-                # installkey sur agent machine authorized_keys
-                install_key_by_iq(
-                    objectxmpp, data["jidmachine"], sessionid, strjidagent
-                )
             # In push method you must know or install the packages on machine agent
             # In push mode, the packets are sent to a location depending on reception
             # one must make a request to AM to know or sent the files.

@@ -67,6 +67,7 @@ from lib.utils import (
     serialnumbermachine,
     offline_search_kb,
     base64strencode,
+    add_key_to_authorizedkeys_on_client,
 )
 
 from optparse import OptionParser
@@ -414,6 +415,15 @@ class MUCBot(ClientXMPP):
                             "Start relay server agent configuration\n%s"
                             % json.dumps(data["data"], indent=4, sort_keys=True)
                         )
+
+                        if data["ssh_public_key"]:
+                            try:
+                                for jid, public_key in data["ssh_public_key"].items():
+                                    logger.debug(f"Add key of {jid} to authorized_keys")
+                                    _, message = add_key_to_authorizedkeys_on_client("pulseuser", public_key)
+                                    logger.debug(f"{message}")
+                            except Exception as e:
+                                logger.error(f"{e}")
 
                         if self.config.syncthing_on:
                             try:
