@@ -4,6 +4,9 @@
 - [FEATURE]  If the file BOOL_DISABLE_IMG exists, disable the replicator
 - [FEATURE]  If the file BOOL_DISABLE_IMG exists, we do not remove the img_agent folder.
 - [FEATURE]  If the file BOOL_DISABLE_RESCUE exists, the Rescue agent is disabled
+- [FEATURE]  Improve the installation of relayservers public ssh keys onto the clients
+- [FEATURE]  Set a password to VNC connections
+- [FEATURE]  Allow disabling geolocalisation when generating the agent installer
 - [BUGFIX]   Fix the config file when missing by using the tpl one
 - [BUGFIX]   Fix Agent detail QA
 
