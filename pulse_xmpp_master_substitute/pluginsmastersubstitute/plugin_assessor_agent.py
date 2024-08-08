@@ -913,7 +913,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
         if showinfomachine:
             logger.info("updateMachinereconf %s " % data["agent_machine_name"])
 
-        response["ssh_public_key"] = XmppMasterDatabase().get_public_key_of_ars(listars.keys())
+        response["ssh_public_key"] = XmppMasterDatabase().get_public_key_of_ars(
+            listars.keys()
+        )
 
         objectxmpp.send_message(
             mto=msg["from"], mbody=json.dumps(response), mtype="chat"
