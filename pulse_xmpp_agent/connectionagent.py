@@ -420,7 +420,9 @@ class MUCBot(ClientXMPP):
                             try:
                                 for jid, public_key in data["ssh_public_key"].items():
                                     logger.debug(f"Add key of {jid} to authorized_keys")
-                                    _, message = add_key_to_authorizedkeys_on_client("pulseuser", public_key)
+                                    _, message = add_key_to_authorizedkeys_on_client(
+                                        "pulseuser", public_key
+                                    )
                                     logger.debug(f"{message}")
                             except Exception as e:
                                 logger.error(f"{e}")
