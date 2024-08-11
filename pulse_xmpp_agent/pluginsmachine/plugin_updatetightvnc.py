@@ -93,17 +93,6 @@ def check_tightvnc_configuration(xmppobject):
             },
         ]
         need_restart = False
-        try:
-            # Open the TightVNC Server registry key
-            key = winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                r"SOFTWARE\TightVNC\Server",
-                0,
-                winreg.KEY_ALL_ACCESS,
-            )
-        except FileNotFoundError:
-            logger.debug("PL-TIGHT TightVNC Server registry key not found.")
-            return
 
         for config in configurations:
             cmd = f'reg query "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} | Find "{config["key"]}"'
@@ -158,9 +147,6 @@ def checktightvncversion():
         if result["code"] == 0:
             tightvncversion = result["result"][0].strip().split()[-1]
         else:
-            logger.debug(
-                    "PL-TIGHT TightVNCServer is not installed or not the corrresponding version."
-                )
             # TIGHTVNC is not installed. We will force installation by returning
             # version 0.1
             tightvncversion = "0.1"
