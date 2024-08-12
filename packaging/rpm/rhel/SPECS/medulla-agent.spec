@@ -198,6 +198,7 @@ fi
 Summary:        Pulse 2 common files
 Group:          System/Servers
 Requires:       python3.11-xmltodict
+Requires:       python3.11-croniter
 Requires:       jq
 BuildArch:      noarch
 
@@ -237,11 +238,11 @@ Requires:   zip
 Requires:   crudini
 #Requires:  dpkg-dev
 
-#Requires:   nsis-plugins-ZipDLL
-#Requires:   nsis-plugins-Pwgen
-#Requires:   nsis-plugins-AccessControl
-#Requires:   nsis-plugins-Inetc
-#Requires:   nsis-plugins-TextReplace
+Requires:   nsis-plugins-ZipDLL
+Requires:   nsis-plugins-Pwgen
+Requires:   nsis-plugins-AccessControl
+Requires:   nsis-plugins-Inetc
+Requires:   nsis-plugins-TextReplace
 Requires(pre): pulse-filetree-generator
 
 %description -n pulse-agent-installers
@@ -403,7 +404,7 @@ rm -fr pulse-machine-plugins-%{version}
 mkdir -p %buildroot%_var/lib/pulse2/clients
 mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 mv  pulse-machine-plugins-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
-GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
+GIT_SSL_NO_VERIFY=true git clone --branch %branch https://github.com/pulse-project/kiosk-interface.git
 mv kiosk-interface kiosk-interface-%{kiosk_version}
 tar czvf kiosk-interface-%{kiosk_version}.tar.gz kiosk-interface-%{kiosk_version}
 rm -fr kiosk-interface-%{kiosk_version}
@@ -476,7 +477,7 @@ cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
 cp pulse_xmpp_agent/bin/RunMedullaKiosk.bat %buildroot%_var/lib/pulse2/clients/win/
-cp contrib/images/* %buildroot%_var/lib/pulse2/clients/win/downloads
+cp contrib/images/* %buildroot%_var/lib/pulse2/clients/win/
 
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-package-watching.service
