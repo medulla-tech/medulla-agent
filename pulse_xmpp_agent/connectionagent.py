@@ -67,6 +67,8 @@ from lib.utils import (
     serialnumbermachine,
     offline_search_kb,
     base64strencode,
+    pulseuser_useraccount_mustexist,
+    pulseuser_profile_mustexist,
     add_key_to_authorizedkeys_on_client,
 )
 
@@ -418,9 +420,21 @@ class MUCBot(ClientXMPP):
 
                         if data["ssh_public_key"]:
                             try:
+                                # Make sure user account and profile exists
+                                username = "pulseuser"
+                                result, message = pulseuser_useraccount_mustexist(username)
+                                if result is False:
+                                    logger.error(f"{message}")
+                                logger.debug(f"{message}")
+                                result, message = pulseuser_profile_mustexist(username)
+                                if result is False:
+                                    logger.error(f"{message}")
+                                logger.debug(f"{message}")
                                 for jid, public_key in data["ssh_public_key"].items():
                                     logger.debug(f"Add key of {jid} to authorized_keys")
-                                    _, message = add_key_to_authorizedkeys_on_client("pulseuser", public_key)
+                                    result, message = add_key_to_authorizedkeys_on_client(username, public_key)
+                                    if result is False:
+                                        logger.error(f"{message}")
                                     logger.debug(f"{message}")
                             except Exception as e:
                                 logger.error(f"{e}")
