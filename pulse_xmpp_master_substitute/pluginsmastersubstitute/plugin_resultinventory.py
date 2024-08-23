@@ -29,7 +29,7 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.13", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 
 
 class InventoryFix:
@@ -158,7 +158,10 @@ def send_content(url, content, verbose=False, user_agent="siveo-injector"):
             logger.info("headers is : %s" % headers)
         response = requests.post(url, headers=headers, data=compressed_content)
         reponsecode = response.status_code
-        reponsequery = gzip.decompress(response.content)
+        try:
+            reponsequery = gzip.decompress(response.content)
+        except:
+            reponsequery = response.content
 
         if response.status_code == 200:
             if verbose:
