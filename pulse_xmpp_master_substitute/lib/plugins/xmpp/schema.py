@@ -363,6 +363,7 @@ class RelayServer(Base, XmppMasterDBObj):
     moderelayserver = Column(String(7))
     keysyncthing = Column(String(70), default="")
     syncthing_port = Column(Integer, default=23000)
+    ssh_public_key = Column(Text)
 
 
 class Regles(Base, XmppMasterDBObj):

@@ -7210,6 +7210,16 @@ class XmppMasterDatabase(DatabaseHelper):
         return listconfsubstitute
 
     @DatabaseHelper._sessionm
+    def get_public_key_of_ars(self, session, jids):
+        try:
+            query = select(RelayServer.jid, RelayServer.ssh_public_key).where(RelayServer.jid.in_(jids))
+            result = session.execute(query).fetchall()
+        except Exception as e:
+            logger.error(f"Voilà mon erreur {e}")
+            return []
+        return {row.jid: row.ssh_public_key for row in result}
+
+    @DatabaseHelper._sessionm
     def GetMachine(self, session, jid):
         """
         Initialize boolean presence in table machines
@@ -10429,6 +10439,10 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 [str(tableproduct["name_procedure"]), str(str_kb_list).strip('"() ')],
             )
             results = list(cursor.fetchall())
+
+            if results is None:
+                return result
+
             for lineresult in results:
                 dictline = {}
                 dictline["tableproduct"] = tableproduct["name_procedure"]

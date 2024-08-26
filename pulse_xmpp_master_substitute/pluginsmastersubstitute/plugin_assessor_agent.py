@@ -31,7 +31,7 @@ DEBUGPULSEPLUGIN = 25
 
 # connectionconf et le nom du plugin appeler.
 
-plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}  # fmt: skip
 
 params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.
@@ -912,6 +912,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
         XmppMasterDatabase().updateMachinereconf(data["agent_machine_name"])
         if showinfomachine:
             logger.info("updateMachinereconf %s " % data["agent_machine_name"])
+
+        response["ssh_public_key"] = XmppMasterDatabase().get_public_key_of_ars(listars.keys())
+
         objectxmpp.send_message(
             mto=msg["from"], mbody=json.dumps(response), mtype="chat"
         )

@@ -6,6 +6,7 @@
 import sys
 import signal
 from optparse import OptionParser
+import os
 
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -13,6 +14,7 @@ from PIL import Image, ImageTk
 import subprocess
 
 from pulse_xmpp_agent.lib.agentconffile import medullaPath
+
 
 def simplecommand(cmd):
     p = subprocess.Popen(
@@ -178,7 +180,6 @@ class dialogboxnotification:
             font=("Open Sans Soft Regular", self.sizenotification),
             wraplength=400,
         ).pack()
-
 
         iconPath = os.path.join(medullaPath(), "bin", "medulla_logo.png")
         if os.path.exists(iconPath):
