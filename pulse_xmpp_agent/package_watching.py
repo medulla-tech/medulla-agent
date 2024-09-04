@@ -155,7 +155,7 @@ def getRandomName(nb, pref=""):
 def send_agent_data(datastrdata, conf):
     logging.getLogger().debug(f"string for send agent : {datastrdata}")
     # Convertir la chaîne en bytes
-    datastrdata_bytes = datastrdata.encode('utf-8')
+    datastrdata_bytes = datastrdata.encode("utf-8")
     # Encoder les bytes en base64
     EncodedString = base64.b64encode(datastrdata_bytes)
     logging.getLogger().debug(f"send base64 string  : {EncodedString}")
