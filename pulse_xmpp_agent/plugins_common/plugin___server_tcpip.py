@@ -65,6 +65,7 @@ def action(xmppobject, action):
         logger.error(f"Plugin load_TCI/IP, we encountered the error {str(e)}")
         logger.error(f"We hit the backtrace {traceback.format_exc()}")
 
+
 def read_conf_server_tcpip_agent_machine(xmppobject):
     """
     Reads and configures the TCP/IP server settings for the XMPP object.
@@ -164,7 +165,6 @@ def read_conf_server_tcpip_agent_machine(xmppobject):
     logger.warning(f"port_tcp_kiosk is {xmppobject.port_tcp_kiosk}")
 
 
-
 def client_info(client, show_info=False):
     """
     Retrieves and returns information about a client socket connection.
@@ -221,7 +221,6 @@ def client_info(client, show_info=False):
         "adress_recept": adressrecept,
         "port_recept": portrecept,
     }
-
 
 
 def _convert_string(data):
@@ -307,6 +306,7 @@ def _convert_string(data):
     logger.debug("Data could not be converted, returning original")
     return data
 
+
 async def handle_client(client, xmppobject):
     """
     Handles an individual client connection.
@@ -331,7 +331,9 @@ async def handle_client(client, xmppobject):
 
         # Allow only local clients to connect
         if infoclient["adress_recept"] != "127.0.0.1":
-            logger.error("Only a local client will be allowed to connect to the server.")
+            logger.error(
+                "Only a local client will be allowed to connect to the server."
+            )
             return
 
         while request != "":
@@ -419,16 +421,22 @@ async def handle_client(client, xmppobject):
                                 ConnectionResetError,
                                 ConnectionAbortedError,
                             ):
-                                logger.warning("Client disconnected before sending the response.")
+                                logger.warning(
+                                    "Client disconnected before sending the response."
+                                )
                         else:
                             try:
-                                await loop.sock_sendall(client, "no result".encode("utf-8"))
+                                await loop.sock_sendall(
+                                    client, "no result".encode("utf-8")
+                                )
                             except (
                                 BrokenPipeError,
                                 ConnectionResetError,
                                 ConnectionAbortedError,
                             ):
-                                logger.warning("Client disconnected before sending the response.")
+                                logger.warning(
+                                    "Client disconnected before sending the response."
+                                )
 
                     elif isinstance(result, bytes):
                         # Send bytes result to the client
@@ -445,7 +453,9 @@ async def handle_client(client, xmppobject):
                                 ConnectionResetError,
                                 ConnectionAbortedError,
                             ):
-                                logger.warning("Client disconnected before sending the response.")
+                                logger.warning(
+                                    "Client disconnected before sending the response."
+                                )
                         except Exception as e:
                             try:
                                 # Send error message if conversion fails
@@ -455,7 +465,9 @@ async def handle_client(client, xmppobject):
                                 ConnectionResetError,
                                 ConnectionAbortedError,
                             ):
-                                logger.warning("Client disconnected before sending the response.")
+                                logger.warning(
+                                    "Client disconnected before sending the response."
+                                )
 
                         logger.warning(f"Type of received data: {type(result)}")
                     break  # Exit the loop after processing the request
@@ -469,7 +481,9 @@ async def handle_client(client, xmppobject):
                         ConnectionResetError,
                         ConnectionAbortedError,
                     ):
-                        logger.warning("Client disconnected before sending the response.")
+                        logger.warning(
+                            "Client disconnected before sending the response."
+                        )
                     break
 
     except Exception:
