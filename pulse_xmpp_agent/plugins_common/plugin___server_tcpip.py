@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-plugin register machine dans presence table xmpp.
+plugin serveur tcp/ip pour les agent machine et relay.
 """
 import base64
 import traceback
