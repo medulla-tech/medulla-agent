@@ -153,7 +153,12 @@ def getRandomName(nb, pref=""):
 
 
 def send_agent_data(datastrdata, conf):
-    EncodedString = base64.b64encode(datastrdata)
+    logging.getLogger().debug(f"string for send agent : {datastrdata}")
+    # Convertir la chaîne en bytes
+    datastrdata_bytes = datastrdata.encode('utf-8')
+    # Encoder les bytes en base64
+    EncodedString = base64.b64encode(datastrdata_bytes)
+    logging.getLogger().debug(f"send base64 string  : {EncodedString}")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = (conf["ip_ars"], int(conf["port_ars"]))
     try:
