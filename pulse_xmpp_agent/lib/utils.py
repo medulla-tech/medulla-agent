@@ -2250,10 +2250,10 @@ def reboot_command():
     elif sys.platform.startswith("darwin"):
         os.system("shutdown -r now")
 
-
 def isBase64(s):
     """
     Vérifie si la chaîne donnée est en base64.
+    La fonction fait une vérification supplémentaire pour s'assurer que les données décodées peuvent être converties en une chaîne UTF-8.
 
     Args:
         s (str/bytes/bytearray): La chaîne à vérifier.
@@ -2262,10 +2262,19 @@ def isBase64(s):
         bool: True si la chaîne est en base64, False sinon.
     """
     try:
-        decoded = base64.b64decode(s)
+        if isinstance(s, str):
+            s = s.encode('utf-8')
+        decoded = base64.b64decode(s, validate=True)
         decoded_str = decoded.decode("utf-8")
         return True
-    except (base64.binascii.Error, UnicodeDecodeError):
+    except base64.binascii.Error as e:
+        logger.warning(f"Erreur de décodage base64 : {e}")
+        return False
+    except UnicodeDecodeError as e:
+        logger.warning(f"base64 mais le décodage UTF-8 erreur : {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Erreur inattendue : {e}")
         return False
 
 

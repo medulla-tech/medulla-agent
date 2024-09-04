@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+"""
+plugin serveur tcp/ip pour les agent machine et relay.
+"""
 import base64
 import traceback
 import os
@@ -232,6 +234,7 @@ async def handle_client(client, xmppobject):
                     logger.debug("Receiving a `connexion end` request")
                 else:
                     logger.warning(f"Receiving data: {requestobj}")
+                await loop.sock_sendall(client, "no result".encode("utf-8"))
                 break
 
             if isinstance(requestobj, (dict)):
