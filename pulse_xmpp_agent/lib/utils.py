@@ -2250,6 +2250,7 @@ def reboot_command():
     elif sys.platform.startswith("darwin"):
         os.system("shutdown -r now")
 
+
 def isBase64(s):
     """
     Vérifie si la chaîne donnée est en base64.
@@ -2263,7 +2264,7 @@ def isBase64(s):
     """
     try:
         if isinstance(s, str):
-            s = s.encode('utf-8')
+            s = s.encode("utf-8")
         decoded = base64.b64decode(s, validate=True)
         decoded_str = decoded.decode("utf-8")
         return True
