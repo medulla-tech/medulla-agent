@@ -163,7 +163,7 @@ def send_agent_data(datastrdata, conf):
     server_address = (conf["ip_ars"], int(conf["port_ars"]))
     try:
         sock.connect(server_address)
-        sock.sendall(EncodedString.encode("ascii"))
+        sock.sendall(EncodedString)
         sock.recv(4096)
         logging.getLogger().debug("send to ARS event")
     except Exception as e:
