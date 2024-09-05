@@ -220,7 +220,7 @@ def process_connection_ssl(self, connection):
         # il faut 1 boucle d'execution async dans ce thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        logger.debug("JFKJFK REV MESSAGE")
+        logger.debug("REV MESSAGE")
 
         if (
             self.server_mmc_master_active_filter

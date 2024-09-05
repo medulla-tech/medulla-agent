@@ -30,7 +30,6 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
         "APPEL FROM SUBSTITUT %s : to rspulse@pulse/mainrelay "
         % xmppobject.boundjid.bare
     )
-    # JFKJFK test_plugin_master
     # test appelle d'un plugin sur relay pour test
     logger.debug("SEND")
     try:
