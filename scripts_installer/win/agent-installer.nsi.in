@@ -310,6 +310,8 @@ Section "!${PRODUCT_NAME}" sec_app
     Delete "$INSTDIR\bin\*.py*"
     ; Delete previous Medulla log files
     Delete "$INSTDIR\var\log\*.*"
+    ; Delete previous packages folder
+    RMDir /r "$INSTDIR\var\tmp\packages"
 
   ; Install of Medulla agent
   StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${WHEEL_FILENAME}`
