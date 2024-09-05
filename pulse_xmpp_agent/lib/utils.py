@@ -2261,19 +2261,24 @@ def isBase64(s):
         s (str/bytes/bytearray): La chaîne à vérifier.
 
     Returns:
-        bool: True si la chaîne est en base64, False sinon.
+        bool: True si la chaîne est en base64 et peut être décodée en UTF-8, False sinon.
     """
     try:
         if isinstance(s, str):
-            s = s.encode('utf-8')
+            s = s.encode("utf-8")
+        # Vérification si les caractères appartiennent au jeu de caractères Base64
+        if not re.match(b'^[A-Za-z0-9+/]*={0,2}$', s):
+            logger.warning("La chaîne contient des caractères non valides pour du base64.")
+            return False
+
         decoded = base64.b64decode(s, validate=True)
-        decoded_str = decoded.decode("utf-8")
+        decoded.decode("utf-8")
         return True
     except base64.binascii.Error as e:
         logger.warning(f"Erreur de décodage base64 : {e}")
         return False
     except UnicodeDecodeError as e:
-        logger.warning(f"base64 mais le décodage UTF-8 erreur : {e}")
+        logger.warning(f"base64 mais le décodage UTF-8 a échoué : {e}")
         return False
     except Exception as e:
         logger.error(f"Erreur inattendue : {e}")
