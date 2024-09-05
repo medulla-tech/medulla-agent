@@ -303,7 +303,7 @@ Section "!${PRODUCT_NAME}" sec_app
   IfFileExists "C:\Progra~1\Pulse" 0 +2
     ; Delete previous install folder ( when it was called pulse )
      RMDir /r "C:\Progra~1\Pulse"
-  IfFileExists "C:\Progra~1\Medulla" 0 +7
+  IfFileExists "C:\Progra~1\Medulla" 0 +9
     ; Delete previous Medulla configuration parameters
     Delete "$INSTDIR\etc\*.*"
     ; Delete previous Medulla binaries
