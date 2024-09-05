@@ -11,6 +11,7 @@
 - [BUGFIX]   Fix agent detail QA
 - [BUGFIX]   Fix adding relay public keys
 - [BUGFIX]   Fix displayed error message when Glpi failed to import a machine
+- [BUGFIX]   Windows installer removes previous packages folder to avoid installation errors
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.1...v3.2.0)
 
