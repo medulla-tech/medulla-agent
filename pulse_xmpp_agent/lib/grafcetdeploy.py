@@ -2582,9 +2582,9 @@ class grafcet:
         if "timeout" in self.workingstep:
             self.workingstep["timeout"] = int(self.workingstep["timeout"])
         if "titlemessage" in self.workingstep:
-            titlemessage = base64.b64decode(self.workingstep["titlemessage"])
+            titlemessage = base64.b64decode(self.workingstep["titlemessage"]).decode('utf-8')
         if "message" in self.workingstep:
-            message = base64.b64decode(self.workingstep["message"])
+            message = base64.b64decode(self.workingstep["message"]).decode('utf-8')
         if "sizeheader" in self.workingstep:
             self.workingstep["sizeheader"] = int(self.workingstep["sizeheader"])
         if "sizemessage" in self.workingstep:
