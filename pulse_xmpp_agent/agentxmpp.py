@@ -107,7 +107,7 @@ from multiprocessing import Queue, Process, Event, Value
 from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
-from datetime import datetime
+from datetime import datetime, timezone
 
 import zipfile
 
@@ -1683,48 +1683,51 @@ class MUCBot(ClientXMPP):
     def reinjection_deplot_message_box(self):
         # creation repertoire si probleme
         dir_reprise_session = self.__dirsessionreprise()
-        timecurrent = int(time.mktime(time.localtime()))
         # lit repertoire de fichier
+        timecurrent_utc = datetime.now(timezone.utc)
+        timecurrent_local = timecurrent_utc.astimezone()
+        offset_seconds = timecurrent_local.utcoffset().total_seconds()
+        timecurrent = timecurrent_utc.timestamp() + offset_seconds
+
         filelist = [
             x
             for x in os.listdir(dir_reprise_session)
-            if os.path.isfile(os.path.join(dir_reprise_session, x))
-            and x.startswith("medulla_messagebox")
+            if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith("medulla_messagebox")
         ]
         for t in filelist:
             try:
                 filenamejson = os.path.join(dir_reprise_session, t)
-                detection = t.split("@_@")
-                if (
-                    len(detection) == 5
-                    and detection[0] == "medulla_messagebox"
-                    and (timecurrent + 60)
-                    >= int(time.mktime(time.localtime(float(detection[1]))))
-                ):
-                    with open(filenamejson, "r") as f:
-                        data = json.load(f)
-                    datainfo = data["data"]
-                    slotdep = time.strftime(
-                        "%D %H:%M", time.gmtime(int(datainfo["stardate"]))
-                    )
-                    slotend = time.strftime(
-                        "%D %H:%M", time.gmtime(int(datainfo["enddate"]))
-                    )
-                    if (timecurrent + 60) > int(
-                        time.mktime(time.gmtime(datainfo["stardate"]))
-                    ) and (timecurrent + 60) < int(
-                        time.mktime(time.gmtime(datainfo["enddate"]))
-                    ):
-                        # on relance le deployement et on quitte
-                        grafcet(self, data)
-                        os.remove(filenamejson)
+                creation_time = os.path.getctime(filenamejson)
+                time_elapsed = time.time() - creation_time
+
+                with open(filenamejson, "r") as f:
+                    data = json.load(f)
+                datainfo = data["data"]
+
+                stardate = float(datainfo.get("stardate", timecurrent))
+                enddate = float(datainfo.get("enddate", timecurrent + 3600))
+
+                if stardate <= timecurrent <= enddate:
+                    logging.debug("Current time is within the deployment window.")
+
+                    # Timeloop verification before relaunching the grafcet
+                    sequence = datainfo.get("descriptor", {}).get("sequence", [])
+                    for step in sequence:
+                        if "timeloop" in step:
+                            timeloop = step["timeloop"]
+                            logging.debug(f"Timeloop duration: {timeloop} seconds")
+
+                            if time_elapsed >= timeloop:
+                                grafcet(self, data)
+                                os.remove(filenamejson)
+                            else:
+                                remaining_time = timeloop - time_elapsed
+                                time.sleep(remaining_time)
                 else:
-                    logger.error("We are not in the interval yet")
+                    logging.error("We are not in the interval yet.")
                     break
-            except:
-                logger.error(
-                    "reinjection deploy message box\n%s" % (traceback.format_exc())
-                )
+            except Exception as e:
+                logging.error(f"Error processing file {e}: {traceback.format_exc()}")
                 os.rename(
                     filenamejson,
                     os.path.join(
