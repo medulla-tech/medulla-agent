@@ -1692,7 +1692,8 @@ class MUCBot(ClientXMPP):
         filelist = [
             x
             for x in os.listdir(dir_reprise_session)
-            if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith("medulla_messagebox")
+            if os.path.isfile(os.path.join(dir_reprise_session, x))
+            and x.startswith("medulla_messagebox")
         ]
         for t in filelist:
             try:
