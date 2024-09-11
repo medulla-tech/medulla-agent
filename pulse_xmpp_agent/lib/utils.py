@@ -2268,8 +2268,10 @@ def isBase64(s):
         if isinstance(s, str):
             s = s.encode("utf-8")
         # Vérification si les caractères appartiennent au jeu de caractères Base64
-        if not re.match(b'^[A-Za-z0-9+/]*={0,2}$', s):
-            logger.warning("La chaîne contient des caractères non valides pour du base64.")
+        if not re.match(b"^[A-Za-z0-9+/]*={0,2}$", s):
+            logger.warning(
+                "La chaîne contient des caractères non valides pour du base64."
+            )
             return False
 
         decoded = base64.b64decode(s, validate=True)
