@@ -918,6 +918,14 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
         objectxmpp.send_message(
             mto=msg["from"], mbody=json.dumps(response), mtype="chat"
         )
+    except IndexError as indexError:
+        sendErrorConnectionConf(objectxmpp, sessionid, msg)
+        logger.error("It seems that the relay server is not correctly" \
+                     "configured.\n" \
+                     "Please verify the substituteconf mysql table")
+
+        logger.error("If this is a new install please replay the ansible")
+
     except Exception:
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         logger.error("Unable to assign a relay server to an agent")
