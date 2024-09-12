@@ -1723,7 +1723,10 @@ class MUCBot(ClientXMPP):
                                 os.remove(filenamejson)
                             else:
                                 remaining_time = timeloop - time_elapsed
-                                time.sleep(remaining_time)
+                                logging.debug(f"Remaining time before relaunching grafcet: {remaining_time} seconds. Skipping to next.")
+                                continue
+                        else:
+                            logging.debug("No timeloop found, relaunching grafcet immediately.")
                 else:
                     logging.error("We are not in the interval yet.")
                     break
