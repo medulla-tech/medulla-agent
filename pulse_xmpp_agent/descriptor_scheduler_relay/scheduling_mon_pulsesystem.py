@@ -146,12 +146,15 @@ def schedule_main(xmppobject):
                         )
                         try:
                             service_json[service_name]["cpu"] = (
-                                int(result_cpu.stdout.readline().split("=")[1]) / 1000000000
+                                int(result_cpu.stdout.readline().split("=")[1])
+                                / 1000000000
                             )
                         except ValueError:
-                            logger.error("We set the value to 0 because the systemd" \
-                                         "DefaultCPUAccounting value is not set on the" \
-                                         "file /etc/systemd/system.conf")
+                            logger.error(
+                                "We set the value to 0 because the systemd"
+                                "DefaultCPUAccounting value is not set on the"
+                                "file /etc/systemd/system.conf"
+                            )
                             service_json[service_name]["cpu"] = 0
 
                         if service_name in xmppobject.config.openfiles_check:
