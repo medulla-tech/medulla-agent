@@ -205,6 +205,7 @@ def schedule_main(xmppobject):
                             "Red Hat Enterprise Linux Server",
                             "redhat",
                             "Mageia",
+                            "rhel",
                         ]:
                             service = "httpd"
                         elif distro.id() in ["debian"]:
