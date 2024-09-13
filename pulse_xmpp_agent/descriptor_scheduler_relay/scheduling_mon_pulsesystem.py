@@ -101,15 +101,14 @@ def schedule_main(xmppobject):
                     elif service_name == "mysql":
                         service = "mariadb"
                     elif service_name == "apache2":
-                        if distro.id() in [
-                            "CentOS Linux",
+                        if distro.id().lower() in [
+                            "centos linux",
                             "centos",
                             "fedora",
-                            "Red Hat Enterprise Linux Server",
+                            "red hat enterprise linux server",
                             "redhat",
                             "rhel",
                             "mageia",
-                            "Mageia",
                         ]:
                             service = "httpd"
                         elif distro.id() in ["debian"]:
