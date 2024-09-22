@@ -2404,6 +2404,12 @@ class grafcet:
                     % (self.data["name"], self.workingstep["step"])
                 )
             elif sys.platform.startswith("win"):
+                if isinstance(message, bytes):
+                    message = message.decode("utf-8")
+
+                if isinstance(titlemessage, bytes):
+                    titlemessage = titlemessage.decode("utf-8")
+
                 command = (
                     """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c"""
@@ -2582,9 +2588,11 @@ class grafcet:
         if "timeout" in self.workingstep:
             self.workingstep["timeout"] = int(self.workingstep["timeout"])
         if "titlemessage" in self.workingstep:
-            titlemessage = base64.b64decode(self.workingstep["titlemessage"])
+            titlemessage = base64.b64decode(self.workingstep["titlemessage"]).decode(
+                "utf-8"
+            )
         if "message" in self.workingstep:
-            message = base64.b64decode(self.workingstep["message"])
+            message = base64.b64decode(self.workingstep["message"]).decode("utf-8")
         if "sizeheader" in self.workingstep:
             self.workingstep["sizeheader"] = int(self.workingstep["sizeheader"])
         if "sizemessage" in self.workingstep:

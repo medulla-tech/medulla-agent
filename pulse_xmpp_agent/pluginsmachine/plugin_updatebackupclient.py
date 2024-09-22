@@ -101,12 +101,12 @@ def backupclientsettings(xmppobject):
             logger.debug("Urbackup filename: %s" % filename)
             os.chdir(urbackup_dir)
             cmd = (
-                '"%s" set-settings -k  internet_mode_enabled -v true -k internet_server -v %s -k internet_server_port -v %s -k computername -v %s -k internet_image_backups -v true -k internet_full_file_backups -v true'
+                '"%s" set-settings -k  internet_mode_enabled -v true --server-url "%s" --name "%s" --authkey "%s" -k internet_image_backups -v false -k internet_full_file_backups -v true'
                 % (
                     filename,
                     xmppobject.config.backup_server,
-                    xmppobject.config.backup_port,
                     hostname,
+                    xmppobject.config.authkey,
                 )
             )
             logger.debug("Urbackup cmd: %s" % cmd)

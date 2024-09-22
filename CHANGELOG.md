@@ -7,8 +7,12 @@
 - [FEATURE]  Improve the installation of relayservers public ssh keys onto the clients
 - [FEATURE]  Set a password to VNC connections
 - [FEATURE]  Allow disabling geolocalisation when generating the agent installer
+- [FEATURE]  Improve urbackup support
 - [BUGFIX]   Fix the config file when missing by using the tpl one
-- [BUGFIX]   Fix Agent detail QA
+- [BUGFIX]   Fix agent detail QA
+- [BUGFIX]   Fix adding relay public keys
+- [BUGFIX]   Fix displayed error message when Glpi failed to import a machine
+- [BUGFIX]   Windows installer removes previous packages folder to avoid installation errors
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.1...v3.2.0)
 

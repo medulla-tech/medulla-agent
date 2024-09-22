@@ -543,15 +543,15 @@ class PkgsDatabase(DatabaseHelper):
     def pkgs_unregister_synchro_package(
         self, session, uuidpackage, typesynchro, jid_relayserver
     ):
-        listdata = jid_relayserver.split("@")
-        if len(listdata) > 0:
-            datadata = "%s%%" % listdata[0]
+        listJID = jid_relayserver.split("@")
+        if len(listJID) > 0:
+            userJID = "%s%%" % listJID[0]
             sql = """DELETE FROM `pkgs`.`syncthingsync`
                 WHERE
                 `syncthingsync`.`uuidpackage` like '%s' AND
                 `syncthingsync`.`relayserver_jid`  like "%s" ;""" % (
                 uuidpackage,
-                datadata,
+                userJID,
             )
             session.execute(sql)
             session.commit()

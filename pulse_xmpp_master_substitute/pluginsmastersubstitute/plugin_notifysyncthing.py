@@ -13,10 +13,10 @@ from lib.plugins.pkgs import PkgsDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "notifysyncthing", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "notifysyncthing", "TYPE": "substitute"}  # fmt: skip
 
 
-def action(objectxmpp, action, sessionid, data, msg, dataerreur):
+def action(objectxmpp, action, sessionid, data, msg, res, dataerreur):
     logger.debug("=====================================================")
     logger.debug(plugin)
     logger.debug("=====================================================")
