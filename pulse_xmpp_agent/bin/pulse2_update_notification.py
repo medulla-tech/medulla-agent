@@ -106,7 +106,7 @@ class dialogboxnotification:
         self.root.configure(bg="#25607d")
         self.root.resizable(width=False, height=False)
         # Disable the Close Window Control Icon
-        self.root.resizable(width=True, height=True) # Allow the window to be resized
+        self.root.resizable(width=True, height=True)  # Allow the window to be resized
         self.root.protocol("WM_DELETE_WINDOW", lambda: None)
         self.root.attributes("-topmost", True)
 
@@ -117,7 +117,7 @@ class dialogboxnotification:
 
         # Main frame with two columns
         main_frame = tk.Frame(self.root, bg="#25607d")
-        main_frame.pack(fill='both', expand=True)
+        main_frame.pack(fill="both", expand=True)
 
         # Configure columns and rows
         main_frame.columnconfigure(0, weight=1)
@@ -141,17 +141,23 @@ class dialogboxnotification:
             try:
                 medullaLogoLocation = Image.open(iconPath)
                 image_max_size = 200
-                medullaLogoLocation.thumbnail((image_max_size, image_max_size), Image.LANCZOS)
+                medullaLogoLocation.thumbnail(
+                    (image_max_size, image_max_size), Image.LANCZOS
+                )
                 self.medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
-                Medullalabel = tk.Label(image_frame, image=self.medullaLogo, bg="#25607d")
-                Medullalabel.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')# Padding around the image
+                Medullalabel = tk.Label(
+                    image_frame, image=self.medullaLogo, bg="#25607d"
+                )
+                Medullalabel.grid(
+                    row=0, column=0, padx=10, pady=10, sticky="nsew"
+                )  # Padding around the image
             except Exception as error_loading:
                 print("Impossible to load the icon.")
                 print(f"Erreur : \n{error_loading}")
         else:
             # If the image does not exist, leave the space empty
             Medullalabel = tk.Label(image_frame, bg="#25607d")
-            Medullalabel.grid(row=0, column=0, sticky='nsew')
+            Medullalabel.grid(row=0, column=0, sticky="nsew")
 
         # Configure content_frame to center content
         content_frame.columnconfigure(0, weight=1)
@@ -171,9 +177,9 @@ class dialogboxnotification:
             fg="white",
             font=("Open Sans Soft Regular", self.sizeHeadertext, "bold"),
             wraplength=text_wrap_length,
-            justify='center',
+            justify="center",
         )
-        submittext_label.grid(row=1, column=0, padx=10, pady=(10, 5), sticky='n')
+        submittext_label.grid(row=1, column=0, padx=10, pady=(10, 5), sticky="n")
 
         textnotification_label = tk.Label(
             content_frame,
@@ -182,14 +188,13 @@ class dialogboxnotification:
             fg="white",
             font=("Open Sans Soft Regular", self.sizenotification),
             wraplength=text_wrap_length,
-            justify='center',
+            justify="center",
         )
-        textnotification_label.grid(row=2, column=0, padx=10, pady=(0, 10), sticky='n')
-
+        textnotification_label.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="n")
 
         if self.Ybutton or self.Nbutton:
             button_frame = tk.Frame(content_frame, bg="#25607d")
-            button_frame.grid(row=3, column=0, pady=10, sticky='n')
+            button_frame.grid(row=3, column=0, pady=10, sticky="n")
 
             if self.Ybutton:
                 Yes_button = tk.Button(
@@ -238,6 +243,7 @@ class dialogboxnotification:
         self.root.after(timeOut, self.timeout)
 
         self.root.mainloop()
+
 
 if __name__ == "__main__":
     # Quit the process if we don't want to continue
