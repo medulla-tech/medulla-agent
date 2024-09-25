@@ -1452,7 +1452,7 @@ class MUCBot(ClientXMPP):
     def handle_disconnected(self, data):
         logger.debug(
             "We got disconnected. We will reconnect in %s seconds"
-            % self.reconnect_time_wait()
+            % self.reconnect_time_wait
         )
 
     def register(self, iq):
