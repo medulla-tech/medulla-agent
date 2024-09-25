@@ -55,6 +55,7 @@ class grafcet:
         self.objectxmpp = objectxmpp
         self.userconecter = None
         self.userstatus = None
+        self.userid = None
         self.userconectdate = None
         self.data = self.datasend["data"]
         self.sessionid = self.datasend["sessionid"]
@@ -234,6 +235,7 @@ class grafcet:
                     x.strip("> ") for x in re["result"][1].split(" ") if x != ""
                 ]
                 self.userconecter = userdata[0]
+                self.userid = userdata[2]
                 self.userstatus = userdata[3]
                 self.userconectdate = f"{userdata[5]} {userdata[6]}"
                 msg_user = f'[{self.data["name"]}]-[{self.data["stepcurrent"]}]: Currently connected user {self.userconecter} status [{self.userstatus}] from {self.userconectdate}'
@@ -244,6 +246,7 @@ class grafcet:
             logger.error("\n%s" % (traceback.format_exc()))
             self.userconecter = None
             self.userstatus = None
+            self.userid = None
             self.userconectdate = None
 
     def find_step_type(self):
@@ -2294,10 +2297,11 @@ class grafcet:
                     titlemessage = titlemessage.decode("utf-8")
 
                 command = (
-                    """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """
+                    """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i %s """
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py"""
                     """ -M "%s"  -B"%s" -t %s -Y "%s" -S%s -s%s -c"""
                     % (
+                        self.userid,
                         message,
                         titlemessage,
                         self.workingstep["timeout"],
@@ -2411,9 +2415,10 @@ class grafcet:
                     titlemessage = titlemessage.decode("utf-8")
 
                 command = (
-                    """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """
+                    """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i %s """
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c"""
                     % (
+                        self.userid,
                         message,
                         titlemessage,
                         self.workingstep["timeout"],
@@ -2620,9 +2625,10 @@ class grafcet:
                 )
             elif sys.platform.startswith("win"):
                 command = (
-                    """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """
+                    """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i %s """
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c"""
                     % (
+                        self.userid,
                         message,
                         titlemessage,
                         self.workingstep["timeout"],
