@@ -20,7 +20,7 @@ logger = logging.getLogger()
 plugin = {"VERSION": "1.3", "NAME": "wakeonlan", "TYPE": "master"}  # fmt: skip
 
 
-def action(xmppobject, action, sessionid, data, message, ret, dataobj):
+def action(xmppobject, action, sessionid, data, message, ret):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("=====================================================")
