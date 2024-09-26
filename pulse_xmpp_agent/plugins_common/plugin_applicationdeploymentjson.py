@@ -66,7 +66,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     try:
         objectxmpp.config.pushsubstitutionmethod
     except BaseException:
-        objectxmpp.config.pushsubstitutionmethod = "pulldirect"
+        objectxmpp.config.pushsubstitutionmethod = "pullrsync"
 
     if objectxmpp.config.agenttype in ["machine"]:
         logger.debug("###################################################")
