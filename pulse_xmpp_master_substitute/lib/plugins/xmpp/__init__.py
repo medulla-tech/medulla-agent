@@ -2427,14 +2427,17 @@ class XmppMasterDatabase(DatabaseHelper):
             We return those mac addresses grouped by the broadcast address.
         """
         grp_wol_broadcast_adress = {}
+
+        listmaccleaned = [mac.replace(":", "") for mac in listmacaddress]
+
         result = (
-            session.query(Network.broadcast, Network.mac)
-            .distinct(Network.mac)
+            session.query(Network.broadcast, Network.macaddress)
+            .distinct(Network.macaddress)
             .filter(
                 and_(
                     Network.broadcast != "",
                     Network.broadcast.isnot(None),
-                    Network.macaddress.in_(listmacaddress),
+                    Network.macaddress.in_(listmaccleaned),
                 )
             )
             .all()
@@ -2450,7 +2453,7 @@ class XmppMasterDatabase(DatabaseHelper):
         for t in result:
             if t.broadcast not in grp_wol_broadcast_adress:
                 grp_wol_broadcast_adress[t.broadcast] = []
-            grp_wol_broadcast_adress[t.broadcast].append(t.mac)
+            grp_wol_broadcast_adress[t.broadcast].append(t.macaddress)
         return grp_wol_broadcast_adress
 
     def convertTimestampToSQLDateTime(self, value):
