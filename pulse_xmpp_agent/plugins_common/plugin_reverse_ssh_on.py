@@ -302,7 +302,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
                 linecmd = []
                 cmd = (
-                    """\\"%s\\" -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
+                    """\\"%s\\" -t -t -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
                     % (
                         sshexec,
                         reversetype,

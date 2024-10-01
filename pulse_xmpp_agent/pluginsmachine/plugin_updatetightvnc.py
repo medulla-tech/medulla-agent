@@ -46,8 +46,8 @@ def check_tightvnc_configuration(xmppobject):
             {
                 "key": "AllowLoopback",
                 "type": "REG_DWORD",
-                "value": "0x0",
-                "set_value": "0",
+                "value": "0x1",
+                "set_value": "1",
             },
             {
                 "key": "LoopbackOnly",
