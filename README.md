@@ -15,11 +15,8 @@ With Medulla XMPP Agent you are be able to:
 
 ## Community
 
-* Discord Channel: https://discord.gg/Mj8wGGp4yH
-* Discuss on IRC chanel [irc://irc.libera.chat](https://web.libera.chat/)
-  * Channel : #medulla-fr
-  * Channel : #medulla-en
-* Website : <http://www.siveo.net>
+* Discuss on Discord Channel: https://discord.gg/Mj8wGGp4yH
+* Website : <[http://www.siveo.net](https://medulla-tech.io/)>
 * Bugtracker : <https://github.com/medulla-tech/medulla-agent/issues>
 
 ## Installation
