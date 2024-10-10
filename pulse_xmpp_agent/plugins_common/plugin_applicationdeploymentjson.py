@@ -81,7 +81,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         if "actionscheduler" in data:
             if data["actionscheduler"] == "run":
                 logger.debug("RUN DEPLOY")
-                sessioninfo = objectxmpp.Deploybasesched.get_sesionscheduler(sessionid)
+                sessioninfo = objectxmpp.Deploybasesched.get(sessionid)
                 if sessioninfo == "":
                     objectxmpp.xmpplog(
                         '<span class="log_err">Package delayed execution error : session missing</span>',
@@ -117,7 +117,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     datajson = json.loads(sessioninfo)
                     datasend = datajson
 
-                    objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
+                    objectxmpp.Deploybasesched.delete(sessionid)
                     initialisesequence(datasend, objectxmpp, sessionid)
                     return
             elif data["actionscheduler"] == "pause":
@@ -152,7 +152,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     touser="",
                 )
 
-                objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
+                objectxmpp.Deploybasesched.delete(sessionid)
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             else:
                 # supprime cet input
@@ -184,7 +184,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     fromuser="AM %s" % strjidagent,
                     touser="",
                 )
-                objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
+                objectxmpp.Deploybasesched.delete(sessionid)
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             return
 
@@ -890,9 +890,12 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     touser="",
                 )
                 datasend["data"]["advanced"]["scheduling"] = True
-                objectxmpp.Deploybasesched.set_sesionscheduler(
-                    sessionid, json.dumps(datasend)
-                )
+
+                try:
+                    objectxmpp.Deploybasesched.put(sessionid, json.dumps(datasend))
+                    objectxmpp.Deploybasesched.close()
+                except Exception as e:
+                    logger.error(f"Problem when inserting data in SQLite base: {e}")
         else:
             objectxmpp.session.sessionsetdata(
                 sessionid, datasend

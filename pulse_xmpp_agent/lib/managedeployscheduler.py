@@ -17,6 +17,7 @@ from lib.agentconffile import (
     rotation_file,
 )
 import lmdb
+from lib.manageDb import ManageDb
 
 logger = logging.getLogger()
 
@@ -162,3 +163,10 @@ class manageschedulerdeploy:
             self.closebase()
 
         return data
+
+class ManageDbScheduler(ManageDb):
+    tablename = "scheduler"
+    path = os.path.join(medullaPath(), "var", "tmp", "BDDeploy", "scheduler.db")
+
+    def __init__(self):
+        super().__init__()
