@@ -352,6 +352,12 @@ configure_rdp_plugin() {
     fi
 }
 
+configure_inventory_plugin() {
+    if [ $DISABLE_INVENTORY = "1" ]; then
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatefusion
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updateglpiagent
+    fi
+}
 
 update_nsi_script() {
 	colored_echo blue "### INFO Updating NSIS script..."
@@ -452,4 +458,5 @@ update_nsi_script
 configure_ssh_plugin
 enable_and_configure_vnc_plugin
 configure_rdp_plugin
+configure_inventory_plugin
 generate_agent_installer
