@@ -10,7 +10,9 @@ import logging
 import sys
 import traceback
 
-plugin = {"VERSION": "1.1", "NAME": "scheduling_deploy", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+logger = logging.getLogger()
+
+plugin = {"VERSION": "1.2", "NAME": "scheduling_deploy", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 # nb  -1 infinie
 SCHEDULE = {"schedule": "*/15 * * * *", "nb": -1}
@@ -21,7 +23,6 @@ def schedule_main(objectxmpp):
     logging.getLogger().debug(plugin)
     logging.getLogger().debug("============================================")
     try:
-        objectxmpp.Deploybasesched.openbase()
         if sys.platform.startswith("darwin"):
             for k, v in objectxmpp.Deploybasesched.dbsessionscheduler:
                 obj = json.loads(v)
@@ -36,30 +37,27 @@ def schedule_main(objectxmpp):
                     mto=obj["data"]["jidmaster"], mbody=json.dumps(obj), mtype="chat"
                 )
         else:
-            # Ouvrir un environnement de transaction
-            with objectxmpp.Deploybasesched.dbsessionscheduler.begin() as txn:
-                # Ouvrir un curseur pour parcourir les clés et les valeurs
-                cursor = txn.cursor()
+            data = objectxmpp.Deploybasesched.get_all()
 
-                # Parcourir toutes les paires clé-valeur
-                for key, value in cursor:
-                    # Convertir les données de type bytes en str (si nécessaire)
-                    k = key.decode("utf-8")
-                    v = value.decode("utf-8")
-                    obj = json.loads(v)
-                    obj["data"]["fromaction"] = obj["action"]
-                    obj["action"] = "machineexecutionscheduler"
-                    del obj["data"]["descriptor"]
-                    del obj["data"]["packagefile"]  # ['descriptor']
-                    print(json.dumps(obj, indent=4))
-                    # send message to master(plugin_machineexecutionscheduler)
-                    # print "SEND", json.dumps(obj, indent = 4)
-                    objectxmpp.send_message(
-                        mto=obj["data"]["jidmaster"],
-                        mbody=json.dumps(obj),
-                        mtype="chat",
-                    )
+            for key, value in data.items():
+                try:
+                    if value is not None and value.strip() != "":
+                        obj = json.loads(value)
+                        obj["data"]["fromaction"] = obj["action"]
+                        obj["action"] = "machineexecutionscheduler"
+                        obj["data"].pop("descriptor", None)
+                        obj["data"].pop("packagefile", None)
+                        objectxmpp.send_message(
+                            mto=obj["data"]["jidmaster"],
+                            mbody=json.dumps(obj),
+                            mtype="chat",
+                        )
+                    else:
+                        logger.error(f"The value for key '{key}' is empty or invalid, possibly missing sessionid.")
+                except Exception as e:
+                    logger.error(f"Unexpected error : {e}")
+
     except Exception:
         logging.getLogger().error("\n%s" % (traceback.format_exc()))
     finally:
-        objectxmpp.Deploybasesched.closebase()
+        objectxmpp.Deploybasesched.close()
