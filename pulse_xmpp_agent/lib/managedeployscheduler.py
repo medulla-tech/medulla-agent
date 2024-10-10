@@ -164,6 +164,7 @@ class manageschedulerdeploy:
 
         return data
 
+
 class ManageDbScheduler(ManageDb):
     tablename = "scheduler"
     path = os.path.join(medullaPath(), "var", "tmp", "BDDeploy", "scheduler.db")
