@@ -138,7 +138,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                data['base_path'],
                                private_key_path=id_rsa_path,
                                restore_to_backup_location = objectxmpp.restore_to_backup_location,
-                               ssh_port = objectxmpp.ssh_port)
+                               ssh_port = objectxmpp.reverseserver_ssh_port)
 
 def read_conf_plugin_backup_restore(objectxmpp):
     """
@@ -189,7 +189,8 @@ username = pulseuser
 restore_to_backup_location = True
 
 # SSH Server machine urbackup port number
-ssh_port = 22
+# Reverse SSH Server port number
+# reverseserver_ssh_port = 22
 
 """
             # Écrire le fichier de configuration avec le contenu par défaut
@@ -209,7 +210,7 @@ ssh_port = 22
         objectxmpp.private_name_key = Config.get('backup_restore', 'private_name_key', fallback='pulseuser_backup_id_rsa')
         objectxmpp.username = Config.get('backup_restore', 'username', fallback='pulseuser')
         objectxmpp.restore_to_backup_location = Config.getboolean('backup_restore', 'restore_to_backup_location', fallback=True)
-        objectxmpp.ssh_port = Config.getint('backup_restore', 'ssh_port', fallback=22)
+        objectxmpp.reverseserver_ssh_port = Config.getint('backup_restore', 'reverseserver_ssh_port', fallback=22)
         logger.debug(f"Configuration values set: remote_user={objectxmpp.remote_user}, "
                      f"private_name_key={objectxmpp.private_name_key}, "
                      f"username={objectxmpp.username}, "
