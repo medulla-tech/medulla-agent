@@ -339,6 +339,7 @@ enable_and_configure_vnc_plugin() {
     else
         crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters rfbport ${VNC_PORT}
         crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters password_rw ${VNC_PASSWORD}
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatetightvnc
     fi
 }
 
@@ -349,6 +350,8 @@ configure_ssh_plugin() {
 configure_rdp_plugin() {
     if [ $DISABLE_RDP = "1" ]; then
         crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updaterdp
+    else
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updaterdp
     fi
 }
 
@@ -356,6 +359,9 @@ configure_inventory_plugin() {
     if [ $DISABLE_INVENTORY = "1" ]; then
         crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatefusion
         crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updateglpiagent
+    else
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatefusion
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updateglpiagent
     fi
 }
 
