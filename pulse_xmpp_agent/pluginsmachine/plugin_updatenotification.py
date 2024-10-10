@@ -17,11 +17,11 @@ from lib.agentconffile import (
     rotation_file,
 )
 
-NOTIFICATIONVERSION = "2.2.2"
+NOTIFICATIONVERSION = "3.0"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
