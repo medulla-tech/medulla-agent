@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger()
 
+
 class ManageDb:
     path = ""
     tablename = ""
@@ -28,9 +29,11 @@ class ManageDb:
         sqlite3.Connection
             A SQLite connection for the current thread.
         """
-        if not hasattr(self.local_storage, 'connection'):
+        if not hasattr(self.local_storage, "connection"):
             try:
-                self.local_storage.connection = sqlite3.connect(self.path, check_same_thread=False)
+                self.local_storage.connection = sqlite3.connect(
+                    self.path, check_same_thread=False
+                )
                 self.activate(self.local_storage.connection)
             except sqlite3.Error as e:
                 logger.error(f"Error while opening the SQLite database: {e}")
@@ -40,7 +43,7 @@ class ManageDb:
         """
         Closes the SQLite connection for the current thread.
         """
-        if hasattr(self.local_storage, 'connection'):
+        if hasattr(self.local_storage, "connection"):
             self.local_storage.connection.close()
             del self.local_storage.connection
 
@@ -82,6 +85,7 @@ class ManageDb:
         function
             The decorated function that provides a session for database operations.
         """
+
         def wrapper(self, *args, **kwargs):
             connection = self.get_connection()
             session = connection.cursor()
@@ -94,6 +98,7 @@ class ManageDb:
                 raise
             finally:
                 session.close()
+
         return wrapper
 
     @session
@@ -124,8 +129,10 @@ class ManageDb:
         if savemode:
             old_value = self.get(key)
             logger.debug(f"Old value retrieved: {old_value}")
-        session.execute(f"REPLACE INTO {self.tablename} (key, value, modification_date) VALUES (?, ?, CURRENT_TIMESTAMP)",
-                        (key, value))
+        session.execute(
+            f"REPLACE INTO {self.tablename} (key, value, modification_date) VALUES (?, ?, CURRENT_TIMESTAMP)",
+            (key, value),
+        )
         if savemode:
             return old_value
 
@@ -175,7 +182,9 @@ class ManageDb:
             The value associated with the key, or None if not found.
         """
         try:
-            query = session.execute(f"SELECT value FROM {self.tablename} WHERE key = ?", (key,))
+            query = session.execute(
+                f"SELECT value FROM {self.tablename} WHERE key = ?", (key,)
+            )
             result = query.fetchone()
             if result is None:
                 logger.error(f"No value found for key: {key}")
@@ -204,7 +213,9 @@ class ManageDb:
             True if the entry was deleted, False if the key does not exist.
         """
         try:
-            query = session.execute(f"DELETE FROM {self.tablename} WHERE key = ?", (key,))
+            query = session.execute(
+                f"DELETE FROM {self.tablename} WHERE key = ?", (key,)
+            )
             if query.rowcount == 0:
                 logger.error(f"No entry found to delete for key: {key}")
                 return False
@@ -244,8 +255,13 @@ class ManageDb:
         try:
             number = abs(number)
             timediff = f"-{number} {epoch}"
-            session.execute(f"DELETE FROM {self.tablename} WHERE modification_date < DATETIME('now', ?)", (timediff,))
-            logger.debug(f"Records older than {number} {epoch} have been deleted from {self.tablename}.")
+            session.execute(
+                f"DELETE FROM {self.tablename} WHERE modification_date < DATETIME('now', ?)",
+                (timediff,),
+            )
+            logger.debug(
+                f"Records older than {number} {epoch} have been deleted from {self.tablename}."
+            )
         except sqlite3.Error as e:
             logger.error(f"Error during the clean operation: {e}")
 

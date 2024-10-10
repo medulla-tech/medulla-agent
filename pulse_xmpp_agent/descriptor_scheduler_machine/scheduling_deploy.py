@@ -53,7 +53,9 @@ def schedule_main(objectxmpp):
                             mtype="chat",
                         )
                     else:
-                        logger.error(f"The value for key '{key}' is empty or invalid, possibly missing sessionid.")
+                        logger.error(
+                            f"The value for key '{key}' is empty or invalid, possibly missing sessionid."
+                        )
                 except Exception as e:
                     logger.error(f"Unexpected error : {e}")
 
