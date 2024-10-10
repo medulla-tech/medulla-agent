@@ -137,7 +137,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                data['directorylist'],
                                data['base_path'],
                                private_key_path=id_rsa_path,
-                               restore_to_backup_location = objectxmpp.restore_to_backup_location)
+                               restore_to_backup_location = objectxmpp.restore_to_backup_location,
+                               ssh_port = objectxmpp.ssh_port)
 
 def read_conf_plugin_backup_restore(objectxmpp):
     """
@@ -186,6 +187,10 @@ username = pulseuser
 # C:\\Program Files\\Medulla\\var\\backup_files pour Windows
 # /var/lib/pulse2/backup_files pour Darwin ou Linux
 restore_to_backup_location = True
+
+# SSH Server machine urbackup port number
+ssh_port = 22
+
 """
             # Écrire le fichier de configuration avec le contenu par défaut
             with open(configfilename, 'w') as configfile:
@@ -204,7 +209,7 @@ restore_to_backup_location = True
         objectxmpp.private_name_key = Config.get('backup_restore', 'private_name_key', fallback='pulseuser_backup_id_rsa')
         objectxmpp.username = Config.get('backup_restore', 'username', fallback='pulseuser')
         objectxmpp.restore_to_backup_location = Config.getboolean('backup_restore', 'restore_to_backup_location', fallback=True)
-
+        objectxmpp.ssh_port = Config.getint('backup_restore', 'ssh_port', fallback=22)
         logger.debug(f"Configuration values set: remote_user={objectxmpp.remote_user}, "
                      f"private_name_key={objectxmpp.private_name_key}, "
                      f"username={objectxmpp.username}, "
@@ -221,7 +226,8 @@ def copy_files_and_directories(remote_user,
                                directories,
                                base_path,
                                private_key_path=None,
-                               restore_to_backup_location=True):
+                               restore_to_backup_location=True,
+                               ssh_port=22):
     """
     Copies files and directories from a remote host to the local machine.
 
@@ -232,6 +238,7 @@ def copy_files_and_directories(remote_user,
     :param base_path: The base path for the backup.
     :param private_key_path: The path to the private key for SSH.
     :param restore_to_backup_location: Whether to restore files to the backup location.
+    :param ssh_port: port number ssh server.
     """
     if private_key_path is None:
         private_key_path = os.path.join(getHomedrive(), ".ssh", "id_rsa")
@@ -272,25 +279,28 @@ def copy_files_and_directories(remote_user,
     #                                               -o ServerAliveInterval=10
     #                                               -o CheckHostIP=no
     #                                               -o LogLevel=ERROR
-    #                                               -o ConnectTimeout=10"
+    #                                               -o ConnectTimeout=10
+    #                                               -p 2222"
     #       -av --chmod=777
     #       urbackup@10.10.0.100:/media/BACKUP/urbackup/amu-win-6/240916-1727/Users/desktop.ini
     #       "C:/Program Files/Medulla/var/backup_files/C_0/Users/desktop.ini
 
     cmd = (
-        """%s -r -p -C "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """
+        """%s -r -p -C -P %s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """
         % (
             scp_path,
+            ssh_port,
             private_key_path,
         )
     )
     if rsync_available:
         cmd = (
-            """%s -L -z --rsync-path=rsync -e "%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10" -av --chmod=777 """
+            """%s -L -z --rsync-path=rsync -e "%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10 -p %s" -av --chmod=777 """
             % (
                 rsync_path,
                 ssh_path,
                 private_key_path,
+                ssh_port
             )
         )
 
