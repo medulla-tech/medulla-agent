@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # file plugin_recombine_file.py
 
+# ce plugin recois les segment de fichier transferer et les reconstitut.
+# puis il decompresse l'archive a l'endroit preciser.
+#
+#
 import logging
 import json
 import platform
