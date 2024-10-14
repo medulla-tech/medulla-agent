@@ -4,9 +4,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_backup_restore_substitut.py
 
-# ce plugin est appeler depuis mmc
-# il a comme but de transferer des fichier de backup
-
+# Ce plugin est appelé depuis mmc, il est utilisé par substitut master.
+# Il a comme but de transférer des fichiers de backup via xmpp
+# Il crée une archive zip, celle de ce que l'on veut transférer via xmpp.
+# L'archive est décomposée en morceaux dans un répertoire /var/lib/pulse2/zip_transfert
 
 """
 This plugin can be called from quick action
@@ -23,6 +24,7 @@ import time
 import re
 import base64
 
+# Chemin où les fichiers ZIP seront créés
 var_file_zipzer = "/var/lib/pulse2/zip_transfert"
 
 logger = logging.getLogger()
@@ -33,48 +35,52 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj=None):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
-    logger.debug("datafffffffffffffff %s" % json.dumps(data['data'], indent=4))
+    logger.debug("data %s" % json.dumps(data['data'], indent=4))
     try:
-        datamsg=data['data']
+        datamsg = data['data']
         logger.debug("datamsg %s" % datamsg.keys())
+
         # Spécifier le chemin où créer le répertoire ZIP
         var_file_zipzer = "/var/lib/pulse2/zip_transfert"
         # Créer le répertoire s'il n'existe pas
         os.makedirs(var_file_zipzer, exist_ok=True)
+
+        # Traitement des répertoires à zipper
         if 'directorylist' in datamsg and datamsg['directorylist']:
             for directory in datamsg['directorylist']:
                 logger.debug("creation d'un fichier zip depuis 1 repertoire : %s" % directory)
                 if directory:
                     repertoire_zip = os.path.join(datamsg['base_path'], directory[0])
-                    logger.info("repertoire_zip %s" %repertoire_zip)
+                    logger.info("repertoire_zip %s" % repertoire_zip)
                     name_file_zip_actuel = generer_name_avec_timestamp(datamsg['machine_dest_backup']['uuid_serial_machine'],
-                                                                    os.path.join(directory[1]))
+                                                                       os.path.join(directory[1]))
                     archive_fichier_name_zip = f'{name_file_zip_actuel}.zip'
-                    logger.info("archive_fichier_name_zip %s" %archive_fichier_name_zip)
-                    path_archive_fichier_name_zip  = os.path.join(var_file_zipzer, archive_fichier_name_zip)
-                    logger.info("creation d'un fichier zip %s" %path_archive_fichier_name_zip)
-                    if not zipper_repertoire( repertoire_zip, path_archive_fichier_name_zip):
+                    logger.info("archive_fichier_name_zip %s" % archive_fichier_name_zip)
+                    path_archive_fichier_name_zip = os.path.join(var_file_zipzer, archive_fichier_name_zip)
+                    logger.info("creation d'un fichier zip %s" % path_archive_fichier_name_zip)
+                    if not zipper_repertoire(repertoire_zip, path_archive_fichier_name_zip):
                         logger.info("demande de compression dun repertoire inexistant")
                         continue
                     # Exemple d'utilisation
                     manager = ZipFileManager(var_file_zipzer)
                     manager.analyze_and_cleanup()
                     output_dir_list = process_zip_files(var_file_zipzer, var_file_zipzer, datamsg['machine_dest_backup']['uuid_serial_machine'], segment_size=64000)
+
+        # Traitement des fichiers à zipper
         if 'filelist' in datamsg and datamsg['filelist']:
             for files in datamsg['filelist']:
                 logger.debug("creation d'un fichier zip depuis 1 fichier : %s" % files)
                 if files:
                     input_file = os.path.join(datamsg['base_path'], files[0])
-                    logger.info("imput file a zipper %s" %input_file)
+                    logger.info("imput file a zipper %s" % input_file)
                     name_file_zip_actuel = generer_name_avec_timestamp(datamsg['machine_dest_backup']['uuid_serial_machine'],
-                                                                    os.path.join(files[1]))
+                                                                       os.path.join(files[1]))
                     archive_fichier_name_zip = f'{name_file_zip_actuel}.zip'
-                    logger.info("archive_fichier_name_zip %s" %archive_fichier_name_zip)
+                    logger.info("archive_fichier_name_zip %s" % archive_fichier_name_zip)
 
-                    path_archive_fichier_name_zip  = os.path.join(var_file_zipzer, archive_fichier_name_zip)
-                    logger.info("creation d'un fichier zip %s" %path_archive_fichier_name_zip)
+                    path_archive_fichier_name_zip = os.path.join(var_file_zipzer, archive_fichier_name_zip)
+                    logger.info("creation d'un fichier zip %s" % path_archive_fichier_name_zip)
                     if not zipper_fichier(input_file, path_archive_fichier_name_zip, fichier_vide=True):
-                    # if not zipper_repertoire( file_zip, path_archive_fichier_name_zip):
                         logger.info("demande de compression dun fichier inexistant")
                         continue
                     # Exemple d'utilisation
@@ -84,9 +90,9 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj=None):
                                                         var_file_zipzer,
                                                         datamsg['machine_dest_backup']['uuid_serial_machine'],
                                                         segment_size=64000,
-                                                        type_transfert = "backup",
-                                                        location = None,
-                                                        contenttype = "file"
+                                                        type_transfert="backup",
+                                                        location=None,
+                                                        contenttype="file"
                                                         )
     except Exception:
         logger.error("%s" % (traceback.format_exc()))
@@ -95,14 +101,14 @@ def process_zip_files(input_dir,
                       output_dir_base_trunck,
                       uuid_serial_machine,
                       segment_size=8000,
-                      type_transfert = "backup",
-                      location = None,
-                      contenttype = "directory"):
+                      type_transfert="backup",
+                      location=None,
+                      contenttype="directory"):
     """
     Lit tous les fichiers ZIP d'un répertoire, les découpe et enregistre les segments dans un répertoire de sortie basé sur le JID.
         contenttype file ou directory
     """
-    output_dir_list=[]
+    output_dir_list = []
     output_dir_base = f"{output_dir_base_trunck}/{uuid_serial_machine}"
 
     # Vérifier si le répertoire de base existe, sinon le créer
@@ -155,16 +161,10 @@ def md5_hash(file_path):
 def split_file(file_path,
                output_dir,
                segment_size=8000,
-               type_transfert =  "backup",
-               location = None ,
-               contenttype = "directory"):
+               type_transfert="backup",
+               location=None,
+               contenttype="directory"):
     """Découpe un fichier en segments et enregistre chaque segment sous forme de fichier JSON en base64."""
-    # Vérifier si le répertoire de sortie existe, sinon le créer
-    logger.error(f"split_file file_path {file_path}: ")
-    logger.error(f"split_file output_dir {output_dir}: ")
-    logger.error(f"split_file contenttype {contenttype}: ")
-
-
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -173,7 +173,7 @@ def split_file(file_path,
     file_size = os.path.getsize(file_path)
     total_parts = (file_size + segment_size - 1) // segment_size
     file_uuid = str(uuid.uuid4())
-    directory_or_file= file_name
+    directory_or_file = file_name
     if file_name.endswith(".zip"):
         directory_or_file = file_name[:-4]
     try:
@@ -197,7 +197,7 @@ def split_file(file_path,
             # Création du fichier JSON pour cette partie
             part_data = {
                 "namefile": file_name,
-                "directory":directory_or_file,
+                "directory": directory_or_file,
                 "nb": part_num + 1,
                 "nbtotal": total_parts,
                 "content": encoded_content,
@@ -217,7 +217,7 @@ def split_file(file_path,
     # Création du fichier manifeste
     manifest_data = {
         "namefile": file_name,
-        "directory":directory_or_file,
+        "directory": directory_or_file,
         "creation": str(datetime.now()),
         "nb_total": total_parts,
         "md5": original_md5,
@@ -267,7 +267,6 @@ def recombine_file(manifest_path, input_dir, output_file):
     else:
         logger.debug(f"Erreur : le MD5 recomposé {recombined_md5} ne correspond pas à l'original {original_md5}.")
 
-
 def check_manifests(directory):
     """Vérifie tous les manifestes dans un répertoire et retourne deux listes :
     - Manifestes complets : Tous les fichiers nécessaires sont présents.
@@ -304,7 +303,6 @@ def check_manifests(directory):
                 incomplete_manifests.append(file_name)
 
     return complete_manifests, incomplete_manifests
-
 
 def remplacer_caracteres(chaine):
     # Remplacer @ par  @@
@@ -401,7 +399,6 @@ def generer_uuid_avec_timestamp(millisecondes=False):
 
     return uuid_timestamp
 
-
 class ZipFileManager:
     """
     Classe qui gère les fichiers ZIP dans un répertoire en conservant les fichiers les plus récents
@@ -461,9 +458,6 @@ class ZipFileManager:
         os.remove(file_path)
         logger.debug(f"Supprimé : {file_path}")
 
-
-
-
 def zipper_fichier(fichier, fichier_zip, fichier_vide=True):
     """
     Zipe un seul fichier.
@@ -476,7 +470,7 @@ def zipper_fichier(fichier, fichier_zip, fichier_vide=True):
     Returns:
         None: La fonction crée un fichier zip et n'a pas de valeur de retour.
     """
-     # Vérifier si le répertoire existe
+    # Vérifier si le répertoire existe
     if not os.path.exists(fichier):
         return None
 
@@ -489,7 +483,6 @@ def zipper_fichier(fichier, fichier_zip, fichier_vide=True):
             if fichier_vide or os.path.getsize(fichier) > 0:
                 zipf.write(fichier, os.path.basename(fichier))
     return True
-
 
 def zipper_repertoire(repertoire, fichier_zip, resoudre_liens=False, repertoire_vide=True, fichier_vide=True):
     """
@@ -542,25 +535,6 @@ def zipper_repertoire(repertoire, fichier_zip, resoudre_liens=False, repertoire_
                         zipf.write(chemin_complet, chemin_rel)
 
     return True
-#
-# def zipper_repertoire( repertoire, fichier_zip, resoudre_liens = False):
-#     with zipfile.ZipFile(fichier_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
-#         for root, dirs, files in os.walk(repertoire):
-#             for file in files:
-#                 chemin_complet = os.path.join(root, file)
-#                 chemin_rel = os.path.relpath(chemin_complet, repertoire)
-#
-#                 if os.path.islink(chemin_complet):
-#                     if resoudre_liens:
-#                         # Résoudre le lien symbolique et ajouter la cible
-#                         chemin_cible = os.readlink(chemin_complet)
-#                         zipf.write(chemin_cible, chemin_rel)
-#                     else:
-#                         # Ajouter le lien symbolique en tant que tel
-#                         zipf.write(chemin_complet, chemin_rel)
-#                 else:
-#                     # Ajouter le fichier normal
-#                     zipf.write(chemin_complet, chemin_rel)
 
 def decompresser_archive(fichier_zip, repertoire_destination):
     # Vérifier si le fichier ZIP existe
