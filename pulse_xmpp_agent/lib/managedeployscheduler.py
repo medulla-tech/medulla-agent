@@ -171,3 +171,24 @@ class ManageDbScheduler(ManageDb):
 
     def __init__(self):
         super().__init__()
+        bddir_path = self.create_bddir()
+
+        if not os.path.exists(bddir_path):
+            try:
+                os.makedirs(bddir_path, mode=0o700)
+                logger.info(f"Created directory: {bddir_path}")
+            except Exception as e:
+                logger.error(f"Failed to create directory {bddir_path}: {str(e)}")
+
+    def create_bddir(self):
+        """
+        This function returns the appropriate directory for BDDeploy based on the platform.
+        """
+        if sys.platform.startswith("linux"):
+            return os.path.join(Env.user_dir(), "BDDeploy")
+        elif sys.platform.startswith("win"):
+            return os.path.join(medullaPath(), "var", "tmp", "BDDeploy")
+        elif sys.platform.startswith("darwin"):
+            return os.path.join("/opt", "Pulse", "BDDeploy")
+        else:
+            return None
