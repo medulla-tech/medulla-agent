@@ -1257,8 +1257,6 @@ def message_config(nameplugin, pathfileconf):
     logger.error("serverip = 192.168.56.2 #Mandatory parameter")
     logger.error("# XMPP port")
     logger.error("port = 5222 #Mandatory parameter")
-    logger.error("# XMPP password")
-    logger.error("password = secret #Mandatory parameter")
     logger.error("# The location of the guacamole server.")
     logger.error(
         "guacamole_baseurl = http://192.168.56.2/guacamole/ #Mandatory parameter"
