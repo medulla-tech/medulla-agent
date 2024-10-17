@@ -2,12 +2,13 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
-# pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_backup_restore_substitut.py
+# pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_send_file_xmpp.py
 
-# Ce plugin est appelé depuis mmc, il est utilisé par substitut master.
-# Il a comme but de transférer des fichiers de backup via xmpp
-# Il crée une archive zip, celle de ce que l'on veut transférer via xmpp.
-# L'archive est décomposée en morceaux dans un répertoire /var/lib/pulse2/zip_transfert
+# ce plugin est appelé pour envoye 1 fichier ou 1 repertoire sur 1 machine
+# il a comme but de transferer des fichiers via xmpp
+# il cree 1 archive zip, celle de ce que l'on veut transferer via xmpp.
+# l'archive et decompose en morceau dans 1 repertoire /var/lib/pulse2/zip_transfert
+# ou indique la destination sur la machine distante.
 
 """
 This plugin can be called from quick action
@@ -23,92 +24,157 @@ import uuid
 import time
 import re
 import base64
+from lib.plugins.xmpp import XmppMasterDatabase
 
-# Chemin où les fichiers ZIP seront créés
 var_file_zipzer = "/var/lib/pulse2/zip_transfert"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "backup_restore_substitut", "TYPE": "mastersub"}
+plugin = {"VERSION": "1.0", "NAME": "send_file_xmpp", "TYPE": "substitut"}
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj=None):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
-    logger.debug("data %s" % json.dumps(data['data'], indent=4))
+    logger.debug("data %s" % json.dumps(data, indent=4))
+    # Spécifier le chemin où créer le répertoire ZIP
+    # Créer le répertoire s'il n'existe pas
+    os.makedirs(var_file_zipzer, exist_ok=True)
+
+    if not verifier_cles_non_vides(data, [ "machine_dest",
+                                           "path_fichier",
+                                           "install_machine_dest",
+                                           "contenttype"]):
+        logger.error("il manque des clefs dans le json d'entree")
+        return
     try:
-        datamsg = data['data']
-        # logger.debug("datamsg %s" % datamsg.keys())
+        # datamsg=data['data']
+        machine = XmppMasterDatabase().search_machine(data['machine_dest'])
+        if machine:
+            # logger.info("Machine destination %s" % json.dumps(machine, indent=4))
+            if data['contenttype'].lower().startswith('file'):
+                # envoi file
+                if os.path.exists(data['path_fichier']):
+                    # logger.info("imput file a zipper %s" % data['path_fichier'])
+                    name_file_zip_actuel = generer_name_avec_timestamp(machine['uuid_serial_machine'],
+                                                                       data['install_machine_dest'])
 
-        # Spécifier le chemin où créer le répertoire ZIP
-        var_file_zipzer = "/var/lib/pulse2/zip_transfert"
-        # Créer le répertoire s'il n'existe pas
-        os.makedirs(var_file_zipzer, exist_ok=True)
-
-        # Traitement des répertoires à zipper
-        if 'directorylist' in datamsg and datamsg['directorylist']:
-            for directory in datamsg['directorylist']:
-                # logger.debug("creation d'un fichier zip depuis 1 repertoire : %s" % directory)
-                if directory:
-                    repertoire_zip = os.path.join(datamsg['base_path'], directory[0])
-                    # logger.info("repertoire_zip %s" % repertoire_zip)
-                    name_file_zip_actuel = generer_name_avec_timestamp(datamsg['machine_dest_backup']['uuid_serial_machine'],
-                                                                       os.path.join(directory[1]))
                     archive_fichier_name_zip = f'{name_file_zip_actuel}.zip'
-                    # logger.info("archive_fichier_name_zip %s" % archive_fichier_name_zip)
-                    path_archive_fichier_name_zip = os.path.join(var_file_zipzer, archive_fichier_name_zip)
-                    # logger.info("creation d'un fichier zip %s" % path_archive_fichier_name_zip)
-                    if not zipper_repertoire(repertoire_zip, path_archive_fichier_name_zip):
-                        logger.error("demande de compression dun repertoire inexistant")
-                        continue
+                    # logger.info("archive_fichier_name_zip %s" %archive_fichier_name_zip)
+
+                    path_archive_fichier_name_zip  = os.path.join(var_file_zipzer, archive_fichier_name_zip)
+                    # logger.info("creation d'un fichier zip %s" %path_archive_fichier_name_zip)
+
+                    if not zipper_fichier(data['path_fichier'],
+                                          path_archive_fichier_name_zip,
+                                          fichier_vide=True):
+                        # logger.error("demande de compression dun fichier inexistant")
+                        return
+
                     # Exemple d'utilisation
                     manager = ZipFileManager(var_file_zipzer)
                     manager.analyze_and_cleanup()
-                    output_dir_list = process_zip_files(var_file_zipzer, var_file_zipzer, datamsg['machine_dest_backup']['uuid_serial_machine'], segment_size=64000)
-
-        # Traitement des fichiers à zipper
-        if 'filelist' in datamsg and datamsg['filelist']:
-            for files in datamsg['filelist']:
-                # logger.debug("creation d'un fichier zip depuis 1 fichier : %s" % files)
-                if files:
-                    input_file = os.path.join(datamsg['base_path'], files[0])
-                    # logger.info("imput file a zipper %s" % input_file)
-                    name_file_zip_actuel = generer_name_avec_timestamp(datamsg['machine_dest_backup']['uuid_serial_machine'],
-                                                                       os.path.join(files[1]))
-                    archive_fichier_name_zip = f'{name_file_zip_actuel}.zip'
-                    # logger.info("archive_fichier_name_zip %s" % archive_fichier_name_zip)
-
-                    path_archive_fichier_name_zip = os.path.join(var_file_zipzer, archive_fichier_name_zip)
-                    # logger.info("creation d'un fichier zip %s" % path_archive_fichier_name_zip)
-                    if not zipper_fichier(input_file, path_archive_fichier_name_zip, fichier_vide=True):
-                        logger.error("demande de compression dun fichier inexistant")
-                        continue
-                    # Exemple d'utilisation
-                    manager = ZipFileManager(var_file_zipzer)
-                    manager.analyze_and_cleanup()
+                    location = data['install_machine_dest'].replace("\\","/")
+                    # location = os.path.dirname(data['install_machine_dest'].replace("\\","/"))
+                    # logger.info("location %s" % location)
                     output_dir_list = process_zip_files(var_file_zipzer,
                                                         var_file_zipzer,
-                                                        datamsg['machine_dest_backup']['uuid_serial_machine'],
-                                                        segment_size=64000,
-                                                        type_transfert="backup",
-                                                        location=None,
-                                                        contenttype="file"
-                                                        )
+                                                        machine['uuid_serial_machine'],
+                                                        segment_size=8000,
+                                                        type_transfert = "location",
+                                                        location = location,
+                                                        contenttype = "file")
+                else:
+                    logger.error("le fichier [%s] a envoyer n'existe pas" % data['path_fichier'])
+            elif data['contenttype'].lower().startswith('direct') or data['contenttype'].lower().startswith('package') :
+                if os.path.exists(data['path_fichier']) and os.path.isdir(data['path_fichier']):
+                    logger.info("imput directory a zipper %s" % data['path_fichier'])
+                    name_file_zip_actuel = generer_name_avec_timestamp( machine['uuid_serial_machine'],
+                                                                        data['install_machine_dest'])
+                    archive_fichier_name_zip = f'{name_file_zip_actuel}.zip'
+                    logger.info("archive_fichier_name_zip %s" %archive_fichier_name_zip)
+                    path_archive_fichier_name_zip  = os.path.join(var_file_zipzer,
+                                                                archive_fichier_name_zip)
+                    # logger.info("creation d'un fichier zip %s" % path_archive_fichier_name_zip)
+                    if not zipper_repertoire( data['path_fichier'], path_archive_fichier_name_zip):
+                        logger.error("demande de compression d'un repertoire inexistant")
+                        return
+                    if data['contenttype'].lower().startswith('package') :
+                        contenttype = 'package'
+                    else:
+                        contenttype = 'directory'
+                    manager = ZipFileManager(var_file_zipzer)
+                    manager.analyze_and_cleanup()
+                    location = data['install_machine_dest'].replace("\\","/")
+                    # logger.info("location %s" % location)
+                    output_dir_list = process_zip_files(var_file_zipzer,
+                                                        var_file_zipzer,
+                                                        machine['uuid_serial_machine'],
+                                                        segment_size=8000,
+                                                        type_transfert = "location",
+                                                        location = location,
+                                                        contenttype = contenttype)
+
+                else:
+                    logger.error("le directory [%s] a envoyer n'existe pas %s " % data['path_fichier'])
     except Exception:
         logger.error("%s" % (traceback.format_exc()))
+
+def generer_name_avec_timestamp(jid_dest_backup, pathnamefile, millisecondes=False):
+    """
+    Génère un UUID aléatoire et y ajoute un timestamp.
+
+    :param millisecondes: Si True, utilise le timestamp en millisecondes. Par défaut, c'est False.
+    :return: Une chaîne contenant l'UUID et le timestamp.
+    """
+    # emplacement = remplacer_caracteres(pathnamefile)
+    emplacement = pathnamefile
+    # Obtenir le timestamp
+    if millisecondes:
+        timestamp = int(time.time() * 1000)  # Timestamp en millisecondes
+    else:
+        timestamp = int(time.time())  # Timestamp en secondes
+    # Combiner le UUID et le timestamp
+    nom_file_emplacement = f"{timestamp}_{jid_dest_backup}_{emplacement}"
+    return remplacer_caracteres(nom_file_emplacement)
+
+
+def verifier_cles_non_vides(data, cles):
+    """
+    Vérifie si toutes les clés spécifiées existent dans le dictionnaire
+    et si leurs valeurs ne sont pas None ou vides.
+
+    Args:
+        data (dict): Le dictionnaire à vérifier.
+        cles (list): Une liste de clés à vérifier dans le dictionnaire.
+
+    Returns:
+        bool: True si toutes les clés existent et leurs valeurs ne sont pas vides, sinon False.
+    """
+    logger.debug("verifier_cles_non_vides")
+    for cle in cles:
+        if cle not in data:  # Vérifie l'existence et la valeur non vide
+            logger.error("cle missing %s" % cle )
+            return False
+        if isinstance(data[cle], int):
+            continue
+        if not data[cle]:
+            return False
+    return True
+
 
 def process_zip_files(input_dir,
                       output_dir_base_trunck,
                       uuid_serial_machine,
                       segment_size=8000,
-                      type_transfert="backup",
-                      location=None,
-                      contenttype="directory"):
+                      type_transfert = "backup",
+                      location = None,
+                      contenttype = "directory"):
     """
     Lit tous les fichiers ZIP d'un répertoire, les découpe et enregistre les segments dans un répertoire de sortie basé sur le JID.
         contenttype file ou directory
     """
-    output_dir_list = []
+    output_dir_list=[]
     output_dir_base = f"{output_dir_base_trunck}/{uuid_serial_machine}"
 
     # Vérifier si le répertoire de base existe, sinon le créer
@@ -161,10 +227,16 @@ def md5_hash(file_path):
 def split_file(file_path,
                output_dir,
                segment_size=8000,
-               type_transfert="backup",
-               location=None,
-               contenttype="directory"):
+               type_transfert =  "backup",
+               location = None ,
+               contenttype = "directory"):
     """Découpe un fichier en segments et enregistre chaque segment sous forme de fichier JSON en base64."""
+    # Vérifier si le répertoire de sortie existe, sinon le créer
+    # logger.error(f"split_file file_path {file_path}: ")
+    # logger.error(f"split_file output_dir {output_dir}: ")
+    # logger.error(f"split_file contenttype {contenttype}: ")
+
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -173,7 +245,7 @@ def split_file(file_path,
     file_size = os.path.getsize(file_path)
     total_parts = (file_size + segment_size - 1) // segment_size
     file_uuid = str(uuid.uuid4())
-    directory_or_file = file_name
+    directory_or_file= file_name
     if file_name.endswith(".zip"):
         directory_or_file = file_name[:-4]
     try:
@@ -181,7 +253,7 @@ def split_file(file_path,
         # Prendre seulement la 3e partie
         directory_or_file = parties[2]
     except ValueError as ve:
-        logger.error("c'est pas 1 fichier zip")
+        logger.error("Ce n'est pas 1 fichier zip")
         return None
 
     # Calculer le hash MD5 du fichier original
@@ -197,7 +269,7 @@ def split_file(file_path,
             # Création du fichier JSON pour cette partie
             part_data = {
                 "namefile": file_name,
-                "directory": directory_or_file,
+                "directory":directory_or_file,
                 "nb": part_num + 1,
                 "nbtotal": total_parts,
                 "content": encoded_content,
@@ -207,7 +279,6 @@ def split_file(file_path,
             }
             # Formater le numéro de segment avec un format spécifique
             segment_formatted = "{:06d}".format(part_num+1)
-
             part_file_name = f"{file_uuid}_{segment_formatted}.json"
             part_file_path = os.path.join(output_dir, part_file_name)
 
@@ -217,9 +288,10 @@ def split_file(file_path,
             part_num += 1
 
     # Création du fichier manifeste
+    # en dernier permet de savoir si archive prete a l'envoi
     manifest_data = {
         "namefile": file_name,
-        "directory": directory_or_file,
+        "directory":directory_or_file,
         "creation": str(datetime.now()),
         "nb_total": total_parts,
         "md5": original_md5,
@@ -230,7 +302,7 @@ def split_file(file_path,
         "contenttype": contenttype
     }
 
-    manifest_file_name = f"{file_uuid}_0.manif"
+    manifest_file_name = f"{file_uuid}_000000.manif"
     manifest_file_path = os.path.join(output_dir, manifest_file_name)
 
     with open(manifest_file_path, "w") as manifest_file:
@@ -238,73 +310,6 @@ def split_file(file_path,
 
     # logger.debug(f"Fichier découpé en {total_parts} parties et manifest généré.")
 
-def recombine_file(manifest_path, input_dir, output_file):
-    """Recompose le fichier original à partir des segments JSON et vérifie le hash MD5."""
-    # Lire le fichier manifeste
-    with open(manifest_path, "r") as manifest_file:
-        manifest_data = json.load(manifest_file)
-
-    original_file_name = manifest_data["le nom reelle du fichier"]
-    total_parts = manifest_data["nombre total de partie"]
-    original_md5 = manifest_data["md5"]
-
-    file_uuid = os.path.basename(manifest_path).split("_")[0]
-
-    with open(output_file, "wb") as output_f:
-        # Recomposer le fichier à partir des fichiers JSON
-        for part_num in range(1, total_parts + 1):
-            part_file_name = f"{file_uuid}_{part_num}.json"
-            part_file_path = os.path.join(input_dir, part_file_name)
-
-            with open(part_file_path, "r") as part_file:
-                part_data = json.load(part_file)
-                # Décoder le contenu base64 et l'écrire dans le fichier de sortie
-                decoded_content = base64.b64decode(part_data["content"])
-                output_f.write(decoded_content)
-
-    # Vérification du hash MD5 du fichier recomposé
-    recombined_md5 = md5_hash(output_file)
-    if recombined_md5 == original_md5:
-        logger.debug(f"Fichier recomposé avec succès, MD5 vérifié : {recombined_md5}")
-    else:
-        logger.error(f"Erreur : le MD5 recomposé {recombined_md5} ne correspond pas à l'original {original_md5}.")
-
-def check_manifests(directory):
-    """Vérifie tous les manifestes dans un répertoire et retourne deux listes :
-    - Manifestes complets : Tous les fichiers nécessaires sont présents.
-    - Manifestes incomplets : Certains fichiers manquent.
-    """
-    complete_manifests = []
-    incomplete_manifests = []
-
-    # Parcourir tous les fichiers dans le répertoire
-    for file_name in os.listdir(directory):
-        # Chercher uniquement les fichiers manifeste (suffixe _0.manif)
-        if file_name.endswith("_0.manif"):
-            manifest_path = os.path.join(directory, file_name)
-
-            # Lire le fichier manifeste
-            with open(manifest_path, "r") as manifest_file:
-                manifest_data = json.load(manifest_file)
-
-            total_parts = manifest_data["nombre total de partie"]
-            file_uuid = file_name.split("_")[0]
-
-            # Vérifier que toutes les parties de fichiers existent
-            all_parts_present = True
-            for part_num in range(1, total_parts + 1):
-                part_file_name = f"{file_uuid}_{part_num}.json"
-                part_file_path = os.path.join(directory, part_file_name)
-                if not os.path.exists(part_file_path):
-                    all_parts_present = False
-                    break
-
-            if all_parts_present:
-                complete_manifests.append(file_name)
-            else:
-                incomplete_manifests.append(file_name)
-
-    return complete_manifests, incomplete_manifests
 
 def remplacer_caracteres(chaine):
     # Remplacer @ par  @@
@@ -335,71 +340,6 @@ def restaurer_caracteres(chaine):
     chaine = chaine.replace('@64@', '@')
 
     return chaine
-
-def time_since_timestamp(timestamp):
-    """
-    Calcule le temps écoulé depuis un timestamp donné.
-
-    Args:
-        timestamp (int): Le timestamp à partir duquel calculer le temps écoulé.
-
-    Returns:
-        tuple: Un tuple contenant le nombre de jours, heures, minutes et secondes écoulés depuis le timestamp.
-    """
-    # Obtenir le temps actuel
-    current_time = time.time()
-
-    # Calculer la différence en secondes
-    time_difference = current_time - timestamp
-
-    # Convertir la différence en jours, heures, minutes et secondes
-    days = time_difference // (24 * 3600)
-    time_difference %= (24 * 3600)
-    hours = time_difference // 3600
-    time_difference %= 3600
-    minutes = time_difference // 60
-    seconds = time_difference % 60
-
-    return int(days), int(hours), int(minutes), int(seconds)
-
-def generer_name_avec_timestamp(jid_dest_backup, pathnamefile, millisecondes=False):
-    """
-    Génère un UUID aléatoire et y ajoute un timestamp.
-
-    :param millisecondes: Si True, utilise le timestamp en millisecondes. Par défaut, c'est False.
-    :return: Une chaîne contenant l'UUID et le timestamp.
-    """
-    # emplacement = remplacer_caracteres(pathnamefile)
-    emplacement = pathnamefile
-    # Obtenir le timestamp
-    if millisecondes:
-        timestamp = int(time.time() * 1000)  # Timestamp en millisecondes
-    else:
-        timestamp = int(time.time())  # Timestamp en secondes
-    # Combiner le UUID et le timestamp
-    nom_file_emplacement = f"{timestamp}_{jid_dest_backup}_{emplacement}"
-    return remplacer_caracteres(nom_file_emplacement)
-
-def generer_uuid_avec_timestamp(millisecondes=False):
-    """
-    Génère un UUID aléatoire et y ajoute un timestamp.
-
-    :param millisecondes: Si True, utilise le timestamp en millisecondes. Par défaut, c'est False.
-    :return: Une chaîne contenant l'UUID et le timestamp.
-    """
-    # Générer un UUID aléatoire
-    uuid_aleatoire = uuid.uuid4()
-
-    # Obtenir le timestamp
-    if millisecondes:
-        timestamp = int(time.time() * 1000)  # Timestamp en millisecondes
-    else:
-        timestamp = int(time.time())  # Timestamp en secondes
-
-    # Combiner le UUID et le timestamp
-    uuid_timestamp = f"{timestamp}-{uuid_aleatoire}"
-
-    return uuid_timestamp
 
 class ZipFileManager:
     """
@@ -460,6 +400,7 @@ class ZipFileManager:
         os.remove(file_path)
         # logger.debug(f"Supprimé : {file_path}")
 
+
 def zipper_fichier(fichier, fichier_zip, fichier_vide=True):
     """
     Zipe un seul fichier.
@@ -472,7 +413,7 @@ def zipper_fichier(fichier, fichier_zip, fichier_vide=True):
     Returns:
         None: La fonction crée un fichier zip et n'a pas de valeur de retour.
     """
-    # Vérifier si le répertoire existe
+     # Vérifier si le répertoire existe
     if not os.path.exists(fichier):
         return None
 
@@ -486,7 +427,12 @@ def zipper_fichier(fichier, fichier_zip, fichier_vide=True):
                 zipf.write(fichier, os.path.basename(fichier))
     return True
 
-def zipper_repertoire(repertoire, fichier_zip, resoudre_liens=False, repertoire_vide=True, fichier_vide=True):
+
+def zipper_repertoire(repertoire,
+                      fichier_zip,
+                      resoudre_liens=False,
+                      repertoire_vide=True,
+                      fichier_vide=True):
     """
     Zipe le contenu d'un répertoire, y compris tous les fichiers, sous-répertoires,
     répertoires vides et fichiers vides.
@@ -537,16 +483,3 @@ def zipper_repertoire(repertoire, fichier_zip, resoudre_liens=False, repertoire_
                         zipf.write(chemin_complet, chemin_rel)
 
     return True
-
-def decompresser_archive(fichier_zip, repertoire_destination):
-    # Vérifier si le fichier ZIP existe
-    if not os.path.exists(fichier_zip):
-        raise FileNotFoundError(f"Le fichier ZIP {fichier_zip} n'existe pas.")
-
-    # Créer le répertoire de destination s'il n'existe pas déjà
-    if not os.path.exists(repertoire_destination):
-        os.makedirs(repertoire_destination)
-
-    # Ouvrir et extraire tout le contenu du fichier ZIP
-    with zipfile.ZipFile(fichier_zip, 'r') as zip_ref:
-        zip_ref.extractall(repertoire_destination)
