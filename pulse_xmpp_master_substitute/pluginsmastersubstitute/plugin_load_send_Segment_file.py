@@ -57,9 +57,10 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
         # Installer le code dynamique : fonction de transfert de fichier
         objectxmpp.transfert_segment_file = types.MethodType(transfert_segment_file, objectxmpp)
         # Planifier l'appel de cette fonction
+        scedule_call_plugin_in_seconde = 15
         objectxmpp.schedule(
             "transfert_segment_file",
-            15,
+            scedule_call_plugin_in_seconde,
             objectxmpp.transfert_segment_file,
             repeat=True,
         )
@@ -67,7 +68,7 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
 def transfert_segment_file(self):
     """
     Fonction de transfert de fichiers vers les machines présentes.
-
+    cette fonction est scheduler a
     Args:
         self (object): L'objet XMPP.
 
@@ -123,21 +124,19 @@ def transfert_segment_file(self):
                 else:
                     continue
 
-                a = 0
+                indexfile = 0
                 for filesend in file_list_to_send:
                     # logger.debug("*********************************")
                     # logger.debug("filesend %s  " % (filesend))
                     # logger.debug("*********************************")
 
-                    if a == 0:
+                    if indexfile == 0:
                         data = manifeste
-                        # logger.debug("a=0 *********************************%s" % data)
                     else:
                         data = lire_fichier_json(filesend)
                         data['namefile'] = manifeste['namefile']
-                        # logger.debug("a=1 *********************************%s" % data)
 
-                    data['segment'] = a
+                    data['segment'] = indexfile
                     data['dir_uuid_machine'] = dir_uuid_machine
                     data['dir_segment'] = os.path.basename(repertoire_file_seg)
                     msg_send = {
@@ -146,13 +145,11 @@ def transfert_segment_file(self):
                         "action": "recombine_file",
                         "ret": 0
                     }
-                    # logger.debug("msg_send: %s " % json.dumps(msg_send, indent=4))
-                    a = a + 1
+                    indexfile = indexfile + 1
                     # C'est la machine qui reçoit les segments qui doit recombiner le fichier.
                     self.send_message(mto=machine['jid'], mbody=json.dumps(msg_send), mtype="chat")
 
                 supprimer_repertoire(repertoire_file_seg)
-
         supprimer_repertoire(os.path.join(var_file_zipper, dir_uuid_machine))
 
 def supprimer_repertoire(chemin_repertoire):
