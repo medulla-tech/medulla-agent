@@ -7,6 +7,7 @@ import sys
 import signal
 from optparse import OptionParser
 import os
+import base64
 
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -54,12 +55,12 @@ class dialogboxnotification:
         self.notificationTimeout = notificationTimeout
         self.Ybutton = Ybutton
         self.Nbutton = Nbutton
-        self.textnotification = textnotification
+        self.textnotification = base64.b64decode(textnotification).decode("utf-8")
+        self.submittext = base64.b64decode(submittext).decode("utf-8")
         self.result = -1
         self.centerfenetre = centerfenetre
         self.root = None
         self.titrebox = titrebox
-        self.submittext = submittext
 
     def center(self, win):
         """
