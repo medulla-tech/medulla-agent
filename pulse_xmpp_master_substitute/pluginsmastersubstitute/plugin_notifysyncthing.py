@@ -37,5 +37,7 @@ def action(objectxmpp, action, sessionid, data, msg, res, dataerreur):
             data["packageid"], "chang", str(msg["from"])
         )
     else:
-        logger.error(f"No matching conditions for package {data['packageid']} from {msg['from']}")
+        logger.error(
+            f"No matching conditions for package {data['packageid']} from {msg['from']}"
+        )
         logger.error(f"The Json file is \n {json.dumps(data, indent=4)}")
