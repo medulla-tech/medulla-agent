@@ -29,7 +29,7 @@ def action(objectxmpp, action, sessionid, data, msg, res, dataerreur):
         PkgsDatabase().pkgs_unregister_synchro_package(
             data["packageid"], None, str(msg["from"])
         )
-    elif "MotifyFile" in data:
+    elif "notifydir" in data:
         logger.debug(
             "removing package %s %s %s" % (data["packageid"], "chang", str(msg["from"]))
         )
