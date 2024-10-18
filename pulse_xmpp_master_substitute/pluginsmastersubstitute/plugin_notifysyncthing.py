@@ -36,3 +36,6 @@ def action(objectxmpp, action, sessionid, data, msg, res, dataerreur):
         PkgsDatabase().pkgs_unregister_synchro_package(
             data["packageid"], "chang", str(msg["from"])
         )
+    else:
+        logger.error(f"No matching conditions for package {data['packageid']} from {msg['from']}")
+        logger.error(f"The Json file is \n {json.dumps(data, indent=4)}")
