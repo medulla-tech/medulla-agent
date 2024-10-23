@@ -7,11 +7,13 @@ import sys
 import signal
 from optparse import OptionParser
 import os
+import base64
 
 import tkinter as tk
 from PIL import Image, ImageTk
 
 import subprocess
+import ctypes
 
 from pulse_xmpp_agent.lib.agentconffile import medullaPath
 
@@ -54,12 +56,12 @@ class dialogboxnotification:
         self.notificationTimeout = notificationTimeout
         self.Ybutton = Ybutton
         self.Nbutton = Nbutton
-        self.textnotification = textnotification
+        self.textnotification = base64.b64decode(textnotification).decode("utf-8")
+        self.submittext = base64.b64decode(submittext).decode("utf-8")
         self.result = -1
         self.centerfenetre = centerfenetre
         self.root = None
         self.titrebox = titrebox
-        self.submittext = submittext
 
     def center(self, win):
         """
@@ -145,6 +147,10 @@ class dialogboxnotification:
                     (image_max_size, image_max_size), Image.LANCZOS
                 )
                 self.medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
+                self.root.wm_iconphoto(True, self.medullaLogo)
+                myappid = "Medulla.Notifications.1.0"
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+                self.root.iconbitmap(self.medullaLogo)
                 Medullalabel = tk.Label(
                     image_frame, image=self.medullaLogo, bg="#25607d"
                 )

@@ -17,6 +17,7 @@ from lib.agentconffile import (
     rotation_file,
 )
 import lmdb
+from lib.manageDb import ManageDb
 
 logger = logging.getLogger()
 
@@ -162,3 +163,32 @@ class manageschedulerdeploy:
             self.closebase()
 
         return data
+
+
+class ManageDbScheduler(ManageDb):
+    tablename = "scheduler"
+    path = os.path.join(medullaPath(), "var", "tmp", "BDDeploy", "scheduler.db")
+
+    def __init__(self):
+        super().__init__()
+        bddir_path = self.create_bddir()
+
+        if not os.path.exists(bddir_path):
+            try:
+                os.makedirs(bddir_path, mode=0o700)
+                logger.info(f"Created directory: {bddir_path}")
+            except Exception as e:
+                logger.error(f"Failed to create directory {bddir_path}: {str(e)}")
+
+    def create_bddir(self):
+        """
+        This function returns the appropriate directory for BDDeploy based on the platform.
+        """
+        if sys.platform.startswith("linux"):
+            return os.path.join(Env.user_dir(), "BDDeploy")
+        elif sys.platform.startswith("win"):
+            return os.path.join(medullaPath(), "var", "tmp", "BDDeploy")
+        elif sys.platform.startswith("darwin"):
+            return os.path.join("/opt", "Pulse", "BDDeploy")
+        else:
+            return None

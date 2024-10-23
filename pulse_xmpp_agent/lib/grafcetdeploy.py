@@ -2302,8 +2302,8 @@ class grafcet:
                     """ -M "%s"  -B"%s" -t %s -Y "%s" -S%s -s%s -c"""
                     % (
                         self.userid,
-                        message,
-                        titlemessage,
+                        self.workingstep["message"],
+                        self.workingstep["titlemessage"],
                         self.workingstep["timeout"],
                         self.workingstep["textbuttonyes"],
                         int(self.workingstep["sizeheader"]),
@@ -2419,8 +2419,8 @@ class grafcet:
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c"""
                     % (
                         self.userid,
-                        message,
-                        titlemessage,
+                        self.workingstep["message"],
+                        self.workingstep["titlemessage"],
                         self.workingstep["timeout"],
                         self.workingstep["textbuttonyes"],
                         self.workingstep["textbuttonno"],
@@ -2629,8 +2629,8 @@ class grafcet:
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c"""
                     % (
                         self.userid,
-                        message,
-                        titlemessage,
+                        self.workingstep["message"],
+                        self.workingstep["titlemessage"],
                         self.workingstep["timeout"],
                         self.workingstep["textbuttonyes"],
                         self.workingstep["textbuttonno"],

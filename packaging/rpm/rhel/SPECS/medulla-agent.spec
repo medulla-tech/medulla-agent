@@ -277,6 +277,7 @@ fi
 %config(noreplace) %_var/lib/pulse2/clients/config/updatebackupclient.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/am___server_tcpip.ini
 %attr(0755,syncthing,syncthing)  %_var/lib/pulse2/xmpp_baseremoteagent/
+%attr(0755,syncthing,syncthing)  %_var/lib/pulse2/clients/
 
 #--------------------------------------------------------------------
 

@@ -43,7 +43,7 @@ from lib.configuration import (
 )
 from lib.managesession import session
 from lib.managefifo import fifodeploy
-from lib.managedeployscheduler import manageschedulerdeploy
+from lib.managedeployscheduler import ManageDbScheduler
 from lib.managedbkiosk import manageskioskdb
 
 from lib.iq_custom import iq_custom_xep, iq_value, Myiq
@@ -640,7 +640,7 @@ class MUCBot(ClientXMPP):
                 self.remove_sessionid_in_ban_deploy_sessionid_list,
                 repeat=True,
             )
-        self.Deploybasesched = manageschedulerdeploy()
+        self.Deploybasesched = ManageDbScheduler()
         self.eventkiosk = manage_kiosk_message(self.queue_recv_tcp_to_xmpp, self)
         self.infolauncherkiook = manageskioskdb()
         self.kiosk_presence = "False"
