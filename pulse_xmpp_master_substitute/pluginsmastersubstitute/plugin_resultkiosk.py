@@ -160,6 +160,10 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                 profiles = KioskDatabase().add_askacknowledge(
                     OU, data["uuid"], data["askuser"]
                 )
+
+        elif data["subaction"] == "inventory":
+            last_inventory(data, message, xmppobject)
+
         else:
             logger.warning("Subaction %s not recognize" % data["subaction"])
     else:
@@ -250,6 +254,50 @@ def handlerkioskpresence(
     xmppobject.send_message(mto=jid, mbody=json.dumps(message_to_machine), mtype="chat")
     return datas
 
+def last_inventory(data, message, xmppobject):
+    machine = XmppMasterDatabase().getMachinefromjid(message["from"])
+
+    if machine and "uuid_inventorymachine" in machine:
+        machine_uuid = machine["uuid_inventorymachine"]
+
+        last_inv = Glpi().getLastMachineInventoryPart(
+            machine_uuid,
+            "Summary",
+            0,
+            -1,
+            "",
+            {"hide_win_updates": True, "history_delta": ""},
+        )
+
+        last_inventory_date = None
+        for item in last_inv:
+            for subitem in item:
+                if subitem[0] == "Last Inventory Date":
+                    last_inventory_date = subitem[1]
+                    break
+            if last_inventory_date:
+                break
+
+        if last_inventory_date:
+            datas = {"subaction": "inventory", "data": last_inventory_date}
+
+            message_to_machine = data_struct_message(
+                "kiosk",
+                data=datas,
+                ret=0,
+                base64=False,
+                sessionid=getRandomName(6, "inventory"),
+            )
+
+            xmppobject.send_message(mto=message["from"], mbody=json.dumps(message_to_machine), mtype="chat")
+
+            return last_inventory_date
+        else:
+            logger.debug(f"No inventory date found for the machine {machine_uuid}")
+            return None
+    else:
+        logger.debug(f"Machine or UUID not found for JID: {message['from']}")
+        return None
 
 def get_packages_for_machine(machine, showinfobool=True):
     """Get a list of the packages for the concerned machine.

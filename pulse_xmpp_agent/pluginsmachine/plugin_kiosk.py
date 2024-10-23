@@ -85,8 +85,19 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         dataerreur,
                         message,
                     )
-            else:
-                pass
+
+        elif data["subaction"] == "inventory":
+            last_inventory = data["data"]
+            tosend = {"action": "inventory", "inventory": last_inventory}
+            strjson = json.dumps(tosend)
+            send_kiosk_data(
+                strjson,
+                objectxmpp.config.kiosk_local_port,
+                objectxmpp,
+                dataerreur,
+                message,
+            )
+        else:
             pass
     except Exception as e:
         logger.error("\n%s" % (traceback.format_exc()))

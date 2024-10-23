@@ -2308,6 +2308,8 @@ class MUCBot(ClientXMPP):
                             pass
                         datasend["data"]["subaction"] = "presence"
                         datasend["data"]["value"] = self.kiosk_presence
+                    elif result["action"] == "inventory":
+                        datasend["data"]["subaction"] = "inventory"
 
                     elif result["action"] == "kioskLog":
                         if "message" in result and result["message"] != "":

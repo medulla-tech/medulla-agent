@@ -8,6 +8,7 @@ from lib.utils import convert
 import os
 import sys
 import platform
+import time
 import zlib
 import base64
 import traceback
@@ -675,6 +676,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             module="Notify | Inventory",
             date=None,
         )
+        if sessionid.startswith("commandkiosk"):
+            # Deadline to ensure that GLPI treatment is completed before requesting the date of inventory
+            time.sleep(10)
+            xmppobject.send_message_to_master({
+                'action': 'resultkiosk', 
+                'data': {'subaction': 'inventory'}
+            })
     else:
         logger.debug("inventory is not injected")
         xmppobject.xmpplog(
