@@ -975,7 +975,7 @@ def confchanged(typeconf):
             os.path.join(Setdirectorytempinfo(), "fingerprintconf")
         )
 
-        if instance(fingerprintconf, bytes):
+        if isinstance(fingerprintconf, bytes):
             fingerprintconf = fingerprintconf.decode("utf-8")
 
         newfingerprintconf = createfingerprintconf(typeconf)
