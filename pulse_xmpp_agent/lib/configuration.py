@@ -229,7 +229,7 @@ def nextalternativeclusterconnection(conffile):
     nextserver = nextserver + 1
     if nextserver > nbserver:
         nextserver = 1
-    #FIXME: Set a better text
+    # FIXME: Set a better text
     logger.debug(f"next index alternatif server {nextserver}")
     Config.set("alternativelist", "nextserver", str(nextserver))
 
