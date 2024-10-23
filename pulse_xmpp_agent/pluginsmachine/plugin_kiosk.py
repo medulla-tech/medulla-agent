@@ -13,7 +13,7 @@ from lib.utils import set_logging_level
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.34", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.35", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
 
 
 @set_logging_level
