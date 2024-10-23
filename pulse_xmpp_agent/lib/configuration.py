@@ -229,7 +229,8 @@ def nextalternativeclusterconnection(conffile):
     nextserver = nextserver + 1
     if nextserver > nbserver:
         nextserver = 1
-    logger.info(f"next index alternatif server {nextserver}")
+    #FIXME: Set a better text
+    logger.debug(f"next index alternatif server {nextserver}")
     Config.set("alternativelist", "nextserver", str(nextserver))
 
     # Writing our configuration file to 'example.cfg'
