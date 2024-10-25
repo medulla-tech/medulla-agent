@@ -49,7 +49,7 @@ class grafcet:
                 f'icacls "{managepackage.packagedir()}" /grant "*S-1-5-32-545:(OI)(CI)F" /T /C'
             )
         self.datasend = datasend
-        logging.getLogger().error(json.dumps(self.datasend, indent=4))
+        logging.getLogger().debug(json.dumps(self.datasend, indent=4))
         self.parameterdynamic = {}
         self.descriptorsection = {"action_section_install": -1}
         self.objectxmpp = objectxmpp
@@ -766,54 +766,70 @@ class grafcet:
 
     def __Go_to_by_jump_succes_and_error__(self, returncode):
         """
-        check return code and jump
-        gotoreturncode@n n is nomber eg gotoreturncode@5 : 3
-        {
-                ......
-                ......
-                ......
-                "step": 5    STEP WITH CODERETURN
+        Directs the flow to the appropriate step based on the provided return code.
 
-                "codereturn": "",
-                "gotoreturncode@5" : "3"   => if return code is 5 goto step 3
-        }
-        check return code and sucess
-        {
-                ......
-                ......
-                ......
-                "step": 5    Step with success return code 0
-                "codereturn": "",
-                "success": 3,    => if return code is 0 goto step 3
-        }
-        check return code and error
-        {
-                ......
-                ......
-                ......
-                "step": 5    Step with error return code diff 0
-                "codereturn": "",
-                "error": 3,    => if return code is dofferent of 0 goto step 3
-        }
+        - If `returncode` is `0`, the function checks for any remaining steps in the sequence:
+            - If additional steps are available, it proceeds to the next step in sequence.
+            - If no further steps are available, it transitions to the step labeled `END_SUCCESS`.
+        - If `returncode` is not `0`, the function searches for a defined `gotoreturncode@<code>` rule:
+            - If a matching rule exists, it jumps to the specified step or label.
+            - If no matching rule is found, it transitions to the step labeled `END_ERROR`.
+
+        Parameters:
+        - returncode (int): The return code of the executed command.
+
+        Returns:
+        - bool: True if a valid step transition was executed, False if no appropriate step was found.
         """
+        # Mark the step as completed
+        self.workingstep["completed"] = True
+        logging.getLogger().debug(f"Return code: {returncode}")
+        # If the return code is 0, check if there are following steps to play
+        if returncode == 0:
+            self.workingstep["successed"] = True
+            next_steps = [
+                step for step in self.sequence if step.get("step") > self.data["stepcurrent"]
+            ]
+
+            if next_steps:
+                # Go to the first step available after the current step
+                self.__search_Next_step_int__(next_steps[0]["step"])
+                self.__execstep__()
+                return True
+            else:
+                # If no next step is defined, go to END_SUCCESS
+                for step_in_sequence in self.sequence:
+                    if step_in_sequence.get("actionlabel") == "END_SUCCESS":
+                        self.__search_Next_step_int__(step_in_sequence["step"])
+                        self.__execstep__()
+                        return True
+        else:
+            # Mark the step as stranded
+            self.workingstep["successed"] = False
+
+        # If the return code is not 0 and a rule exists, follow this rule
         for t in self.workingstep:
             if t.startswith("gotoreturncode"):
                 tab = t.split("@")
                 if len(tab) == 2:
                     val = int(tab[1])
-                    self.__search_Next_step_int__(val)
-                    self.__execstep__()
-                    return True
-        if returncode != 0 and "error" in self.workingstep:
-            self.__search_Next_step_int__(self.workingstep["error"])
-            self.__execstep__()
-            return True
-        elif re["codereturn"] == 0 and "succes" in self.workingstep:
-            self.__search_Next_step_int__(self.workingstep["succes"])
-            self.__execstep__()
-            return True
-        else:
-            return False
+                    if val == returncode:
+                        step_or_label = self.workingstep[t]
+                        if step_or_label.isdigit():
+                            self.__search_Next_step_int__(int(step_or_label))
+                        else:
+                            self.__search_Next_step_int__(step_or_label)
+                        self.__execstep__()
+                        return True
+
+        # If no specific rule is defined, go to END_ERROR
+        for step_in_sequence in self.sequence:
+            if step_in_sequence.get("actionlabel") == "END_ERROR":
+                self.__search_Next_step_int__(step_in_sequence["step"])
+                self.__execstep__()
+                return True
+
+        return False
 
     def __Go_to_by_jump__(self, result):
         if "goto" in self.workingstep:
@@ -1319,18 +1335,11 @@ class grafcet:
 
     def actionprocessscript(self):
         """
-        {
-                "step": intnb,
-                "action": "actionprocessscript",
-                "command": "xmppdeploy.bat",
+        Executes a command, retrieves its return code and output, and directs the flow to the appropriate next step.
 
-                "codereturn": "",
-                "timeout": 900,
-                "error": 5,
-                "success": 3,
-                "@resultcommand": "",
-                "packageuuid" : ""
-        }
+        - Executes the command specified in `workingstep` with a defined timeout.
+        - Processes the command output and return code, storing results as specified in the package descriptor.
+        - Directs to the next step based on the return code, using predefined rules in the descriptor or default success/error paths.
         """
         try:
             if self.__terminateifcompleted__(self.workingstep):
@@ -1340,7 +1349,6 @@ class grafcet:
                 self.workingstep["command"]
             )
             if "timeout" not in self.workingstep:
-                ###
                 try:
                     self.workingstep["timeout"] = int(
                         self.objectxmpp.config.default_timeout
@@ -1366,7 +1374,8 @@ class grafcet:
                 self.workingstep["pwd"] = os.getcwd()
 
             self.__alternatefolder()
-            self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
+            # Execute the order and recover the return code and the output
+            code_return, output_lines = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
                 self.workingstep["command"],
                 self.datasend,
                 self.objectxmpp.boundjid.bare,
@@ -1374,6 +1383,22 @@ class grafcet:
                 self.workingstep["timeout"],
                 self.workingstep["step"],
             )
+
+            # Indicate the return code and process the results
+            self.workingstep["codereturn"] = code_return
+            # Apply __Reultinfo__ to treat the results of the order
+            self.__resultinfo__(self.workingstep, output_lines)
+
+            if code_return == 0:
+                self.__Go_to_by_jump_succes_and_error__(code_return)
+            else:
+                if f"gotoreturncode@{code_return}" in self.workingstep:
+                    self.__Go_to_by_jump_succes_and_error__(code_return)
+                else:
+                    self.__Go_to_by_jump_succes_and_error__(code_return)
+
+            self.steplog()
+
         except Exception as e:
             self.steplog()
             logging.getLogger().error(str(e))
@@ -1640,14 +1665,29 @@ class grafcet:
             self.__protected(self.workingstep["timeout"])
             # working Step recup from process et session
             if command != "":
-                self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
-                    command,
-                    self.datasend,
-                    self.objectxmpp.boundjid.bare,
-                    self.objectxmpp.boundjid.bare,
-                    self.workingstep["timeout"],
-                    self.workingstep["step"],
-                )
+                code_return, output_lines = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
+                command,
+                self.datasend,
+                self.objectxmpp.boundjid.bare,
+                self.objectxmpp.boundjid.bare,
+                self.workingstep["timeout"],
+                self.workingstep["step"],
+            )
+
+            # Indicate the return code and process the results
+            self.workingstep["codereturn"] = code_return
+            # Apply __Reultinfo__ to treat the results of the order
+            self.__resultinfo__(self.workingstep, output_lines)
+
+            if code_return == 0:
+                self.__Go_to_by_jump_succes_and_error__(code_return)
+            else:
+                if f"gotoreturncode@{code_return}" in self.workingstep:
+                    self.__Go_to_by_jump_succes_and_error__(code_return)
+                else:
+                    self.__Go_to_by_jump_succes_and_error__(code_return)
+
+            self.steplog()
         except Exception as e:
             self.steplog()
             logging.getLogger().error(str(e))
