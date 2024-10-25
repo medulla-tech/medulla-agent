@@ -3,14 +3,13 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
 # """
-# This module is dedicated to analyse inventories sent by a Pulse 2 Client.
-# The original inventory is sent using one line per kind of
+# This module is dedicated to monitoring events related to the creation, deletion, and modification of package files
+# and notifying the package system that the modifications have been made.
 # """
+# file pulse_xmpp_agent/package_watching.py
 
 # API information http://seb.dbzteam.org/pyinotify/
-from __future__ import print_function
 
 import socket
 import pyinotify
@@ -20,26 +19,48 @@ import random
 import sys
 import configparser
 import logging
+from logging.handlers import RotatingFileHandler
 import getopt
+import threading
+from lib.utils import simplecommandstr, decode_strconsole, getRandomName
+import traceback
+import os
+import hashlib
+from datetime import datetime
+import zipfile
+import uuid
+import time
+import re
 import base64
-from lib.utils import simplecommandstr, decode_strconsole
+import shutil
+
+# Configuration du logger
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 conf = {}
 
+inifile = "/etc/pulse-xmpp-agent/package_watching.ini"
+pidfile = "/var/run/package_watching.pid"
+# Configuration de base pour le logging
+log_file = "/var/log/pulse/pulse-package-watching.log"
+# parametre for logging rotation
+max_bytes = 10 * 1024 * 1024  # 10 Mo
+backup_count = 5  # Nombre de fichiers de log à conserver
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)s %(message)s",
-    filename="/var/log/pulse/pulse-package-watching.log",
-    filemode="a",
-)
+# Configuration du handler pour la rotation des fichiers de log
+file_handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
+file_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
-
-def writeStdErr(message):
-    if sys.version_info >= (3, 0):
-        print(message, file=sys.stderr)
-    else:
-        sys.stderr.write(message)
+# Fonction pour ajouter un gestionnaire de logging pour la console
+def add_console_handler():
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
 
 class configerror(Exception):
@@ -55,93 +76,96 @@ class configerror(Exception):
         self.msg = msg
 
 
+# Fonction pour valider une adresse IPv4
+def is_valid_ipv4(ip):
+    if ip == "localhost":
+        return True
+    ipv4_pattern = re.compile(r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\$')
+    return ipv4_pattern.match(ip) is not None
+
+# Fonction pour valider un port
+def is_valid_port(port):
+    return 1 <= port <= 65535
+
 def conf_information(conffile):
     Config = configparser.ConfigParser()
     Config.read(conffile)
     Config.read(f"{conffile}.local")
+
+    section_file_de_conf=['global', 'watchingfile', 'network_agent', 'notifyars', 'rsynctocdn', 'segment_package']
+    for sectioni_in_ini in section_file_de_conf:
+        if not Config.has_section(sectioni_in_ini):
+            Config.add_section(sectioni_in_ini)
+
+    # creation et initialisation network informations de confoguration
     configdata = {
-        "ip_ars": (
-            Config.get("network_agent", "ip_ars")
-            if Config.has_option("network_agent", "ip_ars")
-            else "localhost"
-        )
+        "ip_ars": Config.get("network_agent", "ip_ars", fallback="localhost"),
+        "port_ars": Config.getint("network_agent", "port_ars", fallback=8765)
     }
-    if Config.has_option("network_agent", "ip_ars"):
-        configdata["port_ars"] = Config.getint("network_agent", "port_ars")
-    else:
-        configdata["port_ars"] = "8765"
 
-    if Config.has_option("watchingfile", "filelist"):
-        filelist = Config.get("watchingfile", "filelist")
-    else:
-        filelist = "/var/lib/pulse2/packages"
+    # Vérifier que ip_ars est une adresse IPv4 valide
+    if not is_valid_ipv4(configdata["ip_ars"]):
+        logger.warning(f"L'adresse IP {configdata['ip_ars']} n'est pas une adresse IPv4 valide. on applique localhost")
+        configdata["ip_ars"] = "localhost"
 
+    # Vérifier que port_ars est un port valide
+    if not is_valid_port(configdata["port_ars"]):
+        logger.warning(f"Le port {configdata['port_ars']} n'est pas un port valide. on applique 8765")
+        configdata['port_ars'] = 8765
+
+    level = Config.get('global', 'log_level', fallback="INFO")
+
+    # Mise à jour en fonction du niveau de logs spécifiés
+    if level == "CRITICAL":
+        configdata['log_level'] = logging.CRITICAL
+    elif level == "ERROR":
+        configdata['log_level'] = logging.ERROR
+    elif level == "WARNING":
+        configdata['log_level'] = logging.WARNING
+    elif level == "INFO":
+        configdata['log_level'] = logging.INFO
+    elif level == "DEBUG":
+        configdata['log_level'] = logging.DEBUG
+    elif level == "NOTSET":
+        configdata['log_level'] = logging.NOTSET
+    else:
+        # utiliser un niveau par défaut
+        configdata['log_level'] = logging.DEBUG
+
+    filelist = Config.get('watchingfile', 'filelist', fallback="/var/lib/pulse2/packages")
     if filelist == "":
-        raise configerror(msg="filelist is empty")
+        filelist="/var/lib/pulse2/packages"
+        logger.warning(f"le parametre filelist pour watchingfile est vide. on applique /var/lib/pulse2/packages")
 
     configdata["filelist"] = filelist.split(",")
 
-    if Config.has_option("watchingfile", "excludelist"):
-        excludelist = Config.get("watchingfile", "excludelist")
-    else:
-        excludelist = None
-
+    excludelist = Config.get('watchingfile', 'excludelist', fallback=None)
     if excludelist is not None and len(excludelist) != 0:
         configdata["excludelist"] = excludelist.split(",")
     else:
         configdata["excludelist"] = None
 
-    configdata["filelist"] = filelist.split(",")
+    configdata["notifyars_enable"] = Config.getboolean('notifyars', 'enable', fallback=True)
+    configdata["rsynctocdn_enable"] = Config.getboolean("rsynctocdn", "enable", fallback=False)
+    if configdata["rsynctocdn_enable"]:
+        configdata["rsynctocdn_localfolder"] = Config.get("rsynctocdn", "localfolder", fallback="/var/lib/pulse2/packages/sharing")
+        configdata["rsynctocdn_rsync_options"] = Config.get("rsynctocdn", "rsync_options", fallback='--archive --del --exclude ".stfolder"')
+        configdata["rsynctocdn_ssh_privkey_path"] = Config.get("rsynctocdn", "ssh_privkey_path", fallback="/root/.ssh/id_rsa")
+        configdata["rsynctocdn_ssh_options"] = Config.get("rsynctocdn", "ssh_options",
+                                                        fallback="-oBatchMode=yes -oServerAliveInterval=5 -oCheckHostIP=no -oLogLevel=ERROR -oConnectTimeout=40 -oHostKeyAlgorithms=+ssh-dss")
+        configdata["rsynctocdn_ssh_remoteuser"] = Config.get("rsynctocdn", "ssh_remoteuser", fallback=None)
+        if not configdata["rsynctocdn_ssh_remoteuser"]:
+            raise configerror(msg="ssh_remoteuser is not defined")
 
-    if Config.has_option("notifyars", "enable"):
-        configdata["notifyars_enable"] = Config.getboolean("notifyars", "enable")
-    else:
-        configdata["notifyars_enable"] = True
+        configdata["rsynctocdn_ssh_servername"] = Config.get("rsynctocdn", "ssh_servername", fallback=None)
+        if not configdata["rsynctocdn_ssh_servername"]:
+            raise configerror(msg="ssh_servername is not defined")
 
-    if Config.has_option("rsynctocdn", "enable"):
-        configdata["rsynctocdn_enable"] = Config.getboolean("rsynctocdn", "enable")
-    else:
-        configdata["rsynctocdn_enable"] = False
-    if Config.has_option("rsynctocdn", "localfolder"):
-        configdata["rsynctocdn_localfolder"] = Config.get("rsynctocdn", "localfolder")
-    else:
-        configdata["rsynctocdn_localfolder"] = "/var/lib/pulse2/packages/sharing"
-    if Config.has_option("rsynctocdn", "rsync_options"):
-        configdata["rsynctocdn_rsync_options"] = Config.get(
-            "rsynctocdn", "rsync_options"
-        )
-    else:
-        configdata["rsynctocdn_rsync_options"] = '--archive --del --exclude ".stfolder"'
-    if Config.has_option("rsynctocdn", "ssh_privkey_path"):
-        configdata["rsynctocdn_ssh_privkey_path"] = Config.get(
-            "rsynctocdn", "ssh_privkey_path"
-        )
-    else:
-        configdata["rsynctocdn_ssh_privkey_path"] = "/root/.ssh/id_rsa"
-    if Config.has_option("rsynctocdn", "ssh_options"):
-        configdata["rsynctocdn_ssh_options"] = Config.get("rsynctocdn", "ssh_options")
-    else:
-        configdata["rsynctocdn_ssh_options"] = (
-            "-oBatchMode=yes -oServerAliveInterval=5 -oCheckHostIP=no -oLogLevel=ERROR -oConnectTimeout=40 -oHostKeyAlgorithms=+ssh-dss"
-        )
-    if Config.has_option("rsynctocdn", "ssh_remoteuser"):
-        configdata["rsynctocdn_ssh_remoteuser"] = Config.get(
-            "rsynctocdn", "ssh_remoteuser"
-        )
-    elif configdata["rsynctocdn_enable"]:
-        raise configerror(msg="ssh_remoteuser is not defined")
-    if Config.has_option("rsynctocdn", "ssh_servername"):
-        configdata["rsynctocdn_ssh_servername"] = Config.get(
-            "rsynctocdn", "ssh_servername"
-        )
-    elif configdata["rsynctocdn_enable"]:
-        raise configerror(msg="ssh_servername is not defined")
-    if Config.has_option("rsynctocdn", "ssh_destpath"):
-        configdata["rsynctocdn_ssh_destpath"] = Config.get("rsynctocdn", "ssh_destpath")
-    elif configdata["rsynctocdn_enable"]:
-        raise configerror(msg="ssh_destpath is not defined")
-
+        configdata["rsynctocdn_ssh_destpath"] = Config.get("rsynctocdn", "ssh_destpath", fallback=None)
+        if not configdata["rsynctocdn_ssh_destpath"]:
+            raise configerror(msg="ssh_destpath is not defined")
     return configdata
+
 
 
 def getRandomName(nb, pref=""):
@@ -153,24 +177,24 @@ def getRandomName(nb, pref=""):
 
 
 def send_agent_data(datastrdata, conf):
-    logging.getLogger().debug(f"string for send agent : {datastrdata}")
+    logger.debug(f"string for send agent : {datastrdata}")
     # Convertir la chaîne en bytes
     datastrdata_bytes = datastrdata.encode("utf-8")
     # Encoder les bytes en base64
     EncodedString = base64.b64encode(datastrdata_bytes)
-    logging.getLogger().debug(f"send base64 string  : {EncodedString}")
+    logger.debug(f"send base64 string  : {EncodedString}")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = (conf["ip_ars"], int(conf["port_ars"]))
+    logger.debug(f"send address {conf['ip_ars']}:{conf['port_ars']}")
     try:
         sock.connect(server_address)
         sock.sendall(EncodedString)
         sock.recv(4096)
-        logging.getLogger().debug("send to ARS event")
+        logger.debug("send to ARS event")
     except Exception as e:
-        logging.getLogger().error(str(e))
+        logger.error(str(e))
     finally:
         sock.close()
-
 
 def rsync_to_cdn(conf):
     if not conf["rsynctocdn_localfolder"].endswith(os.sep):
@@ -190,14 +214,13 @@ def rsync_to_cdn(conf):
         conf["rsynctocdn_ssh_servername"],
         remotefolder,
     )
-    logging.getLogger().debug("rsync command: %s" % rsync_cmd)
+    logger.debug("rsync command: %s" % rsync_cmd)
     objcmd = simplecommandstr(rsync_cmd)
-    logging.getLogger().debug("rsync command result: %s" % objcmd["result"])
+    logger.debug("rsync command result: %s" % objcmd["result"])
     if objcmd["code"] != 0:
-        logging.getLogger().error(
+        logger.error(
             "Error synchronizing packages to CDN" % decode_strconsole(objcmd["result"])
         )
-
 
 def pathlist(watch):
     return [watch[z].path for z in watch]
@@ -212,10 +235,36 @@ def listdirfile(rootdir):
 
 
 class MyEventHandler(pyinotify.ProcessEvent):
+
     def __init__(self, config, wm, mask):
         self.config = config
         self.wm = wm
         self.mask = mask
+
+
+    def find_directory_with_criteria(self, path):
+        """
+        Recherche un répertoire dans le chemin donné qui commence par un nom de 36 caractères
+        avec un tiret (`-`) au 9ème caractère.
+
+        Args:
+            path (str): Chemin de base où commencer la recherche.
+
+        Returns:
+            str or None: Nom du premier répertoire trouvé qui correspond au motif, ou None si aucun n'est trouvé.
+        """
+        # Diviser le chemin en composants
+        components = path.split(os.sep)
+
+        # Parcourir chaque composant du chemin
+        for component in components:
+            # Vérifier si la longueur est de 36 caractères et si le 9ème caractère est un tiret "-"
+            if len(component) == 36 and component[8] == '-':
+                return component
+
+        # Si aucun répertoire n'est trouvé, retourner None
+        return None
+
 
     def msg_structure(self):
         return {
@@ -225,19 +274,28 @@ class MyEventHandler(pyinotify.ProcessEvent):
         }
 
     def process_IN_ACCESS(self, event):
-        pass
+        typefile = "directory" if event.dir else "file"
+        logger.debug(f"IN_ACCESS {typefile} : {event.pathname}")
+
 
     def process_IN_ATTRIB(self, event):
-        pass
+        typefile = "directory" if event.dir else "file"
+        logger.debug(f"IN_ATTRIB {typefile} : {event.pathname}")
+
 
     def process_IN_CLOSE_NOWRITE(self, event):
-        pass
+        typefile = "directory" if event.dir else "file"
+        logger.debug(f"IN_CLOSE_NOWRITE {typefile} : {event.pathname}")
+
 
     def process_IN_CLOSE_WRITE(self, event):
-        pass
+        typefile = "directory" if event.dir else "file"
+        logger.debug(f"IN_CLOSE_WRITE {typefile} : {event.pathname}")
+
 
     def process_IN_OPEN(self, event):
-        pass
+        typefile = "directory" if event.dir else "file"
+        logger.debug(f"IN_OPEN {typefile} : {event.pathname}")
 
     def process_IN_MOVED_TO(self, event):
         if event.dir:
@@ -251,13 +309,15 @@ class MyEventHandler(pyinotify.ProcessEvent):
                 "packageid": os.path.basename(os.path.dirname(event.pathname)),
             }
             datasendstr = json.dumps(datasend, indent=4)
-            logging.getLogger().debug(f"Msg : {datasendstr}")
+            logger.debug(f"Msg : {datasendstr}")
             send_agent_data(datasendstr, self.config)
         if self.config["rsynctocdn_enable"]:
             # Run rsync command
             rsync_to_cdn(self.config)
 
     def process_IN_MODIFY(self, event):
+        typefile = "directory" if event.dir else "file"
+        logger.debug(f"MODIFY {typefile} : {event.pathname}")
         if self.config["notifyars_enable"]:
             namefile = str(os.path.basename(event.pathname))
             if namefile.startswith(".syncthing"):
@@ -270,13 +330,17 @@ class MyEventHandler(pyinotify.ProcessEvent):
                 "packageid": os.path.basename(os.path.dirname(event.pathname)),
             }
             datasendstr = json.dumps(datasend, indent=4)
-            logging.getLogger().debug(f"Msg : {datasendstr}")
+            logger.debug(f"Msg : {datasendstr}")
             send_agent_data(datasendstr, self.config)
         if self.config["rsynctocdn_enable"]:
             # Run rsync command
             rsync_to_cdn(self.config)
 
     def process_IN_DELETE(self, event):
+        # Supprimez l'observateur pour le fichier ou répertoire supprimé
+        self.wm.rm_watch(event.pathname, rec=True)
+        typefile = "directory" if event.dir else "file"
+        logger.debug(f"DELETE {typefile} : {event.pathname}")
         if self.config["notifyars_enable"]:
             datasend = self.msg_structure()
             if not event.dir:
@@ -288,13 +352,19 @@ class MyEventHandler(pyinotify.ProcessEvent):
                 "packageid": os.path.basename(event.pathname),
             }
             datasendstr = json.dumps(datasend, indent=4)
-            logging.getLogger().debug(f"Msg : {datasendstr}")
+            logger.debug(f"Msg : {datasendstr}")
             send_agent_data(datasendstr, self.config)
         if self.config["rsynctocdn_enable"]:
             # Run rsync command
             rsync_to_cdn(self.config)
 
     def process_IN_CREATE(self, event):
+        # Ajoutez un observateur pour le nouveau fichier ou répertoire
+        self.wm.add_watch(event.pathname,
+                          pyinotify.IN_MODIFY | pyinotify.IN_CREATE | pyinotify.IN_DELETE,
+                          rec=True)
+        typefile = "directory" if event.dir else "file"
+        logger.debug(f"CREATE {typefile} : {event.pathname}")
         if self.config["notifyars_enable"]:
             datasend = self.msg_structure()
             if event.dir:
@@ -305,17 +375,41 @@ class MyEventHandler(pyinotify.ProcessEvent):
                     "packageid": os.path.basename(event.pathname),
                 }
                 datasendstr = json.dumps(datasend, indent=4)
-                logging.getLogger().debug(f"Msg : {datasendstr}")
+                logger.debug(f"Msg : {datasendstr}")
                 send_agent_data(datasendstr, self.config)
         if self.config["rsynctocdn_enable"]:
             # Run rsync command
             rsync_to_cdn(self.config)
 
+class WatchingFilePartage :
+    """
+    A class to watch for file changes in specified directories using inotify.
 
-class watchingfilepartage:
-    def __init__(self, config):
+    Attributes:
+        config (dict): Configuration dictionary containing 'filelist' and 'excludelist'.
+        stop_event (threading.Event): An event to signal the watcher to stop.
+        wm (pyinotify.WatchManager): The Watch Manager instance.
+        mask (int): The event mask for inotify.
+        handler (MyEventHandler): The event handler for inotify events.
+        notifier (pyinotify.ThreadedNotifier): The notifier for handling inotify events.
+
+    Methods:
+        __init__(self, config, stop_event): Initializes the WatchingFilePartage instance.
+        run(self): Starts the file watching process.
+        stop(self): Stops the file watching process.
+    """
+
+    def __init__(self, config, stop_event):
+        """
+        Initializes the WatchingFilePartage instance.
+
+        Args:
+            config (dict): Configuration dictionary containing 'filelist' and 'excludelist'.
+            stop_event (threading.Event): An event to signal the watcher to stop.
+        """
         self.config = config
-        logging.getLogger().info("install inotify")
+        self.stop_event = stop_event
+        logger.info("install inotify")
         listdirectory = [x for x in config["filelist"] if os.path.isdir(x)]
         startlistdirectory = [x for x in config["filelist"] if os.path.isdir(x)]
         for t in startlistdirectory:
@@ -337,32 +431,71 @@ class watchingfilepartage:
             self.wm.add_watch(listdirectory, self.mask, rec=True)
 
     def run(self):
+        """
+        Starts the file watching process.
+        """
         self.notifier = pyinotify.ThreadedNotifier(self.wm, self.handler)
         self.notifier.start()
+        while not self.stop_event.is_set():
+            time.sleep(1)
+        self.notifier.stop()
 
     def stop(self):
+        """
+        Stops the file watching process.
+        """
         self.notifier.stop()
 
 
+def schedule_action(stop_event):
+    while not stop_event.is_set():
+        # action cyclque
+        time.sleep(5)
+
+
+
+def close_file_descriptors():
+    """Close standard file descriptors to detach the daemon."""
+    sys.stdin.close()
+    sys.stdout.close()
+    sys.stderr.close()
+
+
+def daemonize():
+    try:
+        pid = os.fork()
+        if pid > 0:
+            sys.exit(0)  # Exit parent process
+        os.setsid()  # Start a new session
+    except OSError as e:
+        logging.error(f"Fork failed: {e.errno} ({e.strerror})")
+        sys.exit(1)
+
+    # Detach from the parent environment
+    close_file_descriptors()
+    os.chdir("/")
+
 if __name__ == "__main__":
-    logging.getLogger().info("Start package watching server")
-    inifile = "/etc/pulse-xmpp-agent/package_watching.ini"
-    pidfile = "/var/run/package_watching.pid"
+    logger.info("Start package watching server")
     cp = None
+
+    # Événement pour signaler l'arrêt du thread
+    stop_event = threading.Event()
     try:
         opts, suivarg = getopt.getopt(sys.argv[1:], "f:dh")
     except getopt.GetoptError:
         sys.exit(2)
-    daemonize = True
+    daemonize_service = True
     for option, argument in opts:
         if option == "-f":
             inifile = argument
         elif option == "-d":
-            logging.getLogger().info("logger mode debug")
-            daemonize = False
-            logging.getLogger().setLevel(logging.DEBUG)
-            print("pid file: %d\n" % os.getpid())
-            print(f"kill -9 {os.getpid()}")
+            logger.info("console mode log level en debug")
+            daemonize_service = False
+            logger.setLevel(logging.DEBUG)
+            add_console_handler()  # Ajouter le gestionnaire de logging pour la console
+            logger.debug("pid file: %d\n" % os.getpid())
+            logger.debug(f"kill -9 {os.getpid()}")
         elif option == "-h":
             print(
                 "Configure in file '%s' \n[network_agent]\nip_ars=???\nport_ars=???"
@@ -372,73 +505,57 @@ if __name__ == "__main__":
             sys.exit(0)
 
     if not os.path.exists(inifile):
-        print("configuration File missing '%s' does not exist." % inifile)
+        logger.debug("configuration File missing '%s' does not exist." % inifile)
         sys.exit(3)
+
     conf = conf_information(inifile)
 
-    if daemonize:
-        try:
-            pid = os.fork()
-            if pid > 0:
-                # exit first parent
-                sys.exit(0)
-        except OSError as e:
-            writeStdErr("Fork #1 failed: %d (%s)" % (e.errno, e.strerror))
-            sys.exit(1)
-        # dissociate from parent environment
-        os.close(sys.stdin.fileno())
-        os.close(sys.stdout.fileno())
-        os.close(sys.stderr.fileno())
-        os.chdir("/")
-        os.setsid()
-        # do second fork
-        try:
-            pid = os.fork()
-            if pid > 0:
-                # exit from second parent, print eventual PID before
-                # print "Daemon PID %d" % pid
-                # print "kill -9 $(cat %s)"%pidfile
-                logging.getLogger().info("Daemon PID %d" % pid)
-                os.seteuid(0)
-                os.setegid(0)
-                # logging.getLogger().info("PID file" + str(pid) + " > " + pidfile)
-                # logging.getLogger().info("kill -9 $(cat %s)"%pidfile)
-                # os.system("echo " + str(pid) + " > " + pidfile)
-                # print "echo " + str(pid) + " > " + pidfile
-                sys.exit(0)
-        except OSError as e:
-            writeStdErr("fork #2 failed: %d (%s)" % (e.errno, e.strerror))
-            print("fork #2 failed: %d (%s)" % (e.errno, e.strerror), file=sys.stderr)
-            sys.exit(1)
+    if daemonize_service:
+        daemonize()
+        logger.setLevel(conf["log_level"])
     else:
-        logging.getLogger().setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
 
     try:
-        logging.getLogger().info("start program")
-        logging.getLogger().info(
+        logger.info("start program")
+        logger.info(
             "----------------------------------------------------------------"
         )
-        logging.getLogger().info(conf)
+        logger.info(conf)
         pidrun = os.getpid()
+        # Écrire le PID dans le fichier
+        with open(pidfile, 'w') as f:
+            f.write(str(pidrun))
         os.system(f"echo {str(pidrun)} > {pidfile}")
-        print("If in debug mode, you can stop the program by ussing CTRL+Z then one of")
-        print("the following commands")
-        print("kill -9 $(cat %s)" % pidfile)
-        print("or")
-        print("killall -9 package_watching.py")
-        print("or")
-        print("kill %1")
-        print("or")
-        print("kill -9 %s" % os.getpid())
-        logging.getLogger().info(f"PID file : {str(pidrun)} in file {pidfile}")
-        logging.getLogger().info("kill -9 $(cat %s)" % pidfile)
-        logging.getLogger().info("killall package_watching.py")
-        logging.getLogger().info(
+        logger.debug("If in debug mode, you can stop the program by ussing CTRL+Z then one of")
+        logger.debug("the following commands")
+        logger.debug("kill -9 $(cat %s)" % pidfile)
+        logger.debug("or")
+        logger.debug("killall -9 package_watching.py")
+        logger.debug("or")
+        logger.debug("kill %1")
+        logger.debug("or")
+        logger.debug("kill -9 %s" % os.getpid())
+        logger.info(f"PID file : {str(pidrun)} in file {pidfile}")
+        logger.info("kill -9 $(cat %s)" % pidfile)
+        logger.info("killall package_watching.py")
+        logger.info(
             "----------------------------------------------------------------"
         )
-        a = watchingfilepartage(conf)
-        a.run()
+        # Créer et démarrer les threads
+        watching_thread = threading.Thread(target=WatchingFilePartage(conf, stop_event).run)
+        # schedule_action = threading.Thread(target=schedule_action, args=(stop_event,))
+        watching_thread.start()
+        # schedule_action.start()
+
+        # Attendre l'arrêt des threads
+        watching_thread.join()
+        # schedule_action.join()
+
     except KeyboardInterrupt:
-        print("interruption")
-        a.stop()
+        logger.debug("interruption")
+        stop_event.set()
+        watching_thread.join()
+        # schedule_action.join()
         sys.exit(3)
+

@@ -5,7 +5,7 @@ Requires=ejabberd.service
 
 [Service]
 PIDFile=/var/run/package_watching.pid
-Type=simple
+Type=forking
 ExecStart=PATH/pulse_xmpp_agent/package_watching.py
 Restart=always
 RestartSec=1
