@@ -15,9 +15,17 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}
+plugin = {
+    "VERSION": "1.0",
+    "NAME": "scheduling_launch_kiosk",
+    "TYPE": "machine",
+    "SCHEDULED": True,
+}
 
-SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # -1 pour un nombre infini d'exécutions
+SCHEDULE = {
+    "schedule": "*/5 * * * *",
+    "nb": -1,
+}  # -1 pour un nombre infini d'exécutions
 
 
 def schedule_main(objectxmpp):
@@ -48,7 +56,9 @@ def schedule_main(objectxmpp):
                     logger.debug("Kiosk is already running. PID: %d", pid)
                     return
             except psutil.NoSuchProcess:
-                logger.warning(f"Kiosk process with PID {pid} not found. Removing PID file.")
+                logger.warning(
+                    f"Kiosk process with PID {pid} not found. Removing PID file."
+                )
                 os.remove(pid_file)
 
         session_id = get_session_id()
@@ -57,9 +67,7 @@ def schedule_main(objectxmpp):
             return
 
         # Command to launch Kiosk if the process is not active
-        command = (
-            f"""C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i {session_id} -d "C:\\Program Files\\Python3\\pythonw.exe" -m kiosk_interface"""
-        )
+        command = f"""C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i {session_id} -d "C:\\Program Files\\Python3\\pythonw.exe" -m kiosk_interface"""
 
         logger.debug(f"Starting Kiosk. Command: {command}")
         process = subprocess.Popen(command, shell=True)
@@ -70,6 +78,7 @@ def schedule_main(objectxmpp):
         logger.debug("Kiosk started successfully with PID: %d", process.pid)
     else:
         logger.debug("Kiosk is disabled in configuration.")
+
 
 def read_config_plugin_agent(objectxmpp):
     configfilename = os.path.join(directoryconffile(), f'{plugin["NAME"]}.ini')
@@ -83,7 +92,7 @@ def read_config_plugin_agent(objectxmpp):
             configfilename,
             "[scheduling_launch_kiosk]\n"
             "# Enable execution of kiosk\n"
-            "# enable_kiosk = True\n"
+            "# enable_kiosk = True\n",
         )
 
     # Read the configuration file
@@ -92,10 +101,17 @@ def read_config_plugin_agent(objectxmpp):
 
     # Set enable_kiosk based on the configuration file
     try:
-        objectxmpp.enable_kiosk = Config.getboolean("scheduling_launch_kiosk", "enable_kiosk")
+        objectxmpp.enable_kiosk = Config.getboolean(
+            "scheduling_launch_kiosk", "enable_kiosk"
+        )
     except (configparser.NoOptionError, ValueError):
-        objectxmpp.enable_kiosk = False  # Default to False if the setting is missing or invalid
-        logger.warning("The 'enable_kiosk' option is missing or invalid. Defaulting to False.")
+        objectxmpp.enable_kiosk = (
+            False  # Default to False if the setting is missing or invalid
+        )
+        logger.warning(
+            "The 'enable_kiosk' option is missing or invalid. Defaulting to False."
+        )
+
 
 def get_session_id():
     try:
@@ -111,6 +127,7 @@ def get_session_id():
     except Exception as e:
         logger.error(f"Failed to retrieve session ID: {e}")
         return None
+
 
 def cleanup_old_kiosk():
     """Terminate any old Kiosk process, remove old PID file, and delete old startup script."""
