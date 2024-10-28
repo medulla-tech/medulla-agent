@@ -182,5 +182,4 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/
 	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/
-	cp pulse_xmpp_agent/bin/RunMedullaKiosk.bat $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp contrib/images/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
