@@ -254,6 +254,7 @@ def handlerkioskpresence(
     xmppobject.send_message(mto=jid, mbody=json.dumps(message_to_machine), mtype="chat")
     return datas
 
+
 def last_inventory(data, message, xmppobject):
     machine = XmppMasterDatabase().getMachinefromjid(message["from"])
 
@@ -289,7 +290,9 @@ def last_inventory(data, message, xmppobject):
                 sessionid=getRandomName(6, "inventory"),
             )
 
-            xmppobject.send_message(mto=message["from"], mbody=json.dumps(message_to_machine), mtype="chat")
+            xmppobject.send_message(
+                mto=message["from"], mbody=json.dumps(message_to_machine), mtype="chat"
+            )
 
             return last_inventory_date
         else:
@@ -298,6 +301,7 @@ def last_inventory(data, message, xmppobject):
     else:
         logger.debug(f"Machine or UUID not found for JID: {message['from']}")
         return None
+
 
 def get_packages_for_machine(machine, showinfobool=True):
     """Get a list of the packages for the concerned machine.
