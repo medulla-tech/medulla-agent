@@ -40,7 +40,7 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
 PREFIX_COMMAND = "commandkiosk"
 
 
@@ -299,6 +299,10 @@ def last_inventory(data, message, xmppobject):
         logger.debug(f"Machine or UUID not found for JID: {message['from']}")
         return None
 
+def getdescriptor(package_uuid):
+    package = managepackage.getdescriptorpackageuuid(package_uuid)
+    return package
+
 def get_packages_for_machine(machine, showinfobool=True):
     """Get a list of the packages for the concerned machine.
     Param:
@@ -421,7 +425,15 @@ def __search_software_in_glpi(
         "description": packageprofile[2],
         "version": packageprofile[3],
         "profile": packageprofile[1],
+        "launcher_cmd": ""
     }
+
+    descriptor = getdescriptor(packageprofile[6])
+    if 'launcher' in descriptor['info']:
+        structuredatakioskelement["launcher_cmd"] = descriptor['info']['launcher']
+    else:
+        pass
+
     patternname = re.compile(
         "(?i)"
         + packageprofile[4]
