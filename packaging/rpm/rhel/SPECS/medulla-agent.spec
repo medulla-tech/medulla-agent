@@ -4,7 +4,7 @@
 %define python3_version %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3])")
 %define python3_version_nodots %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3].replace('.',''))")
 %define python3_platform %(%{__python3} -Ic "import sysconfig; print(sysconfig.get_platform())")
-
+%global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 %define tarname		medulla-agent
 %define git                    SHA
