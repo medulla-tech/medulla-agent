@@ -40,7 +40,7 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
 PREFIX_COMMAND = "commandkiosk"
 
 
@@ -452,7 +452,10 @@ def __search_software_in_glpi(
             # Process with this package which is installed on the machine
             # The package could be deleted
             structuredatakioskelement["icon"] = "kiosk.png"
-            structuredatakioskelement["action"].append("Delete")
+            for step in descriptor.get("win", {}).get("sequence", []):
+                if step.get("action") == "action_section_uninstall":
+                    structuredatakioskelement["action"].append("Delete")
+                    break
             structuredatakioskelement["action"].append("Launch")
             # verification if update
             # compare the version
@@ -489,7 +492,6 @@ def __search_software_in_glpi(
             if len(structuredatakioskelement["action"]) == 0 and trigger is False:
                 structuredatakioskelement["action"].append("Ask")
     return structuredatakioskelement
-
 
 #### ancine plugin master resultkiosk
 def parsexmppjsonfile(path):
