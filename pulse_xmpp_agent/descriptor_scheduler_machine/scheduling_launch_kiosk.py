@@ -94,7 +94,7 @@ def read_config_plugin_agent(objectxmpp):
     try:
         objectxmpp.enable_kiosk = Config.getboolean("scheduling_launch_kiosk", "enable_kiosk")
     except (configparser.NoOptionError, ValueError):
-        objectxmpp.enable_kiosk = False  # Default to False if the setting is missing or invalid
+        objectxmpp.enable_kiosk = True  # Default to False if the setting is missing or invalid
         logger.warning("The 'enable_kiosk' option is missing or invalid. Defaulting to False.")
 
 def get_session_id():
