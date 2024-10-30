@@ -72,7 +72,10 @@ def updatekioskinterfaceversion(version):
 
 
 def updatekioskinterface(xmppobject, installed_version):
-    logger.info("PL-KIOSK Updating Medulla kiosk interface to version %s" % KIOSKINTERFACEVERSION)
+    logger.info(
+        "PL-KIOSK Updating Medulla kiosk interface to version %s"
+        % KIOSKINTERFACEVERSION
+    )
     version_info = utils.PythonVersionInfo()
     if sys.platform.startswith("win"):
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
@@ -106,7 +109,8 @@ def updatekioskinterface(xmppobject, installed_version):
                 updatekioskinterfaceversion(installed_version)
             else:
                 logger.error(
-                    "PL-KIOSK Error installing %s: %s" % (filename, cmd_result["result"])
+                    "PL-KIOSK Error installing %s: %s"
+                    % (filename, cmd_result["result"])
                 )
 
         else:
