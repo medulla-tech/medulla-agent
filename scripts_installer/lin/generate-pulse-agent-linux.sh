@@ -103,6 +103,24 @@ check_arguments() {
                 DISTROS="${i#*=}"
                 shift
                 ;;
+            --conf-xmppserver*)
+                shift
+                ;;
+            --conf-xmppport*)
+                shift
+                ;;
+            --conf-xmpppasswd*)
+                shift
+                ;;
+            --aes-key*)
+                shift
+                ;;
+            --xmpp-passwd*)
+                shift
+                ;;
+            --chat-domain*)
+                shift
+                ;;
 	    *)
 		# unknown option
 		display_usage
