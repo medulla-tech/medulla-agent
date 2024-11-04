@@ -492,5 +492,8 @@ sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/puls
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 
+mkdir -p %buildroot%_var/lib/pulse2/xml-fix
+cp -frv contrib/inventory/xml-fix/* %buildroot%_var/lib/pulse2/xml-fix
+
 # Not needed in the server
 rm -fv %buildroot%{python3_sitelib}/pulse_xmpp_agent/bin/pulse2_update_notification.py

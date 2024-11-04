@@ -183,3 +183,5 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/
 	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/
 	cp contrib/images/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
+	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/xml-fix
+	cp -frv contrib/inventory/xml-fix/* $(CURDIR)/debian/tmp/var/lib/pulse2/xml-fix
