@@ -222,7 +222,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-master.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 %_var/lib/pulse2/script_monitoring/
-
+%_var/lib/pulse2/xml-fix
 
 #--------------------------------------------------------------------
 
