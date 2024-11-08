@@ -16,7 +16,7 @@ TIGHTVNC = "2.8.84"
 COMPLETETIGHTVNC = "2.8.84.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.0", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.1", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -24,16 +24,17 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug(f"PL-TIGHT call {plugin} from {message['from']}")
     logger.debug("###################################################")
-    try:
-        # Update if version is lower
-        installed_version = checktightvncversion()
-        if Version(installed_version) < Version(COMPLETETIGHTVNC):
-            updatetightvnc(xmppobject)
-        check_tightvnc_configuration(xmppobject)
-    except Exception as error_plugin:
-        logger.debug(f"PL-TIGHT failed with the error {error_plugin}")
-        logger.error(f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}")
-        pass
+    if sys.platform.startswith("win"):
+        try:
+            # Update if version is lower
+            installed_version = checktightvncversion()
+            if Version(installed_version) < Version(COMPLETETIGHTVNC):
+                updatetightvnc(xmppobject)
+            check_tightvnc_configuration(xmppobject)
+        except Exception as error_plugin:
+            logger.debug(f"PL-TIGHT failed with the error {error_plugin}")
+            logger.error(f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}")
+            pass
 
 
 def check_tightvnc_configuration(xmppobject):
