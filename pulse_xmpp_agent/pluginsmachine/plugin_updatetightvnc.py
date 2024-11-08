@@ -33,7 +33,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             check_tightvnc_configuration(xmppobject)
         except Exception as error_plugin:
             logger.debug(f"PL-TIGHT failed with the error {error_plugin}")
-            logger.error(f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}")
+            logger.error(
+                f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}"
+            )
             pass
 
 
