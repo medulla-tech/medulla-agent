@@ -498,6 +498,7 @@ def __search_software_in_glpi(
                 structuredatakioskelement["action"].append("Ask")
     return structuredatakioskelement
 
+
 #### ancine plugin master resultkiosk
 def parsexmppjsonfile(path):
     datastr = file_get_contents(path)
