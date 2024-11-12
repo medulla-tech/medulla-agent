@@ -27,11 +27,11 @@ if sys.platform.startswith("win"):
     import win32file
     import win32security
 
-OPENSSHVERSION = "9.4"
+OPENSSHVERSION = "9.8.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.1", "NAME": "updateopenssh", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "2.2", "NAME": "updateopenssh", "TYPE": "machine"} # fmt: skip
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
