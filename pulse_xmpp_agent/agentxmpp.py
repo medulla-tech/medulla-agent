@@ -4010,7 +4010,7 @@ AGENT %s ERROR TERMINATE""" % (
 
     def loadPluginschedulerList(self):
         logger.debug("Verify base plugin scheduler")
-        plugindataseach = {}
+        plugindatasearch = {}
         for element in os.listdir(self.config.pathpluginsscheduled):
             if element.endswith(".py") and element.startswith("scheduling_"):
                 f = open(os.path.join(self.config.pathpluginsscheduled, element), "r")
@@ -4020,9 +4020,9 @@ AGENT %s ERROR TERMINATE""" % (
                     if "VERSION" in ligne and "NAME" in ligne:
                         l = ligne.split("=")
                         plugin = eval(l[1])
-                        plugindataseach[plugin["NAME"]] = plugin["VERSION"]
+                        plugindatasearch[plugin["NAME"]] = plugin["VERSION"]
                         break
-        return plugindataseach
+        return plugindatasearch
 
     def module_needed(self):
         finder = ModuleFinder()
