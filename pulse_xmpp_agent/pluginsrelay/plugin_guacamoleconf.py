@@ -251,6 +251,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                 port,
                             )
                         )
+
                     except Exception as error_connection:
                         logger.error(
                             f"An Error occured while trying to insert the guacamole parameters for the {proto} protocol. With the error {error_connection}"
@@ -273,6 +274,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                     keydata,
                                 )
                             )
+
                         else:
                             # Update account for the os
                             if option[4:] == "username":
@@ -285,6 +287,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         username,
                                     )
                                 )
+
                             else:
                                 cursor.execute(
                                     insertparameter(
@@ -293,6 +296,39 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         getattr(objectxmpp.config, option),
                                     )
                                 )
+                        if option == "rdp_enable-sftp" or option == "vnc_enable-sftp":
+                            logger.error(f"Guacamole option rdp  {rdp_enable-sftp}")
+                            logger.error(f"Guacamole option vnc {rdp_enable-sftp}")
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "sftp-hostname",
+                                    hostname,
+                                )
+                            )
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "sftp-port",
+                                    "22",
+                                )
+                            )
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "sftp-username",
+                                    username,
+                                )
+                            )
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "sftp-private-key",
+                                    keydata,
+                                )
+                            )
+
+
                     # Commit our queries
                     db.commit()
         except MySQLdb.Error as e:
