@@ -328,7 +328,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                 )
                             )
 
-
                     # Commit our queries
                     db.commit()
         except MySQLdb.Error as e:
