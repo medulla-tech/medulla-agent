@@ -229,11 +229,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     # reversessh connection
                     hostname = data["machine_ip"]
                     port = data["remoteservice"][proto]
+                    port_reverse = 22
                 except socket.error:
                     # Machine is not reachable. We will need a reversessh
                     # connection
                     hostname = "localhost"
                     port = get_free_tcp_port(objectxmpp)
+                    port_reverse = port
                 finally:
                     try:
                         cursor.execute(
@@ -297,8 +299,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                     )
                                 )
                         if option == "rdp_enable-sftp" or option == "vnc_enable-sftp":
-                            logger.error(f"Guacamole option rdp  {rdp_enable-sftp}")
-                            logger.error(f"Guacamole option vnc {rdp_enable-sftp}")
                             cursor.execute(
                                 insertparameter(
                                     result["data"]["connection"][proto.upper()],
@@ -310,7 +310,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                 insertparameter(
                                     result["data"]["connection"][proto.upper()],
                                     "sftp-port",
-                                    "22",
+                                    port_reverse,
                                 )
                             )
                             cursor.execute(
