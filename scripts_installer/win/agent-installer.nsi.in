@@ -121,6 +121,7 @@ Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !Else
   OutFile "Medulla-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}-${INVENTORY_TAG}.exe"
 !EndIf
+Icon "artwork/install.ico"
 !If "$PROGRAMFILES64" != ""
   InstallDir "$PROGRAMFILES64\Medulla"
 !Else
@@ -435,6 +436,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create Medulla service
   SetOutPath "$INSTDIR\bin"
   File "${PULSE_SERVICE_FILENAME}"
+  File "artwork/install.ico"
   StrCpy $0 `SCHTASKS /Delete /TN "${PRODUCT_NAME}" /F`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
@@ -538,6 +540,8 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
 
 
   ${Else}
@@ -556,6 +560,8 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
   ${EndIf}
 
   ; Write the version installed in registry

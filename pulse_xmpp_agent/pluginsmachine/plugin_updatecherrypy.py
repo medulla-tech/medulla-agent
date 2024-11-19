@@ -8,11 +8,14 @@ from distutils.version import StrictVersion
 import logging
 import tempfile
 from lib import utils
+from lib.agentconffile import (
+    medullaPath,
+)
 
 CHERRYPYVERSION = "18.8.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.2", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.3", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -39,6 +42,16 @@ def checkcherrypyversion():
             # The filetree generator is not installed. We will force installation by returning
             # version 0.0
             cherrypyversion = "0.0"
+
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CherryPy" /v "DisplayIcon"'
+        result = utils.simplecommand(cmd)
+
+        if result["code"] != 0:
+            cmd = (
+                f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CherryPy" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
+            )
+            utils.simplecommand(cmd)
     return cherrypyversion
 
 
