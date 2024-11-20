@@ -4970,7 +4970,8 @@ class offline_search_kb:
                 "CurrentBuild",
                 "CurrentVersion",
                 "InstallationType",
-                "ProductName," "ReleaseId",
+                "ProductName",
+                "ReleaseId",
                 "DisplayVersion",
                 "RegisteredOwner",
             )
