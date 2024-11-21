@@ -36,6 +36,8 @@ Unicode True
 !define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
 !define KIOSK_FILENAME "@@KIOSK_FILENAME@@"
+!define KIOSK_INTERFACE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla kiosk interface"
+!define KIOSK_LAUNCHER_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla kiosk launcher"
 !define WHEEL_FILENAME "@@WHEEL_FILENAME@@"
 !define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
 !define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
@@ -600,6 +602,8 @@ Section "Uninstall"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
   DeleteRegKey HKLM "${PAEXEC_UNINST_KEY}"
   DeleteRegKey HKLM "${VIM_UNINST_KEY}"
+  DeleteRegKey HKLM "${KIOSK_LAUNCHER_UNINST_KEY}"
+  DeleteRegKey HKLM "${KIOSK_INTERFACE_UNINST_KEY}"
 
   ; Stop all Medulla services
   Call un.StopMedullaServices
