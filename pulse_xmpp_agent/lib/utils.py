@@ -906,17 +906,26 @@ def isMsiExecRunning() -> None:
     This is the normal msiexec behaviour
     """
 
+    pythoncom.CoInitialize()
     c = wmi.WMI()
 
-    while True:
-        msiexecProcess = c.Win32_Process(name="msiexec.exe")
-        if len(msiexecProcess) > 1:
-            logger.info(
-                "We need to wait, an other instance of msiexec is already running"
-            )
-            time.sleep(5)
-        else:
-            break
+    try:
+        while True:
+            try:
+                msiexecProcess = c.Win32_Process(name="msiexec.exe")
+                if len(msiexecProcess) > 1:
+                    logger.info(
+                        "We need to wait, an other instance of msiexec is already running"
+                    )
+                    time.sleep(5)
+                else:
+                    break
+            except Exception as e:
+                logger.info(
+                    f"An error occurred while checking msiexec.exe processes: {e}"
+                )
+    finally:
+        pythoncom.CoUninitialize()
 
 
 class FunctionThread(threading.Thread):
