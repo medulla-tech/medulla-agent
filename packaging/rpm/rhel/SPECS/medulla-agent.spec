@@ -75,6 +75,7 @@ Requires:       python3.11-zc-lockfile
 Requires:       python3.11-cheroot
 Requires:       python3.11-portend
 Requires:       python3.11-tempora
+Requires:       python3.11-posix-ipc
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
 
