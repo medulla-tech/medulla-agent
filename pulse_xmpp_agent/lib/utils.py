@@ -1804,7 +1804,8 @@ def pulgindeploy1(func):
     return wrapper
 
 
-def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
+
+def getIpXmppInterface(config):
     """
     This function is used to retrieve the local IP from the client which is talking
     with the ejabberd server.
@@ -1814,58 +1815,100 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     and we split to obtain the first IP of the line.
 
     Args:
-        xmpp_server_ipaddress: IP of the xmpp server
+        config (object): The configuration object containing server and port information.
+
     Returns:
-        It returns the local IP from the client which is talking
-        with the ejabberd server.
+        str: The local IP from the client which is talking with the ejabberd server.
     """
     resultip = ""
-    xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
-    logger.debug(
-        "Searching with which IP the agent is connected to the Ejabberd server"
-    )
-    if sys.platform.startswith("linux"):
-        obj = simplecommand(
-            f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
+    xmpp_server_ipaddress_or_dns = config.Server
+    Port = config.Port
+
+    # Get the list of network interfaces
+    interfaces = netifaces.interfaces()
+
+    # Filter interfaces to keep only those with valid IPv4 addresses, excluding loopback addresses
+    valid_interfaces = []
+    for interface in interfaces:
+        addrs = netifaces.ifaddresses(interface)
+        if netifaces.AF_INET in addrs:
+            for addr_info in addrs[netifaces.AF_INET]:
+                ip = addr_info['addr']
+                if ip != '127.0.0.1' and is_valid_ipv4(ip):
+                    valid_interfaces.append(interface)
+                    logger.debug(f"Valid interface found: {interface} with IP: {ip}")
+                    break
+
+    # If there is only one valid interface, use its IPv4 address
+    if len(valid_interfaces) == 1:
+        addrs = netifaces.ifaddresses(valid_interfaces[0])
+        if netifaces.AF_INET in addrs:
+            for addr_info in addrs[netifaces.AF_INET]:
+                ip = addr_info['addr']
+                if ip != '127.0.0.1' and is_valid_ipv4(ip):
+                    resultip = ip
+                    logger.debug(f"Using IP from the only valid interface: {ip}")
+                    break
+
+    if not resultip:
+        xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
+        logger.debug(
+            "Searching with which IP the agent is connected to the Ejabberd server"
         )
-        if obj["code"] != 0:
-            logging.getLogger().error(f'error command netstat : {obj["result"]}')
-            logging.getLogger().error("error install package net-tools")
-        if len(obj["result"]) != 0:
-            for i in range(len(obj["result"])):
-                obj["result"][i] = obj["result"][i].rstrip("\n")
-            a = "\n".join(obj["result"])
-            if b := [x for x in a.split(" ") if x != ""]:
-                resultip = b[3].split(":")[0]
-    elif sys.platform.startswith("win"):
-        obj = simplecommand(f'netstat -an | findstr {Port} | findstr "ESTABLISHED"')
-        if len(obj["result"]) != 0:
-            for i in range(len(obj["result"])):
-                obj["result"][i] = obj["result"][i].rstrip("\n")
-            a = "\n".join(obj["result"])
-            if b := [x for x in a.split(" ") if x != ""]:
-                resultip = b[1].split(":")[0]
-    elif sys.platform.startswith("darwin"):
-        obj = simplecommand(
-            f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED"
-        )
-        if len(obj["result"]) != 0:
-            for i in range(len(obj["result"])):
-                obj["result"][i] = obj["result"][i].rstrip("\n")
-            a = "\n".join(obj["result"])
-            if b := [x for x in a.split(" ") if x != ""]:
-                resultip = b[3][: b[3].rfind(".")]
-    else:
-        obj = simplecommand(f"netstat -a | grep {Port} | grep ESTABLISHED")
-        if len(obj["result"]) != 0:
-            for i in range(len(obj["result"])):
-                obj["result"][i] = obj["result"][i].rstrip("\n")
-            a = "\n".join(obj["result"])
-            if b := [x for x in a.split(" ") if x != ""]:
-                resultip = b[1].split(":")[0]
-    logger.debug(
-        f"The agent is connected to the Ejabberd server with the IP: {resultip}"
-    )
+        if sys.platform.startswith("linux"):
+            obj = simplecommand(
+                f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
+            )
+            if obj["code"] != 0:
+                logging.getLogger().error(f'error command netstat : {obj["result"]}')
+                logging.getLogger().error("error install package net-tools")
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[3].split(":")[0]
+        elif sys.platform.startswith("win"):
+            obj = simplecommand(
+                f'netstat -an | findstr {Port} | findstr "ESTABLISHED SYN_SENT SYN_RECV"'
+            )
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[1].split(":")[0]
+        elif sys.platform.startswith("darwin"):
+            obj = simplecommand(
+                f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED"
+            )
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[3][: b[3].rfind(".")]
+        else:
+            obj = simplecommand(f"netstat -a | grep {Port} | grep ESTABLISHED")
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[1].split(":")[0]
+
+    if not resultip:
+        if sys.platform.startswith("linux") and config.agenttype == "relayserver" and hasattr(config, 'public_ip'):
+            resultip = config.public_ip
+            logger.debug(f"Using public IP from configuration: {resultip}")
+        else:
+            # Determine the most probable network interface
+            for interface in interfaces:
+                addrs = netifaces.ifaddresses(interface)
+                if netifaces.AF_INET in addrs:
+                    resultip = addrs[netifaces.AF_INET][0]['addr']
+                    logger.debug(f"Using IP from the most probable interface: {resultip}")
+                    break
     return resultip
 
 
