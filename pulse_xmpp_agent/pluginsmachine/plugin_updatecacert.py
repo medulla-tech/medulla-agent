@@ -84,7 +84,9 @@ def updatecacertversion(version):
         for cmd in commands:
             result = utils.simplecommand(cmd)
             if result["code"] == 0:
-                logger.info(f"We successfully updated Medulla CA Cert to version {CACERTVERSION}")
+                logger.info(
+                    f"We successfully updated Medulla CA Cert to version {CACERTVERSION}"
+                )
             else:
                 logger.error(f"Failed to execute command: {cmd}")
 
