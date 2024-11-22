@@ -493,7 +493,7 @@ sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/puls
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 
-mkdir -p %buildroot%_var/lib/pulse2/xml-fix
+mkdir -p %buildroot%_var/lib/pulse2/xml_fix
 cp -frv contrib/inventory/xml-fix/* %buildroot%_var/lib/pulse2/xml_fix
 
 # Not needed in the server
