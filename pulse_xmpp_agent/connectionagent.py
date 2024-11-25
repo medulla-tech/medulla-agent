@@ -282,9 +282,7 @@ class MUCBot(ClientXMPP):
             fromuser=self.boundjid.bare,
             touser="",
         )
-        self.config.ipxmpp = getIpXmppInterface(
-            self.config.confserver, self.config.confport
-        )
+        self.config.ipxmpp = getIpXmppInterface(self.config)
         self.infos_machine_assessor()
 
     def xmpplog(
