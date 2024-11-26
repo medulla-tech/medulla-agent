@@ -78,7 +78,6 @@ from threading import Timer
 from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.syncthingapirest import syncthing, syncthingprogram, iddevice
 
-
 # Additionnal path for library and plugins
 pathbase = os.path.abspath(os.curdir)
 pathplugins = os.path.join(pathbase, "pluginsmachine")
@@ -99,9 +98,18 @@ else:
 
 logger = logging.getLogger()
 
-
 class MUCBot(ClientXMPP):
-    def __init__(self, conf):  # jid, password, room, nick):
+    """
+    MUCBot class inherits from ClientXMPP and handles XMPP connections and messages.
+    """
+
+    def __init__(self, conf):
+        """
+        Initialize the MUCBot with the given configuration.
+
+        Args:
+            conf: Configuration object containing necessary parameters.
+        """
         self.agent_machine_name = conf.jidagent
         newjidconf = conf.jidagent.split("@")
         resourcejid = newjidconf[1].split("/")
@@ -112,6 +120,10 @@ class MUCBot(ClientXMPP):
         self.agentmaster = jid.JID("master@pulse")
         self.session = ""
         logger.info(f"start machine {conf.jidagent} Type {conf.agenttype}")
+
+        # Time allocated for the assessor to provide a configuration
+        self.assessor_response_timeout = 120
+        self.timedebut = time.time()  # Start time
 
         ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
@@ -130,6 +142,7 @@ class MUCBot(ClientXMPP):
 
         self.ippublic = None
         self.geodata = None
+
         if self.config.geolocalisation:
             self.geodata = geolocalisation_agent(
                 typeuser="nomade",
@@ -171,6 +184,14 @@ class MUCBot(ClientXMPP):
         except NameError:
             self.config.syncthing_on = False
 
+        # Planification d'un événement pour gérer le dépassement du délai
+        self.schedule(
+            "assessor_response_timeout_event",  # Nom de l'événement
+            self.assessor_response_timeout,     # Délai en secondes
+            self.handle_assessor_timeout,  # Fonction appelée en cas de timeout
+            repeat=False  # L'événement ne se répète pas
+        )
+
         if self.config.syncthing_on:
             logger.info("We will configure syncthing")
             self.deviceid = ""
@@ -179,9 +200,6 @@ class MUCBot(ClientXMPP):
                 browser = True
 
             if sys.platform.startswith("linux"):
-                # if self.config.agenttype in ['relayserver']:
-                # self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
-                # else:
                 self.fichierconfsyncthing = os.path.join(
                     os.path.expanduser("~pulseuser"),
                     ".config",
@@ -259,18 +277,35 @@ class MUCBot(ClientXMPP):
                     mto=self.sub_assessor, mbody=json.dumps(confsyncthing), mtype="chat"
                 )
 
+    def handle_assessor_timeout(self):
+        """
+        Handle the timeout event for the assessor response.
+        """
+        logger.error(f"Assessor timeout: No response within {self.assessor_response_timeout} seconds.")
+        self.disconnect(wait=1)
+
     def stream_error1(self, mesg):
+        """
+        Handle stream errors.
+
+        Args:
+            mesg: The error message.
+        """
         if mesg.get_text() == "User removed":
             logger.debug(
                 f"The {self.boundjid.bare} account have been removed by the assessor: {self.sub_assessor}"
             )
             self.disconnect(wait=5)
 
-    # async def start(self, event): only python 3
-    def start(self, event):
-        self.send_presence()
-        self.get_roster()
+    async def start(self, event):
+        """
+        Start the XMPP connection and send presence.
 
+        Args:
+            event: The event triggering the start.
+        """
+        self.send_presence()
+        await self.get_roster()
         self.xmpplog(
             f"Starting configurator on machine {self.config.jidagent}. Assessor : {self.sub_assessor}",
             type="conf",
@@ -302,6 +337,23 @@ class MUCBot(ClientXMPP):
         fromuser="",
         touser="",
     ):
+        """
+        Log XMPP messages.
+
+        Args:
+            text: The log message.
+            type: The type of log.
+            sessionname: The session name.
+            priority: The priority of the log.
+            action: The action associated with the log.
+            who: The entity performing the action.
+            how: How the action was performed.
+            why: Why the action was performed.
+            module: The module associated with the log.
+            date: The date of the log.
+            fromuser: The user sending the message.
+            touser: The user receiving the message.
+        """
         if sessionname == "":
             sessionname = getRandomName(6, "logagent")
         if who == "":
@@ -335,6 +387,14 @@ class MUCBot(ClientXMPP):
         self.send_message(mto=self.sub_logger, mbody=json.dumps(msgbody), mtype="chat")
 
     def adddevicesyncthing(self, keydevicesyncthing, namerelay, address=["dynamic"]):
+        """
+        Add a device to Syncthing configuration.
+
+        Args:
+            keydevicesyncthing: The key of the Syncthing device.
+            namerelay: The name of the relay.
+            address: The address of the device.
+        """
         resource = jid.JID(namerelay).user[2:]
         if jid.JID(namerelay).bare == "rspulse@pulse":
             resource = "pulse"
@@ -371,12 +431,30 @@ class MUCBot(ClientXMPP):
                 )
 
     def is_exist_device_in_config(self, keydevicesyncthing):
+        """
+        Check if a device exists in the Syncthing configuration.
+
+        Args:
+            keydevicesyncthing: The key of the Syncthing device.
+
+        Returns:
+            bool: True if the device exists, False otherwise.
+        """
         return any(
             device["deviceID"] == keydevicesyncthing
             for device in self.syncthing.devices
         )
 
     def is_format_key_device(self, keydevicesyncthing):
+        """
+        Check if the Syncthing device key is in the correct format.
+
+        Args:
+            keydevicesyncthing: The key of the Syncthing device.
+
+        Returns:
+            bool: True if the key is in the correct format, False otherwise.
+        """
         if len(str(keydevicesyncthing)) != 63:
             logger.warning("The size of the syncthing key is incorrect.")
         listtest = keydevicesyncthing.split("-")
@@ -391,6 +469,12 @@ class MUCBot(ClientXMPP):
         return True
 
     async def message(self, msg):
+        """
+        Handle incoming messages.
+
+        Args:
+            msg: The incoming message.
+        """
         iscorrectmsg, typemessage = self._check_message(msg)
         if iscorrectmsg:
             try:
@@ -585,6 +669,7 @@ class MUCBot(ClientXMPP):
                             shutil.move(namefileconfigurationtmp, namefileconfiguration)
                             logger.debug("make finger print conf file")
                             refreshfingerprintconf(opts.typemachine)
+                            logger.debug("end Assesor configuration")
                         except Exception as configuration_error:
                             logger.error(
                                 "An error occured while modifying the configuration"
@@ -624,14 +709,30 @@ class MUCBot(ClientXMPP):
                 logger.error(
                     "Please check on the server on the /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local"
                 )
-            self.disconnect(wait=5)
-            # only python 3
-            # await asyncio.sleep(15)
+            logger.debug("config terminate")
+
+            # Fin du traitement
+            timefin = time.time()
+
+            # Calcul du temps écoulé
+            temps_ecoule = timefin - self.timedebut
+            # Log du temps de traitement
+            logger.info(f"Traitement effectué en {temps_ecoule:.2f} secondes")
+            self.disconnect(wait=1)
 
     def infosubstitute(self):
+        """
+        Get substitute information.
+
+        Returns:
+            dict: Substitute information.
+        """
         return substitutelist().parameterssubtitute()
 
     def infos_machine_assessor(self):
+        """
+        Send machine information to the assessor.
+        """
         # envoi information
         dataobj = self.searchInfoMachine()
         self.session = getRandomName(10, "session")
@@ -658,6 +759,12 @@ class MUCBot(ClientXMPP):
         )
 
     def searchInfoMachine(self):
+        """
+        Search for machine information.
+
+        Returns:
+            dict: Machine information.
+        """
         er = networkagentinfo("config", "inforegle")
         er.messagejson["info"] = self.config.information
         for t in er.messagejson["listipinfo"]:
@@ -744,101 +851,84 @@ class MUCBot(ClientXMPP):
     # ----------------------- Getion connection agent -----------------------
     # -----------------------------------------------------------------------
 
-    def Mode_Marche_Arret_loop(self, nb_reconnect=None, forever=False, timeout=None):
-        """
-        Connect to the XMPP server and start processing XMPP stanzas.
-        """
-        if nb_reconnect:
-            self.startdata = nb_reconnect
-        else:
-            self.startdata = 1
-            self.disconnect(wait=1)
-        self.Mode_Marche_Arret_connect(forever=False, timeout=timeout)
-        if nb_reconnect:
-            self.startdata = self.startdata - 1
-
-    def Mode_Marche_Arret_nb_reconnect(self, nb_reconnect):
-        self.startdata = nb_reconnect
-
-    def Mode_Marche_Arret_terminate(self):
-        self.Mode_Marche_Arret_nb_reconnect(0)
-        self.disconnect()
-
-    def Mode_Marche_Arret_stop_agent(self, time_stop=5):
-        self.startdata = 0
-        self.connect_loop_wait = -1
-        self.disconnect(wait=time_stop)
-
-    def Mode_Marche_Arret_connect(
-        self, forever=False, timeout=10, IP_or_FQDN_connect=None, Port_connect=None
-    ):
-        """
-        a savoir apres "CONNECTION FAILED"
-        il faut reinitialiser address et port de connection.
-        """
-        if IP_or_FQDN_connect:
-            self.IP_or_FQDN_connect = IP_or_FQDN_connect
-        if Port_connect:
-            self.Port_connect = Port_connect
-        self.address = (self.IP_or_FQDN_connect, self.Port_connect)
-        if IP_or_FQDN_connect or Port_connect:
-            print(f"reinitialisation address {self.address}")
-        self.connect(address=self.address, force_starttls=None)
-        self.process(forever=forever, timeout=timeout)
-
-    def Mode_Marche_Arret_init_adress_connect(
-        self, IP_or_FQDN_connect, Port_connect=5222
-    ):
-        self.IP_or_FQDN_connect = IP_or_FQDN_connect
-        self.Port_connect = Port_connect
-        self.address = (IP_or_FQDN_connect, Port_connect)
-
     def handle_connecting(self, data):
         """
-        success connecting agent
+        Handle the connecting event.
+
+        Args:
+            data: The event data.
         """
-        pass
+        # connection reusssi
+        time_connection_ok = time.time()
+        # Calcul du temps écoulé
+        time_connection = time_connection_ok - self.timedebut
+        # Log du temps de traitement
+        logger.info(f"Connexion {time_connection:.2f} secondes")
 
     def handle_connection_failed(self, data):
         """
-        on connection failed on libere la connection
-        a savoir apres "CONNECTION FAILED"
-        il faut reinitialiser adress et port de connection.
+        Handle the connection failed event.
+
+        Args:
+            data: The event data.
         """
-        print("\nCONNECTION FAILED %s" % self.connect_loop_wait)
-        self.connect_loop_wait = 5
-        self.disconnect(wait=5)
+        print("CONNECTION FAILED")
+        loop1 = asyncio.get_event_loop()
+        loop1.stop()
 
     def handle_disconnected(self, data):
-        logger.debug(
-            f"We got disconnected. We will reconnect in {self.get_connect_loop_wait()} seconds"
-        )
+        """
+        Handle the disconnected event.
+
+        Args:
+            data: The event data.
+        """
+        logger.debug("We got disconnected.")
+        loop1 = asyncio.get_event_loop()
+        loop1.stop()
 
     def handle_connected(self, data):
         """
-        success connecting agentconnect(
+        Handle the connected event.
+
+        Args:
+            data: The event data.
         """
         logger.debug(
             f"Configurator connected with jid name {self.config.jidagent} on ({self.config.confserver}:{self.config.confport})"
         )
 
-    def register(self, iq):
-        logger.debug(f"register user {self.boundjid}")
+    async def register(self, iq):
+        """
+        Fill out and submit a registration form.
+
+        Args:
+            iq: The IQ stanza.
+        """
         resp = self.Iq()
-        resp["type"] = "set"
-        resp["register"]["username"] = self.boundjid.user
-        resp["register"]["password"] = self.password
+        resp['type'] = 'set'
+        resp['register']['username'] = self.boundjid.user
+        resp['register']['password'] = self.password
         try:
-            resp.send()
-            logger.info(f"The configuration account {self.boundjid} created")
+            await resp.send()
+            logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logger.error(f'Could not register account: {e.iq["error"]["text"]}')
-            self.disconnect()
-        except IqTimeout as e:
-            logger.error("No response from server.")
+            logging.debug("Could not register account: %s" %
+                    e.iq['error']['text'])
+        except IqTimeout:
+            logging.error("Could not register account No response from server.")
             self.disconnect()
 
     def _check_message(self, msg):
+        """
+        Check the conformity of the message.
+
+        Args:
+            msg: The message to check.
+
+        Returns:
+            tuple: A tuple containing a boolean indicating if the message is correct and the type of the message.
+        """
         try:
             # verify message conformity
             msgkey = msg.keys()
@@ -894,7 +984,12 @@ class MUCBot(ClientXMPP):
 
     def _errorhandlingstanza(self, msg, msgfrom, msgkey):
         """
-        analyse stanza information
+        Analyze stanza information.
+
+        Args:
+            msg: The message stanza.
+            msgfrom: The sender of the message.
+            msgkey: The keys of the message.
         """
         logger.error("child elements message")
         messagestanza = ""
@@ -918,19 +1013,16 @@ class MUCBot(ClientXMPP):
     # ---------------------- END analyse strophe xmpp -----------------------
     # -----------------------------------------------------------------------
 
-    def get_connect_loop_wait(self):
-        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
-        # cf commit d3063a0368503
-        try:
-            self._connect_loop_wait
-            return self._connect_loop_wait
-        except AttributeError:
-            return self.connect_loop_wait
-
-
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
-    This function create a service/Daemon that will execute a det. task
+    Create a service/Daemon that will execute a det. task.
+
+    Args:
+        optstypemachine: The type of machine.
+        optsconsoledebug: Console debug flag.
+        optsdeamon: Daemon flag.
+        tglevellog: Log level.
+        tglogfile: Log file.
     """
     try:
         if sys.platform.startswith("win"):
@@ -962,8 +1054,17 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
         logger.error("\n%s" % (traceback.format_exc()))
         os._exit(1)
 
-
 def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
+    """
+    Execute the task.
+
+    Args:
+        optstypemachine: The type of machine.
+        optsconsoledebug: Console debug flag.
+        optsdeamon: Daemon flag.
+        tglevellog: Log level.
+        tglogfile: Log file.
+    """
     file_put_contents(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -1015,22 +1116,30 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"
         )
 
-    while True:
+    attempts = 0  # Initialisation du compteur de tentatives
+
+    while attempts < 5:  # Limitation à 5 essais
         if not tg.confserver.strip():
             tg = confParameter(optstypemachine)
 
-        if ipfromdns(tg.confserver) != "" and check_exist_ip_port(
-            ipfromdns(tg.confserver), tg.confport
-        ):
-            break
-        logger.error("The connector failed.")
-        logger.error(f"Unable to connect to {tg.confserver}:{tg.confport}.")
-        if ipfromdns(tg.confserver) == "":
-            logger.debug(f"We cannot contact: {tg.confserver} ")
+        ip_server = ipfromdns(tg.confserver)  # Résolution de l'IP à partir du DNS
+        if ip_server and check_exist_ip_port(ip_server, tg.confport):
+            break  # Sort de la boucle si connexion réussie
 
-        time.sleep(2)
+        # Log d'erreur avec tentative et détails
+        logger.error(
+            f"Attempt {attempts + 1}: Connection failed - IP: {ip_server or 'N/A'}, Port: {tg.confport}"
+        )
+
+        attempts += 1  # Incrémente le compteur
+        time.sleep(2)  # Pause de 2 secondes entre chaque tentative
+    else:
+        # Si toutes les tentatives échouent, consigne un log et quitte le programme
+        logger.error("Maximum retry limit reached. Unable to establish a connection.")
+        sys.exit(1)  # Quitte le programme avec un code d'erreur
+
     if tg.agenttype != "relayserver":
-        logger.debug(f"connect {ipfromdns(tg.confserver)} {tg.confport}")
+        logger.debug(f"connect {ip_server} {tg.confport}")
         xmpp = MUCBot(tg)
         xmpp.register_plugin("xep_0030")  # Service Discovery
         xmpp.register_plugin("xep_0045")  # Multi-User Chat
@@ -1044,28 +1153,41 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         xmpp["xep_0077"].force_registration = True
 
         # Connect to the XMPP server and start processing XMPP
-        logger.debug(f"Connecting to {ipfromdns(tg.confserver)}:{tg.confport}")
+        logger.debug(f"Connecting to {ip_server}:{tg.confport}")
         logger.debug(f"The jid for the configuration is : {tg.jidagent}")
-        xmpp.Mode_Marche_Arret_init_adress_connect(
-            ipfromdns(tg.confserver), int(tg.confport)
-        )
-        t = Timer(300, xmpp.Mode_Marche_Arret_terminate)
-        t.start()
-        xmpp.Mode_Marche_Arret_loop(nb_reconnect=1)
-        t.cancel()
-        xmpp.loop.stop()
-        logger.debug("bye bye connecteur")
-        namefilebool = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR"
-        )
-        fichier = open(namefilebool, "w")
-        fichier.close()
+
+        xmpp.IP_or_FQDN_connect = ip_server
+        xmpp.Port_connect = tg.confport
+
+        xmpp.address = (ip_server, int(tg.confport))
+        logger.debug("/-----------------------------------------\\")
+        logger.debug("|----- CONNECTION XMPP CONFIGURATEUR -----|")
+        logger.debug("\-----------------------------------------/")
+        try:
+            xmpp.connect(address=xmpp.address, force_starttls=None)
+        except Exception as e:
+            logging.error("Connection failed: %s. Retrying..." % e)
+            logging.error("Connection to: IP %s, Port %s." % (ip_server, tg.confport))
+        try:
+            xmpp.loop.run_forever()
+        except RuntimeError:
+            logging.error("RuntimeError during connection")
+        finally:
+            logger.debug("bye bye connecteur")
+            namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        "BOOLCONNECTOR")
+            fichier = open(namefilebool, "w")
+            fichier.close()
+            # xmpp.loop.close()
+
+            logger.debug("bye bye connecteur")
+            # sys.exit(0)  # Quitte le programme avec un code d'erreur
     else:
         logger.debug(
             "Warning: A relay server holds a Static "
             "configuration. Do not run configurator agent on relay servers.",
         )
-
+        sys.exit(1)  # Quitte le programme avec un code d'erreur
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
