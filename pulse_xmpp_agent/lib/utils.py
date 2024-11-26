@@ -4045,6 +4045,7 @@ def get_relayserver_reversessh_idrsa(username="reversessh"):
     return file_get_contents(idrsa_key_path)
 
 
+
 class geolocalisation_agent:
     def __init__(
         self,
@@ -4183,9 +4184,19 @@ class geolocalisation_agent:
         return self.ip_public
 
     @staticmethod
-    def call_simple_page(url):
+    def call_simple_page(url, timeout=20):
+        """
+        This function makes a GET request to the given URL and returns the JSON response.
+
+        Args:
+            url (str): The URL to make the GET request to.
+            timeout (int): The timeout value for the request.
+
+        Returns:
+            dict: The JSON response if the request is successful and contains 'longitude', None otherwise.
+        """
         try:
-            r = requests.get(url)
+            r = requests.get(url, timeout=timeout)
             if r.status_code > 299:
                 logger.warning(
                     "url localisation %s code error is %s" % (url, r.status_code)
@@ -4193,7 +4204,11 @@ class geolocalisation_agent:
                 return None
             result = r.json()
             return None if "longitude" not in result else result
-        except BaseException:
+        except Timeout:
+            logger.warning(f"Request to {url} timed out after {timeout} seconds")
+            return None
+        except BaseException as e:
+            logger.error(f"Error making request to {url}: {e}")
             return None
 
     @staticmethod
@@ -4212,15 +4227,20 @@ class geolocalisation_agent:
         """
         return objet
         """
+        serveur = ""
+        objip=None
         for url in http_url_list_geo_server:
+            serveur = url
             try:
+                logger.debug(f"geolocalisation server  {url}")
                 objip = geolocalisation_agent.call_simple_page(url)
-                if objip is None:
-                    raise
-                return objip
+                if objip is not None:
+                    break
             except BaseException:
                 pass
-        return None
+        if objip is not None:
+            logger.debug(f"geolocalisation serveur {serveur}  {json.dumps(objip, indent=4)}")
+        return objip
 
 
 class downloadfile:
