@@ -1813,7 +1813,6 @@ def pulgindeploy1(func):
     return wrapper
 
 
-
 def getIpXmppInterface(config):
     """
     This function is used to retrieve the local IP from the client which is talking
@@ -1842,8 +1841,8 @@ def getIpXmppInterface(config):
         addrs = netifaces.ifaddresses(interface)
         if netifaces.AF_INET in addrs:
             for addr_info in addrs[netifaces.AF_INET]:
-                ip = addr_info['addr']
-                if ip != '127.0.0.1' and is_valid_ipv4(ip):
+                ip = addr_info["addr"]
+                if ip != "127.0.0.1" and is_valid_ipv4(ip):
                     valid_interfaces.append(interface)
                     logger.debug(f"Valid interface found: {interface} with IP: {ip}")
                     break
@@ -1853,8 +1852,8 @@ def getIpXmppInterface(config):
         addrs = netifaces.ifaddresses(valid_interfaces[0])
         if netifaces.AF_INET in addrs:
             for addr_info in addrs[netifaces.AF_INET]:
-                ip = addr_info['addr']
-                if ip != '127.0.0.1' and is_valid_ipv4(ip):
+                ip = addr_info["addr"]
+                if ip != "127.0.0.1" and is_valid_ipv4(ip):
                     resultip = ip
                     logger.debug(f"Using IP from the only valid interface: {ip}")
                     break
@@ -1907,7 +1906,11 @@ def getIpXmppInterface(config):
                     resultip = b[1].split(":")[0]
 
     if not resultip:
-        if sys.platform.startswith("linux") and config.agenttype == "relayserver" and hasattr(config, 'public_ip'):
+        if (
+            sys.platform.startswith("linux")
+            and config.agenttype == "relayserver"
+            and hasattr(config, "public_ip")
+        ):
             resultip = config.public_ip
             logger.debug(f"Using public IP from configuration: {resultip}")
         else:
@@ -1915,8 +1918,10 @@ def getIpXmppInterface(config):
             for interface in interfaces:
                 addrs = netifaces.ifaddresses(interface)
                 if netifaces.AF_INET in addrs:
-                    resultip = addrs[netifaces.AF_INET][0]['addr']
-                    logger.debug(f"Using IP from the most probable interface: {resultip}")
+                    resultip = addrs[netifaces.AF_INET][0]["addr"]
+                    logger.debug(
+                        f"Using IP from the most probable interface: {resultip}"
+                    )
                     break
     return resultip
 
