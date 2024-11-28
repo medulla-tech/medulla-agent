@@ -746,7 +746,14 @@ class grafcet:
     def __resultinfo__(self, workingstepinfo, listresult):
         for t in workingstepinfo:
             if t == "@resultcommand":
-                workingstepinfo[t] = os.linesep.join(listresult)
+                result_string = os.linesep.join(listresult)
+                total_chars = len(result_string)
+                # Keep only the last 10,000 characters of the result
+                max_chars = 10000
+                logging.getLogger().debug(f"Result truncated to {max_chars} characters on {total_chars}")
+                if total_chars > max_chars:
+                    result_string = result_string[-max_chars:]
+                workingstepinfo[t] = result_string
             elif t.endswith("lastlines"):
                 nb = t.split("@")
                 nb1 = -int(nb[0])
