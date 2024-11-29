@@ -1,7 +1,7 @@
 [Unit]
 Description=Pulse2 XMPP Agent ( Syncthing package watching )
 After=samba.service slapd.service ejabberd.service
-Requires=ejabberd.service
+# Requires=ejabberd.service
 
 [Service]
 PIDFile=/var/run/package_watching.pid
