@@ -152,6 +152,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 # Créer un verrou partagé
 terminate_lock = multiprocessing.Lock()
 
+
 class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
     """
     Extended version of TimedRotatingFileHandler that compress logs on rollover.
@@ -257,7 +258,7 @@ class MUCBot(ClientXMPP):
         eventkillpipe,
         pidprogrammprincipal,
         shared_dict,
-        terminate_lock
+        terminate_lock,
     ):
         logging.log(
             DEBUGPULSE,
@@ -265,8 +266,8 @@ class MUCBot(ClientXMPP):
         )
         # object partage
         self.shared_dict = shared_dict
-        self.massage_reconection="ask connect"
-        self.demandeRestartBot_bool=False
+        self.massage_reconection = "ask connect"
+        self.demandeRestartBot_bool = False
 
         self.connectcount = 0
         self.iq_msg = file_message_iq(dev_mod=True)
@@ -282,7 +283,6 @@ class MUCBot(ClientXMPP):
         self.queueout = queueout
         self.presencectrlsubscribe = "unavailable"
         self.concurrentquickdeployments = {}
-
 
         # create dir for descriptor syncthing deploy
         self.dirsyncthing = os.path.join(
@@ -431,10 +431,6 @@ class MUCBot(ClientXMPP):
                     logger.error(f"An error occurred while copying files: {str(e)}")
             else:
                 logger.error("Your system is not supported.")
-
-
-
-
 
         # We update the descriptors now that the image is copied.
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
@@ -1166,11 +1162,11 @@ class MUCBot(ClientXMPP):
         il faut reinitialiser adress et port de connection.
         """
         if self.demandeRestartBot_bool:
-            self.demandeRestartBot_bool=False
+            self.demandeRestartBot_bool = False
             return
         logging.info(f"handle_connection_failed {data}")
         with terminate_lock:
-            if self.shared_dict.get('terminate'):
+            if self.shared_dict.get("terminate"):
                 if sys.platform.startswith("win"):
                     try:
                         # on debloque le pipe
@@ -1190,7 +1186,7 @@ class MUCBot(ClientXMPP):
                         logger.error("\n%s" % (traceback.format_exc()))
                         pass
                 return
-            if self.shared_dict.get('alternative'):
+            if self.shared_dict.get("alternative"):
                 logging.info("handle_connection_failed STOP ON RECHER ALTERNATIVE")
                 loop1 = asyncio.get_event_loop()
                 loop1.stop()
@@ -1204,13 +1200,15 @@ class MUCBot(ClientXMPP):
     def handle_disconnected(self, data):
         logging.info(f"handle_disconnected {data}")
         with terminate_lock:
-            if self.shared_dict.get('terminate'):
+            if self.shared_dict.get("terminate"):
                 return
         if self.demandeRestartBot_bool:
             self.reconnect(0.0, self.massage_reconection)
             return
         with terminate_lock:
-            if self.config.agenttype in ["relayserver"] or not self.shared_dict.get('alternative'):
+            if self.config.agenttype in ["relayserver"] or not self.shared_dict.get(
+                "alternative"
+            ):
                 logging.info(f"handle_disconnected {data}")
                 self.reconnect(0.0, self.massage_reconection)
             else:
@@ -1218,20 +1216,17 @@ class MUCBot(ClientXMPP):
                 loop1 = asyncio.get_event_loop()
                 loop1.stop()
 
-
     def handle_connected(self, data):
-        self.demandeRestartBot_bool=False
+        self.demandeRestartBot_bool = False
         logging.info(f"handle_connected {data}")
-
 
     def reconnect_agent(self, msg="deconection", delay=0):
         self.massage_reconection = msg
-        self._connect_loop_wait=0
+        self._connect_loop_wait = 0
         if delay:
             self.disconnect(delay)
         else:
             self.disconnect()
-
 
     def quit_application(self, wait=2):
         """
@@ -1275,7 +1270,7 @@ class MUCBot(ClientXMPP):
                 logger.error("\n%s" % (traceback.format_exc()))
                 pass
         with terminate_lock:
-            self.shared_dict['terminate'] = True
+            self.shared_dict["terminate"] = True
         self.startdata = -1
         logger.debug("byby session xmpp")
         loop1 = asyncio.get_event_loop()
@@ -1300,19 +1295,17 @@ class MUCBot(ClientXMPP):
             iq['register']['fields']
         """
         resp = self.Iq()
-        resp['type'] = 'set'
-        resp['register']['username'] = self.boundjid.user
-        resp['register']['password'] = self.password
+        resp["type"] = "set"
+        resp["register"]["username"] = self.boundjid.user
+        resp["register"]["password"] = self.password
         try:
             await resp.send()
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.debug("Could not register account: %s" %
-                    e.iq['error']['text'])
+            logging.debug("Could not register account: %s" % e.iq["error"]["text"])
         except IqTimeout:
             logging.error("Could not register account No response from server.")
             self.disconnect()
-
 
     def check_subscribe(self):
         if self.presencectrlsubscribe != "available":
@@ -2327,7 +2320,7 @@ class MUCBot(ClientXMPP):
         global signalint
         if sys.platform.startswith("win"):
             with terminate_lock:
-                self.shared_dict['terminate'] = True
+                self.shared_dict["terminate"] = True
             msgevt = {
                 "action": "evtfrommachine",
                 "sessionid": getRandomName(6, "eventwin"),
@@ -3880,15 +3873,16 @@ AGENT %s ERROR TERMINATE""" % (
         return False
 
 
-def createDaemon(   optstypemachine,
-                    optsconsoledebug,
-                    optsdeamon,
-                    tgfichierconf,
-                    tglevellog,
-                    tglogfile,
-                    shared_dict,
-                    terminate_lock
-                ):
+def createDaemon(
+    optstypemachine,
+    optsconsoledebug,
+    optsdeamon,
+    tgfichierconf,
+    tglevellog,
+    tglogfile,
+    shared_dict,
+    terminate_lock,
+):
     """
     This function create a service/Daemon that will execute a det. task
     """
@@ -3906,14 +3900,14 @@ def createDaemon(   optstypemachine,
                         tglevellog,
                         tglogfile,
                         shared_dict,
-                        terminate_lock
+                        terminate_lock,
                     ),
                 )
                 p.daemon = True
                 p.start()
                 while p.is_alive():
                     with terminate_lock:
-                        if shared_dict.get('terminate'):
+                        if shared_dict.get("terminate"):
                             logging.info("Terminating daemon process...")
                             p.terminate()
                             p.join()
@@ -3989,10 +3983,10 @@ def createDaemon(   optstypemachine,
                         tglevellog,
                         tglogfile,
                         shared_dict,
-                        terminate_lock
+                        terminate_lock,
                     )
                     with terminate_lock:
-                        if shared_dict.get('terminate'):
+                        if shared_dict.get("terminate"):
                             logging.info("Terminating daemon process...")
                             break
                     time.sleep(1)  # Pause pour éviter une boucle excessive
@@ -4049,6 +4043,7 @@ def tgconf(optstypemachine):
 # = cherrypy server config =
 # ==========================
 
+
 def servercherrypy(
     optstypemachine,
     optsconsoledebug,
@@ -4057,7 +4052,7 @@ def servercherrypy(
     tglevellog,
     tglogfile,
     shared_dict,
-    terminate_lock
+    terminate_lock,
 ):
     config = confParameter(optstypemachine)
     if config.agenttype in ["machine"]:
@@ -4142,7 +4137,6 @@ def servercherrypy(
         cherrypy.engine.start()
 
 
-
 def shuffle_listars(config):
     """
     Réorganise la liste 'listars' dans le dictionnaire de configuration.
@@ -4181,7 +4175,7 @@ def doTask(
     tglevellog,
     tglogfile,
     shared_dict,
-    terminate_lock
+    terminate_lock,
 ):
     processes = []
     listpid = []
@@ -4194,7 +4188,7 @@ def doTask(
     pidfile = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"
     )
-    alternatifconnection=None
+    alternatifconnection = None
     file_put_contents(pidfile, "%s" % os.getpid())
     tg = confParameter(optstypemachine)
     if sys.platform.startswith("win"):
@@ -4259,8 +4253,8 @@ def doTask(
             tglevellog,
             tglogfile,
             shared_dict,
-            terminate_lock
-        )
+            terminate_lock,
+        ),
     )
     processes.append(pcherry)
     listpid.append(pcherry.pid)
@@ -4278,13 +4272,18 @@ def doTask(
         namefilealternatifconnection = conffilename("cluster")
         if os.path.isfile(namefilealternatifconnection):
             alternatifconnection = nextalternativeclusterconnectioninformation(
-                    namefilealternatifconnection)
-            if 'nbserver' not in alternatifconnection or \
-               'listars' not in alternatifconnection or \
-               'nextserver' not in alternatifconnection :
-                alternatifconnection = None # json cluster.ini pas correct pas d'alternative.
-            elif alternatifconnection['nbserver'] == 1:
-                    alternatifconnection = {} # 1 seul serveur pas d'alternative.
+                namefilealternatifconnection
+            )
+            if (
+                "nbserver" not in alternatifconnection
+                or "listars" not in alternatifconnection
+                or "nextserver" not in alternatifconnection
+            ):
+                alternatifconnection = (
+                    None  # json cluster.ini pas correct pas d'alternative.
+                )
+            elif alternatifconnection["nbserver"] == 1:
+                alternatifconnection = {}  # 1 seul serveur pas d'alternative.
             else:
                 # il y a une configuration alternative cluster pour agent machine
                 # en cas d'impossibilite de se connecte sur son serveur ars referent. il commutera
@@ -4292,12 +4291,15 @@ def doTask(
                 if optstypemachine.lower() not in ["relay"]:
                     shuffle_listars(alternatifconnection)
                     logger.debug("file %s" % conffilename("cluster"))
-                    logger.debug("list server connection possible (alternative cluster) %s"% alternatifconnection['listars'])
+                    logger.debug(
+                        "list server connection possible (alternative cluster) %s"
+                        % alternatifconnection["listars"]
+                    )
 
     # alternatifconnection n'existe pas ou si il y a 1 seul serveur pas d'alternative
-    if optstypemachine.lower() in ["relay"] or not alternatifconnection :
+    if optstypemachine.lower() in ["relay"] or not alternatifconnection:
         with terminate_lock:
-            shared_dict['alternative'] = False
+            shared_dict["alternative"] = False
 
         # on utilise jamais d'alternative de connexion
         # 1 perte de connection provoque 1 restart de l'agent avec les meme parametre reseau.
@@ -4317,21 +4319,22 @@ def doTask(
                 eventkillpipe,
                 os.getpid(),
                 shared_dict,
-                terminate_lock)
-            )
+                terminate_lock,
+            ),
+        )
         processes.append(p)
         listpid.append(p.pid)
         p.start()
-        file_put_contents( pid_file_path_xmppagent_win,
-                            "from %s : %s %s" % (os.getpid(), p.name, p.pid))
-        logger.info("%s -> %s : [Process Alive %s (%s)]" % (os.getpid(),
-                                                            p.pid,
-                                                            p.name,
-                                                            p.pid)
+        file_put_contents(
+            pid_file_path_xmppagent_win,
+            "from %s : %s %s" % (os.getpid(), p.name, p.pid),
+        )
+        logger.info(
+            "%s -> %s : [Process Alive %s (%s)]" % (os.getpid(), p.pid, p.name, p.pid)
         )
         while p.is_alive():
             with terminate_lock:
-                if shared_dict.get('terminate'):
+                if shared_dict.get("terminate"):
                     pcherry.terminate()
                     p.terminate()
                     pcherry.join()
@@ -4363,22 +4366,23 @@ def doTask(
                         eventkillpipe,
                         os.getpid(),
                         shared_dict,
-                        terminate_lock
-                        )
-                    )
+                        terminate_lock,
+                    ),
+                )
                 processes.append(p)
                 listpid.append(p.pid)
                 p.start()
-                file_put_contents( pid_file_path_xmppagent_win,
-                                    "from %s : %s %s" % (os.getpid(), p.name, p.pid))
-                logger.info("%s -> %s : [Process Alive %s (%s)]" % (os.getpid(),
-                                                                    p.pid,
-                                                                    p.name,
-                                                                    p.pid)
+                file_put_contents(
+                    pid_file_path_xmppagent_win,
+                    "from %s : %s %s" % (os.getpid(), p.name, p.pid),
+                )
+                logger.info(
+                    "%s -> %s : [Process Alive %s (%s)]"
+                    % (os.getpid(), p.pid, p.name, p.pid)
                 )
                 while p.is_alive():
                     with terminate_lock:
-                        if shared_dict.get('terminate'):
+                        if shared_dict.get("terminate"):
                             pcherry.terminate()
                             p.terminate()
                             pcherry.join()
@@ -4390,38 +4394,44 @@ def doTask(
                             break
                     time.sleep(1)
                 # on initialise le serveur suivant
-                alternatifconnection["nextserver"]=(alternatifconnection["nextserver"] % alternatifconnection["nbserver"]) + 1
-                index_server_list = alternatifconnection["nextserver"]-1
+                alternatifconnection["nextserver"] = (
+                    alternatifconnection["nextserver"]
+                    % alternatifconnection["nbserver"]
+                ) + 1
+                index_server_list = alternatifconnection["nextserver"] - 1
                 arsconnection = alternatifconnection["listars"][index_server_list]
 
                 Port = alternatifconnection[arsconnection]["port"]
                 Server = alternatifconnection[arsconnection]["server"]
-                guacamole_baseurl = alternatifconnection[arsconnection]["guacamole_baseurl"]
+                guacamole_baseurl = alternatifconnection[arsconnection][
+                    "guacamole_baseurl"
+                ]
                 serverjid = str(arsconnection)
                 try:
                     confdomain = str(arsconnection).split("@")[1].split("/")[0]
                 except BaseException:
                     confdomain = str(serverjid)
-                changeconnection( conffilename(optstypemachine),
-                                 Port,
-                                 ipfromdns(Server),
-                                 arsconnection,
-                                 guacamole_baseurl,)
+                changeconnection(
+                    conffilename(optstypemachine),
+                    Port,
+                    ipfromdns(Server),
+                    arsconnection,
+                    guacamole_baseurl,
+                )
                 address = (
-                        ipfromdns(Server),
-                        int(Port),
-                    )
+                    ipfromdns(Server),
+                    int(Port),
+                )
         except KeyboardInterrupt:
             logging.debug("CTRL+C have been asked.")
             logging.debug("The Pulse Xmpp Agent Relay is now stopped")
     with terminate_lock:
-        shared_dict['terminate'] = True
+        shared_dict["terminate"] = True
     for proc in processes:
         if proc.is_alive():
             proc.terminate()
             proc.join()
     logging.debug("The Pulse Xmpp Agent Relay is now stopped")
-
 
 
 class process_xmpp_agent:
@@ -4438,12 +4448,12 @@ class process_xmpp_agent:
         eventkillpipe,
         pidprogrammprincipal,
         shared_dict,
-        terminate_lock
+        terminate_lock,
     ):
         # parameter permet arret programme complet  ICI PASSER PARAMETRE DANS XMPPBOT
 
         self.pidprogrammprincipal = pidprogrammprincipal
-        self.shared_dict = shared_dict,
+        self.shared_dict = (shared_dict,)
         # self.terminate_lock =  terminate_lock
 
         format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
@@ -4488,7 +4498,7 @@ class process_xmpp_agent:
             eventkillpipe,
             pidprogrammprincipal,
             shared_dict,
-            terminate_lock
+            terminate_lock,
         )
         xmpp.auto_reconnect = False
         xmpp.register_plugin("xep_0030")  # Service Discovery
@@ -4525,13 +4535,13 @@ class process_xmpp_agent:
                 loop.close()
 
             with terminate_lock:
-                if shared_dict.get('terminate'):
+                if shared_dict.get("terminate"):
                     logging.info("CONNECTION XMPP AGENT")
                     logging.info("termine application")
                     loop.close()
                     break
 
-                if shared_dict.get('alternative'):
+                if shared_dict.get("alternative"):
                     logging.info("CONNECTION XMPP AGENT")
                     logging.info("cherche alternative")
                     loop.close()
@@ -4573,6 +4583,7 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE, "QUIT")
     logging.log(DEBUGPULSE, "bye bye client xmpp Agent")
 
+
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
         print("Agent must be running as root")
@@ -4611,10 +4622,10 @@ if __name__ == "__main__":
     # Ce dict est partage entre tout les processs
     manager = multiprocessing.Manager()
     shared_dict = manager.dict()
-    shared_dict['terminate'] = False
-    shared_dict['reconnect'] = True
-    shared_dict['compteur'] = 0
-    shared_dict['alternative'] = True
+    shared_dict["terminate"] = False
+    shared_dict["reconnect"] = True
+    shared_dict["compteur"] = 0
+    shared_dict["alternative"] = True
 
     opts, args = optp.parse_args()
 
@@ -4683,7 +4694,7 @@ if __name__ == "__main__":
             tg.levellog,
             tg.logfile,
             shared_dict,
-            terminate_lock
+            terminate_lock,
         )
     else:
         createDaemon(
@@ -4694,10 +4705,8 @@ if __name__ == "__main__":
             tg.levellog,
             tg.logfile,
             shared_dict,
-            terminate_lock
+            terminate_lock,
         )
     logger.info("Ferme Connection manager")
     # Fermer proprement le manager
     manager.shutdown()
-
-
