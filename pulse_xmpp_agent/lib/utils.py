@@ -4050,7 +4050,6 @@ def get_relayserver_reversessh_idrsa(username="reversessh"):
     return file_get_contents(idrsa_key_path)
 
 
-
 class geolocalisation_agent:
     def __init__(
         self,
@@ -4233,7 +4232,7 @@ class geolocalisation_agent:
         return objet
         """
         serveur = ""
-        objip=None
+        objip = None
         for url in http_url_list_geo_server:
             serveur = url
             try:
@@ -4244,7 +4243,9 @@ class geolocalisation_agent:
             except BaseException:
                 pass
         if objip is not None:
-            logger.debug(f"geolocalisation serveur {serveur}  {json.dumps(objip, indent=4)}")
+            logger.debug(
+                f"geolocalisation serveur {serveur}  {json.dumps(objip, indent=4)}"
+            )
         return objip
 
 
