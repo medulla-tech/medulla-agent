@@ -1,7 +1,7 @@
 [Unit]
 Description=Pulse2 XMPP Agent ( Relay )
 After=samba.service slapd.service ejabberd.service
-Requires=ejabberd.service
+# Requires=ejabberd.service
 
 [Service]
 #PIDFile=/var/run/launcher.pid
