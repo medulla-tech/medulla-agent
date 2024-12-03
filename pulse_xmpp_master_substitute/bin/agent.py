@@ -14,6 +14,10 @@ from slixmpp.xmlstream.handler import Callback
 from slixmpp.xmlstream.matcher.xpath import MatchXPath
 from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
 from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
+from datetime import datetime
+from decimal import Decimal
+import uuid
+from pathlib import Path
 import slixmpp
 import sys
 import os
@@ -33,7 +37,6 @@ import posix_ipc
 
 from lib.configuration import confParameter
 from lib.utils import (
-    DEBUGPULSE,
     getRandomName,
     call_plugin,
     ipfromdns,
@@ -46,11 +49,8 @@ from lib.plugins.glpi import Glpi
 from lib.manage_scheduler import manage_scheduler
 import random
 from lib import manageRSAsigned
-import datetime
 
 logger = logging.getLogger()
-
-raw_input = input
 
 
 def getComputerByMac(mac):
@@ -63,7 +63,6 @@ def getComputerByMac(mac):
     return ret
 
 
-#### faire singeton
 class MUCBot(slixmpp.ClientXMPP):
     def __init__(self, conf_file):  # jid, password, room, nick):
         self.fileconf = conf_file
@@ -98,7 +97,8 @@ class MUCBot(slixmpp.ClientXMPP):
 
         self.agentmaster = jid.JID(self.config.jidmaster)
         self.add_event_handler("register", self.register)
-        self.add_event_handler("connecting", self.handle_connecting)
+        # self.add_event_handler("connecting", self.handle_connecting)
+        self.add_event_handler("connected", self.handle_connected)
         self.add_event_handler("connection_failed", self.handle_connection_failed)
         self.add_event_handler("disconnected", self.handle_disconnected)
         self.add_event_handler("session_start", self.start)
@@ -124,9 +124,7 @@ class MUCBot(slixmpp.ClientXMPP):
             )
         )
 
-        logging.log(
-            DEBUGPULSE, "Starting Master sub (%s)" % (self.config.jidmastersubstitute)
-        )
+        logger.debug("Starting Master sub (%s)" % (self.config.jidmastersubstitute))
 
         base_message_queue_posix().clean_file_all_message(prefixe=self.boundjid.user)
 
@@ -223,102 +221,143 @@ class MUCBot(slixmpp.ClientXMPP):
     # ----------------------- Getion connection agent -----------------------
     # -----------------------------------------------------------------------
 
-    def Mode_Marche_Arret_loop(self, nb_reconnect=None, forever=False, timeout=None):
-        """
-        Connect to the XMPP server and start processing XMPP stanzas.
-        """
-        if nb_reconnect:
-            self.startdata = nb_reconnect
-        else:
-            self.startdata = 1
-        while self.startdata > 0:
-            self.disconnect(wait=1)
-            self.config = confParameter(self.fileconf)
-            self.address = (ipfromdns(self.config.Server), int(self.config.Port))
-            self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
-            if nb_reconnect:
-                self.startdata = self.startdata - 1
+    # def handle_connecting(self, data):
+    #     """
+    #     success connecting agent
+    #     """
+    #     pass
 
-    def Mode_Marche_Arret_connect(self, forever=False, timeout=10):
-        """
-        a savoir apres "CONNECTION FAILED"
-        il faut reinitialiser address et port de connection.
-        """
-        self.connect(address=self.address, force_starttls=None)
-        self.process(forever=forever, timeout=timeout)
 
-    def Mode_Marche_Arret_nb_reconnect(self, nb_reconnect):
-        self.startdata = nb_reconnect
-
-    def Mode_Marche_Arret_terminate(self):
-        self.startdata = 0
-        self.disconnect()
-
-    def Mode_Marche_Arret_stop_agent(self, time_stop=5):
-        self.startdata = 0
-        self.connect_loop_wait = -1
-        self.disconnect(wait=time_stop)
-
-    def handle_connecting(self, data):
+    def handle_connected(self, data):
         """
         success connecting agent
         """
-        pass
+        logger.info("Agent \"%s\" connected to Xmpp Server [ %s :%s ]" % (self.boundjid.bare,
+                                                                         self.address[0],
+                                                                         self.address[1]))
+
+
 
     def handle_connection_failed(self, data):
         """
-        on connection failed on libere la connection
-        a savoir apres "CONNECTION FAILED"
-        il faut reinitialiser adress et port de connection.
+        Gère le scénario où la connexion échoue.
+
+        Cette méthode est appelée lorsque la tentative de connexion échoue. Elle effectue les actions suivantes :
+        1. Déconnecte la connexion actuelle.
+        2. Enregistre un message d'erreur indiquant l'échec de la connexion et les paramètres de connexion.
+        3. Enregistre un message de débogage indiquant la tentative de reconnexion après un nombre spécifié de secondes.
+        4. Attend le nombre spécifié de secondes.
+        5. Réinitialise le compteur d'attente de la boucle de connexion.
+        6. Tente de se reconnecter avec un délai spécifié et un code de raison.
+
+        Paramètres :
+        data (any) : Les données associées à l'événement d'échec de connexion.
+
+        Retourne :
+        None
         """
-        print("\nCONNECTION FAILED %s" % self.connect_loop_wait)
-        self.connect_loop_wait = 5
-        self.Mode_Marche_Arret_stop_agent(time_stop=1)
+        self.disconnect()
+        nbsecond = 5
+        logger.error(
+            "Connection failed: verify parameter connection for %s [%s:%s]" %
+            (self.boundjid.bare, self.address[0], self.address[1])
+        )
+        logger.debug("Retrying connection in %d seconds..." % nbsecond)
+        time.sleep(nbsecond)
+        self._connect_loop_wait = 0
+        self.reconnect(nbsecond,"from_handle_connection_failed")
 
-    def get_connect_loop_wait(self):
-        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
-        # cf commit d3063a0368503
-        try:
-            self._connect_loop_wait
-            return self._connect_loop_wait
-        except AttributeError:
-            return self.connect_loop_wait
-
-    def set_connect_loop_wait(self, int_time):
-        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
-        # cf commit d3063a0368503
-        try:
-            self._connect_loop_wait
-            self._connect_loop_wait = int_time
-        except AttributeError:
-            self.connect_loop_wait = int_time
 
     def handle_disconnected(self, data):
-        logger.debug(
-            "We got disconnected. We will reconnect in %s seconds"
-            % self.get_connect_loop_wait()
-        )
+        """
+        Gère le scénario où la connexion est déconnectée.
 
-    def register(self, iq):
-        logging.info("register user %s" % self.boundjid)
+        Cette méthode est appelée lorsque la connexion est déconnectée. Elle effectue les actions suivantes :
+        1. Enregistre un message d'avertissement indiquant la déconnexion et les paramètres de connexion.
+        2. Enregistre un message de débogage indiquant la tentative de reconnexion après un nombre spécifié de secondes.
+        3. Réinitialise le compteur d'attente de la boucle de connexion.
+        4. Enregistre un message de débogage indiquant la tentative de reconnexion.
+        5. Tente de se reconnecter avec un délai spécifié et un code de raison.
+
+        Paramètres :
+        data (any) : Les données associées à l'événement de déconnexion.
+
+        Retourne :
+        None
+        """
+        nbsecond = 5
+        logger.warning(
+            "disconnected : parameter connection for %s [%s:%s]" %
+            (self.boundjid.bare, self.address[0], self.address[1])
+        )
+        logger.debug("Retrying connection in %d seconds..." % nbsecond)
+        # time.sleep(nbsecond)
+        self._connect_loop_wait = 0
+        logger.debug("Retrying connection...")
+        self.reconnect(nbsecond, "from_handle_disconnected")
+
+    async def register(self, iq):
+        """
+        Fill out and submit a registration form.
+
+        The form may be composed of basic registration fields, a data form,
+        an out-of-band link, or any combination thereof. Data forms and OOB
+        links can be checked for as so:
+
+        if iq.match('iq/register/form'):
+            # do stuff with data form
+            # iq['register']['form']['fields']
+        if iq.match('iq/register/oob'):
+            # do stuff with OOB URL
+            # iq['register']['oob']['url']
+
+        To get the list of basic registration fields, you can use:
+            iq['register']['fields']
+        """
         resp = self.Iq()
-        resp["type"] = "set"
-        resp["register"]["username"] = self.boundjid.user
-        resp["register"]["password"] = self.password
+        resp['type'] = 'set'
+        resp['register']['username'] = self.boundjid.user
+        resp['register']['password'] = self.password
         try:
-            resp.send()
+            await resp.send()
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.error("Could not register account: %s" % e.iq["error"]["text"])
-            self.disconnect()
-
-        except IqTimeout as e:
-            logging.error("No response from server.")
+            logging.debug("Could not register account: %s" %
+                    e.iq['error']['text'])
+        except IqTimeout:
+            logging.error("Could not register account No response from server.")
             self.disconnect()
 
     def _check_message(self, msg):
+        """
+        Vérifie la conformité d'un message stanza XMPP.
+
+        Cette méthode analyse un message stanza XMPP pour s'assurer qu'il est correctement formaté
+        et traite les différents types de messages en conséquence.
+
+        Args:
+            msg (dict): Le message stanza XMPP à vérifier.
+
+        Returns:
+            tuple: Un tuple contenant un booléen et une chaîne de caractères.
+                Le booléen indique si le message est valide (True) ou non (False).
+                La chaîne de caractères fournit des informations supplémentaires sur le résultat.
+
+        Raises:
+            Exception: Si une erreur se produit lors de la vérification du message.
+
+        Exemples de types de messages traités :
+            - "chat" : Message envoyé dans le contexte d'une conversation en tête-à-tête.
+            - "groupchat" : Message envoyé dans le contexte d'un chat multi-utilisateurs.
+            - "headline" : Message probablement généré par un service automatisé.
+            - "normal" : Message unique envoyé en dehors du contexte d'une conversation en tête-à-tête ou d'un chat multi-utilisateurs.
+            - "error" : Erreur liée à un message précédent envoyé par l'expéditeur.
+
+        Si le message ne contient pas de clé "from", il est considéré comme mal formaté.
+        Si le message ne contient pas de clé "body", il est considéré comme manquant le corps du message.
+        """
         try:
-            # verify message conformity
+            # vérifier la conformité du message
             msgkey = msg.keys()
             msgfrom = ""
             if "from" not in msgkey:
@@ -332,32 +371,28 @@ class MUCBot(slixmpp.ClientXMPP):
                 # eg: ref section 2.1
                 type = str(msg["type"])
                 if type == "chat":
-                    # The message is sent in the context of a one-to-one chat
-                    # conversation agent
+                    # Le message est envoyé dans le contexte d'une conversation en tête-à-tête
                     pass
                 elif type == "groupchat":
-                    # The message is sent in the context of a multi-user chat
-                    # environment
+                    # Le message est envoyé dans le contexte d'un chat multi-utilisateurs
                     logger.error("Stanza groupchat message no process %s " % msg)
                     msg.reply("Thank you, but I do not treat groupchat messages").send()
                     return False, "groupchat"
                 elif type == "headline":
-                    # The message is probably generated by an automated service
-                    # that delivers or broadcasts content
+                    # Le message est probablement généré par un service automatisé
                     logger.error(
                         "Stanza headline (automated service) message no process %s "
                         % msg
                     )
                     return False, "headline"
                 elif type == "normal":
-                    # The message is a single message that is sent outside the context of a one-to-one conversation
-                    # "or groupchat, and to which it is expected that the recipient will reply
+                    # Le message est un message unique envoyé en dehors du contexte d'une conversation en tête-à-tête
+                    # ou d'un chat multi-utilisateurs, et auquel il est attendu que le destinataire réponde
                     logger.warning("MESSAGE stanza normal %s" % msg)
                     msg.reply("Thank you, but I do not treat normal messages").send()
                     return False, "normal"
                 elif type == "error":
-                    # An error has occurred related to a previous message sent
-                    # by the sender
+                    # Une erreur s'est produite concernant un message précédent envoyé par l'expéditeur
                     logger.error("Stanza message from %s" % msgfrom)
                     self.errorhandlingstanza(msg, msgfrom, msgkey)
                     return False, "error"
@@ -375,7 +410,26 @@ class MUCBot(slixmpp.ClientXMPP):
 
     def _errorhandlingstanza(self, msg, msgfrom, msgkey):
         """
-        analyse stanza information
+        Analyse les informations d'une stanza XMPP en cas d'erreur.
+
+        Cette méthode extrait et logue les informations pertinentes d'une stanza XMPP
+        lorsqu'une erreur est détectée. Elle parcourt les éléments enfants du message
+        et les informations d'erreur pour construire un message de log détaillé.
+
+        Args:
+            msg (dict): Le message stanza XMPP contenant l'erreur.
+            msgfrom (str): L'expéditeur du message.
+            msgkey (list): Les clés du message stanza.
+
+        Returns:
+            None
+
+        Exemple d'utilisation :
+            Cette méthode est généralement appelée lorsqu'une erreur est détectée dans
+            une stanza XMPP pour enregistrer des informations détaillées sur l'erreur.
+
+        Note:
+            Cette méthode utilise la bibliothèque `slixmpp` pour la gestion des stanzas XMPP.
         """
         logging.error("child elements message")
         messagestanza = ""
@@ -400,11 +454,52 @@ class MUCBot(slixmpp.ClientXMPP):
     # -----------------------------------------------------------------------
 
     def send_message_to_master(self, msg):
-        self.send_message(
-            mbody=json.dumps(msg), mto="%s/MASTER" % self.agentmaster, mtype="chat"
-        )
+        """
+        Envoie un message stanza XMPP au maître.
+
+        Cette méthode envoie un message stanza XMPP au substitut master en utilisant les informations
+        fournies dans le message `msg`. Le message est sérialisé en JSON et envoyé en tant
+        que message de type "chat".
+
+        Args:
+            msg (dict): Le message à envoyer, sous forme de dictionnaire. Ce dictionnaire
+                        sera sérialisé en JSON avant d'être envoyé.
+
+        Returns:
+            None
+
+        Exemple d'utilisation :
+            Cette méthode est utilisée pour envoyer des messages de contrôle ou d'information
+            au maître dans un contexte de communication XMPP.
+
+        Note:
+            Cette méthode utilise la bibliothèque `slixmpp` pour la gestion des stanzas XMPP.
+        """
+        self.send_message(mbody=json.dumps(msg),
+                        mto="%s/MASTER" % self.agentmaster,
+                        mtype="chat")
+
+
 
     async def start(self, event):
+        """
+        Démarre l'agent de substitution XMPP.
+
+        Cette méthode initialise l'agent de substitution XMPP en effectuant les étapes suivantes :
+        - Initialise la liste des données à envoyer.
+        - Charge et nettoie les messages de la file d'attente.
+        - Envoie une présence initiale.
+        - Récupère le roster (liste de contacts).
+        - S'abonne au maître si l'agent n'est pas le maître lui-même.
+        - Enregistre un message de démarrage dans les logs XMPP.
+        - Appelle le plugin de démarrage avec les paramètres appropriés.
+
+        Args:
+            event: L'événement qui déclenche le démarrage de l'agent.
+
+        Returns:
+            None
+        """
         self.datas_send = []
         mg = base_message_queue_posix()
         mg.load_file(self.boundjid.user)
@@ -412,8 +507,10 @@ class MUCBot(slixmpp.ClientXMPP):
         self.shutdown = False
         self.send_presence()
         await self.get_roster()
-        logging.log(DEBUGPULSE, "subscribe xmppmaster")
-        self.send_presence(pto=self.agentmaster, ptype="subscribe")
+        if self.agentmaster != str(self.boundjid.bare):
+            # Seul le substitut maître ne s'abonne pas à lui-même.
+            logger.debug("subscribe %s to %s" % (self.boundjid.bare, self.agentmaster))
+            self.send_presence(pto=self.agentmaster, ptype="subscribe")
 
         self.xmpplog(
             "Starting substitute agent",
@@ -429,7 +526,7 @@ class MUCBot(slixmpp.ClientXMPP):
             touser="",
         )
 
-        # call plugin start
+        # Appel du plugin de démarrage
         startparameter = {
             "action": "start",
             "sessionid": getRandomName(6, "start"),
@@ -459,7 +556,21 @@ class MUCBot(slixmpp.ClientXMPP):
         )
 
     def signal_handler(self, signal, frame):
-        logging.log(DEBUGPULSE, "CTRL-C EVENT")
+        """
+        Gère les signaux de fermeture de l'agent XMPP.
+
+        Cette méthode est appelée lorsque l'agent reçoit un signal de fermeture (par exemple, CTRL-C).
+        Elle envoie un message d'événement au maître si l'agent n'est pas le maître lui-même,
+        puis arrête l'agent.
+
+        Args:
+            signal: Le signal reçu.
+            frame: Le cadre d'exécution actuel.
+
+        Returns:
+            None
+        """
+        logger.debug("CTRL-C EVENT")
         msgevt = {
             "action": "evtfrommachine",
             "sessionid": getRandomName(6, "eventwin"),
@@ -470,47 +581,100 @@ class MUCBot(slixmpp.ClientXMPP):
         if self.agentmaster != self.boundjid.bare:
             self.send_message_to_master(msgevt)
         self.shutdown = True
-        logging.log(DEBUGPULSE, "shutdown xmpp agent %s!" % self.boundjid.user)
-        self.Mode_Marche_Arret_stop_agent(time_stop=1)
+        logger.debug("shutdown xmpp agent %s!" % self.boundjid.user)
+        self.loop.stop()
 
     def restartAgent(self, to):
+        """
+        Redémarre l'agent XMPP spécifié.
+
+        Cette méthode envoie un message stanza XMPP pour redémarrer l'agent spécifié par l'adresse JID `to`.
+        Le message contient une action "restartbot" et est envoyé en tant que message de type "chat".
+
+        Args:
+            to (str): L'adresse JID de l'agent à redémarrer.
+
+        Returns:
+            None
+        """
         self.send_message(
             mto=to, mbody=json.dumps({"action": "restartbot", "data": ""}), mtype="chat"
         )
 
     async def restartmachineasynchrone(self, jid):
+        """
+        Redémarre une machine de manière asynchrone après un délai aléatoire.
+
+        Cette méthode attend un délai aléatoire entre 10 et 20 secondes avant de redémarrer
+        la machine spécifiée par l'adresse JID `jid`. Elle utilise `asyncio.sleep` pour gérer
+        le délai de manière asynchrone.
+
+        Args:
+            jid (str): L'adresse JID de la machine à redémarrer.
+
+        Returns:
+            None
+        """
         waittingrestart = random.randint(10, 20)
-        # TODO : Replace print by log
+        # TODO : Remplacer print par log
         # print "Restart Machine jid %s after %s secondes" % (jid, waittingrestart)
         # time.sleep(waittingrestart)
         await asyncio.sleep(waittingrestart)
-        # TODO : Replace print by log
+        # TODO : Remplacer print par log
         # print "Restart Machine jid %s fait" % jid
-        # Check if restartAgent is not called from a plugin or a lib.
+        # Vérifie si restartAgent n'est pas appelé depuis un plugin ou une lib.
         self.restartAgent(jid)
 
-    def xmpplog(
-        self,
-        text,
-        type="noset",
-        sessionname="",
-        priority=0,
-        action="xmpplog",
-        who="",
-        how="",
-        why="",
-        module="",
-        date=None,
-        fromuser="",
-        touser="",
-    ):
+
+    def xmpplog(self,
+                text,
+                type="noset",
+                sessionname="",
+                priority=0,
+                action="xmpplog",
+                who="",
+                how="",
+                why="",
+                module="",
+                date=None,
+                fromuser="",
+                touser=""):
+        """
+        Enregistre un message XMPP.
+
+        Cette fonction enregistre un message XMPP avec les paramètres spécifiés. Si le nom de la session
+        n'est pas fourni, un nom de session aléatoire est généré. Si les champs 'who' et 'touser'
+        ne sont pas fournis, ils sont définis sur le JID nu de l'utilisateur lié. Si le plugin 'xmpp'
+        est activé dans la configuration, le journal est stocké directement dans la base de données
+        XmppMasterDatabase. Sinon, le journal est envoyé en tant que message au substitut log.
+
+        Args:
+            text (str): Le texte du message de journal.
+            type (str, optional): Le type du message de journal. Par défaut, "noset".
+            sessionname (str, optional): Le nom de la session. Par défaut, un nom aléatoire.
+            priority (int, optional): La priorité du message de journal. Par défaut, 0.
+            action (str, optional): L'action associée au message de journal. Par défaut, "xmpplog".
+            who (str, optional): L'utilisateur qui a initié l'action. Par défaut, le JID nu de l'utilisateur lié.
+            how (str, optional): Comment l'action a été effectuée.
+            why (str, optional): La raison de l'action.
+            module (str, optional): Le module associé à l'action.
+            date (datetime, optional): La date de l'action. Par défaut, None.
+            fromuser (str, optional): L'utilisateur d'où provient l'action. Par défaut, une chaîne vide.
+            touser (str, optional): L'utilisateur vers lequel l'action est dirigée. Par défaut, le JID nu de l'utilisateur lié.
+
+        Returns:
+            None
+        """
         if sessionname == "":
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         if touser == "":
             touser = self.boundjid.bare
+
         if "xmpp" in self.config.plugins_list:
+            # le substitut a direct acces a la base.
+            # il inscrit sans passer par 1 message.
             if sessionname.startswith("update"):
                 type = "update"
             XmppMasterDatabase().setlogxmpp(
@@ -527,21 +691,24 @@ class MUCBot(slixmpp.ClientXMPP):
                 fromuser=fromuser,
             )
         else:
-            msgbody = {"action": "xmpplog", "sessionid": sessionname}
-            msgbody["data"] = {
-                "log": "xmpplog",
-                "text": text,
-                "type": type,
-                "session": sessionname,
-                "priority": priority,
-                "action": action,
-                "who": who,
-                "how": how,
-                "why": why,
-                "module": module,
-                "date": None,
-                "fromuser": fromuser,
-                "touser": touser,
+            msgbody = {
+                "action": "xmpplog",
+                "sessionid": sessionname,
+                "data": {
+                    "log": "xmpplog",
+                    "text": text,
+                    "type": type,
+                    "session": sessionname,
+                    "priority": priority,
+                    "action": action,
+                    "who": who,
+                    "how": how,
+                    "why": why,
+                    "module": module,
+                    "date": None,
+                    "fromuser": fromuser,
+                    "touser": touser,
+                }
             }
             self.send_message(
                 mto=jid.JID(self.config.sub_logger),
@@ -553,6 +720,19 @@ class MUCBot(slixmpp.ClientXMPP):
         self.manage_scheduler.process_on_event()
 
     def __bool_data(self, variable, default=False):
+        """
+        Convertit une variable en valeur booléenne.
+
+        Cette méthode convertit une variable en valeur booléenne. Si la variable est une chaîne de caractères
+        représentant "true" (en minuscules), elle retourne True. Sinon, elle retourne la valeur par défaut.
+
+        Args:
+            variable (bool or str): La variable à convertir.
+            default (bool, optional): La valeur par défaut à retourner si la conversion échoue. Par défaut, False.
+
+        Returns:
+            bool: La valeur booléenne convertie.
+        """
         if isinstance(variable, bool):
             return variable
         elif isinstance(variable, str):
@@ -560,34 +740,61 @@ class MUCBot(slixmpp.ClientXMPP):
                 return True
         return default
 
+
     async def message(self, msg):
+        """
+        Traite un message XMPP reçu.
+
+        Cette méthode traite un message XMPP reçu en effectuant les étapes suivantes :
+        - Ignore les messages provenant de l'agent lui-même.
+        - Vérifie que le type de message est "chat".
+        - Vérifie la structure du message.
+        - Charge le corps du message comme un objet JSON.
+        - Traite les actions spécifiques dans le message.
+        - Appelle les plugins pour traiter les actions restantes.
+
+        Args:
+            msg (dict): Le message XMPP à traiter.
+
+        Returns:
+            None
+        """
+
         if msg["from"].bare == self.boundjid.bare:
-            logging.debug("I am talking to myself, nothing to add!")
+            # Il est ignoré s'il provient de lui-même
+            logger.debug("I am talking to myself, nothing to add!")
             return
-        if not msg["type"] == "chat":
-            logging.error("Stanza %s message no process." " only chat" % msg["type"])
+
+        # Vérifie que le type est "chat". Sinon, rejette le message.
+        if msg["type"] != "chat":
+            logging.error("Stanza %s message not processed: only 'chat' supported" % msg["type"])
             return
+
+        # . Vérifie la structure du message.
         is_correct_msg, typemessage = self._check_message(msg)
         if not is_correct_msg:
-            logging.error("Stanza message no process : bad form")
+            logging.error("Stanza message not processed: bad format")
             return
+
+        # Message de reponse générique d'erreur a renvoye à l'emetteur
         dataerreur = {
             "action": "resultmsginfoerror",
             "sessionid": "",
             "ret": 255,
             "base64": False,
-            "data": {"msg": "ERROR : Message structure"},
+            "data": {"msg": "ERROR: Message structure"},
         }
-        try:
-            dataobj = json.loads(msg["body"])
 
+        try:
+            # Charge le corps du message comme un objet JSON.
+            dataobj = json.loads(msg["body"])
         except Exception as e:
-            logging.error("bad struct Message %s %s " % (msg, str(e)))
-            self.send_message(
-                mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
-            )
-            logger.error("\n%s" % (traceback.format_exc()))
+            logging.error("Invalid message structure: %s" % str(e))
+            self.send_message(mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat")
+            logger.error("\n%s" % traceback.format_exc())
             return
+
+        # Traitement d'actions spécifiques dans le message
         if "action" in dataobj and dataobj["action"] == "infomachine":
             dd = {
                 "data": dataobj,
@@ -597,48 +804,34 @@ class MUCBot(slixmpp.ClientXMPP):
             }
             dataobj = dd
 
+        # Liste d'actions à traiter directement
         list_action_traiter_directement = []
         if dataobj["action"] in list_action_traiter_directement:
-            # call function avec dataobj
+            # Appelle directement la fonction correspondante avec les données.
             return
 
-        ### Call plugin in action
+        # Appel des plugins pour traiter les actions restantes
         try:
             if "action" in dataobj and dataobj["action"] != "" and "data" in dataobj:
-                # il y a une action a traite dans le message
                 if "base64" in dataobj and self.__bool_data(dataobj["data"]):
                     mydata = json.loads(base64.b64decode(dataobj["data"]))
                 else:
                     mydata = dataobj["data"]
 
                 if "sessionid" not in dataobj:
-                    dataobj["sessionid"] = getRandomName(6, "misssingid")
-                    logging.warning(
-                        "sessionid missing in message from %s : attributed sessionid %s "
-                        % (msg["from"], dataobj["sessionid"])
-                    )
+                    dataobj["sessionid"] = getRandomName(6, "missingid")
+                    logger.warning("Session ID missing in message, assigned: %s" % dataobj["sessionid"])
 
+                # Supprime les données brutes après décodage
                 del dataobj["data"]
-                if (
-                    dataobj["action"] == "infomachine"
-                ):  # infomachine call plugin registeryagent
+
+                # Transforme "infomachine" en "registeryagent"
+                if dataobj["action"] == "infomachine":
                     dataobj["action"] = "registeryagent"
 
-                # traite plugin
                 try:
-                    msg["body"] = dataobj
-
-                    dataerreur = {
-                        "action": "result" + dataobj["action"],
-                        "data": {"msg": "error plugin : " + dataobj["action"]},
-                        "sessionid": getRandomName(6, "misssingid"),
-                        "ret": 255,
-                        "base64": False,
-                    }
-                    module = "%s/plugin_%s.py" % (self.modulepath, dataobj["action"])
-                    if "ret" not in dataobj:
-                        dataobj["ret"] = 0
-
+                    # Traite le plugin lier a l'action
+                    module = f"{self.modulepath}/plugin_{dataobj['action']}.py"
                     call_plugin(
                         module,
                         self,
@@ -646,54 +839,39 @@ class MUCBot(slixmpp.ClientXMPP):
                         dataobj["sessionid"],
                         mydata,
                         msg,
-                        dataobj["ret"],
+                        dataobj.get("ret", 0),
                         dataerreur,
                     )
                 except TypeError:
-                    if dataobj["action"] != "resultmsginfoerror":
-                        dataerreur["data"]["msg"] = (
-                            "ERROR : plugin %s Missing" % dataobj["action"]
-                        )
-                        dataerreur["action"] = "result%s" % dataobj["action"]
-                        self.send_message(
-                            mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
-                        )
-                    logging.error(
-                        "TypeError execution plugin %s : [ERROR : plugin Missing] %s"
-                        % (dataobj["action"], sys.exc_info()[0])
-                    )
-                    logger.error("\n%s" % (traceback.format_exc()))
+                    # Si le plugin est manquant
+                    dataerreur["data"]["msg"] = f"ERROR: Plugin {dataobj['action']} missing"
+                    self.send_message(mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat")
+                    logging.error("TypeError: Plugin %s missing" % dataobj["action"])
 
                 except Exception as e:
-                    logging.error(
-                        "execution plugin [%s]  : %s " % (dataobj["action"], str(e))
-                    )
-                    logger.error("\n%s" % (traceback.format_exc()))
-                    if dataobj["action"].startswith("result"):
-                        return
-                    if dataobj["action"] != "resultmsginfoerror":
-                        dataerreur["data"]["msg"] = (
-                            "ERROR : plugin execution %s" % dataobj["action"]
-                        )
-                        dataerreur["action"] = "result%s" % dataobj["action"]
-                        self.send_message(
-                            mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
-                        )
-            else:
-                # There is no action to proceed on the message
-                dataerreur["data"]["msg"] = "ERROR : Action ignored"
-                self.send_message(
-                    mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
-                )
+                    # Autres erreurs de plugin
+                    logging.error("Error in plugin [%s]: %s" % (dataobj["action"], str(e)))
+                    if not dataobj["action"].startswith("result"):
+                        dataerreur["data"]["msg"] = f"ERROR: Plugin execution {dataobj['action']}"
+                        # self.send_message(mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat")
         except Exception as e:
-            logging.error("bad struct Message %s %s " % (msg, str(e)))
-            dataerreur["data"]["msg"] = "ERROR : Message structure"
-            self.send_message(
-                mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
-            )
-            logger.error("\n%s" % (traceback.format_exc()))
+            # Erreur générale lors du traitement du message
+            logging.error("Error processing message: %s" % str(e))
+            dataerreur["data"]["msg"] = "ERROR: Message structure"
+            self.send_message(mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat")
+            logger.error("\n%s" % traceback.format_exc())
 
     def get_or_create_eventloop(self):
+        """
+        Récupère ou crée une boucle d'événements asyncio.
+
+        Cette méthode tente de récupérer la boucle d'événements asyncio actuelle. Si aucune boucle
+        d'événements n'est trouvée, elle en crée une nouvelle et la définit comme boucle d'événements
+        actuelle.
+
+        Returns:
+            asyncio.AbstractEventLoop: La boucle d'événements asyncio.
+        """
         try:
             return asyncio.get_event_loop()
         except RuntimeError as ex:
@@ -703,6 +881,21 @@ class MUCBot(slixmpp.ClientXMPP):
                 return asyncio.get_event_loop()
 
     def iqsendpulse1(self, to, datain, timeout):
+        """
+        Envoie une requête IQ avec un délai d'attente.
+
+        Cette méthode envoie une requête IQ avec un délai d'attente spécifié. Elle encode les données
+        en base64 et les envoie dans un message IQ. Si une erreur se produit, elle retourne un message
+        d'erreur.
+
+        Args:
+            to (str): L'adresse JID du destinataire.
+            datain (dict or list or str): Les données à envoyer.
+            timeout (int): Le délai d'attente en secondes.
+
+        Returns:
+            str: Un message d'erreur en cas d'échec, sinon None.
+        """
         tempo = time.time()
         datafile = {
             "sesssioniq": "",
@@ -713,7 +906,7 @@ class MUCBot(slixmpp.ClientXMPP):
             try:
                 data = json.dumps(datain)
             except Exception as e:
-                logging.error("iqsendpulse : encode json : %s" % str(e))
+                logger.error("iqsendpulse : encode json : %s" % str(e))
                 return '{"err" : "%s"}' % str(e).replace('"', "'")
         elif type(datain) is str:
             data = str(datain)
@@ -722,13 +915,13 @@ class MUCBot(slixmpp.ClientXMPP):
         try:
             data = base64.b64encode(bytes(data, "utf-8")).decode("utf8")
         except Exception as e:
-            logging.error("iqsendpulse : encode base64 : %s" % str(e))
+            logger.error("iqsendpulse : encode base64 : %s" % str(e))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         try:
             iq = self.make_iq_get(queryxmlns="custom_xep", ito=to)
             datafile["sesssioniq"] = iq["id"]
-            logging.debug("iq id=%s" % iq["id"])
-            logging.debug("iq datafile=%s" % datafile)
+            logger.debug("iq id=%s" % iq["id"])
+            logger.debug("iq datafile=%s" % datafile)
             itemXML = ET.Element("{%s}data" % data)
             for child in iq.xml:
                 if child.tag.endswith("query"):
@@ -738,21 +931,36 @@ class MUCBot(slixmpp.ClientXMPP):
                 result = iq.send(timeout=timeout)
             except IqError as e:
                 err_resp = e.iq
-                logging.error(
+                logger.error(
                     "iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'")
                 )
                 logger.error("\n%s" % (traceback.format_exc()))
                 ret = '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
             except IqTimeout:
-                logging.error("iqsendpulse : Timeout Error")
+                logger.error("iqsendpulse : Timeout Error")
                 ret = '{"err" : "Timeout Error"}'
         except Exception as e:
-            logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
+            logger.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
             logger.error("\n%s" % (traceback.format_exc()))
             ret = '{"err" : "%s"}' % str(e).replace('"', "'")
 
     def iqsendpulse(self, destinataire, msg, mtimeout):
+        """
+        Envoie une requête IQ avec un délai d'attente et gère la réponse via une file d'attente POSIX.
+
+        Cette méthode envoie une requête IQ avec un délai d'attente spécifié et gère la réponse via une
+        file d'attente POSIX. Elle encode les données en base64 et les envoie dans un message IQ. Si une
+        erreur se produit, elle retourne un message d'erreur.
+
+        Args:
+            destinataire (str): L'adresse JID du destinataire.
+            msg (bytes or dict or list or str): Les données à envoyer.
+            mtimeout (int): Le délai d'attente en secondes.
+
+        Returns:
+            str: Le message reçu ou un message d'erreur en cas d'échec.
+        """
         def close_posix_queue(name):
             # Keep result and remove datafile['name_iq_queue']
             logger.debug("close queue msg %s" % (name))
@@ -764,7 +972,7 @@ class MUCBot(slixmpp.ClientXMPP):
         if isinstance(msg, (bytes)):
             msg = msg.decode("utf-8")
         if isinstance(msg, (dict, list)):
-            msg = json.dumps(msg, cls=DateTimebytesEncoderjson)
+            msg = json.dumps(msg, cls=ExtendedJSONEncoder)
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -774,7 +982,7 @@ class MUCBot(slixmpp.ClientXMPP):
         try:
             data = base64.b64encode(bytes(msg, "utf-8")).decode("utf8")
         except Exception as e:
-            logging.error("iqsendpulse : encode base64 : %s" % str(e))
+            logger.error("iqsendpulse : encode base64 : %s" % str(e))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         try:
             iq = self.make_iq_get(queryxmlns="custom_xep", ito=destinataire)
@@ -788,7 +996,7 @@ class MUCBot(slixmpp.ClientXMPP):
             result = iq.send(timeout=mtimeout)
         except IqError as e:
             err_resp = e.iq
-            logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
+            logger.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
             logger.error("\n%s" % (traceback.format_exc()))
             ret = '{"err" : "%s"}' % str(err_resp).replace('"', "'")
             return ret
@@ -830,85 +1038,13 @@ class MUCBot(slixmpp.ClientXMPP):
             ret = '{"err" : "timeout %s" % }'
             return ret
 
-    # def iqsendpulseasync(self, to, datain, timeout):
-    # iq = self.make_iq_get(queryxmlns='custom_xep', ito=to)
-    # logging.debug("iq id=%s" % iq['id'])
-    # event_loop = asyncio.get_event_loop()
-    # future1 = asyncio.ensure_future( self.myiq(iq,
-    # to,
-    # datain,
-    # timeout),
-    # loop=event_loop)
-    # return iq['id']
-
-    # ##################################################################
-    # async def myiq(self, iq, to, datain, timeout):
-    # if type(datain) == dict or type(datain) == list:
-    # try:
-    # data = json.dumps(datain)
-    # except Exception as e:
-    # logging.error("iqsendpulse : encode json : %s" % str(e))
-    # return '{"err" : "%s"}' % str(e).replace('"', "'")
-    # elif type(datain) == str:
-    # data = str(datain)
-    # else:
-    # data = datain
-    # try:
-    ##data = data.encode("base64")
-    # data = base64.b64encode(bytes(data, "utf-8")).decode('utf8')
-    # except Exception as e:
-    # logging.error("iqsendpulse : encode base64 : %s" % str(e))
-    # return '{"err" : "%s"}' % str(e).replace('"', "'")
-    # try:
-    # iq = self.make_iq_get(queryxmlns='custom_xep', ito=to)
-    # logging.debug("iq id=%s" % iq['id'])
-    # itemXML = ET.Element('{%s}data' % data)
-    # for child in iq.xml:
-    # if child.tag.endswith('query'):
-    # child.append(itemXML)
-
-    # mq.sendbytes(iq['id'],
-    # ret,
-    # prefixe = self.boundjid.user,
-    # priority= 9)
-    # return
-    # try:
-    ##data=str(base64.b64decode(bytes(z.tag[1:-5],
-    ##'utf-8')),'utf-8')
-    # ret=base64.b64decode(bytes(z.tag[1:-5],
-    #'utf-8'))
-    # mq.sendbytes(iq['id'],
-    # ret,
-    # prefixe = self.boundjid.user,
-    # priority= 9)
-    # return
-    # except Exception as e:
-    # logging.error("iqsendpulse : %s" % str(e))
-    # logger.error("\n%s"%(traceback.format_exc()))
-    # ret =  '{"err" : "%s"}' % str(e).replace('"', "'")
-    # mq.sendbytes(iq['id'],
-    # ret,
-    # prefixe = self.boundjid.user,
-    # priority= 9)
-
-    # except IqTimeout:
-    # logging.error("iqsendpulse : Timeout Error")
-    # ret='{"err" : "Timeout Error"}'
-    # except Exception as e:
-    # logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
-    # logger.error("\n%s"%(traceback.format_exc()))
-    # ret='{"err" : "%s"}' % str(e).replace('"', "'")
-    # mq.sendbytes(iq['id'],
-    # ret,
-    # prefixe = self.boundjid.user,
-    # priority= 9)
-
     async def _handle_custom_iq_error(self, iq):
         if iq["type"] == "error":
             errortext = iq["error"]["text"]
             if "User already exists" in errortext:
                 # This is not an IQ error
-                logger.warning("User already exists")
+                logger.info("No need to create the account for"\
+                    " user %s as it already exists." % self.boundjid.bare)
                 self.isaccount = False
                 return
 
@@ -919,7 +1055,7 @@ class MUCBot(slixmpp.ClientXMPP):
             liststop = []
             deleted_queue = []
 
-            logger.debug("time ref %s" % t)
+            # logger.debug("time ref %s" % t)
             try:
                 for ta in self.datas_send:
                     if ta["time"] < t:
@@ -981,6 +1117,19 @@ class MUCBot(slixmpp.ClientXMPP):
                 logger.error("\n%s" % (traceback.format_exc()))
 
     async def _handle_custom_iq(self, iq):
+        """
+        Gère les erreurs de requête IQ personnalisées.
+
+        Cette méthode gère les erreurs de requête IQ personnalisées en vérifiant le type d'erreur et
+        en prenant les mesures appropriées, telles que la suppression des files d'attente expirées et
+        l'envoi de messages d'erreur.
+
+        Args:
+            iq (dict): La requête IQ contenant l'erreur.
+
+        Returns:
+            None
+        """
         if iq["query"] != "custom_xep":
             return
         if iq["type"] == "get":
@@ -1057,7 +1206,7 @@ class MUCBot(slixmpp.ClientXMPP):
                                 quposix.send(data["result"], 2)
                                 return data["result"]
                             except Exception as e:
-                                logging.error("_handle_custom_iq : %s" % str(e))
+                                logger.error("_handle_custom_iq : %s" % str(e))
                                 logger.error("\n%s" % (traceback.format_exc()))
                                 ret = '{"err" : "%s"}' % str(e).replace('"', "'")
                                 quposix.send(ret, 2)
@@ -1070,18 +1219,62 @@ class MUCBot(slixmpp.ClientXMPP):
             ret = "{}"
             return ret
 
+
+
         # self.register_handler(Callback(
         #'CustomXEP Handler3',
         # StanzaPath('iq@type=result/custom_xep'),
         # self._handle_custom_iq_get))
 
     def info_xmppmachinebyuuid(self, uuid):
+        """
+        Récupère les informations d'une machine XMPP par son UUID.
+
+        Cette méthode récupère les informations d'une machine XMPP en utilisant son UUID. Elle interroge
+        la base de données XmppMasterDatabase pour obtenir les détails de la machine associée à l'UUID
+        spécifié.
+
+        Args:
+            uuid (str): L'UUID de la machine XMPP.
+
+        Returns:
+            dict: Les informations de la machine XMPP associée à l'UUID spécifié.
+        """
         return XmppMasterDatabase().getGuacamoleRelayServerMachineUuid("UUID%s" % uuid)
 
 
 class DateTimebytesEncoderjson(json.JSONEncoder):
+
     """
-    Used to handle datetime in json files.
+    JSON encoder subclass that handles serialization of `datetime` and `bytes` objects.
+
+    This class extends the default `json.JSONEncoder` to provide additional
+    functionality for serializing objects that are not natively supported by the
+    `json` module, such as `datetime` and `bytes`.
+
+    - `datetime` objects are converted to ISO 8601 formatted strings (e.g., "2024-12-03T12:34:56").
+    - `bytes` objects are decoded into UTF-8 strings.
+
+    These transformations ensure compatibility when encoding complex Python objects
+    into JSON, which is particularly useful when working with APIs, logging, or
+    saving structured data. If an object is not a `datetime` or `bytes`, the default
+    encoder behavior is applied.
+
+    Example:
+        ```python
+        from datetime import datetime
+        import json
+
+        data = {
+            "timestamp": datetime.now(),
+            "binary_data": b"example bytes",
+            "message": "Hello, World!"
+        }
+
+        encoded_data = json.dumps(data, cls=DateTimebytesEncoderjson)
+        print(encoded_data)
+        # Output: {"timestamp": "2024-12-03T12:34:56", "binary_data": "example bytes", "message": "Hello, World!"}
+        ```
     """
 
     def default(self, obj):
@@ -1092,3 +1285,92 @@ class DateTimebytesEncoderjson(json.JSONEncoder):
         else:
             encoded_object = json.JSONEncoder.default(self, obj)
         return encoded_object
+
+class ExtendedJSONEncoder(json.JSONEncoder):
+    """
+        JSON encoder subclass that handles serialization of additional Python objects.
+
+        This class extends the default `json.JSONEncoder` to provide additional functionality
+        for serializing objects that are not natively supported by the `json` module. The encoder
+        ensures that these objects are transformed into JSON-compatible representations.
+
+        Supported Types and Their Transformations:
+        - `datetime`: Converted to ISO 8601 formatted strings (e.g., "2024-12-03T12:34:56").
+        - `bytes`: Decoded into UTF-8 strings (e.g., `b"example"` -> `"example"`).
+        - `Decimal`: Converted to `float` for approximate representation.
+        - `UUID`: Converted to their string representation (e.g., "550e8400-e29b-41d4-a716-446655440000").
+        - `set` and `frozenset`: Converted to lists for JSON compatibility.
+        - `Path` (from `pathlib`): Converted to strings (e.g., `Path('/path/to/file')` -> `"/path/to/file"`).
+        - Custom Objects: Serialized via a `__json__()` method if the method is defined in the object.
+
+        These transformations ensure compatibility when encoding complex Python objects into JSON,
+        which is particularly useful for APIs, logging, or saving structured data.
+
+        If an object is not of one of the supported types, the default encoder behavior is applied,
+        which may raise a `TypeError` for unsupported types.
+
+        Example Usage:
+            ```python
+            from datetime import datetime
+            from decimal import Decimal
+            import json
+            import uuid
+            from pathlib import Path
+
+            class CustomObject:
+                def __init__(self, value):
+                    self.value = value
+
+                def __json__(self):
+                    return {"custom_value": self.value}
+
+            data = {
+                "timestamp": datetime.now(),
+                "binary_data": b"example bytes",
+                "decimal_value": Decimal("123.45"),
+                "unique_id": uuid.uuid4(),
+                "file_path": Path("/path/to/file"),
+                "set_data": {1, 2, 3},
+                "custom": CustomObject("example")
+            }
+
+            encoded_data = json.dumps(data, cls=ExtendedJSONEncoder)
+            print(encoded_data)
+            # Output:
+            # {
+            #   "timestamp": "2024-12-03T12:34:56",
+            #   "binary_data": "example bytes",
+            #   "decimal_value": 123.45,
+            #   "unique_id": "550e8400-e29b-41d4-a716-446655440000",
+            #   "file_path": "/path/to/file",
+            #   "set_data": [1, 2, 3],
+            #   "custom": {"custom_value": "example"}
+            # }
+            ```
+
+        Attributes:
+            None
+
+        Notes:
+            - Use this encoder as the `cls` argument in `json.dumps()` when serializing data containing
+            unsupported types.
+            - Be mindful of potential precision loss when converting `Decimal` to `float`.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, bytes):
+            return obj.decode("utf-8")
+        elif isinstance(obj, Decimal):
+            return float(obj)
+        elif isinstance(obj, uuid.UUID):
+            return str(obj)
+        elif isinstance(obj, (set, frozenset)):
+            return list(obj)
+        elif isinstance(obj, Path):
+            return str(obj)
+        elif hasattr(obj, "__json__"):
+            return obj.__json__()
+        else:
+            return super().default(obj)
