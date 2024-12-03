@@ -21,6 +21,7 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.pkgs import PkgsDatabase
 from bin.agent import MUCBot
+
 # import signal
 from lib import manageRSAsigned
 
@@ -33,7 +34,6 @@ sys.path.append(
 logger = logging.getLogger()
 
 
-
 def Setdirectorytempinfo():
     """
     Create directory for temporary information.
@@ -42,6 +42,7 @@ def Setdirectorytempinfo():
     if not os.path.exists(dirtempinfo):
         os.makedirs(dirtempinfo, mode=0o700)
     return dirtempinfo
+
 
 def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
     """
@@ -58,6 +59,7 @@ def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s" % (traceback.format_exc()))
         os._exit(1)
+
 
 def doTask(optsconsoledebug, optsdeamon, optfileconf):
     """
@@ -130,7 +132,9 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
     xmpp["xep_0077"].force_registration = True
 
     # Calculer la longueur totale de la ligne centrale
-    total_length = (2 + 5) * 2 + len("CONNECTION SUBSTITUT") + len(str(xmpp.boundjid.bare))
+    total_length = (
+        (2 + 5) * 2 + len("CONNECTION SUBSTITUT") + len(str(xmpp.boundjid.bare))
+    )
     logger.info("/" + "-" * 4 + "-" * total_length + "\\")
     logger.info("|----- CONNECTION XMPP SUBSTITUT %s -----|" % str(xmpp.boundjid.bare))
     logger.info("\\" + "-" * 4 + "-" * total_length + "/")
@@ -147,6 +151,7 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
         logging.error("RuntimeError during connection")
     finally:
         xmpp.loop.close()
+
 
 # def handler_CTRL(signum, frame):
 #     global xmpp
