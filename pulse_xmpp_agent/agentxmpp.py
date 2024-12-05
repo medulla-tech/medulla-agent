@@ -268,11 +268,11 @@ class MUCBot(ClientXMPP):
         self.massage_reconection="ask connect"
         self.demandeRestartBot_bool=False
 
-        self.connectcount = 0
+        # self.connectcount = 0
         self.iq_msg = file_message_iq(dev_mod=True)
         self.pidprogrammprincipal = pidprogrammprincipal
 
-        self.reconnect_time_wait = 3
+        # self.reconnect_time_wait = 3
         # create mutex
         self.mutex = threading.Lock()
         self.mutexslotquickactioncount = threading.Lock()
@@ -1165,30 +1165,17 @@ class MUCBot(ClientXMPP):
         a savoir apres "CONNECTION FAILED"
         il faut reinitialiser adress et port de connection.
         """
+        """
+        on connection failed on libere la connection
+        a savoir apres "CONNECTION FAILED"
+        il faut reinitialiser adress et port de connection.
+        """
         if self.demandeRestartBot_bool:
             self.demandeRestartBot_bool=False
             return
         logging.info(f"handle_connection_failed {data}")
         with terminate_lock:
             if self.shared_dict.get('terminate'):
-                if sys.platform.startswith("win"):
-                    try:
-                        # on debloque le pipe
-                        fileHandle = win32file.CreateFile(
-                            "\\\\.\\pipe\\interfacechang",
-                            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                            0,
-                            None,
-                            win32file.OPEN_EXISTING,
-                            0,
-                            None,
-                        )
-                        win32file.WriteFile(fileHandle, "terminate")
-                        fileHandle.Close()
-                        time.sleep(2)
-                    except Exception as e:
-                        logger.error("\n%s" % (traceback.format_exc()))
-                        pass
                 return
             if self.shared_dict.get('alternative'):
                 logging.info("handle_connection_failed STOP ON RECHER ALTERNATIVE")
@@ -1202,22 +1189,15 @@ class MUCBot(ClientXMPP):
         logging.info(f"connecting {self.server_address}")
 
     def handle_disconnected(self, data):
-        logging.info(f"handle_disconnected {data}")
         with terminate_lock:
             if self.shared_dict.get('terminate'):
                 return
         if self.demandeRestartBot_bool:
             self.reconnect(0.0, self.massage_reconection)
             return
-        with terminate_lock:
-            if self.config.agenttype in ["relayserver"] or not self.shared_dict.get('alternative'):
-                logging.info(f"handle_disconnected {data}")
-                self.reconnect(0.0, self.massage_reconection)
-            else:
-                # on sort pour permettre a la connection alternative de travaille
-                loop1 = asyncio.get_event_loop()
-                loop1.stop()
-
+        if self.config.agenttype in ["relayserver"]:
+            logging.info(f"handle_disconnected {data}")
+            self.reconnect(0.0, self.massage_reconection)
 
     def handle_connected(self, data):
         self.demandeRestartBot_bool=False
@@ -1231,7 +1211,6 @@ class MUCBot(ClientXMPP):
             self.disconnect(delay)
         else:
             self.disconnect()
-
 
     def quit_application(self, wait=2):
         """
@@ -1249,37 +1228,10 @@ class MUCBot(ClientXMPP):
             None
         """
         logging.log(DEBUGPULSE, "Quit Application")
-
-        self.queue_read_event_from_command.put("quit")
-        # termine server kiosk
-        self.eventkiosk.quit()
-        self.eventkilltcp.set()
-        self.eventkillpipe.set()
-        time.sleep(1)
-        if sys.platform.startswith("win"):
-            try:
-                # on debloque le pipe
-                fileHandle = win32file.CreateFile(
-                    "\\\\.\\pipe\\interfacechang",
-                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                    0,
-                    None,
-                    win32file.OPEN_EXISTING,
-                    0,
-                    None,
-                )
-                win32file.WriteFile(fileHandle, "terminate")
-                fileHandle.Close()
-                time.sleep(2)
-            except Exception as e:
-                logger.error("\n%s" % (traceback.format_exc()))
-                pass
         with terminate_lock:
             self.shared_dict['terminate'] = True
-        self.startdata = -1
-        logger.debug("byby session xmpp")
-        loop1 = asyncio.get_event_loop()
-        loop1.stop()
+            loop1 = asyncio.get_event_loop()
+            loop1.stop()
 
     async def register(self, iq):
         """
@@ -1303,16 +1255,16 @@ class MUCBot(ClientXMPP):
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
         resp['register']['password'] = self.password
+
         try:
             await resp.send()
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.debug("Could not register account: %s" %
+            logging.info("Could not register account: %s" %
                     e.iq['error']['text'])
         except IqTimeout:
-            logging.error("Could not register account No response from server.")
+            logging.error("No response from server.")
             self.disconnect()
-
 
     def check_subscribe(self):
         if self.presencectrlsubscribe != "available":
@@ -4270,8 +4222,6 @@ def doTask(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintreename"
     )
 
-    logger.info("tg %s " % tg)
-
     # on lit les alternatives si elle existe. 1 fois suivant alternatifconnection initialise ou pas
     if not alternatifconnection:
         # chemin du fichier alternative
@@ -4393,23 +4343,22 @@ def doTask(
                 alternatifconnection["nextserver"]=(alternatifconnection["nextserver"] % alternatifconnection["nbserver"]) + 1
                 index_server_list = alternatifconnection["nextserver"]-1
                 arsconnection = alternatifconnection["listars"][index_server_list]
-
-                Port = alternatifconnection[arsconnection]["port"]
-                Server = alternatifconnection[arsconnection]["server"]
-                guacamole_baseurl = alternatifconnection[arsconnection]["guacamole_baseurl"]
+                self.config.Port = alternatifconnection[arsconnection]["port"]
+                self.config.Server = alternatifconnection[arsconnection]["server"]
+                self.config.guacamole_baseurl = alternatifconnection[arsconnection]["guacamole_baseurl"]
                 serverjid = str(arsconnection)
                 try:
-                    confdomain = str(arsconnection).split("@")[1].split("/")[0]
+                    self.config.confdomain = str(arsconnection).split("@")[1].split("/")[0]
                 except BaseException:
-                    confdomain = str(serverjid)
-                changeconnection( conffilename(optstypemachine),
-                                 Port,
-                                 ipfromdns(Server),
+                    self.config.confdomain = str(serverjid)
+                changeconnection( conffilename(self.config.agenttype),
+                                 self.config.Port,
+                                 ipfromdns(self.config.Server),
                                  arsconnection,
-                                 guacamole_baseurl,)
-                address = (
-                        ipfromdns(Server),
-                        int(Port),
+                                 self.config.guacamole_baseurl,)
+                self.address = (
+                        ipfromdns(self.config.Server),
+                        int(self.config.Port),
                     )
         except KeyboardInterrupt:
             logging.debug("CTRL+C have been asked.")
@@ -4421,7 +4370,6 @@ def doTask(
             proc.terminate()
             proc.join()
     logging.debug("The Pulse Xmpp Agent Relay is now stopped")
-
 
 
 class process_xmpp_agent:
@@ -4572,6 +4520,27 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE, "Waiting to stop kiosk server")
     logging.log(DEBUGPULSE, "QUIT")
     logging.log(DEBUGPULSE, "bye bye client xmpp Agent")
+    if sys.platform.startswith("win"):
+        windowfilepid = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintree"
+        )
+        with open(windowfilepid) as json_data:
+            data_dict = json.load(json_data)
+        pythonmainproces = ""
+
+        for pidprocess in data_dict:
+            if "pythonmainproces" in data_dict[pidprocess]:
+                pythonmainproces = pidprocess
+        if pythonmainproces != "":
+            logging.log(DEBUGPULSE, "TERMINE process pid %s" % pythonmainproces)
+            pidfile = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"
+            )
+            aa = file_get_contents(pidfile).strip()
+            logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa)
+            cmd = "TASKKILL /F /PID %s /T" % pythonmainproces
+            os.system(cmd)
+    os._exit(0)
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
