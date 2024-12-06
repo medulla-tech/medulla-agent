@@ -3900,7 +3900,6 @@ def createDaemon(
                             break
                 time.sleep(1)
         else:
-            try:
             pid = os.getpid()
             pidfile_path = "/var/run/xmpp_agent_pulse_%s.pid" % optstypemachine
             with open(pidfile_path, "w") as f:
