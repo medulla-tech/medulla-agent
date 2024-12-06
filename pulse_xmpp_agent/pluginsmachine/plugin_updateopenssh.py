@@ -27,11 +27,11 @@ if sys.platform.startswith("win"):
     import win32file
     import win32security
 
-OPENSSHVERSION = "9.4"
+OPENSSHVERSION = "9.8.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.1", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.23", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
@@ -139,6 +139,16 @@ def checkopensshversion():
             # OpenSSH is not installed. We will force installation by returning
             # version 0.0
             opensshversion = "0.0"
+
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" /v "DisplayIcon"'
+        result = utils.simplecommand(cmd)
+
+        if result["code"] != 0:
+            cmd = (
+                f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
+            )
+            utils.simplecommand(cmd)
     return opensshversion
 
 

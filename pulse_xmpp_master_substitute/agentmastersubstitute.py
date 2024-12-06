@@ -21,6 +21,7 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.pkgs import PkgsDatabase
 from bin.agent import MUCBot
+
 # import signal
 from lib import manageRSAsigned
 
@@ -130,7 +131,9 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
     xmpp["xep_0077"].force_registration = True
 
     # Calculer la longueur totale de la ligne centrale
-    total_length = (2 + 5) * 2 + len("CONNECTION SUBSTITUT") + len(str(xmpp.boundjid.bare))
+    total_length = (
+        (2 + 5) * 2 + len("CONNECTION SUBSTITUT") + len(str(xmpp.boundjid.bare))
+    )
     logger.info("/" + "-" * 4 + "-" * total_length + "\\")
     logger.info("|----- CONNECTION XMPP SUBSTITUT %s -----|" % str(xmpp.boundjid.bare))
     logger.info("\\" + "-" * 4 + "-" * total_length + "/")
@@ -147,6 +150,7 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
         logging.error("RuntimeError during connection")
     finally:
         xmpp.loop.close()
+
 
 # def handler_CTRL(signum, frame):
 #     global xmpp

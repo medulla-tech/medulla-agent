@@ -150,8 +150,9 @@ class process_on_end_send_message_xmpp:
         self.queue_out_session = queue_out_session
         logging.debug("manage process start")
 
-
-    def add_processcommand(self, command, message, tosucces=None, toerror=None, timeout=50, step=None):
+    def add_processcommand(
+        self, command, message, tosucces=None, toerror=None, timeout=50, step=None
+    ):
         """
         Executes a command, captures its output, and returns the return code and result lines.
 
@@ -171,11 +172,12 @@ class process_on_end_send_message_xmpp:
 
         try:
             # Capture of the command output
-            result = subprocess.run(command, shell=True, timeout=timeout, capture_output=True, text=True)
+            result = subprocess.run(
+                command, shell=True, timeout=timeout, capture_output=True, text=True
+            )
             code_return = result.returncode
             output_lines = result.stdout.splitlines() if result.stdout else []
             return code_return, output_lines
-
 
         except subprocess.TimeoutExpired:
             logging.error(f"Command '{command}' timed out after {timeout} seconds.")
@@ -183,7 +185,6 @@ class process_on_end_send_message_xmpp:
         except Exception as e:
             logging.error(f"Error executing command '{command}': {str(e)}")
             return -1
-
 
     def processstepcommand(self, command, queue_out_session, messagestr, timeout, step):
         logging.getLogger().error("########processstepcommand")

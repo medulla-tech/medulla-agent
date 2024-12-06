@@ -7,12 +7,15 @@ from distutils.version import StrictVersion
 import logging
 from lib import utils
 import tempfile
+from lib.agentconffile import (
+    medullaPath,
+)
 
 KIOSKINTERFACEVERSION = "1.0.0"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -39,6 +42,16 @@ def kioskinterfaceversion():
             # Not installed. We will force installation by returning
             # version 0.1
             KIOSKINTERFACEVERSION = "0.1"
+
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla kiosk interface" /v "DisplayIcon"'
+        result = utils.simplecommand(cmd)
+
+        if result["code"] != 0:
+            cmd = (
+                f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla kiosk interface" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
+            )
+            utils.simplecommand(cmd)
     return KIOSKINTERFACEVERSION
 
 
@@ -72,7 +85,10 @@ def updatekioskinterfaceversion(version):
 
 
 def updatekioskinterface(xmppobject, installed_version):
-    logger.info("PL-KIOSK Updating Medulla kiosk interface to version %s" % KIOSKINTERFACEVERSION)
+    logger.info(
+        "PL-KIOSK Updating Medulla kiosk interface to version %s"
+        % KIOSKINTERFACEVERSION
+    )
     version_info = utils.PythonVersionInfo()
     if sys.platform.startswith("win"):
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
@@ -106,7 +122,8 @@ def updatekioskinterface(xmppobject, installed_version):
                 updatekioskinterfaceversion(installed_version)
             else:
                 logger.error(
-                    "PL-KIOSK Error installing %s: %s" % (filename, cmd_result["result"])
+                    "PL-KIOSK Error installing %s: %s"
+                    % (filename, cmd_result["result"])
                 )
 
         else:

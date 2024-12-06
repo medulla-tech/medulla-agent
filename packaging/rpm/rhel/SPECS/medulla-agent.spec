@@ -75,6 +75,7 @@ Requires:       python3.11-zc-lockfile
 Requires:       python3.11-cheroot
 Requires:       python3.11-portend
 Requires:       python3.11-tempora
+Requires:       python3.11-posix-ipc
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
 
@@ -238,11 +239,11 @@ Requires:   zip
 Requires:   crudini
 #Requires:  dpkg-dev
 
-Requires:   nsis-plugins-ZipDLL
-Requires:   nsis-plugins-Pwgen
-Requires:   nsis-plugins-AccessControl
-Requires:   nsis-plugins-Inetc
-Requires:   nsis-plugins-TextReplace
+#Requires:   nsis-plugins-ZipDLL
+#Requires:   nsis-plugins-Pwgen
+#Requires:   nsis-plugins-AccessControl
+#Requires:   nsis-plugins-Inetc
+#Requires:   nsis-plugins-TextReplace
 Requires(pre): pulse-filetree-generator
 
 %description -n pulse-agent-installers
@@ -492,7 +493,7 @@ sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/puls
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 
-mkdir -p %buildroot%_var/lib/pulse2/xml-fix
+mkdir -p %buildroot%_var/lib/pulse2/xml_fix
 cp -frv contrib/inventory/xml-fix/* %buildroot%_var/lib/pulse2/xml_fix
 
 # Not needed in the server

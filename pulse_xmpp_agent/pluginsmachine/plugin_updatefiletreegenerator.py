@@ -19,7 +19,7 @@ from lib.agentconffile import (
 FILETREEVERSION = "0.1"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "0.3", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "0.4", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -46,6 +46,16 @@ def checkfiletreegeneratorversion():
             # The filetree generator is not installed. We will force installation by returning
             # version 0.0
             filetreegeneratorversion = "0.0"
+
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Filetree Generator" /v "DisplayIcon"'
+        result = utils.simplecommand(cmd)
+
+        if result["code"] != 0:
+            cmd = (
+                f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Filetree Generator" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
+            )
+            utils.simplecommand(cmd)
     return filetreegeneratorversion
 
 

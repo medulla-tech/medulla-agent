@@ -25,7 +25,7 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.52", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.53", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -90,6 +90,16 @@ def checkversion():
             # Not installed. We will force installation by returning
             # version 0.0
             version = "0.0"
+
+        cmd = f'reg query "{REGKEY}" /v "DisplayIcon"'
+        result = utils.simplecommand(cmd)
+
+        if result["code"] != 0:
+            cmd = (
+                f'REG ADD "{REGKEY}" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
+            )
+            utils.simplecommand(cmd)
     return version
 
 

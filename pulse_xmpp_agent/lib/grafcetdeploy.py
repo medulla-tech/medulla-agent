@@ -788,7 +788,9 @@ class grafcet:
         if returncode == 0:
             self.workingstep["successed"] = True
             next_steps = [
-                step for step in self.sequence if step.get("step") > self.data["stepcurrent"]
+                step
+                for step in self.sequence
+                if step.get("step") > self.data["stepcurrent"]
             ]
 
             if next_steps:
@@ -1375,13 +1377,15 @@ class grafcet:
 
             self.__alternatefolder()
             # Execute the order and recover the return code and the output
-            code_return, output_lines = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
-                self.workingstep["command"],
-                self.datasend,
-                self.objectxmpp.boundjid.bare,
-                self.objectxmpp.boundjid.bare,
-                self.workingstep["timeout"],
-                self.workingstep["step"],
+            code_return, output_lines = (
+                self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
+                    self.workingstep["command"],
+                    self.datasend,
+                    self.objectxmpp.boundjid.bare,
+                    self.objectxmpp.boundjid.bare,
+                    self.workingstep["timeout"],
+                    self.workingstep["step"],
+                )
             )
 
             # Indicate the return code and process the results
@@ -1605,6 +1609,8 @@ class grafcet:
             if "timeout" not in self.workingstep:
                 self.workingstep["timeout"] = 900
                 logging.getLogger().warning("timeout missing : default value 900s")
+            else:
+                self.workingstep["timeout"] = float(self.workingstep["timeout"])
 
             self.workingstep["pwd"] = ""
             if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
@@ -1665,14 +1671,16 @@ class grafcet:
             self.__protected(self.workingstep["timeout"])
             # working Step recup from process et session
             if command != "":
-                code_return, output_lines = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
-                command,
-                self.datasend,
-                self.objectxmpp.boundjid.bare,
-                self.objectxmpp.boundjid.bare,
-                self.workingstep["timeout"],
-                self.workingstep["step"],
-            )
+                code_return, output_lines = (
+                    self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
+                        command,
+                        self.datasend,
+                        self.objectxmpp.boundjid.bare,
+                        self.objectxmpp.boundjid.bare,
+                        self.workingstep["timeout"],
+                        self.workingstep["step"],
+                    )
+                )
 
             # Indicate the return code and process the results
             self.workingstep["codereturn"] = code_return

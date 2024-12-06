@@ -187,9 +187,9 @@ class MUCBot(ClientXMPP):
         # Planification d'un événement pour gérer le dépassement du délai
         self.schedule(
             "assessor_response_timeout_event",  # Nom de l'événement
-            self.assessor_response_timeout,     # Délai en secondes
+            self.assessor_response_timeout,  # Délai en secondes
             self.handle_assessor_timeout,  # Fonction appelée en cas de timeout
-            repeat=False  # L'événement ne se répète pas
+            repeat=False,  # L'événement ne se répète pas
         )
 
         if self.config.syncthing_on:
@@ -281,7 +281,9 @@ class MUCBot(ClientXMPP):
         """
         Handle the timeout event for the assessor response.
         """
-        logger.error(f"Assessor timeout: No response within {self.assessor_response_timeout} seconds.")
+        logger.error(
+            f"Assessor timeout: No response within {self.assessor_response_timeout} seconds."
+        )
         self.disconnect(wait=1)
 
     def stream_error1(self, mesg):
@@ -911,8 +913,7 @@ class MUCBot(ClientXMPP):
             await resp.send()
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.debug("Could not register account: %s" %
-                    e.iq['error']['text'])
+            logging.debug("Could not register account: %s" % e.iq["error"]["text"])
         except IqTimeout:
             logging.error("Could not register account No response from server.")
             self.disconnect()
@@ -1010,6 +1011,7 @@ class MUCBot(ClientXMPP):
     # -----------------------------------------------------------------------
     # ---------------------- END analyse strophe xmpp -----------------------
     # -----------------------------------------------------------------------
+
 
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
@@ -1172,8 +1174,9 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             logging.error("RuntimeError during connection")
         finally:
             logger.debug("bye bye connecteur")
-            namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        "BOOLCONNECTOR")
+            namefilebool = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR"
+            )
             fichier = open(namefilebool, "w")
             fichier.close()
             # xmpp.loop.close()
@@ -1186,6 +1189,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             "configuration. Do not run configurator agent on relay servers.",
         )
         sys.exit(1)  # Quitte le programme avec un code d'erreur
+
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:

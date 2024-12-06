@@ -254,6 +254,7 @@ def handlerkioskpresence(
     xmppobject.send_message(mto=jid, mbody=json.dumps(message_to_machine), mtype="chat")
     return datas
 
+
 def last_inventory(data, message, xmppobject):
     machine = XmppMasterDatabase().getMachinefromjid(message["from"])
 
@@ -289,7 +290,9 @@ def last_inventory(data, message, xmppobject):
                 sessionid=getRandomName(6, "inventory"),
             )
 
-            xmppobject.send_message(mto=message["from"], mbody=json.dumps(message_to_machine), mtype="chat")
+            xmppobject.send_message(
+                mto=message["from"], mbody=json.dumps(message_to_machine), mtype="chat"
+            )
 
             return last_inventory_date
         else:
@@ -299,9 +302,11 @@ def last_inventory(data, message, xmppobject):
         logger.debug(f"Machine or UUID not found for JID: {message['from']}")
         return None
 
+
 def getdescriptor(package_uuid):
     package = managepackage.getdescriptorpackageuuid(package_uuid)
     return package
+
 
 def get_packages_for_machine(machine, showinfobool=True):
     """Get a list of the packages for the concerned machine.
@@ -425,12 +430,12 @@ def __search_software_in_glpi(
         "description": packageprofile[2],
         "version": packageprofile[3],
         "profile": packageprofile[1],
-        "launcher_cmd": ""
+        "launcher_cmd": "",
     }
 
     descriptor = getdescriptor(packageprofile[6])
-    if 'launcher' in descriptor['info']:
-        structuredatakioskelement["launcher_cmd"] = descriptor['info']['launcher']
+    if "launcher" in descriptor["info"]:
+        structuredatakioskelement["launcher_cmd"] = descriptor["info"]["launcher"]
     else:
         pass
 
@@ -492,6 +497,7 @@ def __search_software_in_glpi(
             if len(structuredatakioskelement["action"]) == 0 and trigger is False:
                 structuredatakioskelement["action"].append("Ask")
     return structuredatakioskelement
+
 
 #### ancine plugin master resultkiosk
 def parsexmppjsonfile(path):

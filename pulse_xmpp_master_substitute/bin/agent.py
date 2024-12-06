@@ -227,16 +227,14 @@ class MUCBot(slixmpp.ClientXMPP):
     #     """
     #     pass
 
-
     def handle_connected(self, data):
         """
         success connecting agent
         """
-        logger.info("Agent \"%s\" connected to Xmpp Server [ %s :%s ]" % (self.boundjid.bare,
-                                                                         self.address[0],
-                                                                         self.address[1]))
-
-
+        logger.info(
+            'Agent "%s" connected to Xmpp Server [ %s :%s ]'
+            % (self.boundjid.bare, self.address[0], self.address[1])
+        )
 
     def handle_connection_failed(self, data):
         """
@@ -259,14 +257,13 @@ class MUCBot(slixmpp.ClientXMPP):
         self.disconnect()
         nbsecond = 5
         logger.error(
-            "Connection failed: verify parameter connection for %s [%s:%s]" %
-            (self.boundjid.bare, self.address[0], self.address[1])
+            "Connection failed: verify parameter connection for %s [%s:%s]"
+            % (self.boundjid.bare, self.address[0], self.address[1])
         )
         logger.debug("Retrying connection in %d seconds..." % nbsecond)
         time.sleep(nbsecond)
         self._connect_loop_wait = 0
-        self.reconnect(nbsecond,"from_handle_connection_failed")
-
+        self.reconnect(nbsecond, "from_handle_connection_failed")
 
     def handle_disconnected(self, data):
         """
@@ -287,8 +284,8 @@ class MUCBot(slixmpp.ClientXMPP):
         """
         nbsecond = 5
         logger.warning(
-            "disconnected : parameter connection for %s [%s:%s]" %
-            (self.boundjid.bare, self.address[0], self.address[1])
+            "disconnected : parameter connection for %s [%s:%s]"
+            % (self.boundjid.bare, self.address[0], self.address[1])
         )
         logger.debug("Retrying connection in %d seconds..." % nbsecond)
         # time.sleep(nbsecond)
@@ -322,8 +319,7 @@ class MUCBot(slixmpp.ClientXMPP):
             await resp.send()
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.debug("Could not register account: %s" %
-                    e.iq['error']['text'])
+            logging.debug("Could not register account: %s" % e.iq["error"]["text"])
         except IqTimeout:
             logging.error("Could not register account No response from server.")
             self.disconnect()
@@ -475,11 +471,9 @@ class MUCBot(slixmpp.ClientXMPP):
         Note:
             Cette méthode utilise la bibliothèque `slixmpp` pour la gestion des stanzas XMPP.
         """
-        self.send_message(mbody=json.dumps(msg),
-                        mto="%s/MASTER" % self.agentmaster,
-                        mtype="chat")
-
-
+        self.send_message(
+            mbody=json.dumps(msg), mto="%s/MASTER" % self.agentmaster, mtype="chat"
+        )
 
     async def start(self, event):
         """
@@ -625,20 +619,21 @@ class MUCBot(slixmpp.ClientXMPP):
         # Vérifie si restartAgent n'est pas appelé depuis un plugin ou une lib.
         self.restartAgent(jid)
 
-
-    def xmpplog(self,
-                text,
-                type="noset",
-                sessionname="",
-                priority=0,
-                action="xmpplog",
-                who="",
-                how="",
-                why="",
-                module="",
-                date=None,
-                fromuser="",
-                touser=""):
+    def xmpplog(
+        self,
+        text,
+        type="noset",
+        sessionname="",
+        priority=0,
+        action="xmpplog",
+        who="",
+        how="",
+        why="",
+        module="",
+        date=None,
+        fromuser="",
+        touser="",
+    ):
         """
         Enregistre un message XMPP.
 
@@ -708,7 +703,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     "date": None,
                     "fromuser": fromuser,
                     "touser": touser,
-                }
+                },
             }
             self.send_message(
                 mto=jid.JID(self.config.sub_logger),
@@ -767,7 +762,9 @@ class MUCBot(slixmpp.ClientXMPP):
 
         # Vérifie que le type est "chat". Sinon, rejette le message.
         if msg["type"] != "chat":
-            logging.error("Stanza %s message not processed: only 'chat' supported" % msg["type"])
+            logging.error(
+                "Stanza %s message not processed: only 'chat' supported" % msg["type"]
+            )
             return
 
         # . Vérifie la structure du message.
@@ -790,7 +787,9 @@ class MUCBot(slixmpp.ClientXMPP):
             dataobj = json.loads(msg["body"])
         except Exception as e:
             logging.error("Invalid message structure: %s" % str(e))
-            self.send_message(mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat")
+            self.send_message(
+                mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
+            )
             logger.error("\n%s" % traceback.format_exc())
             return
 
@@ -820,7 +819,10 @@ class MUCBot(slixmpp.ClientXMPP):
 
                 if "sessionid" not in dataobj:
                     dataobj["sessionid"] = getRandomName(6, "missingid")
-                    logger.warning("Session ID missing in message, assigned: %s" % dataobj["sessionid"])
+                    logger.warning(
+                        "Session ID missing in message, assigned: %s"
+                        % dataobj["sessionid"]
+                    )
 
                 # Supprime les données brutes après décodage
                 del dataobj["data"]
@@ -844,21 +846,31 @@ class MUCBot(slixmpp.ClientXMPP):
                     )
                 except TypeError:
                     # Si le plugin est manquant
-                    dataerreur["data"]["msg"] = f"ERROR: Plugin {dataobj['action']} missing"
-                    self.send_message(mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat")
+                    dataerreur["data"][
+                        "msg"
+                    ] = f"ERROR: Plugin {dataobj['action']} missing"
+                    self.send_message(
+                        mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
+                    )
                     logging.error("TypeError: Plugin %s missing" % dataobj["action"])
 
                 except Exception as e:
                     # Autres erreurs de plugin
-                    logging.error("Error in plugin [%s]: %s" % (dataobj["action"], str(e)))
+                    logging.error(
+                        "Error in plugin [%s]: %s" % (dataobj["action"], str(e))
+                    )
                     if not dataobj["action"].startswith("result"):
-                        dataerreur["data"]["msg"] = f"ERROR: Plugin execution {dataobj['action']}"
+                        dataerreur["data"][
+                            "msg"
+                        ] = f"ERROR: Plugin execution {dataobj['action']}"
                         # self.send_message(mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat")
         except Exception as e:
             # Erreur générale lors du traitement du message
             logging.error("Error processing message: %s" % str(e))
             dataerreur["data"]["msg"] = "ERROR: Message structure"
-            self.send_message(mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat")
+            self.send_message(
+                mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
+            )
             logger.error("\n%s" % traceback.format_exc())
 
     def get_or_create_eventloop(self):
@@ -961,6 +973,7 @@ class MUCBot(slixmpp.ClientXMPP):
         Returns:
             str: Le message reçu ou un message d'erreur en cas d'échec.
         """
+
         def close_posix_queue(name):
             # Keep result and remove datafile['name_iq_queue']
             logger.debug("close queue msg %s" % (name))
@@ -1043,8 +1056,10 @@ class MUCBot(slixmpp.ClientXMPP):
             errortext = iq["error"]["text"]
             if "User already exists" in errortext:
                 # This is not an IQ error
-                logger.info("No need to create the account for"\
-                    " user %s as it already exists." % self.boundjid.bare)
+                logger.info(
+                    "No need to create the account for"
+                    " user %s as it already exists." % self.boundjid.bare
+                )
                 self.isaccount = False
                 return
 
@@ -1286,75 +1301,76 @@ class DateTimebytesEncoderjson(json.JSONEncoder):
             encoded_object = json.JSONEncoder.default(self, obj)
         return encoded_object
 
+
 class ExtendedJSONEncoder(json.JSONEncoder):
     """
-        JSON encoder subclass that handles serialization of additional Python objects.
+    JSON encoder subclass that handles serialization of additional Python objects.
 
-        This class extends the default `json.JSONEncoder` to provide additional functionality
-        for serializing objects that are not natively supported by the `json` module. The encoder
-        ensures that these objects are transformed into JSON-compatible representations.
+    This class extends the default `json.JSONEncoder` to provide additional functionality
+    for serializing objects that are not natively supported by the `json` module. The encoder
+    ensures that these objects are transformed into JSON-compatible representations.
 
-        Supported Types and Their Transformations:
-        - `datetime`: Converted to ISO 8601 formatted strings (e.g., "2024-12-03T12:34:56").
-        - `bytes`: Decoded into UTF-8 strings (e.g., `b"example"` -> `"example"`).
-        - `Decimal`: Converted to `float` for approximate representation.
-        - `UUID`: Converted to their string representation (e.g., "550e8400-e29b-41d4-a716-446655440000").
-        - `set` and `frozenset`: Converted to lists for JSON compatibility.
-        - `Path` (from `pathlib`): Converted to strings (e.g., `Path('/path/to/file')` -> `"/path/to/file"`).
-        - Custom Objects: Serialized via a `__json__()` method if the method is defined in the object.
+    Supported Types and Their Transformations:
+    - `datetime`: Converted to ISO 8601 formatted strings (e.g., "2024-12-03T12:34:56").
+    - `bytes`: Decoded into UTF-8 strings (e.g., `b"example"` -> `"example"`).
+    - `Decimal`: Converted to `float` for approximate representation.
+    - `UUID`: Converted to their string representation (e.g., "550e8400-e29b-41d4-a716-446655440000").
+    - `set` and `frozenset`: Converted to lists for JSON compatibility.
+    - `Path` (from `pathlib`): Converted to strings (e.g., `Path('/path/to/file')` -> `"/path/to/file"`).
+    - Custom Objects: Serialized via a `__json__()` method if the method is defined in the object.
 
-        These transformations ensure compatibility when encoding complex Python objects into JSON,
-        which is particularly useful for APIs, logging, or saving structured data.
+    These transformations ensure compatibility when encoding complex Python objects into JSON,
+    which is particularly useful for APIs, logging, or saving structured data.
 
-        If an object is not of one of the supported types, the default encoder behavior is applied,
-        which may raise a `TypeError` for unsupported types.
+    If an object is not of one of the supported types, the default encoder behavior is applied,
+    which may raise a `TypeError` for unsupported types.
 
-        Example Usage:
-            ```python
-            from datetime import datetime
-            from decimal import Decimal
-            import json
-            import uuid
-            from pathlib import Path
+    Example Usage:
+        ```python
+        from datetime import datetime
+        from decimal import Decimal
+        import json
+        import uuid
+        from pathlib import Path
 
-            class CustomObject:
-                def __init__(self, value):
-                    self.value = value
+        class CustomObject:
+            def __init__(self, value):
+                self.value = value
 
-                def __json__(self):
-                    return {"custom_value": self.value}
+            def __json__(self):
+                return {"custom_value": self.value}
 
-            data = {
-                "timestamp": datetime.now(),
-                "binary_data": b"example bytes",
-                "decimal_value": Decimal("123.45"),
-                "unique_id": uuid.uuid4(),
-                "file_path": Path("/path/to/file"),
-                "set_data": {1, 2, 3},
-                "custom": CustomObject("example")
-            }
+        data = {
+            "timestamp": datetime.now(),
+            "binary_data": b"example bytes",
+            "decimal_value": Decimal("123.45"),
+            "unique_id": uuid.uuid4(),
+            "file_path": Path("/path/to/file"),
+            "set_data": {1, 2, 3},
+            "custom": CustomObject("example")
+        }
 
-            encoded_data = json.dumps(data, cls=ExtendedJSONEncoder)
-            print(encoded_data)
-            # Output:
-            # {
-            #   "timestamp": "2024-12-03T12:34:56",
-            #   "binary_data": "example bytes",
-            #   "decimal_value": 123.45,
-            #   "unique_id": "550e8400-e29b-41d4-a716-446655440000",
-            #   "file_path": "/path/to/file",
-            #   "set_data": [1, 2, 3],
-            #   "custom": {"custom_value": "example"}
-            # }
-            ```
+        encoded_data = json.dumps(data, cls=ExtendedJSONEncoder)
+        print(encoded_data)
+        # Output:
+        # {
+        #   "timestamp": "2024-12-03T12:34:56",
+        #   "binary_data": "example bytes",
+        #   "decimal_value": 123.45,
+        #   "unique_id": "550e8400-e29b-41d4-a716-446655440000",
+        #   "file_path": "/path/to/file",
+        #   "set_data": [1, 2, 3],
+        #   "custom": {"custom_value": "example"}
+        # }
+        ```
 
-        Attributes:
-            None
+    Attributes:
+        None
 
-        Notes:
-            - Use this encoder as the `cls` argument in `json.dumps()` when serializing data containing
-            unsupported types.
-            - Be mindful of potential precision loss when converting `Decimal` to `float`.
+    Notes:
+        - Use this encoder as the `cls` argument in `json.dumps()` when serializing data containing
+        unsupported types.
+        - Be mindful of potential precision loss when converting `Decimal` to `float`.
     """
 
     def default(self, obj):

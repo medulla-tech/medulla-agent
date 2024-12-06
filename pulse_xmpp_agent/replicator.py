@@ -302,7 +302,7 @@ def module_needed(agent_image, verbose=False):
                 print(
                     f'Some python modules needed for running "{filename}" are missing. We will not switch to new agent'
                 )
-                error = True
+            error = True
     if boolfichier:
         try:
             os.remove(initfile)

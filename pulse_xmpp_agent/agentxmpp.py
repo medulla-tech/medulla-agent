@@ -1150,18 +1150,25 @@ class MUCBot(ClientXMPP):
             DEBUGPULSE,
             "We restart the medulla agent for the machine %s" % self.boundjid.user,
         )
+        # with terminate_lock:
+        #     self.shared_dict['alternative'] = True
         self.demandeRestartBot_bool = True
         self.disconnect(wait=wait)
 
     def handle_connection_failed(self, data):
+        """
+        on connection failed on libere la connection
+        a savoir apres "CONNECTION FAILED"
+        il faut reinitialiser adress et port de connection.
+        """
         if self.demandeRestartBot_bool:
-            self.demandeRestartBot_bool=False
+            self.demandeRestartBot_bool = False
             return
         logging.info(f"handle_connection_failed {data}")
         with terminate_lock:
-            if self.shared_dict.get('terminate'):
+            if self.shared_dict.get("terminate"):
                 return
-            if self.shared_dict.get('alternative'):
+            if self.shared_dict.get("alternative"):
                 logging.info("handle_connection_failed STOP ON RECHER ALTERNATIVE")
                 loop1 = asyncio.get_event_loop()
                 loop1.stop()
@@ -1171,11 +1178,11 @@ class MUCBot(ClientXMPP):
         success connecting agent
         """
         pass
-        # logging.info(f"connecting {self.server_address}")
+        logging.info(f"connecting {self.server_address}")
 
     def handle_disconnected(self, data):
         with terminate_lock:
-            if self.shared_dict.get('terminate'):
+            if self.shared_dict.get("terminate"):
                 return
         if self.demandeRestartBot_bool:
             self.reconnect(0.0, self.massage_reconection)
@@ -1246,6 +1253,7 @@ class MUCBot(ClientXMPP):
             except Exception as e:
                 # logger.error("\n%s" % (traceback.format_exc()))
                 pass
+
         with terminate_lock:
             self.shared_dict["terminate"] = True
         self.startdata = -1
@@ -1275,6 +1283,7 @@ class MUCBot(ClientXMPP):
         resp["type"] = "set"
         resp["register"]["username"] = self.boundjid.user
         resp["register"]["password"] = self.password
+
         try:
             await resp.send()
             logging.info("Account created for %s!" % self.boundjid)
@@ -3851,14 +3860,15 @@ AGENT %s ERROR TERMINATE""" % (
         return False
 
 
-def createDaemon(   optstypemachine,
-                    optsconsoledebug,
-                    optsdeamon,
-                    tgfichierconf,
-                    tglevellog,
-                    tglogfile,
-                    shared_dict,
-                    terminate_lock,
+def createDaemon(
+    optstypemachine,
+    optsconsoledebug,
+    optsdeamon,
+    tgfichierconf,
+    tglevellog,
+    tglogfile,
+    shared_dict,
+    terminate_lock,
 ):
     """
     This function create a service/Daemon that will execute a det. task
@@ -3891,11 +3901,11 @@ def createDaemon(   optstypemachine,
                             break
                 time.sleep(1)
         else:
+            try:
             pid = os.getpid()
             pidfile_path = "/var/run/xmpp_agent_pulse_%s.pid" % optstypemachine
             with open(pidfile_path, "w") as f:
                 f.write("%s\n" % pid)
-
 
             # Boucle de surveillance pour `shared_dict['terminate']`
             # Boucle de surveillance principale
@@ -3909,10 +3919,10 @@ def createDaemon(   optstypemachine,
                         tglevellog,
                         tglogfile,
                         shared_dict,
-                        terminate_lock
+                        terminate_lock,
                     )
                     with terminate_lock:
-                        if shared_dict.get('terminate'):
+                        if shared_dict.get("terminate"):
                             logging.info("Terminating daemon process...")
                             break
                     time.sleep(1)  # Pause pour éviter une boucle excessive
@@ -3925,6 +3935,7 @@ def createDaemon(   optstypemachine,
     except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s" % (traceback.format_exc()))
+
 
 def tgconf(optstypemachine):
     tg = confParameter(optstypemachine)
@@ -4158,6 +4169,29 @@ def doTask(
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
+    if sys.platform.startswith("win"):
+        format = "%(asctime)s - %(levelname)s - (AGENT_TASK)%(message)s"
+        formatter = logging.Formatter(format)
+
+    logger = logging.getLogger()  # either the given logger or the root logger
+    # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
+    if sys.platform.startswith("win"):
+        if logger.handlers:
+            console = logger.handlers[
+                0
+            ]  # we assume the first handler is the one we want to configure
+        else:
+            console = logging.StreamHandler()
+            logger.addHandler(console)
+
+        console.setFormatter(formatter)
+        console.setLevel(tglevellog)
+
+        file_handler = logging.FileHandler(tglogfile)
+        file_handler.setLevel(tglevellog)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
     if optstypemachine.lower() in ["machine"]:
         sys.path.append(
             os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
@@ -4190,7 +4224,6 @@ def doTask(
     pid_file_path_xmppagent_win = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintreename"
     )
-
 
     # on lit les alternatives si elle existe. 1 fois suivant alternatifconnection initialise ou pas
     if not alternatifconnection:
@@ -4292,22 +4325,23 @@ def doTask(
                         eventkillpipe,
                         os.getpid(),
                         shared_dict,
-                        terminate_lock
-                        )
-                    )
+                        terminate_lock,
+                    ),
+                )
                 processes.append(p)
                 listpid.append(p.pid)
                 p.start()
-                file_put_contents( pid_file_path_xmppagent_win,
-                                    "from %s : %s %s" % (os.getpid(), p.name, p.pid))
-                logger.info("%s -> %s : [Process Alive %s (%s)]" % (os.getpid(),
-                                                                    p.pid,
-                                                                    p.name,
-                                                                    p.pid)
+                file_put_contents(
+                    pid_file_path_xmppagent_win,
+                    "from %s : %s %s" % (os.getpid(), p.name, p.pid),
+                )
+                logger.info(
+                    "%s -> %s : [Process Alive %s (%s)]"
+                    % (os.getpid(), p.pid, p.name, p.pid)
                 )
                 while p.is_alive():
                     with terminate_lock:
-                        if shared_dict.get('terminate'):
+                        if shared_dict.get("terminate"):
                             pcherry.terminate()
                             p.terminate()
                             pcherry.join()
@@ -4319,9 +4353,13 @@ def doTask(
                             break
                     time.sleep(1)
                 # on initialise le serveur suivant
-                alternatifconnection["nextserver"]=(alternatifconnection["nextserver"] % alternatifconnection["nbserver"]) + 1
-                index_server_list = alternatifconnection["nextserver"]-1
+                alternatifconnection["nextserver"] = (
+                    alternatifconnection["nextserver"]
+                    % alternatifconnection["nbserver"]
+                ) + 1
+                index_server_list = alternatifconnection["nextserver"] - 1
                 arsconnection = alternatifconnection["listars"][index_server_list]
+
                 self.config.Port = alternatifconnection[arsconnection]["port"]
                 self.config.Server = alternatifconnection[arsconnection]["server"]
                 self.config.guacamole_baseurl = alternatifconnection[arsconnection]["guacamole_baseurl"]
@@ -4333,23 +4371,22 @@ def doTask(
                 changeconnection( conffilename(self.config.agenttype),
                                  self.config.Port,
                                  ipfromdns(self.config.Server),
-                                 arsconnection,
+                    arsconnection,
                                  self.config.guacamole_baseurl,)
                 self.address = (
                         ipfromdns(self.config.Server),
                         int(self.config.Port),
-                    )
+                )
         except KeyboardInterrupt:
             logging.debug("CTRL+C have been asked.")
             logging.debug("The Pulse Xmpp Agent Relay is now stopped")
     with terminate_lock:
-        shared_dict['terminate'] = True
+        shared_dict["terminate"] = True
     for proc in processes:
         if proc.is_alive():
             proc.terminate()
             proc.join()
     logging.debug("The Pulse Xmpp Agent Relay is now stopped")
-
 
 class process_xmpp_agent:
     def __init__(
@@ -4370,8 +4407,9 @@ class process_xmpp_agent:
         # parameter permet arret programme complet  ICI PASSER PARAMETRE DANS XMPPBOT
 
         self.pidprogrammprincipal = pidprogrammprincipal
-        self.shared_dict = shared_dict
+        self.shared_dict = (shared_dict,)
         # self.terminate_lock =  terminate_lock
+
         if sys.platform.startswith("win"):
             format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
             formatter = logging.Formatter(format)
@@ -4471,12 +4509,7 @@ class process_xmpp_agent:
 def terminateserver(xmpp):
     # event for quit loop server tcpserver for kiosk
     logging.log(DEBUGPULSE, "terminateserver")
-    # if xmpp.config.agenttype in ["relayserver"]:
-    #     xmpp.qin.put("quit")
     xmpp.queue_read_event_from_command.put("quit")
-
-    # if xmpp.config.agenttype in ["relayserver"]:
-    #     xmpp.managerQueue.shutdown()
     # termine server kiosk
     xmpp.eventkiosk.quit()
     xmpp.eventkilltcp.set()
@@ -4526,7 +4559,6 @@ def terminateserver(xmpp):
             cmd = "TASKKILL /F /PID %s /T" % pythonmainproces
             os.system(cmd)
     os._exit(0)
-
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
