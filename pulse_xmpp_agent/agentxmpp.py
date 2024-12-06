@@ -1204,7 +1204,7 @@ class MUCBot(ClientXMPP):
             self.disconnect()
 
     def reconnect_alternative(self, alternative=True, delay=0):
-        self.alternative  = alternative
+        self.alternative = alternative
         if delay:
             self.disconnect(delay)
         else:
