@@ -4339,20 +4339,26 @@ def doTask(
 
                 self.config.Port = alternatifconnection[arsconnection]["port"]
                 self.config.Server = alternatifconnection[arsconnection]["server"]
-                self.config.guacamole_baseurl = alternatifconnection[arsconnection]["guacamole_baseurl"]
+                self.config.guacamole_baseurl = alternatifconnection[arsconnection][
+                    "guacamole_baseurl"
+                ]
                 serverjid = str(arsconnection)
                 try:
-                    self.config.confdomain = str(arsconnection).split("@")[1].split("/")[0]
+                    self.config.confdomain = (
+                        str(arsconnection).split("@")[1].split("/")[0]
+                    )
                 except BaseException:
                     self.config.confdomain = str(serverjid)
-                changeconnection( conffilename(self.config.agenttype),
-                                 self.config.Port,
-                                 ipfromdns(self.config.Server),
+                changeconnection(
+                    conffilename(self.config.agenttype),
+                    self.config.Port,
+                    ipfromdns(self.config.Server),
                     arsconnection,
-                                 self.config.guacamole_baseurl,)
+                    self.config.guacamole_baseurl,
+                )
                 self.address = (
-                        ipfromdns(self.config.Server),
-                        int(self.config.Port),
+                    ipfromdns(self.config.Server),
+                    int(self.config.Port),
                 )
         except KeyboardInterrupt:
             logging.debug("CTRL+C have been asked.")
@@ -4364,6 +4370,7 @@ def doTask(
             proc.terminate()
             proc.join()
     logging.debug("The Pulse Xmpp Agent Relay is now stopped")
+
 
 class process_xmpp_agent:
     def __init__(
@@ -4536,6 +4543,7 @@ def terminateserver(xmpp):
             cmd = "TASKKILL /F /PID %s /T" % pythonmainproces
             os.system(cmd)
     os._exit(0)
+
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
