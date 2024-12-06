@@ -1177,6 +1177,7 @@ class MUCBot(ClientXMPP):
         """
         success connecting agent
         """
+        pass
         logging.info(f"connecting {self.server_address}")
 
     def handle_disconnected(self, data):
@@ -1192,7 +1193,7 @@ class MUCBot(ClientXMPP):
 
     def handle_connected(self, data):
         self.demandeRestartBot_bool = False
-        logging.info(f"handle_connected {data}")
+        logging.info(f"connected {self.server_address}")
 
     def reconnect_agent(self, msg="deconection", delay=0):
         self.massage_reconection = msg
@@ -1201,6 +1202,15 @@ class MUCBot(ClientXMPP):
             self.disconnect(delay)
         else:
             self.disconnect()
+
+    def reconnect_alternative(self, alternative=True, delay=0):
+        self.alternative  = alternative
+        if delay:
+            self.disconnect(delay)
+        else:
+            self.disconnect()
+        loop1 = asyncio.get_event_loop()
+        loop1.stop()
 
     def quit_application(self, wait=2):
         """
@@ -1219,10 +1229,37 @@ class MUCBot(ClientXMPP):
         """
         logging.log(DEBUGPULSE, "Quit Application")
 
+        self.queue_read_event_from_command.put("quit")
+        # termine server kiosk
+        self.eventkiosk.quit()
+        self.eventkilltcp.set()
+        self.eventkillpipe.set()
+        time.sleep(1)
+        if sys.platform.startswith("win"):
+            try:
+                # on debloque le pipe
+                fileHandle = win32file.CreateFile(
+                    "\\\\.\\pipe\\interfacechang",
+                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                    0,
+                    None,
+                    win32file.OPEN_EXISTING,
+                    0,
+                    None,
+                )
+                win32file.WriteFile(fileHandle, "terminate")
+                fileHandle.Close()
+                time.sleep(2)
+            except Exception as e:
+                # logger.error("\n%s" % (traceback.format_exc()))
+                pass
+
         with terminate_lock:
             self.shared_dict["terminate"] = True
-            loop1 = asyncio.get_event_loop()
-            loop1.stop()
+        self.startdata = -1
+        logger.debug("byby session xmpp")
+        loop1 = asyncio.get_event_loop()
+        loop1.stop()
 
     async def register(self, iq):
         """
@@ -1246,13 +1283,14 @@ class MUCBot(ClientXMPP):
         resp["type"] = "set"
         resp["register"]["username"] = self.boundjid.user
         resp["register"]["password"] = self.password
+
         try:
             await resp.send()
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
             logging.debug("Could not register account: %s" % e.iq["error"]["text"])
         except IqTimeout:
-            logging.error("No response from server.")
+            logging.error("Could not register account No response from server.")
             self.disconnect()
 
     def check_subscribe(self):
@@ -3863,57 +3901,6 @@ def createDaemon(
                 time.sleep(1)
         else:
             try:
-                # Cela permet de libérer le processus de lancement initial (le shell), le xhell peut ensuite se terminer ou être utilisé pour d'autres tâches
-                pid = os.fork()
-                if pid > 0:
-                    # Wait for initialization before exiting
-                    time.sleep(2)
-                    # exit first parent and return
-                    sys.exit(0)
-            except OSError as err:
-                sys.stderr.write("fork #1 failed: {0}".format(err))
-                sys.exit(1)
-
-            # decouple from parent environment
-            # Le processus enfant devient l'initiateur d'une nouvelle session
-            # découplage du processus de tout terminal de contrôle existant
-            os.chdir("/")
-            os.setsid()
-
-            # do second fork
-            try:
-                # 2 eme fork garantir que le processus ne puisse pas acquérir de terminal de contrôle.
-                pid = os.fork()
-                if pid > 0:
-                    # exit from second parent
-                    sys.exit(0)
-            except OSError as err:
-                sys.stderr.write("fork #1 failed: {0}".format(err))
-                sys.exit(1)
-
-            maxfd = getrlimit(RLIMIT_NOFILE)[1]
-            if maxfd == RLIM_INFINITY:
-                maxfd = 1024
-
-            for fd in range(0, maxfd):
-                # Don't close twisted FDs
-                # TODO: make a clean code to be sure nothing is opened before this function
-                # ie: daemonize very early, then after import all stuff...
-                if fd not in (3, 4, 5, 6, 7, 8):
-                    try:
-                        os.close(fd)
-                    except OSError:
-                        pass
-
-            if hasattr(os, "devnull"):
-                REDIRECT_TO = os.devnull
-            else:
-                REDIRECT_TO = "/dev/null"
-
-            os.open(REDIRECT_TO, os.O_RDWR)
-            os.dup2(0, 1)
-            os.dup2(0, 2)
-            # write pidfile
             pid = os.getpid()
             pidfile_path = "/var/run/xmpp_agent_pulse_%s.pid" % optstypemachine
             with open(pidfile_path, "w") as f:
@@ -4159,25 +4146,28 @@ def doTask(
             pass
     global signalint
 
-    format = "%(asctime)s - %(levelname)s - (AGENT_TASK)%(message)s"
-    formatter = logging.Formatter(format)
+    if sys.platform.startswith("win"):
+        format = "%(asctime)s - %(levelname)s - (AGENT_TASK)%(message)s"
+        formatter = logging.Formatter(format)
 
     logger = logging.getLogger()  # either the given logger or the root logger
     # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
-    if logger.handlers:
-        console = logger.handlers[
-            0
-        ]  # we assume the first handler is the one we want to configure
-    else:
-        console = logging.StreamHandler()
-        logger.addHandler(console)
-    console.setFormatter(formatter)
-    console.setLevel(tglevellog)
+    if sys.platform.startswith("win"):
+        if logger.handlers:
+            console = logger.handlers[
+                0
+            ]  # we assume the first handler is the one we want to configure
+        else:
+            console = logging.StreamHandler()
+            logger.addHandler(console)
 
-    file_handler = logging.FileHandler(tglogfile)
-    file_handler.setLevel(tglevellog)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+        console.setFormatter(formatter)
+        console.setLevel(tglevellog)
+
+        file_handler = logging.FileHandler(tglogfile)
+        file_handler.setLevel(tglevellog)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
     if optstypemachine.lower() in ["machine"]:
         sys.path.append(
@@ -4397,28 +4387,30 @@ class process_xmpp_agent:
         self.shared_dict = (shared_dict,)
         # self.terminate_lock =  terminate_lock
 
-        format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
-        formatter = logging.Formatter(format)
+        if sys.platform.startswith("win"):
+            format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
+            formatter = logging.Formatter(format)
 
         logger = logging.getLogger()  # either the given logger or the root logger
         logger.setLevel(tglevellog)
         # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
-        if logger.handlers:
-            console = logger.handlers[
-                0
-            ]  # we assume the first handler is the one we want to configure
-        else:
-            console = logging.StreamHandler()
-            logger.addHandler(console)
-        console.setFormatter(formatter)
-        console.setLevel(tglevellog)
+        if sys.platform.startswith("win"):
+            if logger.handlers:
+                console = logger.handlers[
+                    0
+                ]  # we assume the first handler is the one we want to configure
+            else:
+                console = logging.StreamHandler()
+                logger.addHandler(console)
+            console.setFormatter(formatter)
+            console.setLevel(tglevellog)
 
-        file_handler = logging.FileHandler(tglogfile)
-        file_handler.setLevel(tglevellog)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+            file_handler = logging.FileHandler(tglogfile)
+            file_handler.setLevel(tglevellog)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
 
-        self.logger = logger
+            self.logger = logger
 
         self.logger = logging.getLogger()
         # while self.process_restartbot:
@@ -4522,7 +4514,7 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE, "terminate scheduler")
     logging.log(DEBUGPULSE, "Waiting to stop kiosk server")
     logging.log(DEBUGPULSE, "QUIT")
-    logging.log(DEBUGPULSE, "bye bye client xmpp Agent")
+    logging.log(DEBUGPULSE, "bye bye Agent")
     if sys.platform.startswith("win"):
         windowfilepid = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintree"
