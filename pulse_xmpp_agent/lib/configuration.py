@@ -87,7 +87,7 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
             'We will force the configuration by using "pulse" for confdomain.'
         )
 
-        Config.set("configuration_server", "confdomain", "pulse")
+    Config.set("configuration_server", "confdomain", "pulse")
     Config.set("chat", "domain", domain)
     Config.set("connection", "port", str(port))
     Config.set("connection", "server", ipfromdns(str(ipserver)))
