@@ -1186,7 +1186,7 @@ class MUCBot(ClientXMPP):
         logger.debug(
             "We restart the medulla agent for the machine %s" % self.boundjid.user
         )
-        self.demandeRestartBot_bool = True
+        # self.demandeRestartBot_bool = True
         self.disconnect(wait=wait)
 
     def handle_disconnected(self, data):
@@ -1214,11 +1214,11 @@ class MUCBot(ClientXMPP):
                         pass
                 self.loop.stop()
                 return
-
-        if self.demandeRestartBot_bool:
-            logger.debug(f"Restart Bot")
-            self.reconnect(0.0, self.massage_reconection)
-            return
+        #
+        # if self.demandeRestartBot_bool:
+        #     logger.debug(f"Restart Bot")
+        #     self.reconnect(0.0, self.massage_reconection)
+        #     return
 
         if self.config.agenttype in ["relayserver"]:
             self.reconnect(0.0, self.massage_reconection)
@@ -1284,17 +1284,18 @@ class MUCBot(ClientXMPP):
     def handle_connection_failed(self, data):
         logger.debug(f"handle_connection_failed {self.server_address}")
         # logger.info(f"handle_connection_failed alternatifconnection {self.alternatifconnection}")
-        if self.demandeRestartBot_bool:
-            logger.debug(f"Restart Bot {self.server_address}")
-            self.demandeRestartBot_bool = False
-            return
+        # if self.demandeRestartBot_bool:
+        #     logger.debug(f"Restart Bot {self.server_address}")
+        #     self.demandeRestartBot_bool = False
+        #     return
         self.disconnect()
 
     def handle_connecting(self, data):
         """
         success connecting agent
         """
-        logger.info(f"connecting {self.server_address}")
+        # logger.info(f"connecting {self.server_address}")
+        pass
 
     def handle_connected(self, data):
         logger.info(f"handle_connected {self.server_address}")
