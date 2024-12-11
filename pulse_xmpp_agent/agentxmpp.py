@@ -162,6 +162,7 @@ terminate_lock = multiprocessing.Lock()
 
 # reecriture du fichier cluster
 
+
 def create_config_file_atomically(file_path, config_data):
     """
     Creates a configuration file in .ini format based on the provided dictionary structure
@@ -174,14 +175,14 @@ def create_config_file_atomically(file_path, config_data):
     config = configparser.ConfigParser()
 
     # Add the [alternativelist] section
-    config['alternativelist'] = {
-        'listars': ','.join(config_data['listars']),
-        'nbserver': str(config_data['nbserver']),
-        'nextserver': str(config_data['nextserver'])
+    config["alternativelist"] = {
+        "listars": ",".join(config_data["listars"]),
+        "nbserver": str(config_data["nbserver"]),
+        "nextserver": str(config_data["nextserver"]),
     }
 
     # Add sections for each server in listars
-    for server in config_data['listars']:
+    for server in config_data["listars"]:
         config[server] = config_data[server]
 
     # Generate the configuration content as a string
@@ -194,7 +195,7 @@ def create_config_file_atomically(file_path, config_data):
     temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path))
 
     try:
-        with os.fdopen(temp_fd, 'w') as temp_file:
+        with os.fdopen(temp_fd, "w") as temp_file:
             temp_file.write(config_content)
 
         # Renommer le fichier temporaire pour remplacer le fichier cible
