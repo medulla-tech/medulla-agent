@@ -4,7 +4,7 @@
 %define python3_version %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3])")
 %define python3_version_nodots %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3].replace('.',''))")
 %define python3_platform %(%{__python3} -Ic "import sysconfig; print(sysconfig.get_platform())")
-
+%global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 %define tarname		medulla-agent
 %define git                    SHA
@@ -75,6 +75,7 @@ Requires:       python3.11-zc-lockfile
 Requires:       python3.11-cheroot
 Requires:       python3.11-portend
 Requires:       python3.11-tempora
+Requires:       python3.11-posix-ipc
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
 
@@ -222,7 +223,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-master.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 %_var/lib/pulse2/script_monitoring/
-
+%_var/lib/pulse2/xml_fix
 
 #--------------------------------------------------------------------
 
@@ -238,11 +239,11 @@ Requires:   zip
 Requires:   crudini
 #Requires:  dpkg-dev
 
-Requires:   nsis-plugins-ZipDLL
-Requires:   nsis-plugins-Pwgen
-Requires:   nsis-plugins-AccessControl
-Requires:   nsis-plugins-Inetc
-Requires:   nsis-plugins-TextReplace
+#Requires:   nsis-plugins-ZipDLL
+#Requires:   nsis-plugins-Pwgen
+#Requires:   nsis-plugins-AccessControl
+#Requires:   nsis-plugins-Inetc
+#Requires:   nsis-plugins-TextReplace
 Requires(pre): pulse-filetree-generator
 
 %description -n pulse-agent-installers
@@ -477,7 +478,6 @@ cp -fv contrib/monitoring/template_script_remote_python_test.py %buildroot%_var/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
-cp pulse_xmpp_agent/bin/RunMedullaKiosk.bat %buildroot%_var/lib/pulse2/clients/win/
 cp contrib/images/* %buildroot%_var/lib/pulse2/clients/win/
 
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
@@ -493,6 +493,8 @@ sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/puls
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 
+mkdir -p %buildroot%_var/lib/pulse2/xml_fix
+cp -frv contrib/inventory/xml-fix/* %buildroot%_var/lib/pulse2/xml_fix
+
 # Not needed in the server
 rm -fv %buildroot%{python3_sitelib}/pulse_xmpp_agent/bin/pulse2_update_notification.py
-rm -fv %buildroot%{python3_sitelib}/pulse_xmpp_agent/bin/RunMedullaKiosk.bat

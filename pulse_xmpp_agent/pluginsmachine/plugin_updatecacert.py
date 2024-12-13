@@ -9,12 +9,15 @@ import logging
 from lib import utils
 import platform
 import tempfile
+from lib.agentconffile import (
+    medullaPath,
+)
 
-CACERTVERSION = "1.1"
+CACERTVERSION = "1.2"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -71,29 +74,34 @@ def checkcacertversion():
 
 def updatecacertversion(version):
     if sys.platform.startswith("win"):
-        cmd = (
-            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
-            '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % CACERTVERSION
-        )
+        commands = [
+            f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
+            f'/v "DisplayVersion" /t REG_SZ  /d "{CACERTVERSION}" /f',
+            f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
+            f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f',
+        ]
 
-        result = utils.simplecommand(cmd)
-        if result["code"] == 0:
-            logger.info(
-                "We successfully updated Medulla CA Cert to version " % CACERTVERSION
-            )
+        for cmd in commands:
+            result = utils.simplecommand(cmd)
+            if result["code"] == 0:
+                logger.info(
+                    f"We successfully updated Medulla CA Cert to version {CACERTVERSION}"
+                )
+            else:
+                logger.error(f"Failed to execute command: {cmd}")
 
         if version == "0.0":
-            cmdDisplay = (
+            commands = [
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
-                '/v "DisplayName" /t REG_SZ  /d "Medulla CA Cert" /f'
-            )
-            utils.simplecommand(cmdDisplay)
+                '/v "DisplayName" /t REG_SZ  /d "Medulla CA Cert" /f',
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f',
+                f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f',
+            ]
 
-            cmd = (
-                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
-            )
-            utils.simplecommand(cmd)
+            for cmd in commands:
+                result = utils.simplecommand(cmd)
             logger.info("CA Certificate version updated.")
 
 

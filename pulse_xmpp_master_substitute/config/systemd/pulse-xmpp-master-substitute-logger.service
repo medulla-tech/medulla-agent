@@ -1,7 +1,6 @@
 [Unit]
 Description= Pulse master agent substitute for managing logs
 After=samba.service slapd.service ejabberd.service
-Requires=ejabberd.service
 
 [Service]
 #PIDFile=/var/run/launcher.pid

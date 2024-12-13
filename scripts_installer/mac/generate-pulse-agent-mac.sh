@@ -176,6 +176,24 @@ check_arguments() {
             --linux-distros*)
                 shift
                 ;;
+            --conf-xmppserver*)
+                shift
+                ;;
+            --conf-xmppport*)
+                shift
+                ;;
+            --conf-xmpppasswd*)
+                shift
+                ;;
+            --aes-key*)
+                shift
+                ;;
+            --xmpp-passwd*)
+                shift
+                ;;
+            --chat-domain*)
+                shift
+                ;;
 			*)
                 # unknown option
                 display_usage

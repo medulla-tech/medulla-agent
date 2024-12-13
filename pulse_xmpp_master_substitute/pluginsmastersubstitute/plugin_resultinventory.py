@@ -37,6 +37,8 @@ class InventoryFix:
         self, xmlfixplugindir, inventory_xml, xmldumpactive=False, verbose=False
     ):
         self._inventory_content = inventory_xml
+        if isinstance(self._inventory_content, bytes):
+            self._inventory_content = self._inventory_content.decode("utf-8")
         logger.debug("Initialize the inventory fixer")
 
         self.xmldumpactive = xmldumpactive
@@ -106,6 +108,8 @@ class InventoryFix:
             try:
                 if self.verbose:
                     logger.debug("Exec fix plugin %s %s" % (index, fnc.__module__))
+                if isinstance(self._inventory_content, bytes):
+                    self._inventory_content = self._inventory_content.decode("utf-8")
                 self._inventory_content = fnc(self._inventory_content)
                 logger.debug("Inventory fixed by '%s' script" % fnc.__module__)
             except BaseException:

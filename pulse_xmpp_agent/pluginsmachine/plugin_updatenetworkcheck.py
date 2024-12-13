@@ -20,7 +20,7 @@ from lib.agentconffile import (
 NETWORKVERSION = "3.2.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.5", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.6", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -141,6 +141,16 @@ def checknetworkcheckversion():
             # Fusion is not installed. We will force installation by returning
             # version 0.1
             networkcheckversion = "0.1"
+
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" /v "DisplayIcon"'
+        result = utils.simplecommand(cmd)
+
+        if result["code"] != 0:
+            cmd = (
+                f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
+            )
+            utils.simplecommand(cmd)
     return networkcheckversion
 
 

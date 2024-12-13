@@ -16,7 +16,7 @@ TIGHTVNC = "2.8.84"
 COMPLETETIGHTVNC = "2.8.84.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.0", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.2", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -24,16 +24,19 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug(f"PL-TIGHT call {plugin} from {message['from']}")
     logger.debug("###################################################")
-    try:
-        # Update if version is lower
-        installed_version = checktightvncversion()
-        if Version(installed_version) < Version(COMPLETETIGHTVNC):
-            updatetightvnc(xmppobject)
-        check_tightvnc_configuration(xmppobject)
-    except Exception as error_plugin:
-        logger.debug(f"PL-TIGHT failed with the error {error_plugin}")
-        logger.error(f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}")
-        pass
+    if sys.platform.startswith("win"):
+        try:
+            # Update if version is lower
+            installed_version = checktightvncversion()
+            if Version(installed_version) < Version(COMPLETETIGHTVNC):
+                updatetightvnc(xmppobject)
+            check_tightvnc_configuration(xmppobject)
+        except Exception as error_plugin:
+            logger.debug(f"PL-TIGHT failed with the error {error_plugin}")
+            logger.error(
+                f"PL_TIGHT failed with the backtrace \n {traceback.format_exc()}"
+            )
+            pass
 
 
 def check_tightvnc_configuration(xmppobject):
@@ -101,19 +104,36 @@ def check_tightvnc_configuration(xmppobject):
             if result["code"] == 0:
                 value = result["result"][0].strip().split()[-1]
 
-                if value != config["value"]:
-                    cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
-                    result = utils.simplecommand(cmd)
+                if config["key"] in ["Password", "ControlPassword"]:
+                    # Compare the values in a case-insensitive manner
+                    if value.lower() != config["value"].lower():
+                        cmd = f'REG ADD "HKLM\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
+                        result = utils.simplecommand(cmd)
 
-                    if result["code"] == 0:
-                        logger.debug(
-                            f"The registry entry for TightVNCServer {config['key']} is reconfigured."
-                        )
-                        need_restart = True
-                    else:
-                        logger.debug(
-                            f"We failed to reinitialize the registry entry for TightVNCServer {config['key']}"
-                        )
+                        if result["code"] == 0:
+                            logger.debug(
+                                f"The registry entry for TightVNCServer {config['key']} is reconfigured."
+                            )
+                            need_restart = True
+                        else:
+                            logger.error(
+                                f"We failed to reinitialize the registry entry for TightVNCServer {config['key']}"
+                            )
+                else:
+                    if value != config["value"]:
+                        cmd = f'REG ADD "HKLM\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
+                        result = utils.simplecommand(cmd)
+
+                        if result["code"] == 0:
+                            logger.debug(
+                                f"The registry entry for TightVNCServer {config['key']} is reconfigured."
+                            )
+                            need_restart = True
+                        else:
+                            logger.error(
+                                f"We failed to reinitialize the registry entry for TightVNCServer {config['key']}"
+                            )
+
             elif result["code"] == 1:
                 cmd = f'REG ADD "hklm\\SOFTWARE\\TightVNC\\Server" /v {config["key"]} /t {config["type"]} /d "{config["set_value"]}" /f'
                 result = utils.simplecommand(cmd)
@@ -253,6 +273,9 @@ def updatetightvnc(xmppobject):
 
             # Run installer
             cmd = "msiexec /i %s %s REBOOT=R" % (filename, install_options)
+
+            utils.isMsiExecRunning()
+
             cmd_result = utils.simplecommand(cmd)
             if cmd_result["code"] == 0:
                 logger.info(

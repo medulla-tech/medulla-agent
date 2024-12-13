@@ -26,7 +26,13 @@ import zlib
 import importlib
 import cherrypy
 from lib.reverseport import reverse_port_ssh
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir
+from lib.agentconffile import (
+    conffilename,
+    conffilenametmp,
+    medullaPath,
+    directoryconffile,
+    pulseTempDir,
+)
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
 from lib.networkinfo import (
@@ -40,6 +46,7 @@ from lib.configuration import (
     nextalternativeclusterconnection,
     changeconnection,
     nextalternativeclusterconnectioninformation,
+    alternativeclusterconnection,
 )
 from lib.managesession import session
 from lib.managefifo import fifodeploy
@@ -110,7 +117,7 @@ from modulefinder import ModuleFinder
 from datetime import datetime, timezone
 
 import zipfile
-
+import tempfile
 
 from slixmpp import ClientXMPP
 from slixmpp import jid
@@ -148,6 +155,55 @@ from lib.server_kiosk import (
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+
+# Créer un verrou partagé
+terminate_lock = multiprocessing.Lock()
+
+
+# reecriture du fichier cluster
+
+
+def create_config_file_atomically(file_path, config_data):
+    """
+    Creates a configuration file in .ini format based on the provided dictionary structure
+    and writes it atomically.
+
+    :param file_path: The full path of the file to be created.
+    :param config_data: The dictionary containing the configuration data.
+    """
+    # Create a ConfigParser object
+    config = configparser.ConfigParser()
+
+    # Add the [alternativelist] section
+    config["alternativelist"] = {
+        "listars": ",".join(config_data["listars"]),
+        "nbserver": str(config_data["nbserver"]),
+        "nextserver": str(config_data["nextserver"]),
+    }
+
+    # Add sections for each server in listars
+    for server in config_data["listars"]:
+        config[server] = config_data[server]
+
+    # Generate the configuration content as a string
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        config.write(temp_file)
+        temp_file.seek(0)
+        config_content = temp_file.read()
+
+    # Créer un fichier temporaire dans le même répertoire que le fichier cible
+    temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path))
+
+    try:
+        with os.fdopen(temp_fd, "w") as temp_file:
+            temp_file.write(config_content)
+
+        # Renommer le fichier temporaire pour remplacer le fichier cible
+        os.replace(temp_path, file_path)
+    except Exception as e:
+        # En cas d'erreur, supprimer le fichier temporaire
+        os.remove(temp_path)
+        raise e
 
 
 class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
@@ -254,19 +310,26 @@ class MUCBot(ClientXMPP):
         eventkilltcp,
         eventkillpipe,
         pidprogrammprincipal,
-        lockrestart,
-        PROCESS_RESTART,
+        shared_dict,
+        terminate_lock,
+        alternatifconnection,
     ):
         logging.log(
             DEBUGPULSE,
             "initialise agent xmpp  %s Type %s" % (conf.jidagent, conf.agenttype),
         )
-        self.lockrestart = lockrestart
-        self.PROCESS_RESTART = PROCESS_RESTART
-        self.connectcount = 0
+
+        # object partage
+        self.alternatifconnection = alternatifconnection
+        self.shared_dict = shared_dict
+        self.massage_reconection = "ask connect"
+        self.demandeRestartBot_bool = False
+
+        # self.connectcount = 0
         self.iq_msg = file_message_iq(dev_mod=True)
         self.pidprogrammprincipal = pidprogrammprincipal
-        self.reconnect_time_wait = 3
+
+        # self.reconnect_time_wait = 3
         # create mutex
         self.mutex = threading.Lock()
         self.mutexslotquickactioncount = threading.Lock()
@@ -823,7 +886,7 @@ class MUCBot(ClientXMPP):
 
         # Alternatf Configuration agent Machine
         self.brestartbot = False
-        if not self.config.agenttype in ["relayserver"]:
+        if self.config.agenttype in ["relayserver"]:
             self.startmode = (
                 True  # si connection echoue on charge alternative configuration
             )
@@ -1133,71 +1196,147 @@ class MUCBot(ClientXMPP):
                         self.reply_error(iq, str(e))
                         return
 
-    def Mode_Marche_Arret_complet_arret_program(self, pidprogrammprincipal):
-        if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-            logging.debug("END PROGRAMM")
-            for p in processes:
-                p.terminate()
-            cmd = "kill -s kill %s" % pidprogrammprincipal
-            result = simplecommand(cmd)
-        elif sys.platform.startswith("win"):
-            logging.debug("CTRL+C have been asked.")
-            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
-            for p in processes:
-                p.terminate()
-            cmd = "taskkill /F /PID %s" % pidprogrammprincipal
-            result = simplecommand(cmd)
-
-    def Mode_Marche_Arret_loop(
-        self, nb_reconnect=None, forever=False, timeout=None, type_machine="relayserver"
-    ):
-        """
-        Connect to the XMPP server and start processing XMPP stanzas.
-        """
-        try:
-            self.readconfig_Marche_Arret
-        except:
-            self.readconfig_Marche_Arret = True
-        try:
-            if nb_reconnect:
-                self.startdata = nb_reconnect
-            else:
-                self.startdata = 1
-            while self.startdata > 0:
-                if self.readconfig_Marche_Arret:
-                    self.config = tgconf(type_machine)
-                self.address = (ipfromdns(self.config.Server), int(self.config.Port))
-                ctrlC = self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
-                if self.connectcount > 2:
-                    logger.debug(
-                        "attente avant tentative de reconection %s s "
-                        % self.reconnect_time_wait
-                    )
-                    time.sleep(self.reconnect_time_wait)
-                else:
-                    # 3 seconde avant reconnection
-                    time.sleep(3)
-                if ctrlC:  # ctrl+c on quit
-                    return False
-                if self.brestartbot:
-                    return True  # reinitialise agent
-                if nb_reconnect:
-                    self.startdata = self.startdata - 1
-        except Exception:
-            logger.error("Mode_Marche_Arret_loop\n%s" % (traceback.format_exc()))
-        return False  # False quit agent xmpp
-
     def restartBot(self, wait=10):
         """
         on relance xmpp dans agent
         il relit la conf...
         """
         self.brestartbot = True  # boucle reinitialise.
-        logging.log(
-            DEBUGPULSE,
-            "We restart the medulla agent for the machine %s" % self.boundjid.user,
+        logger.debug(
+            "We restart the medulla agent for the machine %s" % self.boundjid.user
         )
-        self.disconnect(wait=wait)  # on provoque 1 connection default
+        # self.demandeRestartBot_bool = True
+        self.disconnect(wait=wait)
+
+    def handle_disconnected(self, data):
+        logger.debug(f"handle_disconnected {self.server_address}")
+        with terminate_lock:
+            if self.shared_dict.get("terminate"):
+                logger.debug(f"handle_disconnected TERMINATE")
+                if sys.platform.startswith("win"):
+                    try:
+                        # on debloque le pipe
+                        fileHandle = win32file.CreateFile(
+                            "\\\\.\\pipe\\interfacechang",
+                            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                            0,
+                            None,
+                            win32file.OPEN_EXISTING,
+                            0,
+                            None,
+                        )
+                        win32file.WriteFile(fileHandle, "terminate")
+                        fileHandle.Close()
+                        time.sleep(2)
+                    except Exception as e:
+                        logger.error("\n%s" % (traceback.format_exc()))
+                        pass
+                self.loop.stop()
+                return
+        #
+        # if self.demandeRestartBot_bool:
+        #     logger.debug(f"Restart Bot")
+        #     self.reconnect(0.0, self.massage_reconection)
+        #     return
+
+        if self.config.agenttype in ["relayserver"]:
+            self.reconnect(0.0, self.massage_reconection)
+            return
+
+        if self.shared_dict.get("alternative"):
+            # reconnecte alternative JFK
+            if (
+                self.alternatifconnection["nextserver"]
+                > self.alternatifconnection["nbserver"]
+            ):
+                self.alternatifconnection["nextserver"] = 1
+
+            logger.debug(f"handle_disconnected {self.alternatifconnection}")
+
+            index_server_list = self.alternatifconnection["nextserver"] - 1
+            arsconnection = self.alternatifconnection["listars"][index_server_list]
+            self.config.Port = self.alternatifconnection[arsconnection]["port"]
+            self.config.Server = self.alternatifconnection[arsconnection]["server"]
+            self.config.guacamole_baseurl = self.alternatifconnection[arsconnection][
+                "guacamole_baseurl"
+            ]
+            serverjid = str(arsconnection)
+            try:
+                self.config.confdomain = str(arsconnection).split("@")[1].split("/")[0]
+            except BaseException:
+                self.config.confdomain = str(serverjid)
+            logger.debug(
+                f"reecrit cluster.ini {self.config.Port}{ipfromdns(self.config.Server)}{arsconnection}{self.config.guacamole_baseurl}"
+            )
+            changeconnection(
+                conffilename(self.config.agenttype),
+                self.config.Port,
+                ipfromdns(self.config.Server),
+                arsconnection,
+                self.config.guacamole_baseurl,
+            )
+
+            self.alternatifconnection["nextserver"] = (
+                self.alternatifconnection["nextserver"]
+            ) + 1
+            if (
+                self.alternatifconnection["nextserver"]
+                > self.alternatifconnection["nbserver"]
+            ):
+                self.alternatifconnection["nextserver"] = 1
+
+            # write alternative configuration
+            create_config_file(conffilenametmp("cluster"), self.alternatifconnection)
+            create_config_file(conffilename("cluster"), self.alternatifconnection)
+            self.address = (
+                ipfromdns(self.config.Server),
+                int(self.config.Port),
+            )
+            self.server_address = self.address
+            # loop1 = asyncio.get_event_loop()
+            self.shared_dict["new_connection"] = True
+            self.loop.stop()
+        else:
+            logger.debug("RECONNECTE DEFAULT")
+            self.reconnect(0.0, self.massage_reconection)
+
+    def handle_connection_failed(self, data):
+        logger.debug(f"handle_connection_failed {self.server_address}")
+        # logger.info(f"handle_connection_failed alternatifconnection {self.alternatifconnection}")
+        # if self.demandeRestartBot_bool:
+        #     logger.debug(f"Restart Bot {self.server_address}")
+        #     self.demandeRestartBot_bool = False
+        #     return
+        self.disconnect()
+
+    def handle_connecting(self, data):
+        """
+        success connecting agent
+        """
+        # logger.info(f"connecting {self.server_address}")
+        pass
+
+    def handle_connected(self, data):
+        logger.info(f"handle_connected {self.server_address}")
+        self.demandeRestartBot_bool = False
+        logger.info(f"connected {self.server_address}")
+
+    def reconnect_agent(self, msg="deconection", delay=0):
+        self.massage_reconection = msg
+        self._connect_loop_wait = 0
+        if delay:
+            self.disconnect(delay)
+        else:
+            self.disconnect()
+
+    def reconnect_alternative(self, alternative=True, delay=0):
+        self.alternative = alternative
+        if delay:
+            self.disconnect(delay)
+        else:
+            self.disconnect()
+        loop1 = asyncio.get_event_loop()
+        loop1.stop()
 
     def quit_application(self, wait=2):
         """
@@ -1214,248 +1353,40 @@ class MUCBot(ClientXMPP):
         Returns:
             None
         """
-        logging.log(DEBUGPULSE, "Quit Application")
-        setgetrestart(0)
-        self.disconnect(wait=wait)
+        logger.debug("Quit Application")
 
-    def handle_connected(self, data):
-        # on reinitialise le nombre de connection en default
-        self.connectcount = 0
-        self.set_connect_loop_wait(3)
-
-    def handle_connection_failed(self, data):
-        """
-        on connection failed on libere la connection
-        a savoir apres "CONNECTION FAILED"
-        il faut reinitialiser adress et port de connection.
-        """
-        logger.error("CONNECTION FAILED %s " % self.connectcount)
-        self.connectcount = self.connectcount + 1
-        self.set_connect_loop_wait(3)
-        if self.connectcount % 5 == 0:
-            logger.warning("tentative de connection failed %s " % self.connectcount)
-        if self.connectcount >= 5 and self.connectcount < 10:
-            self.set_connect_loop_wait(5)
-        if self.connectcount >= 11 and self.connectcount <= 15:
-            self.set_connect_loop_wait(10)
-        if self.connectcount >= 15:
-            self.set_connect_loop_wait(15)
-            # Terminer le processus courant
-            logger.error(
-                "%s Tentatives de connexion échouées dans ce processus."
-                % self.connectcount
-            )
-            logger.error("Veuillez vérifier vos paramètres réseau.")
-            logger.error("Re-création du processus agent XMPP en cours.")
+        self.queue_read_event_from_command.put("quit")
+        # termine server kiosk
+        self.eventkiosk.quit()
+        self.eventkilltcp.set()
+        self.eventkillpipe.set()
+        time.sleep(1)
+        if sys.platform.startswith("win"):
             try:
-                with self.lockrestart:  # Verrouillage pour éviter les conflits d'accès
-                    self.PROCESS_RESTART.value = 1
-                    logger.debug("donne ordre de recreation client xmpp.")
-            except Exception as e:
-                logger.error(f"An error occurred: {e}")
-            self.process_restartbot = False
-            self.queue_read_event_from_command.put("quit")
-            # termine server kiosk
-            self.eventkiosk.quit()
-            self.eventkilltcp.set()
-            self.eventkillpipe.set()
-            time.sleep(1)
-            if sys.platform.startswith("win"):
-                try:
-                    # on debloque le pipe
-                    fileHandle = win32file.CreateFile(
-                        "\\\\.\\pipe\\interfacechang",
-                        win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                        0,
-                        None,
-                        win32file.OPEN_EXISTING,
-                        0,
-                        None,
-                    )
-                    win32file.WriteFile(fileHandle, "terminate")
-                    fileHandle.Close()
-                    time.sleep(2)
-                except Exception as e:
-                    logger.error("\n%s" % (traceback.format_exc()))
-                    pass
-            self.startdata = -1
-            logger.debug("byby session xmpp")
-            logger.error("PROCESS_RESTART %s" % (self.PROCESS_RESTART.value))
-            self.disconnect()
-            self.readconfig_Marche_Arret = False
-            self.loop.stop()
-            time.sleep(1)
-            return False
-        if self.brestartbot:
-            # on force 1 restart bot xmpp
-            self.startdata = -1
-            self.readconfig_Marche_Arret = True
-            self.set_connect_loop_wait(3)
-            self.disconnect()
-            self.loop.stop()
-            return
-        if self.config.agenttype in ["relayserver"]:
-            self.set_connect_loop_wait(3)
-            self.disconnect()
-            self.readconfig_Marche_Arret = False
-            self.loop.stop()
-        else:
-            self.disconnect()
-            if not self.alternatifconnection:
-                # load alternative connection
-                namefilealternatifconnection = conffilename("cluster")
-                if os.path.isfile(namefilealternatifconnection):
-                    # il y a une configuration alternative
-                    logger.debug(
-                        "Machine in cluster ars : analyse alternative alternative connection"
-                    )
-                    logger.debug("file %s" % conffilename("cluster"))
-                    logger.debug("alternative configuration")
-                    self.alternatifconnection = (
-                        nextalternativeclusterconnectioninformation(
-                            namefilealternatifconnection
-                        )
-                    )
-                # self.startmode = False # on charge alternative connection 1 seule fois
-            # search alternatif connection
-            if self.alternatifconnection:
-                self.alternatifconnection["nextserver"] = (
-                    self.alternatifconnection["nextserver"] + 1
+                # on debloque le pipe
+                fileHandle = win32file.CreateFile(
+                    "\\\\.\\pipe\\interfacechang",
+                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                    0,
+                    None,
+                    win32file.OPEN_EXISTING,
+                    0,
+                    None,
                 )
-                if (
-                    self.alternatifconnection["nextserver"]
-                    > self.alternatifconnection["nbserver"]
-                ):
-                    self.alternatifconnection["nextserver"] = 1
-                    # reconfiguraton a refaire
-                    # recharge
-                    # on donne le temps de recevoir nouvelle configuration
-                    self.set_connect_loop_wait(60)
-                    # recupere new connection
-                    arsconnection = self.alternatifconnection["listars"][
-                        self.alternatifconnection["nextserver"] - 1
-                    ]
-                    self.config.Port = self.alternatifconnection[arsconnection]["port"]
-                    self.config.Server = self.alternatifconnection[arsconnection][
-                        "server"
-                    ]
-                    self.config.guacamole_baseurl = self.alternatifconnection[
-                        arsconnection
-                    ]["guacamole_baseurl"]
-                    serverjid = arsconnection
-                    try:
-                        self.config.confdomain = (
-                            str(arsconnection).split("@")[1].split("/")[0]
-                        )
-                    except BaseException:
-                        self.config.confdomain = str(serverjid)
-                    changeconnection(
-                        conffilename(self.config.agenttype),
-                        self.config.Port,
-                        ipfromdns(self.config.Server),
-                        arsconnection,
-                        self.config.guacamole_baseurl,
-                    )
-                    self.address = (
-                        ipfromdns(self.config.Server),
-                        int(self.config.Port),
-                    )
-                    # on reconf mais on est dans 1 phase de restart
-                    self.reconfagent(restartbot=False, force_full_registration=True)
-                    # on recharge la configuration
-                    self.readconfig_Marche_Arret = True
-                else:
-                    self.readconfig_Marche_Arret = False
-                    arsconnection = self.alternatifconnection["listars"][
-                        self.alternatifconnection["nextserver"] - 1
-                    ]
-                    self.config.Port = self.alternatifconnection[arsconnection]["port"]
-                    self.config.Server = self.alternatifconnection[arsconnection][
-                        "server"
-                    ]
-                    self.config.guacamole_baseurl = self.alternatifconnection[
-                        arsconnection
-                    ]["guacamole_baseurl"]
-                    self.readconfig_Marche_Arret = False
-                    changeconnection(
-                        conffilename(self.config.agenttype),
-                        self.config.Port,
-                        ipfromdns(self.config.Server),
-                        arsconnection,
-                        self.config.guacamole_baseurl,
-                    )
+                win32file.WriteFile(fileHandle, "terminate")
+                fileHandle.Close()
+                time.sleep(2)
+            except Exception as e:
+                # logger.error("\n%s" % (traceback.format_exc()))
+                pass
+        with terminate_lock:
+            self.shared_dict["terminate"] = True
+        self.startdata = -1
+        logger.debug("byby session xmpp")
+        loop1 = asyncio.get_event_loop()
+        loop1.stop()
 
-                    self.address = (
-                        ipfromdns(self.config.Server),
-                        int(self.config.Port),
-                    )
-
-    def Mode_Marche_Arret_connect(self, forever=False, timeout=10):
-        """
-        a savoir apres "CONNECTION FAILED"
-        il faut reinitialiser address et port de connection.
-        """
-        ctrlC = False
-        try:
-            logger.debug(
-                f"Tentative de connexion en cours. Tentative numéro {self.connectcount}."
-            )
-            self.connect(address=self.address, force_starttls=None)
-            self.process(forever=False)
-            ctrlC = False
-        except RuntimeError as error:
-            ctrlC = False
-        except KeyboardInterrupt as error:
-            self.startdata = -1
-            ctrlC = True
-        return ctrlC
-
-    def Mode_Marche_Arret_nb_reconnect(self, nb_reconnect):
-        self.startdata = nb_reconnect
-
-    def Mode_Marche_Arret_terminate(self):
-        self.startdata = 0
-        self.disconnect()
-
-    def Mode_Marche_Arret_stop_agent(self, time_stop=5):
-        self.startdata = 0
-        self.set_connect_loop_wait(-1)
-        self.disconnect(wait=time_stop)
-
-    def handle_connecting(self, data):
-        """
-        success connecting agent
-        """
-        pass
-
-    def get_connect_loop_wait(self):
-        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
-        # cf commit d3063a0368503
-        try:
-            self._connect_loop_wait
-            return self._connect_loop_wait
-        except AttributeError:
-            return self.connect_loop_wait
-
-    def set_connect_loop_wait(self, int_time):
-        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
-        # attention slixmpp modifie cette valeur private
-        # cf commit d3063a0368503
-        self.reconnect_time_wait = int_time
-        try:
-            self._connect_loop_wait
-            self._connect_loop_wait = int_time
-
-        except AttributeError:
-            self.connect_loop_wait = int_time
-
-    def handle_disconnected(self, data):
-        logger.debug(
-            "We got disconnected. We will reconnect in %s seconds"
-            % self.reconnect_time_wait
-        )
-
-    def register(self, iq):
+    async def register(self, iq):
         """
         Fill out and submit a registration form.
 
@@ -1478,15 +1409,13 @@ class MUCBot(ClientXMPP):
         resp["register"]["username"] = self.boundjid.user
         resp["register"]["password"] = self.password
         try:
-            resp.send()
-            logging.info("Account created for %s!" % self.boundjid)
+            await resp.send()
+            logger.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.debug("Could not register account: %s" % e.iq["error"]["text"])
-            self.disconnect(wait=10)
-
+            logger.debug("Could not register account: %s" % e.iq["error"]["text"])
         except IqTimeout:
-            logging.error("No response from server.")
-            self.disconnect(wait=10)
+            logger.error("Could not register account No response from server.")
+            self.disconnect()
 
     def check_subscribe(self):
         if self.presencectrlsubscribe != "available":
@@ -2308,6 +2237,8 @@ class MUCBot(ClientXMPP):
                             pass
                         datasend["data"]["subaction"] = "presence"
                         datasend["data"]["value"] = self.kiosk_presence
+                    elif result["action"] == "inventory":
+                        datasend["data"]["subaction"] = "inventory"
 
                     elif result["action"] == "kioskLog":
                         if "message" in result and result["message"] != "":
@@ -2470,7 +2401,7 @@ class MUCBot(ClientXMPP):
         self.levelcharge["charge"] = len(self.levelcharge["machinelist"])
 
     def signal_handler(self, signal, frame):
-        logging.log(DEBUGPULSE, "CTRL-C EVENT")
+        logger.debug("CTRL-C EVENT")
         global signalint
         signalint = True
         msgevt = {
@@ -2498,6 +2429,8 @@ class MUCBot(ClientXMPP):
         """
         global signalint
         if sys.platform.startswith("win"):
+            with terminate_lock:
+                self.shared_dict["terminate"] = True
             msgevt = {
                 "action": "evtfrommachine",
                 "sessionid": getRandomName(6, "eventwin"),
@@ -2508,28 +2441,28 @@ class MUCBot(ClientXMPP):
             if evt == win32con.CTRL_SHUTDOWN_EVENT:
                 msgevt["data"]["event"] = "SHUTDOWN_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL_SHUTDOWN EVENT")
+                logger.debug("CTRL_SHUTDOWN EVENT")
                 signalint = True
                 return True
             if evt == win32con.CTRL_LOGOFF_EVENT:
                 msgevt["data"]["event"] = "LOGOFF_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL_LOGOFF EVENT")
+                logger.debug("CTRL_LOGOFF EVENT")
                 return True
             if evt == win32con.CTRL_BREAK_EVENT:
                 msgevt["data"]["event"] = "BREAK_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL_BREAK EVENT")
+                logger.debug("CTRL_BREAK EVENT")
                 return True
             if evt == win32con.CTRL_CLOSE_EVENT:
                 msgevt["data"]["event"] = "CLOSE_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL_CLOSE EVENT")
+                logger.debug("CTRL_CLOSE EVENT")
                 return True
             if evt == win32con.CTRL_C_EVENT:
                 msgevt["data"]["event"] = "CTRL_C_EVENT"
                 self.send_message_to_master(msgevt)
-                logging.log(DEBUGPULSE, "CTRL-C EVENT")
+                logger.debug("CTRL-C EVENT")
                 signalint = True
                 self.quit_application(wait=3)
                 return True
@@ -2748,7 +2681,7 @@ class MUCBot(ClientXMPP):
         # send iq to subscribe
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         # machine connected
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+        self.config.ipxmpp = getIpXmppInterface(self.config)
 
         self.__clean_message_box()
         if self.config.agenttype in ["relayserver"]:
@@ -3770,7 +3703,7 @@ class MUCBot(ClientXMPP):
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
 
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+        self.config.ipxmpp = getIpXmppInterface(self.config)
         NetworkInfos = NetworkInfoxmpp(self.config.Port)
         portconnection = self.config.Port
         if NetworkInfos.ip_address and NetworkInfos.details:
@@ -4008,7 +3941,7 @@ AGENT %s ERROR TERMINATE""" % (
 
     def loadPluginschedulerList(self):
         logger.debug("Verify base plugin scheduler")
-        plugindataseach = {}
+        plugindatasearch = {}
         for element in os.listdir(self.config.pathpluginsscheduled):
             if element.endswith(".py") and element.startswith("scheduling_"):
                 f = open(os.path.join(self.config.pathpluginsscheduled, element), "r")
@@ -4018,9 +3951,9 @@ AGENT %s ERROR TERMINATE""" % (
                     if "VERSION" in ligne and "NAME" in ligne:
                         l = ligne.split("=")
                         plugin = eval(l[1])
-                        plugindataseach[plugin["NAME"]] = plugin["VERSION"]
+                        plugindatasearch[plugin["NAME"]] = plugin["VERSION"]
                         break
-        return plugindataseach
+        return plugindatasearch
 
     def module_needed(self):
         finder = ModuleFinder()
@@ -4057,100 +3990,70 @@ def createDaemon(
     tgfichierconf,
     tglevellog,
     tglogfile,
-    lockrestart,
-    PROCESS_RESTART,
+    shared_dict,
+    terminate_lock,
 ):
     """
     This function create a service/Daemon that will execute a det. task
     """
     try:
         if sys.platform.startswith("win"):
-            p = multiprocessing.Process(
-                name="xmppagent",
-                target=doTask,
-                args=(
-                    optstypemachine,
-                    optsconsoledebug,
-                    optsdeamon,
-                    tgfichierconf,
-                    tglevellog,
-                    tglogfile,
-                    lockrestart,
-                    PROCESS_RESTART,
-                ),
-            )
-            p.daemon = True
-            p.start()
-            p.join()
+            while True:
+                p = multiprocessing.Process(
+                    name="xmppagent",
+                    target=doTask,
+                    args=(
+                        optstypemachine,
+                        optsconsoledebug,
+                        optsdeamon,
+                        tgfichierconf,
+                        tglevellog,
+                        tglogfile,
+                        shared_dict,
+                        terminate_lock,
+                    ),
+                )
+                p.daemon = True
+                p.start()
+                while p.is_alive():
+                    with terminate_lock:
+                        if shared_dict.get("terminate"):
+                            logging.info("Terminating daemon process...")
+                            p.terminate()
+                            p.join()
+                            break
+                time.sleep(1)
         else:
-            try:
-                pid = os.fork()
-                if pid > 0:
-                    # Wait for initialization before exiting
-                    time.sleep(2)
-                    # exit first parent and return
-                    sys.exit(0)
-            except OSError as err:
-                sys.stderr.write("fork #1 failed: {0}".format(err))
-                sys.exit(1)
-
-            # decouple from parent environment
-            os.chdir("/")
-            os.setsid()
-
-            # do second fork
-            try:
-                pid = os.fork()
-                if pid > 0:
-                    # exit from second parent
-                    sys.exit(0)
-            except OSError as err:
-                sys.stderr.write("fork #1 failed: {0}".format(err))
-                sys.exit(1)
-
-            maxfd = getrlimit(RLIMIT_NOFILE)[1]
-            if maxfd == RLIM_INFINITY:
-                maxfd = 1024
-
-            for fd in range(0, maxfd):
-                # Don't close twisted FDs
-                # TODO: make a clean code to be sure nothing is opened before this function
-                # ie: daemonize very early, then after import all stuff...
-                if fd not in (3, 4, 5, 6, 7, 8):
-                    try:
-                        os.close(fd)
-                    except OSError:
-                        pass
-
-            if hasattr(os, "devnull"):
-                REDIRECT_TO = os.devnull
-            else:
-                REDIRECT_TO = "/dev/null"
-
-            os.open(REDIRECT_TO, os.O_RDWR)
-            os.dup2(0, 1)
-            os.dup2(0, 2)
-            # write pidfile
             pid = os.getpid()
-            f = open("/var/run/xmpp_agent_pulse_%s.pid" % optstypemachine, "w")
-            try:
+            pidfile_path = "/var/run/xmpp_agent_pulse_%s.pid" % optstypemachine
+            with open(pidfile_path, "w") as f:
                 f.write("%s\n" % pid)
+            try:
+                while True:
+                    doTask(
+                        optstypemachine,
+                        optsconsoledebug,
+                        optsdeamon,
+                        tgfichierconf,
+                        tglevellog,
+                        tglogfile,
+                        shared_dict,
+                        terminate_lock,
+                    )
+                    with terminate_lock:
+                        if shared_dict.get("terminate"):
+                            logging.info("Terminating daemon process...")
+                            break
+                    time.sleep(1)  # Pause pour éviter une boucle excessive
+            except KeyboardInterrupt:
+                logging.info("Daemon interrupted by CTRL-C.")
             finally:
-                f.close()
-            doTask(
-                optstypemachine,
-                optsconsoledebug,
-                optsdeamon,
-                tgfichierconf,
-                tglevellog,
-                tglogfile,
-                lockrestart,
-                PROCESS_RESTART,
-            )
+                # Nettoyage final
+                os.remove(pidfile_path)
+                logging.info("Daemon process terminated and PID file removed.")
     except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s" % (traceback.format_exc()))
-        sys.exit(1)
 
 
 def tgconf(optstypemachine):
@@ -4184,11 +4087,139 @@ def tgconf(optstypemachine):
             "Unable to connect. (%s : %s) on xmpp server."
             " Check that %s can be resolved" % (tg.Server, tg.Port, tg.Server),
         )
-        logging.log(DEBUGPULSE, "verify a information ip or dns for connection AM")
+        logger.debug("verify a information ip or dns for connection AM")
         if ipfromdns(tg.Server) == "":
-            logging.log(DEBUGPULSE, "not resolution adresse : %s " % tg.Server)
+            logger.debug("not resolution adresse : %s " % tg.Server)
         time.sleep(2)
     return tg
+
+
+# ==========================
+# = cherrypy server config =
+# ==========================
+
+
+def servercherrypy(
+    optstypemachine,
+    optsconsoledebug,
+    optsdeamon,
+    tgnamefileconfig,
+    tglevellog,
+    tglogfile,
+    shared_dict,
+    terminate_lock,
+):
+    config = confParameter(optstypemachine)
+    if config.agenttype in ["machine"]:
+        port = 52044
+        root_path = os.path.dirname(os.path.realpath(__file__))
+        server_path = os.path.join(root_path, "lib")
+        server_ressources_path = os.path.join(root_path, "lib", "ressources")
+
+        Controller.config = config
+        # Generate cherrypy server conf
+        server_conf = {
+            # Root access
+            "global": {
+                "server.socket_host": config.fv_host,
+                "server.socket_port": config.fv_port,
+            },
+            "/": {
+                # 'tools.staticdir.on': True,
+                "tools.staticdir.dir": server_path
+            },
+            # Sharing css ...
+            "/css": {
+                "tools.staticdir.on": True,
+                "tools.staticdir.dir": os.path.join(
+                    server_ressources_path, "fileviewer", "css"
+                ),
+            },
+            # Sharing js ...
+            "/js": {
+                "tools.staticdir.on": True,
+                "tools.staticdir.dir": os.path.join(
+                    server_ressources_path, "fileviewer", "js"
+                ),
+            },
+            # Sharing images ...
+            "/images": {
+                "tools.staticdir.on": True,
+                "tools.staticdir.dir": os.path.join(
+                    server_ressources_path, "fileviewer", "images"
+                ),
+            },
+            # Alias to images for datatables js lib
+            "/DataTables-1.10.21/images": {
+                "tools.staticdir.on": True,
+                "tools.staticdir.dir": os.path.join(
+                    server_ressources_path, "fileviewer", "images"
+                ),
+            },
+            # Sharing fonts
+            "/fonts": {
+                "tools.staticdir.on": True,
+                "tools.staticdir.dir": os.path.join(
+                    server_ressources_path, "fileviewer", "fonts"
+                ),
+            },
+        }
+        count = 0
+        for path in config.paths:
+            name = config.names[count]
+            # Here we know the name and the path, we can add the access for
+            # each folders
+            server_conf["/%s" % str(name)] = {
+                "tools.staticdir.on": True,
+                "tools.staticdir.dir": str(path),
+            }
+            count += 1
+        cherrypy.tree.mount(Controller(), "/", server_conf)
+        # We will create our own server so we don't need the
+        # default one
+
+        cherrypy.server.unsubscribe()
+        server1 = cherrypy._cpserver.Server()
+        server1.socket_port = config.fv_port
+        server1._socket_host = config.fv_host
+
+        # ===
+        # Do not remove the following lines
+        # They can be usefull to configure the server
+        # ===
+
+        server1.subscribe()
+        cherrypy.engine.start()
+
+
+def shuffle_listars(config):
+    """
+    Réorganise la liste 'listars' dans le dictionnaire de configuration.
+
+    Cette fonction conserve le premier élément de la liste 'listars' à sa position initiale
+    et réorganise les autres éléments de manière aléatoire. La liste 'listars' contient les serveurs
+    (cluster) qui peuvent satisfaire une connexion pour cette machine. En mélangeant les éléments
+    de la liste, on introduit une certaine entropie, ce qui permet de répartir les connexions des
+    machines de manière aléatoire sur le cluster. Cela évite que toutes les machines d'un ARS tombé
+    se connectent au même serveur alternatif.
+
+    Args:
+        config (dict): Le dictionnaire de configuration contenant la liste 'listars'.
+
+    Returns:
+        None
+    """
+    # Vérifier si la liste 'listars' contient plus d'un élément
+    if len(config["listars"]) > 1:
+        # Extraire le premier élément de la liste
+        first_element = config["listars"][0]
+        # Extraire les autres éléments de la liste
+        other_elements = config["listars"][1:]
+        # Mélanger les autres éléments de manière aléatoire
+        random.shuffle(other_elements)
+        # Reconstruire la liste en plaçant le premier élément à sa position initiale
+        # suivi des éléments mélangés
+        config["listars"] = [first_element] + other_elements
 
 
 def doTask(
@@ -4198,35 +4229,8 @@ def doTask(
     tgnamefileconfig,
     tglevellog,
     tglogfile,
-    lockrestart,
-    PROCESS_RESTART,
-):
-
-    while PROCESS_RESTART.value:
-        with lockrestart:  # Verrouillage pour éviter les conflits d'accès
-            PROCESS_RESTART.value = 0
-            logger.debug("START CLIENT AGENT XMPP")
-        doTask1(
-            optstypemachine,
-            optsconsoledebug,
-            optsdeamon,
-            tgnamefileconfig,
-            tglevellog,
-            tglogfile,
-            lockrestart,
-            PROCESS_RESTART,
-        )
-
-
-def doTask1(
-    optstypemachine,
-    optsconsoledebug,
-    optsdeamon,
-    tgnamefileconfig,
-    tglevellog,
-    tglogfile,
-    lockrestart,
-    PROCESS_RESTART,
+    shared_dict,
+    terminate_lock,
 ):
     processes = []
     listpid = []
@@ -4239,7 +4243,9 @@ def doTask1(
     pidfile = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"
     )
+    alternatifconnection = None
     file_put_contents(pidfile, "%s" % os.getpid())
+    tg = confParameter(optstypemachine)
     if sys.platform.startswith("win"):
         try:
             result = subprocess.check_output(
@@ -4268,85 +4274,172 @@ def doTask1(
         sys.path.append(
             os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
         )
+    # ==========================
+    # = cherrypy server config =
+    # ==========================
+    # pcherry = Process(
+    # target=servercherrypy,
+    # name="cherrypy",
+    # args=(
+    # optstypemachine,
+    # optsconsoledebug,
+    # optsdeamon,
+    # tgnamefileconfig,
+    # tglevellog,
+    # tglogfile,
+    # shared_dict,
+    # terminate_lock,
+    # ),
+    # )
+    # processes.append(pcherry)
+    # listpid.append(pcherry.pid)
+    # pcherry.start()
 
-    # start xmpp process
-    p = Process(
-        target=process_xmpp_agent,
-        name="xmppagent",
-        args=(
-            optstypemachine,
-            optsconsoledebug,
-            optsdeamon,
-            tglevellog,
-            tglogfile,
-            queue_recv_tcp_to_xmpp,
-            queueout,
-            eventkilltcp,
-            eventkillpipe,
-            os.getpid(),
-            lockrestart,
-            PROCESS_RESTART,
-        ),
-    )
-    processes.append(p)
-    listpid.append(p.pid)
-    p.start()
-    windowfilepidname = os.path.join(
+    pid_file_path_xmppagent_win = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintreename"
     )
-    file_put_contents(
-        windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid)
-    )
+
+    # on lit les alternatives si elle existe. 1 fois suivant alternatifconnection initialise ou pas
+    if not alternatifconnection:
+        logger.info("composition  altenative")
+        # chemin du fichier alternative
+        namefilealternatifconnection = conffilename("cluster")
+        if os.path.isfile(namefilealternatifconnection):
+            alternatifconnection = nextalternativeclusterconnectioninformation(
+                namefilealternatifconnection
+            )
+            logger.info(f"composition  altenative {namefilealternatifconnection}")
+            if (
+                "nbserver" not in alternatifconnection
+                or "listars" not in alternatifconnection
+                or "nextserver" not in alternatifconnection
+            ):
+                alternatifconnection = (
+                    None  # json cluster.ini pas correct pas d'alternative.
+                )
+            elif alternatifconnection["nbserver"] == 1:
+                alternatifconnection = {}  # 1 seul serveur pas d'alternative.
+            else:
+                # il y a une configuration alternative cluster pour agent machine
+                # en cas d'impossibilite de se connecte sur son serveur ars referent. il commutera
+                # sur 1 alternative du cluster.
+                if optstypemachine.lower() not in ["relay"]:
+                    shuffle_listars(alternatifconnection)
+                    logger.info("file %s" % conffilename("cluster"))
+                    logger.info(
+                        "list server connection possible (alternative cluster) %s"
+                        % alternatifconnection["listars"]
+                    )
+    if not alternatifconnection:
+        with terminate_lock:
+            shared_dict["alternative"] = False
     logger.info(
-        "%s -> %s : [Process Alive %s (%s)]" % (os.getpid(), p.pid, p.name, p.pid)
+        "list server connection possible (alternative cluster) %s"
+        % alternatifconnection
     )
 
-    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-        # completing process
-        try:
-            programrun = True
-            while True:
-                time.sleep(10)
-                if PROCESS_RESTART.value == 1:
-                    return
-        except KeyboardInterrupt:
-            logging.debug("CTRL+C have been asked.")
-            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
-            for p in processes:
-                p.terminate()
-            cmd = "kill -s kill %s" % os.getpid()
-            result = simplecommand(cmd)
+    with terminate_lock:
+        shared_dict["new_connection"] = False
+    while True:
+        logger.info("composition  altenative")
+        # chemin du fichier alternative
+        namefilealternatifconnection = conffilename("cluster")
+        if os.path.isfile(namefilealternatifconnection):
+            alternatifconnection = nextalternativeclusterconnectioninformation(
+                namefilealternatifconnection
+            )
+            logger.info(f"composition  altenative {namefilealternatifconnection}")
+            if (
+                "nbserver" not in alternatifconnection
+                or "listars" not in alternatifconnection
+                or "nextserver" not in alternatifconnection
+            ):
+                alternatifconnection = (
+                    None  # json cluster.ini pas correct pas d'alternative.
+                )
+            elif alternatifconnection["nbserver"] == 1:
+                alternatifconnection = {}  # 1 seul serveur pas d'alternative.
 
-    elif sys.platform.startswith("win"):
-        try:
-            programrun = True
-            while True:
-                time.sleep(10)
-                if PROCESS_RESTART.value == 1:
-                    return
-        except KeyboardInterrupt:
-            logging.debug("CTRL+C have been asked.")
-            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
-            for p in processes:
-                p.terminate()
-            cmd = "taskkill /F /PID %s" % os.getpid()
-            result = simplecommand(cmd)
-    else:
-        # completing process
-        try:
-            programrun = True
-            while True:
-                time.sleep(10)
-                if PROCESS_RESTART.value == 1:
-                    return
-        except KeyboardInterrupt:
-            logging.debug("CTRL+C have been asked.")
-            sys.exit(1)
-        except Exception as e:
-            logging.error("An error occured while trying to stop the agent with CTRL+C")
-            logging.error("The error is %s" % str(e))
-    logging.debug("The Pulse Xmpp Agent Relay is now stopped")
-    sys.exit(0)
+        with terminate_lock:
+            if shared_dict.get("terminate"):
+                logging.info(" termine boucle process")
+                break
+        logger.info("CREATION PROCESS")
+        p = Process(
+            target=process_xmpp_agent,
+            name="xmppagent",
+            args=(
+                optstypemachine,
+                optsconsoledebug,
+                optsdeamon,
+                tglevellog,
+                tglogfile,
+                queue_recv_tcp_to_xmpp,
+                queueout,
+                eventkilltcp,
+                eventkillpipe,
+                os.getpid(),
+                shared_dict,
+                terminate_lock,
+                alternatifconnection,
+            ),
+        )
+        processes.append(p)
+        listpid.append(p.pid)
+        p.start()
+        file_put_contents(
+            pid_file_path_xmppagent_win,
+            "from %s : %s %s" % (os.getpid(), p.name, p.pid),
+        )
+        logger.info(
+            "%s -> %s : [Process Alive %s (%s)]" % (os.getpid(), p.pid, p.name, p.pid)
+        )
+        while p.is_alive():
+            with terminate_lock:
+                if shared_dict.get("terminate"):
+                    logger.debug(" TERMINATE %s" % alternatifconnection)
+                    # pcherry.terminate()
+                    p.terminate()
+                    # pcherry.join()
+                    p.join()
+                    processes.remove(p)  # Supprimer le processus terminé
+                    # processes.remove(pcherry)  # Supprimer le processus terminé
+                    # listpid.remove(pcherry.pid)
+                    listpid.remove(p.pid)
+                    if p.pid in listpid:
+                        listpid.remove(p.pid)
+                    else:
+                        logger.warning(f"PID {p.pid} not found in listpid")
+                    break
+                if shared_dict.get("alternative") and shared_dict.get("new_connection"):
+                    logger.info("NEW CONECTION %s" % alternatifconnection)
+                    # pcherry.terminate()
+                    p.terminate()
+                    # pcherry.join()
+                    p.join()
+                    processes.remove(p)  # Supprimer le processus terminé
+                    # processes.remove(pcherry)  # Supprimer le processus terminé
+                    # listpid.remove(pcherry.pid)
+                    if p.pid in listpid:
+                        listpid.remove(p.pid)
+                    else:
+                        logger.warning(f"PID {p.pid} not found in listpid")
+                    break
+            time.sleep(1)
+        logger.warning("QUIT PROCESS")
+        with terminate_lock:
+            if not shared_dict.get("new_connection"):
+                logger.debug("nouveau process process")
+                break
+            shared_dict["new_connection"] = False
+
+    with terminate_lock:
+        shared_dict["terminate"] = True
+    for proc in processes:
+        if proc.is_alive():
+            proc.terminate()
+            proc.join()
+    logger.debug("The Pulse Xmpp Agent Relay is now stopped")
 
 
 class process_xmpp_agent:
@@ -4362,135 +4455,122 @@ class process_xmpp_agent:
         eventkilltcp,
         eventkillpipe,
         pidprogrammprincipal,
-        lockrestart,
-        PROCESS_RESTART,
+        shared_dict,
+        terminate_lock,
+        alternatifconnection,
     ):
         # parameter permet arret programme complet  ICI PASSER PARAMETRE DANS XMPPBOT
-
+        self.alternatifconnection = alternatifconnection
         self.pidprogrammprincipal = pidprogrammprincipal
-
-        format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
-        formatter = logging.Formatter(format)
+        self.shared_dict = shared_dict
+        # self.terminate_lock =  terminate_lock
+        if sys.platform.startswith("win"):
+            format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
+            formatter = logging.Formatter(format)
 
         logger = logging.getLogger()  # either the given logger or the root logger
         logger.setLevel(tglevellog)
         # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
-        if logger.handlers:
-            console = logger.handlers[
-                0
-            ]  # we assume the first handler is the one we want to configure
-        else:
-            console = logging.StreamHandler()
-            logger.addHandler(console)
-        console.setFormatter(formatter)
-        console.setLevel(tglevellog)
+        if sys.platform.startswith("win"):
+            if logger.handlers:
+                console = logger.handlers[
+                    0
+                ]  # we assume the first handler is the one we want to configure
+            else:
+                console = logging.StreamHandler()
+                logger.addHandler(console)
+            console.setFormatter(formatter)
+            console.setLevel(tglevellog)
 
-        file_handler = logging.FileHandler(tglogfile)
-        file_handler.setLevel(tglevellog)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-        self.logger = logger
+            file_handler = logging.FileHandler(tglogfile)
+            file_handler.setLevel(tglevellog)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
 
         self.logger = logging.getLogger()
-        self.process_restartbot = True
-        while self.process_restartbot:
-            self.process_restartbot = False
-            self.logger.debug(
-                "____________________________________________________________"
-            )
-            self.logger.debug(
-                "_______________ INITIALISATION XMPP AGENT ________________"
-            )
-            self.logger.debug(
-                "____________________________________________________________"
-            )
-            setgetcountcycle()
+        # while self.process_restartbot:
+        self.process_restartbot = False
+        self.logger.debug("/---------------------------------\\")
+        self.logger.debug("|--- INITIALISATION XMPP AGENT ---|")
+        self.logger.debug("\---------------------------------/")
 
-            setgetrestart()
-            tg = tgconf(optstypemachine)
-            xmpp = MUCBot(
-                tg,
-                queue_recv_tcp_to_xmpp,
-                queueout,
-                eventkilltcp,
-                eventkillpipe,
-                self.pidprogrammprincipal,
-                lockrestart,
-                PROCESS_RESTART,
-            )
-            xmpp.auto_reconnect = False
-            xmpp.register_plugin("xep_0030")  # Service Discovery
-            xmpp.register_plugin("xep_0045")  # Multi-User Chat
-            xmpp.register_plugin("xep_0004")  # Data Forms
-            xmpp.register_plugin("xep_0050")  # Adhoc Commands
-            xmpp.register_plugin(
-                "xep_0199",
-                {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
-            )
-            xmpp.register_plugin("xep_0077")  # In-band Registration
-            xmpp["xep_0077"].force_registration = True
-            time.sleep(0.2)
-            if xmpp.config.agenttype in ["relayserver"]:
-                self.process_restartbot = process_restartbot = (
-                    xmpp.Mode_Marche_Arret_loop(
-                        forever=False, timeout=2, type_machine="relayserver"
-                    )
-                )
-            else:
-                self.process_restartbot = process_restartbot = (
-                    xmpp.Mode_Marche_Arret_loop(
-                        forever=False, timeout=2, type_machine="machine"
-                    )
-                )
-            self.logger.debug("TERMINATE")
-            if xmpp.PROCESS_RESTART.value:
-                self.logger.debug("fin process")
-                return
-        terminateserver(xmpp)
+        setgetcountcycle()
 
-
-class process_agent_search:
-    def __init__(self, pid_agent, depth=3):
-        self.pid = ("%s" % pid_agent).strip()
-        # initialisation wmi
-        self.wmi = win32com.client.GetObject("winmgmts:")
-        self.processname = {}
-        self.processname[self.pid] = "pythonmainproces"
-        self.depth = depth
-
-    def pidlist(self):
-        self.search_name_pid(self.pid)
-        return self.processname
-
-    def search_name_pid(self, pidsearch, leveldepth=0):
-        leveldepth += 1
-        if leveldepth >= self.depth:
-            return
-        childrens = self.wmi.ExecQuery(
-            "Select * from win32_process where ParentProcessId=%s" % pidsearch
+        setgetrestart()
+        tg = tgconf(optstypemachine)
+        self.logger.debug(f"{tg.Server}{ int(tg.Port)}")
+        xmpp = MUCBot(
+            tg,
+            queue_recv_tcp_to_xmpp,
+            queueout,
+            eventkilltcp,
+            eventkillpipe,
+            pidprogrammprincipal,
+            shared_dict,
+            terminate_lock,
+            alternatifconnection,
         )
-        for child in childrens:
-            self.processname[str(child.Properties_("ProcessId"))] = "%s_%s" % (
-                pidsearch,
-                child.Name,
-            )
-            self.search_name_pid(str(child.Properties_("ProcessId")), leveldepth)
+        xmpp.auto_reconnect = False
+        xmpp.register_plugin("xep_0030")  # Service Discovery
+        xmpp.register_plugin("xep_0045")  # Multi-User Chat
+        xmpp.register_plugin("xep_0004")  # Data Forms
+        xmpp.register_plugin("xep_0050")  # Adhoc Commands
+        xmpp.register_plugin(
+            "xep_0199",
+            {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
+        )
+        xmpp.register_plugin("xep_0077")  # In-band Registration
+        xmpp["xep_0077"].force_registration = True
+        xmpp.server_address = (ipfromdns(tg.Server), int(tg.Port))
+        time.sleep(0.2)
+        try:
+            self.readconfig_Marche_Arret
+        except:
+            self.readconfig_Marche_Arret = True
 
-    def get_pid(self):
-        return self.processname
+        while True:
+            self.logger.debug("/---------------------------------\\")
+            self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
+            self.logger.debug("\---------------------------------/")
+            try:
+                xmpp.connect(address=xmpp.server_address)
+            except Exception as e:
+                self.logger.error("Connection failed: %s. Retrying..." % e)
+            try:
+                loop = asyncio.get_event_loop()
+                loop.run_forever()
+            except RuntimeError:
+                self.logger.error("RuntimeError during connection")
+            finally:
+                # loop.close()
+                pass
 
-    def numprocess_pid(self):
-        return len(self.processname)
+            with terminate_lock:
+                if shared_dict.get("terminate"):
+                    self.logger.info("CONNECTION XMPP AGENT")
+                    self.logger.info("termine application")
+                    loop.close()
+                    break
 
-    def is_win_process_num(self):
-        self.pidlist()
-        return self.numprocess_pid()
+                if shared_dict.get("alternative"):
+
+                    self.logger.info("CONNECTION XMPP AGENT")
+                    self.logger.info("cherche alternative")
+                    # loop.close()
+
+            self.logger.info("REBOUCLE")
+        terminateserver(xmpp)
 
 
 def terminateserver(xmpp):
     # event for quit loop server tcpserver for kiosk
-    logging.log(DEBUGPULSE, "terminateserver")
+    logger.debug("terminateserver")
+    # if xmpp.config.agenttype in ["relayserver"]:
+    #     xmpp.qin.put("quit")
+    xmpp.queue_read_event_from_command.put("quit")
+
+    # if xmpp.config.agenttype in ["relayserver"]:
+    #     xmpp.managerQueue.shutdown()
     # termine server kiosk
     xmpp.eventkiosk.quit()
     xmpp.eventkilltcp.set()
@@ -4512,13 +4592,13 @@ def terminateserver(xmpp):
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             pass
-    logging.log(DEBUGPULSE, "wait 2s end thread event loop")
-    logging.log(DEBUGPULSE, "terminate manage data sharing")
+    logger.debug("wait 2s end thread event loop")
+    logger.debug("terminate manage data sharing")
     time.sleep(2)
-    logging.log(DEBUGPULSE, "terminate scheduler")
-    logging.log(DEBUGPULSE, "Waiting to stop kiosk server")
-    logging.log(DEBUGPULSE, "QUIT")
-    logging.log(DEBUGPULSE, "bye bye client xmpp Agent")
+    logger.debug("terminate scheduler")
+    logger.debug("Waiting to stop kiosk server")
+    logger.debug("QUIT")
+    logger.debug("bye bye Agent")
     if sys.platform.startswith("win"):
         windowfilepid = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintree"
@@ -4531,23 +4611,18 @@ def terminateserver(xmpp):
             if "pythonmainproces" in data_dict[pidprocess]:
                 pythonmainproces = pidprocess
         if pythonmainproces != "":
-            logging.log(DEBUGPULSE, "TERMINE process pid %s" % pythonmainproces)
+            logger.debug("TERMINE process pid %s" % pythonmainproces)
             pidfile = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"
             )
             aa = file_get_contents(pidfile).strip()
-            logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa)
+            logger.debug("process pid file pidagent is %s" % aa)
             cmd = "TASKKILL /F /PID %s /T" % pythonmainproces
             os.system(cmd)
     os._exit(0)
 
 
 if __name__ == "__main__":
-    # Création d'un lock pour synchroniser l'accès à la valeur partagée
-    lockrestart = multiprocessing.Lock()
-    # Création d'une valeur partagée (initialisée à 0)
-    PROCESS_RESTART = Value("i", 1)  # 'i' pour entier (int)
-
     if sys.platform.startswith("linux") and os.getuid() != 0:
         print("Agent must be running as root")
         sys.exit(0)
@@ -4581,6 +4656,15 @@ if __name__ == "__main__":
         default=False,
         help="console debug",
     )
+    # Créer un dictionnaire partagé
+    # Ce dict est partage entre tout les processs
+    manager = multiprocessing.Manager()
+    shared_dict = manager.dict()
+    shared_dict["terminate"] = False
+    shared_dict["reconnect"] = True
+    shared_dict["compteur"] = 0
+    shared_dict["alternative"] = True
+    shared_dict["new_connection"] = False
 
     opts, args = optp.parse_args()
 
@@ -4648,8 +4732,8 @@ if __name__ == "__main__":
             tg.namefileconfig,
             tg.levellog,
             tg.logfile,
-            lockrestart,
-            PROCESS_RESTART,
+            shared_dict,
+            terminate_lock,
         )
     else:
         createDaemon(
@@ -4659,6 +4743,9 @@ if __name__ == "__main__":
             tg.namefileconfig,
             tg.levellog,
             tg.logfile,
-            lockrestart,
-            PROCESS_RESTART,
+            shared_dict,
+            terminate_lock,
         )
+    logger.info("Ferme Connection manager")
+    # Fermer proprement le manager
+    manager.shutdown()

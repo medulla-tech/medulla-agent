@@ -153,34 +153,38 @@ class process_on_end_send_message_xmpp:
     def add_processcommand(
         self, command, message, tosucces=None, toerror=None, timeout=50, step=None
     ):
+        """
+        Executes a command, captures its output, and returns the return code and result lines.
+
+        - Executes the command with a specified timeout.
+        - Returns the command's return code and output lines for further processing.
+        """
         message["data"]["tosucces"] = tosucces
         message["data"]["toerror"] = toerror
         messagestr = json.dumps(message)
 
         if not (step is None or isinstance(step, int)):
-            logging.error("Error Descriptor Step in not Integer")
-            return False
+            logging.error("Error Descriptor Step is not an Integer")
+            return -1
         if tosucces is None and toerror is None:
-            logging.error("any agent to process result from queue")
-            return False
+            logging.error("No agent to process result from queue")
+            return -1
 
-        message["data"]["tosucces"] = tosucces
-        message["data"]["toerror"] = toerror
-
-        if step is None:
-            createprocesscommand = Process(
-                target=processcommand,
-                args=(command, self.queue_out_session, messagestr, timeout),
+        try:
+            # Capture of the command output
+            result = subprocess.run(
+                command, shell=True, timeout=timeout, capture_output=True, text=True
             )
-            createprocesscommand.start()
-        else:
-            createprocessstepcommand = Process(
-                target=processstepcommand,
-                args=(command, self.queue_out_session, messagestr, timeout, step),
-            )
-            createprocessstepcommand.start()
+            code_return = result.returncode
+            output_lines = result.stdout.splitlines() if result.stdout else []
+            return code_return, output_lines
 
-        return True
+        except subprocess.TimeoutExpired:
+            logging.error(f"Command '{command}' timed out after {timeout} seconds.")
+            return -2
+        except Exception as e:
+            logging.error(f"Error executing command '{command}': {str(e)}")
+            return -1
 
     def processstepcommand(self, command, queue_out_session, messagestr, timeout, step):
         logging.getLogger().error("########processstepcommand")
