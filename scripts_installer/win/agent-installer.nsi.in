@@ -36,6 +36,8 @@ Unicode True
 !define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
 !define KIOSK_FILENAME "@@KIOSK_FILENAME@@"
+!define KIOSK_INTERFACE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla kiosk interface"
+!define KIOSK_LAUNCHER_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla kiosk launcher"
 !define WHEEL_FILENAME "@@WHEEL_FILENAME@@"
 !define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
 !define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
@@ -119,6 +121,7 @@ Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !Else
   OutFile "Medulla-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}-${INVENTORY_TAG}.exe"
 !EndIf
+Icon "artwork/install.ico"
 !If "$PROGRAMFILES64" != ""
   InstallDir "$PROGRAMFILES64\Medulla"
 !Else
@@ -217,6 +220,9 @@ Section "Python" sec_py
     StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813233} /qn /norestart`
     ${LogString} "Running $0"
     nsExec::ExecToLog $0
+    IfFileExists "C:\Python27" 0 +2
+      ; Delete previous python27 folder
+      RMDir /r "C:\Python27"
     ${LogString} "Uninstalling 64bit python 3.11 if found..."
     StrCpy $0 `msiexec /x {34795B45-E434-46E9-8FAD-C1E77BFAEFDC} /qn /norestart`
     ${LogString} "Running $0"
@@ -303,13 +309,15 @@ Section "!${PRODUCT_NAME}" sec_app
   IfFileExists "C:\Progra~1\Pulse" 0 +2
     ; Delete previous install folder ( when it was called pulse )
      RMDir /r "C:\Progra~1\Pulse"
-  IfFileExists "C:\Progra~1\Medulla" 0 +7
+  IfFileExists "C:\Progra~1\Medulla" 0 +9
     ; Delete previous Medulla configuration parameters
     Delete "$INSTDIR\etc\*.*"
     ; Delete previous Medulla binaries
     Delete "$INSTDIR\bin\*.py*"
     ; Delete previous Medulla log files
     Delete "$INSTDIR\var\log\*.*"
+    ; Delete previous packages folder
+    RMDir /r "$INSTDIR\var\tmp\packages"
 
   ; Install of Medulla agent
   StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${WHEEL_FILENAME}`
@@ -428,6 +436,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create Medulla service
   SetOutPath "$INSTDIR\bin"
   File "${PULSE_SERVICE_FILENAME}"
+  File "artwork/install.ico"
   StrCpy $0 `SCHTASKS /Delete /TN "${PRODUCT_NAME}" /F`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
@@ -531,6 +540,8 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
 
 
   ${Else}
@@ -549,6 +560,8 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
   ${EndIf}
 
   ; Write the version installed in registry
@@ -595,6 +608,8 @@ Section "Uninstall"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
   DeleteRegKey HKLM "${PAEXEC_UNINST_KEY}"
   DeleteRegKey HKLM "${VIM_UNINST_KEY}"
+  DeleteRegKey HKLM "${KIOSK_LAUNCHER_UNINST_KEY}"
+  DeleteRegKey HKLM "${KIOSK_INTERFACE_UNINST_KEY}"
 
   ; Stop all Medulla services
   Call un.StopMedullaServices

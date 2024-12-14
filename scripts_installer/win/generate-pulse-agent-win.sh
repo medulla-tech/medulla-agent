@@ -40,7 +40,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="3.1.1"
+AGENT_VERSION="3.2.0"
 KIOSK_VERSION="1.0.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
@@ -51,7 +51,6 @@ LIBCURL_DL_FILENAME="libcurl4-8.0.1-1.tar.xz"
 LIBCURL_FILENAME="cygcurl-4.dll"
 PY_MODULES_64_FILENAMES="CherryPy-18.8.0-py2.py3-none-any.whl \
 cheroot-9.0.0-py2.py3-none-any.whl \
-packaging-24.1-py3-none-any.whl \
 python_dateutil-2.8.2-py2.py3-none-any.whl \
 PyNaCl-1.5.0-cp36-abi3-win_amd64.whl \
 comtypes-1.1.14-py2.py3-none-any.whl \
@@ -112,6 +111,7 @@ pypiwin32-223-py3-none-any.whl \
 PyYAML-6.0.1-cp311-cp311-win_amd64.whl \
 lmdb-1.4.1-cp311-cp311-win_amd64.whl \
 netaddr-0.8.0-py2.py3-none-any.whl \
+packaging-24.1-py3-none-any.whl \
 pillow-10.4.0-cp311-cp311-win_amd64.whl \
 "
 WHEEL_FILENAME="wheel-0.42.0-py3-none-any.whl"
@@ -147,12 +147,12 @@ NETWORK_NAME="Medulla network notify"
 RDP_NAME="Medulla RDP"
 SYNCTHING_NAME="Medulla Syncthing"
 FILETREE_NAME="Medulla Filetree Generator"
-PAEXEC_NAME="PAExec"
+PAEXEC_NAME="Medulla PAExec"
 ROOTCERTIFICATE_FILENAME="medulla-rootca.cert.pem"
 CACERTIFICATE_FILENAME="medulla-ca-chain.cert.pem"
 CACERT_NAME="Medulla CA Cert"
 CACERT_VERSION="1.1"
-VIM_NAME="9.0"
+VIM_NAME="Medulla Vim"
 # Display usage
 display_usage() {
     echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
@@ -204,7 +204,29 @@ check_arguments() {
                 DISABLE_INVENTORY=1
                 shift
                 ;;
+            --disable-geoloc*)
+                DISABLE_GEOLOC=1
+                shift
+                ;;
             --linux-distros*)
+                shift
+                ;;
+            --conf-xmppserver*)
+                shift
+                ;;
+            --conf-xmppport*)
+                shift
+                ;;
+            --conf-xmpppasswd*)
+                shift
+                ;;
+            --aes-key*)
+                shift
+                ;;
+            --xmpp-passwd*)
+                shift
+                ;;
+            --chat-domain*)
                 shift
                 ;;
             *)
@@ -335,6 +357,7 @@ enable_and_configure_vnc_plugin() {
     else
         crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters rfbport ${VNC_PORT}
         crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters password_rw ${VNC_PASSWORD}
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatetightvnc
     fi
 }
 
@@ -345,9 +368,20 @@ configure_ssh_plugin() {
 configure_rdp_plugin() {
     if [ $DISABLE_RDP = "1" ]; then
         crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updaterdp
+    else
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updaterdp
     fi
 }
 
+configure_inventory_plugin() {
+    if [ $DISABLE_INVENTORY = "1" ]; then
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatefusion
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updateglpiagent
+    else
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updatefusion
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins listexcludedplugins updateglpiagent
+    fi
+}
 
 update_nsi_script() {
 	colored_echo blue "### INFO Updating NSIS script..."
@@ -396,6 +430,7 @@ update_nsi_script() {
         -e "s/@@SYNCTHING_NAME@@/${SYNCTHING_NAME}/" \
         -e "s/@@FILETREE_NAME@@/${FILETREE_NAME}/" \
         -e "s/@@PAEXEC_NAME@@/${PAEXEC_NAME}/" \
+        -e "s/@@VIM_NAME@@/${VIM_NAME}/" \
         -e "s/@@CACERTIFICATE@@/${CACERTIFICATE_FILENAME}/" \
         -e "s/@@ROOTCERTIFICATE@@/${ROOTCERTIFICATE_FILENAME}/" \
 		agent-installer.nsi.in \
@@ -447,4 +482,5 @@ update_nsi_script
 configure_ssh_plugin
 enable_and_configure_vnc_plugin
 configure_rdp_plugin
+configure_inventory_plugin
 generate_agent_installer

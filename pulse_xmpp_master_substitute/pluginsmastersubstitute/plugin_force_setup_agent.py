@@ -8,10 +8,10 @@ import logging
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "force_setup_agent", "TYPE": "mastersub"}
+plugin = {"VERSION": "1.5", "NAME": "force_setup_agent", "TYPE": "mastersub"}
 
 
-def action(xmppobject, action, sessionid, data, message, ret, dataobj):
+def action(xmppobject, action, sessionid, data, message, dataobj):
     logger.debug("_________________________")
     logger.debug(plugin)
     logger.debug(data["data"][0])

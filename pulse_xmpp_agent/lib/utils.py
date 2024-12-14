@@ -904,15 +904,27 @@ def isMsiExecRunning() -> None:
     once it creates 2 processes but after the use it keeps one.
     This is the normal msiexec behaviour
     """
-    while True:
-        msiexecProcess = wmi.WMI().Win32_Process(name="msiexec.exe")
-        if len(msiexecProcess) > 1:
-            logger.info(
-                "We need to wait, an other instance of msiexec is already running"
-            )
-            time.sleep(5)
-        else:
-            break
+
+    pythoncom.CoInitialize()
+    c = wmi.WMI()
+
+    try:
+        while True:
+            try:
+                msiexecProcess = c.Win32_Process(name="msiexec.exe")
+                if len(msiexecProcess) > 1:
+                    logger.info(
+                        "We need to wait, an other instance of msiexec is already running"
+                    )
+                    time.sleep(5)
+                else:
+                    break
+            except Exception as e:
+                logger.info(
+                    f"An error occurred while checking msiexec.exe processes: {e}"
+                )
+    finally:
+        pythoncom.CoUninitialize()
 
 
 class FunctionThread(threading.Thread):
@@ -1800,7 +1812,7 @@ def pulgindeploy1(func):
     return wrapper
 
 
-def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
+def getIpXmppInterface(config):
     """
     This function is used to retrieve the local IP from the client which is talking
     with the ejabberd server.
@@ -1810,60 +1822,106 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     and we split to obtain the first IP of the line.
 
     Args:
-        xmpp_server_ipaddress: IP of the xmpp server
+        config (object): The configuration object containing server and port information.
+
     Returns:
-        It returns the local IP from the client which is talking
-        with the ejabberd server.
+        str: The local IP from the client which is talking with the ejabberd server.
     """
     resultip = ""
-    xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
-    logger.debug(
-        "Searching with which IP the agent is connected to the Ejabberd server"
-    )
-    if sys.platform.startswith("linux"):
-        obj = simplecommand(
-            f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
+    xmpp_server_ipaddress_or_dns = config.Server
+    Port = config.Port
+
+    # Get the list of network interfaces
+    interfaces = netifaces.interfaces()
+
+    # Filter interfaces to keep only those with valid IPv4 addresses, excluding loopback addresses
+    valid_interfaces = []
+    for interface in interfaces:
+        addrs = netifaces.ifaddresses(interface)
+        if netifaces.AF_INET in addrs:
+            for addr_info in addrs[netifaces.AF_INET]:
+                ip = addr_info["addr"]
+                if ip != "127.0.0.1" and is_valid_ipv4(ip):
+                    valid_interfaces.append(interface)
+                    logger.debug(f"Valid interface found: {interface} with IP: {ip}")
+                    break
+
+    # If there is only one valid interface, use its IPv4 address
+    if len(valid_interfaces) == 1:
+        addrs = netifaces.ifaddresses(valid_interfaces[0])
+        if netifaces.AF_INET in addrs:
+            for addr_info in addrs[netifaces.AF_INET]:
+                ip = addr_info["addr"]
+                if ip != "127.0.0.1" and is_valid_ipv4(ip):
+                    resultip = ip
+                    logger.debug(f"Using IP from the only valid interface: {ip}")
+                    break
+
+    if not resultip:
+        xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
+        logger.debug(
+            "Searching with which IP the agent is connected to the Ejabberd server"
         )
-        if obj["code"] != 0:
-            logging.getLogger().error(f'error command netstat : {obj["result"]}')
-            logging.getLogger().error("error install package net-tools")
-        if len(obj["result"]) != 0:
-            for i in range(len(obj["result"])):
-                obj["result"][i] = obj["result"][i].rstrip("\n")
-            a = "\n".join(obj["result"])
-            if b := [x for x in a.split(" ") if x != ""]:
-                resultip = b[3].split(":")[0]
-    elif sys.platform.startswith("win"):
-        obj = simplecommand(
-            f'netstat -an | findstr {Port} | findstr "ESTABLISHED"'
-        )
-        if len(obj["result"]) != 0:
-            for i in range(len(obj["result"])):
-                obj["result"][i] = obj["result"][i].rstrip("\n")
-            a = "\n".join(obj["result"])
-            if b := [x for x in a.split(" ") if x != ""]:
-                resultip = b[1].split(":")[0]
-    elif sys.platform.startswith("darwin"):
-        obj = simplecommand(
-            f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED"
-        )
-        if len(obj["result"]) != 0:
-            for i in range(len(obj["result"])):
-                obj["result"][i] = obj["result"][i].rstrip("\n")
-            a = "\n".join(obj["result"])
-            if b := [x for x in a.split(" ") if x != ""]:
-                resultip = b[3][: b[3].rfind(".")]
-    else:
-        obj = simplecommand(f"netstat -a | grep {Port} | grep ESTABLISHED")
-        if len(obj["result"]) != 0:
-            for i in range(len(obj["result"])):
-                obj["result"][i] = obj["result"][i].rstrip("\n")
-            a = "\n".join(obj["result"])
-            if b := [x for x in a.split(" ") if x != ""]:
-                resultip = b[1].split(":")[0]
-    logger.debug(
-        f"The agent is connected to the Ejabberd server with the IP: {resultip}"
-    )
+        if sys.platform.startswith("linux"):
+            obj = simplecommand(
+                f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
+            )
+            if obj["code"] != 0:
+                logging.getLogger().error(f'error command netstat : {obj["result"]}')
+                logging.getLogger().error("error install package net-tools")
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[3].split(":")[0]
+        elif sys.platform.startswith("win"):
+            obj = simplecommand(
+                f'netstat -an | findstr {Port} | findstr "ESTABLISHED SYN_SENT SYN_RECV"'
+            )
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[1].split(":")[0]
+        elif sys.platform.startswith("darwin"):
+            obj = simplecommand(
+                f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED"
+            )
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[3][: b[3].rfind(".")]
+        else:
+            obj = simplecommand(f"netstat -a | grep {Port} | grep ESTABLISHED")
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[1].split(":")[0]
+
+    if not resultip:
+        if (
+            sys.platform.startswith("linux")
+            and config.agenttype == "relayserver"
+            and hasattr(config, "public_ip")
+        ):
+            resultip = config.public_ip
+            logger.debug(f"Using public IP from configuration: {resultip}")
+        else:
+            # Determine the most probable network interface
+            for interface in interfaces:
+                addrs = netifaces.ifaddresses(interface)
+                if netifaces.AF_INET in addrs:
+                    resultip = addrs[netifaces.AF_INET][0]["addr"]
+                    logger.debug(
+                        f"Using IP from the most probable interface: {resultip}"
+                    )
+                    break
     return resultip
 
 
@@ -2266,8 +2324,10 @@ def isBase64(s):
         if isinstance(s, str):
             s = s.encode("utf-8")
         # Vérification si les caractères appartiennent au jeu de caractères Base64
-        if not re.match(b'^[A-Za-z0-9+/]*={0,2}$', s):
-            logger.warning("La chaîne contient des caractères non valides pour du base64.")
+        if not re.match(b"^[A-Za-z0-9+/]*={0,2}$", s):
+            logger.warning(
+                "La chaîne contient des caractères non valides pour du base64."
+            )
             return False
 
         decoded = base64.b64decode(s, validate=True)
@@ -2670,12 +2730,12 @@ def check_socket_status(port):
     """
     # Déterminer la commande appropriée pour le système d'exploitation
     system = platform.system().lower()
-    if system in ['windows', 'linux', 'darwin']:
+    if system in ["windows", "linux", "darwin"]:
         # Commande netstat pour les systèmes Windows, Linux et macOS
-        if system == 'windows':
-            result = subprocess.run(['netstat', '-an'], capture_output=True, text=True)
+        if system == "windows":
+            result = subprocess.run(["netstat", "-an"], capture_output=True, text=True)
         else:
-            result = subprocess.run(['netstat', '-tan'], capture_output=True, text=True)
+            result = subprocess.run(["netstat", "-tan"], capture_output=True, text=True)
 
         # Filtrer les lignes contenant le port
         lines = result.stdout.splitlines()
@@ -2689,6 +2749,7 @@ def check_socket_status(port):
             return None
     else:
         raise OSError(f"Système d'exploitation non supporté : {system}")
+
 
 def get_process_using_port(port):
     """
@@ -2705,26 +2766,29 @@ def get_process_using_port(port):
     """
     system = platform.system()
 
-    if system in ['Linux', 'Darwin']:
-        command = ['lsof', '-i', f':{port}']
-    elif system == 'Windows':
-        command = ['netstat', '-ano']
+    if system in ["Linux", "Darwin"]:
+        command = ["lsof", "-i", f":{port}"]
+    elif system == "Windows":
+        command = ["netstat", "-ano"]
     else:
         return f"Système d'exploitation non supporté : {system}"
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
-        if system == 'Windows':
+        if system == "Windows":
             # Filtrer la sortie pour trouver le port spécifique
             lines = result.stdout.splitlines()
             for line in lines:
-                if f':{port} ' in line:  # espace après le port pour éviter les mauvaises correspondances
+                if (
+                    f":{port} " in line
+                ):  # espace après le port pour éviter les mauvaises correspondances
                     return line
             return f"Aucun processus n'utilise le port {port}."
         else:
             return result.stdout
     except subprocess.CalledProcessError as e:
         return f"Erreur : {e}"
+
 
 def process_exists(pid):
     """
@@ -2743,6 +2807,7 @@ def process_exists(pid):
     else:
         return True
 
+
 def kill_process(pid):
     """
     Tue un processus par son PID.
@@ -2757,25 +2822,32 @@ def kill_process(pid):
         bool: True si le processus a été tué avec succès, False sinon.
     """
     system = platform.system()
-    if system == 'Windows':
+    if system == "Windows":
         try:
-            subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], check=True)
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], check=True)
             logger.debug(f"Le processus avec le PID {pid} a été tué sur Windows.")
             return True
         except subprocess.CalledProcessError as e:
-            logger.error(f"Échec de la tentative de tuer le processus avec le PID {pid} sur Windows : {e}")
+            logger.error(
+                f"Échec de la tentative de tuer le processus avec le PID {pid} sur Windows : {e}"
+            )
             return False
-    elif system in ['Linux', 'Darwin']:
+    elif system in ["Linux", "Darwin"]:
         try:
-            subprocess.run(['kill', '-9', str(pid)], check=True)
-            logger.debug(f"Le processus avec le PID {pid} a été tué sur un système Unix-like.")
+            subprocess.run(["kill", "-9", str(pid)], check=True)
+            logger.debug(
+                f"Le processus avec le PID {pid} a été tué sur un système Unix-like."
+            )
             return True
         except subprocess.CalledProcessError as e:
-            logger.error(f"Échec de la tentative de tuer le processus avec le PID {pid} sur un système Unix-like : {e}")
+            logger.error(
+                f"Échec de la tentative de tuer le processus avec le PID {pid} sur un système Unix-like : {e}"
+            )
             return False
     else:
         logger.error(f"Système d'exploitation non supporté : {system}")
         return False
+
 
 def kill_process_tree(pid, parentprocess=False):
     """
@@ -2810,7 +2882,10 @@ def kill_process_tree(pid, parentprocess=False):
     except psutil.AccessDenied:
         logger.error(f"Permission refusée pour terminer le processus {pid}")
     except psutil.TimeoutExpired:
-        logger.error(f"Délai d'attente expiré lors de la tentative de terminer le processus {pid}")
+        logger.error(
+            f"Délai d'attente expiré lors de la tentative de terminer le processus {pid}"
+        )
+
 
 class AESCipher:
     def __init__(self, key, BS=32):
@@ -3479,6 +3554,10 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         It returns True if the account has been correctly created or if the
         account already exists, it return False otherwise.
     """
+    Config = ConfigParser()
+    namefileconfig = conffilename("machine")
+    Config.read(namefileconfig)
+
     if sys.platform.startswith("linux"):
         try:
             uid = pwd.getpwnam(username).pw_uid
@@ -3494,6 +3573,14 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     elif sys.platform.startswith("win"):
         try:
             win32net.NetUserGetInfo("", username, 0)
+            if Config.has_option("type", "sshuser_isadmin") and Config.getboolean(
+                "type", "sshuser_isadmin"
+            ):
+                adminsgrpsid = win32security.ConvertStringSidToSid("S-1-5-32-544")
+                adminsgroup = win32security.LookupAccountSid("", adminsgrpsid)[0]
+                simplecommand(
+                    encode_strconsole(f'net localgroup {adminsgroup} "{username}" /ADD')
+                )
             # User exists
             msg = f"{username} user account already exists. Nothing to do."
             return True, msg
@@ -4100,9 +4187,19 @@ class geolocalisation_agent:
         return self.ip_public
 
     @staticmethod
-    def call_simple_page(url):
+    def call_simple_page(url, timeout=20):
+        """
+        This function makes a GET request to the given URL and returns the JSON response.
+
+        Args:
+            url (str): The URL to make the GET request to.
+            timeout (int): The timeout value for the request.
+
+        Returns:
+            dict: The JSON response if the request is successful and contains 'longitude', None otherwise.
+        """
         try:
-            r = requests.get(url)
+            r = requests.get(url, timeout=timeout)
             if r.status_code > 299:
                 logger.warning(
                     "url localisation %s code error is %s" % (url, r.status_code)
@@ -4110,7 +4207,11 @@ class geolocalisation_agent:
                 return None
             result = r.json()
             return None if "longitude" not in result else result
-        except BaseException:
+        except Timeout:
+            logger.warning(f"Request to {url} timed out after {timeout} seconds")
+            return None
+        except BaseException as e:
+            logger.error(f"Error making request to {url}: {e}")
             return None
 
     @staticmethod
@@ -4129,15 +4230,22 @@ class geolocalisation_agent:
         """
         return objet
         """
+        serveur = ""
+        objip = None
         for url in http_url_list_geo_server:
+            serveur = url
             try:
+                logger.debug(f"geolocalisation server  {url}")
                 objip = geolocalisation_agent.call_simple_page(url)
-                if objip is None:
-                    raise
-                return objip
+                if objip is not None:
+                    break
             except BaseException:
                 pass
-        return None
+        if objip is not None:
+            logger.debug(
+                f"geolocalisation serveur {serveur}  {json.dumps(objip, indent=4)}"
+            )
+        return objip
 
 
 class downloadfile:
@@ -4939,7 +5047,8 @@ class offline_search_kb:
                 "CurrentBuild",
                 "CurrentVersion",
                 "InstallationType",
-                "ProductName," "ReleaseId",
+                "ProductName",
+                "ReleaseId",
                 "DisplayVersion",
                 "RegisteredOwner",
             )
@@ -6019,9 +6128,8 @@ class convert:
         return formatted_xml
 
 
-
 class NetworkInfoxmpp:
-    def __init__(self, port):
+    def __init__(self, port: int):
         self.port = int(port)
         self.ip_address = self._get_established_ipv4_connection_on_port()
         if self.ip_address:
@@ -6029,12 +6137,15 @@ class NetworkInfoxmpp:
         else:
             self.details = None
 
-    def _get_established_ipv4_connection_on_port(self):
-        connections = psutil.net_connections(kind='inet')
+    def _get_established_ipv4_connection_on_port(self) -> str:
+        connections = psutil.net_connections(kind="inet")
         for conn in connections:
-            if (conn.family == socket.AF_INET and
-                conn.status == psutil.CONN_ESTABLISHED and
-                conn.raddr and conn.raddr.port == self.port):
+            if (
+                conn.family == socket.AF_INET
+                and conn.status == psutil.CONN_ESTABLISHED
+                and conn.raddr
+                and conn.raddr.port == self.port
+            ):
                 return conn.laddr.ip
         return None
 
@@ -6045,12 +6156,11 @@ class NetworkInfoxmpp:
         # Find the interface for the given IPv4 address
         for interface, addrs in psutil.net_if_addrs().items():
             for addr in addrs:
-                if (addr.family == socket.AF_INET and
-                    addr.address == self.ip_address):
+                if addr.family == socket.AF_INET and addr.address == self.ip_address:
                     interface_name = interface
-                    details['ip_address'] = self.ip_address
-                    details['netmask'] = addr.netmask
-                    details['broadcast'] = addr.broadcast
+                    details["ip_address"] = self.ip_address
+                    details["netmask"] = addr.netmask
+                    details["broadcast"] = addr.broadcast
                     break
             if interface_name:
                 break
@@ -6059,32 +6169,42 @@ class NetworkInfoxmpp:
             return None
 
         # Calculate network address
-        if 'ip_address' in details and 'netmask' in details:
-            ip = int.from_bytes(socket.inet_aton(details['ip_address']), 'big')
-            netmask = int.from_bytes(socket.inet_aton(details['netmask']), 'big')
-            network = socket.inet_ntoa((ip & netmask).to_bytes(4, 'big'))
-            details['network'] = network
+        if "ip_address" in details and "netmask" in details:
+            ip = int.from_bytes(socket.inet_aton(details["ip_address"]), "big")
+            netmask = int.from_bytes(socket.inet_aton(details["netmask"]), "big")
+            network = socket.inet_ntoa((ip & netmask).to_bytes(4, "big"))
+            details["network"] = network
 
         # Get the gateway
         gateway = self._get_gateway()
-        details['gateway'] = gateway
+        details["gateway"] = gateway
 
         # Get the DHCP server and client addresses
-        details['dhcp_server'] = None  # Update this for your environment
-        details['dhcp_client'] = None  # Update this for your environment
+        details["dhcp_server"] = None  # Update this for your environment
+        details["dhcp_client"] = None  # Update this for your environment
         # Get the MAC address
-        details['macnotshortened'] = self._get_mac_address(interface_name)
-        details['macaddress'] = self.reduction_mac(details['macnotshortened'])
+        details["macnotshortened"] = self._get_mac_address(interface_name)
+        details["macaddress"] = self.reduction_mac(details["macnotshortened"])
         return details
 
     def _get_gateway(self):
         system = platform.system()
-        if system == 'Windows':
-            gateway = os.popen("ipconfig | findstr /C:\"Default Gateway\"").read().strip().split(":")[-1].strip()
-        elif system == 'Linux':
-            gateway = os.popen("ip route | grep default | awk '{print $3}'").read().strip()
-        elif system == 'Darwin':  # macOS
-            gateway = os.popen("netstat -nr | grep default | awk '{print $2}'").read().strip()
+        if system == "Windows":
+            gateway = (
+                os.popen('ipconfig | findstr /C:"Default Gateway"')
+                .read()
+                .strip()
+                .split(":")[-1]
+                .strip()
+            )
+        elif system == "Linux":
+            gateway = (
+                os.popen("ip route | grep default | awk '{print $3}'").read().strip()
+            )
+        elif system == "Darwin":  # macOS
+            gateway = (
+                os.popen("netstat -nr | grep default | awk '{print $2}'").read().strip()
+            )
         else:
             gateway = None
         return gateway
@@ -6102,5 +6222,3 @@ class NetworkInfoxmpp:
         mac = mac.replace("-", "")
         mac = mac.replace(" ", "")
         return mac
-
-

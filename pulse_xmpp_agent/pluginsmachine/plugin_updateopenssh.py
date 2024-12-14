@@ -27,11 +27,11 @@ if sys.platform.startswith("win"):
     import win32file
     import win32security
 
-OPENSSHVERSION = "9.4"
+OPENSSHVERSION = "9.8.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.1", "NAME": "updateopenssh", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "2.23", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
@@ -139,6 +139,16 @@ def checkopensshversion():
             # OpenSSH is not installed. We will force installation by returning
             # version 0.0
             opensshversion = "0.0"
+
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" /v "DisplayIcon"'
+        result = utils.simplecommand(cmd)
+
+        if result["code"] != 0:
+            cmd = (
+                f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
+            )
+            utils.simplecommand(cmd)
     return opensshversion
 
 
@@ -449,13 +459,15 @@ def FixPermission():
 
     # Initialize an ACL with only SYSTEM and Administrators
     acl = win32security.ACL()
-    sid = win32security.LookupAccountName(None, "NT AUTHORITY\\SYSTEM")[0]
-    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, sid)
-    try:
-        sid = win32security.LookupAccountName(None, "BUILTIN\\Administrators")[0]
-    except:
-        sid = win32security.LookupAccountName(None, "BUILTIN\\Administrateurs")[0]
-    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, sid)
+
+    # Convert the 'NT AUTHORITY\\SYSTEM' SID to a PySID object
+    nt = win32security.ConvertStringSidToSid("S-1-5-18")
+    # Convert the 'BUILTIN\\Administrat...' depending on installed language SID to a PySID object
+    adm = win32security.ConvertStringSidToSid("S-1-5-32-544")
+
+    # Add an access allowed for nt and adm
+    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, nt)
+    acl.AddAccessAllowedAce(ACL_REVISION, GENERIC_WRITE, adm)
 
     # Set the ACL on the security descriptor
     sd.SetSecurityDescriptorDacl(1, acl, 0)

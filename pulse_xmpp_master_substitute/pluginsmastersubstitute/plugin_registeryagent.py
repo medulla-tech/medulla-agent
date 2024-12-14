@@ -1392,7 +1392,7 @@ def test_consolidation_inventory(
                 xmppobject.boundjid.bare,
                 xmppobject.boundjid.bare,
             )
-            return False
+            return False, None
         # cherche machine in glpi on macadress
         for t in results:
             if showinfobool:

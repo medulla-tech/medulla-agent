@@ -4,7 +4,7 @@
 %define python3_version %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3])")
 %define python3_version_nodots %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3].replace('.',''))")
 %define python3_platform %(%{__python3} -Ic "import sysconfig; print(sysconfig.get_platform())")
-
+%global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 %define tarname		medulla-agent
 %define git                    SHA
@@ -17,20 +17,22 @@
 
 Summary:	Pulse XMPP Agent
 Name:		medulla-agent
-Version:	3.1.1
+Version:	3.2.0
 %if ! %use_git
 Release:        1%{?dist}
 %else
 Release:        0.%git.1%{?dist}
 %endif
 
-Source0:        %name-%version.tar.gz
+Source0:        %name-%version.tar.bz2
 License:	MIT
 
 Group:		Development/Python
 Url:		http://www.siveo.net
 
-BuildRequires:	python3-setuptools
+BuildArch:	noarch
+
+BuildRequires:	python3.11-setuptools
 BuildRequires:  git
 
 %description
@@ -45,23 +47,35 @@ BuildArch:      noarch
 
 Requires(pre):  shadow-utils
 
-Requires:       python3-netifaces
-Requires:       python3-slixmpp
-Requires:       python3-croniter
-Requires:       python3-requests
-Requires:       python3-inotify
-Requires:       python3-dateutil
-Requires:       python3-psutil
-Requires:       python3-wakeonlan
-Requires:       python3-cryptodome
-Requires:       python3-cherrypy
+Requires:       python3.11-netifaces
+Requires:       python3.11-slixmpp
+Requires:       python3.11-croniter
+Requires:       python3.11-requests
+Requires:       python3.11-inotify
+Requires:       python3.11-dateutil
+Requires:       python3.11-psutil
+Requires:       python3.11-wakeonlan
+Requires:       python3.11-cryptodome
+Requires:       python3.11-cherrypy
+Requires:       python3.11-pycurl
 Requires:       net-tools
 Requires:       jq
-Requires:       python3-distro
-Requires:       python3-lmdb
-Requires:       python3-xmltodict
-Requires:       python3-netaddr
-
+Requires:       python3.11-distro
+Requires:       python3.11-lmdb
+Requires:       python3.11-xmltodict
+Requires:       python3.11-netaddr
+Requires:       python3.11-more-itertools
+Requires:       python3.11-jaraco-collections
+Requires:       python3.11-jaraco-classes
+Requires:       python3.11-jaraco-text
+Requires:       python3.11-jaraco-context
+Requires:       python3.11-jaraco-functools
+Requires:       python3.11-backports-tarfile
+Requires:       python3.11-zc-lockfile
+Requires:       python3.11-cheroot
+Requires:       python3.11-portend
+Requires:       python3.11-tempora
+Requires:       python3.11-posix-ipc
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
 
@@ -178,14 +192,14 @@ fi
 %{python3_sitelib}/pulse_xmpp_agent/agentversion
 %{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
 %{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
-%{python3_sitelib}/pulse_xmpp_agent/__pycache__/
 
 #--------------------------------------------------------------------
 
 %package -n     pulse-xmpp-master-substitute
 Summary:        Pulse 2 common files
 Group:          System/Servers
-Requires:       python3-xmltodict
+Requires:       python3.11-xmltodict
+Requires:       python3.11-croniter
 Requires:       jq
 BuildArch:      noarch
 
@@ -209,7 +223,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-master.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 %_var/lib/pulse2/script_monitoring/
-
+%_var/lib/pulse2/xml_fix
 
 #--------------------------------------------------------------------
 
@@ -217,19 +231,19 @@ systemctl daemon-reload
 Summary:    Files to create pulse windows installer
 Group:      System/Servers
 
-Requires:   pulse-xmpp-agent-deps >= 1.8
+Requires:   medulla-agent-deps >= 1.8
 
 Requires:   dos2unix
 Requires:   unzip
 Requires:   zip
 Requires:   crudini
-Requires:   dpkg-dev
+#Requires:  dpkg-dev
 
-Requires:   nsis-plugins-ZipDLL
-Requires:   nsis-plugins-Pwgen
-Requires:   nsis-plugins-AccessControl
-Requires:   nsis-plugins-Inetc
-Requires:   nsis-plugins-TextReplace
+#Requires:   nsis-plugins-ZipDLL
+#Requires:   nsis-plugins-Pwgen
+#Requires:   nsis-plugins-AccessControl
+#Requires:   nsis-plugins-Inetc
+#Requires:   nsis-plugins-TextReplace
 Requires(pre): pulse-filetree-generator
 
 %description -n pulse-agent-installers
@@ -264,14 +278,15 @@ fi
 %config(noreplace) %_var/lib/pulse2/clients/config/updatebackupclient.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/am___server_tcpip.ini
 %attr(0755,syncthing,syncthing)  %_var/lib/pulse2/xmpp_baseremoteagent/
+%attr(0755,syncthing,syncthing)  %_var/lib/pulse2/clients/
 
 #--------------------------------------------------------------------
 
 %package -n pulse-xmppmaster-agentplugins
 Summary:    Console agent
 Group:      System/Servers
-Requires:   python3-netifaces
-Requires:   python3-slixmpp
+Requires:   python3.11-netifaces
+Requires:   python3.11-slixmpp
 
 %description -n pulse-xmppmaster-agentplugins
 plugins for pulse xmppmaster
@@ -285,9 +300,9 @@ plugins for pulse xmppmaster
 %package -n pulseagent-plugins-relay
 Summary:    Console agent
 Group:      System/Servers
-Requires:   python3-wakeonlan
-Requires:   python3-netifaces
-Requires:   python3-slixmpp
+Requires:   python3.11-wakeonlan
+Requires:   python3.11-netifaces
+Requires:   python3.11-slixmpp
 Requires:   lsof
 
 %description -n pulseagent-plugins-relay
@@ -300,7 +315,7 @@ plugins for pulse xmppmaster
 #--------------------------------------------------------------------
 
 %prep
-%setup -q
+%setup -q -n %name
 
 # Remove bundled egg-info
 rm -rf %{tarname}.egg-info
@@ -358,7 +373,7 @@ cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python3_sitelib}/pulse_xmpp
 cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
 mkdir -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute/
-touch -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute/EMPTY
+touch %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute/EMPTY
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp -fr pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system
@@ -391,7 +406,7 @@ rm -fr pulse-machine-plugins-%{version}
 mkdir -p %buildroot%_var/lib/pulse2/clients
 mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 mv  pulse-machine-plugins-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
-GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
+GIT_SSL_NO_VERIFY=true git clone --branch %branch https://github.com/pulse-project/kiosk-interface.git
 mv kiosk-interface kiosk-interface-%{kiosk_version}
 tar czvf kiosk-interface-%{kiosk_version}.tar.gz kiosk-interface-%{kiosk_version}
 rm -fr kiosk-interface-%{kiosk_version}
@@ -460,7 +475,26 @@ cp -fv contrib/monitoring/template_script_bash_test.sh %buildroot%_var/lib/pulse
 cp -fv contrib/monitoring/template_script_python_test.py %buildroot%_var/lib/pulse2/script_monitoring/
 cp -fv contrib/monitoring/template_script_remote_bash_test.sh %buildroot%_var/lib/pulse2/script_monitoring/
 cp -fv contrib/monitoring/template_script_remote_python_test.py %buildroot%_var/lib/pulse2/script_monitoring/
-#cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
-#cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
-#cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
-cp pulse_xmpp_agent/bin/RunMedullaKiosk.bat %buildroot%_var/lib/pulse2/clients/win/
+cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
+cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
+cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
+cp contrib/images/* %buildroot%_var/lib/pulse2/clients/win/
+
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-package-watching.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-assessor.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-master.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
+
+mkdir -p %buildroot%_var/lib/pulse2/xml_fix
+cp -frv contrib/inventory/xml-fix/* %buildroot%_var/lib/pulse2/xml_fix
+
+# Not needed in the server
+rm -fv %buildroot%{python3_sitelib}/pulse_xmpp_agent/bin/pulse2_update_notification.py

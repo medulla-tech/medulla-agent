@@ -30,7 +30,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="3.1.1"
+AGENT_VERSION="3.2.0"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 CERTFILE="/var/lib/pulse2/clients/medulla-ca-chain.cert.pem"
@@ -95,8 +95,30 @@ check_arguments() {
                 DISABLE_INVENTORY=1
                 shift
                 ;;
+            --disable-geoloc*)
+                DISABLE_GEOLOC=1
+                shift
+                ;;
             --linux-distros*)
                 DISTROS="${i#*=}"
+                shift
+                ;;
+            --conf-xmppserver*)
+                shift
+                ;;
+            --conf-xmppport*)
+                shift
+                ;;
+            --conf-xmpppasswd*)
+                shift
+                ;;
+            --aes-key*)
+                shift
+                ;;
+            --xmpp-passwd*)
+                shift
+                ;;
+            --chat-domain*)
                 shift
                 ;;
 	    *)

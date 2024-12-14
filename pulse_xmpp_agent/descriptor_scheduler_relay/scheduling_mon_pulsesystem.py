@@ -100,14 +100,15 @@ def schedule_main(xmppobject):
                         service = "slapd"
                     elif service_name == "mysql":
                         service = "mariadb"
-                    elif service_name == "apache":
-                        if distro.id() in [
-                            "CentOS Linux",
+                    elif service_name == "apache2":
+                        if distro.id().lower() in [
+                            "centos linux",
                             "centos",
                             "fedora",
-                            "Red Hat Enterprise Linux Server",
+                            "red hat enterprise linux server",
                             "redhat",
-                            "Mageia",
+                            "rhel",
+                            "mageia",
                         ]:
                             service = "httpd"
                         elif distro.id() in ["debian"]:
@@ -143,9 +144,19 @@ def schedule_main(xmppobject):
                             text=True,
                             stdout=subprocess.PIPE,
                         )
-                        service_json[service_name]["cpu"] = (
-                            int(result_cpu.stdout.readline().split("=")[1]) / 1000000000
-                        )
+                        try:
+                            service_json[service_name]["cpu"] = (
+                                int(result_cpu.stdout.readline().split("=")[1])
+                                / 1000000000
+                            )
+                        except ValueError:
+                            logger.error(
+                                "We set the value to 0 because the systemd"
+                                "DefaultCPUAccounting value is not set on the"
+                                "file /etc/systemd/system.conf"
+                            )
+                            service_json[service_name]["cpu"] = 0
+
                         if service_name in xmppobject.config.openfiles_check:
                             result_openfiles = subprocess.Popen(
                                 ["lsof", "-u", "%s" % service],
@@ -205,6 +216,7 @@ def schedule_main(xmppobject):
                             "Red Hat Enterprise Linux Server",
                             "redhat",
                             "Mageia",
+                            "rhel",
                         ]:
                             service = "httpd"
                         elif distro.id() in ["debian"]:

@@ -11,12 +11,16 @@ import traceback
 from lib.utils import name_random
 import logging
 import os
-import wakeonlan3 as wol
+
+try:
+    import wakeonlan3 as wol
+except ModuleNotFoundError:
+    import wakeonlan as wol
 import configparser
 from netifaces import interfaces, ifaddresses, AF_INET
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.2", "NAME": "wakeonlangroup", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "wakeonlangroup", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret):
@@ -32,6 +36,8 @@ def action(xmppobject, action, sessionid, data, message, ret):
             xmppobject.brodcastwol = []
             for ifaceName in interfaces():
                 addrs = ifaddresses(ifaceName)
+                if AF_INET not in addrs:
+                    continue
                 k = addrs[AF_INET]
                 for t in k:
                     if "broadcast" not in t:

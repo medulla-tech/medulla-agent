@@ -43,7 +43,7 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {"VERSION": "5.40", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "6.0", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
@@ -66,7 +66,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     try:
         objectxmpp.config.pushsubstitutionmethod
     except BaseException:
-        objectxmpp.config.pushsubstitutionmethod = "pulldirect"
+        objectxmpp.config.pushsubstitutionmethod = "pullrsync"
 
     if objectxmpp.config.agenttype in ["machine"]:
         logger.debug("###################################################")
@@ -81,7 +81,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         if "actionscheduler" in data:
             if data["actionscheduler"] == "run":
                 logger.debug("RUN DEPLOY")
-                sessioninfo = objectxmpp.Deploybasesched.get_sesionscheduler(sessionid)
+                sessioninfo = objectxmpp.Deploybasesched.get(sessionid)
                 if sessioninfo == "":
                     objectxmpp.xmpplog(
                         '<span class="log_err">Package delayed execution error : session missing</span>',
@@ -117,7 +117,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     datajson = json.loads(sessioninfo)
                     datasend = datajson
 
-                    objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
+                    objectxmpp.Deploybasesched.delete(sessionid)
                     initialisesequence(datasend, objectxmpp, sessionid)
                     return
             elif data["actionscheduler"] == "pause":
@@ -152,7 +152,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     touser="",
                 )
 
-                objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
+                objectxmpp.Deploybasesched.delete(sessionid)
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             else:
                 # supprime cet input
@@ -184,7 +184,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     fromuser="AM %s" % strjidagent,
                     touser="",
                 )
-                objectxmpp.Deploybasesched.del_sesionscheduler(sessionid)
+                objectxmpp.Deploybasesched.delete(sessionid)
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             return
 
@@ -890,9 +890,12 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     touser="",
                 )
                 datasend["data"]["advanced"]["scheduling"] = True
-                objectxmpp.Deploybasesched.set_sesionscheduler(
-                    sessionid, json.dumps(datasend)
-                )
+
+                try:
+                    objectxmpp.Deploybasesched.put(sessionid, json.dumps(datasend))
+                    objectxmpp.Deploybasesched.close()
+                except Exception as e:
+                    logger.error(f"Problem when inserting data in SQLite base: {e}")
         else:
             objectxmpp.session.sessionsetdata(
                 sessionid, datasend
@@ -1794,11 +1797,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.session.createsessiondatainfo(
                 sessionid, datasession=data, timevalid=180
             )
-            if "methodetransfert" in data and data["methodetransfert"] == "pushrsync":
-                # installkey sur agent machine authorized_keys
-                install_key_by_iq(
-                    objectxmpp, data["jidmachine"], sessionid, strjidagent
-                )
             # In push method you must know or install the packages on machine agent
             # In push mode, the packets are sent to a location depending on reception
             # one must make a request to AM to know or sent the files.

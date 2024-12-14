@@ -133,6 +133,10 @@ class Glpi(object):
         except Exception as e:
             self.logger.error("We failed to connect to the Glpi database.")
             self.logger.error("Please verify your configuration")
+            if str(e) == "`glpi_plugin_glpiinventory_collects`":
+                self.logger.error(
+                    "Please verify that the glipiinventory plugin is installed and activated"
+                )
             self.is_activated = False
             return False
 

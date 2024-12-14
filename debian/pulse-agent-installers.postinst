@@ -6,6 +6,7 @@
 set -e
 
 chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent/
+chown -R syncthing: /var/lib/pulse2/clients/
 
 systemctl daemon-reload
 

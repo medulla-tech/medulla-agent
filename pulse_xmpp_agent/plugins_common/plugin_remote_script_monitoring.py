@@ -26,13 +26,13 @@ from lib.utils import (
 logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.1", "NAME": "remote_script_monitoring", "VERSIONAGENT": "2.0.0", "TYPE": "all", }  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "remote_script_monitoring", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     data_return = {
-        "action": f"result{action}",
+        "action": "result" + action,
         "data": {"result_script": ""},
         "sessionid": sessionid,
         "ret": 255,

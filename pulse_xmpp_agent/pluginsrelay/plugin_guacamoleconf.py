@@ -229,11 +229,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     # reversessh connection
                     hostname = data["machine_ip"]
                     port = data["remoteservice"][proto]
+                    port_reverse = 22
                 except socket.error:
                     # Machine is not reachable. We will need a reversessh
                     # connection
                     hostname = "localhost"
                     port = get_free_tcp_port(objectxmpp)
+                    port_reverse = port
                 finally:
                     try:
                         cursor.execute(
@@ -251,6 +253,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                 port,
                             )
                         )
+
                     except Exception as error_connection:
                         logger.error(
                             f"An Error occured while trying to insert the guacamole parameters for the {proto} protocol. With the error {error_connection}"
@@ -273,6 +276,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                     keydata,
                                 )
                             )
+
                         else:
                             # Update account for the os
                             if option[4:] == "username":
@@ -285,6 +289,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         username,
                                     )
                                 )
+
                             else:
                                 cursor.execute(
                                     insertparameter(
@@ -293,6 +298,36 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         getattr(objectxmpp.config, option),
                                     )
                                 )
+                        if option == "rdp_enable-sftp" or option == "vnc_enable-sftp":
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "sftp-hostname",
+                                    hostname,
+                                )
+                            )
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "sftp-port",
+                                    port_reverse,
+                                )
+                            )
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "sftp-username",
+                                    username,
+                                )
+                            )
+                            cursor.execute(
+                                insertparameter(
+                                    result["data"]["connection"][proto.upper()],
+                                    "sftp-private-key",
+                                    keydata,
+                                )
+                            )
+
                     # Commit our queries
                     db.commit()
         except MySQLdb.Error as e:

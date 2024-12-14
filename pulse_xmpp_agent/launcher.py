@@ -974,6 +974,10 @@ def confchanged(typeconf):
         fingerprintconf = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintconf")
         )
+
+        if isinstance(fingerprintconf, bytes):
+            fingerprintconf = fingerprintconf.decode("utf-8")
+
         newfingerprintconf = createfingerprintconf(typeconf)
         if newfingerprintconf == fingerprintconf:
             return False
@@ -1055,6 +1059,25 @@ def networkchanged():
 
     return True
 
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the network changed.
+
+    A network change means that the interfaces changed ( new or deleted )
+
+    Returns:
+        True if we consider that the network changed
+        False if we consider that the network has not changed
+    """
+    if networkinfoexist():
+        fingerprintnetwork = file_get_contents(
+            os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
+        )
+        newfingerprint = createfingerprintnetwork()
+        if fingerprintnetwork == newfingerprint:
+            return False
+
+    return True
+
 def conffilename(agenttype):
     """
     This function define where the configuration file is located.
@@ -1104,7 +1127,7 @@ def testagentconf(typeconf):
     )
 
 
-def isTemplateConfFile(typeconf):
+def isValidConfFile(typeconf):
     """
     Test the configuration file to see if this is a valid template file.
     Args:
@@ -1183,7 +1206,6 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
         agentfunction = os.path.join(pathagent, "agentxmpp.py")
     agentfunction = programfilepath(agentfunction)
     modeagent = " -c " if console else ""
-    logger.debug(f"AGENT {agent}")
     if agent == "connection":
         logger.debug("Starting configuration agent")
 
@@ -1303,7 +1325,6 @@ if __name__ == "__main__":
         console_handler.setFormatter(formatter)
         logger = logging.getLogger()
         logger.addHandler(console_handler)
-        logger.info("flux des logs vers console")
 
     if sys.platform.startswith("win"):
         result = win32api.SetConsoleCtrlHandler(ProcessData._CtrlHandler, 1)
@@ -1327,11 +1348,30 @@ if __name__ == "__main__":
 
     # This bool file allow to enable the rescue client
     BOOL_ENABLE_RESCUE = os.path.join(filePath, "BOOL_ENABLE_RESCUE")
+    BOOL_DISABLE_RESCUE = os.path.join(filePath, "BOOL_DISABLE_RESCUE")
 
     if os.path.exists(BOOL_ENABLE_RESCUE):
         opts.check_agent = True
 
-    namefileconfig = conffilename(opts.typemachine)
+    if os.path.exists(BOOL_DISABLE_RESCUE):
+        opts.check_agent = False
+
+    namefileconfig = os.path.join(directoryconffile(), conffilename(opts.typemachine))
+    templatefileconfig = os.path.join(directoryconffile(), namefileconfig) + ".tpl"
+    isConfFileOK = isValidConfFile(opts.typemachine)
+
+    if not os.path.isfile(namefileconfig) or not isConfFileOK:
+        if os.path.isfile(templatefileconfig) and opts.typemachine.lower() in [
+            "machine"
+        ]:
+            try:
+                shutil.copy(templatefileconfig, namefileconfig)
+            except Exception as e:
+                logger.error(f"An error {e} occured")
+        else:
+            logger.error(
+                f"The template file does not exist. We won't be able to use the autofix feature"
+            )
 
     if not os.path.isfile(namefileconfig):
         # The Medulla agent config file is missing. We need to reinstall the rescue.
@@ -1343,6 +1383,9 @@ if __name__ == "__main__":
             ret = install_rescue_image().reinstall_agent_rescue()
         else:
             logger.debug("The medulla rescue agent is disabled.")
+            logger.debug("We won't be able to fix the problem.")
+            logger.debug(f"Please manually add the {namefileconfig} file.")
+            sys.exit(1)
 
     # first start network changed
     networkchanged = networkchanged()
@@ -1353,7 +1396,7 @@ if __name__ == "__main__":
             "Some configuration options are missing. You may need to add guacamole_baseurl connection/port/server' or global/relayserver_agent"
         )
         logger.debug("We need to reconfigure")
-        testconfigurable = isTemplateConfFile(opts.typemachine)
+        testconfigurable = isValidConfFile(opts.typemachine)
         if testconfigurable:
             needreconfiguration = True
         else:

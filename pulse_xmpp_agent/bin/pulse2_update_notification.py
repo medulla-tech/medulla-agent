@@ -6,11 +6,16 @@
 import sys
 import signal
 from optparse import OptionParser
+import os
+import base64
 
 import tkinter as tk
 from PIL import Image, ImageTk
 
 import subprocess
+import ctypes
+
+from pulse_xmpp_agent.lib.agentconffile import medullaPath
 
 
 def simplecommand(cmd):
@@ -37,19 +42,26 @@ class dialogboxnotification:
         submittext="",
         sizeHeadertext=20,
     ):
+
+        # Define the maximum sizes for fonts
+        MAX_SIZE_HEADER_TEXT = 20
+        MAX_SIZE_NOTIFICATION = 15
+        MAX_SIZE_TEXT_BUTTON = 20
+
+        self.sizeHeadertext = min(sizeHeadertext, MAX_SIZE_HEADER_TEXT)
+        self.sizenotification = min(sizenotification, MAX_SIZE_NOTIFICATION)
+        self.sizetextbutton = min(sizetextbutton, MAX_SIZE_TEXT_BUTTON)
+
         self.result = 1
         self.notificationTimeout = notificationTimeout
         self.Ybutton = Ybutton
         self.Nbutton = Nbutton
-        self.textnotification = textnotification
+        self.textnotification = base64.b64decode(textnotification).decode("utf-8")
+        self.submittext = base64.b64decode(submittext).decode("utf-8")
         self.result = -1
         self.centerfenetre = centerfenetre
         self.root = None
-        self.sizenotification = sizenotification
-        self.sizetextbutton = sizetextbutton
         self.titrebox = titrebox
-        self.submittext = submittext
-        self.sizeHeadertext = sizeHeadertext
 
     def center(self, win):
         """
@@ -93,10 +105,10 @@ class dialogboxnotification:
         # Create main window
         self.root = tk.Tk()
 
-        self.root.geometry("720x250")
         self.root.configure(bg="#25607d")
         self.root.resizable(width=False, height=False)
         # Disable the Close Window Control Icon
+        self.root.resizable(width=True, height=True)  # Allow the window to be resized
         self.root.protocol("WM_DELETE_WINDOW", lambda: None)
         self.root.attributes("-topmost", True)
 
@@ -105,10 +117,90 @@ class dialogboxnotification:
         else:
             self.root.title(self.titrebox)
 
+        # Main frame with two columns
+        main_frame = tk.Frame(self.root, bg="#25607d")
+        main_frame.pack(fill="both", expand=True)
+
+        # Configure columns and rows
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=2)
+        main_frame.rowconfigure(0, weight=1)
+
+        # Frame for the image on the left, with padding
+        image_frame = tk.Frame(main_frame, bg="#25607d")
+        image_frame.grid(row=0, column=0, sticky="nsew", padx=(20, 10), pady=20)
+
+        # Frame for right content, with padding
+        content_frame = tk.Frame(main_frame, bg="#25607d")
+        content_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 20), pady=20)
+
+        image_frame.columnconfigure(0, weight=1)
+        image_frame.rowconfigure(0, weight=1)
+
+        # Load and display the image in Image_Frame
+        iconPath = os.path.join(medullaPath(), "bin", "medulla_logo.png")
+        if os.path.exists(iconPath):
+            try:
+                medullaLogoLocation = Image.open(iconPath)
+                image_max_size = 200
+                medullaLogoLocation.thumbnail(
+                    (image_max_size, image_max_size), Image.LANCZOS
+                )
+                self.medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
+                self.root.wm_iconphoto(True, self.medullaLogo)
+                myappid = "Medulla.Notifications.1.0"
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+                self.root.iconbitmap(self.medullaLogo)
+                Medullalabel = tk.Label(
+                    image_frame, image=self.medullaLogo, bg="#25607d"
+                )
+                Medullalabel.grid(
+                    row=0, column=0, padx=10, pady=10, sticky="nsew"
+                )  # Padding around the image
+            except Exception as error_loading:
+                print("Impossible to load the icon.")
+                print(f"Erreur : \n{error_loading}")
+        else:
+            # If the image does not exist, leave the space empty
+            Medullalabel = tk.Label(image_frame, bg="#25607d")
+            Medullalabel.grid(row=0, column=0, sticky="nsew")
+
+        # Configure content_frame to center content
+        content_frame.columnconfigure(0, weight=1)
+        content_frame.rowconfigure(0, weight=1)
+        content_frame.rowconfigure(1, weight=1)
+        content_frame.rowconfigure(2, weight=1)
+        content_frame.rowconfigure(3, weight=1)
+        content_frame.rowconfigure(4, weight=1)
+
+        # Limit the width of the text so that it adapts to the framework
+        text_wrap_length = 350
+
+        submittext_label = tk.Label(
+            content_frame,
+            text=self.submittext.replace("\\n", "\n"),
+            bg="#25607d",
+            fg="white",
+            font=("Open Sans Soft Regular", self.sizeHeadertext, "bold"),
+            wraplength=text_wrap_length,
+            justify="center",
+        )
+        submittext_label.grid(row=1, column=0, padx=10, pady=(10, 5), sticky="n")
+
+        textnotification_label = tk.Label(
+            content_frame,
+            text=self.textnotification.replace("\\n", "\n"),
+            bg="#25607d",
+            fg="white",
+            font=("Open Sans Soft Regular", self.sizenotification),
+            wraplength=text_wrap_length,
+            justify="center",
+        )
+        textnotification_label.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="n")
+
         if self.Ybutton or self.Nbutton:
-            button_frame = tk.Frame(self.root, bg="#25607d")
-            xpadvaleur = 70 if self.Ybutton == 0 or self.Nbutton == 0 else 40
-            button_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=xpadvaleur, pady=(10))
+            button_frame = tk.Frame(content_frame, bg="#25607d")
+            button_frame.grid(row=3, column=0, pady=10, sticky="n")
 
             if self.Ybutton:
                 Yes_button = tk.Button(
@@ -122,79 +214,40 @@ class dialogboxnotification:
                     highlightcolor="#25607d",
                     relief="solid",
                     fg="white",
-                    borderwidth="0",
+                    borderwidth=0,
                     font=("calibri", self.sizetextbutton, "bold", "underline"),
                     command=self.ok,
                     activebackground="#0076d7",
                 )
+                Yes_button.pack(side=tk.LEFT, padx=10)
 
             if self.Nbutton:
                 No_button = tk.Button(
                     button_frame,
                     text=self.Nbutton,
-                    bg="#25607d",
                     height=2,
                     width=15,
+                    bg="#25607d",
                     highlightthickness=2,
                     highlightbackground="white",
                     highlightcolor="#25607d",
                     relief="solid",
                     fg="white",
-                    borderwidth="0",
+                    borderwidth=0,
                     font=("calibri", self.sizetextbutton, "bold", "underline"),
                     command=self.no,
                     activebackground="#0076d7",
                 )
-            if self.Ybutton == 0 or self.Nbutton == 0:
-                button_frame.columnconfigure(0, weight=1)
-            else:
-                button_frame.columnconfigure(0, weight=6)
-                button_frame.columnconfigure(6, weight=6)
+                No_button.pack(side=tk.LEFT, padx=10)
 
-            if self.Ybutton and self.Nbutton:
-                Yes_button.grid(row=0, column=0)  # , sticky=tk.W
-                No_button.grid(row=0, column=6)  # , sticky=tk.W
-            elif self.Ybutton:
-                Yes_button.pack(side=tk.TOP, padx=10, pady=(10))
-            elif self.Nbutton:
-                No_button.pack(side=tk.TOP, padx=10, pady=(10))
-
-        tk.Label(
-            text=self.submittext.replace("\\n", "\n"),
-            padx=10,
-            pady=(2),
-            bg="#25607d",
-            fg="white",
-            font=("Open Sans Soft Regular", self.sizeHeadertext, "bold"),
-        ).pack()
-
-        tk.Label(
-            text=self.textnotification.replace("\\n", "\n"),
-            padx=10,
-            pady=(2),
-            bg="#25607d",
-            fg="white",
-            font=("Open Sans Soft Regular", self.sizenotification),
-            wraplength=400,
-        ).pack()
-
-        # Create a photoimage object of the image in the path
-        medullaLogoLocation = Image.open("Image3.png")
-        medullaLogo = ImageTk.PhotoImage(medullaLogoLocation)
-
-        Medullalabel = tk.Label(image=medullaLogo, bg="#25607d")
-        Medullalabel.image = medullaLogo
-
-        Medullalabel.place(x=15, y=12)
-
-        self.root.update_idletasks()
-        # Remove window decorations
-        timeOut = int(self.notificationTimeout * 1000)  # Convert to ms from s
-        # Run appliction
-        self.root.wm_attributes("-topmost", 1)
-        self.root.after(timeOut, self.timeout)
         if self.centerfenetre:
+            self.root.update_idletasks()
             self.center(self.root)
+
+        # Configure the time before closing
+        timeOut = int(self.notificationTimeout * 1000)
+        self.root.after(timeOut, self.timeout)
+
         self.root.mainloop()
 
 
