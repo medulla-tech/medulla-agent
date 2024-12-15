@@ -1468,8 +1468,6 @@ if __name__ == "__main__":
         ProcessData.load_child_process()
         try:
             end_time = datetime.now()
-            logger.debug("time progam on: {}".format(end_time - start_time))
-            logger.debug("### LOOP LAUNCHER CYCLE %s###" % countcycle)
             if (countcycle % 6) == 0:  # Every 60 secondes.
                 if sys.platform.startswith("linux") or sys.platform.startswith(
                     "darwin"
