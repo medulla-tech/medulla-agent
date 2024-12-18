@@ -43,7 +43,7 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updatevim", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "updatevim", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -107,6 +107,16 @@ def checkversion():
             # Not installed. We will force installation by returning
             # version 0.0
             version = "0.0"
+
+        cmd = f'reg query "{REGKEY}" /v "DisplayIcon"'
+        result = utils.simplecommand(cmd)
+
+        if result["code"] != 0:
+            cmd = (
+                f'REG ADD "{REGKEY}" '
+                f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
+            )
+            utils.simplecommand(cmd)
     return version
 
 

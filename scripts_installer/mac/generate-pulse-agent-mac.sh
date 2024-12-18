@@ -61,7 +61,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="3.1.1"
+AGENT_VERSION="3.2.0"
 HOMEBREW_VERSION="1.5.12"
 FUSION_INVENTORY_AGENT_NAME="FusionInventory-Agent"
 FUSION_INVENTORY_AGENT_VERSION="2.4-1"
@@ -169,7 +169,29 @@ check_arguments() {
                 DISABLE_INVENTORY=1
                 shift
                 ;;
+            --disable-geoloc*)
+                DISABLE_GEOLOC=1
+                shift
+                ;;
             --linux-distros*)
+                shift
+                ;;
+            --conf-xmppserver*)
+                shift
+                ;;
+            --conf-xmppport*)
+                shift
+                ;;
+            --conf-xmpppasswd*)
+                shift
+                ;;
+            --aes-key*)
+                shift
+                ;;
+            --xmpp-passwd*)
+                shift
+                ;;
+            --chat-domain*)
                 shift
                 ;;
 			*)

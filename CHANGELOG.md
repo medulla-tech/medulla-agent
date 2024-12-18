@@ -1,6 +1,23 @@
 # Change Log
 
-## [v3.1.1](unreleased)
+## [v3.2.0](https://github.com/medulla-tech/medulla-agent/tree/v3.2.0) (unreleased)
+- [FEATURE]  If the file BOOL_DISABLE_IMG exists, disable the replicator
+- [FEATURE]  If the file BOOL_DISABLE_IMG exists, we do not remove the img_agent folder.
+- [FEATURE]  If the file BOOL_DISABLE_RESCUE exists, the Rescue agent is disabled
+- [FEATURE]  Improve the installation of relayservers public ssh keys onto the clients
+- [FEATURE]  Set a password to VNC connections
+- [FEATURE]  Allow disabling geolocalisation when generating the agent installer
+- [FEATURE]  Improve urbackup support
+- [BUGFIX]   Fix the config file when missing by using the tpl one
+- [BUGFIX]   Fix agent detail QA
+- [BUGFIX]   Fix adding relay public keys
+- [BUGFIX]   Fix displayed error message when Glpi failed to import a machine
+- [BUGFIX]   Windows installer removes previous packages folder to avoid installation errors
+
+[Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.1...v3.2.0)
+
+## [v3.1.1](https://github.com/medulla-tech/medulla-agent/tree/v3.1.1) (unreleased)
+
 - [FEATURE]  Improve installer
 - [FEATURE]  Rename install folder on windows from c:\program Files\Pulse to Medulla
 - [FEATURE]  Improve security of pulseuser account by removing it from administrators group
@@ -11,6 +28,7 @@
 - [BUGFIX]   Fix reconnection of the agent after network hiccup
 - [BUGFIX]   Fix creation of pulseuser account
 - [BUGFIX]   Fix remote desktop for VNC where the reversessh was not created
+- [BUGFIX]   Make sure permissions on packages folder is granted to Users group on all Windows independent of the OS language
 - [BUGFIX]   Remove use of reverssh for the VNC. Fixes the use of VNC in Guacamole.
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.0...v3.1.1)

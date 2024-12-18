@@ -1,0 +1,25 @@
+# -*- coding: utf-8 -*-
+# SPDX-FileCopyrightText: 2012 Mandriva, http://www.mandriva.com/
+# SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-3.0-or-later
+def xml_fix(xml):
+    import xml.etree.cElementTree as ET
+
+    xml = ET.fromstring(xml)
+    tree = ET.ElementTree(xml)
+    root = tree.getroot()
+    for subelem1 in root:
+        if subelem1.tag == "CONTENT":
+            for subelem2 in subelem1:
+                for subelem3 in subelem2:
+                    # HP vendor name should allways be the same
+                    if subelem3.text in [
+                        "HP Hewlett-Packard Corporation",
+                        "Hewlett Packard",
+                        "Hewlett_Packard",
+                        "Hewlett - Packard",
+                        "Hewlett-Packard",
+                    ]:
+                        subelem3.text = "HP"
+
+    return ET.tostring(root)

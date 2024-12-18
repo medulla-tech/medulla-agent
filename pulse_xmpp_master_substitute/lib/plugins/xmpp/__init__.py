@@ -274,6 +274,20 @@ class XmppMasterDatabase(DatabaseHelper):
                 convert_unicode=True,
             )
             self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
+
+            Base = automap_base()
+            Base.prepare(self.engine_xmppmmaster_base, reflect=True)
+
+            # Only federated tables (beginning by local_) are automatically mapped
+            # If needed, excludes tables from this list
+            exclude_table = []
+            # Dynamically add attributes to the object for each mapped class
+            for table_name, mapped_class in Base.classes.items():
+                if table_name in exclude_table:
+                    continue
+                if table_name.startswith("local"):
+                    setattr(self, table_name.capitalize(), mapped_class)
+
             self.is_activated = True
             self.logger.debug("Xmpp activation done.")
             return True
@@ -2413,14 +2427,17 @@ class XmppMasterDatabase(DatabaseHelper):
             We return those mac addresses grouped by the broadcast address.
         """
         grp_wol_broadcast_adress = {}
+
+        listmaccleaned = [mac.replace(":", "") for mac in listmacaddress]
+
         result = (
-            session.query(Network.broadcast, Network.mac)
-            .distinct(Network.mac)
+            session.query(Network.broadcast, Network.macaddress)
+            .distinct(Network.macaddress)
             .filter(
                 and_(
                     Network.broadcast != "",
                     Network.broadcast.isnot(None),
-                    Network.mac.in_(listmacaddress),
+                    Network.macaddress.in_(listmaccleaned),
                 )
             )
             .all()
@@ -2436,7 +2453,7 @@ class XmppMasterDatabase(DatabaseHelper):
         for t in result:
             if t.broadcast not in grp_wol_broadcast_adress:
                 grp_wol_broadcast_adress[t.broadcast] = []
-            grp_wol_broadcast_adress[t.broadcast].append(t.mac)
+            grp_wol_broadcast_adress[t.broadcast].append(t.macaddress)
         return grp_wol_broadcast_adress
 
     def convertTimestampToSQLDateTime(self, value):
@@ -7196,6 +7213,18 @@ class XmppMasterDatabase(DatabaseHelper):
         return listconfsubstitute
 
     @DatabaseHelper._sessionm
+    def get_public_key_of_ars(self, session, jids):
+        try:
+            query = select(RelayServer.jid, RelayServer.ssh_public_key).where(
+                RelayServer.jid.in_(jids)
+            )
+            result = session.execute(query).fetchall()
+        except Exception as e:
+            logger.error(f"Voilà mon erreur {e}")
+            return []
+        return {row.jid: row.ssh_public_key for row in result}
+
+    @DatabaseHelper._sessionm
     def GetMachine(self, session, jid):
         """
         Initialize boolean presence in table machines
@@ -10415,6 +10444,10 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 [str(tableproduct["name_procedure"]), str(str_kb_list).strip('"() ')],
             )
             results = list(cursor.fetchall())
+
+            if results is None:
+                return result
+
             for lineresult in results:
                 dictline = {}
                 dictline["tableproduct"] = tableproduct["name_procedure"]

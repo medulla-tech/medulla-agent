@@ -52,6 +52,7 @@ try:
 except ImportError:
     from sqlalchemy.sql.operators import ColumnOperators
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.automap import automap_base
 
 # TODO rename location into entity (and locations in location)
 
@@ -242,7 +243,7 @@ class Glpi100(DatabaseHelper):
 
         if LooseVersion(self._glpi_version) >= LooseVersion("10.0") and LooseVersion(
             self._glpi_version
-        ) <= LooseVersion("10.0.9"):
+        ) <= LooseVersion("10.0.20"):
             logging.getLogger().debug("GLPI version %s found !" % self._glpi_version)
         else:
             logging.getLogger().debug("GLPI higher than version 10.0 was not detected")
@@ -271,6 +272,19 @@ class Glpi100(DatabaseHelper):
         """
         Initialize all SQLalchemy mappers needed for the inventory database
         """
+
+        Base = automap_base()
+        Base.prepare(self.engine_glpi, reflect=True)
+
+        # Only federated tables (beginning by local_) are automatically mapped
+        # If needed, excludes tables from this list
+        exclude_table = []
+        # Dynamically add attributes to the object for each mapped class
+        for table_name, mapped_class in Base.classes.items():
+            if table_name in exclude_table:
+                continue
+            if table_name.startswith("local"):
+                setattr(self, table_name.capitalize(), mapped_class)
 
         self.klass = {}
 

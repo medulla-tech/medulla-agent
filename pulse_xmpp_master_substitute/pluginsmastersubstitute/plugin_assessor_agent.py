@@ -31,7 +31,7 @@ DEBUGPULSEPLUGIN = 25
 
 # connectionconf et le nom du plugin appeler.
 
-plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}  # fmt: skip
 
 params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.
@@ -912,9 +912,24 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
         XmppMasterDatabase().updateMachinereconf(data["agent_machine_name"])
         if showinfomachine:
             logger.info("updateMachinereconf %s " % data["agent_machine_name"])
+
+        response["ssh_public_key"] = XmppMasterDatabase().get_public_key_of_ars(
+            listars.keys()
+        )
+
         objectxmpp.send_message(
             mto=msg["from"], mbody=json.dumps(response), mtype="chat"
         )
+    except IndexError as indexError:
+        sendErrorConnectionConf(objectxmpp, sessionid, msg)
+        logger.error(
+            "It seems that the relay server is not correctly"
+            "configured.\n"
+            "Please verify the substituteconf mysql table"
+        )
+
+        logger.error("If this is a new install please replay the ansible")
+
     except Exception:
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         logger.error("Unable to assign a relay server to an agent")
@@ -1242,8 +1257,6 @@ def message_config(nameplugin, pathfileconf):
     logger.error("serverip = 192.168.56.2 #Mandatory parameter")
     logger.error("# XMPP port")
     logger.error("port = 5222 #Mandatory parameter")
-    logger.error("# XMPP password")
-    logger.error("password = secret #Mandatory parameter")
     logger.error("# The location of the guacamole server.")
     logger.error(
         "guacamole_baseurl = http://192.168.56.2/guacamole/ #Mandatory parameter"

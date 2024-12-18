@@ -169,7 +169,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         list_update = XmppMasterDatabase().search_update_by_products(
             tableproduct=t, str_kb_list=data["system_info"]["kb_list"]
         )
-        logger.debug("list_update search is : " % list_update)
+        logger.debug("list_update search is %s: " % list_update)
         res_update.extend(exclude_update_in_select(msg, exclude_update, list_update))
     # autre methode attribution des update
     # list_update = XmppMasterDatabase().search_kb_windows1( "", product=data['system_info']['platform_info']['type'],

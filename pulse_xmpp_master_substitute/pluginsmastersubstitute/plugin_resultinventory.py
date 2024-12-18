@@ -29,7 +29,7 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.13", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 
 
 class InventoryFix:
@@ -37,6 +37,8 @@ class InventoryFix:
         self, xmlfixplugindir, inventory_xml, xmldumpactive=False, verbose=False
     ):
         self._inventory_content = inventory_xml
+        if isinstance(self._inventory_content, bytes):
+            self._inventory_content = self._inventory_content.decode("utf-8")
         logger.debug("Initialize the inventory fixer")
 
         self.xmldumpactive = xmldumpactive
@@ -106,6 +108,8 @@ class InventoryFix:
             try:
                 if self.verbose:
                     logger.debug("Exec fix plugin %s %s" % (index, fnc.__module__))
+                if isinstance(self._inventory_content, bytes):
+                    self._inventory_content = self._inventory_content.decode("utf-8")
                 self._inventory_content = fnc(self._inventory_content)
                 logger.debug("Inventory fixed by '%s' script" % fnc.__module__)
             except BaseException:
@@ -158,7 +162,10 @@ def send_content(url, content, verbose=False, user_agent="siveo-injector"):
             logger.info("headers is : %s" % headers)
         response = requests.post(url, headers=headers, data=compressed_content)
         reponsecode = response.status_code
-        reponsequery = gzip.decompress(response.content)
+        try:
+            reponsequery = gzip.decompress(response.content)
+        except:
+            reponsequery = response.content
 
         if response.status_code == 200:
             if verbose:

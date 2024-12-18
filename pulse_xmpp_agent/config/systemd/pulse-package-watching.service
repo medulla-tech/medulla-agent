@@ -1,12 +1,11 @@
 [Unit]
 Description=Pulse2 XMPP Agent ( Syncthing package watching )
 After=samba.service slapd.service ejabberd.service
-Requires=ejabberd.service
 
 [Service]
 PIDFile=/var/run/package_watching.pid
-Type=forking
-ExecStart=/usr/lib/python3/site-packages/pulse_xmpp_agent/package_watching.py
+Type=simple
+ExecStart=PATH/pulse_xmpp_agent/package_watching.py
 Restart=always
 RestartSec=1
 
