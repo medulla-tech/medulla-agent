@@ -5,7 +5,7 @@
 """
     This file contains shared functions use in pulse client/server agents.
 """
-
+import shutil
 import sys
 import urllib.request as urllib2
 from urllib.parse import urlparse
@@ -6266,3 +6266,88 @@ class NetworkInfoxmpp:
         mac = mac.replace("-", "")
         mac = mac.replace(" ", "")
         return mac
+
+
+def clean_update_directories():
+    """
+    Cette fonction vérifie l'existence du fichier BOOL_CLEAN_UPDATE dans le répertoire
+    C:\\Program Files\\Python3\\Lib\\site-packages\\pulse_xmpp_agent\\.
+    Si le fichier existe, elle recherche les répertoires terminant par la chaîne "update" dans
+    C:\\Program Files\\Medulla\\var\\tmp\\packages\\ et les supprime, ainsi que le fichier BOOL_CLEAN_UPDATE.
+    Ensuite, elle démonte tous les lecteurs logiques CD-ROM.
+    """
+    # Chemin du fichier BOOL_CLEAN_UPDATE
+    bool_clean_update_path = r"C:\Program Files\Python3\Lib\site-packages\pulse_xmpp_agent\BOOL_CLEAN_UPDATE"
+
+    # Vérifie si le fichier BOOL_CLEAN_UPDATE existe
+    if os.path.exists(bool_clean_update_path):
+        logger.debug("Le fichier BOOL_CLEAN_UPDATE a été trouvé. Exécution des actions...")
+
+        # Chemin du répertoire cible pour la recherche des répertoires "update"
+        target_dir = r"C:\Program Files\Medulla\var\tmp\packages"
+
+        # Recherche des répertoires terminant par "update"
+        for root, dirs, files in os.walk(target_dir):
+            for dir_name in dirs:
+                if dir_name.endswith("update"):
+                    dir_path = os.path.join(root, dir_name)
+                    logger.debug(f"Suppression du répertoire : {dir_path}")
+                    try:
+                        shutil.rmtree(dir_path)
+                        logger.debug(f"Le répertoire {dir_path} a été supprimé avec succès.")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la suppression du répertoire {dir_path}. Message : {e}")
+
+        # Suppression du fichier BOOL_CLEAN_UPDATE
+        try:
+            os.remove(bool_clean_update_path)
+            logger.debug("Le fichier BOOL_CLEAN_UPDATE a été supprimé avec succès.")
+        except Exception as e:
+            logger.debug(f"Erreur lors de la suppression du fichier BOOL_CLEAN_UPDATE. Message : {e}")
+
+        # Démonter les lecteurs logiques CD-ROM
+        eject_cdrom_drives()
+    else:
+        logger.debug("Le fichier BOOL_CLEAN_UPDATE n'a pas été trouvé. Aucune action n'est requise.")
+
+def eject_cdrom_drives():
+    """
+    Cette fonction récupère tous les lecteurs logiques avec WMI, filtre ceux dont la description contient "CD-ROM",
+    et tente de les démonter/éjecter.
+
+    La fonction utilise WMI pour interagir avec les lecteurs logiques et Shell.Application pour démonter les lecteurs CD-ROM.
+    Elle initialise et finalise COM pour assurer une utilisation correcte des objets COM.
+
+    :return: None
+    """
+    # Initialisation de l'objet WMI
+    pythoncom.CoInitialize()
+    try:
+        c = wmi.WMI()
+
+        # Récupère tous les lecteurs logiques
+        logical_disks = c.query("SELECT * FROM Win32_LogicalDisk")
+
+        # Filtre les lecteurs où la description contient "CD-ROM"
+        cdrom_disks = [disk for disk in logical_disks if "CD-ROM" in disk.Description]
+
+        # Vérifie si des lecteurs correspondants ont été trouvés
+        if not cdrom_disks:
+            logger.debug("Aucun lecteur avec une description contenant 'CD-ROM' n'a été trouvé.")
+        else:
+            for disk in cdrom_disks:
+                logger.debug(f"Lecteur trouvé : {disk.DeviceID} - Description : {disk.Description}")
+
+                # Tente de démonter/éjecter le lecteur
+                try:
+                    shell_app = win32com.client.Dispatch("Shell.Application")
+                    cd_drive = shell_app.Namespace(17).ParseName(disk.DeviceID)
+                    if cd_drive:
+                        cd_drive.InvokeVerb("Eject")
+                        logger.debug(f"Le lecteur {disk.DeviceID} a été démonté avec succès.")
+                    else:
+                        logger.debug(f"Impossible de trouver le lecteur {disk.DeviceID} pour le démonter.")
+                except Exception as e:
+                    logger.debug(f"Erreur lors du démontage du lecteur {disk.DeviceID}. Message : {e}")
+    finally:
+        pythoncom.CoUninitialize()
