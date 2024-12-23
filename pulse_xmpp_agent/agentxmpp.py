@@ -97,6 +97,7 @@ from lib.utils import (
     call_plugin_sequentially,
     convert,
     DateTimebytesEncoderjson,
+    clean_update_directories
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -907,6 +908,7 @@ class MUCBot(ClientXMPP):
                 self._iq_error_Handle,
             )
         )
+
 
     def sendbigdatatoagent(self, jid_receiver, data_utf8_json, segment_size=65535):
         """
@@ -2682,7 +2684,8 @@ class MUCBot(ClientXMPP):
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         # machine connected
         self.config.ipxmpp = getIpXmppInterface(self.config)
-
+        # nettoy les fichiers de mise a jour windows
+        clean_update_directories()
         self.__clean_message_box()
         if self.config.agenttype in ["relayserver"]:
             try:
