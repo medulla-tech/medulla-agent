@@ -2226,10 +2226,10 @@ class MUCBot(ClientXMPP):
                             # Send pong message
                             self.kiosk_presence = "True"
                             self.send_pong_to_kiosk()
-                            logging.getLogger().info("Sendback pong message to kiosk")
+                            logging.getLogger().debug("Sendback pong message to kiosk")
                         elif result["type"] == "pong":
                             # Set the kiosk_presence variable to True
-                            logging.getLogger().info("Receive pong message from kiosk")
+                            logging.getLogger().debug("Receive pong message from kiosk")
                             self.kiosk_presence = "True"
 
                         else:
