@@ -140,7 +140,7 @@ def check_tightvnc_configuration(xmppobject):
 
                 if result["code"] == 0:
                     logger.debug(
-                        f"PL-TIGHT TightVNCServer registry {config['key']} with value {value} is reconfigured."
+                        f"PL-TIGHT TightVNCServer registry {config['key']} with value {config['set_value']} is reconfigured."
                     )
                     need_restart = True
                 else:
