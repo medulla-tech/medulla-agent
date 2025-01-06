@@ -117,7 +117,6 @@ from modulefinder import ModuleFinder
 from datetime import datetime, timezone
 
 import zipfile
-import tempfile
 
 from slixmpp import ClientXMPP
 from slixmpp import jid
@@ -161,13 +160,9 @@ terminate_lock = multiprocessing.Lock()
 
 
 # reecriture du fichier cluster
-
-
-def create_config_file_atomically(file_path, config_data):
+def create_config_file(file_path, config_data):
     """
-    Creates a configuration file in .ini format based on the provided dictionary structure
-    and writes it atomically.
-
+    Creates a configuration file in .ini format based on the provided dictionary structure.
     :param file_path: The full path of the file to be created.
     :param config_data: The dictionary containing the configuration data.
     """
@@ -185,26 +180,9 @@ def create_config_file_atomically(file_path, config_data):
     for server in config_data["listars"]:
         config[server] = config_data[server]
 
-    # Generate the configuration content as a string
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        config.write(temp_file)
-        temp_file.seek(0)
-        config_content = temp_file.read()
-
-    # Créer un fichier temporaire dans le même répertoire que le fichier cible
-    temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path))
-
-    try:
-        with os.fdopen(temp_fd, "w") as temp_file:
-            temp_file.write(config_content)
-
-        # Renommer le fichier temporaire pour remplacer le fichier cible
-        os.replace(temp_path, file_path)
-    except Exception as e:
-        # En cas d'erreur, supprimer le fichier temporaire
-        os.remove(temp_path)
-        raise e
-
+    # Write the configuration to the specified file
+    with open(file_path, "w") as configfile:
+        config.write(configfile)
 
 class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
     """
