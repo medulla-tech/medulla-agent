@@ -186,7 +186,7 @@ def create_config_file_atomically(file_path, config_data):
         config[server] = config_data[server]
 
     # Generate the configuration content as a string
-    with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, mode="w") as temp_file:
         config.write(temp_file)
         temp_file.flush()
         temp_file_path = temp_file.name
@@ -1280,8 +1280,12 @@ class MUCBot(ClientXMPP):
                 self.alternatifconnection["nextserver"] = 1
 
             # write alternative configuration
-            create_config_file_atomically(conffilenametmp("cluster"), self.alternatifconnection)
-            create_config_file_atomically(conffilename("cluster"), self.alternatifconnection)
+            create_config_file_atomically(
+                conffilenametmp("cluster"), self.alternatifconnection
+            )
+            create_config_file_atomically(
+                conffilename("cluster"), self.alternatifconnection
+            )
             self.address = (
                 ipfromdns(self.config.Server),
                 int(self.config.Port),
