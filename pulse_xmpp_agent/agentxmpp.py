@@ -186,23 +186,17 @@ def create_config_file_atomically(file_path, config_data):
         config[server] = config_data[server]
 
     # Generate the configuration content as a string
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_file:
         config.write(temp_file)
-        temp_file.seek(0)
-        config_content = temp_file.read()
-
-    # Créer un fichier temporaire dans le même répertoire que le fichier cible
-    temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(file_path))
+        temp_file.flush()
+        temp_file_path = temp_file.name
 
     try:
-        with os.fdopen(temp_fd, "w") as temp_file:
-            temp_file.write(config_content)
-
         # Renommer le fichier temporaire pour remplacer le fichier cible
-        os.replace(temp_path, file_path)
+        os.replace(temp_file_path, file_path)
     except Exception as e:
         # En cas d'erreur, supprimer le fichier temporaire
-        os.remove(temp_path)
+        os.remove(temp_file_path)
         raise e
 
 
