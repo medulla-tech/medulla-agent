@@ -1830,7 +1830,14 @@ def getIpXmppInterface(config):
     """
     resultip = ""
     xmpp_server_ipaddress_or_dns = config.Server
-    Port = config.Port
+
+    # Control on the Port variable
+    if hasattr(config, "Port") and isinstance(config.Port, int) and 0 <= config.Port <= 65535:
+        Port = config.Port
+    elif hasattr(config, "confPort") and isinstance(config.confPort, int) and 0 <= config.confPort <= 65535:
+        Port = config.confPort
+    else:
+        Port = 5222
 
     # Get the list of network interfaces
     interfaces = netifaces.interfaces()
