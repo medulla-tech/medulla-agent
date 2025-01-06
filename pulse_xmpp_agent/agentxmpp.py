@@ -1266,7 +1266,7 @@ class MUCBot(ClientXMPP):
             except BaseException:
                 self.config.confdomain = str(serverjid)
             logger.debug(
-                f"Rewriting cluster.ini file: {self.config.Port} {ipfromdns(self.config.Server)} {arsconnection} {self.config.guacamole_baseurl}"
+                f"reecrit cluster.ini {self.config.Port}{ipfromdns(self.config.Server)}{arsconnection}{self.config.guacamole_baseurl}"
             )
             changeconnection(
                 conffilename(self.config.agenttype),
@@ -1286,8 +1286,8 @@ class MUCBot(ClientXMPP):
                 self.alternatifconnection["nextserver"] = 1
 
             # write alternative configuration
-            create_config_file_atomically(conffilenametmp("cluster"), self.alternatifconnection)
-            create_config_file_atomically(conffilename("cluster"), self.alternatifconnection)
+            create_config_file(conffilenametmp("cluster"), self.alternatifconnection)
+            create_config_file(conffilename("cluster"), self.alternatifconnection)
             self.address = (
                 ipfromdns(self.config.Server),
                 int(self.config.Port),
