@@ -184,6 +184,7 @@ def create_config_file(file_path, config_data):
     with open(file_path, "w") as configfile:
         config.write(configfile)
 
+
 class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
     """
     Extended version of TimedRotatingFileHandler that compress logs on rollover.
