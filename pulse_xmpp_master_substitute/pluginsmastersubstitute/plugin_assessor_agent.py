@@ -923,7 +923,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
     except IndexError as indexError:
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         logger.error(
-            "It seems that the relay server is not correctly"
+            "It seems that the relay server is not correctly "
             "configured.\n"
             "Please verify the substituteconf mysql table"
         )
