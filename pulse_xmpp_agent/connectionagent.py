@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import sys
+from pathlib import Path
 
 from slixmpp import ClientXMPP
 from slixmpp import jid
@@ -1268,6 +1269,9 @@ if __name__ == "__main__":
         logger.addHandler(console)
     console.setFormatter(formatter)
     console.setLevel(tg.levellog)
+
+    medullaLogFolder = Path(os.path.join(medullaPath(), "var", "log"))
+    medullaLogFolder.mkdir(exist_ok=True)
     file_handler = logging.FileHandler(tg.logfile)
     file_handler.setLevel(tg.levellog)
     file_handler.setFormatter(formatter)
