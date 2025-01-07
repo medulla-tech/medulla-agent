@@ -121,7 +121,7 @@ class MUCBot(ClientXMPP):
         conf.jidagent = f"{newjidconf[0]}@{resourcejid[0]}/{self.HostNameSystem}"
         self.agentmaster = jid.JID("master@pulse")
         self.session = ""
-        logger.info(f"start machine {conf.jidagent} Type {conf.agenttype}")
+        logger.info(f"Starting the {conf.agenttype} agent on {socket.gethostname()}")
 
         # Time allocated for the assessor to provide a configuration
         self.assessor_response_timeout = 120
