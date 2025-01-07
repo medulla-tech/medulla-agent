@@ -1864,7 +1864,7 @@ def getIpXmppInterface(config):
         )
         if sys.platform.startswith("linux"):
             obj = simplecommand(
-                f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
+                f"netstat -an | grep {Port} | grep ESTABLISHED | grep -v tcp6"
             )
             if obj["code"] != 0:
                 logging.getLogger().error(f'error command netstat : {obj["result"]}')
@@ -1887,7 +1887,7 @@ def getIpXmppInterface(config):
                     resultip = b[1].split(":")[0]
         elif sys.platform.startswith("darwin"):
             obj = simplecommand(
-                f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED"
+                f"netstat -an | grep {Port} | grep ESTABLISHED"
             )
             if len(obj["result"]) != 0:
                 for i in range(len(obj["result"])):
