@@ -15,6 +15,7 @@
 - [BUGFIX]   Windows installer removes previous packages folder to avoid installation errors
 - [BUGFIX]   Fix reconnection of the agent when the ARS or ejabberd goes down
 - [BUGFIX]   Add the Medulla icon to the list of applications under Windows
+- [BUGFIX]   Only use if.siveo.net by default for the geolocalisation
 
 [Full Changelog](https://github.com/medulla-tech/medulla-agent/compare/v3.1.1...v3.2.0)
 

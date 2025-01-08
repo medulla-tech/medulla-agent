@@ -1954,7 +1954,7 @@ def subnetnetwork(adressmachine, mask):
 def searchippublic(site=1):
     if site == 1:
         try:
-            objip = json.loads(urllib.urlopen("http://ifconfig.co/json"))
+            objip = json.loads(urllib.urlopen("http://if.siveo.net/json"))
             return objip["ip"] if is_valid_ipv4(objip["ip"]) else searchippublic(2)
         except BaseException:
             return searchippublic(2)
