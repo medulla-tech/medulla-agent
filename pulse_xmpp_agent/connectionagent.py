@@ -642,6 +642,7 @@ class MUCBot(ClientXMPP):
                                 )
                         except Exception as e:
                             logger.error("change configuration subtitute ko")
+                            logger.error(f"We encounted the error \n {e}")
 
                     try:
                         changeconnection(
