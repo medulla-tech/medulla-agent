@@ -4236,7 +4236,7 @@ class geolocalisation_agent:
         for url in http_url_list_geo_server:
             serveur = url
             try:
-                logger.debug(f"geolocalisation server  {url}")
+                logger.debug(f"The geolocalisation server used is:  {url}")
                 objip = geolocalisation_agent.call_simple_page(url)
                 if objip is not None:
                     break
