@@ -195,7 +195,7 @@ class MUCBot(ClientXMPP):
         )
 
         if self.config.syncthing_on:
-            logger.info("We will configure syncthing")
+            logger.debug("We will configure syncthing")
             self.deviceid = ""
             if logger.level <= 10:
                 console = False
@@ -499,10 +499,11 @@ class MUCBot(ClientXMPP):
                             logger.error("Verify table cluster : has_cluster_ars")
                             sys.exit(0)
 
-                        logger.info(
+                        logger.debug(
                             "Start relay server agent configuration\n%s"
                             % json.dumps(data["data"], indent=4, sort_keys=True)
                         )
+                        logger.info(f"The choosen relayserver is {data['data'][0][2]} with the IP {data['data'][0][0]}")
 
                         if data["ssh_public_key"]:
                             try:
@@ -711,7 +712,6 @@ class MUCBot(ClientXMPP):
                 logger.error(
                     "Please check on the server on the /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local"
                 )
-            logger.debug("config terminate")
 
             # Fin du traitement
             timefin = time.time()
@@ -719,7 +719,7 @@ class MUCBot(ClientXMPP):
             # Calcul du temps écoulé
             temps_ecoule = timefin - self.timedebut
             # Log du temps de traitement
-            logger.info(f"Traitement effectué en {temps_ecoule:.2f} secondes")
+            logger.info(f"The configuration is done. It tooks {temps_ecoule:.2f} seconds")
             self.disconnect(wait=1)
 
     def infosubstitute(self):
@@ -865,7 +865,7 @@ class MUCBot(ClientXMPP):
         # Calcul du temps écoulé
         time_connection = time_connection_ok - self.timedebut
         # Log du temps de traitement
-        logger.info(f"Connexion {time_connection:.2f} secondes")
+        logger.debug(f"The connection to the ejabberd server took {time_connection:.2f} seconds")
 
     def handle_connection_failed(self, data):
         """
@@ -913,7 +913,7 @@ class MUCBot(ClientXMPP):
         resp["register"]["password"] = self.password
         try:
             await resp.send()
-            logging.info("Account created for %s!" % self.boundjid)
+            logging.info(f"The account {self.boundjid} is created")
         except IqError as e:
             logging.debug("Could not register account: %s" % e.iq["error"]["text"])
         except IqTimeout:
