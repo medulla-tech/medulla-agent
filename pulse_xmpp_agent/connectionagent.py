@@ -503,7 +503,9 @@ class MUCBot(ClientXMPP):
                             "Start relay server agent configuration\n%s"
                             % json.dumps(data["data"], indent=4, sort_keys=True)
                         )
-                        logger.info(f"The choosen relayserver is {data['data'][0][2]} with the IP {data['data'][0][0]}")
+                        logger.info(
+                            f"The choosen relayserver is {data['data'][0][2]} with the IP {data['data'][0][0]}"
+                        )
 
                         if data["ssh_public_key"]:
                             try:
@@ -719,7 +721,9 @@ class MUCBot(ClientXMPP):
             # Calcul du temps écoulé
             temps_ecoule = timefin - self.timedebut
             # Log du temps de traitement
-            logger.info(f"The configuration is done. It tooks {temps_ecoule:.2f} seconds")
+            logger.info(
+                f"The configuration is done. It tooks {temps_ecoule:.2f} seconds"
+            )
             self.disconnect(wait=1)
 
     def infosubstitute(self):
@@ -865,7 +869,9 @@ class MUCBot(ClientXMPP):
         # Calcul du temps écoulé
         time_connection = time_connection_ok - self.timedebut
         # Log du temps de traitement
-        logger.debug(f"The connection to the ejabberd server took {time_connection:.2f} seconds")
+        logger.debug(
+            f"The connection to the ejabberd server took {time_connection:.2f} seconds"
+        )
 
     def handle_connection_failed(self, data):
         """
