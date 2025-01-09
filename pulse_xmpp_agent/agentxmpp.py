@@ -1245,7 +1245,6 @@ class MUCBot(ClientXMPP):
         ):
             self.alternatifconnection["nextserver"] = 1
 
-
         index_server_list = self.alternatifconnection["nextserver"] - 1
         arsconnection = self.alternatifconnection["listars"][index_server_list]
         self.config.Port = self.alternatifconnection[arsconnection]["port"]
@@ -1279,8 +1278,12 @@ class MUCBot(ClientXMPP):
             self.alternatifconnection["nextserver"] = 1
 
         # write alternative configuration
-        create_config_file_atomically(conffilenametmp("cluster"), self.alternatifconnection)
-        create_config_file_atomically(conffilename("cluster"), self.alternatifconnection)
+        create_config_file_atomically(
+            conffilenametmp("cluster"), self.alternatifconnection
+        )
+        create_config_file_atomically(
+            conffilename("cluster"), self.alternatifconnection
+        )
         self.address = (
             ipfromdns(self.config.Server),
             int(self.config.Port),
@@ -1288,7 +1291,6 @@ class MUCBot(ClientXMPP):
         self.server_address = self.address
         self.shared_dict["new_connection"] = True
         self.loop.stop()
-
 
     def handle_connection_failed(self, data):
         logger.debug(f"handle_connection_failed {self.server_address}")
@@ -4222,6 +4224,7 @@ def shuffle_listars(config):
         # suivi des éléments mélangés
         config["listars"] = [first_element] + other_elements
 
+
 def initialize_alternatifconnection(optstypemachine):
     """
     Initialise la variable alternatifconnection en fonction des informations de configuration.
@@ -4234,7 +4237,9 @@ def initialize_alternatifconnection(optstypemachine):
     # Chemin du fichier alternative
     namefilealternatifconnection = conffilename("cluster")
     if os.path.isfile(namefilealternatifconnection):
-        alternatifconnection = nextalternativeclusterconnectioninformation(namefilealternatifconnection)
+        alternatifconnection = nextalternativeclusterconnectioninformation(
+            namefilealternatifconnection
+        )
         logger.info(f"composition alternative {namefilealternatifconnection}")
 
         if (
@@ -4242,7 +4247,9 @@ def initialize_alternatifconnection(optstypemachine):
             or "listars" not in alternatifconnection
             or "nextserver" not in alternatifconnection
         ):
-            alternatifconnection = None  # json cluster.ini pas correct pas d'alternative.
+            alternatifconnection = (
+                None  # json cluster.ini pas correct pas d'alternative.
+            )
 
         if optstypemachine.lower() not in ["relay"]:
             shuffle_listars(alternatifconnection)
@@ -4313,7 +4320,10 @@ def is_process_running(pid):
         print(f"Le processus avec le PID {pid} est un processus zombie")
         return False
 
-def launch_standalone_program(pathagent=None, program_name="connectionagent.py", options="-t machine"):
+
+def launch_standalone_program(
+    pathagent=None, program_name="connectionagent.py", options="-t machine"
+):
     """
     Lance un programme standalone Python sans attendre de résultat.
 
@@ -4325,28 +4335,34 @@ def launch_standalone_program(pathagent=None, program_name="connectionagent.py",
     """
     if pathagent is None:
         # Le programme à lancer dans le même répertoire
-        pathagent = os.path.dirname(os.path.abspath(__file__))  # Répertoire courant du programme
+        pathagent = os.path.dirname(
+            os.path.abspath(__file__)
+        )  # Répertoire courant du programme
 
     try:
         # Obtenir le chemin complet du programme à lancer
         program_path = os.path.join(pathagent, program_name)
 
-
         # Obtenir l'exécutable Python utilisé par le processus actuel
         pythonexec = psutil.Process().exe()
 
-
         # Vérifier si le fichier existe
         if not os.path.isfile(program_path):
-            raise FileNotFoundError(f"Le programme {pythonexec} {program_path} est introuvable.")
+            raise FileNotFoundError(
+                f"Le programme {pythonexec} {program_path} est introuvable."
+            )
 
         # Construire la commande à exécuter
         command = [pythonexec, program_path] + options.split()
 
         # Lancer le programme de manière asynchrone
-        process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        process = subprocess.Popen(
+            command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
 
-        logger.info(f"Programme lancé : {pythonexec} {program_path} avec les options : {options}")
+        logger.info(
+            f"Programme lancé : {pythonexec} {program_path} avec les options : {options}"
+        )
 
         # Retourner le PID du processus lancé
         return process.pid
@@ -4379,7 +4395,7 @@ def doTask(
     pidfile = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"
     )
-    pid_connecteur=None
+    pid_connecteur = None
     alternatifconnection = None
     file_put_contents(pidfile, "%s" % os.getpid())
     tg = confParameter(optstypemachine)
@@ -4469,22 +4485,25 @@ def doTask(
         tous_les_n_essais = 10
 
         # Vérifie si le compteur est un multiple de 10 et n'est pas égal à 0
-        if shared_dict["compteur"] % tous_les_n_essais == 0 and shared_dict["compteur"] != 0:
+        if (
+            shared_dict["compteur"] % tous_les_n_essais == 0
+            and shared_dict["compteur"] != 0
+        ):
 
             # Si le compteur est un multiple de 10 et n'est pas égal à 0, lance connectionagent.py
             if pid_connecteur is None:
                 # Si pid_connecteur est None, lance le programme standalone
-                pid_connecteur=launch_standalone_program()
+                pid_connecteur = launch_standalone_program()
                 logger.info("pid_connecteur : %s" % pid_connecteur)
                 with terminate_lock:
                     shared_dict["reconnect"] = True
                     # Construire le chemin du fichier
                     # force_reconfiguration = os.path.join(
-                        # os.path.dirname(os.path.realpath(__file__)),
-                        # "action_force_reconfiguration" )
-                        # # Créer le fichier vide
+                    # os.path.dirname(os.path.realpath(__file__)),
+                    # "action_force_reconfiguration" )
+                    # # Créer le fichier vide
                     # with open(force_reconfiguration, 'w') as f:
-                        # pass  # Le fichier est créé vide
+                    # pass  # Le fichier est créé vide
 
             else:
                 logger.info("attendre fin connecteur pour pouvoir le relancer")
@@ -4494,7 +4513,7 @@ def doTask(
                     pid_connecteur = None
                     # # reconnect demande
                     # with terminate_lock:
-                        # shared_dict["reconnect"]= True
+                    # shared_dict["reconnect"]= True
 
         with terminate_lock:
             if shared_dict.get("terminate"):
