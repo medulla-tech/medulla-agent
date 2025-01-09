@@ -1895,7 +1895,7 @@ def getIpXmppInterface(config):
         )
         if sys.platform.startswith("linux"):
             obj = simplecommand(
-                f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED | grep -v tcp6"
+                f"netstat -an | grep {Port} | grep ESTABLISHED | grep -v tcp6"
             )
             if obj["code"] != 0:
                 logging.getLogger().error(f'error command netstat : {obj["result"]}')
@@ -1917,9 +1917,7 @@ def getIpXmppInterface(config):
                 if b := [x for x in a.split(" ") if x != ""]:
                     resultip = b[1].split(":")[0]
         elif sys.platform.startswith("darwin"):
-            obj = simplecommand(
-                f"netstat -an |grep {Port} |grep {xmpp_server_ipaddress}| grep ESTABLISHED"
-            )
+            obj = simplecommand(f"netstat -an | grep {Port} | grep ESTABLISHED")
             if len(obj["result"]) != 0:
                 for i in range(len(obj["result"])):
                     obj["result"][i] = obj["result"][i].rstrip("\n")
@@ -1984,7 +1982,7 @@ def subnetnetwork(adressmachine, mask):
 def searchippublic(site=1):
     if site == 1:
         try:
-            objip = json.loads(urllib.urlopen("http://ifconfig.co/json"))
+            objip = json.loads(urllib.urlopen("http://if.siveo.net/json"))
             return objip["ip"] if is_valid_ipv4(objip["ip"]) else searchippublic(2)
         except BaseException:
             return searchippublic(2)
@@ -4267,7 +4265,7 @@ class geolocalisation_agent:
         for url in http_url_list_geo_server:
             serveur = url
             try:
-                logger.debug(f"geolocalisation server  {url}")
+                logger.debug(f"The geolocalisation server used is:  {url}")
                 objip = geolocalisation_agent.call_simple_page(url)
                 if objip is not None:
                     break

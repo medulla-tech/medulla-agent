@@ -16,7 +16,7 @@ TIGHTVNC = "2.8.84"
 COMPLETETIGHTVNC = "2.8.84.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.2", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.3", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -140,7 +140,7 @@ def check_tightvnc_configuration(xmppobject):
 
                 if result["code"] == 0:
                     logger.debug(
-                        f"PL-TIGHT TightVNCServer registry {config['key']} with value {value} is reconfigured."
+                        f"PL-TIGHT TightVNCServer registry {config['key']} with value {config['set_value']} is reconfigured."
                     )
                     need_restart = True
                 else:

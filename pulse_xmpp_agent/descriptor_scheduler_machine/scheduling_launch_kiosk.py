@@ -15,17 +15,9 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "scheduling_launch_kiosk",
-    "TYPE": "machine",
-    "SCHEDULED": True,
-}
+plugin = {"VERSION": "1.1", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
-SCHEDULE = {
-    "schedule": "*/5 * * * *",
-    "nb": -1,
-}  # -1 pour un nombre infini d'exécutions
+SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # fmt: skip
 
 
 def schedule_main(objectxmpp):
