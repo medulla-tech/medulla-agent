@@ -186,7 +186,7 @@ def create_config_file_atomically(file_path, config_data):
         config[server] = config_data[server]
 
     # Generate the configuration content as a string
-    with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, mode="w") as temp_file:
         config.write(temp_file)
         temp_file.flush()
         temp_file_path = temp_file.name
@@ -1237,62 +1237,60 @@ class MUCBot(ClientXMPP):
             self.reconnect(0.0, self.massage_reconection)
             return
 
-        if self.shared_dict.get("alternative"):
-            # reconnecte alternative JFK
-            if (
-                self.alternatifconnection["nextserver"]
-                > self.alternatifconnection["nbserver"]
-            ):
-                self.alternatifconnection["nextserver"] = 1
+        # if self.shared_dict.get("alternative"):
+        # reconnecte alternative JFK
+        if (
+            self.alternatifconnection["nextserver"]
+            > self.alternatifconnection["nbserver"]
+        ):
+            self.alternatifconnection["nextserver"] = 1
 
-            logger.debug(f"handle_disconnected {self.alternatifconnection}")
+        index_server_list = self.alternatifconnection["nextserver"] - 1
+        arsconnection = self.alternatifconnection["listars"][index_server_list]
+        self.config.Port = self.alternatifconnection[arsconnection]["port"]
+        self.config.Server = self.alternatifconnection[arsconnection]["server"]
+        self.config.guacamole_baseurl = self.alternatifconnection[arsconnection][
+            "guacamole_baseurl"
+        ]
+        serverjid = str(arsconnection)
+        try:
+            self.config.confdomain = str(arsconnection).split("@")[1].split("/")[0]
+        except BaseException:
+            self.config.confdomain = str(serverjid)
+        logger.debug(
+            f"Rewriting cluster.ini file: {self.config.Port} {ipfromdns(self.config.Server)} {arsconnection} {self.config.guacamole_baseurl}"
+        )
+        changeconnection(
+            conffilename(self.config.agenttype),
+            self.config.Port,
+            ipfromdns(self.config.Server),
+            arsconnection,
+            self.config.guacamole_baseurl,
+        )
 
-            index_server_list = self.alternatifconnection["nextserver"] - 1
-            arsconnection = self.alternatifconnection["listars"][index_server_list]
-            self.config.Port = self.alternatifconnection[arsconnection]["port"]
-            self.config.Server = self.alternatifconnection[arsconnection]["server"]
-            self.config.guacamole_baseurl = self.alternatifconnection[arsconnection][
-                "guacamole_baseurl"
-            ]
-            serverjid = str(arsconnection)
-            try:
-                self.config.confdomain = str(arsconnection).split("@")[1].split("/")[0]
-            except BaseException:
-                self.config.confdomain = str(serverjid)
-            logger.debug(
-                f"Rewriting cluster.ini file: {self.config.Port} {ipfromdns(self.config.Server)} {arsconnection} {self.config.guacamole_baseurl}"
-            )
-            changeconnection(
-                conffilename(self.config.agenttype),
-                self.config.Port,
-                ipfromdns(self.config.Server),
-                arsconnection,
-                self.config.guacamole_baseurl,
-            )
+        self.alternatifconnection["nextserver"] = (
+            self.alternatifconnection["nextserver"]
+        ) + 1
+        if (
+            self.alternatifconnection["nextserver"]
+            > self.alternatifconnection["nbserver"]
+        ):
+            self.alternatifconnection["nextserver"] = 1
 
-            self.alternatifconnection["nextserver"] = (
-                self.alternatifconnection["nextserver"]
-            ) + 1
-            if (
-                self.alternatifconnection["nextserver"]
-                > self.alternatifconnection["nbserver"]
-            ):
-                self.alternatifconnection["nextserver"] = 1
-
-            # write alternative configuration
-            create_config_file_atomically(conffilenametmp("cluster"), self.alternatifconnection)
-            create_config_file_atomically(conffilename("cluster"), self.alternatifconnection)
-            self.address = (
-                ipfromdns(self.config.Server),
-                int(self.config.Port),
-            )
-            self.server_address = self.address
-            # loop1 = asyncio.get_event_loop()
-            self.shared_dict["new_connection"] = True
-            self.loop.stop()
-        else:
-            logger.debug("RECONNECTE DEFAULT")
-            self.reconnect(0.0, self.massage_reconection)
+        # write alternative configuration
+        create_config_file_atomically(
+            conffilenametmp("cluster"), self.alternatifconnection
+        )
+        create_config_file_atomically(
+            conffilename("cluster"), self.alternatifconnection
+        )
+        self.address = (
+            ipfromdns(self.config.Server),
+            int(self.config.Port),
+        )
+        self.server_address = self.address
+        self.shared_dict["new_connection"] = True
+        self.loop.stop()
 
     def handle_connection_failed(self, data):
         logger.debug(f"handle_connection_failed {self.server_address}")
@@ -1314,6 +1312,11 @@ class MUCBot(ClientXMPP):
         logger.info(f"handle_connected {self.server_address}")
         self.demandeRestartBot_bool = False
         logger.info(f"connected {self.server_address}")
+        with terminate_lock:
+            if self.shared_dict["reconnect"] == True:
+                pass
+            self.shared_dict["compteur"] = 0
+            self.shared_dict["reconnect"] = False
 
     def reconnect_agent(self, msg="deconection", delay=0):
         self.massage_reconection = msg
@@ -3173,6 +3176,12 @@ class MUCBot(ClientXMPP):
         pass
 
     def handlemanagesession(self):
+        # on verifie si on doit faire 1 reconnection
+        with terminate_lock:
+            if self.shared_dict.get("reconnect"):
+                self.shared_dict["reconnect"] = False
+                self.reconnect(0.0, "new configuration recu")
+        # on gere les compteurs de session
         self.session.decrementesessiondatainfo()
 
     def force_full_registration(self):
@@ -4216,6 +4225,155 @@ def shuffle_listars(config):
         config["listars"] = [first_element] + other_elements
 
 
+def initialize_alternatifconnection(optstypemachine):
+    """
+    Initialise la variable alternatifconnection en fonction des informations de configuration.
+
+    :param optstypemachine: Type de machine (par exemple, "relay").
+    :return: La variable alternatifconnection initialisée.
+    """
+    logger.info("composition alternative")
+
+    # Chemin du fichier alternative
+    namefilealternatifconnection = conffilename("cluster")
+    if os.path.isfile(namefilealternatifconnection):
+        alternatifconnection = nextalternativeclusterconnectioninformation(
+            namefilealternatifconnection
+        )
+        logger.info(f"composition alternative {namefilealternatifconnection}")
+
+        if (
+            "nbserver" not in alternatifconnection
+            or "listars" not in alternatifconnection
+            or "nextserver" not in alternatifconnection
+        ):
+            alternatifconnection = (
+                None  # json cluster.ini pas correct pas d'alternative.
+            )
+
+        if optstypemachine.lower() not in ["relay"]:
+            shuffle_listars(alternatifconnection)
+            logger.info("file %s" % conffilename("cluster"))
+            logger.info(
+                "list server connection possible (alternative cluster) %s"
+                % alternatifconnection["listars"]
+            )
+        else:
+            alternatifconnection = {}  # 1 seul serveur pas d'alternative.
+    else:
+        alternatifconnection = None  # Fichier de configuration non trouvé
+
+    return alternatifconnection
+
+
+def read_alternatifconnection():
+    """
+    Lecture et vérification des informations d'une connexion alternative
+    pour un cluster, basée sur le fichier de configuration.
+    """
+    alternatifconnection = None
+
+    # Récupération du nom du fichier de configuration
+    namefilealternatifconnection = conffilename("cluster")
+
+    if os.path.isfile(namefilealternatifconnection):
+        # Lecture des informations de connexion alternative
+        alternatifconnection = nextalternativeclusterconnectioninformation(
+            namefilealternatifconnection
+        )
+
+        logger.info(f"Composition alternative : {namefilealternatifconnection}")
+
+        # Validation des informations obtenues
+        if (
+            "nbserver" not in alternatifconnection
+            or "listars" not in alternatifconnection
+            or "nextserver" not in alternatifconnection
+        ):
+            # Si le fichier est mal formé, alternative impossible
+            return None
+        return alternatifconnection
+    else:
+        logger.warning(f"Fichier {namefilealternatifconnection} introuvable.")
+        return None
+
+
+def is_process_running(pid):
+    """
+    Vérifie si un processus avec le PID spécifié est en cours d'exécution.
+
+    Args:
+        pid (int): Le PID du processus à vérifier.
+
+    Returns:
+        bool: True si le processus est en cours d'exécution, False sinon.
+    """
+    try:
+        process = psutil.Process(pid)
+        return process.is_running()
+    except psutil.NoSuchProcess:
+        return False
+    except psutil.AccessDenied:
+        print(f"Accès refusé pour le PID {pid}")
+        return False
+    except psutil.ZombieProcess:
+        print(f"Le processus avec le PID {pid} est un processus zombie")
+        return False
+
+
+def launch_standalone_program(
+    pathagent=None, program_name="connectionagent.py", options="-t machine"
+):
+    """
+    Lance un programme standalone Python sans attendre de résultat.
+
+    Args:
+        pathagent (str, optional): Répertoire contenant le programme à exécuter.
+                                   Si None, utilise le répertoire courant.
+        program_name (str, optional): Nom du programme à exécuter. Par défaut, "connectionagent.py".
+        options (str, optional): Options à passer au programme. Par défaut, "-t relayserver".
+    """
+    if pathagent is None:
+        # Le programme à lancer dans le même répertoire
+        pathagent = os.path.dirname(
+            os.path.abspath(__file__)
+        )  # Répertoire courant du programme
+
+    try:
+        # Obtenir le chemin complet du programme à lancer
+        program_path = os.path.join(pathagent, program_name)
+
+        # Obtenir l'exécutable Python utilisé par le processus actuel
+        pythonexec = psutil.Process().exe()
+
+        # Vérifier si le fichier existe
+        if not os.path.isfile(program_path):
+            raise FileNotFoundError(
+                f"Le programme {pythonexec} {program_path} est introuvable."
+            )
+
+        # Construire la commande à exécuter
+        command = [pythonexec, program_path] + options.split()
+
+        # Lancer le programme de manière asynchrone
+        process = subprocess.Popen(
+            command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+
+        logger.info(
+            f"Programme lancé : {pythonexec} {program_path} avec les options : {options}"
+        )
+
+        # Retourner le PID du processus lancé
+        return process.pid
+
+    except FileNotFoundError as fnf_error:
+        logger.error(f"Erreur : {fnf_error}")
+    except Exception as e:
+        logger.error(f"Erreur lors du lancement du programme : {e}")
+    return None
+
+
 def doTask(
     optstypemachine,
     optsconsoledebug,
@@ -4237,6 +4395,7 @@ def doTask(
     pidfile = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"
     )
+    pid_connecteur = None
     alternatifconnection = None
     file_put_contents(pidfile, "%s" % os.getpid())
     tg = confParameter(optstypemachine)
@@ -4295,35 +4454,9 @@ def doTask(
 
     # on lit les alternatives si elle existe. 1 fois suivant alternatifconnection initialise ou pas
     if not alternatifconnection:
-        logger.info("composition  altenative")
-        # chemin du fichier alternative
-        namefilealternatifconnection = conffilename("cluster")
-        if os.path.isfile(namefilealternatifconnection):
-            alternatifconnection = nextalternativeclusterconnectioninformation(
-                namefilealternatifconnection
-            )
-            logger.info(f"composition  altenative {namefilealternatifconnection}")
-            if (
-                "nbserver" not in alternatifconnection
-                or "listars" not in alternatifconnection
-                or "nextserver" not in alternatifconnection
-            ):
-                alternatifconnection = (
-                    None  # json cluster.ini pas correct pas d'alternative.
-                )
-            elif alternatifconnection["nbserver"] == 1:
-                alternatifconnection = {}  # 1 seul serveur pas d'alternative.
-            else:
-                # il y a une configuration alternative cluster pour agent machine
-                # en cas d'impossibilite de se connecte sur son serveur ars referent. il commutera
-                # sur 1 alternative du cluster.
-                if optstypemachine.lower() not in ["relay"]:
-                    shuffle_listars(alternatifconnection)
-                    logger.info("file %s" % conffilename("cluster"))
-                    logger.info(
-                        "list server connection possible (alternative cluster) %s"
-                        % alternatifconnection["listars"]
-                    )
+        logger.debug("composition  alternative")
+        alternatifconnection = initialize_alternatifconnection(optstypemachine)
+
     if not alternatifconnection:
         with terminate_lock:
             shared_dict["alternative"] = False
@@ -4335,24 +4468,52 @@ def doTask(
     with terminate_lock:
         shared_dict["new_connection"] = False
     while True:
-        logger.info("composition  altenative")
-        # chemin du fichier alternative
-        namefilealternatifconnection = conffilename("cluster")
-        if os.path.isfile(namefilealternatifconnection):
-            alternatifconnection = nextalternativeclusterconnectioninformation(
-                namefilealternatifconnection
-            )
-            logger.info(f"composition  altenative {namefilealternatifconnection}")
-            if (
-                "nbserver" not in alternatifconnection
-                or "listars" not in alternatifconnection
-                or "nextserver" not in alternatifconnection
-            ):
-                alternatifconnection = (
-                    None  # json cluster.ini pas correct pas d'alternative.
-                )
-            elif alternatifconnection["nbserver"] == 1:
-                alternatifconnection = {}  # 1 seul serveur pas d'alternative.
+        # Enregistre un message d'information dans le logger
+        logger.info("composition alternative")
+
+        # Lit le fichier de configuration alternative
+        alternatifconnection = read_alternatifconnection()
+
+        # Incrémente la valeur de "compteur" dans le dictionnaire partagé
+        with terminate_lock:
+            shared_dict["compteur"] += 1
+
+        # Enregistre la valeur actuelle du compteur dans le logger
+        logger.info("shared_dict_compteur : %s" % shared_dict["compteur"])
+
+        # Définit le nombre d'essais pour vérifier le compteur et lanceer 1 reconf des fichiers.
+        tous_les_n_essais = 10
+
+        # Vérifie si le compteur est un multiple de 10 et n'est pas égal à 0
+        if (
+            shared_dict["compteur"] % tous_les_n_essais == 0
+            and shared_dict["compteur"] != 0
+        ):
+
+            # Si le compteur est un multiple de 10 et n'est pas égal à 0, lance connectionagent.py
+            if pid_connecteur is None:
+                # Si pid_connecteur est None, lance le programme standalone
+                pid_connecteur = launch_standalone_program()
+                logger.info("pid_connecteur : %s" % pid_connecteur)
+                with terminate_lock:
+                    shared_dict["reconnect"] = True
+                    # Construire le chemin du fichier
+                    # force_reconfiguration = os.path.join(
+                    # os.path.dirname(os.path.realpath(__file__)),
+                    # "action_force_reconfiguration" )
+                    # # Créer le fichier vide
+                    # with open(force_reconfiguration, 'w') as f:
+                    # pass  # Le fichier est créé vide
+
+            else:
+                logger.info("attendre fin connecteur pour pouvoir le relancer")
+                # Si pid_connecteur n'est pas None, vérifie si le processus est en cours d'exécution
+                if not is_process_running(pid_connecteur):
+                    # Si le processus n'est pas en cours d'exécution, réinitialise pid_connecteur à None
+                    pid_connecteur = None
+                    # # reconnect demande
+                    # with terminate_lock:
+                    # shared_dict["reconnect"]= True
 
         with terminate_lock:
             if shared_dict.get("terminate"):
@@ -4650,12 +4811,11 @@ if __name__ == "__main__":
         default=False,
         help="console debug",
     )
-    # Créer un dictionnaire partagé
     # Ce dict est partage entre tout les processs
     manager = multiprocessing.Manager()
     shared_dict = manager.dict()
     shared_dict["terminate"] = False
-    shared_dict["reconnect"] = True
+    shared_dict["reconnect"] = False
     shared_dict["compteur"] = 0
     shared_dict["alternative"] = True
     shared_dict["new_connection"] = False
