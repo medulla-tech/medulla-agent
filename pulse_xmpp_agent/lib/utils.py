@@ -1886,9 +1886,7 @@ def getIpXmppInterface(config):
                 if b := [x for x in a.split(" ") if x != ""]:
                     resultip = b[1].split(":")[0]
         elif sys.platform.startswith("darwin"):
-            obj = simplecommand(
-                f"netstat -an | grep {Port} | grep ESTABLISHED"
-            )
+            obj = simplecommand(f"netstat -an | grep {Port} | grep ESTABLISHED")
             if len(obj["result"]) != 0:
                 for i in range(len(obj["result"])):
                     obj["result"][i] = obj["result"][i].rstrip("\n")
