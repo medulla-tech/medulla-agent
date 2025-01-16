@@ -10,11 +10,10 @@ import platform
 import tempfile
 import os
 
-FUSIONVERSION = "2.5.2"
-GLPIAGENTVERSION = "1.5"
+GLPIAGENTVERSION = "1.11"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -39,7 +38,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 def checkGlpiAgentVersion():
     if sys.platform.startswith("win"):
-        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{AACB13FD-6BF5-1014-8857-9DC1274EEC25} /s | Find "DisplayVersion"'
+        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{4E945D68-6BF4-1014-92CA-C66FDCA228A2} /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             glpiagentversion = result["result"][0].strip().split()[-1]
@@ -58,7 +57,7 @@ def check_if_binary_ok():
             logger.info("Glpi-Agent is not present, we need to install the component.")
 
             cmd = (
-                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{AACB13FD-6BF5-1014-8857-9DC1274EEC25}" '
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{4E945D68-6BF4-1014-92CA-C66FDCA228A2}" '
                 '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
             )
             result = utils.simplecommand(cmd)
@@ -71,7 +70,7 @@ def check_if_binary_ok():
 
 
 def updateGlpiAgent(xmppobject):
-    logger.info("Updating Glpi-Agent to version %s" % FUSIONVERSION)
+    logger.info("Updating Glpi-Agent to version %s" % GLPIAGENTVERSION)
 
     windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
     install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
