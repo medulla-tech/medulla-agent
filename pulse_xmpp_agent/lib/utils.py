@@ -1831,7 +1831,6 @@ def getIpXmppInterface(config):
     """
     resultip = ""
 
-
     # Validate xmpp_server_ipaddress_or_dns
     def is_valid_url_or_ipv4(value):
         try:
@@ -1844,20 +1843,28 @@ def getIpXmppInterface(config):
         except Exception:
             return False
 
-
-
     if hasattr(config, "Server") and is_valid_url_or_ipv4(config.Server):
         xmpp_server_ipaddress_or_dns = config.Server
     elif hasattr(config, "confserver") and is_valid_url_or_ipv4(config.confserver):
         xmpp_server_ipaddress_or_dns = config.confserver
     else:
-        logger.error("Invalid server configuration. Neither 'Server' nor 'confserver' is valid.")
+        logger.error(
+            "Invalid server configuration. Neither 'Server' nor 'confserver' is valid."
+        )
         return None
 
     # Control on the Port variable
-    if hasattr(config, "Port") and isinstance(config.Port, int) and 0 <= config.Port <= 65535:
+    if (
+        hasattr(config, "Port")
+        and isinstance(config.Port, int)
+        and 0 <= config.Port <= 65535
+    ):
         Port = config.Port
-    elif hasattr(config, "confPort") and isinstance(config.confPort, int) and 0 <= config.confPort <= 65535:
+    elif (
+        hasattr(config, "confPort")
+        and isinstance(config.confPort, int)
+        and 0 <= config.confPort <= 65535
+    ):
         Port = config.confPort
     else:
         Port = 5222
