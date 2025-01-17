@@ -4684,7 +4684,6 @@ class process_xmpp_agent:
             except:
                 self.readconfig_Marche_Arret = True
 
-
             self.logger.debug("/---------------------------------\\")
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
             self.logger.debug("\---------------------------------/")
