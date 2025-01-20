@@ -5076,9 +5076,57 @@ class offline_search_kb:
                 )
         return result_cmd
 
+
+    def get_windows_version_major(self):
+        version = platform.version()
+        match = re.search(r'(\d+)\.(\d+)\.(\d+)', version)
+        if match:
+            major, minor, build = match.groups()
+            if major == '10' and int(build) >= 22000:
+                return '11'
+            elif major == '10':
+                return '10'
+            elif major == '6' and minor == '1':
+                return '7'
+        return ""
+
+    def get_locale_id_iso(self):
+        cmd = """REG QUERY "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\Language" """
+        result = simplecommand(encode_strconsole(cmd))
+        if int(result["code"]) == 0:
+            # analyse result
+            line = [
+                    decode_strconsole(x.strip())
+                    for x in result["result"]
+                    if x.strip().startswith('InstallLanguage')
+                ]
+            if line:
+                for sline in line:
+                   lcmd = [x for x in sline.split(" ") if x != ""]
+                   logging.getLogger().error(lcmd)
+                   if len(lcmd) == 3:
+                      return lcmd[2]
+        return ""
+
     def search_system_info_reg(self):
         result_cmd = {}
         if sys.platform.startswith("win"):
+            datalang = {
+                "0416": {"OSL": "Brazilian Portuguese", "VSV": "English, Brazilian Portuguese", "code_lang": "pt-br"},
+                "0405": {"OSL": "Czech", "VSV": "English, Czech", "code_lang": "cs"},
+                "0409": {"OSL": "English", "VSV": "English", "code_lang": "en"},
+                "040C": {"OSL": "French", "VSV": "English, French", "code_lang": "fr"},
+                "0407": {"OSL": "German", "VSV": "English, German", "code_lang": "de"},
+                "040E": {"OSL": "Hungarian", "VSV": "English, Hungarian", "code_lang": "hu"},
+                "0410": {"OSL": "Italian", "VSV": "English, Italian", "code_lang": "it"},
+                "0411": {"OSL": "Japanese", "VSV": "English, Japanese", "code_lang": "ja"},
+                "0412": {"OSL": "Korean", "VSV": "English, Korean", "code_lang": "ko"},
+                "0415": {"OSL": "Polish", "VSV": "English, Polish", "code_lang": "pl"},
+                "0419": {"OSL": "Russian", "VSV": "English, Russian", "code_lang": "ru"},
+                "0C0A": {"OSL": "Spanish", "VSV": "English, Spanish", "code_lang": "es"},
+                "0804": {"OSL": "Simplified Chinese", "VSV": "English", "code_lang": "zh-cn"}
+            }
+
             informationlist = (
                 "CurrentBuild",
                 "CurrentVersion",
@@ -5102,6 +5150,26 @@ class offline_search_kb:
                     if len(lcmd) >= 3:
                         keystring = " ".join(lcmd[2:])
                         result_cmd[lcmd[0]] = keystring
+            # major update
+            result_cmd[ 'major_version'] = self.get_windows_version_major()
+            if (result_cmd['major_version'] == "10" and
+                   "DisplayVersion" in result_cmd and
+                   result_cmd['DisplayVersion'] != "22H2"):
+                result_cmd[ 'InstallLanguage'] = self.get_locale_id_iso()
+                if (result_cmd['InstallLanguage'] and
+                       result_cmd['major_version'] and
+                       datalang[result_cmd['InstallLanguage']]['code_lang']):
+                    result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
+                                                                 datalang[result_cmd['InstallLanguage']]['code_lang'])
+            if (result_cmd['major_version'] == "11" and
+                   "DisplayVersion" in result_cmd and
+                   result_cmd['DisplayVersion'] != "24H2"):
+                result_cmd[ 'InstallLanguage'] = self.get_locale_id_iso()
+                if (result_cmd['InstallLanguage'] and
+                       result_cmd['major_version'] and
+                       datalang[result_cmd['InstallLanguage']]['code_lang']):
+                    result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
+                                                                 datalang[result_cmd['InstallLanguage']]['code_lang'])
 
             # search code langue
             try:
