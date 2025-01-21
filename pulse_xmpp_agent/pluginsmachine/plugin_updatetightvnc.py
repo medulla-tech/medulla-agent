@@ -26,10 +26,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     if sys.platform.startswith("win"):
         try:
-            identifyingnumber_cmd = 'wmic product get name,identifyingnumber | find "TightVNC"'
+            identifyingnumber_cmd = (
+                'wmic product get name,identifyingnumber | find "TightVNC"'
+            )
             identifyingnumber_result = utils.simplecommand(identifyingnumber_cmd)
             if identifyingnumber_result["code"] == 0:
-                identifyingnumber = identifyingnumber_result["result"][0].strip().split()[0]
+                identifyingnumber = (
+                    identifyingnumber_result["result"][0].strip().split()[0]
+                )
                 installed_version = checktightvncversion(identifyingnumber)
 
                 if Version(installed_version) < Version(COMPLETETIGHTVNC):
@@ -38,9 +42,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     uninstall_cmd = f"msiexec /x {identifyingnumber} /quiet /qn"
                     uninstall_result = utils.simplecommand(uninstall_cmd)
                     if uninstall_result["code"] == 0:
-                        logger.info(f"PL-TIGHT Version {installed_version} uninstalled with success.")
+                        logger.info(
+                            f"PL-TIGHT Version {installed_version} uninstalled with success."
+                        )
                     else:
-                        logger.error(f"PL-TIGHT Error when uninstalling the version {installed_version}: {uninstall_result['result']}")
+                        logger.error(
+                            f"PL-TIGHT Error when uninstalling the version {installed_version}: {uninstall_result['result']}"
+                        )
                         return
                     updatetightvnc(xmppobject)
             else:
@@ -179,7 +187,7 @@ def checktightvncversion(identifyingnumber):
     if sys.platform.startswith("win"):
         if identifyingnumber:
             cmd = (
-                f'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\'
+                f"reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\"
                 f'{identifyingnumber} /s | Find "DisplayVersion"'
             )
             result = utils.simplecommand(cmd)
