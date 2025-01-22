@@ -12,11 +12,11 @@ import traceback
 from lib import utils
 
 
-TIGHTVNC = "2.8.85"
-COMPLETETIGHTVNC = "2.8.85.0"
+TIGHTVNC = "2.8.81"
+COMPLETETIGHTVNC = "2.8.81.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.5", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.6", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -26,9 +26,32 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     if sys.platform.startswith("win"):
         try:
-            # Update if version is lower
-            installed_version = checktightvncversion()
-            if Version(installed_version) < Version(COMPLETETIGHTVNC):
+            identifyingnumber_cmd = (
+                'wmic product get name,identifyingnumber | find "TightVNC"'
+            )
+            identifyingnumber_result = utils.simplecommand(identifyingnumber_cmd)
+            if identifyingnumber_result["code"] == 0:
+                identifyingnumber = (
+                    identifyingnumber_result["result"][0].strip().split()[0]
+                )
+                installed_version = checktightvncversion(identifyingnumber)
+
+                if Version(installed_version) < Version(COMPLETETIGHTVNC):
+                    updatetightvnc(xmppobject)
+                elif Version(installed_version) > Version("2.8.81"):
+                    uninstall_cmd = f"msiexec /x {identifyingnumber} /quiet /qn"
+                    uninstall_result = utils.simplecommand(uninstall_cmd)
+                    if uninstall_result["code"] == 0:
+                        logger.info(
+                            f"PL-TIGHT Version {installed_version} uninstalled with success."
+                        )
+                    else:
+                        logger.error(
+                            f"PL-TIGHT Error when uninstalling the version {installed_version}: {uninstall_result['result']}"
+                        )
+                        return
+                    updatetightvnc(xmppobject)
+            else:
                 updatetightvnc(xmppobject)
             check_tightvnc_configuration(xmppobject)
         except Exception as error_plugin:
@@ -160,12 +183,16 @@ def check_tightvnc_configuration(xmppobject):
                 )
 
 
-def checktightvncversion():
+def checktightvncversion(identifyingnumber):
     if sys.platform.startswith("win"):
-        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{78CA3586-0715-4862-B091-200565E3BC87} /s | Find "DisplayVersion"'
-        result = utils.simplecommand(cmd)
-        if result["code"] == 0:
-            tightvncversion = result["result"][0].strip().split()[-1]
+        if identifyingnumber:
+            cmd = (
+                f"reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\"
+                f'{identifyingnumber} /s | Find "DisplayVersion"'
+            )
+            result = utils.simplecommand(cmd)
+            if result["code"] == 0 and result["result"]:
+                tightvncversion = result["result"][0].strip().split()[-1]
         else:
             # TIGHTVNC is not installed. We will force installation by returning
             # version 0.1
