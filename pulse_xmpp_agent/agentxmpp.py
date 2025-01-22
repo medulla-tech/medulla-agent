@@ -4652,38 +4652,38 @@ class process_xmpp_agent:
         setgetcountcycle()
 
         setgetrestart()
-        tg = tgconf(optstypemachine)
-        self.logger.debug(f"{tg.Server}{ int(tg.Port)}")
-        xmpp = MUCBot(
-            tg,
-            queue_recv_tcp_to_xmpp,
-            queueout,
-            eventkilltcp,
-            eventkillpipe,
-            pidprogrammprincipal,
-            shared_dict,
-            terminate_lock,
-            alternatifconnection,
-        )
-        xmpp.auto_reconnect = False
-        xmpp.register_plugin("xep_0030")  # Service Discovery
-        xmpp.register_plugin("xep_0045")  # Multi-User Chat
-        xmpp.register_plugin("xep_0004")  # Data Forms
-        xmpp.register_plugin("xep_0050")  # Adhoc Commands
-        xmpp.register_plugin(
-            "xep_0199",
-            {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
-        )
-        xmpp.register_plugin("xep_0077")  # In-band Registration
-        xmpp["xep_0077"].force_registration = True
-        xmpp.server_address = (ipfromdns(tg.Server), int(tg.Port))
-        time.sleep(0.2)
-        try:
-            self.readconfig_Marche_Arret
-        except:
-            self.readconfig_Marche_Arret = True
-
         while True:
+            tg = tgconf(optstypemachine)
+            self.logger.debug(f"{tg.Server}{ int(tg.Port)}")
+            xmpp = MUCBot(
+                tg,
+                queue_recv_tcp_to_xmpp,
+                queueout,
+                eventkilltcp,
+                eventkillpipe,
+                pidprogrammprincipal,
+                shared_dict,
+                terminate_lock,
+                alternatifconnection,
+            )
+            xmpp.auto_reconnect = False
+            xmpp.register_plugin("xep_0030")  # Service Discovery
+            xmpp.register_plugin("xep_0045")  # Multi-User Chat
+            xmpp.register_plugin("xep_0004")  # Data Forms
+            xmpp.register_plugin("xep_0050")  # Adhoc Commands
+            xmpp.register_plugin(
+                "xep_0199",
+                {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
+            )
+            xmpp.register_plugin("xep_0077")  # In-band Registration
+            xmpp["xep_0077"].force_registration = True
+            xmpp.server_address = (ipfromdns(tg.Server), int(tg.Port))
+            time.sleep(0.2)
+            try:
+                self.readconfig_Marche_Arret
+            except:
+                self.readconfig_Marche_Arret = True
+
             self.logger.debug("/---------------------------------\\")
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
             self.logger.debug("\---------------------------------/")

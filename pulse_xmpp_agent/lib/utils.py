@@ -8,6 +8,7 @@
 
 import sys
 import urllib.request as urllib2
+from urllib.parse import urlparse
 from configparser import ConfigParser
 import binascii
 import netifaces
@@ -1829,8 +1830,44 @@ def getIpXmppInterface(config):
         str: The local IP from the client which is talking with the ejabberd server.
     """
     resultip = ""
-    xmpp_server_ipaddress_or_dns = config.Server
-    Port = config.Port
+
+    # Validate xmpp_server_ipaddress_or_dns
+    def is_valid_url_or_ipv4(value):
+        try:
+            # Check if it's a valid IPv4
+            if is_valid_ipv4(value):
+                return True
+            # Check if it's a valid URL
+            parsed = urlparse(value)
+            return bool(parsed.scheme and parsed.netloc)
+        except Exception:
+            return False
+
+    if hasattr(config, "Server") and is_valid_url_or_ipv4(config.Server):
+        xmpp_server_ipaddress_or_dns = config.Server
+    elif hasattr(config, "confserver") and is_valid_url_or_ipv4(config.confserver):
+        xmpp_server_ipaddress_or_dns = config.confserver
+    else:
+        logger.error(
+            "Invalid server configuration. Neither 'Server' nor 'confserver' is valid."
+        )
+        return None
+
+    # Control on the Port variable
+    if (
+        hasattr(config, "Port")
+        and isinstance(config.Port, int)
+        and 0 <= config.Port <= 65535
+    ):
+        Port = config.Port
+    elif (
+        hasattr(config, "confPort")
+        and isinstance(config.confPort, int)
+        and 0 <= config.confPort <= 65535
+    ):
+        Port = config.confPort
+    else:
+        Port = 5222
 
     # Get the list of network interfaces
     interfaces = netifaces.interfaces()
