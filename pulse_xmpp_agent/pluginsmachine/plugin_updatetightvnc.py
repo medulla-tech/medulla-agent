@@ -12,11 +12,11 @@ import traceback
 from lib import utils
 
 
-TIGHTVNC = "2.8.84"
-COMPLETETIGHTVNC = "2.8.84.0"
+TIGHTVNC = "2.8.85"
+COMPLETETIGHTVNC = "2.8.85.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.3", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.5", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -162,7 +162,7 @@ def check_tightvnc_configuration(xmppobject):
 
 def checktightvncversion():
     if sys.platform.startswith("win"):
-        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{5AE9C1FB-F4F8-44A7-8550-F0592F56A1F2} /s | Find "DisplayVersion"'
+        cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\{78CA3586-0715-4862-B091-200565E3BC87} /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result["code"] == 0:
             tightvncversion = result["result"][0].strip().split()[-1]
