@@ -280,6 +280,7 @@ def prepare_folder_rollback(rollback_pulse_xmpp_agent, agent_folder):
 
 
 def module_needed(agent_image, verbose=False):
+    original_sys_path = sys.path.copy()
     # sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__))))
     # create file __init.py si non exist
     boolfichier = False
@@ -316,6 +317,7 @@ def module_needed(agent_image, verbose=False):
         except BaseException:
             print("Error while deleting file __init__.py")
     if error:
+        sys.path = original_sys_path
         return False
 
     for filename in [
@@ -330,7 +332,9 @@ def module_needed(agent_image, verbose=False):
                 print(
                     f"Some python modules needed for running lib/{filename} are missing. We will not switch to new agent"
                 )
+            sys.path = original_sys_path
             return False
+    sys.path = original_sys_path
     return True
 
 
