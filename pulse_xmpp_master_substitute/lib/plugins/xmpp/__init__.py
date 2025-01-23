@@ -10480,11 +10480,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 FROM
                     %s
                 WHERE
-                    updateid LIKE '%s'
+                    %s LIKE '%s'
                 LIMIT 1;""" % (
                 namefield,
                 tablename,
-                valchamp,
+                namefield,
+                valchamp
             )
             rest = session.execute(sql)
             session.commit()
@@ -10497,6 +10498,118 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 "sql is_exist_value_in_table: %s" % traceback.format_exc()
             )
         return False
+
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows_gray_list_major_version(self, session, data, validity_day=10):
+        """
+        Ajoute ou met à jour une entrée dans la table `up_gray_list` pour un package Windows en fonction
+        de sa version majeure, avec gestion de la validité.
+
+        Args:
+            session: Objet de session SQLAlchemy pour exécuter les requêtes.
+            data (dict): Données contenant les informations système nécessaires, incluant :
+                - system_info (dict): Informations sur le système.
+                    - infobuild (dict): Détails de la version du système.
+                        - major_version (str): Version majeure du système (par ex., "10").
+                        - code_lang_iso (str): Code ISO de la langue du système (par ex., "fr").
+            validity_day (int, optional): Nombre de jours avant que l'entrée ne devienne invalide.
+                                        Par défaut à 10 jours.
+
+        Returns:
+            str: L'identifiant unique (`package_name_id`) de l'entrée ajoutée ou mise à jour dans la table `up_gray_list`.
+            None: Si l'entrée existe déjà dans l'une des tables suivantes :
+                - `up_gray_list`
+                - `up_gray_list_flop` (elle sera supprimée de cette table si trouvée)
+                - `up_black_list`
+
+        Raises:
+            Exception: Enregistre une erreur dans les logs en cas d'échec.
+
+        Notes:
+            - Cette méthode utilise des tables SQL spécifiques (`up_gray_list`, `up_gray_list_flop`, `up_black_list`).
+            - Un contrôle est effectué pour éviter d'ajouter des entrées déjà existantes dans ces tables.
+        """
+        # Construire le nom du package et son identifiant unique
+        package_name = f"win{data['system_info']['infobuild']['major_version']}upd_{data['system_info']['infobuild']['code_lang_iso']}"
+        package_name_id = f"9514859a-{package_name}bqbowfj6h9update"
+        try:
+            # Vérifier si le package existe déjà dans la table `up_gray_list`
+            if self.is_exist_value_in_table(package_name_id, namefield="updateid", tablename="up_gray_list"):
+                return None
+
+            # Vérifier si le package existe dans la table `up_gray_list_flop`
+            if self.is_exist_value_in_table(package_name_id, namefield="updateid", tablename="up_gray_list_flop"):
+                # Supprimer l'entrée de la table `up_gray_list_flop`
+                sql_delete_gray_list_flop = """
+                    DELETE FROM up_gray_list_flop
+                    WHERE updateid = :package_name;
+                """
+                session.execute(sql_delete_gray_list_flop, {"package_name": package_name_id})
+                session.commit()
+                return None
+
+            # Vérifier si le package existe dans la table `up_black_list` (ignoré s'il y est présent)
+            if self.is_exist_value_in_table(package_name_id, namefield="updateid_or_kb", tablename="up_black_list"):
+                return None
+
+            # Définir les dates actuelles et de validité
+            current_date = datetime.now()
+            validity_date = current_date + timedelta(days=validity_day)
+
+            # Préparer les données pour l'insertion dans `up_gray_list`
+            insert_data = {
+                "updateid": package_name_id,
+                "updateid_package": package_name_id,
+                "kb": package_name,
+                "revisionid": package_name,
+                "title": package_name,
+                "description": f"{package_name} major update",
+                "payloadfiles": package_name,
+                "supersededby": package_name,
+                "title_short": package_name,
+                "valided": 0,
+                "validity_date": validity_date,
+            }
+            # Insertion de l'entrée dans `up_gray_list`
+            sql_insert_gray_list = """
+                INSERT INTO up_gray_list (
+                    updateid,
+                    updateid_package,
+                    kb,
+                    revisionid,
+                    title,
+                    description,
+                    payloadfiles,
+                    supersededby,
+                    creationdate,
+                    title_short,
+                    valided,
+                    validity_date
+                ) VALUES (
+                    :updateid,
+                    :updateid_package,
+                    :kb,
+                    :revisionid,
+                    :title,
+                    :description,
+                    :payloadfiles,
+                    :supersededby,
+                    CURRENT_TIMESTAMP,
+                    :title_short,
+                    :valided,
+                    :validity_date
+                );
+            """
+            session.execute(sql_insert_gray_list, insert_data)
+            session.commit()
+            return package_name_id
+
+        except Exception as e:
+            # En cas d'erreur, effectuer un rollback et enregistrer l'erreur dans les logs
+            logger.error(f"Error in setUp_machine_windows_gray_list_major_version: {e}")
+            session.rollback()
+            return None
 
     @DatabaseHelper._sessionm
     def setUp_machine_windows_gray_list(
@@ -10686,37 +10799,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             )
         return False
 
-    @DatabaseHelper._sessionm
-    def get_all_update_in_gray_list(self, session, updateid=None):
-        """cette function renvoi tout les update de la list gray"""
-        try:
-            sql = """
-                select * from
-                    (SELECT
-                        *
-                    FROM
-                        xmppmaster.up_gray_list
-                    UNION
-                    SELECT
-                        *
-                    FROM
-                        xmppmaster.up_gray_list_flop) as e"""
-            if updateid:
-                filter = """ WHERE
-                            updateid = '%s'""" % (
-                    updateid
-                )
-                sql = sql + filter
-            sql += ";"
-            resultproxy = session.execute(sql)
-            session.commit()
-            session.flush()
-            return [rowproxy._asdict() for rowproxy in resultproxy]
-        except Exception:
-            logging.getLogger().error(
-                "sql get_all_update_in_gray_list : %s" % traceback.format_exc()
-            )
-        return []
 
     @DatabaseHelper._sessionm
     def delete_in_white_list(self, session, updateid):
@@ -10740,6 +10822,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 "sql delete_in_white_list : %s" % traceback.format_exc()
             )
         return False
+
 
     @DatabaseHelper._sessionm
     def get_all_update_in_gray_list(self, session, updateid=None):

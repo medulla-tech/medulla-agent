@@ -5159,25 +5159,32 @@ class offline_search_kb:
                         keystring = " ".join(lcmd[2:])
                         result_cmd[lcmd[0]] = keystring
             # major update
-            result_cmd[ 'major_version'] = self.get_windows_version_major()
-            if (result_cmd['major_version'] == "10" and
-                   "DisplayVersion" in result_cmd and
-                   result_cmd['DisplayVersion'] != "22H2"):
-                result_cmd[ 'InstallLanguage'] = self.get_locale_id_iso()
-                if (result_cmd['InstallLanguage'] and
-                       result_cmd['major_version'] and
-                       datalang[result_cmd['InstallLanguage']]['code_lang']):
-                    result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
+            result_cmd['major_version'] = self.get_windows_version_major()
+            result_cmd['InstallLanguage'] = self.get_locale_id_iso()
+            if result_cmd['InstallLanguage']  in datalang:
+                result_cmd['code_lang_iso'] = datalang[result_cmd['InstallLanguage']]['code_lang']
+                result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
                                                                  datalang[result_cmd['InstallLanguage']]['code_lang'])
-            if (result_cmd['major_version'] == "11" and
-                   "DisplayVersion" in result_cmd and
-                   result_cmd['DisplayVersion'] != "24H2"):
-                result_cmd[ 'InstallLanguage'] = self.get_locale_id_iso()
-                if (result_cmd['InstallLanguage'] and
-                       result_cmd['major_version'] and
-                       datalang[result_cmd['InstallLanguage']]['code_lang']):
-                    result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
-                                                                 datalang[result_cmd['InstallLanguage']]['code_lang'])
+#             result_cmd[ 'major_version'] = self.get_windows_version_major()
+#             if (result_cmd['major_version'] == "10" and
+#                    "DisplayVersion" in result_cmd and
+#                    result_cmd['DisplayVersion'] != "22H2"):
+#                 result_cmd[ 'InstallLanguage'] = self.get_locale_id_iso()
+#                 if (result_cmd['InstallLanguage'] and
+#                        result_cmd['major_version'] and
+#                        datalang[result_cmd['InstallLanguage']]['code_lang']):
+#                     result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
+#                                                                  datalang[result_cmd['InstallLanguage']]['code_lang'])
+#
+#             if (result_cmd['major_version'] == "11" and
+#                    "DisplayVersion" in result_cmd and
+#                    result_cmd['DisplayVersion'] != "24H2"):
+#                 result_cmd[ 'InstallLanguage'] = self.get_locale_id_iso()
+#                 if (result_cmd['InstallLanguage'] and
+#                        result_cmd['major_version'] and
+#                        datalang[result_cmd['InstallLanguage']]['code_lang']):
+#                     result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
+#                                                                  datalang[result_cmd['InstallLanguage']]['code_lang'])
 
             # search code langue
             try:
