@@ -17,6 +17,8 @@ import shutil
 import importlib
 import urllib
 
+from pathlib import Path
+
 from optparse import OptionParser
 
 if sys.platform.startswith("win"):
@@ -285,6 +287,11 @@ def module_needed(agent_image, verbose=False):
     initfile = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "img_agent", "__init__.py"
     )
+
+    img_agent_path = Path(__file__).parent / "img_agent"
+    sys.path = [p for p in sys.path if "pulse_xmpp_agent" not in p]
+    sys.path.insert(0, str(img_agent_path))
+
     if not os.path.isfile(initfile):
         boolfichier = True
         open(initfile, "w").close()
@@ -296,7 +303,7 @@ def module_needed(agent_image, verbose=False):
     ]
     for filename in list_script_python_for_update:
         try:
-            importlib.import_module(f"img_agent.{filename[:-3]}")
+            importlib.import_module(f"{filename[:-3]}")
         except Exception as e:
             if verbose:
                 print(
@@ -317,7 +324,7 @@ def module_needed(agent_image, verbose=False):
         if x.endswith(".py")
     ]:
         try:
-            importlib.import_module(f"img_agent.lib.{filename}")
+            importlib.import_module(f"lib.{filename}")
         except ImportError:
             if verbose:
                 print(
