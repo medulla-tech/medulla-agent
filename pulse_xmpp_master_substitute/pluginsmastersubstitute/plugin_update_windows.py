@@ -69,6 +69,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
         showinfobool = True
         traitement_update(xmppobject, action, sessionid, data, msg, ret)
+
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
 
@@ -233,6 +234,57 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         XmppMasterDatabase().setUp_machine_windows_gray_list(
             t["updateid"], t["tableproduct"]
         )
+
+    logger.error("JFK traitement_update")
+    if ("system_info" in data and
+        "infobuild" in data["system_info"] and
+        "DisplayVersion" in data["system_info"]["infobuild"] and
+        "major_version" in data["system_info"]["infobuild"] and
+        "code_lang_iso" in data["system_info"]["infobuild"] and
+        "update_major" in data["system_info"]["infobuild"]):
+            logger.error("JFK traitement_update")
+            # package_name = f"win{data['system_info']['infobuild']['major_version']}upd_{data['system_info']['infobuild']['code_lang_iso']}"
+            # package_name_id = f"9514859a-{package_name}bqbowfj6h9update"
+            # windows 10 majeur update
+            if str(data["system_info"]["infobuild"]["major_version"]) == "10":
+                if data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
+                    package_name_id = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(data, validity_day=10)
+                    logger.error("JFK traitement_update")
+                    if package_name_id:
+                        XmppMasterDatabase().del_all_Up_machine_windows(machine["id"], [package_name_id])
+                        logger.error("add JFK traitement_update")
+
+                        XmppMasterDatabase().setUp_machine_windows(
+                                                                    machine["id"],
+                                                                    package_name_id,
+                                                                    kb= package_name_id[9:20],
+                                                                    deployment_intervals=xmppobject.deployment_intervals,
+                                                                    msrcseverity="major update",)
+                        logger.error("add JFK traitement_update")
+
+                else:
+                    # mise a jour de win 10 to win 11 decomenter a prevoir 1 parametre
+                    # il y a aussi les verification a faire
+                    # tpm2.0
+                    # boot secure.
+                    # memoire, espace disk, et processeur.
+                    # data["system_info"]["infobuild"]["major_version"] = "11"
+                    pass
+            if str(data["system_info"]["infobuild"]["major_version"]) == "11":
+                if data["system_info"]["infobuild"]["DisplayVersion"] == "24H2":
+                    package_name_id = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(data, validity_day=10)
+                    if package_name_id:
+                        XmppMasterDatabase().del_all_Up_machine_windows(machine["id"], [package_name_id])
+                        XmppMasterDatabase().setUp_machine_windows(
+                                                                    machine["id"],
+                                                                    package_name_id,
+                                                                    kb= package_name_id[9:19],
+                                                                    deployment_intervals=xmppobject.deployment_intervals,
+                                                                    msrcseverity="major update",)
+            if int(data["system_info"]["infobuild"]["major_version"]) > 11:
+                logger.debug("update major  '%s' pas pris encore en compte%" % (data["system_info"]["infobuild"]["DisplayVersion"]))
+            if int(data["system_info"]["infobuild"]["major_version"]) > 11:
+                logger.debug("update major  '%s' pas pris encore en compte%" % (data["system_info"]["infobuild"]["DisplayVersion"]))
 
 
 def list_products_on(xmppobject, data, list_produits):
