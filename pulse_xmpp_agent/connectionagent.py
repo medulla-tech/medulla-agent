@@ -1170,9 +1170,9 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         xmpp.Port_connect = tg.confport
 
         xmpp.address = (ip_server, int(tg.confport))
-        logger.debug("/-----------------------------------------\\")
-        logger.debug("|----- CONNECTION XMPP CONFIGURATEUR -----|")
-        logger.debug("\-----------------------------------------/")
+        logger.debug("-----------------------------------------")
+        logger.debug("----- CONNECTION XMPP CONFIGURATEUR -----")
+        logger.debug("-----------------------------------------")
         try:
             xmpp.connect(address=xmpp.address, force_starttls=None)
         except Exception as e:
