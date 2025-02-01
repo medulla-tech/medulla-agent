@@ -308,9 +308,8 @@ class MUCBot(ClientXMPP):
         terminate_lock,
         alternatifconnection,
     ):
-        logging.log(
-            DEBUGPULSE,
-            "initialise agent xmpp  %s Type %s" % (conf.jidagent, conf.agenttype),
+        logging.debug(
+            "initialise agent xmpp  %s Type %s" % (conf.jidagent, conf.agenttype)
         )
 
         # object partage
@@ -1294,22 +1293,15 @@ class MUCBot(ClientXMPP):
 
     def handle_connection_failed(self, data):
         logger.debug(f"handle_connection_failed {self.server_address}")
-        # logger.info(f"handle_connection_failed alternatifconnection {self.alternatifconnection}")
-        # if self.demandeRestartBot_bool:
-        #     logger.debug(f"Restart Bot {self.server_address}")
-        #     self.demandeRestartBot_bool = False
-        #     return
         self.disconnect()
 
     def handle_connecting(self, data):
         """
         success connecting agent
         """
-        # logger.info(f"connecting {self.server_address}")
         pass
 
     def handle_connected(self, data):
-        logger.info(f"handle_connected {self.server_address}")
         self.demandeRestartBot_bool = False
         logger.info(f"connected {self.server_address}")
         with terminate_lock:
@@ -2638,7 +2630,7 @@ class MUCBot(ClientXMPP):
             self.get_roster()
 
     def subscribe_initialisation(self):
-        logger.info("subscribe_initialisation agent %s" % self.sub_subscribe)
+        logger.debug("subscribe_initialisation agent %s" % self.sub_subscribe)
         self.unsubscribe_agent()
         if self.sub_subscribe not in list(self.client_roster.keys()):
             logger.warning(
@@ -3127,11 +3119,9 @@ class MUCBot(ClientXMPP):
         # retrieve existing sessions
         if not self.session.loadsessions():
             return
-        logger.debug("RELOAD SESSION DEPLOY")
         try:
             # load back to deploy after read session
             self.back_to_deploy = load_back_to_deploy()
-            logger.debug("RELOAD DEPENDENCY MANAGER")
         except IOError:
             self.back_to_deploy = {}
         cleanbacktodeploy(self)
@@ -4462,10 +4452,8 @@ def doTask(
 
     with terminate_lock:
         shared_dict["new_connection"] = False
-    while True:
-        # Enregistre un message d'information dans le logger
-        logger.info("composition alternative")
 
+    while True:
         # Lit le fichier de configuration alternative
         alternatifconnection = read_alternatifconnection()
 
@@ -4474,7 +4462,7 @@ def doTask(
             shared_dict["compteur"] += 1
 
         # Enregistre la valeur actuelle du compteur dans le logger
-        logger.info("shared_dict_compteur : %s" % shared_dict["compteur"])
+        logger.debug("shared_dict_compteur : %s" % shared_dict["compteur"])
 
         # Définit le nombre d'essais pour vérifier le compteur et lanceer 1 reconf des fichiers.
         tous_les_n_essais = 10
@@ -4512,7 +4500,6 @@ def doTask(
             if shared_dict.get("terminate"):
                 logging.info(" termine boucle process")
                 break
-        logger.info("CREATION PROCESS")
         p = Process(
             target=process_xmpp_agent,
             name="xmppagent",
