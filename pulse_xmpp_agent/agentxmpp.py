@@ -4232,16 +4232,12 @@ def initialize_alternatifconnection(optstypemachine):
     :param optstypemachine: Type de machine (par exemple, "relay").
     :return: La variable alternatifconnection initialisée.
     """
-    logger.info("composition alternative")
-
     # Chemin du fichier alternative
     namefilealternatifconnection = conffilename("cluster")
     if os.path.isfile(namefilealternatifconnection):
         alternatifconnection = nextalternativeclusterconnectioninformation(
             namefilealternatifconnection
         )
-        logger.info(f"composition alternative {namefilealternatifconnection}")
-
         if (
             "nbserver" not in alternatifconnection
             or "listars" not in alternatifconnection
@@ -4253,8 +4249,7 @@ def initialize_alternatifconnection(optstypemachine):
 
         if optstypemachine.lower() not in ["relay"]:
             shuffle_listars(alternatifconnection)
-            logger.info("file %s" % conffilename("cluster"))
-            logger.info(
+            logger.debug(
                 "list server connection possible (alternative cluster) %s"
                 % alternatifconnection["listars"]
             )
@@ -4494,7 +4489,6 @@ def doTask(
             if pid_connecteur is None:
                 # Si pid_connecteur est None, lance le programme standalone
                 pid_connecteur = launch_standalone_program()
-                logger.info("pid_connecteur : %s" % pid_connecteur)
                 with terminate_lock:
                     shared_dict["reconnect"] = True
                     # Construire le chemin du fichier
@@ -4506,7 +4500,6 @@ def doTask(
                     # pass  # Le fichier est créé vide
 
             else:
-                logger.info("attendre fin connecteur pour pouvoir le relancer")
                 # Si pid_connecteur n'est pas None, vérifie si le processus est en cours d'exécution
                 if not is_process_running(pid_connecteur):
                     # Si le processus n'est pas en cours d'exécution, réinitialise pid_connecteur à None
@@ -4875,8 +4868,6 @@ if __name__ == "__main__":
     file_handler.setLevel(tg.levellog)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
-    logger.info("file_handler (%s) %s " % (tg.levellog, tg.logfile))
-    logger.info("opts.consoledebug (%s) " % (opts.consoledebug))
 
     if not opts.deamon:
         doTask(

@@ -408,7 +408,7 @@ def handle_client_connection(self, msg):
                 )
             else:
                 # Call plugin on master
-                logger.warning("send to master")
+                logger.debug("send to master")
                 self.send_message_to_master(datasend)
             return True, ""
     except Exception as e:
