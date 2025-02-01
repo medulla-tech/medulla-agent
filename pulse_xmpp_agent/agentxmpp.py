@@ -4455,7 +4455,7 @@ def doTask(
     if not alternatifconnection:
         with terminate_lock:
             shared_dict["alternative"] = False
-    logger.info(
+    logger.debug(
         "list server connection possible (alternative cluster) %s"
         % alternatifconnection
     )
