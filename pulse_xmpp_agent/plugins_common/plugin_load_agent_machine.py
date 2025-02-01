@@ -86,7 +86,7 @@ def read_conf_load_agent_machine(xmppobject):
     try:
         pathfileconf = os.path.join(xmppobject.config.nameplugindir, conf_filename)
         if not os.path.isfile(pathfileconf):
-            logger.warning(
+            logger.debug(
                 "Plugin %s\nConfiguration file :"
                 "\n\t%s missing" % (plugin["NAME"], pathfileconf)
             )
