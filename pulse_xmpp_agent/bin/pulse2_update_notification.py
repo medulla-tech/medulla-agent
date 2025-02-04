@@ -150,7 +150,6 @@ class dialogboxnotification:
                 self.root.wm_iconphoto(True, self.medullaLogo)
                 myappid = "Medulla.Notifications.1.0"
                 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-                self.root.iconbitmap(self.medullaLogo)
                 Medullalabel = tk.Label(
                     image_frame, image=self.medullaLogo, bg="#25607d"
                 )
