@@ -328,6 +328,8 @@ class networkagentinfo:
         """
         try:
             for interface in netifaces.interfaces():
+                if interface == "":
+                    continue
                 addrs = netifaces.ifaddresses(interface)
 
                 if netifaces.AF_INET in addrs:
@@ -437,7 +439,7 @@ class networkagentinfo:
             pass
         interfaces = netifaces.interfaces()
         for i in interfaces:
-            if i == "lo":
+            if i == "lo" or i == "":
                 continue
             if iface := netifaces.ifaddresses(i).get(netifaces.AF_INET):
                 for j in iface:
@@ -507,6 +509,8 @@ class networkagentinfo:
             # Collecte les informations réseau sous Linux
             interfaces = netifaces.interfaces()
             for interface in interfaces:
+                if interface == "":
+                    continue
                 interface_info = {}
                 interface_info["interface"] = interface
                 interface_info["ipv4"] = None
@@ -789,14 +793,12 @@ def adusergroups(user):
 
 
 def interfacename(mac):
-    return next(
-        (
-            interface
-            for interface in netifaces.interfaces()
-            if isInterfaceToMacadress(interface, mac)
-        ),
-        "",
-    )
+    for interface in netifaces.interfaces():
+        if interface == '':
+            continue
+        if isInterfaceToMacadress(interface, mac):
+            return interface
+    return ""
 
 
 def lit_networkconf():
