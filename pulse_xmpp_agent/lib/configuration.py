@@ -1199,7 +1199,7 @@ class confParameter:
         ip_addresses = list()
         interfaces = netifaces.interfaces()
         for i in interfaces:
-            if i == "lo":
+            if i == "lo" or i == "":
                 continue
             iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
             if iface:
@@ -1218,6 +1218,8 @@ class confParameter:
             None if not found
         """
         for i in netifaces.interfaces():
+            if i == "":
+                continue
             addrs = netifaces.ifaddresses(i)
             try:
                 if_mac = addrs[netifaces.AF_LINK][0]["addr"]

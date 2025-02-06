@@ -10091,7 +10091,7 @@ class configuration:
         ip_addresses = []
         interfaces = netifaces.interfaces()
         for i in interfaces:
-            if i == "lo":
+            if i == "lo" or i == "":
                 continue
             if iface := netifaces.ifaddresses(i).get(netifaces.AF_INET):
                 for j in iface:
