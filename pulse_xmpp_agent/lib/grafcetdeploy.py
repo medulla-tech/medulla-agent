@@ -421,7 +421,7 @@ class grafcet:
 
         cmd = cmd.replace(
             "@@@LIST_INTERFACE_NET_NO_LOOP@@@",
-            " ".join([x for x in netifaces.interfaces() if x != "lo"]),
+            " ".join([x for x in netifaces.interfaces() if x != "lo" and x != ""]),
         )
 
         cmd = cmd.replace("@@@LIST_MAC_ADRESS@@@", " ".join(getMacAdressList()))

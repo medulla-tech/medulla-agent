@@ -1117,6 +1117,8 @@ def getshortenedmacaddress():
     listmacadress = {}
     for _ in range(20):
         for i in netifaces.interfaces():
+            if i == "":
+                continue
             addrs = netifaces.ifaddresses(i)
             try:
                 if_mac = reduction_mac(addrs[netifaces.AF_LINK][0]["addr"])
@@ -1171,6 +1173,8 @@ def MacAdressToIp(ip):
         Returns a MAC for interfaces that have given IP, returns None if not found
     """
     for i in netifaces.interfaces():
+        if i == "":
+            continue
         addrs = netifaces.ifaddresses(i)
         try:
             if_mac = addrs[netifaces.AF_LINK][0]["addr"]
@@ -1875,6 +1879,8 @@ def getIpXmppInterface(config):
     # Filter interfaces to keep only those with valid IPv4 addresses, excluding loopback addresses
     valid_interfaces = []
     for interface in interfaces:
+        if interface == "":
+            continue
         addrs = netifaces.ifaddresses(interface)
         if netifaces.AF_INET in addrs:
             for addr_info in addrs[netifaces.AF_INET]:
@@ -1951,6 +1957,8 @@ def getIpXmppInterface(config):
         else:
             # Determine the most probable network interface
             for interface in interfaces:
+                if interface == "":
+                    continue
                 addrs = netifaces.ifaddresses(interface)
                 if netifaces.AF_INET in addrs:
                     resultip = addrs[netifaces.AF_INET][0]["addr"]
