@@ -796,6 +796,17 @@ class MUCBot(ClientXMPP):
         if os.path.exists(BOOLFILECOMPLETREGISTRATION):
             self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
+        system_info = offline_search_kb().get()
+        if "infobuild" in system_info:
+            if "DisplayVersion" in system_info['infobuild']:
+            # er.messagejson["info"]["platform"]=er.messagejson["info"]["platform"]+" ["+system_info['infobuild']['DisplayVersion'] +"]"
+                er.messagejson["info"]["DisplayVersion"]  = system_info['infobuild']['DisplayVersion']
+            if  "update_major" in system_info['infobuild']:
+                er.messagejson["info"]["update_major"]  = system_info['infobuild']['update_major']
+            if  "ProductName" in system_info['infobuild']:
+                er.messagejson["info"]["ProductName"]  = system_info['infobuild']['ProductName']
+            if  "code_lang_iso" in system_info['infobuild']:
+                er.messagejson["info"]["code_lang_iso"]  = system_info['infobuild']['code_lang_iso']
         try:
             dataobj = {
                 "action": "connectionconf",
@@ -830,7 +841,7 @@ class MUCBot(ClientXMPP):
                 "agent_machine_name": self.agent_machine_name,
                 "uuid_serial_machine": serialnumbermachine(),
                 "regcomplet": self.FullRegistration,
-                "system_info": offline_search_kb().search_system_info_reg(),
+                "system_info": system_info,
             }
 
         except Exception:

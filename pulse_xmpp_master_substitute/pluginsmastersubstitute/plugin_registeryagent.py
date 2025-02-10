@@ -752,6 +752,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     logger.info(
                         "uuid serial machine : %s" % data["uuid_serial_machine"]
                     )
+                # name_platform=  data["platform"]
+                # if "DisplayVersion" in data:
+                #     name_platform = name_platform + " [" + data["DisplayVersion"] +"]"
+                # if "code_lang_iso" in data:
+                #     name_platform = name_platform + " [" + data["code_lang_iso"] +"]"
                 idmachine, msgret = XmppMasterDatabase().addPresenceMachine(
                     data["from"],
                     data["platform"],
