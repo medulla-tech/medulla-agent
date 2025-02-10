@@ -5136,6 +5136,8 @@ class offline_search_kb:
                 "DisplayVersion",
                 "RegisteredOwner",
             )
+
+
             cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" | findstr REG_SZ"""
             result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
@@ -5157,27 +5159,6 @@ class offline_search_kb:
                 result_cmd['code_lang_iso'] = datalang[result_cmd['InstallLanguage']]['code_lang']
                 result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
                                                                  datalang[result_cmd['InstallLanguage']]['code_lang'])
-#             result_cmd[ 'major_version'] = self.get_windows_version_major()
-#             if (result_cmd['major_version'] == "10" and
-#                    "DisplayVersion" in result_cmd and
-#                    result_cmd['DisplayVersion'] != "22H2"):
-#                 result_cmd[ 'InstallLanguage'] = self.get_locale_id_iso()
-#                 if (result_cmd['InstallLanguage'] and
-#                        result_cmd['major_version'] and
-#                        datalang[result_cmd['InstallLanguage']]['code_lang']):
-#                     result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
-#                                                                  datalang[result_cmd['InstallLanguage']]['code_lang'])
-#
-#             if (result_cmd['major_version'] == "11" and
-#                    "DisplayVersion" in result_cmd and
-#                    result_cmd['DisplayVersion'] != "24H2"):
-#                 result_cmd[ 'InstallLanguage'] = self.get_locale_id_iso()
-#                 if (result_cmd['InstallLanguage'] and
-#                        result_cmd['major_version'] and
-#                        datalang[result_cmd['InstallLanguage']]['code_lang']):
-#                     result_cmd[ 'update_major'] = "win%s_upd_%s"% (result_cmd['major_version'],
-#                                                                  datalang[result_cmd['InstallLanguage']]['code_lang'])
-
             # search code langue
             try:
                 result_cmd["Locale"] = {

@@ -133,7 +133,6 @@ class PkgsDatabase(DatabaseHelper):
             self.session = create_session(bind=self.engine_pkgsmmaster_base)
             if self.session is not None:
                 self.is_activated = True
-                self.logger.debug("Pkgs database connected")
                 return True
             self.logger.error("Pkgs database connecting")
             return False
@@ -990,3 +989,17 @@ class PkgsDatabase(DatabaseHelper):
                         share_id=resuldict["id_sharing"]
                     )
         return ret
+
+
+    @DatabaseHelper._sessionm
+    def verifier_exist_uuid(self, session, uuid):
+        """
+        Vérifie si un UUID existe dans la table `packages`.
+
+        Paramètres :
+        uuid (str) : Le UUID à vérifier.
+
+        Retourne :
+        bool : True si le UUID existe, False sinon.
+        """
+        return session.query(Packages).filter_by(uuid=uuid).first() is not None

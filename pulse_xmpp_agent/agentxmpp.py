@@ -3820,6 +3820,18 @@ AGENT %s ERROR TERMINATE""" % (
         if os.path.exists(BOOLFILECOMPLETREGISTRATION):
             self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
+
+        system_info = offline_search_kb().get()
+        if "infobuild" in system_info:
+            # Information version pour windows
+            if "DisplayVersion" in system_info['infobuild']:
+                er.messagejson["info"]["DisplayVersion"]  = system_info['infobuild']['DisplayVersion']
+            if  "update_major" in system_info['infobuild']:
+                er.messagejson["info"]["update_major"]  = system_info['infobuild']['update_major']
+            if  "ProductName" in system_info['infobuild']:
+                er.messagejson["info"]["ProductName"]  = system_info['infobuild']['ProductName']
+            if  "code_lang_iso" in system_info['infobuild']:
+                er.messagejson["info"]["code_lang_iso"]  = system_info['infobuild']['code_lang_iso']
         dataobj = {
             "action": "infomachine",
             "from": self.config.jidagent,
@@ -3864,7 +3876,7 @@ AGENT %s ERROR TERMINATE""" % (
             "keysyncthing": self.deviceid,
             "uuid_serial_machine": serialnumbermachine(),
             "updatingagent": self.config.updating,
-            "system_info": offline_search_kb().get(),
+            "system_info": system_info,
         }
         try:
             dataobj["md5_conf_monitoring"] = ""

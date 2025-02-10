@@ -1449,6 +1449,9 @@ class XmppMasterDatabase(DatabaseHelper):
                         regwindokey,
                         value=glpiinformation["data"]["reg"][regwindokey][0],
                     )
+
+        # type au lieu de model pour etre conforme and model remplace manufactured
+        # pour avoir meme information que glpi
         return self.updateGLPI_information_machine(
             idmachine,
             "UUID%s" % glpiinformation["data"]["uuidglpicomputer"][0],
@@ -1456,8 +1459,8 @@ class XmppMasterDatabase(DatabaseHelper):
             glpiinformation["data"]["owner_firstname"][0],
             glpiinformation["data"]["owner_realname"][0],
             glpiinformation["data"]["owner"][0],
+            glpiinformation["data"]["type"][0],
             glpiinformation["data"]["model"][0],
-            glpiinformation["data"]["manufacturer"][0],
             entity_id_xmpp,
             location_id_xmpp,
         )
@@ -10324,10 +10327,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         msrcseverity="Corrective",
     ):
         """
-        creation 1 update pour 1 machine
+        Création d'un update pour une machine
         """
         if msrcseverity.strip() == "":
             msrcseverity = "Corrective"
+        # Vérifiez si l'objet existe déjà
         objet_existant = (
             session.query(Up_machine_windows)
             .filter(
@@ -10339,10 +10343,24 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     ),
                 )
             )
-            .count()
+            .first()
         )
-        # Si l'objet n'existe pas, l'ajouter à la base de données
-        if objet_existant == 0:
+
+        if objet_existant:
+            # Si l'objet existe, mettez-le à jour
+            try:
+                objet_existant.update_id = update_id
+                objet_existant.kb = kb
+                objet_existant.intervals = deployment_intervals
+                objet_existant.msrcseverity = msrcseverity
+                session.commit()
+                session.flush()
+                return self.__Up_machine_windows(objet_existant)
+            except Exception as e:
+                self.logger.info("Exception lors de la mise à jour : %s" % str(e))
+                self.logger.error("\n%s" % (traceback.format_exc()))
+        else:
+            # Si l'objet n'existe pas, l'ajouter à la base de données
             try:
                 new_Up_machine_windows = Up_machine_windows()
                 new_Up_machine_windows.id_machine = id_machine
@@ -10357,7 +10375,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             except IntegrityError as e:
                 self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
             except Exception as e:
-                self.logger.info("Except setUp_machine_windows : %s" % str(e))
+                self.logger.info("Exception setUp_machine_windows : %s" % str(e))
                 self.logger.error("\n%s" % (traceback.format_exc()))
         return None
 
@@ -10378,8 +10396,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             - La date de fin est soit nulle, soit antérieure à la date et à l'heure actuelles.
             - L'ID de mise à jour n'est pas présent dans la liste 'listupdatiddesire'.
         """
-        logging.getLogger().debug("id_machine : %s" % id_machine)
-        logging.getLogger().debug("listupdatiddesire : %s" % listupdatiddesire)
         if listupdatiddesire:
             sql = """DELETE
                 FROM
@@ -10472,33 +10488,33 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         self, session, valchamp, namefield="updateid", tablename="up_gray_list"
     ):
         """
-        test si il existe dans 1 table 1 enregistrement avec la valeur pour le nom du champ passe
+        Teste si un enregistrement avec la valeur spécifiée pour le nom du champ existe dans la table.
         """
         try:
-            sql = """SELECT
-                    COUNT(%s)
-                FROM
-                    %s
-                WHERE
-                    %s LIKE '%s'
-                LIMIT 1;""" % (
-                namefield,
-                tablename,
-                namefield,
-                valchamp
-            )
-            rest = session.execute(sql)
+            sql = f"""
+            SELECT EXISTS (
+                SELECT 1
+                FROM {tablename}
+                WHERE {namefield} LIKE :valchamp
+                LIMIT 1
+            );
+            """
+            result = session.execute(sql, {'valchamp': valchamp})
             session.commit()
             session.flush()
-            if rest:
-                ret = [elt for elt in rest][0]
-                return bool(ret[0] == 1)
-        except Exception:
-            logging.getLogger().error(
+            existenregistrement = bool(result.scalar())
+            if existenregistrement:
+                logging.getLogger().debug(
+                f"valeur {valchamp} de table {tablename}.{namefield} exist ")
+            else:
+                logging.getLogger().error(
+                f"valeur {valchamp} de table {tablename}.{namefield} no exist ")
+            return existenregistrement
+        except Exception as e:
+            logging.getLogger().debug(
                 "sql is_exist_value_in_table: %s" % traceback.format_exc()
             )
-        return False
-
+            return False
 
     @DatabaseHelper._sessionm
     def setUp_machine_windows_gray_list_major_version(self, session, data, validity_day=10):
@@ -10531,12 +10547,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             - Un contrôle est effectué pour éviter d'ajouter des entrées déjà existantes dans ces tables.
         """
         # Construire le nom du package et son identifiant unique
-        package_name = f"win{data['system_info']['infobuild']['major_version']}upd_{data['system_info']['infobuild']['code_lang_iso']}"
+        package_name = "win%supd_%s"%( data['system_info']['infobuild']['major_version'],
+                                       data['system_info']['infobuild']['code_lang_iso'] )
         package_name_id = f"9514859a-{package_name}bqbowfj6h9update"
         try:
             # Vérifier si le package existe déjà dans la table `up_gray_list`
             if self.is_exist_value_in_table(package_name_id, namefield="updateid", tablename="up_gray_list"):
-                return None
+                return package_name_id, True
 
             # Vérifier si le package existe dans la table `up_gray_list_flop`
             if self.is_exist_value_in_table(package_name_id, namefield="updateid", tablename="up_gray_list_flop"):
@@ -10547,11 +10564,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 """
                 session.execute(sql_delete_gray_list_flop, {"package_name": package_name_id})
                 session.commit()
-                return None
+                return package_name_id, True
 
             # Vérifier si le package existe dans la table `up_black_list` (ignoré s'il y est présent)
             if self.is_exist_value_in_table(package_name_id, namefield="updateid_or_kb", tablename="up_black_list"):
-                return None
+                return package_name_id, False
 
             # Définir les dates actuelles et de validité
             current_date = datetime.now()
@@ -10603,13 +10620,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             """
             session.execute(sql_insert_gray_list, insert_data)
             session.commit()
-            return package_name_id
+            return package_name_id, True
 
         except Exception as e:
             # En cas d'erreur, effectuer un rollback et enregistrer l'erreur dans les logs
             logger.error(f"Error in setUp_machine_windows_gray_list_major_version: {e}")
             session.rollback()
-            return None
+            return package_name_id, False
 
     @DatabaseHelper._sessionm
     def setUp_machine_windows_gray_list(
@@ -10798,31 +10815,38 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 "sql delete_in_white_list : %s" % traceback.format_exc()
             )
         return False
-
-
-    @DatabaseHelper._sessionm
-    def delete_in_white_list(self, session, updateid):
-        """
-        cettte fonction supprime 1 update completement depuis les grays list
-        update est supprime du flip flop (up_gray_list_flop/up_gray_list)
-        le principe on renome le updateid en "a_efface"
-        updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
-        """
-        try:
-            sql = """ DELETE FROM `up_white_list` WHERE (`updateid` = '%s');""" % (
-                updateid
-            )
-            self.logger.info("delete_in_white_list : %s" % sql)
-            session.execute(sql)
-            session.commit()
-            session.flush()
-            return True
-        except Exception:
-            logging.getLogger().error(
-                "sql delete_in_white_list : %s" % traceback.format_exc()
-            )
-        return False
-
+    #
+    # @DatabaseHelper._sessionm
+    # def get_all_update_in_gray_list(self, session, updateid=None):
+    #     """cette function renvoi tout les update de la list gray"""
+    #     try:
+    #         sql = """
+    #             select * from
+    #                 (SELECT
+    #                     *
+    #                 FROM
+    #                     xmppmaster.up_gray_list
+    #                 UNION
+    #                 SELECT
+    #                     *
+    #                 FROM
+    #                     xmppmaster.up_gray_list_flop) as e"""
+    #         if updateid:
+    #             filter = """ WHERE
+    #                         updateid = '%s'""" % (
+    #                 updateid
+    #             )
+    #             sql = sql + filter
+    #         sql += ";"
+    #         resultproxy = session.execute(sql)
+    #         session.commit()
+    #         session.flush()
+    #         return [rowproxy._asdict() for rowproxy in resultproxy]
+    #     except Exception:
+    #         logging.getLogger().error(
+    #             "sql get_all_update_in_gray_list : %s" % traceback.format_exc()
+    #         )
+    #     return []
 
     @DatabaseHelper._sessionm
     def get_all_update_in_gray_list(self, session, updateid=None):
@@ -10854,9 +10878,32 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             return [rowproxy._asdict() for rowproxy in resultproxy]
         except Exception:
             logging.getLogger().error(
-                "sql delete_in_gray_list : %s" % traceback.format_exc()
+                "sql get_all_update_in_gray_list : %s" % traceback.format_exc()
             )
         return []
+
+    @DatabaseHelper._sessionm
+    def delete_in_white_list(self, session, updateid):
+        """
+        cettte fonction supprime 1 update completement depuis les grays list
+        update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+        le principe on renome le updateid en "a_efface"
+        updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            sql = """ DELETE FROM `up_white_list` WHERE (`updateid` = '%s');""" % (
+                updateid
+            )
+            self.logger.info("delete_in_white_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error(
+                "sql delete_in_white_list : %s" % traceback.format_exc()
+            )
+        return False
 
     @DatabaseHelper._sessionm
     def delete_in_gray_and_white_list(self, session, updateid):
@@ -11281,10 +11328,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         deploy_done.append(deploy)
                     else:
                         deploy_not_done.append(deploy)
-                self.logger.info(
-                    "%s deploy done for machine %s and update %s"
-                    % (len(deploy_done), machine.jid, update.update_id)
-                )
+                if len(deploy_done):
+                    self.logger.debug(
+                        "%s deploy done for machine %s and update %s"
+                        % (len(deploy_done), machine.jid, update.update_id)
+                    )
             except Exception as e:
                 self.logger.error(e)
                 return False
@@ -11382,5 +11430,118 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.commit()
 
     # -------------------------------------------------------------------------------
+
+
+    @DatabaseHelper._sessionm
+    def get_os_xmpp_update_major_stats(self, session, presence=True):
+        """
+        Récupère les statistiques de mise à jour majeure des systèmes d'exploitation Windows 10 et Windows 11.
+
+        Args:
+            session (sqlalchemy.orm.session.Session): La session de base de données.
+            presence (bool, optional): Filtrer uniquement les machines activées si True. Par défaut, True.
+
+        Returns:
+            dict: Un dictionnaire contenant les statistiques de mise à jour des systèmes d'exploitation.
+        """
+        try:
+            # Dictionnaire final des résultats
+
+            cols=["W10to10", "W10to11", "W11to11"]
+            results = {"entity": {}}
+
+            # Condition de filtre sur xma.enabled
+            presence_filter = "AND xma.enabled = 1" if presence else ""
+
+            # Requête pour le nombre total de machines par entité
+            total_os_sql = f'''
+                SELECT
+                    xe.name AS entity_name,
+                    xe.complete_name AS complete_name,
+                    COUNT(*) AS count
+                FROM
+                    xmppmaster.machines xma
+                INNER JOIN xmppmaster.glpi_entity xe ON xe.id = xma.glpi_entity_id
+                WHERE
+                    xma.platform LIKE '%Windows%'
+                    {presence_filter}
+                GROUP BY xe.id;
+            '''
+
+            total_os_result = session.execute(total_os_sql).fetchall()
+            for row in total_os_result:
+                results["entity"].setdefault(row.complete_name, {"count" :  int(row.count)})
+
+            # Requête pour les statistiques par entité
+            entity_sql = f'''
+                        SELECT
+                            xe.name AS entity_name,
+                            xe.complete_name AS complete_name,
+                            COUNT(*) AS nbwin,
+                            CASE
+                                WHEN
+                                    xma.platform LIKE '%Windows 10%'
+                                        AND xma.platform NOT LIKE '%[22H2]'
+                                THEN
+                                    'W10to10'
+                                WHEN
+                                    xma.platform LIKE '%Windows 10%'
+                                        AND xma.platform LIKE '%[22H2]'
+                                THEN
+                                    'W10to11'
+                                WHEN
+                                    xma.platform LIKE '%Windows 11%'
+                                        AND xma.platform NOT LIKE '%[24H2]'
+                                THEN
+                                    'W11to11'
+                                WHEN
+                                    xma.platform LIKE '%Windows%'
+                                        AND xma.platform NOT REGEXP '\[[0-9]{2}H[0-9]\]$'
+                                THEN
+                                    'winVers_missing'
+                                ELSE 'not_win'
+                            END AS os
+                        FROM
+                            xmppmaster.machines xma
+                                INNER JOIN
+                            xmppmaster.glpi_entity xe ON xe.id = xma.glpi_entity_id
+                        WHERE
+                            xma.platform LIKE '%Windows%'
+                            {presence_filter}
+                        GROUP BY xe.id , os
+                        ORDER BY xe.complete_name , os;
+            '''
+
+            entity_result = session.execute(entity_sql).fetchall()
+            for row in entity_result:
+                 # initialisation
+                results["entity"].setdefault(row.complete_name, {})
+                results["entity"][row.complete_name]["name"]=row.entity_name
+                results["entity"][row.complete_name][row.os ]=int(row.nbwin)
+              # Calcul de la conformité
+            for entity, data in results["entity"].items():
+                total=results["entity"][entity]["count"]
+                non_conforme = sum(data.get(key, 0) for key in cols)
+                results["entity"][entity]["conformite"] = round(((non_conforme - total) / total * 100) if non_conforme > 0 else 0, 2)
+
+            # Copier les clés existantes avant d'itérer
+            existing_entities = list(results["entity"].keys())
+            for entity in existing_entities:  # Itérer sur la copie des clés
+                for col in cols:
+                    if col not in results["entity"][entity]:
+                        results["entity"][entity][col] = 0
+            return results
+
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des statistiques de mise à jour des OS : {str(e)}")
+            logger.error(f"Traceback : {traceback.format_exc()}")
+            raise
+
+
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des statistiques de mise à jour des OS : {str(e)}")
+            logger.error(f"Traceback : {traceback.format_exc()}")
+            raise
+
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [rowproxy._asdict() for rowproxy in resultproxy]
