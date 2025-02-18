@@ -35,34 +35,41 @@ from lib.plugins.glpi.Glpi94 import Glpi94
 from lib.plugins.glpi.Glpi95 import Glpi95
 from lib.plugins.glpi.Glpi100 import Glpi100
 
-glpi = None
 
-
-class Glpi(object):
+class Glpi:
     """
-    Singleton Class to query the glpi database in version > 0.80.
-
+    Singleton Class to query the GLPI database in version > 0.80.
     """
 
-    is_activated = False
+    _instance = None  # Stocke l'instance unique du Singleton
 
-    def activate(self):
-        global glpi
-        if self.is_activated:
-            return None
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Glpi, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        if hasattr(self, "is_initialized"):
+            return  # Empêche la réinitialisation de l'instance
+        self.is_initialized = True
+
+        self.is_activated = False
         self.config = confParameter()
         self.logger = logging.getLogger()
-        self.logger.debug("Glpi activation")
+        self.logger.debug("Glpi initialization")
+
         self.engine = None
         self.dbpoolrecycle = 60
         self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
 
+    def activate(self):
+        if self.is_activated:
+            return None
+
         self.logger.info(
-            "Glpi parameters connections is "
-            " user = %s,host = %s, port = %s, schema = %s,"
-            " poolrecycle = %s, poolsize = %s, pool_timeout %s"
+            "Glpi parameters connections: user = %s, host = %s, port = %s, schema = %s, poolrecycle = %s, poolsize = %s"
             % (
                 self.config.glpi_dbuser,
                 self.config.glpi_dbhost,
@@ -70,132 +77,102 @@ class Glpi(object):
                 self.config.glpi_dbname,
                 self.config.xmpp_dbpoolrecycle,
                 self.config.xmpp_dbpoolsize,
-                self.config.xmpp_dbpooltimeout,
             )
         )
+
         try:
             self.engine_glpi = create_engine(
-                "mysql://%s:%s@%s:%s/%s?charset=%s"
-                % (
-                    self.config.glpi_dbuser,
-                    self.config.glpi_dbpasswd,
-                    self.config.glpi_dbhost,
-                    self.config.glpi_dbport,
-                    self.config.glpi_dbname,
-                    self.config.charset,
-                ),
+                f"mysql://{self.config.glpi_dbuser}:{self.config.glpi_dbpasswd}@{self.config.glpi_dbhost}:{self.config.glpi_dbport}/{self.config.glpi_dbname}?charset={self.config.charset}",
                 pool_recycle=self.config.glpi_dbpoolrecycle,
                 pool_size=self.config.glpi_dbpoolsize,
-                pool_timeout=self.config.glpi_dbpooltimeout,
+                pool_timeout=self.config.xmpp_dbpooltimeout,
                 convert_unicode=True,
             )
+
             try:
                 self._glpi_version = (
-                    self.engine_glpi.execute("SELECT version FROM glpi_configs")
-                    .fetchone()
-                    .values()[0]
-                    .replace(" ", "")
+                    self.engine_glpi.execute("SELECT version FROM glpi_configs").fetchone()[0].replace(" ", "")
                 )
             except OperationalError:
                 self._glpi_version = (
-                    self.engine_glpi.execute(
-                        'SELECT value FROM glpi_configs WHERE name = "version"'
-                    )
-                    .fetchone()
-                    .values()[0]
+                    self.engine_glpi.execute('SELECT value FROM glpi_configs WHERE name = "version"')
+                    .fetchone()[0]
                     .replace(" ", "")
                 )
 
             self.Session = sessionmaker(bind=self.engine_glpi)
             self.metadata = MetaData(self.engine_glpi)
 
-            if self._glpi_version.startswith("0.84"):
-                glpi = Glpi84()
+            # Instanciation de la bonne version de GLPI
+            versions_map = {
+                "0.84": Glpi84,
+                "9.2": Glpi92,
+                "9.3": Glpi93,
+                "9.4": Glpi94,
+                "9.5": Glpi95,
+                "10.0": Glpi100,
+            }
 
-            if self._glpi_version.startswith("9.2"):
-                glpi = Glpi92()
+            for version_prefix, cls in versions_map.items():
+                if self._glpi_version.startswith(version_prefix):
+                    self.logger.debug(f"Version Glpi {self._glpi_version}")
+                    self.version_instance = cls()
+                    break
 
-            if self._glpi_version.startswith("9.3"):
-                glpi = Glpi93()
-
-            if self._glpi_version.startswith("9.4"):
-                glpi = Glpi94()
-
-            if self._glpi_version.startswith("9.5"):
-                glpi = Glpi95()
-
-            if self._glpi_version.startswith("10.0"):
-                glpi = Glpi100()
-
-            ret = glpi.activate()
-            self.is_activated = glpi.is_activated
+            self.is_activated = self.version_instance.activate()
             return True
+
         except Exception as e:
             self.logger.error("We failed to connect to the Glpi database.")
             self.logger.error("Please verify your configuration")
             if str(e) == "`glpi_plugin_glpiinventory_collects`":
-                self.logger.error(
-                    "Please verify that the glipiinventory plugin is installed and activated"
-                )
+                self.logger.error("Please verify that the glpiinventory plugin is installed and activated")
+
             self.is_activated = False
             return False
 
+    # Méthodes appelant directement la version correcte
     def getMachineBySerial(self, serial):
-        global glpi
-        return glpi.getMachineBySerial(serial)
+        return self.version_instance.getMachineBySerial(serial)
 
     def getMachineByUuidSetup(self, uuidsetupmachine):
-        global glpi
-        return glpi.getMachineByUuidSetup(uuidsetupmachine)
+        return self.version_instance.getMachineByUuidSetup(uuidsetupmachine)
 
     def getMachineInformationByUuidSetup(self, uuidsetupmachine):
-        global glpi
-        return glpi.getMachineInformationByUuidSetup(uuidsetupmachine)
+        return self.version_instance.getMachineInformationByUuidSetup(uuidsetupmachine)
 
     def getMachineInformationByUuidMachine(self, idmachine):
-        global glpi
-        return glpi.getMachineInformationByUuidMachine(idmachine)
-
-    def machineobjectdymresult(self, ret):
-        global glpi
-        return glpi._machineobjectdymresult(ret)
+        return self.version_instance.getMachineInformationByUuidMachine(idmachine)
 
     def getMachineByMacAddress(self, ctx, filter):
-        global glpi
-        return glpi.getMachineByMacAddress(ctx, filter)
+        return self.version_instance.getMachineByMacAddress(ctx, filter)
 
-    def getLastMachineInventoryPart(
-        self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False
-    ):
-        global glpi
-        return glpi.getLastMachineInventoryPart(
-            uuid, part, minbound, maxbound, filt, options, count
-        )
-
-    def getRegistryCollect(self, fullkey):
-        global glpi
-        return glpi.getRegistryCollect(fullkey)
-
-    def addRegistryCollectContent(self, computers_id, registry_id, key, value):
-        global glpi
-        return glpi.addRegistryCollectContent(computers_id, registry_id, key, value)
+    def getLastMachineInventoryPart(self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False):
+        return self.version_instance.getLastMachineInventoryPart(uuid, part, minbound, maxbound, filt, options, count)
 
     def getComputersOS(self, ids):
-        global glpi
-        return glpi.getComputersOS(ids)
+        return self.version_instance.getComputersOS(ids)
 
     def getMachineUUID(self, machine):
-        global glpi
-        return glpi.getMachineUUID(machine)
+        return self.version_instance.getMachineUUID(machine)
 
     def getMachineOwner(self, machine):
-        global glpi
-        return glpi.getMachineOwner(machine)
+        return self.version_instance.getMachineOwner(machine)
 
     def getLastMachineInventoryFull(self, uuid):
-        global glpi
-        return glpi.getLastMachineInventoryFull(uuid)
+        return self.version_instance.getLastMachineInventoryFull(uuid)
 
     def getMachineByUUID(self, uuid):
-        global glpi
-        return glpi.getMachineByUUID(uuid)
+        return self.version_instance.getMachineByUUID(uuid)
+
+    def addRegistryCollect(self, fullkey, keyname):
+        return self.version_instance.addRegistryCollect(fullkey, keyname)
+
+    def getRegistryCollect(self, fullkey):
+        return self.version_instance.getRegistryCollect(fullkey)
+
+    def machineobjectdymresult(self, ret):
+        return self.version_instance._machineobjectdymresult(ret)
+
+    def addRegistryCollectContent(self, computers_id, registry_id, key, value):
+        return self.version_instance.addRegistryCollectContent(computers_id, registry_id, key, value)

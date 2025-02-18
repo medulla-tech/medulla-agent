@@ -32,6 +32,7 @@ from sqlalchemy import (
     desc,
     func,
     distinct,
+    inspect
 )
 from sqlalchemy.orm import (
     create_session,
@@ -42,7 +43,7 @@ from sqlalchemy.orm import (
     scoped_session,
 )
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-
+from sqlalchemy.exc import NoSuchTableError
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:
@@ -763,23 +764,23 @@ class Glpi100(DatabaseHelper):
         mapper(Group, self.group)
 
         try:
+            # mapper suivant plugin
             self.collects = Table(
                 "glpi_plugin_fusioninventory_collects",
                 self.metadata,
                 Column("entities_id", Integer, ForeignKey("glpi_entities.id")),
                 autoload=True,
             )
-            mapper(Collects, self.collects)
-        except:
+        except  NoSuchTableError:
             self.collects = Table(
                 "glpi_plugin_glpiinventory_collects",
                 self.metadata,
-                Column("entities_id", Integer, ForeignKey("glpi_entities.id")),
                 autoload=True,
             )
-            mapper(Collects, self.collects)
+        mapper(Collects, self.collects)
 
         try:
+            # mapper suivant plugin
             self.registries = Table(
                 "glpi_plugin_fusioninventory_collects_registries",
                 self.metadata,
@@ -790,19 +791,13 @@ class Glpi100(DatabaseHelper):
                 ),
                 autoload=True,
             )
-            mapper(Registries, self.registries)
-        except:
+        except  NoSuchTableError:
             self.registries = Table(
                 "glpi_plugin_glpiinventory_collects_registries",
                 self.metadata,
-                Column(
-                    "plugin_fusioninventory_collects_id",
-                    Integer,
-                    ForeignKey("glpi_plugin_fusioninventory_collects.id"),
-                ),
                 autoload=True,
             )
-            mapper(Registries, self.registries)
+        mapper(Registries, self.registries)
 
         try:
             self.regcontents = Table(
@@ -816,20 +811,13 @@ class Glpi100(DatabaseHelper):
                 ),
                 autoload=True,
             )
-            mapper(RegContents, self.regcontents)
         except:
             self.regcontents = Table(
                 "glpi_plugin_glpiinventory_collects_registries_contents",
                 self.metadata,
-                Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
-                Column(
-                    "plugin_glpiinventory_collects_registries_id",
-                    Integer,
-                    ForeignKey("glpi_plugin_glpiinventory_collects_registries.id"),
-                ),
                 autoload=True,
             )
-            mapper(RegContents, self.regcontents)
+        mapper(RegContents, self.regcontents)
 
     # internal query generators
     def __filter_on(self, query):
@@ -2919,6 +2907,9 @@ class Glpi100(DatabaseHelper):
         @param value: The new value
         @param value: string
         """
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. setGlpiEditableValue")
+            return True
 
         self.logger.debug("Update an editable field")
         self.logger.debug("%s: Set %s as new value for %s" % (uuid, value, name))
@@ -2929,30 +2920,37 @@ class Glpi100(DatabaseHelper):
             table, field = self.__getTableAndFieldFromName(name)
             session.query(table).filter_by(id=fromUUID(uuid)).update({field: value})
 
-            # Set updated field as a locked field so it won't be updated
-            # at next inventory
-            query = session.query(FusionLocks).filter(
-                self.fusionlocks.c.items_id == fromUUID(uuid)
-            )
-            flocks = query.first()
-            if flocks is not None:
-                # Update glpi_plugin_fusioninventory_locks tablefields table
-                flocksFields = eval(flocks.tablefields)
-                if field not in flocksFields:
-                    flocksFields.append(field)
-                    query.update({"tablefields": str(flocksFields).replace("'", '"')})
-            else:
-                # Create new glpi_plugin_fusioninventory_locks entry
-                session.execute(
-                    self.fusionlocks.insert().values(
-                        {
-                            "tablename": table.__tablename__,
-                            "items_id": fromUUID(uuid),
-                            "tablefields": str([field]).replace("'", '"'),
-                        }
-                    )
-                )
+            # Créez une instance d'inspecteur
+            inspector = inspect(FusionLocks)
 
+            # Vérifiez si la classe est mappée
+            if inspector.has_table(FusionLocks.__tablename__):
+                self.logger.warning("le plugin Fusioninventory prends en compte le nom edite.")
+                # Set updated field as a locked field so it won't be updated
+                # at next inventory
+                query = session.query(FusionLocks).filter(
+                    self.fusionlocks.c.items_id == fromUUID(uuid)
+                )
+                flocks = query.first()
+                if flocks is not None:
+                    # Update glpi_plugin_fusioninventory_locks tablefields table
+                    flocksFields = eval(flocks.tablefields)
+                    if field not in flocksFields:
+                        flocksFields.append(field)
+                        query.update({"tablefields": str(flocksFields).replace("'", '"')})
+                else:
+                    # Create new glpi_plugin_fusioninventory_locks entry
+                    session.execute(
+                        self.fusionlocks.insert().values(
+                            {
+                                "tablename": table.__tablename__,
+                                "items_id": fromUUID(uuid),
+                                "tablefields": str([field]).replace("'", '"'),
+                            }
+                        )
+                    )
+            else:
+                self.logger.warning("Sur Un réenregistrement GLPI. Le nom de l'ordinateur et le description ne seront pas protégés.")
             session.close()
             return True
         except Exception as e:
@@ -5198,6 +5196,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def addUser(self, session, username, password, entity_rights=None):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. addUser")
+            return True
         # Check if the user exits or not
         try:
             user = session.query(User).filter_by(name=username).one()
@@ -5222,6 +5223,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def setUserPassword(self, session, username, password):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. setUserPassword")
+            return True
         try:
             user = session.query(User).filter_by(name=username).one()
         except NoResultFound:
@@ -5237,6 +5241,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def addEntity(self, session, entity_name, parent_id, comment):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. addEntity")
+            return True
         entity = Entities()
         entity.id = session.query(func.max(Entities.id)).scalar() + 1
         entity.entities_id = parent_id
@@ -5260,6 +5267,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def editEntity(self, session, id, entity_name, parent_id, comment):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. addEntityRule")
+            return True
         entity = session.query(Entities).filter_by(id=id).one()
         entity.entities_id = parent_id
         entity.name = entity_name
@@ -5293,6 +5303,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def addLocation(self, session, name, parent_id, comment):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. addLocation")
+            return True
         location = Locations()
         location.entities_id = 0  # Entity is root
         location.name = name
@@ -5321,6 +5334,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def editLocation(self, session, id, name, parent_id, comment):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. editLocation")
+            return True
         location = session.query(Locations).filter_by(id=id).one()
         location.locations_id = parent_id
         location.name = name
@@ -5368,6 +5384,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def addEntityRule(self, session, rule_data):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. addEntityRule")
+            return True
         rule = Rule()
         # root entity (this means that rule is appliable on root entity and all subentities)
         rule.entities_id = 0
@@ -5438,6 +5457,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def moveEntityRuleUp(self, session, id):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. moveEntityRuleUp")
+            return True
         rule = session.query(Rule).filter_by(id=id).one()
         # get previous rule
         previous = (
@@ -5461,6 +5483,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def moveEntityRuleDown(self, session, id):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. moveEntityRuleDown")
+            return True
         rule = session.query(Rule).filter_by(id=id).one()
         # get next rule
         next_ = (
@@ -5484,6 +5509,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def editEntityRule(self, session, id, rule_data):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. editEntityRule")
+            return True
         rule = session.query(Rule).filter_by(id=id).one()
         # Delete associated criteria and actions
         session.query(RuleCriterion).filter_by(rules_id=id).delete()
@@ -5571,6 +5599,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def deleteEntityRule(self, session, id):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. deleteEntityRule")
+            return True
         # Delete rule
         session.query(Rule).filter_by(id=id).delete()
         # Delete associated criteria and actions
@@ -5603,6 +5634,9 @@ class Glpi100(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def setLocationsForUser(self, session, username, profiles):
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. setLocationsForUser")
+            return True
         user_id = session.query(User).filter_by(name=username).one().id
         # Delete all user entity profiles
         session.query(UserProfile).filter_by(users_id=user_id).delete()
@@ -5631,10 +5665,13 @@ class Glpi100(DatabaseHelper):
         @return: id of the registry collect
         @rtype: int
         """
-
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. getRegistryCollect")
+            return False
         # Split into hive / path / key
-        hive = full_key.split("\\")[0]
-        key = full_key.split("\\")[-1]
+        parts = full_key.split("\\")
+        hive = parts[0]
+        key = parts[-1]
         path = full_key.replace(hive + "\\", "").replace("\\" + key, "")
         path = "/" + path + "/"
         # Get registry_id
@@ -5664,10 +5701,13 @@ class Glpi100(DatabaseHelper):
         @return: success of the operation
         @rtype: bool
         """
-
+        if self.config.dbreadonly:
+            self.logger.debug("Impossible d'exécuter GLPI  en mode lecture seule. addRegistryCollect")
+            return True
         # Split into hive / path / key
-        hive = full_key.split("\\")[0]
-        key = full_key.split("\\")[-1]
+        parts = full_key.split("\\")
+        hive = parts[0]
+        key = parts[-1]
         path = full_key.replace(hive + "\\", "").replace("\\" + key, "")
         path = "/" + path + "/"
         # Insert in database
@@ -5712,6 +5752,7 @@ class Glpi100(DatabaseHelper):
         session.close()
         return ret
 
+
     @DatabaseHelper._sessionm
     def addRegistryCollectContent(self, session, computers_id, registry_id, key, value):
         """
@@ -5720,7 +5761,7 @@ class Glpi100(DatabaseHelper):
         @param computers_id: the computer_id from glpi_computers_pulse
         @type computers_id: str
 
-        @param registry_id: the registry_id from plugin_fusioninventory_collects_registries
+        @param registry_id: the registry_id from plugin_fusioninventory_collects_registries or plugin_glpiinventory_collects_registries
         @type registry_id: str
 
         @param key: the registry key name
@@ -5733,31 +5774,36 @@ class Glpi100(DatabaseHelper):
         @rtype: bool
         """
 
-        # Check if already present
-        try:
-            contents_id = (
-                session.query(RegContents)
-                .filter_by(
-                    computers_id=computers_id,
-                    plugin_fusioninventory_collects_registries_id=registry_id,
-                    key=key,
-                )
-                .first()
-                .id
-            )
-            if contents_id:
-                # Update database
-                session.query(RegContents).filter_by(id=contents_id).update(
-                    {"value": str(value)}
-                )
-                session.commit()
-                session.flush()
-                return True
-        except AttributeError:
-            # Insert in database
+        # Déterminer le bon champ selon le plugin actif
+        fusioninventory_field = "plugin_fusioninventory_collects_registries_id"
+        glpiinventory_field = "plugin_glpiinventory_collects_registries_id"
+
+        if hasattr(RegContents, fusioninventory_field):
+            registry_field = fusioninventory_field
+        elif hasattr(RegContents, glpiinventory_field):
+            registry_field = glpiinventory_field
+        else:
+            self.logger.error("Aucun champ valide trouvé pour les registres GLPI/FusionInventory.")
+            return False  # Échec car aucun champ valide
+
+        # Vérifier si l'entrée existe déjà
+        query = session.query(RegContents).filter_by(computers_id=computers_id, key=key)
+        query = query.filter_by(**{registry_field: registry_id})
+
+        contents = query.first()  # Récupérer l'entrée existante (s'il y en a une)
+
+        if contents:
+            # Mettre à jour la valeur existante
+            session.query(RegContents).filter_by(id=contents.id).update({"value": str(value)})
+            session.commit()
+            session.flush()
+            return True
+        else:
+            # Insérer une nouvelle entrée
             regcontents = RegContents()
             regcontents.computers_id = int(computers_id)
-            regcontents.plugin_fusioninventory_collects_registries_id = int(registry_id)
+            # selon le plugin actif
+            setattr(regcontents, registry_field, int(registry_id))  # Définir dynamiquement le bon champ
             regcontents.key = str(key)
             regcontents.value = str(value)
             session.add(regcontents)
