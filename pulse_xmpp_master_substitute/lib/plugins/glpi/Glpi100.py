@@ -778,7 +778,6 @@ class Glpi100(DatabaseHelper):
                 autoload=True,
             )
             mapper(Collects, self.collects)
-
         try:
             self.registries = Table(
                 "glpi_plugin_fusioninventory_collects_registries",
