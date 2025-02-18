@@ -376,6 +376,12 @@ class confParameter:
         if confiobject.has_option("glpi", "url_to_forward"):
             self.url_to_forward = confiobject.get("glpi", "url_to_forward")
 
+
+        if confiobject.has_option("glpi", "dbreadonly"):
+            self.dbreadonly = confiobject.getboolean("glpi", "dbreadonly")
+        else:
+            self.dbreadonly = True  # Valeur par défaut pour dbreadonly si non défini
+
         self.inventory_verbose = False
         if confiobject.has_option("glpi", "inventory_verbose"):
             self.inventory_verbose = confiobject.getboolean("glpi", "inventory_verbose")
