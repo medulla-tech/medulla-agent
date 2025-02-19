@@ -265,14 +265,20 @@ def list_products_on(xmppobject, data, list_produits):
     logger.debug("listin fonction  selectionne package  %s  " % list_produits)
     if data["system_info"]["platform_info"]["machine"] == "x64":
         if data["system_info"]["platform_info"]["type"] == "Windows 10":
+            # deselectionne les windows 11
             del_element("up_packages_Win11_X64")
+            del_element("up_packages_Win11_X64_21H2")
+            del_element("up_packages_Win11_X64_22H2")
+            del_element("up_packages_Win11_X64_23H2")
+            del_element("up_packages_Win11_X64_24H2")
             if data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
                 del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H1")
                 del_element("up_packages_Win10_X64_22H2")
             elif data["system_info"]["infobuild"]["DisplayVersion"] == "21H1":
-                del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H2")
+                del_element("up_packages_Win10_X64_1903")
+                del_element("up_packages_Win10_X64_22H2")
             elif data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
                 del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H1")
@@ -281,18 +287,42 @@ def list_products_on(xmppobject, data, list_produits):
                 del_element("up_packages_Win10_X64_21H1")
                 del_element("up_packages_Win10_X64_22H2")
                 del_element("up_packages_Win10_X64_21H2")
-
         elif "windows 11" in data["system_info"]["platform_info"]["type"]:
+            # deselectionne les windows 10
             del_element("up_packages_Win10_X64_21H1")
             del_element("up_packages_Win10_X64_21H2")
             del_element("up_packages_Win10_X64_1903")
             del_element("up_packages_Win10_X64_22H2")
+            if data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
+                del_element("up_packages_Win11_X64_22H2")
+                del_element("up_packages_Win11_X64_23H2")
+                del_element("up_packages_Win11_X64_24H2")
+            elif data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
+                del_element("up_packages_Win11_X64_21H2")
+                del_element("up_packages_Win11_X64_23H2")
+                del_element("up_packages_Win11_X64_24H2")
+            elif data["system_info"]["infobuild"]["DisplayVersion"] == "23H2":
+                del_element("up_packages_Win11_X64_21H2")
+                del_element("up_packages_Win11_X64_22H2")
+                del_element("up_packages_Win11_X64_24H2")
+            elif data["system_info"]["infobuild"]["DisplayVersion"] == "24H2":
+                del_element("up_packages_Win11_X64_21H2")
+                del_element("up_packages_Win11_X64_22H2")
+                del_element("up_packages_Win11_X64_23H2")
+            else:
+                # on conserve seulement la window 11 generique up_packages_Win11_X64
+                del_element("up_packages_Win11_X64_21H2")
+                del_element("up_packages_Win11_X64_22H2")
+                del_element("up_packages_Win11_X64_23H2")
+                del_element("up_packages_Win11_X64_24H2")
         else:
             del_element("up_packages_Win10_X64_21H1")
             del_element("up_packages_Win10_X64_21H2")
             del_element("up_packages_Win10_X64_1903")
             del_element("up_packages_Win10_X64_22H2")
-            del_element("up_packages_Win11_X64")
+            del_element("up_packages_Win11_X64_21H2")
+            del_element("up_packages_Win11_X64_22H2")
+            del_element("up_packages_Win11_X64_23H2")
     else:
         # we don't look at x64 updates
         liste_a_supprimer = [
@@ -300,6 +330,10 @@ def list_products_on(xmppobject, data, list_produits):
             "up_packages_Win10_X64_21H2",
             "up_packages_Win10_X64_1903",
             "up_packages_Win11_X64",
+            "up_packages_Win11_X64_21H2",
+            "up_packages_Win11_X64_22H2",
+            "up_packages_Win11_X64_23H2",
+            "up_packages_Win11_X64_24H2",
             "up_packages_Win_Malicious_X64",
             "up_packages_office_2003_64bit",
             "up_packages_office_2007_64bit",
