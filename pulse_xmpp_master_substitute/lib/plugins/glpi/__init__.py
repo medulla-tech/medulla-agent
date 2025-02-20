@@ -199,3 +199,7 @@ class Glpi(object):
     def getMachineByUUID(self, uuid):
         global glpi
         return glpi.getMachineByUUID(uuid)
+
+    def get_plugin_inventory_state(self, plugin_name=""):
+        global glpi
+        return glpi.get_plugin_inventory_state(plugin_name)
