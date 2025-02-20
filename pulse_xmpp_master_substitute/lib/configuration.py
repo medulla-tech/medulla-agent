@@ -376,7 +376,6 @@ class confParameter:
         if confiobject.has_option("glpi", "url_to_forward"):
             self.url_to_forward = confiobject.get("glpi", "url_to_forward")
 
-
         if confiobject.has_option("glpi", "dbreadonly"):
             self.dbreadonly = confiobject.getboolean("glpi", "dbreadonly")
         else:
