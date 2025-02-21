@@ -97,6 +97,7 @@ from lib.utils import (
     call_plugin_sequentially,
     convert,
     DateTimebytesEncoderjson,
+    execute_medulla_info_update,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -4889,7 +4890,7 @@ if __name__ == "__main__":
     logger.addHandler(file_handler)
     logger.info("file_handler (%s) %s " % (tg.levellog, tg.logfile))
     logger.info("opts.consoledebug (%s) " % (opts.consoledebug))
-
+    execute_medulla_info_update()
     if not opts.deamon:
         doTask(
             opts.typemachine,

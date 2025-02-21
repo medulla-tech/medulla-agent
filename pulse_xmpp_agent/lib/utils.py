@@ -5375,6 +5375,29 @@ def log_params(func):
 
     return wrapper
 
+def execute_medulla_info_update():
+    """
+    Exécute le script medulla_info_update.py situé dans le répertoire spécifié.
+
+    Ce script est exécuté uniquement si le système d'exploitation est Windows.
+    Il utilise le module subprocess pour lancer le script avec l'interpréteur Python.
+
+    Raises:
+        subprocess.CalledProcessError: Si le script retourne un code d'erreur non nul.
+        FileNotFoundError: Si le fichier medulla_info_update.py n'existe pas à l'emplacement spécifié.
+    """
+    if platform.system() == "Windows":
+        script_path = r"C:\Program Files\Medulla\bin\medulla_info_update.py"
+        try:
+            # Exécuter le script en utilisant l'interpréteur Python
+            subprocess.run(["c:\Program Files\Python3\python.exe", script_path], check=True)
+            logger.error("Le script medulla_info_update.py a été exécuté avec succès.")
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"Erreur lors de l'exécution du script : {e}")
+        except FileNotFoundError:
+            logger.error("Le fichier medulla_info_update.py n'existe pas à l'emplacement spécifié.")
+    else:
+        logger.warning("Ce programme est destiné à être exécuté uniquement sur Windows.")
 
 def log_details(func):
     """
@@ -6218,7 +6241,6 @@ class convert:
         dom = parseString(xml_string)
         formatted_xml = dom.toprettyxml(indent="  ")
         return formatted_xml
-
 
 class NetworkInfoxmpp:
     def __init__(self, port: int):
