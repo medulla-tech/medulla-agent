@@ -5,6 +5,7 @@
 
 import winreg
 
+
 def delete_subkey(key_path):
     """
     Supprime une sous-clé spécifiée dans le registre Windows.
@@ -23,7 +24,7 @@ def delete_subkey(key_path):
             winreg.HKEY_LOCAL_MACHINE,
             r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
             0,
-            winreg.KEY_ALL_ACCESS
+            winreg.KEY_ALL_ACCESS,
         )
 
         # Supprimer la sous-clé spécifiée
@@ -35,10 +36,13 @@ def delete_subkey(key_path):
         print(f"La sous-clé '{key_path}' n'existe pas.")
     except PermissionError:
         # Gérer le cas où les permissions sont insuffisantes
-        print(f"Vous n'avez pas les permissions nécessaires pour supprimer la sous-clé '{key_path}'.")
+        print(
+            f"Vous n'avez pas les permissions nécessaires pour supprimer la sous-clé '{key_path}'."
+        )
     except Exception as e:
         # Gérer toute autre erreur inattendue
         print(f"Une erreur s'est produite : {e}")
+
 
 if __name__ == "__main__":
     # Définir le chemin de la sous-clé à supprimer

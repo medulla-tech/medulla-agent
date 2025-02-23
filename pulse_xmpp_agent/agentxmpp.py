@@ -903,7 +903,6 @@ class MUCBot(ClientXMPP):
             )
         )
 
-
     def sendbigdatatoagent(self, jid_receiver, data_utf8_json, segment_size=65535):
         """
         Envoie de gros volumes de données à un agent XMPP en plusieurs segments.
@@ -3818,14 +3817,22 @@ AGENT %s ERROR TERMINATE""" % (
         system_info = offline_search_kb().get()
         if "infobuild" in system_info:
             # Information version pour windows
-            if "DisplayVersion" in system_info['infobuild']:
-                er.messagejson["info"]["DisplayVersion"]  = system_info['infobuild']['DisplayVersion']
-            if  "update_major" in system_info['infobuild']:
-                er.messagejson["info"]["update_major"]  = system_info['infobuild']['update_major']
-            if  "ProductName" in system_info['infobuild']:
-                er.messagejson["info"]["ProductName"]  = system_info['infobuild']['ProductName']
-            if  "code_lang_iso" in system_info['infobuild']:
-                er.messagejson["info"]["code_lang_iso"]  = system_info['infobuild']['code_lang_iso']
+            if "DisplayVersion" in system_info["infobuild"]:
+                er.messagejson["info"]["DisplayVersion"] = system_info["infobuild"][
+                    "DisplayVersion"
+                ]
+            if "update_major" in system_info["infobuild"]:
+                er.messagejson["info"]["update_major"] = system_info["infobuild"][
+                    "update_major"
+                ]
+            if "ProductName" in system_info["infobuild"]:
+                er.messagejson["info"]["ProductName"] = system_info["infobuild"][
+                    "ProductName"
+                ]
+            if "code_lang_iso" in system_info["infobuild"]:
+                er.messagejson["info"]["code_lang_iso"] = system_info["infobuild"][
+                    "code_lang_iso"
+                ]
         dataobj = {
             "action": "infomachine",
             "from": self.config.jidagent,

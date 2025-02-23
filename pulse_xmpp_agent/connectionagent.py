@@ -798,15 +798,23 @@ class MUCBot(ClientXMPP):
             os.remove(BOOLFILECOMPLETREGISTRATION)
         system_info = offline_search_kb().get()
         if "infobuild" in system_info:
-            if "DisplayVersion" in system_info['infobuild']:
-            # er.messagejson["info"]["platform"]=er.messagejson["info"]["platform"]+" ["+system_info['infobuild']['DisplayVersion'] +"]"
-                er.messagejson["info"]["DisplayVersion"]  = system_info['infobuild']['DisplayVersion']
-            if  "update_major" in system_info['infobuild']:
-                er.messagejson["info"]["update_major"]  = system_info['infobuild']['update_major']
-            if  "ProductName" in system_info['infobuild']:
-                er.messagejson["info"]["ProductName"]  = system_info['infobuild']['ProductName']
-            if  "code_lang_iso" in system_info['infobuild']:
-                er.messagejson["info"]["code_lang_iso"]  = system_info['infobuild']['code_lang_iso']
+            if "DisplayVersion" in system_info["infobuild"]:
+                # er.messagejson["info"]["platform"]=er.messagejson["info"]["platform"]+" ["+system_info['infobuild']['DisplayVersion'] +"]"
+                er.messagejson["info"]["DisplayVersion"] = system_info["infobuild"][
+                    "DisplayVersion"
+                ]
+            if "update_major" in system_info["infobuild"]:
+                er.messagejson["info"]["update_major"] = system_info["infobuild"][
+                    "update_major"
+                ]
+            if "ProductName" in system_info["infobuild"]:
+                er.messagejson["info"]["ProductName"] = system_info["infobuild"][
+                    "ProductName"
+                ]
+            if "code_lang_iso" in system_info["infobuild"]:
+                er.messagejson["info"]["code_lang_iso"] = system_info["infobuild"][
+                    "code_lang_iso"
+                ]
         try:
             dataobj = {
                 "action": "connectionconf",
