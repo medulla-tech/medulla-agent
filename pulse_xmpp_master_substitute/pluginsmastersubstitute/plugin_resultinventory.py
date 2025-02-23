@@ -131,7 +131,9 @@ class InventoryFix:
         return self._inventory_content
 
 
-def send_content(url, content, verbose=False, user_agent="siveo-injector", inventory_plugin_name=""):
+def send_content(
+    url, content, verbose=False, user_agent="siveo-injector", inventory_plugin_name=""
+):
     """
     send inventaire to plugin fusion inventory
 
@@ -142,8 +144,15 @@ def send_content(url, content, verbose=False, user_agent="siveo-injector", inven
         plugin_in_result = True if inventory_plugin_name in check_plugin else False
 
         # If the plugin is missing or disabled
-        if plugin_in_result is False or plugin_in_result is True and check_plugin[inventory_plugin_name]["state"] == "disabled":
-            logger.warning("The plugin %s is disabled or not installed, the inventory will be sent but not saved" % inventory_plugin_name)
+        if (
+            plugin_in_result is False
+            or plugin_in_result is True
+            and check_plugin[inventory_plugin_name]["state"] == "disabled"
+        ):
+            logger.warning(
+                "The plugin %s is disabled or not installed, the inventory will be sent but not saved"
+                % inventory_plugin_name
+            )
 
     headers = {
         "User-Agent": user_agent,
@@ -272,7 +281,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     content,
                     verbose=xmppobject.config.inventory_verbose,
                     user_agent=xmppobject.config.user_agent,
-                    inventory_plugin_name=xmppobject.config.inventory_plugin
+                    inventory_plugin_name=xmppobject.config.inventory_plugin,
                 )
         inventory = content
         machine = XmppMasterDatabase().getMachinefromjid(msg["from"])
