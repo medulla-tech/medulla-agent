@@ -91,11 +91,15 @@ class Glpi:
 
             try:
                 self._glpi_version = (
-                    self.engine_glpi.execute("SELECT version FROM glpi_configs").fetchone()[0].replace(" ", "")
+                    self.engine_glpi.execute("SELECT version FROM glpi_configs")
+                    .fetchone()[0]
+                    .replace(" ", "")
                 )
             except OperationalError:
                 self._glpi_version = (
-                    self.engine_glpi.execute('SELECT value FROM glpi_configs WHERE name = "version"')
+                    self.engine_glpi.execute(
+                        'SELECT value FROM glpi_configs WHERE name = "version"'
+                    )
                     .fetchone()[0]
                     .replace(" ", "")
                 )
@@ -126,7 +130,9 @@ class Glpi:
             self.logger.error("We failed to connect to the Glpi database.")
             self.logger.error("Please verify your configuration")
             if str(e) == "`glpi_plugin_glpiinventory_collects`":
-                self.logger.error("Please verify that the glpiinventory plugin is installed and activated")
+                self.logger.error(
+                    "Please verify that the glpiinventory plugin is installed and activated"
+                )
 
             self.is_activated = False
             return False
@@ -147,8 +153,12 @@ class Glpi:
     def getMachineByMacAddress(self, ctx, filter):
         return self.version_instance.getMachineByMacAddress(ctx, filter)
 
-    def getLastMachineInventoryPart(self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False):
-        return self.version_instance.getLastMachineInventoryPart(uuid, part, minbound, maxbound, filt, options, count)
+    def getLastMachineInventoryPart(
+        self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False
+    ):
+        return self.version_instance.getLastMachineInventoryPart(
+            uuid, part, minbound, maxbound, filt, options, count
+        )
 
     def getComputersOS(self, ids):
         return self.version_instance.getComputersOS(ids)
@@ -179,4 +189,6 @@ class Glpi:
         return self.version_instance._machineobjectdymresult(ret)
 
     def addRegistryCollectContent(self, computers_id, registry_id, key, value):
-        return self.version_instance.addRegistryCollectContent(computers_id, registry_id, key, value)
+        return self.version_instance.addRegistryCollectContent(
+            computers_id, registry_id, key, value
+        )
