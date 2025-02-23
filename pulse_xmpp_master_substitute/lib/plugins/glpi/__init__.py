@@ -165,6 +165,10 @@ class Glpi:
     def getMachineByUUID(self, uuid):
         return self.version_instance.getMachineByUUID(uuid)
 
+    def get_plugin_inventory_state(self, plugin_name=""):
+        global glpi
+        return glpi.get_plugin_inventory_state(plugin_name)
+
     def addRegistryCollect(self, fullkey, keyname):
         return self.version_instance.addRegistryCollect(fullkey, keyname)
 

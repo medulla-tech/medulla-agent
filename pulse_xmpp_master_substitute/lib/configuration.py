@@ -390,6 +390,10 @@ class confParameter:
         if confiobject.has_option("glpi", "user_agent"):
             self.user_agent = confiobject.get("glpi", "user_agent")
 
+        self.inventory_plugin = ""
+        if confiobject.has_option("glpi", "inventory_plugin"):
+            self.inventory_plugin = confiobject.get("glpi", "inventory_plugin")
+
         self.xmlfixplugindir = "/var/lib/pulse2/xml_fix"
         if confiobject.has_option("glpi", "xml_fix"):
             self.xmlfixplugindir = confiobject.get("glpi", "xml_fix")
