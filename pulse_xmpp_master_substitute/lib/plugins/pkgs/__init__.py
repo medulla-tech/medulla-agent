@@ -990,7 +990,6 @@ class PkgsDatabase(DatabaseHelper):
                     )
         return ret
 
-
     @DatabaseHelper._sessionm
     def verifier_exist_uuid(self, session, uuid):
         """

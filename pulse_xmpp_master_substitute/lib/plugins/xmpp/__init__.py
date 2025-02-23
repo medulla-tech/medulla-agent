@@ -10499,16 +10499,18 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 LIMIT 1
             );
             """
-            result = session.execute(sql, {'valchamp': valchamp})
+            result = session.execute(sql, {"valchamp": valchamp})
             session.commit()
             session.flush()
             existenregistrement = bool(result.scalar())
             if existenregistrement:
                 logging.getLogger().debug(
-                f"valeur {valchamp} de table {tablename}.{namefield} exist ")
+                    f"valeur {valchamp} de table {tablename}.{namefield} exist "
+                )
             else:
                 logging.getLogger().error(
-                f"valeur {valchamp} de table {tablename}.{namefield} no exist ")
+                    f"valeur {valchamp} de table {tablename}.{namefield} no exist "
+                )
             return existenregistrement
         except Exception as e:
             logging.getLogger().debug(
@@ -10517,7 +10519,9 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             return False
 
     @DatabaseHelper._sessionm
-    def setUp_machine_windows_gray_list_major_version(self, session, data, validity_day=10):
+    def setUp_machine_windows_gray_list_major_version(
+        self, session, data, validity_day=10
+    ):
         """
         Ajoute ou met à jour une entrée dans la table `up_gray_list` pour un package Windows en fonction
         de sa version majeure, avec gestion de la validité.
@@ -10547,27 +10551,37 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             - Un contrôle est effectué pour éviter d'ajouter des entrées déjà existantes dans ces tables.
         """
         # Construire le nom du package et son identifiant unique
-        package_name = "win%supd_%s"%( data['system_info']['infobuild']['major_version'],
-                                       data['system_info']['infobuild']['code_lang_iso'] )
+        package_name = "win%supd_%s" % (
+            data["system_info"]["infobuild"]["major_version"],
+            data["system_info"]["infobuild"]["code_lang_iso"],
+        )
         package_name_id = f"9514859a-{package_name}bqbowfj6h9update"
         try:
             # Vérifier si le package existe déjà dans la table `up_gray_list`
-            if self.is_exist_value_in_table(package_name_id, namefield="updateid", tablename="up_gray_list"):
+            if self.is_exist_value_in_table(
+                package_name_id, namefield="updateid", tablename="up_gray_list"
+            ):
                 return package_name_id, True
 
             # Vérifier si le package existe dans la table `up_gray_list_flop`
-            if self.is_exist_value_in_table(package_name_id, namefield="updateid", tablename="up_gray_list_flop"):
+            if self.is_exist_value_in_table(
+                package_name_id, namefield="updateid", tablename="up_gray_list_flop"
+            ):
                 # Supprimer l'entrée de la table `up_gray_list_flop`
                 sql_delete_gray_list_flop = """
                     DELETE FROM up_gray_list_flop
                     WHERE updateid = :package_name;
                 """
-                session.execute(sql_delete_gray_list_flop, {"package_name": package_name_id})
+                session.execute(
+                    sql_delete_gray_list_flop, {"package_name": package_name_id}
+                )
                 session.commit()
                 return package_name_id, True
 
             # Vérifier si le package existe dans la table `up_black_list` (ignoré s'il y est présent)
-            if self.is_exist_value_in_table(package_name_id, namefield="updateid_or_kb", tablename="up_black_list"):
+            if self.is_exist_value_in_table(
+                package_name_id, namefield="updateid_or_kb", tablename="up_black_list"
+            ):
                 return package_name_id, False
 
             # Définir les dates actuelles et de validité
@@ -10815,6 +10829,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 "sql delete_in_white_list : %s" % traceback.format_exc()
             )
         return False
+
     #
     # @DatabaseHelper._sessionm
     # def get_all_update_in_gray_list(self, session, updateid=None):
@@ -11431,7 +11446,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     # -------------------------------------------------------------------------------
 
-
     @DatabaseHelper._sessionm
     def get_os_xmpp_update_major_stats(self, session, presence=True):
         """
@@ -11447,14 +11461,14 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         try:
             # Dictionnaire final des résultats
 
-            cols=["W10to10", "W10to11", "W11to11"]
+            cols = ["W10to10", "W10to11", "W11to11"]
             results = {"entity": {}}
 
             # Condition de filtre sur xma.enabled
             presence_filter = "AND xma.enabled = 1" if presence else ""
 
             # Requête pour le nombre total de machines par entité
-            total_os_sql = f'''
+            total_os_sql = f"""
                 SELECT
                     xe.name AS entity_name,
                     xe.complete_name AS complete_name,
@@ -11466,14 +11480,16 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     xma.platform LIKE '%Windows%'
                     {presence_filter}
                 GROUP BY xe.id;
-            '''
+            """
 
             total_os_result = session.execute(total_os_sql).fetchall()
             for row in total_os_result:
-                results["entity"].setdefault(row.complete_name, {"count" :  int(row.count)})
+                results["entity"].setdefault(
+                    row.complete_name, {"count": int(row.count)}
+                )
 
             # Requête pour les statistiques par entité
-            entity_sql = f'''
+            entity_sql = f"""
                         SELECT
                             xe.name AS entity_name,
                             xe.complete_name AS complete_name,
@@ -11510,19 +11526,21 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             {presence_filter}
                         GROUP BY xe.id , os
                         ORDER BY xe.complete_name , os;
-            '''
+            """
 
             entity_result = session.execute(entity_sql).fetchall()
             for row in entity_result:
-                 # initialisation
+                # initialisation
                 results["entity"].setdefault(row.complete_name, {})
-                results["entity"][row.complete_name]["name"]=row.entity_name
-                results["entity"][row.complete_name][row.os ]=int(row.nbwin)
-              # Calcul de la conformité
+                results["entity"][row.complete_name]["name"] = row.entity_name
+                results["entity"][row.complete_name][row.os] = int(row.nbwin)
+            # Calcul de la conformité
             for entity, data in results["entity"].items():
-                total=results["entity"][entity]["count"]
+                total = results["entity"][entity]["count"]
                 non_conforme = sum(data.get(key, 0) for key in cols)
-                results["entity"][entity]["conformite"] = round(((non_conforme - total) / total * 100) if non_conforme > 0 else 0, 2)
+                results["entity"][entity]["conformite"] = round(
+                    ((non_conforme - total) / total * 100) if non_conforme > 0 else 0, 2
+                )
 
             # Copier les clés existantes avant d'itérer
             existing_entities = list(results["entity"].keys())
@@ -11533,23 +11551,22 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             return results
 
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération des statistiques de mise à jour des OS : {str(e)}")
+            logger.error(
+                f"Erreur lors de la récupération des statistiques de mise à jour des OS : {str(e)}"
+            )
             logger.error(f"Traceback : {traceback.format_exc()}")
             raise
-
 
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération des statistiques de mise à jour des OS : {str(e)}")
+            logger.error(
+                f"Erreur lors de la récupération des statistiques de mise à jour des OS : {str(e)}"
+            )
             logger.error(f"Traceback : {traceback.format_exc()}")
             raise
 
-    def get_os_xmpp_update_major_details(self,
-                                         session,
-                                         entity_id,
-                                         filter="",
-                                         start=0,
-                                         limit=-1,
-                                         colonne=True):
+    def get_os_xmpp_update_major_details(
+        self, session, entity_id, filter="", start=0, limit=-1, colonne=True
+    ):
         """
         Récupère les détails des machines avec des systèmes d'exploitation Windows à partir de la base de données XMPPMaster.
 
@@ -11578,7 +11595,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
 
         # Base SQL query
-        total_os_sql = '''
+        total_os_sql = """
             SELECT
                 SQL_CALC_FOUND_ROWS
                 xma.id AS id_machine,
@@ -11604,7 +11621,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 INNER JOIN xmppmaster.glpi_entity xe ON xe.id = xma.glpi_entity_id
             WHERE
                 xma.platform LIKE '%Windows%' AND xe.glpi_id = :entity_id
-        '''
+        """
         # Add filter condition if filter is not empty
         if filter:
             total_os_sql += " AND xma.hostname LIKE :filter"
@@ -11612,7 +11629,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         # Add ORDER BY and LIMIT/OFFSET if limit is not -1
         total_os_sql += " ORDER BY xma.hostname "
         if limit != -1:
-            logger.error("limit %s "%limit)
+            logger.error("limit %s " % limit)
             total_os_sql += " LIMIT :limit OFFSET :start"
 
         # Convert to text for parameter binding
@@ -11620,15 +11637,24 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         # Log the SQL query with parameters
         logger.debug("Executing SQL query: %s", total_os_sql)
-        logger.debug("With parameters: entity_id=%s, filter=%s, limit=%s, start=%s", entity_id, f"%{filter}%", limit, start)
+        logger.debug(
+            "With parameters: entity_id=%s, filter=%s, limit=%s, start=%s",
+            entity_id,
+            f"%{filter}%",
+            limit,
+            start,
+        )
 
         # Execute the SQL query with parameters
-        entity_result = session.execute(total_os_sql, {
-            'entity_id': entity_id,
-            'filter': f"%{filter}%",
-            'limit': limit,
-            'start': start
-        }).fetchall()
+        entity_result = session.execute(
+            total_os_sql,
+            {
+                "entity_id": entity_id,
+                "filter": f"%{filter}%",
+                "limit": limit,
+                "start": start,
+            },
+        ).fetchall()
 
         # Count the total number of matching elements using FOUND_ROWS()
         sql_count = text("SELECT FOUND_ROWS();")
@@ -11641,7 +11667,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         # Prepare the result dictionary with the count of matching rows and common fields
         result = {
-            'nb_machine': ret_count,
+            "nb_machine": ret_count,
             # 'entity_id': common_entity_id,
             # 'entity_name': common_entity_name,
             # 'complete_name': common_complete_name
@@ -11649,30 +11675,44 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         if colonne:
             # If colonne is True, return results in columnar format
-            result.update({
-                'id_machine': [row.id_machine if row.id_machine is not None else "" for row in entity_result],
-                'machine': [row.machine if row.machine is not None else "" for row in entity_result],
-                'platform': [row.platform if row.platform is not None else "" for row in entity_result],
-                'version': [row.version if row.version is not None else "" for row in entity_result],
-                'update': [row.update  if row.update is not None else "" for row in entity_result]
-            })
+            result.update(
+                {
+                    "id_machine": [
+                        row.id_machine if row.id_machine is not None else ""
+                        for row in entity_result
+                    ],
+                    "machine": [
+                        row.machine if row.machine is not None else ""
+                        for row in entity_result
+                    ],
+                    "platform": [
+                        row.platform if row.platform is not None else ""
+                        for row in entity_result
+                    ],
+                    "version": [
+                        row.version if row.version is not None else ""
+                        for row in entity_result
+                    ],
+                    "update": [
+                        row.update if row.update is not None else ""
+                        for row in entity_result
+                    ],
+                }
+            )
         else:
             # If colonne is False, return detailed results in row-wise format
-            result['details'] = [
+            result["details"] = [
                 {
-                    'id_machine': row.id_machine if row.id_machine is not None else "",
-                    'machine': row.machine if row.machine is not None else "",
-                    'platform': row.platform if row.platform is not None else "",
-                    'version':  row.version if row.version is not None else "",
-                    'update': row.update if row.update is not None else ""
+                    "id_machine": row.id_machine if row.id_machine is not None else "",
+                    "machine": row.machine if row.machine is not None else "",
+                    "platform": row.platform if row.platform is not None else "",
+                    "version": row.version if row.version is not None else "",
+                    "update": row.update if row.update is not None else "",
                 }
                 for row in entity_result
             ]
 
         return result
-
-
-
 
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [rowproxy._asdict() for rowproxy in resultproxy]
