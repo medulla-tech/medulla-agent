@@ -35,7 +35,7 @@ def schedule_main(objectxmpp):
 
 def read_config_file():
     """
-    Bed the configuration files 'scheduling_websocket_logs.ini' and 'scheduling_websocket_logs.ini.local'
+    Reads the configuration files 'scheduling_websocket_logs.ini' and 'scheduling_websocket_logs.ini.local'
     and builds a dictionary structured by group.
 
     Example :
