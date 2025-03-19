@@ -391,7 +391,7 @@ async def handle_client(client, xmppobject):
                     codeerror, result = xmppobject.handle_client_connection(
                         json.dumps(requestobj)
                     )
-                    logger.warning(f"Received data: __{codeerror}__ __{result}__")
+                    logger.debug(f"Received data: __{codeerror}__ __{result}__")
 
                     # Handle different types of results and send them back to the client
                     if not result or result == "":
