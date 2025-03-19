@@ -376,6 +376,11 @@ class confParameter:
         if confiobject.has_option("glpi", "url_to_forward"):
             self.url_to_forward = confiobject.get("glpi", "url_to_forward")
 
+        if confiobject.has_option("glpi", "dbreadonly"):
+            self.dbreadonly = confiobject.getboolean("glpi", "dbreadonly")
+        else:
+            self.dbreadonly = True  # Valeur par défaut pour dbreadonly si non défini
+
         self.inventory_verbose = False
         if confiobject.has_option("glpi", "inventory_verbose"):
             self.inventory_verbose = confiobject.getboolean("glpi", "inventory_verbose")
@@ -383,6 +388,10 @@ class confParameter:
         self.user_agent = "siveo-injector"
         if confiobject.has_option("glpi", "user_agent"):
             self.user_agent = confiobject.get("glpi", "user_agent")
+
+        self.inventory_plugin = ""
+        if confiobject.has_option("glpi", "inventory_plugin"):
+            self.inventory_plugin = confiobject.get("glpi", "inventory_plugin")
 
         self.xmlfixplugindir = "/var/lib/pulse2/xml_fix"
         if confiobject.has_option("glpi", "xml_fix"):

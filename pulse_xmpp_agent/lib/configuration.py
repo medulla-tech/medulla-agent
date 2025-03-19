@@ -218,7 +218,6 @@ def nextalternativeclusterconnection(conffile):
     listalternative = Config.get("alternativelist", "listars").split(",")
 
     serverjid = listalternative[nextserver - 1]
-    logger.info(f"serverjid {serverjid}")
     port = Config.get(serverjid, "port")
     server = Config.get(serverjid, "server")
     guacamole_baseurl = Config.get(serverjid, "guacamole_baseurl")

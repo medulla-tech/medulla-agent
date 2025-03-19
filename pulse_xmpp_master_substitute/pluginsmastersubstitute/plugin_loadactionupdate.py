@@ -301,7 +301,19 @@ def msg_debug_local(self, msg):
 
 def Action_update(self):
     """
-    Runs the log rotation
+    This function is called periodically to execute actions associated with the
+    Up_action_update_packages table. It performs the following steps:
+
+    1. Reads the debug configuration.
+    2. Retrieves all update packages from the Up_action_update_packages table.
+    3. For each package, executes the associated action using a shell command.
+    4. Logs the command being executed.
+    5. Deletes the processed entries from the Up_action_update_packages table.
+    6. Handles any exceptions and logs errors.
+
+    If the command contains the substrings "9514859a-win" and "upd_", the command
+    execution is skipped because these packages should already exist and do not need
+    to be created.
     """
     try:
         read_debug_conf(self)
@@ -312,7 +324,13 @@ def Action_update(self):
                     str(t["action"])
                 )  # str(t['packages'])/usr/sbin/medulla_mysql_exec_update.sh %s
                 self.msg_debug_local("call launcher : %s" % cmd)
-                rr = simplecommand(cmd)
+
+                # Check if the command contains the substrings "9514859a-win" and "upd_"
+                if "9514859a-win" in cmd and "upd_" in cmd:
+                    self.msg_debug_local("Skipping command execution for: %s" % cmd)
+                else:
+                    rr = simplecommand(cmd)
+
             idlist = [x["id"] for x in resultbase]
             XmppMasterDatabase().del_Up_action_update_packages_id(idlist)
     except Exception as e:
