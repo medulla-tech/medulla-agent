@@ -97,6 +97,8 @@ from lib.utils import (
     call_plugin_sequentially,
     convert,
     DateTimebytesEncoderjson,
+    clean_update_directories,
+    execute_medulla_info_update,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -308,9 +310,8 @@ class MUCBot(ClientXMPP):
         terminate_lock,
         alternatifconnection,
     ):
-        logging.log(
-            DEBUGPULSE,
-            "initialise agent xmpp  %s Type %s" % (conf.jidagent, conf.agenttype),
+        logging.debug(
+            "initialise agent xmpp  %s Type %s" % (conf.jidagent, conf.agenttype)
         )
 
         # object partage
@@ -1294,22 +1295,15 @@ class MUCBot(ClientXMPP):
 
     def handle_connection_failed(self, data):
         logger.debug(f"handle_connection_failed {self.server_address}")
-        # logger.info(f"handle_connection_failed alternatifconnection {self.alternatifconnection}")
-        # if self.demandeRestartBot_bool:
-        #     logger.debug(f"Restart Bot {self.server_address}")
-        #     self.demandeRestartBot_bool = False
-        #     return
         self.disconnect()
 
     def handle_connecting(self, data):
         """
         success connecting agent
         """
-        # logger.info(f"connecting {self.server_address}")
         pass
 
     def handle_connected(self, data):
-        logger.info(f"handle_connected {self.server_address}")
         self.demandeRestartBot_bool = False
         logger.info(f"connected {self.server_address}")
         with terminate_lock:
@@ -2638,7 +2632,7 @@ class MUCBot(ClientXMPP):
             self.get_roster()
 
     def subscribe_initialisation(self):
-        logger.info("subscribe_initialisation agent %s" % self.sub_subscribe)
+        logger.debug("subscribe_initialisation agent %s" % self.sub_subscribe)
         self.unsubscribe_agent()
         if self.sub_subscribe not in list(self.client_roster.keys()):
             logger.warning(
@@ -2679,7 +2673,8 @@ class MUCBot(ClientXMPP):
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         # machine connected
         self.config.ipxmpp = getIpXmppInterface(self.config)
-
+        # nettoy les fichiers de mise a jour windows
+        clean_update_directories()
         self.__clean_message_box()
         if self.config.agenttype in ["relayserver"]:
             try:
@@ -3127,11 +3122,9 @@ class MUCBot(ClientXMPP):
         # retrieve existing sessions
         if not self.session.loadsessions():
             return
-        logger.debug("RELOAD SESSION DEPLOY")
         try:
             # load back to deploy after read session
             self.back_to_deploy = load_back_to_deploy()
-            logger.debug("RELOAD DEPENDENCY MANAGER")
         except IOError:
             self.back_to_deploy = {}
         cleanbacktodeploy(self)
@@ -3820,6 +3813,26 @@ AGENT %s ERROR TERMINATE""" % (
         if os.path.exists(BOOLFILECOMPLETREGISTRATION):
             self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
+
+        system_info = offline_search_kb().get()
+        if "infobuild" in system_info:
+            # Information version pour windows
+            if "DisplayVersion" in system_info["infobuild"]:
+                er.messagejson["info"]["DisplayVersion"] = system_info["infobuild"][
+                    "DisplayVersion"
+                ]
+            if "update_major" in system_info["infobuild"]:
+                er.messagejson["info"]["update_major"] = system_info["infobuild"][
+                    "update_major"
+                ]
+            if "ProductName" in system_info["infobuild"]:
+                er.messagejson["info"]["ProductName"] = system_info["infobuild"][
+                    "ProductName"
+                ]
+            if "code_lang_iso" in system_info["infobuild"]:
+                er.messagejson["info"]["code_lang_iso"] = system_info["infobuild"][
+                    "code_lang_iso"
+                ]
         dataobj = {
             "action": "infomachine",
             "from": self.config.jidagent,
@@ -3864,7 +3877,7 @@ AGENT %s ERROR TERMINATE""" % (
             "keysyncthing": self.deviceid,
             "uuid_serial_machine": serialnumbermachine(),
             "updatingagent": self.config.updating,
-            "system_info": offline_search_kb().get(),
+            "system_info": system_info,
         }
         try:
             dataobj["md5_conf_monitoring"] = ""
@@ -4232,16 +4245,12 @@ def initialize_alternatifconnection(optstypemachine):
     :param optstypemachine: Type de machine (par exemple, "relay").
     :return: La variable alternatifconnection initialisée.
     """
-    logger.info("composition alternative")
-
     # Chemin du fichier alternative
     namefilealternatifconnection = conffilename("cluster")
     if os.path.isfile(namefilealternatifconnection):
         alternatifconnection = nextalternativeclusterconnectioninformation(
             namefilealternatifconnection
         )
-        logger.info(f"composition alternative {namefilealternatifconnection}")
-
         if (
             "nbserver" not in alternatifconnection
             or "listars" not in alternatifconnection
@@ -4253,8 +4262,7 @@ def initialize_alternatifconnection(optstypemachine):
 
         if optstypemachine.lower() not in ["relay"]:
             shuffle_listars(alternatifconnection)
-            logger.info("file %s" % conffilename("cluster"))
-            logger.info(
+            logger.debug(
                 "list server connection possible (alternative cluster) %s"
                 % alternatifconnection["listars"]
             )
@@ -4460,17 +4468,15 @@ def doTask(
     if not alternatifconnection:
         with terminate_lock:
             shared_dict["alternative"] = False
-    logger.info(
+    logger.debug(
         "list server connection possible (alternative cluster) %s"
         % alternatifconnection
     )
 
     with terminate_lock:
         shared_dict["new_connection"] = False
-    while True:
-        # Enregistre un message d'information dans le logger
-        logger.info("composition alternative")
 
+    while True:
         # Lit le fichier de configuration alternative
         alternatifconnection = read_alternatifconnection()
 
@@ -4479,7 +4485,7 @@ def doTask(
             shared_dict["compteur"] += 1
 
         # Enregistre la valeur actuelle du compteur dans le logger
-        logger.info("shared_dict_compteur : %s" % shared_dict["compteur"])
+        logger.debug("shared_dict_compteur : %s" % shared_dict["compteur"])
 
         # Définit le nombre d'essais pour vérifier le compteur et lanceer 1 reconf des fichiers.
         tous_les_n_essais = 10
@@ -4494,7 +4500,6 @@ def doTask(
             if pid_connecteur is None:
                 # Si pid_connecteur est None, lance le programme standalone
                 pid_connecteur = launch_standalone_program()
-                logger.info("pid_connecteur : %s" % pid_connecteur)
                 with terminate_lock:
                     shared_dict["reconnect"] = True
                     # Construire le chemin du fichier
@@ -4506,7 +4511,6 @@ def doTask(
                     # pass  # Le fichier est créé vide
 
             else:
-                logger.info("attendre fin connecteur pour pouvoir le relancer")
                 # Si pid_connecteur n'est pas None, vérifie si le processus est en cours d'exécution
                 if not is_process_running(pid_connecteur):
                     # Si le processus n'est pas en cours d'exécution, réinitialise pid_connecteur à None
@@ -4519,7 +4523,6 @@ def doTask(
             if shared_dict.get("terminate"):
                 logging.info(" termine boucle process")
                 break
-        logger.info("CREATION PROCESS")
         p = Process(
             target=process_xmpp_agent,
             name="xmppagent",
@@ -4875,9 +4878,8 @@ if __name__ == "__main__":
     file_handler.setLevel(tg.levellog)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
-    logger.info("file_handler (%s) %s " % (tg.levellog, tg.logfile))
-    logger.info("opts.consoledebug (%s) " % (opts.consoledebug))
 
+    execute_medulla_info_update()
     if not opts.deamon:
         doTask(
             opts.typemachine,

@@ -5,7 +5,7 @@
 """
     This file contains shared functions use in pulse client/server agents.
 """
-
+import shutil
 import sys
 import urllib.request as urllib2
 from urllib.parse import urlparse
@@ -5084,9 +5084,84 @@ class offline_search_kb:
                 )
         return result_cmd
 
+    def get_windows_version_major(self):
+        version = platform.version()
+        match = re.search(r"(\d+)\.(\d+)\.(\d+)", version)
+        if match:
+            major, minor, build = match.groups()
+            if major == "10" and int(build) >= 22000:
+                return "11"
+            elif major == "10":
+                return "10"
+            elif major == "6" and minor == "1":
+                return "7"
+        return ""
+
+    def get_locale_id_iso(self):
+        cmd = """REG QUERY "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\Language" """
+        result = simplecommand(encode_strconsole(cmd))
+        if int(result["code"]) == 0:
+            # analyse result
+            line = [
+                decode_strconsole(x.strip())
+                for x in result["result"]
+                if x.strip().startswith("InstallLanguage")
+            ]
+            if line:
+                for sline in line:
+                    lcmd = [x for x in sline.split(" ") if x != ""]
+                    logging.getLogger().error(lcmd)
+                    if len(lcmd) == 3:
+                        return lcmd[2]
+        return ""
+
     def search_system_info_reg(self):
         result_cmd = {}
         if sys.platform.startswith("win"):
+            datalang = {
+                "0416": {
+                    "OSL": "Brazilian Portuguese",
+                    "VSV": "English, Brazilian Portuguese",
+                    "code_lang": "pt-br",
+                },
+                "0405": {"OSL": "Czech", "VSV": "English, Czech", "code_lang": "cs"},
+                "0409": {"OSL": "English", "VSV": "English", "code_lang": "en"},
+                "040C": {"OSL": "French", "VSV": "English, French", "code_lang": "fr"},
+                "0407": {"OSL": "German", "VSV": "English, German", "code_lang": "de"},
+                "040E": {
+                    "OSL": "Hungarian",
+                    "VSV": "English, Hungarian",
+                    "code_lang": "hu",
+                },
+                "0410": {
+                    "OSL": "Italian",
+                    "VSV": "English, Italian",
+                    "code_lang": "it",
+                },
+                "0411": {
+                    "OSL": "Japanese",
+                    "VSV": "English, Japanese",
+                    "code_lang": "ja",
+                },
+                "0412": {"OSL": "Korean", "VSV": "English, Korean", "code_lang": "ko"},
+                "0415": {"OSL": "Polish", "VSV": "English, Polish", "code_lang": "pl"},
+                "0419": {
+                    "OSL": "Russian",
+                    "VSV": "English, Russian",
+                    "code_lang": "ru",
+                },
+                "0C0A": {
+                    "OSL": "Spanish",
+                    "VSV": "English, Spanish",
+                    "code_lang": "es",
+                },
+                "0804": {
+                    "OSL": "Simplified Chinese",
+                    "VSV": "English",
+                    "code_lang": "zh-cn",
+                },
+            }
+
             informationlist = (
                 "CurrentBuild",
                 "CurrentVersion",
@@ -5096,6 +5171,7 @@ class offline_search_kb:
                 "DisplayVersion",
                 "RegisteredOwner",
             )
+
             cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" | findstr REG_SZ"""
             result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
@@ -5110,7 +5186,17 @@ class offline_search_kb:
                     if len(lcmd) >= 3:
                         keystring = " ".join(lcmd[2:])
                         result_cmd[lcmd[0]] = keystring
-
+            # major update
+            result_cmd["major_version"] = self.get_windows_version_major()
+            result_cmd["InstallLanguage"] = self.get_locale_id_iso()
+            if result_cmd["InstallLanguage"] in datalang:
+                result_cmd["code_lang_iso"] = datalang[result_cmd["InstallLanguage"]][
+                    "code_lang"
+                ]
+                result_cmd["update_major"] = "win%s_upd_%s" % (
+                    result_cmd["major_version"],
+                    datalang[result_cmd["InstallLanguage"]]["code_lang"],
+                )
             # search code langue
             try:
                 result_cmd["Locale"] = {
@@ -5326,6 +5412,37 @@ def log_params(func):
         return result
 
     return wrapper
+
+
+def execute_medulla_info_update():
+    """
+    Exécute le script medulla_info_update.py situé dans le répertoire spécifié.
+
+    Ce script est exécuté uniquement si le système d'exploitation est Windows.
+    Il utilise le module subprocess pour lancer le script avec l'interpréteur Python.
+
+    Raises:
+        subprocess.CalledProcessError: Si le script retourne un code d'erreur non nul.
+        FileNotFoundError: Si le fichier medulla_info_update.py n'existe pas à l'emplacement spécifié.
+    """
+    if platform.system() == "Windows":
+        script_path = r"C:\Program Files\Medulla\bin\medulla_info_update.py"
+        try:
+            # Exécuter le script en utilisant l'interpréteur Python
+            subprocess.run(
+                ["c:\Program Files\Python3\python.exe", script_path], check=True
+            )
+            logger.error("Le script medulla_info_update.py a été exécuté avec succès.")
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"Erreur lors de l'exécution du script : {e}")
+        except FileNotFoundError:
+            logger.error(
+                "Le fichier medulla_info_update.py n'existe pas à l'emplacement spécifié."
+            )
+    else:
+        logger.warning(
+            "Ce programme est destiné à être exécuté uniquement sur Windows."
+        )
 
 
 def log_details(func):
@@ -6266,3 +6383,111 @@ class NetworkInfoxmpp:
         mac = mac.replace("-", "")
         mac = mac.replace(" ", "")
         return mac
+
+
+def clean_update_directories():
+    """
+    Cette fonction vérifie l'existence du fichier BOOL_CLEAN_UPDATE dans le répertoire
+    C:\\Program Files\\Python3\\Lib\\site-packages\\pulse_xmpp_agent\\.
+    Si le fichier existe, elle recherche les répertoires terminant par la chaîne "update" dans
+    C:\\Program Files\\Medulla\\var\\tmp\\packages\\ et les supprime, ainsi que le fichier BOOL_CLEAN_UPDATE.
+    Ensuite, elle démonte tous les lecteurs logiques CD-ROM.
+    """
+    # Chemin du fichier BOOL_CLEAN_UPDATE
+    bool_clean_update_path = (
+        r"C:\Program Files\Python3\Lib\site-packages\pulse_xmpp_agent\BOOL_CLEAN_UPDATE"
+    )
+
+    # Vérifie si le fichier BOOL_CLEAN_UPDATE existe
+    if os.path.exists(bool_clean_update_path):
+        logger.debug(
+            "Le fichier BOOL_CLEAN_UPDATE a été trouvé. Exécution des actions..."
+        )
+
+        # Chemin du répertoire cible pour la recherche des répertoires "update"
+        target_dir = r"C:\Program Files\Medulla\var\tmp\packages"
+
+        # Recherche des répertoires terminant par "update"
+        for root, dirs, files in os.walk(target_dir):
+            for dir_name in dirs:
+                if dir_name.endswith("update"):
+                    dir_path = os.path.join(root, dir_name)
+                    logger.debug(f"Suppression du répertoire : {dir_path}")
+                    try:
+                        shutil.rmtree(dir_path)
+                        logger.debug(
+                            f"Le répertoire {dir_path} a été supprimé avec succès."
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Erreur lors de la suppression du répertoire {dir_path}. Message : {e}"
+                        )
+
+        # Suppression du fichier BOOL_CLEAN_UPDATE
+        try:
+            os.remove(bool_clean_update_path)
+            logger.debug("Le fichier BOOL_CLEAN_UPDATE a été supprimé avec succès.")
+        except Exception as e:
+            logger.debug(
+                f"Erreur lors de la suppression du fichier BOOL_CLEAN_UPDATE. Message : {e}"
+            )
+
+        # Démonter les lecteurs logiques CD-ROM
+        eject_cdrom_drives()
+    else:
+        logger.debug(
+            "Le fichier BOOL_CLEAN_UPDATE n'a pas été trouvé. Aucune action n'est requise."
+        )
+
+
+def eject_cdrom_drives():
+    """
+    Cette fonction récupère tous les lecteurs logiques avec WMI, filtre ceux dont la description contient "CD-ROM",
+    et tente de les démonter/éjecter.
+
+    La fonction utilise WMI pour interagir avec les lecteurs logiques et Shell.Application pour démonter les lecteurs CD-ROM.
+    Elle initialise et finalise COM pour assurer une utilisation correcte des objets COM.
+
+    :return: None
+    """
+    # Initialisation de l'objet WMI
+    pythoncom.CoInitialize()
+    try:
+        c = wmi.WMI()
+
+        # Récupère tous les lecteurs logiques
+        logical_disks = c.query("SELECT * FROM Win32_LogicalDisk")
+
+        # Filtre les lecteurs où la description contient "CD-ROM"
+        cdrom_disks = [disk for disk in logical_disks if "CD-ROM" in disk.Description]
+
+        # Vérifie si des lecteurs correspondants ont été trouvés
+        if not cdrom_disks:
+            logger.debug(
+                "Aucun lecteur avec une description contenant 'CD-ROM' n'a été trouvé."
+            )
+        else:
+            for disk in cdrom_disks:
+                logger.debug(
+                    f"Lecteur trouvé : {disk.DeviceID} - Description : {disk.Description}"
+                )
+
+                # Tente de démonter/éjecter le lecteur
+                try:
+                    shell_app = win32com.client.Dispatch("Shell.Application")
+                    cd_drive = shell_app.Namespace(17).ParseName(disk.DeviceID)
+                    if cd_drive:
+                        cd_drive.InvokeVerb("Eject")
+                        logger.debug(
+                            f"Le lecteur {disk.DeviceID} a été démonté avec succès."
+                        )
+                    else:
+                        logger.debug(
+                            f"Impossible de trouver le lecteur {disk.DeviceID} pour le démonter."
+                        )
+                except Exception as e:
+                    logger.debug(
+                        f"Erreur lors du démontage du lecteur {disk.DeviceID}. Message : {e}"
+                    )
+    finally:
+        pythoncom.CoUninitialize()

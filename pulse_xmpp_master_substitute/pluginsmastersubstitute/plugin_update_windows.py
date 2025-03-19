@@ -11,7 +11,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from lib.manageRSAsigned import MsgsignedRSA
-
+from lib.plugins.pkgs import PkgsDatabase
 from slixmpp import jid
 from lib.utils import getRandomName
 import re
@@ -69,6 +69,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
         showinfobool = True
         traitement_update(xmppobject, action, sessionid, data, msg, ret)
+
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
 
@@ -118,8 +119,59 @@ def exclude_update_in_select(msg, exclude_update, list_update):
 
 
 def traitement_update(xmppobject, action, sessionid, data, msg, ret):
-    logger.debug("PROCESSING UPDATES FOR %s " % msg["from"])
-    logger.debug(json.dumps(data, indent=4))
+    """
+    Traite les mises à jour en fonction des informations système envoyées par une machine.
+
+    Args:
+        xmppobject: Objet XMPP contenant les informations de connexion et les paramètres globaux.
+        action: Action demandée (non utilisée dans ce code).
+        sessionid: ID de session pour la requête XMPP.
+        data: Dictionnaire contenant les informations système de la machine.
+        msg: Message XMPP contenant les informations sur l'expéditeur.
+        ret: Valeur de retour (non utilisée dans ce code).
+    """
+
+    def package_name_major(data):
+        """
+        Génère un identifiant unique pour une mise à jour majeure en fonction de la version et de la langue du système.
+
+        Args:
+            data (dict): Dictionnaire contenant les informations système.
+
+        Returns:
+            str | None: Identifiant du package de mise à jour ou None si les informations requises sont absentes.
+        """
+        if (
+            "system_info" in data
+            and "infobuild" in data["system_info"]
+            and "major_version" in data["system_info"]["infobuild"]
+            and "code_lang_iso" in data["system_info"]["infobuild"]
+        ):
+            package_name = "win%supd_%s" % (
+                data["system_info"]["infobuild"]["major_version"],
+                data["system_info"]["infobuild"]["code_lang_iso"],
+            )
+            return f"9514859a-{package_name}bqbowfj6h9update"
+        return None
+
+    def verifier_exist_package(package_name_update):
+        """
+        Vérifie si un package existe à l'emplacement spécifié.
+
+        Le chemin du package est construit en combinant le chemin de base
+        '/var/lib/pulse2/packages/sharing/winupdates' avec le nom du UUID du package.
+
+        Paramètres :
+        package_name_update (str) : Le nom du UUID du package à vérifier.
+
+        Retourne :
+        bool : True si le package existe, False sinon.
+        """
+        chemin_package = os.path.join(
+            "/var/lib/pulse2/packages/sharing/winupdates", package_name_update
+        )
+        return os.path.isdir(chemin_package)
+
     logger.debug(
         "Enabled products (xmppobject.list_produits):  %s" % xmppobject.list_produits
     )
@@ -171,13 +223,6 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         )
         logger.debug("list_update search is %s: " % list_update)
         res_update.extend(exclude_update_in_select(msg, exclude_update, list_update))
-    # autre methode attribution des update
-    # list_update = XmppMasterDatabase().search_kb_windows1( "", product=data['system_info']['platform_info']['type'],
-    # version =data['system_info']['infobuild']['DisplayVersion'],
-    # sevrity="Critical",
-    # archi=data['system_info']['platform_info']['machine'],
-    # kb_list=lkbe)
-    # res_update.extend(exclude_update_in_select( msg, exclude_update, list_update ))
 
     if "up_packages_Win_Malicious_X64" in list_table_product_select:
         if (
@@ -222,17 +267,121 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                 t["kb"],
             )
         )
-        XmppMasterDatabase().setUp_machine_windows(
-            machine["id"],
-            t["updateid"],
-            kb=t["kb"],
-            deployment_intervals=xmppobject.deployment_intervals,
-            msrcseverity=t["msrcseverity"],
-        )
-        # on add ou update le kb dans la gray list
-        XmppMasterDatabase().setUp_machine_windows_gray_list(
-            t["updateid"], t["tableproduct"]
-        )
+        # on ajoute le deploiement si le package exist iniquement
+        exist_package_base = PkgsDatabase().verifier_exist_uuid(t["updateid"])
+        exist_package_physique = verifier_exist_package(t["updateid"])
+        if not exist_package_base:
+            logger.warning("package update '%s' missing in base pkgs" % t["updateid"])
+        if not exist_package_physique:
+            logger.warning(
+                "package update '%s' missing in base files /var/lib/pulse2/packages/sharing/winupdate"
+                % t["updateid"]
+            )
+        if exist_package_base and exist_package_physique:
+            XmppMasterDatabase().setUp_machine_windows(
+                machine["id"],
+                t["updateid"],
+                kb=t["kb"],
+                deployment_intervals=xmppobject.deployment_intervals,
+                msrcseverity=t["msrcseverity"],
+            )
+            # on add ou update le kb dans la gray list
+            XmppMasterDatabase().setUp_machine_windows_gray_list(
+                t["updateid"], t["tableproduct"]
+            )
+
+    if (
+        "system_info" in data
+        and "infobuild" in data["system_info"]
+        and "DisplayVersion" in data["system_info"]["infobuild"]
+        and "major_version" in data["system_info"]["infobuild"]
+        and "code_lang_iso" in data["system_info"]["infobuild"]
+        and "update_major" in data["system_info"]["infobuild"]
+    ):
+        if str(data["system_info"]["infobuild"]["major_version"]) == "10":
+            if data["system_info"]["infobuild"]["DisplayVersion"] != "22H2":
+                (
+                    package_name_id,
+                    validity,
+                ) = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(
+                    data, validity_day=10
+                )
+                XmppMasterDatabase().del_all_Up_machine_windows(
+                    machine["id"], [package_name_id]
+                )
+                if validity:
+                    exist_package_base = PkgsDatabase().verifier_exist_uuid(
+                        package_name_id
+                    )
+                    exist_package_physique = verifier_exist_package(package_name_id)
+                    if not exist_package_base:
+                        logger.warning(
+                            "package update '%s' missing in base pkgs" % package_name_id
+                        )
+                    if not exist_package_physique:
+                        logger.warning(
+                            "package update '%s' missing in base file /var/lib/pulse2/packages/sharing/winupdate"
+                            % package_name_id
+                        )
+                    if exist_package_base and exist_package_physique:
+                        XmppMasterDatabase().setUp_machine_windows(
+                            machine["id"],
+                            package_name_id,
+                            kb=package_name_id[9:20],
+                            deployment_intervals=xmppobject.deployment_intervals,
+                            msrcseverity="major update",
+                        )
+
+            else:
+                # mise a jour de win 10 to win 11
+                package_name_id = package_name_major(data)
+                if package_name_id:
+                    # on nettoy si package release precedente restant
+                    XmppMasterDatabase().del_all_Up_machine_windows(
+                        machine["id"], [package_name_id]
+                    )
+                    data["system_info"]["infobuild"]["major_version"] = "11"
+                else:
+                    return
+        # mise à jour win 10 or 11 vers derniere win11
+        if str(data["system_info"]["infobuild"]["major_version"]) == "11":
+            if data["system_info"]["infobuild"]["DisplayVersion"] != "24H2":
+                (
+                    package_name_id,
+                    validity,
+                ) = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(
+                    data, validity_day=10
+                )
+                XmppMasterDatabase().del_all_Up_machine_windows(
+                    machine["id"], [package_name_id]
+                )
+                if validity:
+                    exist_package_base = PkgsDatabase().verifier_exist_uuid(
+                        package_name_id
+                    )
+                    exist_package_physique = verifier_exist_package(package_name_id)
+                    if not exist_package_base:
+                        logger.warning(
+                            "package update '%s' missing in base pkgs" % package_name_id
+                        )
+                    if not exist_package_physique:
+                        logger.warning(
+                            "package update '%s' missing in base file /var/lib/pulse2/packages/sharing/winupdate"
+                            % package_name_id
+                        )
+                    if exist_package_base and exist_package_physique:
+                        XmppMasterDatabase().setUp_machine_windows(
+                            machine["id"],
+                            package_name_id,
+                            kb=package_name_id[9:19],
+                            deployment_intervals=xmppobject.deployment_intervals,
+                            msrcseverity="major update",
+                        )
+        if int(data["system_info"]["infobuild"]["major_version"]) > 11:
+            logger.debug(
+                "update major  '%s' pas pris encore en compte%"
+                % (data["system_info"]["infobuild"]["DisplayVersion"])
+            )
 
 
 def list_products_on(xmppobject, data, list_produits):
@@ -265,14 +414,20 @@ def list_products_on(xmppobject, data, list_produits):
     logger.debug("listin fonction  selectionne package  %s  " % list_produits)
     if data["system_info"]["platform_info"]["machine"] == "x64":
         if data["system_info"]["platform_info"]["type"] == "Windows 10":
+            # deselectionne les windows 11
             del_element("up_packages_Win11_X64")
+            del_element("up_packages_Win11_X64_21H2")
+            del_element("up_packages_Win11_X64_22H2")
+            del_element("up_packages_Win11_X64_23H2")
+            del_element("up_packages_Win11_X64_24H2")
             if data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
                 del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H1")
                 del_element("up_packages_Win10_X64_22H2")
             elif data["system_info"]["infobuild"]["DisplayVersion"] == "21H1":
-                del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H2")
+                del_element("up_packages_Win10_X64_1903")
+                del_element("up_packages_Win10_X64_22H2")
             elif data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
                 del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H1")
@@ -281,18 +436,42 @@ def list_products_on(xmppobject, data, list_produits):
                 del_element("up_packages_Win10_X64_21H1")
                 del_element("up_packages_Win10_X64_22H2")
                 del_element("up_packages_Win10_X64_21H2")
-
         elif "windows 11" in data["system_info"]["platform_info"]["type"]:
+            # deselectionne les windows 10
             del_element("up_packages_Win10_X64_21H1")
             del_element("up_packages_Win10_X64_21H2")
             del_element("up_packages_Win10_X64_1903")
             del_element("up_packages_Win10_X64_22H2")
+            if data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
+                del_element("up_packages_Win11_X64_22H2")
+                del_element("up_packages_Win11_X64_23H2")
+                del_element("up_packages_Win11_X64_24H2")
+            elif data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
+                del_element("up_packages_Win11_X64_21H2")
+                del_element("up_packages_Win11_X64_23H2")
+                del_element("up_packages_Win11_X64_24H2")
+            elif data["system_info"]["infobuild"]["DisplayVersion"] == "23H2":
+                del_element("up_packages_Win11_X64_21H2")
+                del_element("up_packages_Win11_X64_22H2")
+                del_element("up_packages_Win11_X64_24H2")
+            elif data["system_info"]["infobuild"]["DisplayVersion"] == "24H2":
+                del_element("up_packages_Win11_X64_21H2")
+                del_element("up_packages_Win11_X64_22H2")
+                del_element("up_packages_Win11_X64_23H2")
+            else:
+                # on conserve seulement la window 11 generique up_packages_Win11_X64
+                del_element("up_packages_Win11_X64_21H2")
+                del_element("up_packages_Win11_X64_22H2")
+                del_element("up_packages_Win11_X64_23H2")
+                del_element("up_packages_Win11_X64_24H2")
         else:
             del_element("up_packages_Win10_X64_21H1")
             del_element("up_packages_Win10_X64_21H2")
             del_element("up_packages_Win10_X64_1903")
             del_element("up_packages_Win10_X64_22H2")
-            del_element("up_packages_Win11_X64")
+            del_element("up_packages_Win11_X64_21H2")
+            del_element("up_packages_Win11_X64_22H2")
+            del_element("up_packages_Win11_X64_23H2")
     else:
         # we don't look at x64 updates
         liste_a_supprimer = [
@@ -300,6 +479,10 @@ def list_products_on(xmppobject, data, list_produits):
             "up_packages_Win10_X64_21H2",
             "up_packages_Win10_X64_1903",
             "up_packages_Win11_X64",
+            "up_packages_Win11_X64_21H2",
+            "up_packages_Win11_X64_22H2",
+            "up_packages_Win11_X64_23H2",
+            "up_packages_Win11_X64_24H2",
             "up_packages_Win_Malicious_X64",
             "up_packages_office_2003_64bit",
             "up_packages_office_2007_64bit",
