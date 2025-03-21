@@ -1,8 +1,11 @@
 # Change Log
 
+## [v3.2.1](https://github.com/medulla-tech/medulla-agent/tree/v3.2.1) (unreleased)
 - [FEATURE]  Update to Python 3.11.9
 - [FEATURE]  Update to GLPI Agent 1.12
+- [FEATURE]  Add a way to know if the glpi plugin is available and enabled on the server
 - [BUGFIX]   Fix display of icon in notification
+- [BUGFIX]   Ignore interfaces reported by netifaces as empty
 
 ## [v3.2.0](https://github.com/medulla-tech/medulla-agent/tree/v3.2.0) (unreleased)
 - [FEATURE]  If the file BOOL_DISABLE_IMG exists, disable the replicator
