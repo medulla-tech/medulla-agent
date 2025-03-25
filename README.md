@@ -16,14 +16,12 @@ With Medulla XMPP Agent you are be able to:
 ## Community
 
 * Discuss on Discord Channel: https://discord.gg/Mj8wGGp4yH
-* Website : <[http://www.siveo.net](https://medulla-tech.io/)>
+* Website : <[http://www.medulla-tech.io](https://medulla-tech.io/)>
 * Bugtracker : <https://github.com/medulla-tech/medulla-agent/issues>
 
 ## Installation
 
 Installation had been simplified to easily try and use, just [download](https://medulla-tech.io/dl/)
-
-For large and complex installation, follow this [links](https://github.com/medulla-tech/integration//blob/main/README.md)
 
 If you find some errors, please feel free to contribute.
 
