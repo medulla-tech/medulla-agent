@@ -27,83 +27,100 @@ logger = logging.getLogger()
 @set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug(
-        "call %s from %s session id %s" % (plugin, message["from"], sessionid)
-    )
+    logger.debug("call %s from %s session id %s" % (plugin, message["from"], sessionid))
     logger.debug("###################################################")
-    logger.debug("json entree %s" % json.dumps(data, indent=4 ))
+    logger.debug("json entree %s" % json.dumps(data, indent=4))
 
     # verification des clefs
-    if not verifier_cles_non_vides(data, [  "namefile",
-                                            "directory",
-                                            "type",
-                                            "contenttype",
-                                            "segment",
-                                            "dir_uuid_machine",
-                                            "dir_segment"]):
-        logger.error("message error recombine_file"  )
+    if not verifier_cles_non_vides(
+        data,
+        [
+            "namefile",
+            "directory",
+            "type",
+            "contenttype",
+            "segment",
+            "dir_uuid_machine",
+            "dir_segment",
+        ],
+    ):
+        logger.error("message error recombine_file")
         return
 
     if data["contenttype"].lower().startswith("package"):
         package = data["location"]
-        data['type'] = "location"
+        data["type"] = "location"
         data["contenttype"] = "directory"
-        if platform.system() in ['Linux', 'Darwin']:
-            data['location'] = os.path.join( "/var/lib/pulse2/packages", package)
-        elif platform.system() == 'Windows':
-            data['location'] = os.path.join(r'C:\Program Files\Pulse\var\tmp\packages', package )
+        if platform.system() in ["Linux", "Darwin"]:
+            data["location"] = os.path.join("/var/lib/pulse2/packages", package)
+        elif platform.system() == "Windows":
+            data["location"] = os.path.join(
+                r"C:\Program Files\Pulse\var\tmp\packages", package
+            )
 
     # on veriy les types de transfert
-    if platform.system() in ['Linux', 'Darwin']:
-        if data['type'].lower().startswith("backup"):
-            directory_path = '/var/lib/pulse2/zip_transfert'
-        elif data['type'].lower().startswith("packages"):
-            directory_path = '/var/lib/pulse2/packages/'
-        elif data['type'].lower().startswith("location"):
+    if platform.system() in ["Linux", "Darwin"]:
+        if data["type"].lower().startswith("backup"):
+            directory_path = "/var/lib/pulse2/zip_transfert"
+        elif data["type"].lower().startswith("packages"):
+            directory_path = "/var/lib/pulse2/packages/"
+        elif data["type"].lower().startswith("location"):
             if not verifier_cles_non_vides(data, ["location"]):
                 logger.error("type location. la location n'est pas transmise")
                 return
-            elif not chemin_valide( data["location"] ):
-                logger.error("location n'est pas 1 chemin correct %s" % data["location"] )
+            elif not chemin_valide(data["location"]):
+                logger.error(
+                    "location n'est pas 1 chemin correct %s" % data["location"]
+                )
                 return
-            directory_path = os.path.dirname(data['location'])
-            namefileresult=os.path.basename(data['location'])
+            directory_path = os.path.dirname(data["location"])
+            namefileresult = os.path.basename(data["location"])
         else:
-            logger.error("type transfert incorect, le type doit etre dans la liste [ 'backup', 'packages', 'location' ]")
+            logger.error(
+                "type transfert incorect, le type doit etre dans la liste [ 'backup', 'packages', 'location' ]"
+            )
             return
         tmp_dir = "/tmp"
-    elif platform.system() == 'Windows':
-        if data['type'].lower().startswith("backup"):
-            directory_path = r'C:\Program Files\Pulse\var\zip_transfert'
-        elif data['type'].lower().startswith("packages"):
-            directory_path = r'C:\Program Files\Pulse\var\tmp\packages'
-        elif data['type'].lower().startswith("location"):
+    elif platform.system() == "Windows":
+        if data["type"].lower().startswith("backup"):
+            directory_path = r"C:\Program Files\Pulse\var\zip_transfert"
+        elif data["type"].lower().startswith("packages"):
+            directory_path = r"C:\Program Files\Pulse\var\tmp\packages"
+        elif data["type"].lower().startswith("location"):
             if not verifier_cles_non_vides(data, ["location"]):
                 logger.error("type location. la location n'est pas transmise")
                 return
-            elif not chemin_valide( data["location"] ):
-                logger.error("location n'est pas 1 chemin correct %s" % data["location"] )
+            elif not chemin_valide(data["location"]):
+                logger.error(
+                    "location n'est pas 1 chemin correct %s" % data["location"]
+                )
                 return
-            if data['contenttype'].lower().startswith("file")  :
+            if data["contenttype"].lower().startswith("file"):
                 # on recuperer le repertoire ou le fichier ou doit se trouver
                 # quand c'est 1 fichier location doit contenir le path et le nom de fichier de reception
-                directory_path = os.path.dirname(data['location'].replace("/","\\"))
-                namefileresult=os.path.basename(data['location'].replace("/","\\"))
-                directory_path = directory_path.replace("\\","/")
+                directory_path = os.path.dirname(data["location"].replace("/", "\\"))
+                namefileresult = os.path.basename(data["location"].replace("/", "\\"))
+                directory_path = directory_path.replace("\\", "/")
             else:
-                directory_path = data['location']
+                directory_path = data["location"]
         else:
-            logger.error("type transfert incorect, le type doit etre dans la liste [ 'backup', 'packages', 'location' ]")
+            logger.error(
+                "type transfert incorect, le type doit etre dans la liste [ 'backup', 'packages', 'location' ]"
+            )
             return
         tmp_dir = r"C:\Windows\Temp"
     else:
         logger.error("os inconue")
         return
 
-    if data['type'].lower().startswith('location'):
-        repertoire_temporaire_reception = os.path.join(tmp_dir, data['dir_uuid_machine'] )
+    if data["type"].lower().startswith("location"):
+        repertoire_temporaire_reception = os.path.join(
+            tmp_dir, data["dir_uuid_machine"]
+        )
     else:
-        repertoire_temporaire_reception = os.path.join(tmp_dir, data['dir_uuid_machine'], data['dir_segment'] )
+        repertoire_temporaire_reception = os.path.join(
+            tmp_dir, data["dir_uuid_machine"], data["dir_segment"]
+        )
 
     try:
         if not os.path.exists(repertoire_temporaire_reception):
@@ -119,29 +136,29 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     # logger.error(f"repertoire_temporaire_reception: {repertoire_temporaire_reception}")
     # logger.error(f"directory_path  : {directory_path}" )
 
+    file_transfert = os.path.join(repertoire_temporaire_reception, data["namefile"])
 
-    file_transfert =  os.path.join( repertoire_temporaire_reception, data['namefile'])
-
-    if data['segment'] == 0:
+    if data["segment"] == 0:
         # logger.debug("DEBUT TRAITEMENT MANIFEST")
         # logger.debug("fichier %s" % json.dumps(data, indent=4 ))
         # manifest
         # creation des chemin
-        manifest_file =  os.path.join(repertoire_temporaire_reception, "manifeste")
+        manifest_file = os.path.join(repertoire_temporaire_reception, "manifeste")
         # logger.debug("creation manifeste transfert %s" % manifest_file)
         try:
-            with open(manifest_file, 'w') as json_file:
+            with open(manifest_file, "w") as json_file:
                 json.dump(data, json_file, indent=4)
         except Exception as e:
-            logger.error(f"Erreur lors de l'écriture du manifest de transfert en JSON : {e}")
+            logger.error(
+                f"Erreur lors de l'écriture du manifest de transfert en JSON : {e}"
+            )
             logger.error("We hit the backtrace \n %s" % traceback.format_exc())
         # logger.debug("CREATION FICHIER MANIFESTE %s " % manifest_file )
-
 
         # Création d'un fichier vide
         try:
             # logger.debug("creation file transfer %s" % file_transfert)
-            with open( file_transfert, 'wb') as file:
+            with open(file_transfert, "wb") as file:
                 pass  # Ne fait rien, mais crée le fichier vide
         except Exception as e:
             logger.error(f"Erreur lors de l'écriture du fichier JSON : {e}")
@@ -150,52 +167,65 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     else:
         # logger.debug("DEBUT TRAITEMENT SEGMENT")
 
-        if not verifier_cles_non_vides(data, ["nbtotal",
-                                            "content",
-                                            "nb",
-                                            "directory"]):
-            logger.error("message error TRAITEMENT SEGMENT"  )
+        if not verifier_cles_non_vides(data, ["nbtotal", "content", "nb", "directory"]):
+            logger.error("message error TRAITEMENT SEGMENT")
             return
         try:
             # logger.debug("creation file transfer %s" % file_transfert)
 
-            with open( file_transfert, 'ab') as file:
-                file.write(base64.b64decode(data['content']))# Décodage en Base64
+            with open(file_transfert, "ab") as file:
+                file.write(base64.b64decode(data["content"]))  # Décodage en Base64
             file_size_bytes = get_file_size(file_transfert)
             if file_size_bytes is not None:
                 file_size_human = convert_size(file_size_bytes)
-                logger.debug(f"La taille du fichier est : {file_size_bytes} octets ({file_size_human})")
+                logger.debug(
+                    f"La taille du fichier est : {file_size_bytes} octets ({file_size_human})"
+                )
         except Exception as e:
             logger.error(f"Erreur lors de l'écriture du fichier JSON : {e}")
             logger.error("We hit the backtrace \n %s" % traceback.format_exc())
 
-        if data['nbtotal'] == data['segment']:
+        if data["nbtotal"] == data["segment"]:
             try:
                 md5 = md5_hash(file_transfert)
                 # logger.error("md5 is %s" % md5 )
                 # on charge le manifest pour controler le md5
-                manifest_file =  os.path.join(repertoire_temporaire_reception, "manifeste")
-                with open(manifest_file, 'r') as json_file:
+                manifest_file = os.path.join(
+                    repertoire_temporaire_reception, "manifeste"
+                )
+                with open(manifest_file, "r") as json_file:
                     data_manifest = json.load(json_file)
-                if data_manifest['md5'] == md5:
+                if data_manifest["md5"] == md5:
                     logger.debug("transfert archive reussi md5 correct")
                 else:
-                    logger.error("le md5 n'est pas du transfert n'est pas correct abandon et netoyage")
+                    logger.error(
+                        "le md5 n'est pas du transfert n'est pas correct abandon et netoyage"
+                    )
                     supprimer_repertoire(repertoire_temporaire_reception)
                     return
             except Exception:
-                logger.error("transfert terminer. 1 erreur dans le md5 %s" % traceback.format_exc())
+                logger.error(
+                    "transfert terminer. 1 erreur dans le md5 %s"
+                    % traceback.format_exc()
+                )
                 return
             try:
                 # if data['type'].lower().startswith('location
 
                 # on recupere le repertoire ou decompresser l'archive
-                name_repertoire_reception = restaurer_caracteres(data['directory'])
-                name_repertoire_decompression =  re.sub(r'^[A-Za-z]:', '', name_repertoire_reception)
-                name_repertoire_decompression1 =  re.sub(r'\.zip$', '', name_repertoire_decompression)
-                if data['type'].lower() in ['backup','packages']:
-                    name_repertoire_decomp =  directory_path.replace("\\",'/') +  name_repertoire_decompression1
-                    if data['contenttype'].lower().startswith('file'):
+                name_repertoire_reception = restaurer_caracteres(data["directory"])
+                name_repertoire_decompression = re.sub(
+                    r"^[A-Za-z]:", "", name_repertoire_reception
+                )
+                name_repertoire_decompression1 = re.sub(
+                    r"\.zip$", "", name_repertoire_decompression
+                )
+                if data["type"].lower() in ["backup", "packages"]:
+                    name_repertoire_decomp = (
+                        directory_path.replace("\\", "/")
+                        + name_repertoire_decompression1
+                    )
+                    if data["contenttype"].lower().startswith("file"):
                         name_repertoire_decomp = os.path.dirname(name_repertoire_decomp)
                 else:
                     name_repertoire_decomp = directory_path
@@ -209,19 +239,27 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 # logger.debug("decompresser_archive file zip %s"%(file_transfert)  )
                 # logger.debug("decompresser_archive vers repertoire %s"%(name_repertoire_decomp)  )
 
-
-                if data['contenttype'].lower().startswith('file') and 'location' in data and data['location']:
+                if (
+                    data["contenttype"].lower().startswith("file")
+                    and "location" in data
+                    and data["location"]
+                ):
                     # logger.debug("nouveau_nom file %s"%(namefileresult)  )
-                    decompresser_archive(file_transfert, name_repertoire_decomp, nouveau_nom=namefileresult)
+                    decompresser_archive(
+                        file_transfert,
+                        name_repertoire_decomp,
+                        nouveau_nom=namefileresult,
+                    )
                 else:
                     decompresser_archive(file_transfert, name_repertoire_decomp)
                 # logger.error("et on remet a zero le fichier"  )
                 # with open( file_transfert, 'wb') as file:
-                    # pass
-                logger.debug("nettoyage repertoire de travail"  )
+                # pass
+                logger.debug("nettoyage repertoire de travail")
                 supprimer_repertoire(repertoire_temporaire_reception)
             except Exception:
                 logger.error("We hit the backtrace \n %s" % traceback.format_exc())
+
 
 def md5_hash(file_path):
     """
@@ -238,6 +276,7 @@ def md5_hash(file_path):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
 
 def decompresser_archive(fichier_zip, repertoire_destination, nouveau_nom=None):
     """
@@ -267,21 +306,27 @@ def decompresser_archive(fichier_zip, repertoire_destination, nouveau_nom=None):
             os.makedirs(repertoire_destination)
 
         # Ouvrir le fichier ZIP
-        with zipfile.ZipFile(fichier_zip, 'r') as zip_ref:
+        with zipfile.ZipFile(fichier_zip, "r") as zip_ref:
             # Vérifier si nouveau_nom est défini
             if nouveau_nom:
                 # Vérifier que l'archive contient exactement un fichier
                 noms_fichiers = zip_ref.namelist()
                 if len(noms_fichiers) != 1:
-                    raise ValueError("L'archive ZIP doit contenir exactement un fichier.")
+                    raise ValueError(
+                        "L'archive ZIP doit contenir exactement un fichier."
+                    )
 
                 # Extraire le fichier
                 nom_fichier = noms_fichiers[0]
                 zip_ref.extract(nom_fichier, repertoire_destination)
 
                 # Renommer le fichier extrait
-                chemin_fichier_extrait = os.path.join(repertoire_destination, nom_fichier)
-                chemin_fichier_renomme = os.path.join(repertoire_destination, nouveau_nom)
+                chemin_fichier_extrait = os.path.join(
+                    repertoire_destination, nom_fichier
+                )
+                chemin_fichier_renomme = os.path.join(
+                    repertoire_destination, nouveau_nom
+                )
 
                 # Vérifier si le fichier de destination existe déjà
                 if os.path.exists(chemin_fichier_renomme):
@@ -296,6 +341,7 @@ def decompresser_archive(fichier_zip, repertoire_destination, nouveau_nom=None):
     except Exception as e:
         logger.error(f"Erreur lors de la décompression de l'archive : {e}")
         return False
+
 
 def verifier_cles_non_vides(data, cles):
     """
@@ -312,13 +358,14 @@ def verifier_cles_non_vides(data, cles):
     logger.debug("verifier_cles_non_vides")
     for cle in cles:
         if cle not in data:  # Vérifie l'existence et la valeur non vide
-            logger.error("cle missing %s" % cle )
+            logger.error("cle missing %s" % cle)
             return False
         if isinstance(data[cle], int):
             continue
         if not data[cle]:
             return False
     return True
+
 
 def get_file_size(file_path):
     """
@@ -337,6 +384,7 @@ def get_file_size(file_path):
         logger.error(f"Erreur lors de la récupération de la taille du fichier : {e}")
         return None
 
+
 def convert_size(size_bytes):
     """
     Convertit une taille en octets en une taille lisible par un humain.
@@ -350,10 +398,11 @@ def convert_size(size_bytes):
     if size_bytes is None:
         return "Taille inconnue"
 
-    for unit in ['octets', 'Ko', 'Mo', 'Go', 'To']:
+    for unit in ["octets", "Ko", "Mo", "Go", "To"]:
         if size_bytes < 1024:
             return f"{size_bytes:.2f} {unit}"
         size_bytes /= 1024
+
 
 def remplacer_caracteres(chaine):
     """
@@ -372,12 +421,13 @@ def remplacer_caracteres(chaine):
     Retourne:
     str: La chaîne modifiée avec les caractères remplacés.
     """
-    chaine = chaine.replace('\\', '@@')
-    chaine = chaine.replace(' ', '@nbsp@')
-    chaine = chaine.replace('/', '@47@')
-    chaine = chaine.replace('\\', '@92@')
-    chaine = chaine.replace('.', '@46@')
+    chaine = chaine.replace("\\", "@@")
+    chaine = chaine.replace(" ", "@nbsp@")
+    chaine = chaine.replace("/", "@47@")
+    chaine = chaine.replace("\\", "@92@")
+    chaine = chaine.replace(".", "@46@")
     return chaine
+
 
 def restaurer_caracteres(chaine):
     """
@@ -396,11 +446,11 @@ def restaurer_caracteres(chaine):
     Retourne:
     str: La chaîne restaurée avec les caractères originaux.
     """
-    chaine = chaine.replace('@58@', ':')
-    chaine = chaine.replace('@46@', '.')
-    chaine = chaine.replace('@92@', '\\')
-    chaine = chaine.replace('@47@', '/')
-    chaine = chaine.replace('@nbsp@', ' ')
+    chaine = chaine.replace("@58@", ":")
+    chaine = chaine.replace("@46@", ".")
+    chaine = chaine.replace("@92@", "\\")
+    chaine = chaine.replace("@47@", "/")
+    chaine = chaine.replace("@nbsp@", " ")
     return chaine
 
 
@@ -439,6 +489,8 @@ def supprimer_repertoire(repertoire):
     """
     if os.path.exists(repertoire):
         shutil.rmtree(repertoire)
-        logger.debug(f"Le répertoire '{repertoire}' et tout son contenu ont été supprimés.")
+        logger.debug(
+            f"Le répertoire '{repertoire}' et tout son contenu ont été supprimés."
+        )
     else:
         logger.debug(f"Le répertoire '{repertoire}' n'existe pas.")

@@ -11721,7 +11721,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     # -------------------------------------------------------------------------------
 
-
     @DatabaseHelper._sessionm
     def search_machine(self, session, search_term):
         """
@@ -11737,7 +11736,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         if not search_term:
             return {}
         # Requête SQL
-        query = text("""
+        query = text(
+            """
         SELECT
             id,
             uuid_inventorymachine,
@@ -11754,11 +11754,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             OR id = :search_term
             OR jid =:search_term
         LIMIT 1;
-        """)
+        """
+        )
         logger.error("search_machine query %s" % query)
         logger.error("search_machine search_term %s" % search_term)
         # Exécution de la requête
-        result = session.execute(query, {'search_term': search_term}).fetchone()
+        result = session.execute(query, {"search_term": search_term}).fetchone()
 
         # Si aucun résultat n'est trouvé, retourner un dictionnaire vide
         if result is None:
@@ -11766,12 +11767,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         # Construire le dictionnaire de résultats
         result_machines = {
-            'hostname': result['hostname'],
-            'jid': result['jid'],
-            'uuid_inventorymachine': result['uuid_inventorymachine'],
-            'uuid_serial_machine': result['uuid_serial_machine'],
-            'id': int(result['id']),
-            'enabled': int(result['enabled'])
+            "hostname": result["hostname"],
+            "jid": result["jid"],
+            "uuid_inventorymachine": result["uuid_inventorymachine"],
+            "uuid_serial_machine": result["uuid_serial_machine"],
+            "id": int(result["id"]),
+            "enabled": int(result["enabled"]),
         }
 
         return result_machines
@@ -11792,7 +11793,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             return []
 
         # Requête SQL
-        query = text("""
+        query = text(
+            """
         SELECT
             id,
             macaddress,
@@ -11806,10 +11808,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             xmppmaster.network
         WHERE
             machines_id = :id_machine;
-        """)
+        """
+        )
 
         # Exécution de la requête
-        result = session.execute(query, {'id_machine': id_machine}).fetchall()
+        result = session.execute(query, {"id_machine": id_machine}).fetchall()
 
         # Si aucun résultat n'est trouvé, retourner une liste vide
         if not result:
@@ -11819,14 +11822,14 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         network_list = []
         for row in result:
             network_info = {
-                'id': row['id'],
-                'macaddress': row['macaddress'],
-                'ipaddress': row['ipaddress'],
-                'broadcast': row['broadcast'],
-                'gateway': row['gateway'],
-                'mask': row['mask'],
-                'mac': row['mac'],
-                'machines_id': row['machines_id']
+                "id": row["id"],
+                "macaddress": row["macaddress"],
+                "ipaddress": row["ipaddress"],
+                "broadcast": row["broadcast"],
+                "gateway": row["gateway"],
+                "mask": row["mask"],
+                "mac": row["mac"],
+                "machines_id": row["machines_id"],
             }
             network_list.append(network_info)
 

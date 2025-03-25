@@ -57,6 +57,7 @@ def find_common_addresses(list1, list2):
 
     return common_addresses
 
+
 def get_CIDR_ipv4_addresses(exclude_localhost=True):
     """
     Récupère les adresses IPv4 au format CIDR pour chaque interface réseau de la machine.
@@ -85,7 +86,9 @@ def get_CIDR_ipv4_addresses(exclude_localhost=True):
                 if ip and mask:
                     if exclude_localhost and ip == "127.0.0.1":
                         continue
-                    cidr = ipaddress.IPv4Network(f'{ip}/{mask}', strict=False).with_prefixlen
+                    cidr = ipaddress.IPv4Network(
+                        f"{ip}/{mask}", strict=False
+                    ).with_prefixlen
                     ipv4_addresses.append(cidr)
                     ip, mask = None, None
     elif system == "Linux":
@@ -111,9 +114,12 @@ def get_CIDR_ipv4_addresses(exclude_localhost=True):
                 mask = parts[3]  # Le masque est généralement le quatrième champ
                 if exclude_localhost and ip == "127.0.0.1":
                     continue
-                cidr = ipaddress.IPv4Network(f'{ip}/{mask}', strict=False).with_prefixlen
+                cidr = ipaddress.IPv4Network(
+                    f"{ip}/{mask}", strict=False
+                ).with_prefixlen
                 ipv4_addresses.append(cidr)
     return ipv4_addresses
+
 
 class networkagentinfo:
     def __init__(self, sessionid, action="resultgetinfo", param=[]):

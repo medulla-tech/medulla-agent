@@ -20,9 +20,16 @@ import hashlib
 from lib.agentconffile import (
     directoryconffile,
 )
+
 # from lib.networkinfo import find_common_addresses, get_CIDR_ipv4_addresses
 import subprocess
-from lib.utils import pulseuser_useraccount_mustexist, pulseuser_profile_mustexist, create_idrsa_on_client, getHomedrive, simplecommand
+from lib.utils import (
+    pulseuser_useraccount_mustexist,
+    pulseuser_profile_mustexist,
+    create_idrsa_on_client,
+    getHomedrive,
+    simplecommand,
+)
 import platform
 import configparser
 import json
@@ -41,6 +48,7 @@ plugin = {"VERSION": "1.0", "NAME": "backup_restore", "TYPE": "all"}  # fmt: ski
 # config_lock = Lock()
 
 config_condition = Condition()
+
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     """
@@ -64,7 +72,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("%s" % json.dumps(data, indent=4))
     # strjidagent = str(objectxmpp.boundjid.bare)
 
-
     compteurcallplugin = getattr(objectxmpp, f"num_call{action}", None)
     if compteurcallplugin is None:
         logger.error(f"num_call attribute for action {action} not found on objectxmpp")
@@ -75,7 +82,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         # tant que pas configurer les concurant attentent pour profiter de la conf aussi.
         # et pas provoquer des erreurs par manque de configuration
         if compteurcallplugin == 0:
-            if not hasattr(objectxmpp, 'configuration_done') or not objectxmpp.configuration_done:
+            if (
+                not hasattr(objectxmpp, "configuration_done")
+                or not objectxmpp.configuration_done
+            ):
                 logger.debug("Starting initial configuration")
                 read_conf_plugin_backup_restore(objectxmpp)
                 objectxmpp.configuration_done = True
@@ -83,7 +93,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 logger.debug("Configuration done")
         else:
             # Si la configuration n'est pas encore faite, attendre sa fin
-            while not hasattr(objectxmpp, 'configuration_done') or not objectxmpp.configuration_done:
+            while (
+                not hasattr(objectxmpp, "configuration_done")
+                or not objectxmpp.configuration_done
+            ):
                 config_condition.wait()
 
     # Execution du corps du plugin une fois la configuration terminee
@@ -96,7 +109,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         if not remote_host:
             logger.error("le serveur urbackup n'est pas dans le reseau de la machine.")
             logger.error("SERVEUR IP : %s", server_ip_networks)
-            logger.error("CLIENT IP : %s", client_ip_networks )
+            logger.error("CLIENT IP : %s", client_ip_networks)
             return
     except Exception as e:
         logger.error("termine plugin %s" % (traceback.format_exc()))
@@ -105,9 +118,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
     try:
         # Make sure user account and profile exists
-        result, message = pulseuser_useraccount_mustexist(
-            objectxmpp.username
-        )
+        result, message = pulseuser_useraccount_mustexist(objectxmpp.username)
         if result is False:
             logger.error(f"{message}")
             return
@@ -118,8 +129,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             return
         logger.debug(f"{message}")
         result, message = create_idrsa_on_client(
-            objectxmpp.username,
-            data['key_private']
+            objectxmpp.username, data["key_private"]
         )
         if result is False:
             logger.error(f"{message}")
@@ -131,14 +141,17 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
 
     id_rsa_path = os.path.join(getHomedrive(), ".ssh", objectxmpp.private_name_key)
 
-    copy_files_and_directories(objectxmpp.remote_user,
-                               remote_host,
-                               data['filelist'],
-                               data['directorylist'],
-                               data['base_path'],
-                               private_key_path=id_rsa_path,
-                               restore_to_backup_location = objectxmpp.restore_to_backup_location,
-                               ssh_port = objectxmpp.reverseserver_ssh_port)
+    copy_files_and_directories(
+        objectxmpp.remote_user,
+        remote_host,
+        data["filelist"],
+        data["directorylist"],
+        data["base_path"],
+        private_key_path=id_rsa_path,
+        restore_to_backup_location=objectxmpp.restore_to_backup_location,
+        ssh_port=objectxmpp.reverseserver_ssh_port,
+    )
+
 
 def read_conf_plugin_backup_restore(objectxmpp):
     """
@@ -165,7 +178,9 @@ def read_conf_plugin_backup_restore(objectxmpp):
 
         # Si le fichier de configuration n'existe pas, le créer avec un contenu par défaut
         if not os.path.isfile(configfilename):
-            logger.warning(f"Configuration file {configfilename} not found. Creating it...")
+            logger.warning(
+                f"Configuration file {configfilename} not found. Creating it..."
+            )
 
             config_content = """[backup_restore]
 remote_user = urbackup
@@ -194,10 +209,12 @@ restore_to_backup_location = True
 
 """
             # Écrire le fichier de configuration avec le contenu par défaut
-            with open(configfilename, 'w') as configfile:
+            with open(configfilename, "w") as configfile:
                 configfile.write(config_content)
 
-            logger.info(f"Configuration file {configfilename} has been created with default content.")
+            logger.info(
+                f"Configuration file {configfilename} has been created with default content."
+            )
 
         # Charger les valeurs du fichier de configuration
         Config.read(configfilename)
@@ -206,29 +223,43 @@ restore_to_backup_location = True
         logger.debug(f"Loaded configuration from {configfilename}")
 
         # Récupérer les valeurs de configuration ou les valeurs par défaut
-        objectxmpp.remote_user = Config.get('backup_restore', 'remote_user', fallback='urbackup')
-        objectxmpp.private_name_key = Config.get('backup_restore', 'private_name_key', fallback='pulseuser_backup_id_rsa')
-        objectxmpp.username = Config.get('backup_restore', 'username', fallback='pulseuser')
-        objectxmpp.restore_to_backup_location = Config.getboolean('backup_restore', 'restore_to_backup_location', fallback=True)
-        objectxmpp.reverseserver_ssh_port = Config.getint('backup_restore', 'reverseserver_ssh_port', fallback=22)
-        logger.debug(f"Configuration values set: remote_user={objectxmpp.remote_user}, "
-                     f"private_name_key={objectxmpp.private_name_key}, "
-                     f"username={objectxmpp.username}, "
-                     f"restore_to_backup_location={objectxmpp.restore_to_backup_location}")
+        objectxmpp.remote_user = Config.get(
+            "backup_restore", "remote_user", fallback="urbackup"
+        )
+        objectxmpp.private_name_key = Config.get(
+            "backup_restore", "private_name_key", fallback="pulseuser_backup_id_rsa"
+        )
+        objectxmpp.username = Config.get(
+            "backup_restore", "username", fallback="pulseuser"
+        )
+        objectxmpp.restore_to_backup_location = Config.getboolean(
+            "backup_restore", "restore_to_backup_location", fallback=True
+        )
+        objectxmpp.reverseserver_ssh_port = Config.getint(
+            "backup_restore", "reverseserver_ssh_port", fallback=22
+        )
+        logger.debug(
+            f"Configuration values set: remote_user={objectxmpp.remote_user}, "
+            f"private_name_key={objectxmpp.private_name_key}, "
+            f"username={objectxmpp.username}, "
+            f"restore_to_backup_location={objectxmpp.restore_to_backup_location}"
+        )
 
     except Exception as e:
         logger.error(f"Error reading or creating configuration: {str(e)}")
         logger.error("\n%s" % (traceback.format_exc()))
 
 
-def copy_files_and_directories(remote_user,
-                               remote_host,
-                               files,
-                               directories,
-                               base_path,
-                               private_key_path=None,
-                               restore_to_backup_location=True,
-                               ssh_port=22):
+def copy_files_and_directories(
+    remote_user,
+    remote_host,
+    files,
+    directories,
+    base_path,
+    private_key_path=None,
+    restore_to_backup_location=True,
+    ssh_port=22,
+):
     """
     Copies files and directories from a remote host to the local machine.
 
@@ -254,20 +285,19 @@ def copy_files_and_directories(remote_user,
     # Determiner le systeme d'exploitation
     system = platform.system()
     # Chemins des executables
-    if system == 'Windows':
-        rsync_path = r'C:\Windows\SysWOW64\rsync.exe'
-        ssh_path = r'C:\Progra~1\OpenSSH\ssh.exe'
-        scp_path = r'C:\Progra~1\OpenSSH\scp.exe'
+    if system == "Windows":
+        rsync_path = r"C:\Windows\SysWOW64\rsync.exe"
+        ssh_path = r"C:\Progra~1\OpenSSH\ssh.exe"
+        scp_path = r"C:\Progra~1\OpenSSH\scp.exe"
     else:  # Linux
-        rsync_path = 'rsync'
-        ssh_path = 'ssh'
-        scp_path = 'scp'
+        rsync_path = "rsync"
+        ssh_path = "ssh"
+        scp_path = "scp"
     # Verifier si rsync est disponible que pour windows
 
     # cette ligne sera a decomenter
     rsync_available = False
     # rsync_available = os.path.exists(rsync_path) if system == 'Windows' else True
-
 
     # quand on poura ectire la commande rsync en windows. avec clef ssh
     # C:\Windows\SysWOW64\rsync.exe -L -z --rsync-path=rsync
@@ -297,12 +327,7 @@ def copy_files_and_directories(remote_user,
     if rsync_available:
         cmd = (
             """%s -L -z --rsync-path=rsync -e "%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10 -p %s" -av --chmod=777 """
-            % (
-                rsync_path,
-                ssh_path,
-                private_key_path,
-                ssh_port
-            )
+            % (rsync_path, ssh_path, private_key_path, ssh_port)
         )
 
     # Copier les fichiers
@@ -322,26 +347,26 @@ def copy_files_and_directories(remote_user,
         # remotesrc = "urbackup@10.10.0.100:/media/BACKUP/urbackup/amu-win-6/240916-1727/Users/desktop.ini"
         create_directories(get_directory_path(modified_path_dest))
         # dest = ' C:/Users/blablabla.txt'
-        command = cmd + remotesrc + '"'+modified_path_dest+'"'
+        command = cmd + remotesrc + '"' + modified_path_dest + '"'
 
         # command = cmd + remotesrc + modified_path_dest
         logger.debug(f"Command: {command}")
         obj = simplecommand(command)
         logger.warning(f"Transfer file : {obj['code']} {obj['result']}")
 
-        if obj['code'] == 1:
+        if obj["code"] == 1:
             logger.warning(f"Transfer mais link non creer : { obj['code']}")
             logger.warning(f"nb link {len(obj['result'])}")
             logger.warning("liste link")
-            for linelogresult in obj['result']:
+            for linelogresult in obj["result"]:
                 logger.warning("{ linelogresult.strip()}")
-        elif obj['code'] != 0:
+        elif obj["code"] != 0:
             logger.error(f"Transfer error: { obj['code']}")
             logger.error(f"Transfer error: sur nb file : {len(obj['result'])}")
 
         else:
-            if len(obj['result']) > 0:
-                for linelogresult in obj['result']:
+            if len(obj["result"]) > 0:
+                for linelogresult in obj["result"]:
                     logger.debug("Transfer successful")
                     logger.debug("{ linelogresult.strip()}")
             else:
@@ -365,17 +390,17 @@ def copy_files_and_directories(remote_user,
         remotesrc = """%s@%s:"%s" """ % (remote_user, remote_host, srcdirectory)
         # create_directories(modified_path_dest)
         create_directories(get_directory_path(modified_path_dest))
-        command = cmd + remotesrc + '"'+modified_path_dest+'"'
+        command = cmd + remotesrc + '"' + modified_path_dest + '"'
         logger.debug(f"Command: {command}")
         obj = simplecommand(command)
         if rsync_available:
-            if obj['code'] != 0:
+            if obj["code"] != 0:
                 logger.error(f"Transfer error code error: { obj['code']}")
                 logger.error(f"error message : {obj['result']}")
             else:
                 logger.debug("Transfer successful")
         else:
-            if obj['code'] == 1:
+            if obj["code"] == 1:
                 logger.warning(f"Transfer mais link non creer : { obj['code']}")
                 logger.warning(f"nb link {len(obj['result'])}")
                 logger.warning("liste link from serveur %s" % base_path)
@@ -385,22 +410,23 @@ def copy_files_and_directories(remote_user,
                 logger.warning("to %s" % backup_path_slach_linux)
                 stringmessage = scp_path + ": Download of file " + base_path
                 # Remplacement de stringmessage dans chaque élément de la liste
-                for linelogresult in obj['result']:
+                for linelogresult in obj["result"]:
                     linestr = linelogresult.replace(stringmessage, "").strip()
                     # if restore_to_backup_location:
-                    linestr1 = linestr.replace( backup_path_slach_linux, "")
+                    linestr1 = linestr.replace(backup_path_slach_linux, "")
                     linestr1 = linestr1.replace(str(scp_path), "")
                     logger.warning(f"{linestr1}")
-            elif obj['code'] != 0:
+            elif obj["code"] != 0:
                 logger.error(f"Transfer error: { obj['code']}")
                 logger.error(f"Transfer error: sur nb file : {len(obj['result'])}")
             else:
-                if len(obj['result']) > 0:
-                    for linelogresult in obj['result']:
+                if len(obj["result"]) > 0:
+                    for linelogresult in obj["result"]:
                         logger.debug("Transfer successful")
                         logger.debug(f"{linelogresult.strip()}")
                 else:
                     logger.warning("Transfer successful")
+
 
 def get_ip_and_netmask_linux(exclude_local=True):
     """
@@ -427,6 +453,7 @@ def get_ip_and_netmask_linux(exclude_local=True):
                 ip_netmask_list.append((ip, netmask))
     return ip_netmask_list
 
+
 def find_best_server_address(server_addresses, client_addresses):
     """
     Finds the best server address that is in the same network as the client.
@@ -439,13 +466,18 @@ def find_best_server_address(server_addresses, client_addresses):
     :rtype: str or None
     """
     for client_ip, client_netmask in client_addresses:
-        client_network = ipaddress.IPv4Network(f"{client_ip}/{client_netmask}", strict=False)
+        client_network = ipaddress.IPv4Network(
+            f"{client_ip}/{client_netmask}", strict=False
+        )
         for server_ip, server_netmask in server_addresses:
-            server_network = ipaddress.IPv4Network(f"{server_ip}/{server_netmask}", strict=False)
+            server_network = ipaddress.IPv4Network(
+                f"{server_ip}/{server_netmask}", strict=False
+            )
             # Verifie si le client et le serveur sont dans le meme reseau
             if client_network.overlaps(server_network):
                 return server_ip  # Retourne l'adresse du serveur dans le meme reseau que le client
     return None  # Aucun reseau commun trouve
+
 
 def get_backup_path():
     """
@@ -470,6 +502,7 @@ def get_backup_path():
 
     return backup_path
 
+
 def modify_backup_path(base_dir, restore_path):
     """
     Modifies the backup path to include the drive letter.
@@ -480,10 +513,11 @@ def modify_backup_path(base_dir, restore_path):
     :rtype: str
     """
     # Convertir le chemin de restauration en chemin absolu
-    drive_letter = restore_path.replace(':', '_0')
+    drive_letter = restore_path.replace(":", "_0")
     modified_path = os.path.join(base_dir, drive_letter)
-    modified_path =  modified_path.replace('\\', '/')
+    modified_path = modified_path.replace("\\", "/")
     return modified_path
+
 
 def create_directories(path):
     """
@@ -494,6 +528,7 @@ def create_directories(path):
     """
     # Créer les répertoires nécessaires
     os.makedirs(path, exist_ok=True)
+
 
 def get_directory_path(file_path):
     """
@@ -508,10 +543,12 @@ def get_directory_path(file_path):
     directory_path = os.path.dirname(file_path)
     return directory_path
 
+
 class FileHasher:
     """
     A class to calculate the MD5 hash of a file.
     """
+
     def __init__(self, file_path):
         """
         Initializes the FileHasher with the file path.

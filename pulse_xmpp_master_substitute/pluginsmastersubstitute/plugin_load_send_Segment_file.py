@@ -31,6 +31,7 @@ plugin = {"VERSION": "1.0", "NAME": "load_send_Segment_file", "TYPE": "substitut
 
 var_file_zipper = "/var/lib/pulse2/zip_transfert"
 
+
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):
     """
     Fonction principale du plugin, appelée lors de l'exécution du plugin.
@@ -55,7 +56,9 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
     if compteurcallplugin == 0:
         read_conf_load_send_Segment_file(objectxmpp)
         # Installer le code dynamique : fonction de transfert de fichier
-        objectxmpp.transfert_segment_file = types.MethodType(transfert_segment_file, objectxmpp)
+        objectxmpp.transfert_segment_file = types.MethodType(
+            transfert_segment_file, objectxmpp
+        )
         # Planifier l'appel de cette fonction
         scedule_call_plugin_in_seconde = 15
         objectxmpp.schedule(
@@ -64,6 +67,7 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
             objectxmpp.transfert_segment_file,
             repeat=True,
         )
+
 
 def transfert_segment_file(self):
     """
@@ -78,7 +82,9 @@ def transfert_segment_file(self):
     type_transfert = "backup"
     location = None
     transfert_de_fichier_a_nb_machine_simultanement = 10
-    repertoires_uuid = lister_repertoires_uuid(var_file_zipper)[:transfert_de_fichier_a_nb_machine_simultanement]
+    repertoires_uuid = lister_repertoires_uuid(var_file_zipper)[
+        :transfert_de_fichier_a_nb_machine_simultanement
+    ]
     # Envoyer les fichiers tronqués.
     for dir_uuid_machine in repertoires_uuid:
         # dir est un répertoire mais le nom du répertoire est le UUID de la machine cible.
@@ -87,15 +93,25 @@ def transfert_segment_file(self):
         machine = XmppMasterDatabase().getMachinefromuuidsetup(str(dir_uuid_machine))
 
         if machine:
-            if not machine['enabled']:
+            if not machine["enabled"]:
                 # La machine n'est pas présente, on ne peut pas lui envoyer des fichiers.
-                logger.debug("Machine %s eteinte : on ne peut pas transferer de fichiers a cette machine" % machine['hostname'] )
-                logger.debug("tout les demande de transfert pour la machine %s sont annuler" % machine['hostname'])
+                logger.debug(
+                    "Machine %s eteinte : on ne peut pas transferer de fichiers a cette machine"
+                    % machine["hostname"]
+                )
+                logger.debug(
+                    "tout les demande de transfert pour la machine %s sont annuler"
+                    % machine["hostname"]
+                )
                 supprimer_repertoire(os.path.join(var_file_zipper, dir_uuid_machine))
                 continue
-            logger.debug("TRANSFERT SEGMENT FILE to machine %s " % (machine['hostname'] ))
+            logger.debug(
+                "TRANSFERT SEGMENT FILE to machine %s " % (machine["hostname"])
+            )
             # La machine est présente. On peut lui envoyer les fichiers.
-            list_repertoire_to_file_for_send = get_uuid_directories(os.path.join(var_file_zipper, dir_uuid_machine))
+            list_repertoire_to_file_for_send = get_uuid_directories(
+                os.path.join(var_file_zipper, dir_uuid_machine)
+            )
             for repertoire_file_seg in list_repertoire_to_file_for_send:
                 sessionid = getRandomName(5, "transfert_file")
                 file_list_to_send = lister_fichiers(repertoire_file_seg)
@@ -108,7 +124,7 @@ def transfert_segment_file(self):
                 # Le premier fichier de la liste doit être un fichier .manif pour manifeste.
                 if file_list_to_send[0].endswith(".manif"):
                     manifeste = lire_fichier_json(file_list_to_send[0])
-                    if len(file_list_to_send) != manifeste['nb_total'] + 1:
+                    if len(file_list_to_send) != manifeste["nb_total"] + 1:
                         # Pas encore préparé
                         continue
 
@@ -134,23 +150,26 @@ def transfert_segment_file(self):
                         data = manifeste
                     else:
                         data = lire_fichier_json(filesend)
-                        data['namefile'] = manifeste['namefile']
+                        data["namefile"] = manifeste["namefile"]
 
-                    data['segment'] = indexfile
-                    data['dir_uuid_machine'] = dir_uuid_machine
-                    data['dir_segment'] = os.path.basename(repertoire_file_seg)
+                    data["segment"] = indexfile
+                    data["dir_uuid_machine"] = dir_uuid_machine
+                    data["dir_segment"] = os.path.basename(repertoire_file_seg)
                     msg_send = {
                         "sessionid": sessionid,
                         "data": data,
                         "action": "recombine_file",
-                        "ret": 0
+                        "ret": 0,
                     }
                     indexfile = indexfile + 1
                     # C'est la machine qui reçoit les segments qui doit recombiner le fichier.
-                    self.send_message(mto=machine['jid'], mbody=json.dumps(msg_send), mtype="chat")
+                    self.send_message(
+                        mto=machine["jid"], mbody=json.dumps(msg_send), mtype="chat"
+                    )
 
                 supprimer_repertoire(repertoire_file_seg)
         supprimer_repertoire(os.path.join(var_file_zipper, dir_uuid_machine))
+
 
 def supprimer_repertoire(chemin_repertoire):
     """
@@ -170,11 +189,16 @@ def supprimer_repertoire(chemin_repertoire):
         logger.debug(f"Le répertoire {chemin_repertoire} n'existe pas.")
         return False
     except PermissionError:
-        logger.debug(f"Vous n'avez pas les permissions nécessaires pour supprimer le répertoire {chemin_repertoire}.")
+        logger.debug(
+            f"Vous n'avez pas les permissions nécessaires pour supprimer le répertoire {chemin_repertoire}."
+        )
         return False
     except Exception as e:
-        logger.debug(f"Une erreur s'est produite lors de la suppression du répertoire {chemin_repertoire}: {e}")
+        logger.debug(
+            f"Une erreur s'est produite lors de la suppression du répertoire {chemin_repertoire}: {e}"
+        )
         return False
+
 
 def lire_fichier_json(chemin_fichier):
     """
@@ -187,7 +211,7 @@ def lire_fichier_json(chemin_fichier):
     dict: Le contenu du fichier JSON sous forme de dictionnaire.
     """
     try:
-        with open(chemin_fichier, 'r', encoding='utf-8') as fichier:
+        with open(chemin_fichier, "r", encoding="utf-8") as fichier:
             contenu = json.load(fichier)
         return contenu
     except FileNotFoundError:
@@ -199,6 +223,7 @@ def lire_fichier_json(chemin_fichier):
     except Exception as e:
         logger.debug(f"Erreur lors de la lecture du fichier {chemin_fichier}: {e}")
         return None
+
 
 def get_uuid_directories(base_directory):
     """
@@ -213,7 +238,9 @@ def get_uuid_directories(base_directory):
     matching_dirs = []
 
     # Expression régulière pour 10 chiffres au début du nom
-    pattern = re.compile(r'^\d{10}_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')
+    pattern = re.compile(
+        r"^\d{10}_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    )
 
     # Parcourt les fichiers et répertoires dans le répertoire de base
     for dir_name in os.listdir(base_directory):
@@ -223,6 +250,7 @@ def get_uuid_directories(base_directory):
             matching_dirs.append(dir_path)
 
     return matching_dirs
+
 
 def lister_fichiers(repertoire):
     """
@@ -240,7 +268,11 @@ def lister_fichiers(repertoire):
         contenu = os.listdir(repertoire)
         # logger.debug(f"CONTENU {contenu}")
         # Filtrer pour ne conserver que les fichiers
-        fichiers = [os.path.join(repertoire, f) for f in contenu if os.path.isfile(os.path.join(repertoire, f))]
+        fichiers = [
+            os.path.join(repertoire, f)
+            for f in contenu
+            if os.path.isfile(os.path.join(repertoire, f))
+        ]
         # logger.debug(f"fichiers {fichiers}")
         # Trier la liste des fichiers
         fichiers.sort()
@@ -249,6 +281,7 @@ def lister_fichiers(repertoire):
     except Exception as e:
         logger.debug(f"Erreur lors de la lecture du répertoire {repertoire}: {e}")
         return []
+
 
 def lire_contenu_fichier(chemin_fichier):
     """
@@ -261,12 +294,13 @@ def lire_contenu_fichier(chemin_fichier):
     str: Le contenu texte du fichier.
     """
     try:
-        with open(chemin_fichier, 'r', encoding='utf-8') as fichier:
+        with open(chemin_fichier, "r", encoding="utf-8") as fichier:
             contenu = fichier.read()
         return contenu
     except Exception as e:
         logger.debug(f"Erreur lors de la lecture du fichier {chemin_fichier}: {e}")
         return None
+
 
 def lister_repertoires_uuid(repertoire_principal):
     """
@@ -279,7 +313,9 @@ def lister_repertoires_uuid(repertoire_principal):
     list: Une liste des répertoires ayant un nom de la forme UUID.
     """
     # Expression régulière pour vérifier le format UUID
-    uuid_pattern = re.compile(r'^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$')
+    uuid_pattern = re.compile(
+        r"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$"
+    )
     # Liste pour stocker les répertoires UUID
     repertoires_uuid = []
     # Parcourir les éléments dans le répertoire principal
@@ -288,6 +324,7 @@ def lister_repertoires_uuid(repertoire_principal):
         if os.path.isdir(item_path) and uuid_pattern.match(item):
             repertoires_uuid.append(item)
     return repertoires_uuid
+
 
 def read_conf_load_send_Segment_file(objectxmpp):
     """
