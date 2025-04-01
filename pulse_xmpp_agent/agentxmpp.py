@@ -4790,6 +4790,13 @@ if __name__ == "__main__":
     elif sys.platform.startswith("darwin") and not isMacOsUserAdmin():
         print("Medulla agent must be running as root")
         sys.exit(0)
+    if sys.platform.startswith("win"):
+        # Vérifier si medulla_info_update.py existe dans le même répertoire
+        script_dir = r"C:\Program Files\Medulla\bin"
+        medulla_script_path = os.path.join(script_dir, "medulla_info_update.py")
+        if os.path.exists(medulla_script_path):
+            subprocess.run([sys.executable, medulla_script_path])
+
     optp = OptionParser()
     optp.add_option(
         "-d",
