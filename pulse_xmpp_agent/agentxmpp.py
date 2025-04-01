@@ -4790,6 +4790,7 @@ if __name__ == "__main__":
     elif sys.platform.startswith("darwin") and not isMacOsUserAdmin():
         print("Medulla agent must be running as root")
         sys.exit(0)
+
     optp = OptionParser()
     optp.add_option(
         "-d",
