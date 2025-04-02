@@ -98,7 +98,6 @@ from lib.utils import (
     convert,
     DateTimebytesEncoderjson,
     clean_update_directories,
-    execute_medulla_info_update,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -4791,13 +4790,6 @@ if __name__ == "__main__":
         print("Medulla agent must be running as root")
         sys.exit(0)
 
-    if sys.platform.startswith("win"):
-        # Vérifier si medulla_info_update.py existe dans le même répertoire
-        script_dir = r"C:\Program Files\Medulla\bin"
-        medulla_script_path = os.path.join(script_dir, "medulla_info_update.py")
-        if os.path.exists(medulla_script_path):
-            subprocess.run([sys.executable, medulla_script_path])
-
     optp = OptionParser()
     optp.add_option(
         "-d",
@@ -4887,7 +4879,6 @@ if __name__ == "__main__":
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    execute_medulla_info_update()
     if not opts.deamon:
         doTask(
             opts.typemachine,
