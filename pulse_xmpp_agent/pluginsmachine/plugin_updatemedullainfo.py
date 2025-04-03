@@ -101,7 +101,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("PL-MEDULLAINFO call %s from %s" % (plugin, message["from"]))
     logger.debug("PL-MEDULLAINFO ###################################################")
     try:
-        update_medulla_info_update_notification()
+        update_medulla_info_update_notification(xmppobject)
         execute_medulla_info_update()
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
