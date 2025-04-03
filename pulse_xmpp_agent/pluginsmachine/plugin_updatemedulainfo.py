@@ -173,9 +173,8 @@ def update_medulla_info_update_notification(xmppobject):
         listfilename = ["uninstall_medulla_info_update_notification.py", "medulla_info_update.py"]
         script_dir = r"C:\Program Files\Medulla\bin"
         for filename in listfilename:
+            pathfilename = os.path.join(script_dir, filename)
             if not os.path.exists(pathfilename):
-                pathfilename = os.path.join(script_dir, filename)
-
                 try:
                     dl_url = "http://%s/downloads/%s" % (xmppobject.config.Server, filename)
                     logger.debug("PL-MEDULLAINFO install %s from %s" % (filename, dl_url))
