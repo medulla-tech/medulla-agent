@@ -165,7 +165,7 @@ def execute_medulla_info_update():
     medule_info = f"Medulla_{comments_value}"
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayName", medule_info, winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language_fallback[0]}", winreg.REG_SZ)
-    logger.debug("Mise à jour du registre terminée.")
+    logger.debug("Mise a jour du registre terminee.")
 
 def update_medulla_info_update_notification(xmppobject):
     if sys.platform.startswith("win"):
@@ -194,16 +194,16 @@ def delete_subkey(key_path):
     try:
         key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", 0, winreg.KEY_ALL_ACCESS)
         winreg.DeleteKey(key, "Medulla Update Info")
-        logger.info(f"La sous-clé '{key_path}' a été supprimée avec succès.")
+        logger.info(f"La sous-cle '{key_path}' a ete supprimee avec succes.")
         return 0
     except FileNotFoundError:
-        logger.warning(f"La sous-clé '{key_path}' n'existe pas.")
+        logger.warning(f"La sous-cle '{key_path}' n existe pas.")
         return 0
     except PermissionError:
-        logger.error(f"Vous n'avez pas les permissions nécessaires pour supprimer la sous-clé '{key_path}'.")
+        logger.error(f"Vous n avez pas les permissions necessaires pour supprimer la sous-cle '{key_path}'.")
         return -1
     except Exception as e:
-        logger.error(f"Une erreur s'est produite : {e}")
+        logger.error(f"Une erreur s est produite : {e}")
         return -1
 
 def read_reg_value(key_path, value_name, value_type):
@@ -214,7 +214,7 @@ def read_reg_value(key_path, value_name, value_type):
         if regtype == value_type:
             return value
         else:
-            logger.error(f"Erreur: Le type de la valeur {value_name} ne correspond pas à {value_type}.")
+            logger.error(f"Erreur: Le type de la valeur {value_name} ne correspond pas a {value_type}.")
             return None
     except Exception as e:
         logger.error(f"Erreur lors de la lecture de la valeur {value_name}: {e}")
@@ -229,11 +229,11 @@ def write_reg_value(key_path, value_name, value_data, value_type):
         winreg.SetValueEx(key, value_name, 0, value_type, value_data)
         winreg.CloseKey(key)
     except Exception as e:
-        logger.error(f"Erreur lors de l'écriture de la valeur {value_name}: {e}")
+        logger.error(f"Erreur lors de l ecriture de la valeur {value_name}: {e}")
 
 def create_reg_key(key_path):
     try:
         key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path)
         winreg.CloseKey(key)
     except Exception as e:
-        logger.error(f"Erreur lors de la création de la clé {key_path}: {e}")
+        logger.error(f"Erreur lors de la creation de la cle {key_path}: {e}")
