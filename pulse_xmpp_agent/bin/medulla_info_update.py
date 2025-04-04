@@ -173,7 +173,7 @@ def main():
     if architecture == "AMD64":
         archi = "x64"
     install_language = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
-    install_language_fallback = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguageFallback", winreg.REG_MULTI_SZ)
+    install_language_fallback = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_MULTI_SZ)
     default_lang = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "Default", winreg.REG_SZ)
     logger.info(f"InstallLanguage: {install_language}")
     logger.info(f"InstallLanguageFallback: {install_language_fallback}")
