@@ -16,7 +16,7 @@ if sys.platform.startswith("win"):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updatemedulainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 
 # Tableau de correspondance entre les codes Windows et les langues
