@@ -147,6 +147,8 @@ override_dh_auto_install:
 	cp scripts_installer/generate-agent-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/HEADER.html $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/style.css $(CURDIR)/debian/tmp/var/lib/pulse2/clients
+	cp pulse_xmpp_agent/bin/medulla_info_update.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
+	cp pulse_xmpp_agent/bin/uninstall_medulla_info_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
 	cp scripts_installer/win/generate-pulse-agent-win.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
 	cp scripts_installer/win/agent-installer.nsi.in $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win

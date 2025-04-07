@@ -481,6 +481,8 @@ cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
 cp pulse_xmpp_agent/bin/medulla_info_update.py %buildroot%_sbindir/
 cp contrib/images/* %buildroot%_var/lib/pulse2/clients/win/
+cp pulse_xmpp_agent/bin/medulla_info_update.py %buildroot%_var/lib/pulse2/clients/win
+cp pulse_xmpp_agent/bin/uninstall_medulla_info_update_notification.py %buildroot%_var/lib/pulse2/clients/win
 
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-package-watching.service
