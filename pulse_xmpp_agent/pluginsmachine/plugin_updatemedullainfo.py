@@ -125,12 +125,9 @@ def execute_medulla_info_update():
     if architecture == "AMD64":
         archi = "x64"
     install_language = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
-    install_language_fallback = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_MULTI_SZ)
+    install_language_fallback = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
     default_lang = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "Default", winreg.REG_SZ)
-    logger.debug(f"InstallLanguage: {install_language}")
-    logger.debug(f"InstallLanguageFallback: {install_language_fallback}")
-    logger.debug(f"Default Language: {default_lang}")
-    logger.debug(f"Correspondence Text: {correspondence_text.get(install_language, 'Unknown')}")
+    logger.debug(f"PL-MEDULLAINFO Install Language: {install_language} :default lang {default_lang} : language : {correspondence_text.get(install_language, 'Unknown')}")
     create_reg_key(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info")
     value_data = r'"C:\Program Files\Python3\python.exe" "C:\Program Files\Medulla\bin\uninstall_pulse2_update_notification.py"'
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayVersion", "1.0.0", winreg.REG_SZ)
@@ -164,8 +161,8 @@ def execute_medulla_info_update():
 
     medule_info = f"Medulla_{comments_value}"
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayName", medule_info, winreg.REG_SZ)
-    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language_fallback[0]}", winreg.REG_SZ)
-    logger.debug("Mise a jour du registre terminee.")
+    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language_fallback}", winreg.REG_SZ)
+    logger.debug("PL-MEDULLAINFO Mise a jour du registre terminee.")
 
 def update_medulla_info_update_notification(xmppobject):
     if sys.platform.startswith("win"):
@@ -193,30 +190,31 @@ def delete_subkey(key_path):
     try:
         key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", 0, winreg.KEY_ALL_ACCESS)
         winreg.DeleteKey(key, "Medulla Update Info")
-        logger.info(f"La sous-cle '{key_path}' a ete supprimee avec succes.")
+        logger.info(f"PL-MEDULLAINFO La sous-cle '{key_path}' a ete supprimee avec succes.")
         return 0
     except FileNotFoundError:
         logger.warning(f"La sous-cle '{key_path}' n existe pas.")
         return 0
     except PermissionError:
-        logger.error(f"Vous n avez pas les permissions necessaires pour supprimer la sous-cle '{key_path}'.")
+        logger.error(f"PL-MEDULLAINFO Vous n avez pas les permissions necessaires pour supprimer la sous-cle '{key_path}'.")
         return -1
     except Exception as e:
-        logger.error(f"Une erreur s est produite : {e}")
+        logger.error(f"PL-MEDULLAINFO Une erreur s est produite : {e}")
         return -1
 
 def read_reg_value(key_path, value_name, value_type):
     try:
         key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path)
         value, regtype = winreg.QueryValueEx(key, value_name)
+        logger.debug(f"PL-MEDULLAINFO Erreur : regtype {regtype} value_type {value_type} ")
         winreg.CloseKey(key)
         if regtype == value_type:
             return value
         else:
-            logger.error(f"Erreur: Le type de la valeur {value_name} ne correspond pas a {value_type}.")
+            logger.error(f"PL-MEDULLAINFO Erreur : key {key_path} Le type de la valeur {value_name} ne correspond pas a {value_type}.")
             return None
     except Exception as e:
-        logger.error(f"Erreur lors de la lecture de la valeur {value_name}: {e}")
+        logger.error(f"PL-MEDULLAINFO Erreur lors de la lecture de la valeur {value_name}: {e}")
         return None
 
 def generate_random_ascii_string(length):
@@ -228,11 +226,12 @@ def write_reg_value(key_path, value_name, value_data, value_type):
         winreg.SetValueEx(key, value_name, 0, value_type, value_data)
         winreg.CloseKey(key)
     except Exception as e:
-        logger.error(f"Erreur lors de l ecriture de la valeur {value_name}: {e}")
+        logger.error(f"PL-MEDULLAINFO Erreur lors de l ecriture de la valeur {value_name}: {e}")
 
 def create_reg_key(key_path):
     try:
         key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key_path)
         winreg.CloseKey(key)
     except Exception as e:
-        logger.error(f"Erreur lors de la creation de la cle {key_path}: {e}")
+        logger.error(f"PL-MEDULLAINFO Erreur lors de la creation de la cle {key_path}: {e}")
+

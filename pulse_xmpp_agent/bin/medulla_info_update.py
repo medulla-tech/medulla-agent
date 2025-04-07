@@ -173,7 +173,7 @@ def main():
     if architecture == "AMD64":
         archi = "x64"
     install_language = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
-    install_language_fallback = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_MULTI_SZ)
+    install_language_fallback = install_language
     default_lang = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "Default", winreg.REG_SZ)
     logger.info(f"InstallLanguage: {install_language}")
     logger.info(f"InstallLanguageFallback: {install_language_fallback}")
@@ -212,7 +212,7 @@ def main():
 
     medule_info = f"Medulla_{comments_value}"
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayName", medule_info, winreg.REG_SZ)
-    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language_fallback[0]}", winreg.REG_SZ)
+    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language_fallback}", winreg.REG_SZ)
     logger.info("Mise à jour du registre terminée.")
 
 if __name__ == "__main__":
