@@ -123,7 +123,7 @@ def delete_subkey(key_path):
         logger.error(f"Une erreur s'est produite : {e}")
         return -1
 
-def read_reg_value(key_path, value_name, value_type):
+def read_reg_value(key_path, value_name, value_type,defaut_valeur=""):
     try:
         key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path)
         value, regtype = winreg.QueryValueEx(key, value_name)
@@ -132,10 +132,10 @@ def read_reg_value(key_path, value_name, value_type):
             return value
         else:
             logger.error(f"Erreur: Le type de la valeur {value_name} ne correspond pas à {value_type}.")
-            return None
+            return defaut_valeur
     except Exception as e:
         logger.error(f"Erreur lors de la lecture de la valeur {value_name}: {e}")
-        return None
+        return defaut_valeur
 
 def generate_random_ascii_string(length):
     return ''.join(random.choices(string.printable, k=length))
@@ -195,6 +195,8 @@ def main():
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Readme", "", winreg.REG_SZ)
 
     if major_name == 10 and DisplayVersion.upper() != "22H2":
+        if DisplayVersion=="":
+            DisplayVersion = "1906"
         update = f"{correspondence_text.get(install_language, 'Unknown')}-10"
         iso_name = f"Win{major_name}_22H2_{language_codes.get(install_language, 'Unknown')}_{archi}"
         comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'Unknown')}@{install_language}@{iso_name}@{update}"
