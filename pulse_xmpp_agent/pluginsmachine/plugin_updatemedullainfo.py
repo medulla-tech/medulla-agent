@@ -16,7 +16,7 @@ if sys.platform.startswith("win"):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 
 # Tableau de correspondance entre les codes Windows et les langues
@@ -112,7 +112,11 @@ def execute_medulla_info_update():
     delete_subkey(key_path)
     current_date = datetime.now().strftime("%Y%m%d")
     ProductName = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", winreg.REG_SZ)
-    DisplayVersion = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "DisplayVersion", winreg.REG_SZ)
+    try:
+        DisplayVersion = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "DisplayVersion", winreg.REG_SZ)
+    except Exception:
+        DisplayVersion = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", winreg.REG_SZ)
+
     if "Windows 10" in ProductName:
         major_name = 10
     elif "Windows 11" in ProductName:
