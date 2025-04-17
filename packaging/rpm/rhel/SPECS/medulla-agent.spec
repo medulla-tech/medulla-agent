@@ -192,6 +192,7 @@ fi
 %{python3_sitelib}/pulse_xmpp_agent/agentversion
 %{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
 %{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
+%_sbindir/medulla_info_update.py
 
 #--------------------------------------------------------------------
 
@@ -478,7 +479,10 @@ cp -fv contrib/monitoring/template_script_remote_python_test.py %buildroot%_var/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
+cp pulse_xmpp_agent/bin/medulla_info_update.py %buildroot%_sbindir/
 cp contrib/images/* %buildroot%_var/lib/pulse2/clients/win/
+cp pulse_xmpp_agent/bin/medulla_info_update.py %buildroot%_var/lib/pulse2/clients/win
+cp pulse_xmpp_agent/bin/uninstall_medulla_info_update_notification.py %buildroot%_var/lib/pulse2/clients/win
 
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-package-watching.service

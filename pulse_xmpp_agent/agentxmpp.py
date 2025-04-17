@@ -98,7 +98,6 @@ from lib.utils import (
     convert,
     DateTimebytesEncoderjson,
     clean_update_directories,
-    execute_medulla_info_update,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -4790,6 +4789,7 @@ if __name__ == "__main__":
     elif sys.platform.startswith("darwin") and not isMacOsUserAdmin():
         print("Medulla agent must be running as root")
         sys.exit(0)
+
     optp = OptionParser()
     optp.add_option(
         "-d",
@@ -4879,7 +4879,6 @@ if __name__ == "__main__":
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    execute_medulla_info_update()
     if not opts.deamon:
         doTask(
             opts.typemachine,
