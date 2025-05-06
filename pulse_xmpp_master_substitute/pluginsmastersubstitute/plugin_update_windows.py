@@ -420,15 +420,15 @@ def list_products_on(xmppobject, data, list_produits):
             del_element("up_packages_Win11_X64_22H2")
             del_element("up_packages_Win11_X64_23H2")
             del_element("up_packages_Win11_X64_24H2")
-            if data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
+            if data["system_info"]["infobuild"]["DisplayVersion"] and data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
                 del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H1")
                 del_element("up_packages_Win10_X64_22H2")
-            elif data["system_info"]["infobuild"]["DisplayVersion"] == "21H1":
+            elif data["system_info"]["infobuild"]["DisplayVersion"] and data["system_info"]["infobuild"]["DisplayVersion"] == "21H1":
                 del_element("up_packages_Win10_X64_21H2")
                 del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_22H2")
-            elif data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
+            elif data["system_info"]["infobuild"]["DisplayVersion"] and data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
                 del_element("up_packages_Win10_X64_1903")
                 del_element("up_packages_Win10_X64_21H1")
                 del_element("up_packages_Win10_X64_21H2")

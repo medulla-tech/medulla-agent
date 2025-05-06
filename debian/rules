@@ -4,7 +4,7 @@
 DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
 DEB_NOEPOCH_VERSION := $(shell echo $(DEB_VERSION) | cut -d: -f2-)
 DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//')
-VERSION_XMPP_AGENT=3.2.0
+VERSION_XMPP_AGENT=3.2.1
 VERSION_KIOSK_INTERFACE=1.0.0
 FILETREE_VERSION=0.1
 BRANCH=master
@@ -74,6 +74,8 @@ override_dh_auto_install:
 	cp -r pulse_xmpp_master_substitute/lib/  $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
 	cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
 	cp -r pulse_xmpp_master_substitute/script/ $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
+	mkdir -p $(CURDIR)/debian/tmp/usr/sbin/
+	cp -r ./pulse_xmpp_agent/bin/medulla_info_update.py $(CURDIR)/debian/tmp/usr/sbin/medulla_info_update.py
 	mkdir -p $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent-substitute/
 	cp pulse_xmpp_master_substitute/config/*.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent-substitute/
 	cp -fr pulse_xmpp_master_substitute/config/systemd/* $(CURDIR)/debian/tmp/usr/lib/systemd/system
@@ -146,6 +148,8 @@ override_dh_auto_install:
 	cp scripts_installer/HEADER.html $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/style.css $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
+	cp pulse_xmpp_agent/bin/medulla_info_update.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
+	cp pulse_xmpp_agent/bin/uninstall_medulla_info_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
 	cp scripts_installer/win/generate-pulse-agent-win.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
 	cp scripts_installer/win/agent-installer.nsi.in $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
 	cp scripts_installer/win/pulse-agent-task.xml $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
