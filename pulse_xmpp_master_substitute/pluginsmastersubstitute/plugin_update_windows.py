@@ -277,111 +277,111 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                 "package update '%s' missing in base files /var/lib/pulse2/packages/sharing/winupdate"
                 % t["updateid"]
             )
-        if exist_package_base and exist_package_physique:
-            XmppMasterDatabase().setUp_machine_windows(
-                machine["id"],
-                t["updateid"],
-                kb=t["kb"],
-                deployment_intervals=xmppobject.deployment_intervals,
-                msrcseverity=t["msrcseverity"],
-            )
-            # on add ou update le kb dans la gray list
-            XmppMasterDatabase().setUp_machine_windows_gray_list(
-                t["updateid"], t["tableproduct"]
-            )
+        # if exist_package_base and exist_package_physique:
+        XmppMasterDatabase().setUp_machine_windows(
+            machine["id"],
+            t["updateid"],
+            kb=t["kb"],
+            deployment_intervals=xmppobject.deployment_intervals,
+            msrcseverity=t["msrcseverity"],
+        )
+        # on add ou update le kb dans la gray list
+        XmppMasterDatabase().setUp_machine_windows_gray_list(
+            t["updateid"], t["tableproduct"]
+        )
 
-    if (
-        "system_info" in data
-        and "infobuild" in data["system_info"]
-        and "DisplayVersion" in data["system_info"]["infobuild"]
-        and "major_version" in data["system_info"]["infobuild"]
-        and "code_lang_iso" in data["system_info"]["infobuild"]
-        and "update_major" in data["system_info"]["infobuild"]
-    ):
-        if str(data["system_info"]["infobuild"]["major_version"]) == "10":
-            if data["system_info"]["infobuild"]["DisplayVersion"] != "22H2":
-                (
-                    package_name_id,
-                    validity,
-                ) = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(
-                    data, validity_day=10
-                )
-                XmppMasterDatabase().del_all_Up_machine_windows(
-                    machine["id"], [package_name_id]
-                )
-                if validity:
-                    exist_package_base = PkgsDatabase().verifier_exist_uuid(
-                        package_name_id
-                    )
-                    exist_package_physique = verifier_exist_package(package_name_id)
-                    if not exist_package_base:
-                        logger.warning(
-                            "package update '%s' missing in base pkgs" % package_name_id
-                        )
-                    if not exist_package_physique:
-                        logger.warning(
-                            "package update '%s' missing in base file /var/lib/pulse2/packages/sharing/winupdate"
-                            % package_name_id
-                        )
-                    if exist_package_base and exist_package_physique:
-                        XmppMasterDatabase().setUp_machine_windows(
-                            machine["id"],
-                            package_name_id,
-                            kb=package_name_id[9:20],
-                            deployment_intervals=xmppobject.deployment_intervals,
-                            msrcseverity="major update",
-                        )
+    # if (
+    #     "system_info" in data
+    #     and "infobuild" in data["system_info"]
+    #     and "DisplayVersion" in data["system_info"]["infobuild"]
+    #     and "major_version" in data["system_info"]["infobuild"]
+    #     and "code_lang_iso" in data["system_info"]["infobuild"]
+    #     and "update_major" in data["system_info"]["infobuild"]
+    # ):
+    #     if str(data["system_info"]["infobuild"]["major_version"]) == "10":
+    #         if data["system_info"]["infobuild"]["DisplayVersion"] != "22H2":
+    #             (
+    #                 package_name_id,
+    #                 validity,
+    #             ) = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(
+    #                 data, validity_day=10
+    #             )
+    #             XmppMasterDatabase().del_all_Up_machine_windows(
+    #                 machine["id"], [package_name_id]
+    #             )
+    #             if validity:
+    #                 exist_package_base = PkgsDatabase().verifier_exist_uuid(
+    #                     package_name_id
+    #                 )
+    #                 exist_package_physique = verifier_exist_package(package_name_id)
+    #                 if not exist_package_base:
+    #                     logger.warning(
+    #                         "package update '%s' missing in base pkgs" % package_name_id
+    #                     )
+    #                 if not exist_package_physique:
+    #                     logger.warning(
+    #                         "package update '%s' missing in base file /var/lib/pulse2/packages/sharing/winupdate"
+    #                         % package_name_id
+    #                     )
+    #                 if exist_package_base and exist_package_physique:
+    #                     XmppMasterDatabase().setUp_machine_windows(
+    #                         machine["id"],
+    #                         package_name_id,
+    #                         kb=package_name_id[9:20],
+    #                         deployment_intervals=xmppobject.deployment_intervals,
+    #                         msrcseverity="major update",
+    #                     )
 
-            else:
-                # mise a jour de win 10 to win 11
-                package_name_id = package_name_major(data)
-                if package_name_id:
-                    # on nettoy si package release precedente restant
-                    XmppMasterDatabase().del_all_Up_machine_windows(
-                        machine["id"], [package_name_id]
-                    )
-                    data["system_info"]["infobuild"]["major_version"] = "11"
-                else:
-                    return
-        # mise à jour win 10 or 11 vers derniere win11
-        if str(data["system_info"]["infobuild"]["major_version"]) == "11":
-            if data["system_info"]["infobuild"]["DisplayVersion"] != "24H2":
-                (
-                    package_name_id,
-                    validity,
-                ) = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(
-                    data, validity_day=10
-                )
-                XmppMasterDatabase().del_all_Up_machine_windows(
-                    machine["id"], [package_name_id]
-                )
-                if validity:
-                    exist_package_base = PkgsDatabase().verifier_exist_uuid(
-                        package_name_id
-                    )
-                    exist_package_physique = verifier_exist_package(package_name_id)
-                    if not exist_package_base:
-                        logger.warning(
-                            "package update '%s' missing in base pkgs" % package_name_id
-                        )
-                    if not exist_package_physique:
-                        logger.warning(
-                            "package update '%s' missing in base file /var/lib/pulse2/packages/sharing/winupdate"
-                            % package_name_id
-                        )
-                    if exist_package_base and exist_package_physique:
-                        XmppMasterDatabase().setUp_machine_windows(
-                            machine["id"],
-                            package_name_id,
-                            kb=package_name_id[9:19],
-                            deployment_intervals=xmppobject.deployment_intervals,
-                            msrcseverity="major update",
-                        )
-        if int(data["system_info"]["infobuild"]["major_version"]) > 11:
-            logger.debug(
-                "update major  '%s' pas pris encore en compte%"
-                % (data["system_info"]["infobuild"]["DisplayVersion"])
-            )
+    #         else:
+    #             # mise a jour de win 10 to win 11
+    #             package_name_id = package_name_major(data)
+    #             if package_name_id:
+    #                 # on nettoy si package release precedente restant
+    #                 XmppMasterDatabase().del_all_Up_machine_windows(
+    #                     machine["id"], [package_name_id]
+    #                 )
+    #                 data["system_info"]["infobuild"]["major_version"] = "11"
+    #             else:
+    #                 return
+    #     # mise à jour win 10 or 11 vers derniere win11
+    #     if str(data["system_info"]["infobuild"]["major_version"]) == "11":
+    #         if data["system_info"]["infobuild"]["DisplayVersion"] != "24H2":
+    #             (
+    #                 package_name_id,
+    #                 validity,
+    #             ) = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(
+    #                 data, validity_day=10
+    #             )
+    #             XmppMasterDatabase().del_all_Up_machine_windows(
+    #                 machine["id"], [package_name_id]
+    #             )
+    #             if validity:
+    #                 exist_package_base = PkgsDatabase().verifier_exist_uuid(
+    #                     package_name_id
+    #                 )
+    #                 exist_package_physique = verifier_exist_package(package_name_id)
+    #                 if not exist_package_base:
+    #                     logger.warning(
+    #                         "package update '%s' missing in base pkgs" % package_name_id
+    #                     )
+    #                 if not exist_package_physique:
+    #                     logger.warning(
+    #                         "package update '%s' missing in base file /var/lib/pulse2/packages/sharing/winupdate"
+    #                         % package_name_id
+    #                     )
+    #                 if exist_package_base and exist_package_physique:
+    #                     XmppMasterDatabase().setUp_machine_windows(
+    #                         machine["id"],
+    #                         package_name_id,
+    #                         kb=package_name_id[9:19],
+    #                         deployment_intervals=xmppobject.deployment_intervals,
+    #                         msrcseverity="major update",
+    #                     )
+    #     if int(data["system_info"]["infobuild"]["major_version"]) > 11:
+    #         logger.debug(
+    #             "update major  '%s' pas pris encore en compte%"
+    #             % (data["system_info"]["infobuild"]["DisplayVersion"])
+    #         )
 
 
 def list_products_on(xmppobject, data, list_produits):
