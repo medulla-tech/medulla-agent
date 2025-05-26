@@ -277,18 +277,18 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                 "package update '%s' missing in base files /var/lib/pulse2/packages/sharing/winupdate"
                 % t["updateid"]
             )
-        if exist_package_base and exist_package_physique:
-            XmppMasterDatabase().setUp_machine_windows(
-                machine["id"],
-                t["updateid"],
-                kb=t["kb"],
-                deployment_intervals=xmppobject.deployment_intervals,
-                msrcseverity=t["msrcseverity"],
-            )
-            # on add ou update le kb dans la gray list
-            XmppMasterDatabase().setUp_machine_windows_gray_list(
-                t["updateid"], t["tableproduct"]
-            )
+        # if exist_package_base and exist_package_physique:
+        XmppMasterDatabase().setUp_machine_windows(
+            machine["id"],
+            t["updateid"],
+            kb=t["kb"],
+            deployment_intervals=xmppobject.deployment_intervals,
+            msrcseverity=t["msrcseverity"],
+        )
+        # on add ou update le kb dans la gray list
+        XmppMasterDatabase().setUp_machine_windows_gray_list(
+            t["updateid"], t["tableproduct"]
+        )
 
     # if (
     #     "system_info" in data
