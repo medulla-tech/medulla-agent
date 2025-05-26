@@ -1770,7 +1770,7 @@ class grafcet:
                 if self.workingstep["clear"] == "False":
                     clear = False
         self.__affiche_message(
-            f'[{self.data["name"]}]-[{self.workingstep["step"]}] :<span class="log_ok">Deployment successful<span>',
+            f'[{self.data["name"]}]-[{self.workingstep["step"]}] :<span class="log_ok">Execution successful<span>',
             module="Deployment | Error | Execution | Notify",
         )
         if self.__terminateifcompleted__(self.workingstep):
