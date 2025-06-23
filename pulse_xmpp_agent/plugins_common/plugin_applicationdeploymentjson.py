@@ -17,7 +17,7 @@ import urllib.error
 import shutil
 from lib.utils import file_get_contents
 from distutils.util import strtobool
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from lib import utils, managepackage, grafcetdeploy
 from lib.agentconffile import (
     conffilename,
@@ -43,7 +43,7 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {"VERSION": "6.0", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "6.1", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
@@ -3101,7 +3101,7 @@ def check_hash(objectxmpp, data):
     hash_type = data["hash"]["type"]
     dest = data["pathpackageonmachine"]
     dest += "\\"
-    concat_hash = ""
+    concat_hash = b""
 
     if hasattr(objectxmpp.config, "keyAES32"):
         salt = objectxmpp.config.keyAES32
@@ -3126,9 +3126,9 @@ def check_hash(objectxmpp, data):
                 file_hash.update(file_block)
                 file_block = _file.read(BLOCK_SIZE)
 
-        concat_hash += file_hash.hexdigest()
+        concat_hash += file_hash.hexdigest().encode('utf-8')
 
-    concat_hash += salt
+    concat_hash += salt.encode('utf-8')
     try:
         file_hash = hashlib.new(hash_type)
     except:
@@ -3237,8 +3237,8 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
             urlfile = (
                 urlobject.scheme
                 + "://"
-                + urllib.quote(urlobject.netloc)
-                + urllib.quote(urlobject.path)
+                + quote(urlobject.netloc)
+                + quote(urlobject.path)
             )
             token = datasend["data"]["descriptor"]["info"]["hash_info"]["token"]
             logger.debug("URL for downloading package using curl : " + urlfile)

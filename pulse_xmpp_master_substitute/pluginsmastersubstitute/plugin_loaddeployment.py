@@ -32,7 +32,7 @@ import time
 import threading
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.4", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
@@ -1117,12 +1117,12 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
 
         try:
             with open((os.path.join(dest, file_package)) + ".hash", "wb") as _file:
-                _file.write(file_hash.hexdigest())
+                _file.write(file_hash.hexdigest().encode('utf-8'))
         except:
             logging.error("Error writing the hash for %s" % file_package)
 
     # FOREACH FILES IN DEST IN ALPHA ORDER AND ADD KEY AES32, CONCAT AND HASH
-    content = ""
+    content = b""
 
     salt = keyAES32
     filelist = os.listdir(dest)
@@ -1130,7 +1130,7 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
         with open(os.path.join(dest, file_package), "rb") as infile:
             content += infile.read()
 
-    content += salt
+    content += salt.encode('utf-8')
     try:
         file_hash = hashlib.new(hash_type)
     except:
@@ -1139,8 +1139,7 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
     content = file_hash.hexdigest()
 
     with open("%s.hash" % dest, "wb") as outfile:
-        outfile.write(content)
-
+        outfile.write(content.encode('utf-8'))
 
 def applicationdeploymentjson(
     self,
@@ -1559,12 +1558,12 @@ def applicationdeploymentjson(
                     logger.error("%s" % (traceback.format_exc()))
                 finally:
                     self.mutexdeploy.release()
-                content = ""
+                content = b""
                 try:
                     with open(dest + ".hash", "rb") as infile:
                         content += infile.read()
                         data["hash"] = {}
-                        data["hash"]["global"] = content
+                        data["hash"]["global"] = content.decode('utf-8')
                         data["hash"]["type"] = self.hashing_algo
 
                 except Exception as e:
