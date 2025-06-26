@@ -15,5 +15,5 @@ X-Python-Version: >= 2.7
 Package: pulse-agent-linux
 Architecture: all
 Provides: ${python:Provides}
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, net-tools, fusioninventory-agent (>= 2.3), openssh-server, rsync, x11vnc, xrdp, apt-transport-https, python3-pip, sudo, syncthing
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, net-tools, fusioninventory-agent (>= 2.3), openssh-server, rsync, x11vnc, xrdp, apt-transport-https, python3-pip, sudo, syncthing, python3-yaml
 Description: Linux installer for Pulse XMPP agent
