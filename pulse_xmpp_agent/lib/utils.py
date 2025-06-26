@@ -895,40 +895,6 @@ def call_plugin_separate(name, *args, **kwargs):
         logging.getLogger().error(f"{traceback.format_exc()}")
 
 
-def isMsiExecRunning() -> None:
-    """
-    Windows Msiexec can only be runned one by one.
-
-    Here if it is already running we keep the function in use
-    and only release when it is available again.
-
-    We check for more than one process because when we start msiexec.exe
-    once it creates 2 processes but after the use it keeps one.
-    This is the normal msiexec behaviour
-    """
-
-    pythoncom.CoInitialize()
-    c = wmi.WMI()
-
-    try:
-        while True:
-            try:
-                msiexecProcess = c.Win32_Process(name="msiexec.exe")
-                if len(msiexecProcess) > 1:
-                    logger.info(
-                        "We need to wait, an other instance of msiexec is already running"
-                    )
-                    time.sleep(5)
-                else:
-                    break
-            except Exception as e:
-                logger.info(
-                    f"An error occurred while checking msiexec.exe processes: {e}"
-                )
-    finally:
-        pythoncom.CoUninitialize()
-
-
 class FunctionThread(threading.Thread):
     def __init__(self, function, *args, **kwargs):
         threading.Thread.__init__(self)
