@@ -13,7 +13,7 @@ import os
 GLPIAGENTVERSION = "1.12"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
