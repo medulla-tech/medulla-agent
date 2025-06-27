@@ -13,7 +13,7 @@ import os
 GLPIAGENTVERSION = "1.12"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -96,6 +96,8 @@ def updateGlpiAgent(xmppobject):
             os.chdir(install_tempdir)
             # Run installer
             cmd = "msiexec /i %s /quiet" % filename
+
+            utils.wait_until_msiexec_finishes()
 
             cmd_result = utils.simplecommand(cmd)
             if cmd_result["code"] == 0:
