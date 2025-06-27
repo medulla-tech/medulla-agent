@@ -16,7 +16,7 @@ TIGHTVNC = "2.8.81"
 COMPLETETIGHTVNC = "2.8.81.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.7", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.8", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -300,6 +300,8 @@ def updatetightvnc(xmppobject):
 
             # Run installer
             cmd = "msiexec /i %s %s REBOOT=R" % (filename, install_options)
+
+            utils.wait_until_msiexec_finishes()
 
             cmd_result = utils.simplecommand(cmd)
             if cmd_result["code"] == 0:
