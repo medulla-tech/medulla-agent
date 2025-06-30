@@ -9,11 +9,12 @@ import logging
 import platform
 import tempfile
 import os
+import time
 
 GLPIAGENTVERSION = "1.12"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.6", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -68,6 +69,42 @@ def check_if_binary_ok():
                     "We failed to reinitialize the registry entry for Glpi-Agent."
                 )
 
+def callInventoryPlugin(xmppobject, sessionid):
+    """
+    Calls the inventory plugin to perform an inventory action.
+
+    Args:
+        xmppobject: The XMPP object representing the connection.
+        sessionid: The session ID for the inventory action.
+    """
+    msg = {"from": xmppobject.boundjid.bare, "to": xmppobject.boundjid.bare, "type": "chat"}
+    dataerreur = {"action": "resultinventory", "data": {}}
+    dataerreur["data"]["msg"] = "ERROR : inventory"
+    dataerreur["sessionid"] = sessionid
+    dataerreur["ret"] = 255
+    dataerreur["base64"] = False
+    utils.call_plugin(
+        "inventory",
+        xmppobject,
+        "inventory",
+        sessionid,
+        {"forced": "forced"},
+        msg,
+        dataerreur,
+    )
+    xmppobject.xmpplog(
+        f"Sent Inventory from agent {xmppobject.boundjid.bare}",
+        type="noset",
+        sessionname=sessionid,
+        priority=0,
+        action="xmpplog",
+        who=xmppobject.boundjid.bare,
+        how="Planned",
+        why="",
+        module="Inventory | Inventory reception | Planned",
+        fromuser="",
+        touser="",
+    )
 
 def updateGlpiAgent(xmppobject):
     logger.info("Updating Glpi-Agent to version %s" % GLPIAGENTVERSION)
@@ -97,15 +134,23 @@ def updateGlpiAgent(xmppobject):
             # Run installer
             cmd = "msiexec /i %s /quiet" % filename
 
-            utils.wait_until_msiexec_finishes()
-
-            cmd_result = utils.simplecommand(cmd)
+            count = 0
+            while True:
+                cmd_result = utils.simplecommand(cmd)
+                if cmd_result["code"] == 0:
+                    logger.info("%s installed successfully" % filename)
+                    break
+                else:
+                    logger.error("Error installing %s: %s" % (filename, cmd_result["result"]))
+                count += 1
+                if count > 10:
+                    logger.error("Failed to install %s after several attempts." % filename)
+                    break
+                time.sleep(60)
             if cmd_result["code"] == 0:
-                logger.info("%s installed successfully" % filename)
-            else:
-                logger.error(
-                    "Error installing %s: %s" % (filename, cmd_result["result"])
-                )
+                # Call inventory plugin after successful installation
+                sessionid = utils.getRandomName(6, "inventory")
+                callInventoryPlugin(xmppobject, sessionid)
         else:
             # Download error
             logger.error("%s" % txtmsg)
