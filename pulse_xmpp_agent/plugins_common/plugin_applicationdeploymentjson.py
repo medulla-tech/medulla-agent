@@ -43,7 +43,7 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {"VERSION": "6.1", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "6.2", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
@@ -911,10 +911,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             "advanced" in data
             and "paramdeploy" in data["advanced"]
             and "section" in data["advanced"]["paramdeploy"]
-            and data["advanced"]["paramdeploy"]["section"]
-            in ["update", "install", "uninstall"]
+            and data["advanced"]["paramdeploy"]["section"] in ["update", "install", "uninstall"]
         ):
-            # priorite avanced selection
+            # Forcing "Install" if the title starts with "convergence"
+            if data.get("title", "").startswith("Convergence"):
+                data["advanced"]["paramdeploy"]["section"] = "install"
+                logger.debug("Title begins with 'Convergence', so forcing section to 'install'")
+            # priorite advanced selection
             pass
         else:
             # paramdeploy pas definie au lancement

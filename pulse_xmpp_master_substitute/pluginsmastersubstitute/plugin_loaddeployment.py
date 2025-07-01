@@ -32,7 +32,7 @@ import time
 import threading
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.5", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
@@ -1339,6 +1339,7 @@ def applicationdeploymentjson(
         "name": name,
         "login": login,
         "idcmd": idcommand,
+        "title": title,
         "advanced": objdeployadvanced,
         "stardate": self.totimestamp(start_date),
         "enddate": self.totimestamp(end_date),
