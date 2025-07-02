@@ -43,7 +43,7 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {"VERSION": "6.2", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "6.3", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
@@ -907,16 +907,25 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         logger.debug("###################################################")
         logger.debug("##############AGENT RELAY SERVER###################")
         logger.debug("###################################################")
+        title = data.get("title", "")
+        if "-@convergence@-" in title:
+            if "advanced" not in data:
+                data["advanced"] = {}
+            if "paramdeploy" not in data["advanced"]:
+                data["advanced"]["paramdeploy"] = {}
+            if title.startswith("Uninstall"):
+                data["advanced"]["paramdeploy"]["section"] = "uninstall"
+                logger.debug("Convergence uninstall detected, forcing section to 'uninstall'")
+            else:
+                data["advanced"]["paramdeploy"]["section"] = "install"
+                logger.debug("Convergence install detected, forcing section to 'install'")
+
         if (
             "advanced" in data
             and "paramdeploy" in data["advanced"]
             and "section" in data["advanced"]["paramdeploy"]
             and data["advanced"]["paramdeploy"]["section"] in ["update", "install", "uninstall"]
         ):
-            # Forcing "Install" if the title starts with "convergence"
-            if data.get("title", "").startswith("Convergence"):
-                data["advanced"]["paramdeploy"]["section"] = "install"
-                logger.debug("Title begins with 'Convergence', so forcing section to 'install'")
             # priorite advanced selection
             pass
         else:
