@@ -5,6 +5,14 @@
 
 set -e
 
+# We try to generate the full and minimal agents
+cd /var/lib/pulse2/clients
+if [ -f /var/lib/pulse2/clients/config/agentconf.ini ]; then
+    ./generate-pulse-agent.sh
+    ./generate-pulse-agent.sh --minimal
+    ./generate-agent-package
+fi
+
 chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent/
 chown -R syncthing: /var/lib/pulse2/clients/
 
