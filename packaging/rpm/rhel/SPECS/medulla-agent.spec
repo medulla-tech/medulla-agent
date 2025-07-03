@@ -266,14 +266,6 @@ if [ -d "/var/lib/pulse2/clients/linux" ]; then
     rm -fr /var/lib/pulse2/clients/linux/
 fi
 
-%post -n pulse-agent-installers
-if [ $1 == 2 ]; then
-    if [ -f %_var/lib/pulse2/clients/config/agentconf.ini ]; then
-        %_var/lib/pulse2/clients/generate-pulse-agent.sh
-        %_var/lib/pulse2/clients/generate-pulse-agent.sh --minimal
-        %_var/lib/pulse2/clients/generate-agent-package
-    fi
-fi
 
 %files -n pulse-agent-installers
 %_var/lib/pulse2/clients
