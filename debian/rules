@@ -118,7 +118,7 @@ override_dh_auto_install:
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	mv  pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	mv  pulse-machine-plugins-${VERSION_XMPP_AGENT}.tar.gz $(CURDIR)/debian/tmp/var/lib/pulse2/clients
-	GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" git clone --branch ${BRANCH} git@github.com:medulla-tech/kiosk-interface.git
+	GIT_SSL_NO_VERIFY=true git clone --branch ${BRANCH} https://github.com/medulla-tech/kiosk-interface.git
 	mv kiosk-interface kiosk-interface-${VERSION_KIOSK_INTERFACE}
 	tar czvf kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz kiosk-interface-${VERSION_KIOSK_INTERFACE}
 	rm -fr kiosk-interface-${VERSION_KIOSK_INTERFACE}
