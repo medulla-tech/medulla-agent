@@ -46,7 +46,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.31", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.4", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -2480,7 +2480,10 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
         if datasend['data']['methodetransfert'] == "pullcurl":
             dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
 
-            packageUuid = str(datasend['data']['descriptor']['info']['packageUuid'])
+            packageUuid = (
+                datasend['data']['descriptor']['info'].get('packageUuid') or
+                datasend['data']['descriptor'].get('metaparameter', {}).get('uuid')
+            )
 
             if ('localisation_server' in datasend['data']['descriptor']['info'] and datasend['data']['descriptor']['info']['localisation_server'] != ""):
                 urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['localisation_server']) + "/" + packageUuid + "/" + str(filepackage)
