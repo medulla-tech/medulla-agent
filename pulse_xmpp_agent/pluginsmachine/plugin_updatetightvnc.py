@@ -10,13 +10,14 @@ import tempfile
 import os
 import traceback
 from lib import utils
+import time
 
 
 TIGHTVNC = "2.8.81"
 COMPLETETIGHTVNC = "2.8.81.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.6", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.9", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -301,18 +302,19 @@ def updatetightvnc(xmppobject):
             # Run installer
             cmd = "msiexec /i %s %s REBOOT=R" % (filename, install_options)
 
-            utils.isMsiExecRunning()
-
-            cmd_result = utils.simplecommand(cmd)
-            if cmd_result["code"] == 0:
-                logger.info(
-                    f"PL-TIGHT {filename} installed successfully to version {TIGHTVNC}"
-                )
-
-            else:
-                logger.error(
-                    f"PL-TIGHT Error installing {filename}: {cmd_result['result']}"
-                )
+            count = 0
+            while True:
+                cmd_result = utils.simplecommand(cmd)
+                if cmd_result["code"] == 0:
+                    logger.info("PL-TIGHT %s installed successfully" % filename)
+                    break
+                else:
+                    logger.error("PL-TIGHT Error installing %s: %s" % (filename, cmd_result["result"]))
+                count += 1
+                if count > 10:
+                    logger.error("PL-TIGHT Failed to install %s after several attempts." % filename)
+                    break
+                time.sleep(60)
 
             utils.simplecommand(
                 'netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=%s'

@@ -15,7 +15,7 @@ import configparser
 # import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.03", "NAME": "xmpplog", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "xmpplog", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
@@ -206,17 +206,19 @@ def xmpplogdeploy(xmppobject, data):
             )
         elif "action" in data:
             if data["action"] == "resultapplicationdeploymentjson":
-                # Log dans base resultat
-                if data["ret"] == 0:
+                    # Determination of the message according to section
+                    section = data.get("advanced", {}).get("paramdeploy", {}).get("section", "").lower()
+                    if data["ret"] == 0:
+                        if section == "uninstall":
+                            message = "UNINSTALL SUCCESS"
+                        else:
+                            message = "DEPLOYMENT SUCCESS"
+                    else:
+                        message = "ABORT PACKAGE EXECUTION ERROR"
+
                     XmppMasterDatabase().updatedeployresultandstate(
                         data["sessionid"],
-                        "DEPLOYMENT SUCCESS",
-                        json.dumps(data, indent=4, sort_keys=True),
-                    )
-                else:
-                    XmppMasterDatabase().updatedeployresultandstate(
-                        data["sessionid"],
-                        "ABORT PACKAGE EXECUTION ERROR",
+                        message,
                         json.dumps(data, indent=4, sort_keys=True),
                     )
     except Exception as e:

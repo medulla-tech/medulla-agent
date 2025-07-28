@@ -894,9 +894,9 @@ def call_plugin_separate(name, *args, **kwargs):
         logging.getLogger().error(f"{traceback.format_exc()}")
 
 
-def isMsiExecRunning() -> None:
+def wait_until_msiexec_finishes():
     """
-    Windows Msiexec can only be runned one by one.
+    Windows Msiexec can only be run one by one.
 
     Here if it is already running we keep the function in use
     and only release when it is available again.
@@ -905,27 +905,24 @@ def isMsiExecRunning() -> None:
     once it creates 2 processes but after the use it keeps one.
     This is the normal msiexec behaviour
     """
+    while True:
+        msiexec_count = 0
 
-    pythoncom.CoInitialize()
-    c = wmi.WMI()
-
-    try:
-        while True:
+        # Iterate over all running processes
+        for proc in psutil.process_iter(['name']):
             try:
-                msiexecProcess = c.Win32_Process(name="msiexec.exe")
-                if len(msiexecProcess) > 1:
-                    logger.info(
-                        "We need to wait, an other instance of msiexec is already running"
-                    )
-                    time.sleep(5)
-                else:
-                    break
-            except Exception as e:
-                logger.info(
-                    f"An error occurred while checking msiexec.exe processes: {e}"
-                )
-    finally:
-        pythoncom.CoUninitialize()
+                # Check if the process name is msiexec.exe
+                if proc.info['name'] == 'msiexec.exe':
+                    msiexec_count += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+
+        if msiexec_count < 2:  # Assuming less than 2 means no installation is in progress
+            logger.info("No MSI installation is currently running. Proceeding with the new installation.")
+            break
+
+        logger.info(f"An MSI installation is already in progress ({msiexec_count} instances running). Waiting...")
+        time.sleep(10)  # Wait for 10 seconds before checking again
 
 
 class FunctionThread(threading.Thread):
@@ -5431,7 +5428,7 @@ def execute_medulla_info_update():
             subprocess.run(
                 ["c:\Program Files\Python3\python.exe", script_path], check=True
             )
-            logger.error("Le script medulla_info_update.py a été exécuté avec succès.")
+            logger.info("Le script medulla_info_update.py a été exécuté avec succès.")
         except subprocess.CalledProcessError as e:
             logger.debug(f"Erreur lors de l'exécution du script : {e}")
         except FileNotFoundError:

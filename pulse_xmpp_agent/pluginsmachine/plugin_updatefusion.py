@@ -38,7 +38,7 @@ FUSIONVERSION = "2.6"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.6", "NAME": "updatefusion", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updatefusion", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level

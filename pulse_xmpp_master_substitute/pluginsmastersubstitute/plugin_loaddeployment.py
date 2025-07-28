@@ -32,7 +32,7 @@ import time
 import threading
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.5", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
@@ -719,9 +719,12 @@ def applicationdeployjsonUuidMachineAndUuidPackage(
         sessiondeployementless = name_random(5, "arsdeployupdate")
         deploymenttype = "update"
         prefixcommanddeploy = "update"
+    elif "-@convergence@-" in title:
+        prefixcommanddeploy = "convergence"
     else:
-        sessiondeployementless = name_random(5, "command")
         prefixcommanddeploy = "command"
+
+    sessiondeployementless = name_random(5, prefixcommanddeploy)
     msg = []
     name = uuidpackage
     if name is not None:
@@ -803,9 +806,11 @@ def applicationdeployjsonuuid(
             sessiondeployementless = name_random(5, "arsdeployupdate")
             deploymenttype = "update"
             prefixcommanddeploy = "update"
+        elif "-@convergence@-" in title:
+            prefixcommanddeploy = "convergence"
         else:
-            sessiondeployementless = name_random(5, "command")
             prefixcommanddeploy = "command"
+        sessiondeployementless = name_random(5, prefixcommanddeploy)
         msg = []
         # search group deploy and jid machine
         objmachine = XmppMasterDatabase().getGuacamoleRelayServerMachineUuid(
@@ -1189,10 +1194,11 @@ def applicationdeploymentjson(
         sessiondeployementless = name_random(5, "arsdeployupdate")
         deploymenttype = "update"
         prefixcommanddeploy = "update"
+    elif "-@convergence@-" in title:
+        prefixcommanddeploy = "convergence"
     else:
-        sessiondeployementless = name_random(5, "command")
         prefixcommanddeploy = "command"
-
+    sessiondeployementless = name_random(5, prefixcommanddeploy)
     if managepackage.getversionpackageuuid(name) is None:
         logger.error("Deployment error package name or version missing for %s" % (name))
         msg.append(
@@ -1339,6 +1345,7 @@ def applicationdeploymentjson(
         "name": name,
         "login": login,
         "idcmd": idcommand,
+        "title": title,
         "advanced": objdeployadvanced,
         "stardate": self.totimestamp(start_date),
         "enddate": self.totimestamp(end_date),

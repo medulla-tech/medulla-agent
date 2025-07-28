@@ -1885,7 +1885,7 @@ class grafcet:
                 if self.workingstep["clear"] == "False":
                     clear = False
         self.objectxmpp.xmpplog(
-            '[%s]-[%s] :<span class="log_ok">Deployment successful<span>'
+            '[%s]-[%s] :<span class="log_ok">Execution successful<span>'
             % (self.data["name"], self.workingstep["step"]),
             type="deploy",
             sessionname=self.sessionid,
