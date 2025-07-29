@@ -227,6 +227,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     )
                 machine = XmppMasterDatabase().getMachinefromjid(data["from"])
                 if machine:
+                    if "Unknown operating system (PXE network boot inventory)" in machine['platform']:
+                        data['regcomplet'] = True
                     if (
                         "regcomplet" in data
                         and data["regcomplet"] is True

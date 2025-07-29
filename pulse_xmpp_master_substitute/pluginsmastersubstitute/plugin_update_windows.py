@@ -208,9 +208,36 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     exclude_update = XmppMasterDatabase().test_black_list(msg["from"])
     logger.debug("Excluding updates for %s: %s" % (msg["from"], exclude_update))
     for t in list_table_product_select:
-        if t == "up_packages_Win_Malicious_X64":
+        if t['name_procedure'] == "up_packages_Win_Malicious_X64":
             # le traitement de cette mise a jour est dependante de la version renvoyee par la machine du logiciel.
             # le kb n'est pas modifiee.
+            if (
+                "malicious_software_removal_tool" in data["system_info"]
+                ):
+
+                if "FileMinorPart" in data["system_info"]["malicious_software_removal_tool"]:
+                    FileMinorPart = data["system_info"]["malicious_software_removal_tool"]["FileMinorPart"]
+                else:
+                    FileMinorPart = ""
+
+                if "FileMajorPart" in data["system_info"]["malicious_software_removal_tool"]:
+                    FileMajorPart = data["system_info"]["malicious_software_removal_tool"]["FileMajorPart"]
+                else:
+                    FileMajorPart = ""
+
+                list_update = []
+                # search malicious_software_removal_tool
+                list_update = (
+                    XmppMasterDatabase().search_update_windows_malicious_software_tool(
+                        data["system_info"]["platform_info"]["type"],
+                        data["system_info"]["platform_info"]["machine"],
+                        FileMajorPart,
+                        FileMinorPart,
+                    )
+                )
+                res_update.extend(
+                    exclude_update_in_select(msg, exclude_update, list_update)
+                )
             continue
         list_update = []
         logger.debug(
@@ -224,35 +251,6 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         logger.debug("list_update search is %s: " % list_update)
         res_update.extend(exclude_update_in_select(msg, exclude_update, list_update))
 
-    if "up_packages_Win_Malicious_X64" in list_table_product_select:
-        if (
-            "malicious_software_removal_tool" in data["system_info"]
-            and "FileMajorPart"
-            in data["system_info"]["malicious_software_removal_tool"]
-            and "FileMinorPart"
-            in data["system_info"]["malicious_software_removal_tool"]
-            and data["system_info"]["malicious_software_removal_tool"]["FileMajorPart"]
-            != ""
-            and data["system_info"]["malicious_software_removal_tool"]["FileMinorPart"]
-            != ""
-        ):
-            list_update = []
-            # search malicious_software_removal_tool
-            list_update = (
-                XmppMasterDatabase().search_update_windows_malicious_software_tool(
-                    data["system_info"]["platform_info"]["type"],
-                    data["system_info"]["platform_info"]["machine"],
-                    data["system_info"]["malicious_software_removal_tool"][
-                        "FileMajorPart"
-                    ],
-                    data["system_info"]["malicious_software_removal_tool"][
-                        "FileMinorPart"
-                    ],
-                )
-            )
-            res_update.extend(
-                exclude_update_in_select(msg, exclude_update, list_update)
-            )
 
     # update les updates windows a installer
     # delete les mise a jour faites ou a reactualise
