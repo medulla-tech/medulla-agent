@@ -167,7 +167,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         else:
             logger.warning("Subaction %s not recognize" % data["subaction"])
     else:
-        logger.warning("No subaction found in agent machine query")
+        logger.warning("resultkiosk - No subaction found in agent machine query")
 
 
 def initialisekiosk(data, message, xmppobject):

@@ -56,7 +56,7 @@ setup(
             "pypiwin32 >= 223",
             "comtypes >= 1.1.14",
             "wmi >= 1.5.1",
-            "netifaces2",
+            "netifaces_plus",
             "pycryptodome >= 3.15.0",
         ]
         if "win" in sys.platform
