@@ -8142,7 +8142,7 @@ globaltest = """
       <ARCH>all</ARCH>
       <FILESIZE>203072</FILESIZE>
       <FROM>deb</FROM>
-      <NAME>medulla-agent-deps</NAME>
+      <NAME>pulse-xmpp-agent-deps</NAME>
       <PUBLISHER>Debian</PUBLISHER>
       <SYSTEM_CATEGORY>admin</SYSTEM_CATEGORY>
       <VERSION>1.6git20180619164725.9212b24-1</VERSION>
