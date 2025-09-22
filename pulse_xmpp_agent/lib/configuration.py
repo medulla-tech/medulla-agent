@@ -555,9 +555,9 @@ class confParameter:
             self.updating = 1
 
         if Config.has_option("updateagent", "updateserver"):
-            self.updateserver = Config.get("updateagent", "updateserver")
+            self.update_server = Config.get("updateagent", "updateserver")
         else:
-            self.updateserver = "http://%s" % self.Server
+            self.update_server = "http://%s" % self.Server
 
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint("networkstatus", "netchanging")
