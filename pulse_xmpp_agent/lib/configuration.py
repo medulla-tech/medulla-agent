@@ -555,7 +555,7 @@ class confParameter:
             self.updating = 1
 
         if Config.has_option("updateagent", "updateserver"):
-            self.updateserver = Config.getboolean("updateagent", "updateserver")
+            self.updateserver = Config.get("updateagent", "updateserver")
         else:
             self.updateserver = "http://%s" % self.Server
 
