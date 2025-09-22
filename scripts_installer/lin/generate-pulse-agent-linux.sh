@@ -121,6 +121,9 @@ check_arguments() {
             --chat-domain*)
                 shift
                 ;;
+            --updateserver*)
+                shift
+                ;;
 	    *)
 		# unknown option
 		display_usage
