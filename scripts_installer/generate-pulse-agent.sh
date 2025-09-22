@@ -265,6 +265,7 @@ compute_settings() {
 }
 
 update_config_file() {
+    # Update agentconf.ini file with the new parameters
     CONFIG_FILE='config/agentconf.ini'
     # Backup the config file if no backup present
     if [ ! -e ${CONFIG_FILE}.bak ]; then
@@ -284,6 +285,19 @@ update_config_file() {
         crudini --set ${CONFIG_FILE} updateagent updateserver ${UPDATESERVER}
     fi
 	unix2dos ${CONFIG_FILE}
+    # Update inventory.ini file with the new parameters
+    INVENTORY_CONFIG_FILE='config/inventory.ini'
+    # Backup the config file if no backup present
+    if [ ! -e ${INVENTORY_CONFIG_FILE}.bak ]; then
+        cp ${INVENTORY_CONFIG_FILE} ${INVENTORY_CONFIG_FILE}.bak
+    fi
+    # Update the config file for the agent
+    if [ ! -z ${INVENTORY_TAG} ]; then
+        crudini --set ${INVENTORY_CONFIG_FILE} parameters inventorytag ${INVENTORY_TAG}
+    else
+        crudini --del ${INVENTORY_CONFIG_FILE} parameters inventorytag
+    fi
+    unix2dos ${INVENTORY_CONFIG_FILE}
 }
 
 update_generation_options_file() {
