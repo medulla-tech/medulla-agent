@@ -17,7 +17,7 @@ TIGHTVNC = "2.8.81"
 COMPLETETIGHTVNC = "2.8.81.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.9", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.10", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -217,8 +217,8 @@ def updatetightvnc(xmppobject):
         else:
             architecture = "32bit"
         filename = "tightvnc-%s-gpl-setup-%s.msi" % (TIGHTVNC, architecture)
-        dl_url = "http://%s/downloads/win/downloads/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/%s" % (
+            xmppobject.config.update_server,
             filename,
         )
         logger.debug(f"PL-TIGHT Downloading {dl_url}")

@@ -57,6 +57,7 @@ display_usage() {
     echo -e "\t [--disable-inventory (Disable Fusion Inventory)]"
     echo -e "\t [--disable-geoloc (Disable geolocalisation for example on machines which do not access internet)]"
     echo -e "\t [--linux-distros (Used linux distros)]"
+    echo -e "\t [--updateserver (Download url for the agent updates)]"
 }
 
 check_arguments() {
@@ -130,6 +131,10 @@ check_arguments() {
                 ;;
             --linux-distros*)
                 LINUX_DISTROS="--linux-distros=${i#*=}"
+                shift
+                ;;
+            --updateserver*)
+                UPDATESERVER="${i#*=}"
                 shift
                 ;;
             *)
@@ -249,10 +254,18 @@ compute_settings() {
         colored_echo green " - Geolocalisation is disabled"
         DISABLE_GEOLOC="--disable-geoloc"
     fi
+    if [ -z ${UPDATESERVER} ]; then
+        colored_echo green " - No update server defined"
+        UPDATESERVER_OPTIONS=""
+    else
+        colored_echo green " - Update server: ${UPDATESERVER}"
+        UPDATESERVER_OPTIONS="--updateserver=${UPDATESERVER}"
+    fi
 
 }
 
 update_config_file() {
+    # Update agentconf.ini file with the new parameters
     CONFIG_FILE='config/agentconf.ini'
     # Backup the config file if no backup present
     if [ ! -e ${CONFIG_FILE}.bak ]; then
@@ -268,12 +281,28 @@ update_config_file() {
     if [ ! -z ${DISABLE_GEOLOC} ]; then
         crudini --set ${CONFIG_FILE} type geolocalisation False
     fi
+    if [ ! -z ${UPDATESERVER} ]; then
+        crudini --set ${CONFIG_FILE} updateagent updateserver ${UPDATESERVER}
+    fi
 	unix2dos ${CONFIG_FILE}
+    # Update inventory.ini file with the new parameters
+    INVENTORY_CONFIG_FILE='config/inventory.ini'
+    # Backup the config file if no backup present
+    if [ ! -e ${INVENTORY_CONFIG_FILE}.bak ]; then
+        cp ${INVENTORY_CONFIG_FILE} ${INVENTORY_CONFIG_FILE}.bak
+    fi
+    # Update the config file for the agent
+    if [ ! -z ${INVENTORY_TAG} ]; then
+        crudini --set ${INVENTORY_CONFIG_FILE} parameters inventorytag ${INVENTORY_TAG}
+    else
+        crudini --del ${INVENTORY_CONFIG_FILE} parameters inventorytag
+    fi
+    unix2dos ${INVENTORY_CONFIG_FILE}
 }
 
 update_generation_options_file() {
     # Save arguments to file for future use
-    echo "--conf-xmppserver=${PUBLIC_XMPP_SERVER_ADDRESS} --conf-xmppport=${PUBLIC_XMPP_SERVER_PORT} --conf-xmpppasswd=${PUBLIC_XMPP_SERVER_PASSWORD} --aes-key=${AES_KEY} --xmpp-passwd=${XMPP_SERVER_PASSWORD} --chat-domain=${CHAT_DOMAIN} ${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${DISABLE_GEOLOC} ${LINUX_DISTROS} " > .generation_options
+    echo "--conf-xmppserver=${PUBLIC_XMPP_SERVER_ADDRESS} --conf-xmppport=${PUBLIC_XMPP_SERVER_PORT} --conf-xmpppasswd=${PUBLIC_XMPP_SERVER_PASSWORD} --aes-key=${AES_KEY} --xmpp-passwd=${XMPP_SERVER_PASSWORD} --chat-domain=${CHAT_DOMAIN} ${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${DISABLE_GEOLOC} ${LINUX_DISTROS} ${UPDATESERVER_OPTIONS}" > .generation_options
     # Update generation_options var
     if [ -e .generation_options ]; then
        colored_echo blue "Extracting parameters from previous options file (.generation_options)."

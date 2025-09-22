@@ -36,7 +36,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.75", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.0", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -157,6 +157,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s" % (nbcmd, timeoutfusion))
                 general_options = "--backend-collect-timeout=%s" % timeoutfusion
+                if hasattr(xmppobject.config, "inventorytag"):
+                    if xmppobject.config.inventorytag:
+                        general_options = (
+                            general_options + " --tag=%s" % xmppobject.config.inventorytag
+                        )
                 location_option = '--local="%s"' % inventoryfile
                 if xmppobject.config.via_xmpp == "False":
                     location_option = '--server="%s"' % xmppobject.config.urlinventory
@@ -289,6 +294,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 "--config=none --scan-profiles "
                 "--backend-collect-timeout=%s" % timeoutfusion
             )
+            if hasattr(xmppobject.config, "inventorytag"):
+                if xmppobject.config.inventorytag:
+                    general_options = (
+                        general_options + " --tag=%s" % xmppobject.config.inventorytag
+                    )
             location_option = '--local="%s"' % inventoryfile
             if xmppobject.config.via_xmpp == "False":
                 location_option = '--server="%s"' % xmppobject.config.urlinventory

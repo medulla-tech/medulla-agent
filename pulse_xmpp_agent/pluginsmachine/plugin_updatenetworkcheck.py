@@ -20,7 +20,7 @@ from lib.agentconffile import (
 NETWORKVERSION = "3.2.1"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.6", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.7", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -198,7 +198,7 @@ def updatenetworkcheck(xmppobject):
         pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "networkevents.py"
-        dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
+        dl_url = "%s/downloads/win/%s" % (xmppobject.config.update_server, filename)
         logger.debug(" PL-NETNOT Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
             dl_url, os.path.join(pulsedir_path, filename)
@@ -222,8 +222,8 @@ def updatenetworkcheck(xmppobject):
             )
 
         servicefilename = "netcheck-service.py"
-        service_dl_url = "http://%s/downloads/win/%s" % (
-            xmppobject.config.Server,
+        service_dl_url = "%s/downloads/win/%s" % (
+            xmppobject.config.update_server,
             servicefilename,
         )
         serviceresult, servicetxtmsg = utils.downloadfile(

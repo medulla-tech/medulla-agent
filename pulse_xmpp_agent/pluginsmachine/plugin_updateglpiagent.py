@@ -14,7 +14,7 @@ import time
 GLPIAGENTVERSION = "1.12"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.7", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.9", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -118,8 +118,8 @@ def updateGlpiAgent(xmppobject):
         else:
             architecture = "x86"
         filename = "GLPI-Agent-%s-%s.msi" % (GLPIAGENTVERSION, architecture)
-        dl_url = "http://%s/downloads/win/downloads/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/%s" % (
+            xmppobject.config.update_server,
             filename,
         )
         logger.debug("Downloading %s" % dl_url)

@@ -17,7 +17,7 @@ CACERTVERSION = "1.2"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -111,8 +111,8 @@ def updatecacert(xmppobject, installed_version):
     filename_root = "medulla-rootca.cert.pem"
 
     # Download certificate
-    dl_url_chain = "http://%s/downloads/%s" % (xmppobject.config.Server, filename_chain)
-    dl_url_root = "http://%s/downloads/%s" % (xmppobject.config.Server, filename_root)
+    dl_url_chain = "%s/downloads/%s" % (xmppobject.config.update_server, filename_chain)
+    dl_url_root = "%s/downloads/%s" % (xmppobject.config.update_server, filename_root)
     if sys.platform.startswith("win"):
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
