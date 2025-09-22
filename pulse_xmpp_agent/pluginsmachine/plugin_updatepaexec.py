@@ -25,7 +25,7 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.53", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.54", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -136,8 +136,8 @@ def updateapp(xmppobject, installed_version):
         pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "paexec_1_29.exe"
-        dl_url = "http://%s/downloads/win/downloads/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/%s" % (
+            xmppobject.config.update_server,
             filename,
         )
         logger.debug(" PL-PAEXEC Downloading %s" % dl_url)

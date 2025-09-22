@@ -25,7 +25,7 @@ from xml.etree import ElementTree
 SYNCTHINGVERSION = "1.23.4"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.26", "NAME": "updatesyncthing", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.27", "NAME": "updatesyncthing", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -133,8 +133,8 @@ def updatesyncthing(xmppobject, installed_version):
 
         filename = "syncthing-windows-%s-v%s.zip" % (architecture, SYNCTHINGVERSION)
         extracted_path = "syncthing-windows-%s-v%s" % (architecture, SYNCTHINGVERSION)
-        dl_url = "http://%s/downloads/win/downloads/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/%s" % (
+            xmppobject.config.update_server,
             filename,
         )
         logger.debug("Downloading %s" % dl_url)

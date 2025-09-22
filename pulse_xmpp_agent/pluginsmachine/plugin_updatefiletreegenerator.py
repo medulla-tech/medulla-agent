@@ -19,7 +19,7 @@ from lib.agentconffile import (
 FILETREEVERSION = "0.1"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "0.4", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "0.5", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -97,7 +97,7 @@ def updatefiletreegenerator(xmppobject, installed_version):
         pulsedir_path = os.path.join(medullaPath(), "bin")
 
         filename = "pulse-filetree-generator.exe"
-        dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
+        dl_url = "%s/downloads/win/%s" % (xmppobject.config.update_server, filename)
         logger.debug("Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
             dl_url, os.path.join(pulsedir_path, filename)

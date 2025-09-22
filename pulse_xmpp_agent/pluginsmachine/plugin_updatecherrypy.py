@@ -15,7 +15,7 @@ from lib.agentconffile import (
 CHERRYPYVERSION = "18.8.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.3", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.4", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -100,8 +100,8 @@ def updatecherrypy(xmppobject, installed_version):
         ]
 
         for module_to_dl in python_modules:
-            dl_url = "http://%s/downloads/win/downloads/python_modules/%s" % (
-                xmppobject.config.Server,
+            dl_url = "%s/downloads/win/downloads/python_modules/%s" % (
+                xmppobject.config.update_server,
                 module_to_dl,
             )
             logger.debug(" PL-CHERRYP Downloading %s" % dl_url)
@@ -109,8 +109,8 @@ def updatecherrypy(xmppobject, installed_version):
                 dl_url, os.path.join(install_tempdir, module_to_dl)
             ).downloadurl()
 
-        dl_url = "http://%s/downloads/win/downloads/python_modules/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/python_modules/%s" % (
+            xmppobject.config.update_server,
             cherrypy_filename,
         )
         logger.debug(" PL-CHERRYP Downloading %s" % dl_url)

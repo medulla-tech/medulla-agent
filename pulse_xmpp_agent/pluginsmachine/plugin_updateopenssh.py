@@ -31,7 +31,7 @@ OPENSSHVERSION = "9.8.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.23", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.24", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
@@ -310,8 +310,8 @@ def updateopenssh(xmppobject, installed_version):
 
         filename = "OpenSSH-%s.zip" % architecture
         extracted_path = "OpenSSH-%s" % architecture
-        dl_url = "http://%s/downloads/win/downloads/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/%s" % (
+            xmppobject.config.update_server,
             filename,
         )
         result, txtmsg = utils.downloadfile(
@@ -412,8 +412,8 @@ def updateopenssh(xmppobject, installed_version):
             rsync_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
             rsync_filename = "rsync.zip"
             rsync_extracted_path = "rsync"
-            rsync_dl_url = "http://%s/downloads/win/downloads/%s" % (
-                xmppobject.config.Server,
+            rsync_dl_url = "%s/downloads/win/downloads/%s" % (
+                xmppobject.config.update_server,
                 rsync_filename,
             )
             rsync_result, rsync_txtmsg = utils.downloadfile(

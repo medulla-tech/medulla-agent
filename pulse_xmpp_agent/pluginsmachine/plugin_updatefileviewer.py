@@ -16,7 +16,7 @@ MAIN = "1.1"
 list_modules = ["bootstrap", "jquery", "jqueryui", "datatables", "main"]
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.6", "NAME": "updatefileviewer", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updatefileviewer", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -150,8 +150,8 @@ def updatemain(xmppobject):
     elif sys.platform.startswith("darwin"):
         architecture = "mac"
 
-    dl_url_css = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_css = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_css,
     )
@@ -166,8 +166,8 @@ def updatemain(xmppobject):
         # Download error
         logger.debug("%s" % txtmsg_css)
 
-    dl_url_js = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_js = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_js,
     )
@@ -200,8 +200,8 @@ def updatebootstrap(xmppobject):
     elif sys.platform.startswith("darwin"):
         architecture = "mac"
 
-    dl_url_css = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_css = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_css,
     )
@@ -216,8 +216,8 @@ def updatebootstrap(xmppobject):
         # Download error
         logger.debug("%s" % txtmsg_css)
 
-    dl_url_js = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_js = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_js,
     )
@@ -250,8 +250,8 @@ def updatejquery(xmppobject):
     elif sys.platform.startswith("darwin"):
         architecture = "mac"
 
-    dl_url_js = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_js = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_js,
     )
@@ -287,8 +287,8 @@ def updatedatatables(xmppobject):
     elif sys.platform.startswith("darwin"):
         architecture = "mac"
 
-    dl_url_js = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_js = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_js,
     )
@@ -303,8 +303,8 @@ def updatedatatables(xmppobject):
         # Download error
         logger.error("%s" % txtmsg_js)
 
-    dl_url_css = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_css = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_css,
     )
@@ -318,8 +318,8 @@ def updatedatatables(xmppobject):
         # Download error
         logger.error("%s" % txtmsg_css)
 
-    dl_url_woff = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_woff = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_woff,
     )
@@ -351,8 +351,8 @@ def updatejqueryui(xmppobject):
     elif sys.platform.startswith("darwin"):
         architecture = "mac"
 
-    dl_url_css = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_css = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_css,
     )
@@ -367,8 +367,8 @@ def updatejqueryui(xmppobject):
         # Download error
         logger.error("%s" % txtmsg_css)
 
-    dl_url_js = "http://%s/downloads/%s/downloads/%s" % (
-        xmppobject.config.Server,
+    dl_url_js = "%s/downloads/%s/downloads/%s" % (
+        xmppobject.config.update_server,
         architecture,
         filename_js,
     )
