@@ -98,6 +98,7 @@ from lib.utils import (
     convert,
     DateTimebytesEncoderjson,
     clean_update_directories,
+    get_extracted_driver_key,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -3878,6 +3879,9 @@ AGENT %s ERROR TERMINATE""" % (
             "updatingagent": self.config.updating,
             "system_info": system_info,
         }
+        if sys.platform.startswith("win"):
+            dataobj["extractedDrivers"] = get_extracted_driver_key()
+
         try:
             dataobj["md5_conf_monitoring"] = ""
             # self.monitoring_agent_config_file
