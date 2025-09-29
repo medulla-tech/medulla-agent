@@ -1102,13 +1102,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
             )
         finally:
-            # Need to extract drivers for this machine, only if the key "extractedDrivers" is present and is False
-            # extractedDrivers key present = windows machine
-            #extractedDrivers = False : drivers not extracted
-            #extractedDrivers = True : drivers extracted
+            # Add the possibility to disable the extraction drivers
+            if xmppobject.extractdrivers_activate is True and xmppobject.extractdrivers_package_uuid != "":
+                # Need to extract drivers for this machine, only if the key "extractedDrivers" is present and is False
+                # extractedDrivers key present = windows machine
+                # extractedDrivers = False : drivers not extracted
+                # extractedDrivers = True : drivers extracted
+                if "extractedDrivers" in data and data["extractedDrivers"] is False:
+                        safe_deploy_extraction_drivers(xmppobject, data)
 
-            if "extractedDrivers" in data and data["extractedDrivers"] is False:
-                    safe_deploy_extraction_drivers(xmppobject, data)
             if sessionid in xmppobject.compteur_de_traitement:
                 del xmppobject.compteur_de_traitement[sessionid]
         # ______________________________________
@@ -1700,6 +1702,10 @@ def read_conf_remote_registeryagent(xmppobject):
         xmppobject.blacklisted_mac_addresses = ["00\\:00\\:00\\:00\\:00\\:00"]
         xmppobject.registeryagent_showinfomachine = []
         xmppobject.use_uuid = True
+
+        # Security to be able to disable the extract drivers mecanics
+        xmppobject.extractdrivers_activate = False
+        xmppobject.extractdrivers_package_uuid = ""
     else:
         Config = configparser.ConfigParser()
         Config.read(pathfileconf)
@@ -1794,8 +1800,18 @@ def read_conf_remote_registeryagent(xmppobject):
                 xmppobject.registeryagent_showinfomachine = []
                 logger.warning("showinfomachine default value is []")
 
+        xmppobject.extractdrivers_activate = False
+        xmppobject.extractdrivers_package_uuid = ""
+        if Config.has_section("extractdrivers"):
+            if Config.has_option("extractdrivers", "activate"):
+                xmppobject.extractdrivers_activate = Config.getboolean("extractdrivers", "activate")
+
+            if Config.has_option("extractdrivers", "package_uuid"):
+                xmppobject.extractdrivers_package_uuid = Config.get("extractdrivers", "package_uuid")
+
     logger.debug("Plugin list registered is %s" % xmppobject.pluginlistregistered)
     logger.debug("Plugin list unregistered is %s" % xmppobject.pluginlistunregistered)
+
 
 def safe_deploy_extraction_drivers(xmppobject, data):
     """Handle "safely" the extraction drivers deployment on the machine.
@@ -1803,6 +1819,10 @@ def safe_deploy_extraction_drivers(xmppobject, data):
             - xmppobject MUCBot object. To have a reference of the main object if needed
             - data dict To get data["from"] (te machine jid) and data["extractedDrivers"]
     """
+
+    # Already tested but if for some reason we are here and we shouldn't, we just leave
+    if xmppobject.extractdrivers_activate is False:
+        return
 
     # Get the xmpp machine
     machine = None
