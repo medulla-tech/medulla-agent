@@ -5309,6 +5309,21 @@ class offline_search_kb:
         return res
 
 
+def get_extracted_driver_key():
+    """This function check the presence of the key HKEY/SOFTWARE/Microsoft/Windows/CurrentVersion/Uninstall/Medulla Extract Drivers.
+    This function is called only on windows machines.
+    The key is added by the package Extract Drivers, only if the extraction step succeeded
+        - return True if the key is present
+        - return False if the key is absent
+    """
+
+    cmd = """REG QUERY "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Medulla Extract Drivers" """
+    result = simplecommand(encode_strconsole(cmd))
+    if result["code"] == 0:
+        return True
+    return False
+
+
 def download_file_windows_update(url, connecttimeout=30, outdirname=None):
     """
     Cette function download file dans base windows

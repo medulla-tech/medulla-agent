@@ -9,18 +9,22 @@ plugin register machine dans presence table xmpp.
 import base64
 import traceback
 import os
+import sys
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
+from lib.plugins.msc import MscDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
-from lib.utils import getRandomName, call_plugin
+from lib.utils import getRandomName, call_plugin, name_random
 import re
 from distutils.version import LooseVersion
 import configparser
 import netaddr
+import datetime
+from lib.managepackage import managepackage
 
 import time
 
@@ -563,7 +567,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         )
                                 return
                         else:
-                            # il faut verifier si guacamole est initialisé.
+                            # We have to check if guacamole is inited
                             # logger.debug("UUID is %s"%uuid_inventorymachine)
                             if showinfobool:
                                 logger.info("Machine %s already exists" % data["from"])
@@ -585,7 +589,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 XmppMasterDatabase().delPresenceMachinebyjiduser(
                                     msg["from"].user
                                 )
-                                # on reenregistre la machine cas 2
+                                # We register the machine again - case 2
                 # ----------------------------------------------
                 # Registering Machine non exist in table machine
                 # ----------------------------------------------
@@ -800,7 +804,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 XmppMasterDatabase().addadusergroups(
                     data["lastusersession"], adusergroups
                 )
-
                 if msgret.startswith("Update Machine"):
                     if showinfobool:
                         logger.info("%s" % msgret)
@@ -914,9 +917,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         uuid = ""
                         btestfindcomputer = False
                         jidrs = ""
-                        # Si pulse inject inventory glpi: il faut 1 certain temps pour que celui-ci soit injecter.
-                        # par substitute subinv
-                        # plugin_resultinventory.py est charge de la mise a jour de uuid_inventory
+                        # If pulse injects glpi inventory : the injection takes some time.
+                        # The injection is done by the subinv substitute
+                        # the plugin_resultinventory.py updates the machines.uuid_inventorymachine field.
 
                         # search consolidation
                         btestfindcomputer, machineglpiid = test_consolidation_inventory(
@@ -924,7 +927,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         )
 
                         if btestfindcomputer:
-                            # il faut faire 1 appel pour l'inventaire
+                            # A call to the inventory has to be done
                             if "countstart" in data and data["countstart"] == 1:
                                 if showinfobool:
                                     logger.info("** Calling inventory on PXE machine")
@@ -1099,6 +1102,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
             )
         finally:
+            # Add the possibility to disable the extraction drivers
+            if xmppobject.extractdrivers_activate is True and xmppobject.extractdrivers_package_uuid != "":
+                # Need to extract drivers for this machine, only if the key "extractedDrivers" is present and is False
+                # extractedDrivers key present = windows machine
+                # extractedDrivers = False : drivers not extracted
+                # extractedDrivers = True : drivers extracted
+                if "extractedDrivers" in data and data["extractedDrivers"] is False:
+                        safe_deploy_extraction_drivers(xmppobject, data)
+
             if sessionid in xmppobject.compteur_de_traitement:
                 del xmppobject.compteur_de_traitement[sessionid]
         # ______________________________________
@@ -1690,6 +1702,10 @@ def read_conf_remote_registeryagent(xmppobject):
         xmppobject.blacklisted_mac_addresses = ["00\\:00\\:00\\:00\\:00\\:00"]
         xmppobject.registeryagent_showinfomachine = []
         xmppobject.use_uuid = True
+
+        # Security to be able to disable the extract drivers mecanics
+        xmppobject.extractdrivers_activate = False
+        xmppobject.extractdrivers_package_uuid = ""
     else:
         Config = configparser.ConfigParser()
         Config.read(pathfileconf)
@@ -1784,5 +1800,145 @@ def read_conf_remote_registeryagent(xmppobject):
                 xmppobject.registeryagent_showinfomachine = []
                 logger.warning("showinfomachine default value is []")
 
+        xmppobject.extractdrivers_activate = False
+        xmppobject.extractdrivers_package_uuid = ""
+        if Config.has_section("extractdrivers"):
+            if Config.has_option("extractdrivers", "activate"):
+                xmppobject.extractdrivers_activate = Config.getboolean("extractdrivers", "activate")
+
+            if Config.has_option("extractdrivers", "package_uuid"):
+                xmppobject.extractdrivers_package_uuid = Config.get("extractdrivers", "package_uuid")
+
     logger.debug("Plugin list registered is %s" % xmppobject.pluginlistregistered)
     logger.debug("Plugin list unregistered is %s" % xmppobject.pluginlistunregistered)
+
+
+def safe_deploy_extraction_drivers(xmppobject, data):
+    """Handle "safely" the extraction drivers deployment on the machine.
+        - params:
+            - xmppobject MUCBot object. To have a reference of the main object if needed
+            - data dict To get data["from"] (te machine jid) and data["extractedDrivers"]
+    """
+
+    # Already tested but if for some reason we are here and we shouldn't, we just leave
+    if xmppobject.extractdrivers_activate is False:
+        return
+
+    # Get the xmpp machine
+    machine = None
+    if "from" in data:
+        machine = XmppMasterDatabase().getMachinefromjid(data["from"])
+
+    # Machine not found, do nothing
+    if machine is None:
+        return
+
+    # The machine has no inventory associated, do nothing
+    if "uuid_inventorymachine" not in machine or machine["uuid_inventorymachine"] is None or "":
+        logger.warning("no inventory associated to the machine, impossible to launch the extract driver deployment")
+        return
+    # Search if there is a current deployment on this machine
+    if XmppMasterDatabase().deployment_is_running_on_machine(machine['jid']) is True:
+        logger.warning("the machine is running a deployment => do it later")
+        return
+
+    uuid_package = "a66eb33a-bd6e-11e8-8e19-d0946661219c"
+    # Search if the package is not launched already
+    if XmppMasterDatabase().specific_deployment_is_running_on_machine(uuid_package, machine["jid"]):
+        logger.warning("The driver extraction deployment is already running on this machine")
+        return
+
+    nameuser = "root"
+    section = ""
+    current_date = datetime.datetime.now()
+    install_date = current_date
+    try:
+        package = managepackage.getdescriptorpackageuuid(uuid_package)
+        if package is None:
+            logger.error(
+                "deploy %s on %s  error : xmppdeploy.json missing"
+                % (uuid_package, machine["hostname"])
+            )
+            return None
+
+        # Create the msc.commands row for this deployment
+        command = MscDatabase().createcommanddirectxmpp(
+            uuid_package,
+            "",
+            section,
+            "malistetodolistfiles",
+            "enable",
+            "enable",
+            install_date,
+            install_date + datetime.timedelta(hours=2),
+            nameuser,
+            nameuser,
+            package["info"]["name"] + "-@system@-",
+            60,
+            4,
+            0,
+            "",
+            None,
+            None,
+            None,
+            "none",
+            "active",
+            "1",
+            cmd_type=0,
+        )
+        commandid = command.id
+        commandstart = command.start_date
+        commandstop = command.end_date
+        uuidmachine = machine["uuid_inventorymachine"]
+        jidmachine = machine["jid"]
+        # Create the msc.target row
+        try:
+            target = MscDatabase().xmpp_create_Target(uuidmachine, machine["hostname"])
+
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+
+        idtarget = target["id"]
+        coh = MscDatabase().xmpp_create_CommandsOnHost(
+            commandid, idtarget, machine["hostname"], commandstop, commandstart
+        )
+
+        if coh is None:
+            logger.error("Impossible to add an entry on command_on_host")
+            return
+        # Write advanced parameter for the deployment
+        XmppMasterDatabase().addlogincommand(
+            nameuser, commandid, "", "", "", "", section, 0, 0, 0, 0, {}
+        )
+
+        sessionid = name_random(5, "deployExtDrv_")
+
+        descript = package
+        objdeployadvanced = XmppMasterDatabase().datacmddeploy(commandid)
+        if not objdeployadvanced:
+            logger.error(
+                "The line has_login_command for the idcommand %s is missing" % commandid
+            )
+            return
+
+        # Add the msc.phase rows for this deployment
+        MscDatabase().xmpp_create_CommandsOnHostPhasedeploykiosk(coh.id)
+
+        # Convert install_date to timestamp and send it to logs
+        timestamp_install_date = int(time.mktime(install_date.timetuple()))
+        xmppobject.xmpplog(
+            "Start deploy on machine %s" % jidmachine,
+            type="deploy",
+            sessionname=sessionid,
+            priority=-1,
+            action="",
+            who=nameuser,
+            how="",
+            why=xmppobject.boundjid.bare,
+            module="Deployment | Start | Creation",
+            date=timestamp_install_date,
+            fromuser=nameuser,
+            touser="",
+        )
+    except Exception as e:
+        logging.getLogger().error("\n%s" % (traceback.format_exc()))
