@@ -15,7 +15,7 @@ KIOSKINTERFACEVERSION = "1.0.0"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -95,7 +95,7 @@ def updatekioskinterface(xmppobject, installed_version):
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
         filename = "kiosk-interface-%s.tar.gz" % KIOSKINTERFACEVERSION
-        dl_url = "http://%s/downloads/%s" % (xmppobject.config.Server, filename)
+        dl_url = "%s/downloads/%s" % (xmppobject.config.update_server, filename)
         logger.debug("PL-KIOSK Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
             dl_url, os.path.join(install_tempdir, filename)

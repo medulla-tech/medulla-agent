@@ -14,7 +14,7 @@ URBACKUP_VERSION = "2.5.25"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.6", "NAME": "updatebackupclient", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updatebackupclient", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -56,8 +56,8 @@ def updatebackupclient(xmppobject):
 
     if sys.platform.startswith("win"):
         filename = "UrBackup_Client_%s.exe" % URBACKUP_VERSION
-        dl_url = "http://%s/downloads/win/downloads/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/%s" % (
+            xmppobject.config.update_server,
             filename,
         )
         logger.debug("Downloading %s" % dl_url)

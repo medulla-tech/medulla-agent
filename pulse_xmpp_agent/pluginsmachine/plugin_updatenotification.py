@@ -17,11 +17,11 @@ from lib.agentconffile import (
     rotation_file,
 )
 
-NOTIFICATIONVERSION = "3.2.1"
+NOTIFICATIONVERSION = "5.4.0"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.7", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.8", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -141,7 +141,7 @@ def updatenotification(xmppobject):
 
         filenames = ["pulse2_update_notification.py", "medulla_logo.png"]
         for filename in filenames:
-            dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
+            dl_url = "%s/downloads/win/%s" % (xmppobject.config.update_server, filename)
             logger.debug("Downloading %s" % dl_url)
             result, txtmsg = utils.downloadfile(
                 dl_url, os.path.join(pulsedir_path, filename)

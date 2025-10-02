@@ -24,7 +24,7 @@ import netaddr
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.0", "NAME": "update_windows", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "2.1", "NAME": "update_windows", "TYPE": "substitute"}  # fmt: skip
 
 # function comment for next feature
 # this functions will be used later
@@ -64,9 +64,24 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 % (xmppobject.registeryagent_showinfomachine)
             )
 
-            xmppobject.list_produits = []
-            xmppobject.list_produits = XmppMasterDatabase().list_produits()
-
+            data['list_produits'] = []
+            data['list_produits'] = XmppMasterDatabase().list_produits()
+            data['display_version_usuel'] = ['1983',
+                                             '21H1',
+                                             '21H2',
+                                             '22H2',
+                                             '23H2',
+                                             '24H2',
+                                             '25H2',
+                                             '26H2',
+                                             '2003',
+                                             '2008',
+                                             '2012',
+                                             '2019']
+            # MSOS Microsoft Server Operating System
+            # WS Window Server
+            data['excluded_prefixes_os'] = ["Win10","Win11","MSOS", "WS"]
+            data['ARCHI_os'] = ["X64", "AMD64", "X86", "I386", "ARM64"]
         showinfobool = True
         traitement_update(xmppobject, action, sessionid, data, msg, ret)
 
@@ -173,12 +188,12 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         return os.path.isdir(chemin_package)
 
     logger.debug(
-        "Enabled products (xmppobject.list_produits):  %s" % xmppobject.list_produits
+        "Enabled products (list_produits):  %s" % data['list_produits']
     )
     # suivant type de windows exclude list produit
 
     list_table_product_select = list_products_on(
-        xmppobject, data, xmppobject.list_produits
+        xmppobject, data, data['list_produits']
     )
     logger.debug(
         "For machine %s only the following tables will be updated:  %s"
@@ -288,210 +303,88 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
             t["updateid"], t["tableproduct"]
         )
 
-    # if (
-    #     "system_info" in data
-    #     and "infobuild" in data["system_info"]
-    #     and "DisplayVersion" in data["system_info"]["infobuild"]
-    #     and "major_version" in data["system_info"]["infobuild"]
-    #     and "code_lang_iso" in data["system_info"]["infobuild"]
-    #     and "update_major" in data["system_info"]["infobuild"]
-    # ):
-    #     if str(data["system_info"]["infobuild"]["major_version"]) == "10":
-    #         if data["system_info"]["infobuild"]["DisplayVersion"] != "22H2":
-    #             (
-    #                 package_name_id,
-    #                 validity,
-    #             ) = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(
-    #                 data, validity_day=10
-    #             )
-    #             XmppMasterDatabase().del_all_Up_machine_windows(
-    #                 machine["id"], [package_name_id]
-    #             )
-    #             if validity:
-    #                 exist_package_base = PkgsDatabase().verifier_exist_uuid(
-    #                     package_name_id
-    #                 )
-    #                 exist_package_physique = verifier_exist_package(package_name_id)
-    #                 if not exist_package_base:
-    #                     logger.warning(
-    #                         "package update '%s' missing in base pkgs" % package_name_id
-    #                     )
-    #                 if not exist_package_physique:
-    #                     logger.warning(
-    #                         "package update '%s' missing in base file /var/lib/pulse2/packages/sharing/winupdate"
-    #                         % package_name_id
-    #                     )
-    #                 if exist_package_base and exist_package_physique:
-    #                     XmppMasterDatabase().setUp_machine_windows(
-    #                         machine["id"],
-    #                         package_name_id,
-    #                         kb=package_name_id[9:20],
-    #                         deployment_intervals=xmppobject.deployment_intervals,
-    #                         msrcseverity="major update",
-    #                     )
-
-    #         else:
-    #             # mise a jour de win 10 to win 11
-    #             package_name_id = package_name_major(data)
-    #             if package_name_id:
-    #                 # on nettoy si package release precedente restant
-    #                 XmppMasterDatabase().del_all_Up_machine_windows(
-    #                     machine["id"], [package_name_id]
-    #                 )
-    #                 data["system_info"]["infobuild"]["major_version"] = "11"
-    #             else:
-    #                 return
-    #     # mise à jour win 10 or 11 vers derniere win11
-    #     if str(data["system_info"]["infobuild"]["major_version"]) == "11":
-    #         if data["system_info"]["infobuild"]["DisplayVersion"] != "24H2":
-    #             (
-    #                 package_name_id,
-    #                 validity,
-    #             ) = XmppMasterDatabase().setUp_machine_windows_gray_list_major_version(
-    #                 data, validity_day=10
-    #             )
-    #             XmppMasterDatabase().del_all_Up_machine_windows(
-    #                 machine["id"], [package_name_id]
-    #             )
-    #             if validity:
-    #                 exist_package_base = PkgsDatabase().verifier_exist_uuid(
-    #                     package_name_id
-    #                 )
-    #                 exist_package_physique = verifier_exist_package(package_name_id)
-    #                 if not exist_package_base:
-    #                     logger.warning(
-    #                         "package update '%s' missing in base pkgs" % package_name_id
-    #                     )
-    #                 if not exist_package_physique:
-    #                     logger.warning(
-    #                         "package update '%s' missing in base file /var/lib/pulse2/packages/sharing/winupdate"
-    #                         % package_name_id
-    #                     )
-    #                 if exist_package_base and exist_package_physique:
-    #                     XmppMasterDatabase().setUp_machine_windows(
-    #                         machine["id"],
-    #                         package_name_id,
-    #                         kb=package_name_id[9:19],
-    #                         deployment_intervals=xmppobject.deployment_intervals,
-    #                         msrcseverity="major update",
-    #                     )
-    #     if int(data["system_info"]["infobuild"]["major_version"]) > 11:
-    #         logger.debug(
-    #             "update major  '%s' pas pris encore en compte%"
-    #             % (data["system_info"]["infobuild"]["DisplayVersion"])
-    #         )
-
-
 def list_products_on(xmppobject, data, list_produits):
     """
-    Filter the list of products based on the type of operating system.
+    Filter the list of products based on the type of operating system. and sur les
+        produit sur lesquel il faut prendre en compte.
 
     Args:
         xmppobject (object): The XMPP object used in the function.
         data (dict): A dictionary containing information about the operating system.
-        list_produits (list): A list of products to filter.
+        list_produits (list): A list of products (dicts with name_procedure).
 
     Returns:
         list: A filtered list of products.
 
-    Important Notes:
-        - Adding new OS tables may require modification of this function.
+    Logic:
+        - Removes all OS-specific packages (Win10, Win11, MSOS).
+        - Keeps all other products (Office, VStudio, etc.).
+        - Adds only the correct OS package for the current machine.
     """
-    logger.debug(
-        "exclud table pas du TYPE =   %s "
-        % data["system_info"]["platform_info"]["type"]
-    )
-    listpack = []
+    # On commence par recopier tous les produits SAUF ceux liés aux OS
 
-    def del_element(x):
-        if x in listpack:
-            listpack.remove(x)
+    # Construction de la liste des procédures filtrées :
+    # - On exclut les procédures dont le nom commence par "up_packages_<OS>"
+    basepack = [
+        p["name_procedure"]
+        for p in list_produits
+        # Vérification que le nom ne commence par aucun des préfixes exclus
+        if not any(
+            p["name_procedure"].startswith(f"up_packages_{os_prefix}")
+            for os_prefix in data['excluded_prefixes_os']
+        )
+    ]
+    # En cas d'erreur, on retourne la liste des table mise à jour sous forme de dictionnaires
+    try:
+        system_info = data.get("system_info")
+        platform_type = system_info["platform_info"]["type"]
+        # Récupération de la valeur de machine_arch
+        machine_arch = system_info["platform_info"]["machine"]
+        # Vérification et transformation en majuscules
+        if machine_arch:
+            machine_arch = machine_arch.upper()
+        display_version = system_info["infobuild"].get("DisplayVersion")
+    except KeyError as e:
+        logger.error("Clé manquante dans data: %s", e)
+        prds = [{"name_procedure": element} for element in basepack if element]
+        return prds
+    except Exception as e:
+        logger.error("Erreur inattendue lors de la lecture des infos système: %s", e)
+        prds = [{"name_procedure": element} for element in basepack if element]
+        return prds
 
-    for t in list_produits:
-        listpack.append(t["name_procedure"])
-    logger.debug("listin fonction  selectionne package  %s  " % list_produits)
-    if data["system_info"]["platform_info"]["machine"] == "x64":
-        if data["system_info"]["platform_info"]["type"] == "Windows 10":
-            # deselectionne les windows 11
-            del_element("up_packages_Win11_X64")
-            del_element("up_packages_Win11_X64_21H2")
-            del_element("up_packages_Win11_X64_22H2")
-            del_element("up_packages_Win11_X64_23H2")
-            del_element("up_packages_Win11_X64_24H2")
-            if data["system_info"]["infobuild"]["DisplayVersion"] and data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
-                del_element("up_packages_Win10_X64_1903")
-                del_element("up_packages_Win10_X64_21H1")
-                del_element("up_packages_Win10_X64_22H2")
-            elif data["system_info"]["infobuild"]["DisplayVersion"] and data["system_info"]["infobuild"]["DisplayVersion"] == "21H1":
-                del_element("up_packages_Win10_X64_21H2")
-                del_element("up_packages_Win10_X64_1903")
-                del_element("up_packages_Win10_X64_22H2")
-            elif data["system_info"]["infobuild"]["DisplayVersion"] and data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
-                del_element("up_packages_Win10_X64_1903")
-                del_element("up_packages_Win10_X64_21H1")
-                del_element("up_packages_Win10_X64_21H2")
-            else:
-                del_element("up_packages_Win10_X64_21H1")
-                del_element("up_packages_Win10_X64_22H2")
-                del_element("up_packages_Win10_X64_21H2")
-        elif "windows 11" in data["system_info"]["platform_info"]["type"]:
-            # deselectionne les windows 10
-            del_element("up_packages_Win10_X64_21H1")
-            del_element("up_packages_Win10_X64_21H2")
-            del_element("up_packages_Win10_X64_1903")
-            del_element("up_packages_Win10_X64_22H2")
-            if data["system_info"]["infobuild"]["DisplayVersion"] == "21H2":
-                del_element("up_packages_Win11_X64_22H2")
-                del_element("up_packages_Win11_X64_23H2")
-                del_element("up_packages_Win11_X64_24H2")
-            elif data["system_info"]["infobuild"]["DisplayVersion"] == "22H2":
-                del_element("up_packages_Win11_X64_21H2")
-                del_element("up_packages_Win11_X64_23H2")
-                del_element("up_packages_Win11_X64_24H2")
-            elif data["system_info"]["infobuild"]["DisplayVersion"] == "23H2":
-                del_element("up_packages_Win11_X64_21H2")
-                del_element("up_packages_Win11_X64_22H2")
-                del_element("up_packages_Win11_X64_24H2")
-            elif data["system_info"]["infobuild"]["DisplayVersion"] == "24H2":
-                del_element("up_packages_Win11_X64_21H2")
-                del_element("up_packages_Win11_X64_22H2")
-                del_element("up_packages_Win11_X64_23H2")
-            else:
-                # on conserve seulement la window 11 generique up_packages_Win11_X64
-                del_element("up_packages_Win11_X64_21H2")
-                del_element("up_packages_Win11_X64_22H2")
-                del_element("up_packages_Win11_X64_23H2")
-                del_element("up_packages_Win11_X64_24H2")
-        else:
-            del_element("up_packages_Win10_X64_21H1")
-            del_element("up_packages_Win10_X64_21H2")
-            del_element("up_packages_Win10_X64_1903")
-            del_element("up_packages_Win10_X64_22H2")
-            del_element("up_packages_Win11_X64_21H2")
-            del_element("up_packages_Win11_X64_22H2")
-            del_element("up_packages_Win11_X64_23H2")
+    # Normalisation du nom d'OS
+    os_name = None
+    if "Windows 10" in platform_type:
+        os_name = "Win10"
+    elif "Windows 11" in platform_type:
+        os_name = "Win11"
+    elif "MSOS" in platform_type:
+        os_name = "MSOS"
+    elif "WS" in platform_type:
+        os_name = "WS"
+
+    # Construction du package attendu
+    selected_os_pkg = None
+    if os_name:
+        if display_version in data['display_version_usuel']:# exemple : up_packages_Win10_X64_21H2
+            selected_os_pkg = f"up_packages_{os_name}_{machine_arch}_{display_version}"
+        else:  # fallback générique (ex: up_packages_Win11_X64)
+            logger.warning( f"display_version '{display_version}' inconnue. "
+                            f"Valeur : {display_version}")
+            selected_os_pkg = f"up_packages_{os_name}_{machine_arch}" # (ex cas: up_packages_Win11_X64)
+
+    # Vérifie si ce package existe dans la table des produits
+    if selected_os_pkg and any(p["name_procedure"] == selected_os_pkg for p in list_produits):
+        # on ajoute les mise a jour a prendre en compte pour cette machine
+        basepack.append(selected_os_pkg)
+        logger.debug("Selected OS package: %s", selected_os_pkg)
     else:
-        # we don't look at x64 updates
-        liste_a_supprimer = [
-            "up_packages_Win10_X64_21H1",
-            "up_packages_Win10_X64_21H2",
-            "up_packages_Win10_X64_1903",
-            "up_packages_Win11_X64",
-            "up_packages_Win11_X64_21H2",
-            "up_packages_Win11_X64_22H2",
-            "up_packages_Win11_X64_23H2",
-            "up_packages_Win11_X64_24H2",
-            "up_packages_Win_Malicious_X64",
-            "up_packages_office_2003_64bit",
-            "up_packages_office_2007_64bit",
-            "up_packages_office_2010_64bit",
-            "up_packages_office_2013_64bit",
-            "up_packages_office_2016_64bit",
-        ]
-        listpack = [element for element in listpack if element not in liste_a_supprimer]
-    prds = [{"name_procedure": element} for element in listpack if element != ""]
-    return prds
+        logger.debug("No matching OS package found for %s", selected_os_pkg)
 
+    # Transformation finale en liste de dicts
+    prds = [{"name_procedure": element} for element in basepack if element]
+    return prds
 
 def read_conf_remote_update_windows(xmppobject):
     """

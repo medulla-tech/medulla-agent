@@ -1,13 +1,11 @@
 [Unit]
 Description=Pulse2 XMPP Agent ( Machine )
-After=samba.service slapd.service ejabberd.service
-Requires=ejabberd.service
 
 [Service]
 #PIDFile=/var/run/machine.pid
 #User=pulse
 #Group=pulse
-Type=exec
+Type=simple
 ExecStart=PATH/pulse_xmpp_agent/launcher.py -t machine
 Restart=always
 RestartSec=1

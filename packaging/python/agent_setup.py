@@ -15,7 +15,7 @@ for scheme in list(INSTALL_SCHEMES.values()):
 
 setup(
     name="pulse_xmpp_agent",
-    version="3.2.1",
+    version="5.4.0",
     author="SIVEO",
     author_email="contact@medulla-tech.io",
     description="XMPP Agent for Medulla",
@@ -56,7 +56,7 @@ setup(
             "pypiwin32 >= 223",
             "comtypes >= 1.1.14",
             "wmi >= 1.5.1",
-            "netifaces2",
+            "netifaces_plus",
             "pycryptodome >= 3.15.0",
         ]
         if "win" in sys.platform

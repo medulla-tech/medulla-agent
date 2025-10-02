@@ -30,7 +30,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="3.2.1"
+AGENT_VERSION="5.4.0"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 CERTFILE="/var/lib/pulse2/clients/medulla-ca-chain.cert.pem"
@@ -119,6 +119,9 @@ check_arguments() {
                 shift
                 ;;
             --chat-domain*)
+                shift
+                ;;
+            --updateserver*)
                 shift
                 ;;
 	    *)
@@ -333,6 +336,9 @@ install_repos() {
 }
 
 build_deb() {
+    # Install dependencies for building deb package
+    apt -y install python3-setuptools
+    # Generate deb package
 	pushd /var/lib/pulse2/clients/lin/deb/pulse-agent-linux/
 		dpkg-buildpackage
         cd ..

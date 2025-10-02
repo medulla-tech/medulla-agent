@@ -4,7 +4,7 @@
 DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
 DEB_NOEPOCH_VERSION := $(shell echo $(DEB_VERSION) | cut -d: -f2-)
 DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//')
-VERSION_XMPP_AGENT=3.2.1
+VERSION_XMPP_AGENT=5.4.0
 VERSION_KIOSK_INTERFACE=1.0.0
 FILETREE_VERSION=0.1
 BRANCH=master

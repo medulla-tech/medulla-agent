@@ -38,7 +38,7 @@ FUSIONVERSION = "2.6"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.7", "NAME": "updatefusion", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.8", "NAME": "updatefusion", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -142,8 +142,8 @@ def updatefusion(xmppobject):
             architecture,
             FUSIONVERSION,
         )
-        dl_url = "http://%s/downloads/win/downloads/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/%s" % (
+            xmppobject.config.update_server,
             filename,
         )
         logger.debug("Downloading %s" % dl_url)

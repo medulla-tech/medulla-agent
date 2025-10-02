@@ -1,1 +1,13 @@
 .directory
+agentversion
+pulse_xmpp_agent/INFOSTMP/
+pulse_xmpp_agent/cycle/
+pulse_xmpp_agent/lib/INFOSTMP/
+**/__pycache__/
+*.pyc
+*.pyo
+pulse_xmpp_master_substitute/INFOSTMP/
+pulse_xmpp_master_substitute/lib/INFOSTMP/
+
+
+

@@ -23,7 +23,7 @@ if sys.platform.startswith("win"):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 
 class Compatibilite:
@@ -228,8 +228,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("PL-MEDULLAINFO call %s from %s" % (plugin, message["from"]))
     logger.debug("PL-MEDULLAINFO ###################################################")
     try:
-        update_medulla_info_update_notification(xmppobject)
-        execute_medulla_info_update()
+        if sys.platform.startswith("win"):
+            update_medulla_info_update_notification(xmppobject)
+            execute_medulla_info_update()
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
 
@@ -311,7 +312,7 @@ def update_medulla_info_update_notification(xmppobject):
             pathfilename = os.path.join(script_dir, filename)
             if not os.path.exists(pathfilename):
                 try:
-                    dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
+                    dl_url = "%s/downloads/win/%s" % (xmppobject.config.update_server, filename)
                     logger.debug("PL-MEDULLAINFO install %s from %s" % (filename, dl_url))
                     result, txtmsg = utils.downloadfile(dl_url, pathfilename).downloadurl()
                     if result:

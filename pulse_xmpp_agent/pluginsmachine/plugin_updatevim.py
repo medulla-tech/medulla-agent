@@ -43,7 +43,7 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatevim", "TYPE": "machine"}
+plugin = {"VERSION": "1.3", "NAME": "updatevim", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -152,8 +152,8 @@ def updateapp(xmppobject, installed_version):
     if sys.platform.startswith("win"):
         medulla_dir_path = os.path.join(medullaPath(), "bin")
         filename = "vim.exe"
-        dl_url = "http://%s/downloads/win/downloads/%s" % (
-            xmppobject.config.Server,
+        dl_url = "%s/downloads/win/downloads/%s" % (
+            xmppobject.config.update_server,
             filename,
         )
         logger.debug("PL-VIM Downloading %s" % dl_url)

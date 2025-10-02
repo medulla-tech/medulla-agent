@@ -40,7 +40,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="3.2.1"
+AGENT_VERSION="5.4.0"
 KIOSK_VERSION="1.0.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
@@ -105,7 +105,7 @@ more_itertools-9.1.0-py3-none-any.whl \
 pyparsing-3.0.9-py3-none-any.whl \
 urllib3-1.26.15-py2.py3-none-any.whl \
 charset_normalizer-3.1.0-cp311-cp311-win_amd64.whl \
-netifaces2-0.0.22-cp37-abi3-win_amd64.whl \
+netifaces_plus-0.12.4-cp311-cp311-win_amd64.whl \
 zc.lockfile-3.0.post1-py3-none-any.whl \
 pypiwin32-223-py3-none-any.whl \
 PyYAML-6.0.1-cp311-cp311-win_amd64.whl \
@@ -227,6 +227,9 @@ check_arguments() {
                 shift
                 ;;
             --chat-domain*)
+                shift
+                ;;
+            --updateserver*)
                 shift
                 ;;
             *)

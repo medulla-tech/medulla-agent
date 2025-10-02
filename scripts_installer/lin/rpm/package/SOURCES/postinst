@@ -24,6 +24,9 @@ fi
 
 sed -i "/s/^#?Port .*$/Port ${SSH_PORT}/" /etc/ssh/sshd_config
 
+echo -e "PubkeyAcceptedAlgorithms +ssh-rsa\nHostKeyAlgorithms +ssh-rsa" > /etc/ssh/sshd_config.d/medulla.conf
+systemctl restart sshd
+
 
 fusion_dir="/etc/fusioninventory"
 fusion_cfg="$fusion_dir/agent.cfg"

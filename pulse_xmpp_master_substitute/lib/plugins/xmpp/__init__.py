@@ -7075,7 +7075,7 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoloadbalancerforcluster(self, session):
         sql = """
-            SELECT 
+            SELECT
                 COUNT(*) - 1 AS nb, `machines`.`groupdeploy`
             FROM
                 xmppmaster.machines
@@ -11278,6 +11278,31 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         query = query.count()
 
         return bool(query is not None and query != 0)
+
+
+    @DatabaseHelper._sessionm
+    def specific_deployment_is_running_on_machine(self, session, package_uuid:str, jid:str)->bool:
+        """Check if the specific package is not running on a specific machine
+        - params:
+            - self : XmppMasterDatabase object - Reference to the current object
+            - session : sqlalchemy session - added by the decorator @DatabaseHelper._sessionm
+            - package_uuid : str - the package's uuid to check
+            - jid : str - The machine's jid to check
+        - return bool - True if the deployement of the package is running on the machine
+        - return bool - False if the package is not currently deployed on the machine"""
+
+        sql = """select
+    count(d.id)
+from deploy d
+    join msc.commands c on c.id = d.command
+where d.jidmachine='%s' and c.package_id = '%s'
+    and
+    d.state not regexp ("(SUCCESS)|(ABORT)|(ERROR)")"""%(jid, package_uuid)
+
+        query = session.execute(sql).one()
+        count = query[0]
+
+        return bool(count is not None and count != 0)
 
     @DatabaseHelper._sessionm
     def delete_all_done_updates(self, session):
