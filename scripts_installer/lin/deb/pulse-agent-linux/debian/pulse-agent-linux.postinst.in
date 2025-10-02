@@ -35,6 +35,9 @@ chmod 600 /home/pulseuser/.ssh/authorized_keys
 
 sed -i "s/^#?Port .*$/Port ${SSH_PORT}/" /etc/ssh/sshd_config
 
+echo -e "PubkeyAcceptedAlgorithms +ssh-rsa\nHostKeyAlgorithms +ssh-rsa" > /etc/ssh/sshd_config.d/medulla.conf
+systemctl restart sshd
+
 # Open firewall port 22 - TODO
 # if shorewall
 # echo "ACCEPT net fw tcp 22" >> /etc/shorewall/rules
