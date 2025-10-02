@@ -97,13 +97,12 @@ mkdir -p /usr/lib/systemd/system/
 cat <<EOF > /usr/lib/systemd/system/pulse-xmpp-agent-machine.service
 [Unit]
 Description=Pulse2 XMPP Agent ( Machine )
-After=samba.service slapd.service
 
 [Service]
 #PIDFile=/var/run/launcher.pid
 #User=pulse
 #Group=pulse
-Type=forking
+Type=simple
 ExecStart=$PYTHON_DIR/pulse_xmpp_agent/launcher.py -t machine
 Restart=always
 RestartSec=1
