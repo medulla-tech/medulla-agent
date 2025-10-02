@@ -72,6 +72,9 @@ systemctl enable xrdp
 usermod -aG ssl-cert xrdp
 chown root:ssl-cert /etc/xrdp/*.pem
 
+# Configure xrdp to use rdp security layer
+sed -i "s/^security_layer=.*$/security_layer=rdp/" /etc/xrdp/xrdp.ini
+
 # Start the service
 systemctl restart xrdp
 
