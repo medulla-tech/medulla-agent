@@ -267,44 +267,10 @@ def get_python_exec():
     """
     return sys.executable
 
-<<<<<<< HEAD
 
 def os_version(brelease_windows=1, bbuild_windows=0):
     """
     Retourne le nom complet du système d'exploitation avec sa version détaillée.
-=======
-def os_version():
-    """
-    Retrieve a human-readable OS version for Windows, Linux, and macOS
-    """
-    if sys.platform.startswith("win"):
-        try:
-            import pythoncom
-            import wmi
-            pythoncom.CoInitialize()
-            c = wmi.WMI()
-            for oses in c.Win32_OperatingSystem():
-                return oses.Caption.strip()
-        except ImportError:
-            return f"Windows (version: {platform.version()})"
-    elif sys.platform.startswith("darwin"):
-        mac_version, _, _ = platform.mac_ver()
-        return f"macOS {mac_version}"
-    elif sys.platform.startswith("linux"):
-        try:
-            # Try to read /etc/os-release (common on modern Linux distros)
-            with open("/etc/os-release", "r") as f:
-                info = dict(
-                    line.strip().split("=", 1) for line in f if "=" in line
-                )
-                name = info.get("PRETTY_NAME", "")
-                return name.strip('"')
-        except Exception:
-            return f"Linux (version: {platform.release()})"
-    else:
-        # Unknown OS
-        return platform.platform()
->>>>>>> 2444c76e ([os version] fixe la renvoye le system d'exploitation)
 
     Paramètres :
         brelease_windows (int) : Inclut l'identifiant de version Windows (ex : 21H2).
