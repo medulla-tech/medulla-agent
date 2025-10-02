@@ -1,5 +1,14 @@
 # Change Log
 
+## [5.4.0](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.0) (2025-10-02)
+- [FEATURE] Allow downloading of agent updates from specific url as well as relay
+- [FEATURE] Support for inventory tag in agent generator
+- [FEATURE] Improve extract drivers execution
+- [BUGFIX]  Replace netifaces2 with netifaces_plus to improve detection of network interfaces
+- [BUGFIX]  Fix generation and installation of agent for linux clients
+- [BUGFIX]  Fix RDP guacamole connection for linux clients
+- [BUGFIX]  Fix SSH guacamole connection for linux clients
+
 ## [v3.2.1](https://github.com/medulla-tech/medulla-agent/tree/v3.2.1) (unreleased)
 - [FEATURE]  Update to Python 3.11.9
 - [FEATURE]  Update to GLPI Agent 1.12
