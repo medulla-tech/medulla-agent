@@ -76,11 +76,11 @@ install_agent() {
         ;;
         debian)
             if [[ ${VERSION} == "12" ]]; then
-                apt install -y python3-setuptools python3-pycryptodome python3-wheel python3-croniter python3-lxml python3-netifaces python3-psutil python3-pycurl python3-slixmpp python3-pip pulse-agent-linux python3-cherrypy3 python3-lmdb python3-posix-ipc python3-xmltodict python3-typing-extensions python3-netifaces python3-netaddr sysstat python3-pillow python3-packaging python3-pyyaml
+                apt install -y python3-setuptools python3-pycryptodome python3-wheel python3-croniter python3-lxml python3-netifaces python3-psutil python3-pycurl python3-slixmpp python3-pip pulse-agent-linux python3-cherrypy3 python3-lmdb python3-posix-ipc python3-xmltodict python3-typing-extensions python3-netifaces python3-netaddr sysstat python3-pil python3-packaging python3-yaml
             fi
         ;;
         ubuntu)
-            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-pip pulse-agent-linux python-cherrypy3 python3-netifaces python3-netaddr python3-pillow python3-packaging python3-pyyaml
+            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-pip pulse-agent-linux python-cherrypy3 python3-netifaces python3-netaddr python3-pil python3-packaging python3-yaml
 
         ;;
         esac

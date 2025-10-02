@@ -336,6 +336,9 @@ install_repos() {
 }
 
 build_deb() {
+    # Install dependencies for building deb package
+    apt -y install python3-setuptools
+    # Generate deb package
 	pushd /var/lib/pulse2/clients/lin/deb/pulse-agent-linux/
 		dpkg-buildpackage
         cd ..
