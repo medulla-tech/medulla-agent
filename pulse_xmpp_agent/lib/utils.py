@@ -270,16 +270,69 @@ def get_python_exec():
 
 def os_version():
     """
-    Retrieve the name of the real Windows version
+    Retourne le nom complet du système avec la version détaillée :
+    - Windows : 'Microsoft Windows 10 Pro (21H2 - build 19044)'
+    - Linux : 'Ubuntu 22.04.3 LTS'
+    - macOS : 'macOS Sonoma 14.0'
     """
-    os_version_name = platform.platform()
-    if sys.platform.startswith("win"):
-        pythoncom.CoInitialize()
-        c = wmi.WMI()
-        for oses in c.Win32_OperatingSystem():
-            os_version_name = oses.Caption
-    return os_version_name
+    try:
+        # ----- WINDOWS -----
+        if sys.platform.startswith("win"):
+            import pythoncom
+            import wmi
+            pythoncom.CoInitialize()
+            c = wmi.WMI()
+            for os_info in c.Win32_OperatingSystem():
+                name = os_info.Caption.strip()
+                version = os_info.Version
+                build = os_info.BuildNumber
+                release_id = None
 
+                # Lecture du code type "21H2" via la base de registre
+                try:
+                    import winreg
+                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                         r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+                    release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
+                    winreg.CloseKey(key)
+                except Exception:
+                    pass
+
+                if release_id:
+                    return f"{name} ({release_id} - build {build})"
+                else:
+                    return f"{name} (build {build})"
+
+        # ----- LINUX -----
+        elif sys.platform.startswith("linux"):
+            os_release = "/etc/os-release"
+            if os.path.exists(os_release):
+                with open(os_release, "r") as f:
+                    info = {}
+                    for line in f:
+                        if "=" in line:
+                            k, v = line.strip().split("=", 1)
+                            info[k] = v.strip('"')
+                    name = info.get("PRETTY_NAME") or info.get("NAME", "Linux")
+                    return name
+            else:
+                return platform.platform()
+
+        # ----- MACOS -----
+        elif sys.platform == "darwin":
+            try:
+                version, _, _ = platform.mac_ver()
+                name = os.popen("sw_vers -productName").read().strip()
+                return f"{name} {version}"
+            except Exception:
+                return "macOS (version inconnue)"
+
+        # ----- AUTRES -----
+        else:
+            return platform.platform()
+
+    except Exception as e:
+        return f"Erreur détection OS : {e}"
 
 # debug decorator
 
