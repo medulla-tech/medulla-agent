@@ -268,12 +268,27 @@ def get_python_exec():
     return sys.executable
 
 
-def os_version():
+def os_version(brelease_windows=1, bbuild_windows=0):
     """
-    Retourne le nom complet du système avec la version détaillée :
-    - Windows : 'Microsoft Windows 10 Pro (21H2 - build 19044)'
-    - Linux : 'Ubuntu 22.04.3 LTS'
-    - macOS : 'macOS Sonoma 14.0'
+    Retourne le nom complet du système d'exploitation avec sa version détaillée.
+
+    Paramètres :
+        brelease_windows (int) : Inclut l'identifiant de version Windows (ex : 21H2).
+                                 1 = activé, 0 = désactivé.
+        bbuild_windows (int)   : Inclut le numéro de build Windows.
+                                 1 = activé, 0 = désactivé.
+
+    Retour :
+        str : Description complète du système d’exploitation.
+
+    Exemple :
+        >>> print(os_version())
+        Microsoft Windows 10 Pro (21H2 - build 19044)
+
+    Notes :
+        - Sous Windows, utilise WMI et la base de registre.
+        - Sous Linux, lit les infos depuis /etc/os-release.
+        - Sous macOS, utilise `sw_vers` et `platform.mac_ver()`.
     """
     try:
         # ----- WINDOWS -----
@@ -282,6 +297,7 @@ def os_version():
             import wmi
             pythoncom.CoInitialize()
             c = wmi.WMI()
+
             for os_info in c.Win32_OperatingSystem():
                 name = os_info.Caption.strip()
                 version = os_info.Version
@@ -289,19 +305,29 @@ def os_version():
                 release_id = None
 
                 # Lecture du code type "21H2" via la base de registre
-                try:
-                    import winreg
-                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                         r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
-                    release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
-                    winreg.CloseKey(key)
-                except Exception:
-                    pass
+                if brelease_windows:
+                    try:
+                        import winreg
+                        key = winreg.OpenKey(
+                            winreg.HKEY_LOCAL_MACHINE,
+                            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                        )
+                        release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
+                        winreg.CloseKey(key)
+                    except Exception:
+                        pass
 
+                # Construction de la chaîne finale
+                parts = []
                 if release_id:
-                    return f"{name} ({release_id} - build {build})"
+                    parts.append(release_id)
+                if bbuild_windows:
+                    parts.append(f"build {build}")
+
+                if parts:
+                    return f"{name} ({' - '.join(parts)})"
                 else:
-                    return f"{name} (build {build})"
+                    return name
 
         # ----- LINUX -----
         elif sys.platform.startswith("linux"):
@@ -331,8 +357,9 @@ def os_version():
         else:
             return platform.platform()
 
-    except Exception as e:
-        return f"Erreur détection OS : {e}"
+    except Exception:
+        # En cas d'erreur inattendue, on renvoie une info générique fiable
+        return platform.platform()
 
 # debug decorator
 
