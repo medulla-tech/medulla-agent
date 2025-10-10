@@ -1,5 +1,9 @@
 # Change Log
 
+## [5.4.1](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.1) (2025-10-10)
+- [FEATURE] Improve detection of Linux OS and distribution
+- [FEATURE] Improve detection of Windows version
+
 ## [5.4.0](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.0) (2025-10-02)
 - [FEATURE] Allow downloading of agent updates from specific url as well as relay
 - [FEATURE] Support for inventory tag in agent generator

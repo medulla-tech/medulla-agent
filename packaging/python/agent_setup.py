@@ -15,7 +15,7 @@ for scheme in list(INSTALL_SCHEMES.values()):
 
 setup(
     name="pulse_xmpp_agent",
-    version="5.4.0",
+    version="5.4.1",
     author="SIVEO",
     author_email="contact@medulla-tech.io",
     description="XMPP Agent for Medulla",
