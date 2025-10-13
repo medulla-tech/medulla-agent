@@ -18,17 +18,31 @@ from sqlalchemy import (
     distinct,
     not_,
     delete,
+    text,
+    Boolean
 )
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.sql.expression import literal
+from sqlalchemy import TypeDecorator
+from sqlalchemy.orm import scoped_session
+
+import functools
+
+
+try:
+    from sqlalchemy.orm.util import _entity_descriptor
+except ImportError:
+    # normal
+    from sqlalchemy.orm.base import _entity_descriptor
+
+
 from datetime import date, datetime, timedelta
 import pprint
 
-from sqlalchemy import Boolean
-from sqlalchemy import TypeDecorator
+
 
 # PULSE2 modules
 from lib.plugins.xmpp.schema import (
@@ -80,6 +94,7 @@ from lib.plugins.xmpp.schema import (
     Up_action_update_packages,
     Up_history,
     Users_adgroups,
+    Up_auto_approve_rules,
 )
 
 # Imported last
@@ -108,18 +123,14 @@ from lib.utils import (
     simplecommandstr,
 )
 import subprocess
-import functools
+
 import base64
 import zlib
 from netaddr import *
 
-try:
-    from sqlalchemy.orm.util import _entity_descriptor
-except ImportError:
-    from sqlalchemy.orm.base import _entity_descriptor
-
-from sqlalchemy.orm import scoped_session
 import random
+
+
 
 if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
@@ -127,6 +138,8 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
+# sql debug mode
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -183,9 +196,31 @@ class LiberalBoolean(TypeDecorator):
 
 
 class DatabaseHelper(Singleton):
-    # Session decorator to create and close session automatically
+    """
+    Classe utilitaire pour la gestion des connexions et sessions SQLAlchemy.
+    Implémente le pattern Singleton pour garantir une seule instance partagée
+    dans l'application.
+    """
+
     @classmethod
     def _sessionxmpp(self, func):
+        """
+        Décorateur de méthode pour gérer automatiquement la création et la fermeture
+        d'une session SQLAlchemy simple (non thread-safe) liée à `engine_xmppmmaster_base`.
+
+        Ce décorateur vérifie si `self.sessionxmpp` existe :
+        - Si non, il crée une nouvelle session et marque qu'elle a été créée.
+        - Il exécute ensuite la fonction décorée en lui passant la session comme argument.
+        - Enfin, si la session a été créée par ce décorateur, elle est fermée proprement.
+
+        ⚠️ À utiliser uniquement dans des contextes **monothread**.
+
+        Args:
+            func (Callable): La fonction métier à exécuter avec la session.
+
+        Returns:
+            Callable: Une fonction enveloppée gérant automatiquement la session.
+        """
         @functools.wraps(func)
         def __session(self, *args, **kw):
             created = False
@@ -200,9 +235,24 @@ class DatabaseHelper(Singleton):
 
         return __session
 
-    # Session decorator to create and close session automatically
     @classmethod
     def _sessionm(self, func):
+        """
+        Décorateur de méthode pour gérer automatiquement la création et la fermeture
+        d'une session SQLAlchemy thread-safe via `scoped_session`.
+
+        Ce décorateur crée un `scoped_session` à partir de `engine_xmppmmaster_base`,
+        exécute la fonction décorée, puis supprime la session du contexte du thread
+        afin d’éviter les fuites de connexion.
+
+        ✅ À utiliser dans des contextes **multithread** ou asynchrones.
+
+        Args:
+            func (Callable): La fonction métier à exécuter avec la session thread-safe.
+
+        Returns:
+            Callable: Une fonction enveloppée gérant automatiquement la session.
+        """
         @functools.wraps(func)
         def __sessionm(self, *args, **kw):
             session_factory = sessionmaker(bind=self.engine_xmppmmaster_base)
@@ -1324,7 +1374,7 @@ class XmppMasterDatabase(DatabaseHelper):
             try:
                 # creation si cette entite n'existe pas.
                 new_glpi_entity = Glpi_entity()
-                new_glpi_entity.complete_name = complete_name
+                new_.complete_name = complete_name
                 new_glpi_entity.name = name
                 new_glpi_entity.glpi_id = glpi_id
                 session.add(new_glpi_entity)
@@ -7075,7 +7125,7 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoloadbalancerforcluster(self, session):
         sql = """
-            SELECT
+            SELECT 
                 COUNT(*) - 1 AS nb, `machines`.`groupdeploy`
             FROM
                 xmppmaster.machines
@@ -10281,40 +10331,151 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             return None
 
     @DatabaseHelper._sessionm
-    def test_black_list(self, session, jid):
+    def test_black_list(self, session, jid, entityid):
         """
-        This function renvoi la liste des tables produits a prendre en compte pour les updates.
+        Récupère la liste des mises à jour (update IDs ou KBs) à exclure pour un utilisateur donné,
+        en fonction des règles définies dans la table `up_black_list`.
+
+        La sélection s'effectue uniquement sur :
+            - les règles actives (`enable_rule = 1`)
+            - l'entité (`entityid`)
+            - un filtrage REGEXP sur le JID utilisateur
+
+        Args:
+            session: Objet SQLAlchemy permettant l'exécution des requêtes.
+            jid (str): JID complet de l'utilisateur (ex: "user.machine@domain").
+            entityid (int): Identifiant de l'entité.
+
+        Returns:
+            dict: Un dictionnaire contenant deux clés :
+                - "update_id": liste des identifiants d'updates (type_rule = 'id').
+                - "kb": liste des KBs à exclure (type_rule = 'kb').
         """
-        ret = {}
-        up = []
-        kb = []
+        ret = {"update_id": [], "kb": []}
         try:
+            # Extraire le "user" à partir du JID (on ignore le domaine et la dernière partie séparée par un ".")
             user = "".join(str(jid).split("@")[0].split(".")[:-1])
-            sql = (
-                """SELECT DISTINCT
-                    updateid_or_kb, type_rule
-                FROM
-                    xmppmaster.up_black_list
-                WHERE
-                    enable_rule = 1
-                        AND "%s" REGEXP userjid_regexp;"""
-                % user
-            )
-            req = session.execute(sql)
-            session.commit()
-            session.flush()
-            if req:
-                for x in req:
-                    if x[1].lower() == "kb":
-                        kb.append(x[0])
-                    elif x[1].lower() == "id":
-                        up.append(x[0])
-            ret = {"update_id": up, "kb": kb}
+
+            # Construire la requête SQL avec entityid
+            sql = """
+                SELECT DISTINCT updateid_or_kb, type_rule
+                FROM xmppmaster.up_black_list
+                WHERE enable_rule = 1
+                AND entityid = :entityid
+                AND :user REGEXP userjid_regexp;
+            """
+
+            # Exécuter la requête avec des paramètres liés (sécurisé contre injections)
+            req = session.execute(sql, {"entityid": entityid, "user": user})
+
+            # Traiter les résultats
+            for updateid_or_kb, type_rule in req:
+                if type_rule and type_rule.lower() == "kb":
+                    ret["kb"].append(updateid_or_kb)
+                elif type_rule and type_rule.lower() == "id":
+                    ret["update_id"].append(updateid_or_kb)
+
         except Exception:
             logging.getLogger().error(
                 "sql test_black_list : %s" % traceback.format_exc()
             )
+
         return ret
+
+    @DatabaseHelper._sessionm
+    def getIdsEntityMachineInventaireFromJid(self, session, jid):
+        """
+        Récupère l'id de la machine, son UUID d'inventaire et l'id de l'entité GLPI associée à partir du jid.
+
+        Comportement :
+        - On utilise la partie avant '@' du jid (préfixe user) et on recherche les machines dont
+        `Machines.jid` commence par ce préfixe (filtre LIKE 'user%').
+        -> Si tu veux matcher l'intégralité du jid, remplace le LIKE par un égal exact.
+        - Jointure correcte :
+            Machines.glpi_entity_id  ->  Glpi_entity.id
+        (puis on retourne Glpi_entity.glpi_id comme `entity_id`).
+        - Lecture seule : pas de commit/flush.
+        - Renvoie {} si aucun résultat.
+        """
+
+        # on prend la partie avant '@' (prefixe user)
+        user_prefix = str(jid).split("@")[0]
+
+        # Requête : jointure sur Glpi_entity.id (clé primaire)
+        row = (
+            session.query(
+                Machines.id.label("id"),
+                Machines.uuid_inventorymachine.label("uuid_inv"),
+                Glpi_entity.glpi_id.label("entity_id"),
+            )
+            # JOIN correct : Machines.glpi_entity_id -> Glpi_entity.id
+            .join(Glpi_entity, Machines.glpi_entity_id == Glpi_entity.id)
+            # recherche par préfixe du jid (user@...), garder LIKE si voulu
+            .filter(Machines.jid.like(f"{user_prefix}%"))
+            .first()  # .one_or_none() si tu veux lever si plusieurs résultats
+        )
+
+        if not row:
+            return {}
+
+        return {"id": row.id, "uuid_inv": row.uuid_inv, "entity_id": row.entity_id}
+
+    @DatabaseHelper._sessionm
+    def ensure_auto_approve_rules_for_entity(self, session, entityid):
+        """
+        Vérifie si les règles d'auto-approbation existent pour une entityid donnée.
+        Si elles n'existent pas, les insère avec les valeurs par défaut.
+
+        Args:
+            session (Session): Session SQLAlchemy pour interagir avec la base de données.
+            entityid (int): Identifiant de l'entité pour laquelle vérifier/insérer les règles.
+
+        Returns:
+            bool: True si les règles ont été insérées ou existaient déjà, False en cas d'erreur.
+        """
+        # Liste des règles par défaut à insérer
+        default_rules = [
+            ('Critical', 'Security Updates', 0),
+            ('Important', 'Security Updates', 0),
+            ('Moderate', 'Security Updates', 0),
+            ('Low', 'Security Updates', 0),
+            (None, 'Update Rollups', 0),
+            (None, 'Service Packs', 0),
+            (None, 'Security Updates', 0),
+            (None, 'Critical Updates', 0),
+            (None, 'Updates', 0),
+        ]
+
+        # Vérifie si au moins une règle existe pour cette entityid
+        existing_rule = session.query(Up_auto_approve_rules).filter(
+            Up_auto_approve_rules.entityid == entityid
+        ).first()
+
+        if existing_rule:
+            # Si une règle existe déjà pour cette entityid, on ne fait rien
+            logging.getLogger().warning("regle exist auto approve rules")
+            return True
+        # Sinon, on insère toutes les règles par défaut pour cette entityid
+        try:
+            for msrcseverity, updateclassification, active_rule in default_rules:
+                new_rule = Up_auto_approve_rules(
+                    entityid=entityid,
+                    msrcseverity=msrcseverity,
+                    updateclassification=updateclassification,
+                    active_rule=active_rule
+                )
+                session.add(new_rule)
+            session.commit()
+            return True
+        except IntegrityError as e:
+            session.rollback()
+            logging.getLogger().error(f"IntegrityError lors de l'insertion des règles pour entityid={entityid}: {e}")
+            return False
+        except Exception as e:
+            session.rollback()
+            logging.getLogger().error(f"Exception lors de l'insertion des règles pour entityid={entityid}: {e}")
+            traceback.print_exc()
+            return False
 
     @DatabaseHelper._sessionm
     def setUp_machine_windows(
@@ -10322,21 +10483,45 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         session,
         id_machine,
         update_id,
+        entityid,  # Nouveau paramètre : identifiant de l'entité associée à la machine
         kb="",
         deployment_intervals="",
         msrcseverity="Corrective",
     ):
         """
-        Création d'un update pour une machine
+        Crée ou met à jour un enregistrement de mise à jour Windows (update) pour une machine donnée,
+        en prenant en compte l'identifiant de l'entité (entityid) associée.
+
+        Cette fonction recherche d'abord dans la base de données si un enregistrement existe déjà
+        pour la machine (`id_machine`), l'update (`update_id` ou `kb`), et l'entité (`entityid`).
+        - Si un enregistrement est trouvé, il est mis à jour avec les nouvelles informations.
+        - Sinon, un nouvel enregistrement est créé.
+
+        Args:
+            session (Session): Session SQLAlchemy injectée via le décorateur `_sessionm`.
+            id_machine (int): Identifiant unique de la machine cible.
+            update_id (str): Identifiant unique de la mise à jour (ex. GUID Microsoft).
+            entityid (str): Identifiant unique de l'entité associée à la machine.
+            kb (str, optional): Identifiant KB (Knowledge Base) de la mise à jour. Défaut : "".
+            deployment_intervals (str, optional): Intervalles de déploiement. Défaut : "".
+            msrcseverity (str, optional): Niveau de sévérité Microsoft Security Response Center.
+                                        Défaut : "Corrective".
+
+        Returns:
+            dict | None: Un dictionnaire (via `__Up_machine_windows`) représentant l'objet créé
+                        ou mis à jour, ou `None` en cas d'échec.
         """
+        # Vérification et normalisation de la sévérité
         if msrcseverity.strip() == "":
             msrcseverity = "Corrective"
-        # Vérifiez si l'objet existe déjà
+
+        # Recherche d'un enregistrement existant pour cette machine, update et entité
         objet_existant = (
             session.query(Up_machine_windows)
             .filter(
                 and_(
                     Up_machine_windows.id_machine == id_machine,
+                    Up_machine_windows.entityid == entityid,  # Ajout du filtre sur entityid
                     or_(
                         Up_machine_windows.update_id == update_id,
                         Up_machine_windows.kb == kb,
@@ -10347,12 +10532,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         )
 
         if objet_existant:
-            # Si l'objet existe, mettez-le à jour
+            # Mise à jour de l'objet existant
             try:
                 objet_existant.update_id = update_id
                 objet_existant.kb = kb
                 objet_existant.intervals = deployment_intervals
                 objet_existant.msrcseverity = msrcseverity
+                objet_existant.entityid = entityid  # Mise à jour du champ entityid
                 session.commit()
                 session.flush()
                 return self.__Up_machine_windows(objet_existant)
@@ -10360,7 +10546,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 self.logger.info("Exception lors de la mise à jour : %s" % str(e))
                 self.logger.error("\n%s" % (traceback.format_exc()))
         else:
-            # Si l'objet n'existe pas, l'ajouter à la base de données
+            # Création d'un nouvel enregistrement
             try:
                 new_Up_machine_windows = Up_machine_windows()
                 new_Up_machine_windows.id_machine = id_machine
@@ -10368,6 +10554,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 new_Up_machine_windows.kb = kb
                 new_Up_machine_windows.intervals = deployment_intervals
                 new_Up_machine_windows.msrcseverity = msrcseverity
+                new_Up_machine_windows.entityid = entityid  # Ajout du champ entityid
                 session.add(new_Up_machine_windows)
                 session.commit()
                 session.flush()
@@ -10377,49 +10564,132 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             except Exception as e:
                 self.logger.info("Exception setUp_machine_windows : %s" % str(e))
                 self.logger.error("\n%s" % (traceback.format_exc()))
+
         return None
 
     @DatabaseHelper._sessionm
-    def del_all_Up_machine_windows(self, session, id_machine, listupdatiddesire=[]):
+    def del_all_Up_machine_windows(self,
+                                   session,
+                                   id_machine,
+                                   entityid,
+                                   listupdatiddesire=[]):
         """
-        Supprime les enregistrements de la table 'Up_machine_windows' qui sont maintenant installé.
+        Supprime les enregistrements de la table 'Up_machine_windows' pour une machine et une entité données,
+        en excluant les mises à jour nécessaires (listupdatiddesire) et celles encore actives.
 
         Args:
-            session (Session): Session SQLAlchemy active.
-                La session active fournie par le décorateur @DatabaseHelper._sessionm.
-            id_machine (int): L'ID de la machine cible pour laquelle les enregistrements doivent être supprimés.
-            listupdatiddesire (list): Liste des mises necessaire a la machine.
+            session (Session): Session SQLAlchemy active, fournie par le décorateur @DatabaseHelper._sessionm.
+            id_machine (int): ID de la machine cible pour laquelle les enregistrements doivent être supprimés.
+            entityid (str): ID de l'entité associée à la machine, pour filtrer les enregistrements à supprimer.
+            listupdatiddesire (list, optional): Liste des IDs de mises à jour nécessaires à la machine.
+                Les enregistrements correspondant à ces IDs ne seront pas supprimés. Défaut : [].
 
         Note:
-            requête de suppression sur la table 'Up_machine_windows', en fonction des conditions fournies. Les conditions incluent :
-            - L'ID de la machine correspondant à 'id_machine'.
-            - La date de fin est soit nulle, soit antérieure à la date et à l'heure actuelles.
-            - L'ID de mise à jour n'est pas présent dans la liste 'listupdatiddesire'.
+            La requête de suppression cible les enregistrements de 'Up_machine_windows' qui :
+            - Correspondent à l'ID de machine (`id_machine`) et à l'ID d'entité (`entityid`).
+            - Ont une date de fin nulle ou antérieure à la date actuelle (considérés comme obsolètes).
+            - Ne sont pas dans la liste des mises à jour nécessaires (`listupdatiddesire`).
         """
+        # Construction de la requête SQL en fonction de la présence de mises à jour nécessaires
         if listupdatiddesire:
+            # Si des mises à jour sont nécessaires, on les exclut de la suppression
             sql = """DELETE
                 FROM
                     `xmppmaster`.`up_machine_windows`
                 WHERE
                     (`id_machine` = '%s')
-                        AND (`update_id` NOT IN (%s)
+                    AND (`entityid` = '%s')
+                    AND (
+                        `update_id` NOT IN (%s)
                         OR up_machine_windows.end_date IS NULL
-                        OR up_machine_windows.end_date < NOW());""" % (
+                        OR up_machine_windows.end_date < NOW()
+                    );""" % (
                 id_machine,
+                entityid,
                 ",".join(["'%s'" % x for x in listupdatiddesire]),
             )
         else:
+            # Si aucune mise à jour n'est nécessaire, on supprime tous les enregistrements pour cette machine et entité
             sql = """DELETE
                 FROM
                     `xmppmaster`.`up_machine_windows`
                 WHERE
-                    (`id_machine` = '%s');""" % (
-                id_machine
+                    (`id_machine` = '%s')
+                    AND (`entityid` = '%s');""" % (
+                id_machine,
+                entityid
             )
-        logging.getLogger().debug("sql : %s" % sql)
-        req = session.execute(sql)
-        session.commit()
-        session.flush()
+
+        # Log de la requête SQL pour le débogage
+        logging.getLogger().debug("SQL : %s" % sql)
+
+        # Exécution de la requête et validation des changements
+        try:
+            req = session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error("Erreur lors de la suppression des enregistrements : %s" % str(e))
+            raise  # Relance l'exception pour une gestion ultérieure si nécessaire
+
+    @DatabaseHelper._sessionm
+    def list_produits_entity(self, session, entityid, enable=1):
+        """
+        Récupère la liste des procédures de produits associées à une entité.
+
+        Args:
+            session: Objet SQLAlchemy gérant la connexion à la base (fourni par le décorateur).
+            entityid (int): Identifiant de l'entité dont on souhaite lister les produits.
+                            Doit être un entier strictement positif ou nul.
+            enable (int | bool): État d'activation des produits.
+                                - 1 ou True = activé
+                                - 0 ou False = désactivé
+
+        Returns:
+            dict: Résultats de la requête sous forme de dictionnaire,
+                via la méthode interne `_return_dict_from_dataset_mysql`.
+                Les clés correspondent aux colonnes sélectionnées.
+
+        Raises:
+            ValueError: Si les paramètres `entityid` ou `enable` ne sont pas valides.
+        """
+        ret = {}
+        try:
+            # Vérification et normalisation des paramètres d'entrée
+            if not isinstance(entityid, int):
+                raise ValueError(f"entityid doit être un entier, reçu {type(entityid)}")
+
+            if isinstance(enable, bool):
+                enable = int(enable)  # True → 1, False → 0
+            elif isinstance(enable, int):
+                if enable not in (0, 1):
+                    raise ValueError("enable doit valoir 0, 1, True ou False")
+            else:
+                raise ValueError(f"enable doit être un booléen ou un entier 0/1, reçu {type(enable)}")
+
+            # Prépare la requête SQL paramétrée pour éviter les injections
+            sql = text("""
+                SELECT
+                    name_procedure
+                FROM
+                    xmppmaster.up_list_produit
+                WHERE
+                    entity_id = :entityid
+                    AND enable = :enable
+            """)
+
+            # Exécution sécurisée avec passage des paramètres
+            req = session.execute(sql, {"entityid": entityid, "enable": enable})
+
+            # Transformation du dataset en dictionnaire via l'utilitaire interne
+            ret = self._return_dict_from_dataset_mysql(req)
+
+        except Exception:
+            # En cas d'erreur, logge l'exception complète dans les logs
+            logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+
+        # Retourne le dictionnaire des résultats
+        return ret
 
     @DatabaseHelper._sessionm
     def list_produits(self, session):
@@ -10515,6 +10785,53 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         except Exception as e:
             logging.getLogger().debug(
                 "sql is_exist_value_in_table: %s" % traceback.format_exc()
+            )
+            return False
+
+    @DatabaseHelper._sessionm
+    def is_exist_value_in_entity_table(
+        self, session, entityid, valchamp, namefield="updateid", tablename="up_gray_list"
+    ):
+        """
+        Teste si un enregistrement avec la valeur spécifiée pour le champ donné
+        et l'entityid spécifié existe dans la table.
+
+        Parameters :
+            entityid : identifiant de l'entité concernée
+            valchamp : valeur à rechercher dans le champ namefield
+            namefield : nom du champ à tester (par défaut 'updateid')
+            tablename : nom de la table (par défaut 'up_gray_list')
+        """
+        try:
+            sql = f"""
+            SELECT EXISTS (
+                SELECT 1
+                FROM {tablename}
+                WHERE {namefield} LIKE :valchamp
+                AND entityid = :entityid
+                LIMIT 1
+            );
+            """
+            result = session.execute(sql, {"valchamp": valchamp, "entityid": entityid})
+            session.commit()
+            session.flush()
+            existenregistrement = bool(result.scalar())
+
+            logger = logging.getLogger()
+            if existenregistrement:
+                logger.debug(
+                    f"valeur {valchamp} pour entityid {entityid} existe dans {tablename}.{namefield}"
+                )
+            else:
+                logger.debug(
+                    f"valeur {valchamp} pour entityid {entityid} n'existe pas dans {tablename}.{namefield}"
+                )
+
+            return existenregistrement
+
+        except Exception:
+            logging.getLogger().debug(
+                "sql is_exist_value_in_entity_table: %s" % traceback.format_exc()
             )
             return False
 
@@ -10642,97 +10959,130 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.rollback()
             return package_name_id, False
 
+
     @DatabaseHelper._sessionm
     def setUp_machine_windows_gray_list(
-        self, session, updateid, tableproduct="", validity_day=10
+        self, session, entityid, updateid, tableproduct="", validity_day=10, debug_sql=False
     ):
         """
-        cette fonction insert dans la table gray list 1 update
-        Si l update existe. Il update seulement la date de validity
+        Insère ou met à jour un update dans la table up_gray_list.
+        Si l'update existe déjà, seule la date de validité est mise à jour.
+
         Parameters :
-            tableproduct voir table produits dans la table list_produits
-            str_kb_list list des kb installer sur la machine
+            entityid : identifiant de l'entité concernée
+            updateid : identifiant de la mise à jour
+            tableproduct : table produit (voir table list_produits)
+            validity_day : durée de validité en jours
+            debug_sql : bool, si True affiche toutes les requêtes SQL exécutées
         """
-        # if le update existe dans la table up_white_list
-        # on ne fait rien
-        # if le update existe dans la table up_gray_list_flop
-        # on supprime dans la stock_table up_gray_list_flop
-        # ce qui fera que l'update sera reinitialiser
-        # auterment on insert ou update
 
         try:
-            if self.is_exist_value_in_table(
-                updateid, namefield="updateid", tablename="up_white_list"
+
+            # 1️⃣ Vérifie si l'update existe dans la white list → ne rien faire
+            logger.debug("1️⃣ Vérifie si l'update existe dans la white list → ne rien faire")
+            if self.is_exist_value_in_entity_table(
+                entityid,
+                updateid,
+                namefield="updateid",
+                tablename="up_white_list",
             ):
+                logger.debug(f"[{updateid}] déjà en white list — aucun changement")
                 return False
 
-            if self.is_exist_value_in_table(
-                updateid, namefield="updateid", tablename="up_gray_list_flop"
+            # 2️⃣ Si l'update est dans la gray_list_flop → suppression (réinitialisation)
+            logger.debug("1️⃣ Vérifie si l'update existe dans la white list → ne rien faire")
+            if self.is_exist_value_in_entity_table(
+                entityid,
+                updateid,
+                namefield="updateid",
+                tablename="up_gray_list_flop",
             ):
-                # si l'update existe dans la flip flop, la supprimer de la table flip flop la reinitialise dans la table gray list.
-                # On met a jour la date avant que l'enregistrement change de table.
+                logger.debug(f"[{updateid}] trouvé dans gray_list_flop → réinitialisation")
+
                 self.update_in_grays_list_validity(
-                    updateid, flipflop=True, validity_day=validity_day
+                    entityid,
+                    updateid,
+                    flipflop=True,
+                    validity_day=validity_day,
                 )
-                sql = (
-                    """DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');"""
-                    % (updateid)
-                )
-                session.execute(sql)
+
+                delete_sql = """
+                    DELETE FROM `up_gray_list_flop`
+                    WHERE updateid = :updateid AND entityid = :entityid
+                """
+                session.execute(delete_sql, {"updateid": updateid, "entityid": entityid})
                 session.commit()
                 session.flush()
                 return True
-            if self.is_exist_value_in_table(
-                updateid, namefield="updateid", tablename="up_gray_list"
+
+            # 3️⃣ Si l'update existe déjà dans gray_list → mise à jour de la validité
+            if self.is_exist_value_in_entity_table(
+                entityid,
+                updateid,
+                namefield="updateid",
+                tablename="up_gray_list",
             ):
-                # update date validity date
+                logger.debug(f"[{updateid}] déjà en gray list → mise à jour de la validité")
                 self.update_in_grays_list_validity(
-                    updateid, flipflop=False, validity_day=validity_day
+                    entityid,
+                    updateid,
+                    flipflop=False,
+                    validity_day=validity_day,
                 )
                 return True
 
-            # insertion
-            sql = """INSERT INTO `xmppmaster`.`up_gray_list` (updateid,
-                                                            kb,
-                                                            revisionid,
-                                                            title,
-                                                            description,
-                                                            updateid_package,
-                                                            payloadfiles,
-                                                            supersededby,
-                                                            title_short,
-                                                            validity_date)
-                        ( SELECT updateid,
-                                kb,
-                                revisionid,
-                                title,
-                                description,
-                                updateid_package,
-                                payloadfiles,
-                                supersededby,
-                                title_short,
-                                now() + INTERVAL %s day
-                        FROM
-                            xmppmaster.%s
-                        WHERE
-                            updateid LIKE '%s')
-                        ON DUPLICATE KEY UPDATE validity_date = now() + INTERVAL %s day;""" % (
-                validity_day,
-                tableproduct,
+            # 4️⃣ Insertion dans gray_list depuis la table produit
+            insert_sql = f"""
+            INSERT INTO `xmppmaster`.`up_gray_list` (
                 updateid,
-                validity_day,
+                entityid,
+                kb,
+                revisionid,
+                title,
+                description,
+                updateid_package,
+                payloadfiles,
+                supersededby,
+                title_short,
+                validity_date
             )
-            session.execute(sql)
+            SELECT
+                src.updateid,
+                :entityid AS entityid,
+                src.kb,
+                src.revisionid,
+                src.title,
+                src.description,
+                src.updateid_package,
+                src.payloadfiles,
+                src.supersededby,
+                src.title_short,
+                NOW() + INTERVAL {validity_day} DAY
+            FROM xmppmaster.{tableproduct} AS src
+            WHERE src.updateid = :updateid
+            LIMIT 1
+            ON DUPLICATE KEY UPDATE
+                validity_date = NOW() + INTERVAL {validity_day} DAY;
+            """
+            session.execute(insert_sql, {"entityid": entityid, "updateid": updateid})
+            # log_sql(insert_sql, params)
+            # session.execute(insert_sql, params)
             session.commit()
             session.flush()
+
+            logger.debug(f"[{updateid}] inséré ou mis à jour dans up_gray_list ✅")
             return True
+
         except Exception:
-            logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
-        return False
+            logger.error(
+                "Erreur dans setUp_machine_windows_gray_list : %s",
+                traceback.format_exc(),
+            )
+            return False
 
     @DatabaseHelper._sessionm
     def update_in_grays_list_validity(
-        self, session, updateid, flipflop=True, validity_day=10
+        self, session, entityid, updateid, flipflop=True, validity_day=10
     ):
         """
         Met à jour la date de validité d'un enregistrement dans la table
@@ -10757,11 +11107,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             sql = """
             UPDATE `xmppmaster`.`%s`
             SET validity_date = DATE_ADD(NOW(), INTERVAL %s DAY)
-            WHERE updateid LIKE '%s';
+            WHERE updateid LIKE '%s' AND entityid = %s;
             """ % (
                 table,
                 validity_day,
                 updateid,
+                entityid
             )
 
             # Exécute la requête SQL.
@@ -10830,38 +11181,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             )
         return False
 
-    #
-    # @DatabaseHelper._sessionm
-    # def get_all_update_in_gray_list(self, session, updateid=None):
-    #     """cette function renvoi tout les update de la list gray"""
-    #     try:
-    #         sql = """
-    #             select * from
-    #                 (SELECT
-    #                     *
-    #                 FROM
-    #                     xmppmaster.up_gray_list
-    #                 UNION
-    #                 SELECT
-    #                     *
-    #                 FROM
-    #                     xmppmaster.up_gray_list_flop) as e"""
-    #         if updateid:
-    #             filter = """ WHERE
-    #                         updateid = '%s'""" % (
-    #                 updateid
-    #             )
-    #             sql = sql + filter
-    #         sql += ";"
-    #         resultproxy = session.execute(sql)
-    #         session.commit()
-    #         session.flush()
-    #         return [rowproxy._asdict() for rowproxy in resultproxy]
-    #     except Exception:
-    #         logging.getLogger().error(
-    #             "sql get_all_update_in_gray_list : %s" % traceback.format_exc()
-    #         )
-    #     return []
 
     @DatabaseHelper._sessionm
     def get_all_update_in_gray_list(self, session, updateid=None):
@@ -11278,31 +11597,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         query = query.count()
 
         return bool(query is not None and query != 0)
-
-
-    @DatabaseHelper._sessionm
-    def specific_deployment_is_running_on_machine(self, session, package_uuid:str, jid:str)->bool:
-        """Check if the specific package is not running on a specific machine
-        - params:
-            - self : XmppMasterDatabase object - Reference to the current object
-            - session : sqlalchemy session - added by the decorator @DatabaseHelper._sessionm
-            - package_uuid : str - the package's uuid to check
-            - jid : str - The machine's jid to check
-        - return bool - True if the deployement of the package is running on the machine
-        - return bool - False if the package is not currently deployed on the machine"""
-
-        sql = """select
-    count(d.id)
-from deploy d
-    join msc.commands c on c.id = d.command
-where d.jidmachine='%s' and c.package_id = '%s'
-    and
-    d.state not regexp ("(SUCCESS)|(ABORT)|(ERROR)")"""%(jid, package_uuid)
-
-        query = session.execute(sql).one()
-        count = query[0]
-
-        return bool(count is not None and count != 0)
 
     @DatabaseHelper._sessionm
     def delete_all_done_updates(self, session):
