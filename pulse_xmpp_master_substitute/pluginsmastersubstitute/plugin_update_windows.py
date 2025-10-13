@@ -64,24 +64,26 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 % (xmppobject.registeryagent_showinfomachine)
             )
 
-            data['list_produits'] = []
-            data['list_produits'] = XmppMasterDatabase().list_produits()
-            data['display_version_usuel'] = ['1983',
-                                             '21H1',
-                                             '21H2',
-                                             '22H2',
-                                             '23H2',
-                                             '24H2',
-                                             '25H2',
-                                             '26H2',
-                                             '2003',
-                                             '2008',
-                                             '2012',
-                                             '2019']
-            # MSOS Microsoft Server Operating System
-            # WS Window Server
-            data['excluded_prefixes_os'] = ["Win10","Win11","MSOS", "WS"]
-            data['ARCHI_os'] = ["X64", "AMD64", "X86", "I386", "ARM64"]
+        data['list_produits'] = []
+
+        logger.debug("liste produits  %s" % data['list_produits'])
+
+        data['display_version_usuel'] =['1983',
+                                        '21H1',
+                                        '21H2',
+                                        '22H2',
+                                        '23H2',
+                                        '24H2',
+                                        '25H2',
+                                        '26H2',
+                                        '2003',
+                                        '2008',
+                                        '2012',
+                                        '2019']
+        # MSOS Microsoft Server Operating System
+        # WS Window Server
+        data['excluded_prefixes_os'] = ["Win10", "Win11", "MSOS", "WS"]
+        data['ARCHI_os'] = ["X64", "AMD64", "X86", "I386", "ARM64"]
         showinfobool = True
         traitement_update(xmppobject, action, sessionid, data, msg, ret)
 
@@ -187,23 +189,36 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         )
         return os.path.isdir(chemin_package)
 
-    logger.debug(
-        "Enabled products (list_produits):  %s" % data['list_produits']
-    )
-    # suivant type de windows exclude list produit
+    machine = XmppMasterDatabase().getIdsEntityMachineInventaireFromJid(msg["from"])
+    if not machine or not 'entity_id' in  machine:
+        logger.warning("Machine %s is not yet registered" % msg["from"])
+        return
 
-    list_table_product_select = list_products_on(
-        xmppobject, data, data['list_produits']
+    entity_id = machine.get('entity_id')
+    data['entityid']=entity_id
+    # ajoute en base si il n'existe pas les regles pour faire 1 gestion
+    # automatique des mise a jour en fonction de entity.
+    XmppMasterDatabase().ensure_auto_approve_rules_for_entity(entity_id)
+
+    data['list_produits'] = XmppMasterDatabase().list_produits_entity(entity_id)
+
+    if not data['list_produits']:
+        logger.warning(f"Pas de produits sélectionnés pour l'entité {entity_id}")
+        return
+
+    list_table_product_select = list_products_on(xmppobject, data)
+    if not list_table_product_select:
+         logger.debug(
+        "For machine %s only the following tables will be updated:  %s"
+        % (msg["from"], list_table_product_select)
     )
+
     logger.debug(
         "For machine %s only the following tables will be updated:  %s"
         % (msg["from"], list_table_product_select)
     )
-    machine = XmppMasterDatabase().getId_UuidFromJid(msg["from"])
-    if not machine:
-        logger.warning("Machine %s is not yet registered" % msg["from"])
-        return
 
+    # si on prend en compte l'historique des mise à jours on ajoute a la liste des kb installer la list des kb historique. history_list_kb
     if not xmppobject.exclude_history_list:
         logger.debug("Checking against KB history list")
         kblistexclde = []
@@ -220,10 +235,15 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         data["system_info"]["kb_list"] = lkbe
     logger.debug("Installed KB list: %s" % data["system_info"]["kb_list"])
     list_update = exclude_update = res_update = []
-    exclude_update = XmppMasterDatabase().test_black_list(msg["from"])
-    logger.debug("Excluding updates for %s: %s" % (msg["from"], exclude_update))
+
+    # on exclut les mise à jour se trouvant en liste noire en fonction de  l'entite.
+    exclude_update = XmppMasterDatabase().test_black_list(msg["from"], entity_id)
+    logger.debug("Excluding updates for %s/%s: %s" % (entity_id, msg["from"], exclude_update))
+
     for t in list_table_product_select:
+
         if t['name_procedure'] == "up_packages_Win_Malicious_X64":
+            # cas pour le traitement des mise à jour pour malveillant (malware) détecté ou catégorisé.
             # le traitement de cette mise a jour est dependante de la version renvoyee par la machine du logiciel.
             # le kb n'est pas modifiee.
             if (
@@ -259,18 +279,21 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
             "Looking for product %s (%s)"
             % (t["name_procedure"], data["system_info"]["kb_list"])
         )
-
+        # on cherche si il y a des mise à jour pour cette machine en fonction des kb renvoye et de la table produit
         list_update = XmppMasterDatabase().search_update_by_products(
             tableproduct=t, str_kb_list=data["system_info"]["kb_list"]
         )
         logger.debug("list_update search is %s: " % list_update)
+        # on recupere la liste des mise a jour a faire sur la machine en tenant cimpte des mise a jour que l'on a exclut'
         res_update.extend(exclude_update_in_select(msg, exclude_update, list_update))
 
 
     # update les updates windows a installer
     # delete les mise a jour faites ou a reactualise
     upd_machine = [x["updateid"] for x in res_update]
-    XmppMasterDatabase().del_all_Up_machine_windows(machine["id"], upd_machine)
+    # Supprime les enregistrements de la table 'Up_machine_windows' qui sont maintenant installé.
+    # on met a jour up_machine_windows en fonction de la demande et si la mise à jour est traite ou a traite
+    XmppMasterDatabase().del_all_Up_machine_windows(machine["id"],entity_id, upd_machine)
     for t in res_update:
         logger.info(
             "Enabling update %s: %s - %s"
@@ -280,9 +303,10 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                 t["kb"],
             )
         )
-        # on ajoute le deploiement si le package exist iniquement
+        # on ajoute le deploiement si le package exist uniquement
         exist_package_base = PkgsDatabase().verifier_exist_uuid(t["updateid"])
         exist_package_physique = verifier_exist_package(t["updateid"])
+
         if not exist_package_base:
             logger.warning("package update '%s' missing in base pkgs" % t["updateid"])
         if not exist_package_physique:
@@ -290,20 +314,25 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                 "package update '%s' missing in base files /var/lib/pulse2/packages/sharing/winupdate"
                 % t["updateid"]
             )
+
         # if exist_package_base and exist_package_physique:
+        # Crée ou met à jour un enregistrement de mise à jour Windows (update) pour une machine donnée.
+        # table Up_machine_windows
         XmppMasterDatabase().setUp_machine_windows(
             machine["id"],
             t["updateid"],
+            entity_id,
             kb=t["kb"],
             deployment_intervals=xmppobject.deployment_intervals,
             msrcseverity=t["msrcseverity"],
         )
         # on add ou update le kb dans la gray list
+        # ajoute la mise jour dans la gray list en fonction de entite
         XmppMasterDatabase().setUp_machine_windows_gray_list(
-            t["updateid"], t["tableproduct"]
+            entity_id, t["updateid"], t["tableproduct"]
         )
 
-def list_products_on(xmppobject, data, list_produits):
+def list_products_on(xmppobject, data):
     """
     Filter the list of products based on the type of operating system. and sur les
         produit sur lesquel il faut prendre en compte.
@@ -325,6 +354,11 @@ def list_products_on(xmppobject, data, list_produits):
 
     # Construction de la liste des procédures filtrées :
     # - On exclut les procédures dont le nom commence par "up_packages_<OS>"
+    list_produits = data.get("list_produits", None)
+    if not list_produits:
+        logger.warning("pas de liste produits de selectionner" )
+        return
+    logger.debug("liste des produits Microsoft a mettre a jour %s " % list_produits )
     basepack = [
         p["name_procedure"]
         for p in list_produits

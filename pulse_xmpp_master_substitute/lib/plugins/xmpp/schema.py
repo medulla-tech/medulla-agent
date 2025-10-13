@@ -286,6 +286,23 @@ class Machines(Base, XmppMasterDBObj):
     glpi_location = relationship(Glpi_location)
 
 
+class Up_auto_approve_rules(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_auto_approve_rules"
+
+    # ====== Fields =============================
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    entityid = Column(Integer, primary_key=True, nullable=False)
+    msrcseverity = Column(String(45), default=None, comment="Exemples : Critical, Important, Moderate, Low. Peut être NULL pour matcher toute sévérité.")
+    updateclassification = Column(String(45), default=None, comment="Exemples : Security Updates, Critical Updates, Update Rollups, Service Packs. Peut être NULL pour matcher toute classification.")
+    active_rule = Column(Integer, default=0, comment="0 = inactif, 1 = actif. Si actif, la règle est utilisée pour valider automatiquement une mise à jour.")
+
+    # # ====== Constraints ========================
+    # __table_args__ = (
+    #     UniqueConstraint('entityid', 'msrcseverity', 'updateclassification', name='uniq_entity_rule'),
+    # )
+
+
 class Glpi_Register_Keys(Base, XmppMasterDBObj):
     # ====== Table name =========================
     __tablename__ = "glpi_register_keys"
