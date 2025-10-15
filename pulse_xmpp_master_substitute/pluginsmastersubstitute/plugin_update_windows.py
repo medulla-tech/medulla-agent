@@ -293,7 +293,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     upd_machine = [x["updateid"] for x in res_update]
     # Supprime les enregistrements de la table 'Up_machine_windows' qui sont maintenant installé.
     # on met a jour up_machine_windows en fonction de la demande et si la mise à jour est traite ou a traite
-    XmppMasterDatabase().del_all_Up_machine_windows(machine["id"],entity_id, upd_machine)
+    XmppMasterDatabase().del_all_Up_machine_windows(machine["id"], entity_id, upd_machine)
     for t in res_update:
         logger.info(
             "Enabling update %s: %s - %s"

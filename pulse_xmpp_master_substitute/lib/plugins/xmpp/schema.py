@@ -852,6 +852,7 @@ class Up_machine_windows(Base):
     # ====== Fields =============================
     id_machine = Column(Integer, primary_key=True)
     update_id = Column(String(38), primary_key=True)
+    entityid = Column(String)  # Make sure this line is present
     kb = Column(String(45), default="")
     curent_deploy = Column(Boolean, unique=False)
     required_deploy = Column(Boolean, unique=False)
