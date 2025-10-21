@@ -24,7 +24,7 @@ import netaddr
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.1", "NAME": "update_windows", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "2.2", "NAME": "update_windows", "TYPE": "substitute"}  # fmt: skip
 
 # function comment for next feature
 # this functions will be used later
@@ -66,7 +66,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
         data['list_produits'] = []
 
-        logger.debug("liste produits  %s" % data['list_produits'])
+
+        # Windows 11
+        # dernière Windows 11 25H2 (Octobre 2025).
+        # Windows 11 25H2	26200	1 Octobre 2025
+        # Windows 11 24H2	26100	8 Octobre 2024
+        # Windows 11 23H2	22631	23 Septembre 2023
+        # Windows 11 22H2	22621	21 Septembre 2022
+        # Windows 11 21H2	22000	5 octobre 2021
+
 
         data['display_version_usuel'] =['1983',
                                         '21H1',
@@ -75,11 +83,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         '23H2',
                                         '24H2',
                                         '25H2',
+                                        '26H1'
                                         '26H2',
                                         '2003',
                                         '2008',
                                         '2012',
-                                        '2019']
+                                        '2019',
+                                        '2022',
+                                        '2025'
+                                        '2026']
         # MSOS Microsoft Server Operating System
         # WS Window Server
         data['excluded_prefixes_os'] = ["Win10", "Win11", "MSOS", "WS"]
@@ -202,23 +214,28 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
 
     data['list_produits'] = XmppMasterDatabase().list_produits_entity(entity_id)
 
+    # logger.debug("Machine %s \n liste produit %s" % (msg["from"], data['list_produits']))
     if not data['list_produits']:
-        logger.warning(f"Pas de produits sélectionnés pour l'entité {entity_id}")
+        logger.warning(f"Pas de produits windows sélectionnés pour l'entité {entity_id}")
         return
-
+    # on recuperer la table produit windows 1 seule doit conserner ce windows.
     list_table_product_select = list_products_on(xmppobject, data)
+
+
+
     if not list_table_product_select:
          logger.debug(
         "For machine %s only the following tables will be updated:  %s"
         % (msg["from"], list_table_product_select)
     )
+         return
 
     logger.debug(
         "For machine %s only the following tables will be updated:  %s"
         % (msg["from"], list_table_product_select)
     )
 
-    # si on prend en compte l'historique des mise à jours on ajoute a la liste des kb installer la list des kb historique. history_list_kb
+    # si on prend en compte l'historique des mises à jours on ajoute a la liste des kb installer la list des kb historique. history_list_kb
     if not xmppobject.exclude_history_list:
         logger.debug("Checking against KB history list")
         kblistexclde = []
@@ -234,6 +251,8 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         lkbe = '"%s"' % ",".join(kblistexclde)
         data["system_info"]["kb_list"] = lkbe
     logger.debug("Installed KB list: %s" % data["system_info"]["kb_list"])
+
+
     list_update = exclude_update = res_update = []
 
     # on exclut les mise à jour se trouvant en liste noire en fonction de  l'entite.
@@ -241,7 +260,6 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     logger.debug("Excluding updates for %s/%s: %s" % (entity_id, msg["from"], exclude_update))
 
     for t in list_table_product_select:
-
         if t['name_procedure'] == "up_packages_Win_Malicious_X64":
             # cas pour le traitement des mise à jour pour malveillant (malware) détecté ou catégorisé.
             # le traitement de cette mise a jour est dependante de la version renvoyee par la machine du logiciel.
@@ -283,10 +301,10 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         list_update = XmppMasterDatabase().search_update_by_products(
             tableproduct=t, str_kb_list=data["system_info"]["kb_list"]
         )
-        logger.debug("list_update search is %s: " % list_update)
+
         # on recupere la liste des mise a jour a faire sur la machine en tenant cimpte des mise a jour que l'on a exclut'
         res_update.extend(exclude_update_in_select(msg, exclude_update, list_update))
-
+        logger.debug("list_update search is %s: " % res_update)
 
     # update les updates windows a installer
     # delete les mise a jour faites ou a reactualise
@@ -351,14 +369,12 @@ def list_products_on(xmppobject, data):
         - Adds only the correct OS package for the current machine.
     """
     # On commence par recopier tous les produits SAUF ceux liés aux OS
-
     # Construction de la liste des procédures filtrées :
     # - On exclut les procédures dont le nom commence par "up_packages_<OS>"
     list_produits = data.get("list_produits", None)
     if not list_produits:
         logger.warning("pas de liste produits de selectionner" )
         return
-    logger.debug("liste des produits Microsoft a mettre a jour %s " % list_produits )
     basepack = [
         p["name_procedure"]
         for p in list_produits
@@ -371,42 +387,73 @@ def list_products_on(xmppobject, data):
     # En cas d'erreur, on retourne la liste des table mise à jour sous forme de dictionnaires
     try:
         system_info = data.get("system_info")
-        platform_type = system_info["platform_info"]["type"]
+        platform_type = system_info["platform_info"].get("type", None)
         # Récupération de la valeur de machine_arch
-        machine_arch = system_info["platform_info"]["machine"]
+        machine_arch = system_info["platform_info"].get("machine", None)
+        ProductName =  system_info["infobuild"].get("ProductName", None)
+        logger.debug("system_info %s " % json.dumps(system_info, indent=4))
+        DisplayVersion = system_info["infobuild"].get("DisplayVersion", None)
         # Vérification et transformation en majuscules
-        if machine_arch:
-            machine_arch = machine_arch.upper()
-        display_version = system_info["infobuild"].get("DisplayVersion")
+
+        if not (machine_arch and ProductName and platform_type):
+            raise ValueError(f"Version de produit inconnue pour traitement: ProductName : {ProductName} machine_arch : {machine_arch} platform_type :{platform_type}")
+        machine_arch = machine_arch.upper()
+
+        # Normalisation du nom d'OS
+        os_name = None
+
+        if 'microsoft windows server' in platform_type:
+            if DisplayVersion:
+                # on a des packages MSO
+                os_name  = "MSOS"
+            else:
+                os_name = "WS"
+                if '2003' in ProductName :
+                    DisplayVersion = '2003'
+                elif '2008' in ProductName :
+                    DisplayVersion = '2008'
+                elif '2012' in ProductName :
+                    DisplayVersion = '2012'
+                elif '2019' in ProductName :
+                    DisplayVersion = '2019'
+                elif '2022' in ProductName :
+                    DisplayVersion = '2022'
+                elif '2025' in ProductName :
+                    DisplayVersion = '2025'
+                else:
+                    raise ValueError(f"update Version inconnue ProductName: {ProductName} platform_type: {platform_type} arch: {machine_arch} DisplayVersion: {DisplayVersion}")
+        elif "Windows 10" in platform_type:
+            os_name = "Win10"
+        elif "Windows 11" in platform_type:
+            os_name = "Win11"
+        else:
+            raise ValueError(f"update Version inconnue ProductName: {ProductName} platform_type: {platform_type} arch: {machine_arch} DisplayVersion: {DisplayVersion}")
+
+
     except KeyError as e:
         logger.error("Clé manquante dans data: %s", e)
+        logger.exception("Clé manquante dans data: %s", e)
         prds = [{"name_procedure": element} for element in basepack if element]
         return prds
     except Exception as e:
         logger.error("Erreur inattendue lors de la lecture des infos système: %s", e)
+        logger.exception("Erreur inattendue lors de la lecture des infos système: %s", e)
         prds = [{"name_procedure": element} for element in basepack if element]
         return prds
 
-    # Normalisation du nom d'OS
-    os_name = None
-    if "Windows 10" in platform_type:
-        os_name = "Win10"
-    elif "Windows 11" in platform_type:
-        os_name = "Win11"
-    elif "MSOS" in platform_type:
-        os_name = "MSOS"
-    elif "WS" in platform_type:
-        os_name = "WS"
+    logger.debug(f"update Version : ProductName: {ProductName} platform_type: {platform_type} arch: {machine_arch} DisplayVersion: {DisplayVersion} os_name {os_name}")
 
     # Construction du package attendu
     selected_os_pkg = None
     if os_name:
-        if display_version in data['display_version_usuel']:# exemple : up_packages_Win10_X64_21H2
-            selected_os_pkg = f"up_packages_{os_name}_{machine_arch}_{display_version}"
+        if DisplayVersion in data['display_version_usuel']:# exemple : up_packages_Win10_X64_21H2
+            selected_os_pkg = f"up_packages_{os_name}_{machine_arch}_{DisplayVersion}"
         else:  # fallback générique (ex: up_packages_Win11_X64)
-            logger.warning( f"display_version '{display_version}' inconnue. "
-                            f"Valeur : {display_version}")
+            logger.warning( f"DisplayVersion '{DisplayVersion}' inconnue. "
+                            f"Valeur : {DisplayVersion}")
             selected_os_pkg = f"up_packages_{os_name}_{machine_arch}" # (ex cas: up_packages_Win11_X64)
+        logger.debug(f"selected os Table : {selected_os_pkg}")
+
 
     # Vérifie si ce package existe dans la table des produits
     if selected_os_pkg and any(p["name_procedure"] == selected_os_pkg for p in list_produits):
