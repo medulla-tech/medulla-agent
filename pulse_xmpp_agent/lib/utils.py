@@ -4138,7 +4138,7 @@ def reversessh_keys_mustexist_on_relay(username="reversessh"):
     authorized_keys_path = os.path.join(
         os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys"
     )
-    addtoauth_cmd = f"ssh-keygen -y -f {id_rsa_key_path} > {authorized_keys_path}"
+    addtoauth_cmd = f"grep -qxF \"$(ssh-keygen -y -f {id_rsa_key_path})\" {authorized_keys_path} || ssh-keygen -y -f {id_rsa_key_path}) >> {authorized_keys_path}"
     simplecommand(encode_strconsole(addtoauth_cmd))
     os.chmod(os.path.dirname(id_rsa_key_path), 0o700)
     os.chown(os.path.dirname(id_rsa_key_path), uid, -1)
