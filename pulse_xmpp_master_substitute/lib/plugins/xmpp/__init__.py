@@ -1374,7 +1374,7 @@ class XmppMasterDatabase(DatabaseHelper):
             try:
                 # creation si cette entite n'existe pas.
                 new_glpi_entity = Glpi_entity()
-                new_.complete_name = complete_name
+                new_glpi_entity.complete_name = complete_name
                 new_glpi_entity.name = name
                 new_glpi_entity.glpi_id = glpi_id
                 session.add(new_glpi_entity)
