@@ -150,7 +150,7 @@ class Compatibilite:
         if self.debug:
             print(f"System Meets Requirements: {result}")
         return result
-
+# "0409": "EnglishInternational",
 # Tableau de correspondance entre les codes Windows et les langues
 language_codes = {
     "0401": "Arabic",
@@ -160,7 +160,7 @@ language_codes = {
     "0407": "German",
     "0408": "Greek",
     "0809": "English",
-    "0409": "EnglishInternational",
+    "0409": "English",
     "040A": "Spanish",
     "080A": "Spanish_Mexico",
     "0425": "Estonian",
@@ -295,7 +295,10 @@ def main():
         DisplayVersion = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "DisplayVersion", winreg.REG_SZ)
     except Exception:
         DisplayVersion = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", winreg.REG_SZ)
-    if "Windows 10" in ProductName:
+
+    if "Windows Server" in ProductName:
+        major_name = "MSO"+ server_annee[-2:]
+    elif "Windows 10" in ProductName:
         major_name = 10
         compatibleWin11 = compatiblew11
     elif "Windows 11" in ProductName:
@@ -310,6 +313,8 @@ def main():
     install_language = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
     install_language_fallback = install_language
     default_lang = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "Default", winreg.REG_SZ)
+    logger.info(f"ProductName: {ProductName}")
+    logger.info(f"DisplayVersion: {DisplayVersion}")
     logger.info(f"InstallLanguage: {install_language}")
     logger.info(f"InstallLanguageFallback: {install_language_fallback}")
     logger.info(f"Default Language: {default_lang}")
@@ -329,7 +334,12 @@ def main():
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "InstallDate", current_date, winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Readme", "", winreg.REG_SZ)
 # Medulla_10@22H2@fr-FR@040C@Win11_24H2_French_x64@fr-FR-11
-    if major_name == 10 and DisplayVersion.upper() != "22H2":
+
+    if major_name.startswith("MSO"):
+        update = f"{correspondence_text.get(install_language, 'Unknown')}-10"
+        iso_name = f"{major_name}_24H2_{language_codes.get(install_language, 'Unknown')}_{archi}"
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'Unknown')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
+    elif major_name == 10 and DisplayVersion.upper() != "22H2":
         if DisplayVersion=="":
             DisplayVersion = "1906"
         update = f"{correspondence_text.get(install_language, 'Unknown')}-10"
