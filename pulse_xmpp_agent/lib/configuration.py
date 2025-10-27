@@ -673,7 +673,7 @@ class confParameter:
                 self.packageserver["port"] = int(packageserver["port"])
         self.public_ip = ""
         self.public_ip_relayserver = ""
-        self.geoservers = "if.siveo.net"
+        self.geoservers = "if.medulla-tech.io"
         self.geolocalisation = True
 
         if Config.has_option("type", "public_ip"):

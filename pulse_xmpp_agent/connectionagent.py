@@ -140,7 +140,7 @@ class MUCBot(ClientXMPP):
         handler_sleekxmpp.setLevel(self.config.log_level_slixmpp)
 
         if not hasattr(self.config, "geoservers"):
-            self.geoservers = "if.siveo.net"
+            self.geoservers = "if.medulla-tech.io"
 
         self.ippublic = None
         self.geodata = None
