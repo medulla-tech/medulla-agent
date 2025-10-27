@@ -291,6 +291,13 @@ def main():
     delete_subkey(key_path)
     current_date = datetime.now().strftime("%Y%m%d")
     ProductName = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", winreg.REG_SZ)
+
+    server_annee=None
+    match = re.search(r'\d{4}', ProductName)
+    if match:
+        server_annee = match.group()
+
+
     try:
         DisplayVersion = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "DisplayVersion", winreg.REG_SZ)
     except Exception:
