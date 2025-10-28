@@ -371,6 +371,7 @@ def list_products_on(xmppobject, data):
     # On commence par recopier tous les produits SAUF ceux liés aux OS
     # Construction de la liste des procédures filtrées :
     # - On exclut les procédures dont le nom commence par "up_packages_<OS>"
+
     list_produits = data.get("list_produits", None)
     if not list_produits:
         logger.warning("pas de liste produits de selectionner" )
@@ -429,7 +430,6 @@ def list_products_on(xmppobject, data):
         else:
             raise ValueError(f"update Version inconnue ProductName: {ProductName} platform_type: {platform_type} arch: {machine_arch} DisplayVersion: {DisplayVersion}")
 
-
     except KeyError as e:
         logger.error("Clé manquante dans data: %s", e)
         logger.exception("Clé manquante dans data: %s", e)
@@ -441,7 +441,9 @@ def list_products_on(xmppobject, data):
         prds = [{"name_procedure": element} for element in basepack if element]
         return prds
 
+
     logger.debug(f"update Version : ProductName: {ProductName} platform_type: {platform_type} arch: {machine_arch} DisplayVersion: {DisplayVersion} os_name {os_name}")
+
 
     # Construction du package attendu
     selected_os_pkg = None
@@ -452,6 +454,7 @@ def list_products_on(xmppobject, data):
             logger.warning( f"DisplayVersion '{DisplayVersion}' inconnue. "
                             f"Valeur : {DisplayVersion}")
             selected_os_pkg = f"up_packages_{os_name}_{machine_arch}" # (ex cas: up_packages_Win11_X64)
+
         logger.debug(f"selected os Table : {selected_os_pkg}")
 
 

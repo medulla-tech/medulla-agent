@@ -147,6 +147,7 @@ class Compatibilite:
         return result
 # "0409": "EnglishInternational",
 # Tableau de correspondance entre les codes Windows et les langues
+# "0409": "EnglishInternational",
 language_codes = {
     "0401": "Arabic",
     "0402": "Bulgarian",
@@ -245,10 +246,12 @@ def execute_medulla_info_update():
     current_date = datetime.now().strftime("%Y%m%d")
     ProductName = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", winreg.REG_SZ)
 
+
     server_annee=None
     match = re.search(r'\d{4}', ProductName)
     if match:
         server_annee = match.group()
+
 
     try:
         DisplayVersion = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "DisplayVersion", winreg.REG_SZ)
