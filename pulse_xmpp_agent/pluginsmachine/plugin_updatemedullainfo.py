@@ -23,7 +23,7 @@ if sys.platform.startswith("win"):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.7", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.8", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 
 class Compatibilite:
