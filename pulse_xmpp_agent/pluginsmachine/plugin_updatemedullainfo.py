@@ -23,7 +23,8 @@ if sys.platform.startswith("win"):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.8", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+
+plugin = {"VERSION": "1.9", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 
 class Compatibilite:
@@ -291,7 +292,7 @@ def execute_medulla_info_update():
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "InstallDate", current_date, winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Readme", "", winreg.REG_SZ)
 
-    if major_name.startswith("MSO"):
+    if isinstance(major_name, str) and major_name.startswith("MSO"):
         update = f"{correspondence_text.get(install_language, 'Unknown')}-10"
         iso_name = f"{major_name}_24H2_{language_codes.get(install_language, 'Unknown')}_{archi}"
         comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'Unknown')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
