@@ -293,9 +293,16 @@ def execute_medulla_info_update():
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Readme", "", winreg.REG_SZ)
 
     if isinstance(major_name, str) and major_name.startswith("MSO"):
-        update = f"{correspondence_text.get(install_language, 'Unknown')}-10"
-        iso_name = f"{major_name}_24H2_{language_codes.get(install_language, 'Unknown')}_{archi}"
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'Unknown')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
+        update = f"{correspondence_text.get(install_language, 'Unknown')}-MSO25"
+        iso_name = "SW_DVD9_Win_Server_STD_CORE_2025_24H2_64Bit_English_DC_STD_MLF_X23-81891"
+        if major_name[3:] in ['12', '16', '19', '22', '25']: # les serveur suivant sont mis a jour avec l iso 2025
+            update = f"{correspondence_text.get(install_language, 'English')}-MSO25"
+            iso_name = f"SW_DVD9_Win_Server_STD_CORE_2025_24H2_64Bit_{language_codes.get(install_language, 'English')}_DC_STD_MLF_X23-81893.ISO"
+
+            iso_name = iso_name.removesuffix('.iso').removesuffix('.ISO')
+        if DisplayVersion == "":
+            DisplayVersion = major_name
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
     elif major_name == 10 and DisplayVersion.upper() != "22H2":
         if DisplayVersion == "":
             DisplayVersion = "1906"
