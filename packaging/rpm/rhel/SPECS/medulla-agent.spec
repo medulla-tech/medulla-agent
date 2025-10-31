@@ -17,7 +17,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		medulla-agent
-Version:	5.4.1
+Version:	5.4.2
 %if ! %use_git
 Release:        1%{?dist}
 %else
