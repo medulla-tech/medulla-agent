@@ -24,7 +24,7 @@ import netaddr
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.3", "NAME": "update_windows", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "2.4", "NAME": "update_windows", "TYPE": "substitute"}  # fmt: skip
 
 # function comment for next feature
 # this functions will be used later
@@ -376,15 +376,15 @@ def list_products_on(xmppobject, data):
     if not list_produits:
         logger.warning("pas de liste produits de selectionner" )
         return
-    basepack = [
-        p["name_procedure"]
-        for p in list_produits
-        # Vérification que le nom ne commence par aucun des préfixes exclus
-        if not any(
-            p["name_procedure"].startswith(f"up_packages_{os_prefix}")
-            for os_prefix in data['excluded_prefixes_os']
-        )
-    ]
+    basepack = []
+    #     p["name_procedure"]
+    #     for p in list_produits
+    #     # Vérification que le nom ne commence par aucun des préfixes exclus
+    #     if not any(
+    #         p["name_procedure"].startswith(f"up_packages_{os_prefix}")
+    #         for os_prefix in data['excluded_prefixes_os']
+    #     )
+    # ]
     # En cas d'erreur, on retourne la liste des table mise à jour sous forme de dictionnaires
     try:
         system_info = data.get("system_info")
@@ -395,25 +395,30 @@ def list_products_on(xmppobject, data):
         logger.debug("system_info %s " % json.dumps(system_info, indent=4))
         DisplayVersion = system_info["infobuild"].get("DisplayVersion", None)
 
+        office_info = system_info["office"]
+        visual_info = system_info["visual"]
         # Vérification et transformation en majuscules
-
+        produitbrute= [p["name_procedure"] for p in list_produits]
         # Construction des noms de packages pour Office et Visual Studio
         packageofficename = None
         OfficeVersion = office_info.get("version")
         if OfficeVersion and "year" in office_info:
             packageofficename = f"up_packages_office_{office_info['year']}_{machine_arch}"
+            if packageofficename in produitbrute:
+                basepack.append(packageofficename)
 
         packageVisualStudioname = None
         VisualStudioVersion = visual_info.get("version")
         if VisualStudioVersion and "year" in visual_info:
             packageVisualStudioname = f"up_packages_Vstudio_{visual_info['year']}"
+            if packageVisualStudioname in produitbrute:
+                basepack.append(packageVisualStudioname)
 
         if not (machine_arch and ProductName and platform_type):
             raise ValueError(
                 f"Version de produit inconnue pour traitement: "
                 f"ProductName: {ProductName}, machine_arch: {machine_arch}, platform_type: {platform_type}"
             )
-
 
         machine_arch = machine_arch.upper()
 
@@ -495,10 +500,6 @@ def list_products_on(xmppobject, data):
 
     # Transformation finale en liste de dicts
     prds = [{"name_procedure": element} for element in basepack if element]
-    if OfficeVersion:
-        prds.append({"name_procedure": packageofficename})
-    if VisualStudioVersion:
-        prds.append() {"name_procedure": packageVisualStudioname})
     return prds
 
 def read_conf_remote_update_windows(xmppobject):
