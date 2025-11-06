@@ -2778,7 +2778,7 @@ class geolocalisation_agent:
         self.listgeoserver = [
             "http://%s/json" % x
             for x in re.split(
-                r"[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]", strlistgeoserveur
+                r"[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\$\|\s]", strlistgeoserveur
             )
             if x.strip() != ""
         ]
