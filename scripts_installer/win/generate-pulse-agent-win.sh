@@ -332,6 +332,8 @@ prepare_mandatory_includes() {
         rm rsync/ssh-agent.exe
         rm rsync/ssh-add.exe     
 		zip -r rsync.zip rsync
+        chmod 664 rsync.zip
+        chown syncthing:syncthing rsync.zip
 		rm -rf rsync
 		rm -rf ${FOLDERNAME}
 		popd
