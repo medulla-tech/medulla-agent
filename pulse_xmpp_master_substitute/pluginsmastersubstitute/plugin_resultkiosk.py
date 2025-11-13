@@ -40,7 +40,7 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
 PREFIX_COMMAND = "commandkiosk"
 
 
@@ -321,7 +321,7 @@ def get_packages_for_machine(machine, showinfobool=True):
         machine_entity = XmppMasterDatabase().getmachineentityfromjid(machine["jid"])
 
         machine_entity = (
-            machine_entity.complete_name.replace(" > ", "/")
+            machine_entity.completename.replace(" > ", "/")
             if machine_entity is not None
             else None
         )
