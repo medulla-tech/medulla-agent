@@ -11736,8 +11736,15 @@ where d.jidmachine='%s' and c.package_id = '%s'
     @DatabaseHelper._sessionm
     def getmachineentityfromjid(self, session, jid):
         query = (
-            session.query(Glpi_entity)
-            .join(Machines, Glpi_entity.id == Machines.glpi_entity_id)
+            session.query(self.Local_glpi_entities)
+            .join(
+                self.Local_glpi_machines,
+                self.Local_glpi_entities.id == self.Local_glpi_machines.entities_id
+            )
+            .join(
+                Machines,
+                self.Local_glpi_machines.id == Machines.id_glpi
+            )
             .filter(Machines.jid == jid)
             .first()
         )
