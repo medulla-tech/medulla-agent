@@ -1,3 +1,5 @@
+
+
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
 # SPDX-FileCopyrightText: 2007-2010 Mandriva, http://www.mandriva.com
@@ -34,6 +36,7 @@ from lib.plugins.glpi.Glpi93 import Glpi93
 from lib.plugins.glpi.Glpi94 import Glpi94
 from lib.plugins.glpi.Glpi95 import Glpi95
 from lib.plugins.glpi.Glpi100 import Glpi100
+from lib.plugins.glpi.Itsmng21 import Itsmng21
 
 
 class Glpi:
@@ -109,6 +112,7 @@ class Glpi:
 
             # Instanciation de la bonne version de GLPI
             versions_map = {
+                "2.1.0": Itsmng21,
                 "0.84": Glpi84,
                 "9.2": Glpi92,
                 "9.3": Glpi93,
@@ -191,3 +195,4 @@ class Glpi:
         return self.version_instance.addRegistryCollectContent(
             computers_id, registry_id, key, value
         )
+
