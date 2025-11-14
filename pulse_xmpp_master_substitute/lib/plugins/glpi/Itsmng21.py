@@ -5986,72 +5986,6 @@ class Itsmng21(DyngroupDatabaseHelper):
     def isComputerNameAvailable(self, ctx, locationUUID, name):
         raise Exception("need to be implemented when we would be able to add computers")
 
-    def _killsession(self, sessionwebservice):
-        """
-        Destroy a session identified by a session token.
-
-        @param sessionwebservice: session var provided by initSession endpoint.
-        @type sessionwebservice: str
-
-        """
-        headers = {
-            "content-type": "application/json",
-            "Session-Token": sessionwebservice,
-        }
-        url = Itsm - ngConfig.webservices["glpi_base_url"] + "killSession"
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200:
-            self.logger.debug("Kill session REST: %s" % sessionwebservice)
-
-    def delMachine(self, uuid):
-        """
-        Deleting a machine in GLPI (only the flag 'is_deleted' updated)
-
-        @param uuid: UUID of machine
-        @type uuid: str
-
-        @return: True if the machine successfully deleted
-        @rtype: bool
-        """
-        authtoken = base64.b64encode(
-            Itsm
-            - ngConfig.webservices["glpi_username"]
-            + ":"
-            + Itsm
-            - ngConfig.webservices["glpi_password"]
-        )
-        headers = {
-            "content-type": "application/json",
-            "Authorization": "Basic " + authtoken,
-        }
-        url = Itsm - ngConfig.webservices["glpi_base_url"] + "initSession"
-        self.logger.debug("Create session REST")
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200:
-            sessionwebservice = str(json.loads(r.text)["session_token"])
-            self.logger.debug("session %s" % sessionwebservice)
-            url = (
-                Itsm
-                - ngConfig.webservices["glpi_base_url"]
-                + "Computer/"
-                + str(fromUUID(uuid))
-            )
-            headers = {
-                "content-type": "application/json",
-                "Session-Token": sessionwebservice,
-            }
-            if GlpiConfig.webservices["purge_machine"]:
-                parameters = {"force_purge": "1"}
-            else:
-                parameters = {"force_purge": "0"}
-            r = requests.delete(url, headers=headers, params=parameters)
-            if r.status_code == 200:
-                self.logger.debug("Machine %s deleted" % str(fromUUID(uuid)))
-                self._killsession(sessionwebservice)
-                return True
-        self._killsession(sessionwebservice)
-        return False
-
     @DatabaseHelper._sessionm
     def addUser(self, session, username, password, entity_rights=None):
         # Check if the user exits or not
@@ -7409,7 +7343,7 @@ class Machine(object):
         return {"hostname": self.name, "uuid": toUUID(self.id)}
 
     def to_a(self):
-        owner_login, owner_firstname, owner_realname = Itsm_ng14().getMachineOwner(self)
+        owner_login, owner_firstname, owner_realname = Itsmng21().getMachineOwner(self)
         return [
             ["id", self.id],
             ["name", self.name],
@@ -7434,7 +7368,7 @@ class Machine(object):
             ["model", self.computermodels_id],
             ["type", self.computertypes_id],
             ["entity", self.entities_id],
-            ["uuid", Itsm_ng14().getMachineUUID(self)],
+            ["uuid", Itsmng21().getMachineUUID(self)],
         ]
 
 
