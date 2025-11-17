@@ -27,7 +27,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "3.3", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "3.4", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -298,35 +298,18 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 utils.apply_perms_sshkey(filekey, private=True)
 
                 sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
-                reversesshbat = os.path.join(medullaPath(), "bin", "reversessh.bat")
-
-                linecmd = []
-                cmd = (
-                    """\\"%s\\" -t -t -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
-                    % (
-                        sshexec,
-                        reversetype,
-                        data["port"],
-                        remoteport,
-                        filekey,
-                        data["relayserverip"],
-                        reversessh_server_port,
-                    )
-                )
-                linecmd.append("""@echo off""")
-                linecmd.append(
-                    """for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """
-                    % cmd
-                )
-                linecmd.append("""echo %$PID%""")
-                linecmd.append(
-                    """echo %$PID% > C:\\progra~1\\Medulla\\bin\\%$PID%.pid"""
-                )
-                dd = "\r\n".join(linecmd)
+                reversesshps1 = os.path.join(medullaPath(), "bin", "reversessh.ps1")
+                linecmd = [
+                    """$process = Start-Process -FilePath "%s" -ArgumentList "-t -t -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -i `"%s`" -l reversessh %s -p %s" -PassThru""" % (sshexec, reversetype, data["port"], remoteport, filekey, data["relayserverip"], reversessh_server_port),
+                    """$sshPID = $process.Id""",
+                    """Write-Output "SSH process PID: $sshPID" """,
+                    """$sshPID | Out-File -FilePath "C:\\Progra~1\\Medulla\\bin\\$sshPID.pid" -Encoding ASCII""",
+                ]
+                cmd = "\r\n".join(linecmd)
 
                 if not os.path.exists(os.path.join(medullaPath(), "bin")):
                     os.makedirs(os.path.join(medullaPath(), "bin"))
-                utils.file_put_contents(reversesshbat, dd)
+                utils.file_put_contents(reversesshps1, cmd)
                 if "persistence" not in data:
                     data["persistence"] = "no"
                 # clear tout les reverse ssh
@@ -355,7 +338,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         fromuser="",
                         touser="",
                     )
-                result = subprocess.Popen(reversesshbat)
+                result = utils.powerschellscriptps1(reversesshps1)
                 time.sleep(2)
                 for f in [
                     os.path.join(medullaPath(), "bin", x)
@@ -467,9 +450,17 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             if sys.platform.startswith("win"):
                 # voir cela powershell.exe "Stop-Process -Force
                 # (Get-NetTCPConnection -LocalPort 22).OwningProcess"
-
-                cmd = "wmic path win32_process Where \"Commandline like '%reversessh%'\" Call Terminate"
-                subprocess.Popen(cmd)
+                searchreversesshprocess = os.path.join(medullaPath(), "bin")
+                for f in [
+                    os.path.join(medullaPath(), "bin", x)
+                    for x in os.listdir(searchreversesshprocess)
+                    if x[-4:] == ".pid"
+                ]:
+                    pid = utils.file_get_contents(f).strip(" \n\r\t")
+                    cmd = "taskkill /F /PID %s" % str(pid)
+                    logger.info(cmd)
+                    utils.simplecommand(cmd)
+                    os.remove(f)
             else:
                 os.system(
                     "lpid=$(ps aux | grep reversessh | grep -v grep | awk '{print $2}');kill -9 $lpid"
