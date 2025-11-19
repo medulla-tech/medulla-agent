@@ -32,7 +32,7 @@ import time
 import threading
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.7", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.8", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
@@ -1321,10 +1321,95 @@ def applicationdeploymentjson(
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
 
     if not objdeployadvanced:
-        logger.error(
+        logger.warning(
             "The line has_login_command for the idcommand %s is missing" % idcommand
         )
-        logger.error("To solve this, please remove the group, and recreate it")
+        logger.warning("Attempting automatic repair: creating missing has_login_command entry")
+
+        # Try to auto-repair by creating the missing entry with default values
+        try:
+            result_id = XmppMasterDatabase().addlogincommand(
+                login=login,
+                commandid=idcommand,
+                grpid="",
+                nb_machine_in_grp="",
+                instructions_nb_machine_for_exec="",
+                instructions_datetime_for_exec="",
+                parameterspackage="",
+                rebootrequired=0,
+                shutdownrequired=0,
+                bandwidth=0,
+                syncthing=0,
+                params={}
+            )
+
+            if result_id:
+                logger.info(
+                    "Successfully created missing has_login_command entry with id %s for command %s"
+                    % (result_id, idcommand)
+                )
+                # Reload the command data after auto-repair
+                objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
+
+                if not objdeployadvanced:
+                    logger.error(
+                        "Auto-repair failed: still cannot retrieve command data for idcommand %s"
+                        % idcommand
+                    )
+                    raise Exception("Auto-repair failed")
+                else:
+                    logger.info("Auto-repair successful, deployment will continue")
+            else:
+                logger.error("Failed to create has_login_command entry for command %s" % idcommand)
+                raise Exception("Could not create has_login_command entry")
+
+        except Exception as e:
+            logger.error(
+                "Auto-repair failed for command %s: %s" % (idcommand, str(e))
+            )
+            logger.error("To solve this, please remove the group, and recreate it")
+
+            # Abort the deployment due to missing command data
+            XmppMasterDatabase().adddeploy(
+                idcommand,
+                jidmachine,
+                jidrelay,
+                name,
+                uuidmachine,
+                title,
+                "ABORT COMMAND DATA MISSING",
+                sessiondeployementless,
+                user=login,
+                login=login,
+                title=title,
+                group_uuid=GUID,
+                startcmd=start_date,
+                endcmd=end_date,
+                macadress=macadress,
+                result="",
+                syncthing=0,
+            )
+            msg.append(
+                "<span class='log_err'>Command data missing for command ID %s</span>"
+                % idcommand
+            )
+            msg.append("Auto-repair failed. Action: Remove and recreate the deployment group")
+            for logmsg in msg:
+                self.xmpplog(
+                    logmsg,
+                    type="deploy",
+                    sessionname=sessiondeployementless,
+                    priority=-1,
+                    action="xmpplog",
+                    why=self.boundjid.bare,
+                    module="Deployment | Start | Creation",
+                    fromuser=login,
+                )
+            logger.error(
+                "Deployment %s failed on %s: Command ID %s missing from has_login_command table"
+                % (name, uuidmachine, idcommand)
+            )
+            return False
 
     if (
         jidmachine is not None
