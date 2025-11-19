@@ -1,5 +1,13 @@
 # Change Log
 
+## [5.4.3](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.3) (2025-11-19)
+- [FEATURE] Update Office and Visual Studio through Windows update module
+- [FEATURE] Add support for ITSM-NG version 2.1
+- [BUGFIX]  Fix permissions on rsync.zip when windows agent generation is run
+- [BUGFIX]  Fix retrieval of user's entities in the Kiosk module
+- [BUGFIX]  Fix reversessh script for Windows 25H2 where wmic is no longer present
+- [BUGFIX]  Fix convergences when the command is missing
+
 ## [5.4.2](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.2) (2025-10-31)
 - [FEATURE] Add support for Windows Servers in Updates Module
 - [FEATURE] Use if.medulla-tech.io for geolocalisation of clients and relays
