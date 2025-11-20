@@ -22,6 +22,7 @@ from .utils import (
     pulseuser_profile_mustexist,
     create_idrsa_on_client,
     add_key_to_authorizedkeys_on_client,
+    powerschellscriptps1
 )
 
 from lib.agentconffile import (
@@ -178,33 +179,19 @@ class functionsynchroxmpp:
                 filekey = os.path.join(medullaPath, ".ssh", "id_rsa")
 
             sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
-            reversesshbat = os.path.join(medullaPath(), "bin", "reversessh.bat")
-            linecmd = []
-            cmd = (
-                """\\"%s\\" -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s"""
-                % (
-                    sshexec,
-                    datareverse["type_reverse"],
-                    datareverse["portproxy"],
-                    datareverse["remoteport"],
-                    filekey,
-                    datareverse["ipARS"],
-                    datareverse["port_ssh_ars"],
-                )
-            )
-            linecmd.append("""@echo off""")
-            linecmd.append(
-                """for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """
-                % cmd
-            )
-            linecmd.append("""echo %$PID%""")
-            linecmd.append("""echo %$PID% > C:\\progra~1\\Medulla\\bin\\%$PID%.pid""")
+            reversesshps1 = os.path.join(medullaPath(), "bin", "reversessh.ps1")
+            linecmd = [
+                """$process = Start-Process -FilePath "%s" -ArgumentList "-t -t -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -i `"%s`" -l reversessh %s -p %s" -PassThru""" % (sshexec, datareverse["type_reverse"], datareverse["portproxy"], remoteport, filekey, datareverse["ipARS"], datareverse["port_ssh_ars"]),
+                """$sshPID = $process.Id""",
+                """Write-Output "SSH process PID: $sshPID" """,
+                """$sshPID | Out-File -FilePath "C:\\Progra~1\\Medulla\\bin\\$sshPID.pid" -Encoding ASCII""",
+            ]
             cmd = "\r\n".join(linecmd)
 
             if not os.path.exists(os.path.join("c:\\", "progra~1", "Medulla", "bin")):
                 os.makedirs(os.path.join("c:\\", "progra~1", "Medulla", "bin"))
-            file_put_contents(reversesshbat, cmd)
-            result = subprocess.Popen(reversesshbat)
+            file_put_contents(reversesshps1, cmd)
+            result = powerschellscriptps1(reversesshps1)
             time.sleep(2)
         elif sys.platform.startswith("darwin"):
             filekey = os.path.join(os.path.expanduser("~pulseuser"), ".ssh", "id_rsa")

@@ -4992,10 +4992,22 @@ class offline_search_kb:
             "version_edge": "",
             "infobuild": {},
             "platform_info": {},
+            "office" :{},
+            "visual" : {},
         }
 
         try:
             self.info_package["platform_info"] = self.platform_info()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
+        try:
+            self.info_package["visual"] = self.search_visual_version()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
+        try:
+            self.info_package["office"] = self.search_office_version()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -5172,6 +5184,44 @@ class offline_search_kb:
             elif major == "6" and minor == "1":
                 return "7"
         return ""
+
+    def search_office_version(self):
+        office_info = {}
+        if sys.platform.startswith("win"):
+            try:
+                cmd = r'powershell -Command "Get-ChildItem \"HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" | ForEach-Object { Get-ItemProperty $_.PsPath } | Where-Object { $_.DisplayName -like \"*Microsoft Office*\" } | Select-Object -First 1 -ExpandProperty DisplayName"'
+                result = simplecommand(encode_strconsole(cmd))
+                if int(result["code"]) == 0:
+                    office_name = [x.strip() for x in result["result"] if x.strip() != ""]
+                    if office_name:
+                        office_info["version"] = office_name[0]
+                        # Extraction de l'année si présente dans la chaîne
+                        match = re.search(r"(\d{4})", office_name[0])
+                        if match:
+                            office_info["year"] = match.group(1)
+            except Exception:
+                logger.error("\n%s" % (traceback.format_exc()))
+                office_info = {}
+        return office_info
+
+    def search_visual_version(self):
+        visual_info = {}
+        if sys.platform.startswith("win"):
+            try:
+                cmd = r'powershell -Command "Get-ChildItem \"HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" | ForEach-Object { Get-ItemProperty $_.PsPath } | Where-Object { $_.DisplayName -like \"*Visual Studio*\" } | Select-Object -First 1 -ExpandProperty DisplayName"'
+                result = simplecommand(encode_strconsole(cmd))
+                if int(result["code"]) == 0:
+                    visual_name = [x.strip() for x in result["result"] if x.strip() != ""]
+                    if visual_name:
+                        visual_info["version"] = visual_name[0]
+                        # Extraction de l'année si présente dans la chaîne
+                        match = re.search(r"(\d{4})", visual_name[0])
+                        if match:
+                            visual_info["year"] = match.group(1)
+            except Exception:
+                logger.error("\n%s" % (traceback.format_exc()))
+                visual_info = {}
+        return visual_info
 
     def get_locale_id_iso(self):
         cmd = """REG QUERY "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\Language" """
@@ -6249,10 +6299,10 @@ class convert:
         en
         1 list de colonne
 
-        data = [{"id": 1, "name": "dede", "age": 30},
-                {"id": 2, "name": "dada", "age": 25}]
+        data = [{"id": 1, "name": "mac1", "age": 30},
+                {"id": 2, "name": "mac2", "age": 25}]
         to
-        [{'age': [30, 25]}, {'name': ['dede', 'dada']}, {'id': [1, 2]}]
+        [{'age': [30, 25]}, {'name': ['mac1', 'mac2']}, {'id': [1, 2]}]
         """
         # Obtenez les noms de colonnes
         column_names = set()
@@ -6273,10 +6323,10 @@ class convert:
         """
         Cette fonction fait l'inverse de la conversion réalisée par la fonction convert_rows_to_columns.
 
-        data = [{'age': [30, 25]}, {'name': ['dede', 'dada']}, {'id': [1, 2]}]
+        data = [{'age': [30, 25]}, {'name': ['mac1', 'mac2']}, {'id': [1, 2]}]
         to
-        [{"id": 1, "name": "dede", "age": 30},
-        {"id": 2, "name": "dada", "age": 25}]
+        [{"id": 1, "name": "mac1", "age": 30},
+        {"id": 2, "name": "mac2", "age": 25}]
         """
         # Obtenez tous les noms de colonnes
         rows = []

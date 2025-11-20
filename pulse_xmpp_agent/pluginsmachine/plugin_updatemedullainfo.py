@@ -229,12 +229,17 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("PL-MEDULLAINFO ###################################################")
     logger.debug("PL-MEDULLAINFO call %s from %s" % (plugin, message["from"]))
     logger.debug("PL-MEDULLAINFO ###################################################")
-    try:
-        if sys.platform.startswith("win"):
+
+    if sys.platform.startswith("win"):
+        try:
             update_medulla_info_update_notification(xmppobject)
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
             execute_medulla_info_update()
-    except Exception:
-        logger.error("\n%s" % (traceback.format_exc()))
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
 
 
 def execute_medulla_info_update():
