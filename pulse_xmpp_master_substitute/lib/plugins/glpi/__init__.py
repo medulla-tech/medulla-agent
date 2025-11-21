@@ -112,7 +112,7 @@ class Glpi:
 
             # Instanciation de la bonne version de GLPI
             versions_map = {
-                "2.1.0": Itsmng21,
+                "2.1": Itsmng21,
                 "0.84": Glpi84,
                 "9.2": Glpi92,
                 "9.3": Glpi93,
