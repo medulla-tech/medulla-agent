@@ -34,7 +34,7 @@ from sqlalchemy import (
     distinct,
     inspect,
 )
-from sqlalchemy.orm import ( 
+from sqlalchemy.orm import (
     create_session,
     mapper,
     relationship,
@@ -237,13 +237,13 @@ class Itsmng21(DatabaseHelper):
         except OperationalError:
             self._glpi_version = list(
                 self.engine_glpi.execute(
-                    'SELECT value FROM glpi_configs WHERE name = "version"'
+                    'SELECT value FROM glpi_configs WHERE name = "itsmversion"'
                 )
                 .fetchone()
                 .values()
             )[0].replace(" ", "")
 
-        if LooseVersion(self._glpi_version) >= LooseVersion("2.0.0") and LooseVersion(self._glpi_version) <= LooseVersion("2.1.99"):
+        if LooseVersion(self._glpi_version) >= LooseVersion("2.1.0") and LooseVersion(self._glpi_version) <= LooseVersion("2.1.99"):
             logging.getLogger().debug("Itsm-ng version %s found !" % self._glpi_version)
         else:
             logging.getLogger().debug("Itsm-ng higher than version 2.1 was not detected")
@@ -253,7 +253,7 @@ class Itsmng21(DatabaseHelper):
         self.logger.info("Itsm-ng is in version %s" % (self.glpi_version))
         self.metadata.create_all()
         logging.getLogger().debug(
-            "Trying to detect if Itsm-ng version is higher than 2.1.0"
+            "Trying to detect if Itsm-ng version is higher than 2.1"
         )
         self.is_activated = True
         self.logger.debug("Itsm-ng finish activation")
@@ -474,17 +474,12 @@ class Itsmng21(DatabaseHelper):
             mapper(FusionAntivirus, self.fusionantivirus)
             self.logger.debug("... Success !!")
         except:
-            self.logger.warn("Load of fusion antivirus table failed")
-            self.logger.warn(
-                "This means you can not know antivirus statuses of your machines."
-            )
-            self.logger.warn("This feature comes with Fusioninventory GLPI plugin")
+            self.logger.warning("Load of fusion antivirus table failed")
 
         # glpi_plugin_fusioninventory_locks
         self.fusionlocks = None
         # glpi_plugin_fusioninventory_agents
         self.fusionagents = None
-
         if self.fusionantivirus is not None:
             try:
                 self.logger.debug("Load glpi_plugin_fusioninventory_locks")
@@ -495,6 +490,10 @@ class Itsmng21(DatabaseHelper):
                     autoload=True,
                 )
                 mapper(FusionLocks, self.fusionlocks)
+            except:
+                self.logger.warning("Impossible to map glpi_plugin_fusioninventory_locks")
+
+            try:
                 self.logger.debug("Load glpi_plugin_fusioninventory_agents")
                 self.fusionagents = Table(
                     "glpi_plugin_fusioninventory_agents",
@@ -506,6 +505,9 @@ class Itsmng21(DatabaseHelper):
                 )
                 mapper(FusionAgents, self.fusionagents)
             except:
+                self.logger.warning("Impossible to map glpi_plugin_fusioninventory_locks")
+
+            if self.fusionagents is None:
                 try:
                     self.logger.debug("Load glpi_agents")
                     self.fusionagents = Table(
@@ -518,8 +520,8 @@ class Itsmng21(DatabaseHelper):
                     )
                     mapper(FusionAgents, self.fusionagents)
                 except:
-                    self.fusionlocks = None
-                    self.fusionagents = None
+                    self.logger.warning("Impossible to map glpi_agents")
+
         # glpi_items_disks
         self.disk = Table(
             "glpi_items_disks",
@@ -774,39 +776,54 @@ class Itsmng21(DatabaseHelper):
                 Column("entities_id", Integer, ForeignKey("glpi_entities.id")),
                 autoload=True,
             )
-        except NoSuchTableError:
+            mapper(Collects, self.collects)
+
+        except:
+            self.logger.warning("Impossible to map glpi_plugin_fusioninventory_collects")
+
+        if self.collects is None:
             try:
                 self.collects = Table(
                     "glpi_plugin_glpiinventory_collects",
                     self.metadata,
                     autoload=True,
                 )
+                mapper(Collects, self.collects)
             except:
-                self.collects = None
-        if self.collects is not None:
-            mapper(Collects, self.collects)
+                self.logger.warning("Impossible to load glpi_plugin_glpiinventory_collects")
 
-            # map tables related to collects only if self.collects is not None
+        self.registries = None
+
+        try:
+            # mapper suivant plugin
+            self.registries = Table(
+                "glpi_plugin_fusioninventory_collects_registries",
+                self.metadata,
+                Column(
+                    "plugin_fusioninventory_collects_id",
+                    Integer,
+                    ForeignKey("glpi_plugin_fusioninventory_collects.id"),
+                ),
+                autoload=True,
+            )
+            mapper(Registries, self.registries)
+
+        except:
+            self.logger.warning("Impossible to map glpi_plugin_fusioninventory_collects_registries")
+
+        if self.registries is None:
             try:
-                # mapper suivant plugin
-                self.registries = Table(
-                    "glpi_plugin_fusioninventory_collects_registries",
-                    self.metadata,
-                    Column(
-                        "plugin_fusioninventory_collects_id",
-                        Integer,
-                        ForeignKey("glpi_plugin_fusioninventory_collects.id"),
-                    ),
-                    autoload=True,
-                )
-            except NoSuchTableError:
                 self.registries = Table(
                     "glpi_plugin_glpiinventory_collects_registries",
                     self.metadata,
                     autoload=True,
                 )
-            mapper(Registries, self.registries)
+                mapper(Registries, self.registries)
+            except:
+                self.logger.warning("Impossible to map glpi_plugin_glpiinventory_collects_registries")
 
+        self.regcontents = None
+        if self.registries is not None:
             try:
                 self.regcontents = Table(
                     "glpi_plugin_fusioninventory_collects_registries_contents",
@@ -819,13 +836,22 @@ class Itsmng21(DatabaseHelper):
                     ),
                     autoload=True,
                 )
+                mapper(RegContents, self.regcontents)
+
             except:
-                self.regcontents = Table(
-                    "glpi_plugin_glpiinventory_collects_registries_contents",
-                    self.metadata,
-                    autoload=True,
-                )
-            mapper(RegContents, self.regcontents)
+                self.logger.warninig("Impossible to map glpi_plugin_fusioninventory_collects_registries_contents")
+
+            if self.regcontents is None:
+                try:
+                    self.regcontents = Table(
+                        "glpi_plugin_glpiinventory_collects_registries_contents",
+                        self.metadata,
+                        autoload=True,
+                    )
+                    mapper(RegContents, self.regcontents)
+                except:
+                    self.logger.warning("Impossible to load glpi_plugin_glpiinventory_collects_registries_contents")
+
 
     # internal query generators
     def __filter_on(self, query):
@@ -862,24 +888,18 @@ class Itsmng21(DatabaseHelper):
                         self.machine.c.computertypes_id.in_(filter_values)
                     )
                 if filter_key == "entity":
-                    self.logger.debug(
-                        "will filter %s in (%s)" % (filter_key, str(filter_values))
-                    )
+                    self.logger.debug("will filter %s in (%s)" % (filter_key, str(filter_values)))
                     a_filter_on.append(self.machine.c.entities_id.in_(filter_values))
                 if filter_key == "autoupdatesystems_id":
-                    self.logger.debug(
-                        "will filter %s in (%s)" % (filter_key, str(filter_values))
-                    )
-                    a_filter_on.append(
-                        self.machine.c.autoupdatesystems_id.in_(filter_values)
-                    )
+                    self.logger.debug("will filter %s in (%s)" % (filter_key, str(filter_values)))
+                    a_filter_on.append(self.machine.c.autoupdatesystems_id.in_(filter_values))
                 if filter_key not in (
                     "state",
                     "type",
                     "entity",
                     "autoupdatesystems_id",
                 ):
-                    self.logger.warn("dont know how to filter on %s" % (filter_key))
+                    self.logger.warning("dont know how to filter on %s" % (filter_key))
             if len(a_filter_on) == 0:
                 return None
             elif len(a_filter_on) == 1:
@@ -928,9 +948,7 @@ class Itsmng21(DatabaseHelper):
                     ret[q[2]] = [q[1], q[2], q[3], listid]
         return ret
 
-    def __getRestrictedComputersListQuery(
-        self, ctx, filt=None, session=create_session(), displayList=False, count=False
-    ):
+    def __getRestrictedComputersListQuery(self, ctx, filt=None, session=create_session(), displayList=False, count=False):
         """
         Get the sqlalchemy query to get a list of computers with some filters
         If displayList is True, we are displaying computers list
@@ -1022,7 +1040,7 @@ class Itsmng21(DatabaseHelper):
                         locationids = [int(x.replace("UUID", "")) for x in location]
                         for locationid in locationids:
                             if locationid not in locsid:
-                                self.logger.warn(
+                                self.logger.warning(
                                     "User '%s' is trying to get the content of an unauthorized entity : '%s'"
                                     % (ctx.userid, "UUID" + location)
                                 )
@@ -1038,7 +1056,7 @@ class Itsmng21(DatabaseHelper):
                                 query_filter, (self.machine.c.entities_id == locationid)
                             )
                         else:
-                            self.logger.warn(
+                            self.logger.warning(
                                 "User '%s' is trying to get the content of an unauthorized entity : '%s'"
                                 % (ctx.userid, location)
                             )
@@ -1068,11 +1086,8 @@ class Itsmng21(DatabaseHelper):
                     join_query = join_query.outerjoin(
                         self.user, self.machine.c.users_id == self.user.c.id
                     )
-                try:
-                    if regs[0]:
-                        join_query = join_query.outerjoin(self.regcontents)
-                except IndexError:
-                    pass
+                if self.regcontents is not None:
+                    join_query = join_query.outerjoin(self.regcontents)
 
             if self.fusionagents is not None:
                 join_query = join_query.outerjoin(self.fusionagents)
@@ -1185,15 +1200,12 @@ class Itsmng21(DatabaseHelper):
                         )
                     r = re.compile("reg_key_.*")
                     regs = list(filter(r.search, self.config.summary))
-                    try:
-                        if regs[0]:
-                            clauses.append(
-                                self.regcontents.c.value.like(
-                                    "%" + filt["hostname"] + "%"
-                                )
+                    if self.regcontents is not None:
+                        clauses.append(
+                            self.regcontents.c.value.like(
+                                "%" + filt["hostname"] + "%"
                             )
-                    except IndexError:
-                        pass
+                        )
                     # Filtering on computer list page
                     if clauses:
                         query = query.filter(or_(*clauses))
@@ -1418,9 +1430,9 @@ class Itsmng21(DatabaseHelper):
             ]
         elif query[2] == "User location":
             return base + [self.user, self.locations]
-        elif query[2] == "Register key" and self.collects is not None:
+        elif query[2] == "Register key" and self.regcontents is not None:
             return base + [self.regcontents]  # self.collects, self.registries,
-        elif query[2] == "Register key value" and self.collects is not None:
+        elif query[2] == "Register key value" and self.regcontents is not None:
             return base + [
                 self.regcontents,
                 self.registries,
@@ -1581,9 +1593,9 @@ class Itsmng21(DatabaseHelper):
                 [self.software.c.name, query[3][1]],
                 [self.softwareversions.c.name, query[3][2]],
             ]
-        elif query[2] == "Register key" and self.collects is not None:
+        elif query[2] == "Register key" and self.regcontents is not None:
             return [[self.registries.c.name, query[3]]]
-        elif query[2] == "Register key value" and self.collects is not None:
+        elif query[2] == "Register key value" and self.regcontents is not None:
             return [
                 [self.registries.c.name, query[3][0]],
                 [self.regcontents.c.value, query[3][1]],
@@ -2371,6 +2383,8 @@ class Itsmng21(DatabaseHelper):
         """
 
         ret = None
+        if self.regcontents is None:
+            return []
         session = create_session()
 
         query = (
@@ -2791,6 +2805,8 @@ class Itsmng21(DatabaseHelper):
     def getLastMachineRegistryPart(
         self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
     ):
+        if self.regcontents is None:
+            return []
         # Mutable dict options used as default argument to a method or function
         query = self.filterOnUUID(
             session.query(RegContents)
@@ -2929,14 +2945,8 @@ class Itsmng21(DatabaseHelper):
             table, field = self.__getTableAndFieldFromName(name)
             session.query(table).filter_by(id=fromUUID(uuid)).update({field: value})
 
-            if self.fusionlocks is None:
-                return False
-
-            # Créez une instance d'inspecteur
-            inspector = inspect(FusionLocks)
-
             # Vérifiez si la classe est mappée
-            if inspector.has_table(FusionLocks.__tablename__):
+            if self.fusionlocks is not None:
                 self.logger.warning(
                     "le plugin Fusioninventory prends en compte le nom edite."
                 )
@@ -2966,9 +2976,7 @@ class Itsmng21(DatabaseHelper):
                         )
                     )
             else:
-                self.logger.warning(
-                    "Sur Un réenregistrement GLPI. Le nom de l'ordinateur et le description ne seront pas protégés."
-                )
+                self.logger.warning("Sur Un réenregistrement GLPI. Le nom de l'ordinateur et le description ne seront pas protégés.")
             session.close()
             return True
         except Exception as e:
@@ -3494,9 +3502,7 @@ class Itsmng21(DatabaseHelper):
             return self.searchOptions["en_US"][str(log.id_search_option)]
         except:
             if log.id_search_option != 0:
-                logging.getLogger().warn(
-                    "I can't get a search option for id %s" % log.id_search_option
-                )
+                logging.getLogger().warning("I can't get a search option for id %s" % log.id_search_option)
             return ""
 
     def getLinkedActionValues(self, log):
@@ -4638,8 +4644,9 @@ class Itsmng21(DatabaseHelper):
                 self.glpi_computermodels,
                 Machine.computermodels_id == self.glpi_computermodels.c.id,
             )
-            .outerjoin(self.regcontents, Machine.id == self.regcontents.c.computers_id)
         )
+        if self.regcontents is not None:
+            query = query.outerjoin(self.regcontents, Machine.id == self.regcontents.c.computers_id)
         if field != "":
             query = query.join(
                 Computersitems, Machine.id == Computersitems.computers_id
@@ -4769,9 +4776,10 @@ class Itsmng21(DatabaseHelper):
                         self.locations.c.name.contains(criterion),
                         self.manufacturers.c.name.contains(criterion),
                         self.model.c.name.contains(criterion),
-                        self.regcontents.c.value.contains(criterion),
                     )
                 )
+                if self.regcontents is not None:
+                    query = query.filter(or_(self.regcontents.c.value.contains(criterion),))
             else:
                 if field == "peripherals":
                     if contains == "notcontains":
@@ -4807,10 +4815,14 @@ class Itsmng21(DatabaseHelper):
         nb_columns = len(columns_name)
         if idmachine != "" or uuidsetup != "":
             result["data"]["columns_name"] = columns_name
-            result["data"]["columns_name_reg"] = list_reg_columns_name
+            result["data"]["columns_name_reg"] = list_reg_columns_name if self.regcontents is not None else []
 
         # initialiser 1 tableau pour chaque registerkey windows demande in configuration
-        regs = {reg_column: [] for reg_column in list_reg_columns_name}
+        if self.regcontents is not None:
+            regs = {reg_column: [] for reg_column in list_reg_columns_name}
+        else:
+            regs = {}
+
         result["data"]["reg"] = regs
 
         for machine in machines:
@@ -4828,25 +4840,26 @@ class Itsmng21(DatabaseHelper):
 
             for column in list_reg_columns_name:
                 result["data"]["reg"][column].append(None)
-        regquery = []
-        if list_reg_columns_name:
-            regquery = (
-                session.query(
-                    self.regcontents.c.computers_id,
-                    self.regcontents.c.key,
-                    self.regcontents.c.value,
-                )
-                .filter(
-                    and_(
-                        self.regcontents.c.key.in_(list_reg_columns_name),
-                        self.regcontents.c.computers_id.in_(result["data"]["uuid"]),
+        if self.regcontents is not None:
+            regquery = []
+            if list_reg_columns_name:
+                regquery = (
+                    session.query(
+                        self.regcontents.c.computers_id,
+                        self.regcontents.c.key,
+                        self.regcontents.c.value,
                     )
+                    .filter(
+                        and_(
+                            self.regcontents.c.key.in_(list_reg_columns_name),
+                            self.regcontents.c.computers_id.in_(result["data"]["uuid"]),
+                        )
+                    )
+                    .all()
                 )
-                .all()
-            )
-        for reg in regquery:
-            index = result["data"]["uuid"].index(reg[0])
-            result["data"]["reg"][reg[1]][index] = reg[2]
+            for reg in regquery:
+                index = result["data"]["uuid"].index(reg[0])
+                result["data"]["reg"][reg[1]][index] = reg[2]
 
         result["count"] = count
 
@@ -4925,10 +4938,7 @@ class Itsmng21(DatabaseHelper):
         try:
             ret = query.one()
         except (MultipleResultsFound, NoResultFound) as e:
-            self.logger.warn(
-                "I can't get any UUID for machine %s and macs %s: %s"
-                % (hostname, macs, e)
-            )
+            self.logger.warning("I can't get any UUID for machine %s and macs %s: %s"%(hostname, macs, e))
             return None
         return toUUID(ret.id)
 
@@ -5707,6 +5717,10 @@ class Itsmng21(DatabaseHelper):
         @return: id of the registry collect
         @rtype: int
         """
+
+        if self.registries is None:
+            return False
+
         if self.config.dbreadonly:
             self.logger.debug(
                 "Impossible d'exécuter GLPI  en mode lecture seule. getRegistryCollect"
@@ -5745,6 +5759,10 @@ class Itsmng21(DatabaseHelper):
         @return: success of the operation
         @rtype: bool
         """
+
+        if self.registries is None:
+            return False
+
         if self.config.dbreadonly:
             self.logger.debug(
                 "Impossible d'exécuter GLPI  en mode lecture seule. addRegistryCollect"
@@ -5819,12 +5837,13 @@ class Itsmng21(DatabaseHelper):
         @rtype: bool
         """
 
+        if self.regcontents is None:
+            return False
+
         # Déterminer le bon champ selon le plugin actif
         fusioninventory_field = "plugin_fusioninventory_collects_registries_id"
         glpiinventory_field = "plugin_glpiinventory_collects_registries_id"
 
-        if self.collects is None:
-            return False
         if hasattr(RegContents, fusioninventory_field):
             registry_field = fusioninventory_field
         elif hasattr(RegContents, glpiinventory_field):
@@ -6026,7 +6045,7 @@ class Machine(object):
         return {"hostname": self.name, "uuid": toUUID(self.id)}
 
     def to_a(self):
-        owner_login, owner_firstname, owner_realname = Itsmng21().getMachineOwner(self)
+        owner_login, owner_firstname, owner_realname = Glpi100().getMachineOwner(self)
         return [
             ["name", self.name],
             ["comments", self.comment],
@@ -6049,7 +6068,7 @@ class Machine(object):
             ["model", self.computermodels_id],
             ["type", self.computertypes_id],
             ["entity", self.entities_id],
-            ["uuid", Itsmng21().getMachineUUID(self)],
+            ["uuid", Glpi100().getMachineUUID(self)],
         ]
 
 
