@@ -63,7 +63,7 @@ setup(
         else [
             "posix_ipc >= 1.0.5",
             "lmdb",
-            "netifaces",
+            "netifaces_plus",
             "pycryptodomex >= 3.15.0",
             "xmltodict",
         ]
