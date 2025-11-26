@@ -61,7 +61,7 @@ setup(
         ]
         if "win" in sys.platform
         else [
-            "slixmpp == 1.8.2",
+            "slixmpp == 1.8.5",
             "posix_ipc >= 1.0.5",
             "lmdb",
             "netifaces_plus",
