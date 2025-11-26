@@ -74,6 +74,18 @@ install_agent_deps_ubuntu() {
     apt update
 }
 
+install_agent_deps_debian12() {
+    # Install Python 3.11
+    apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
+    # Install pip for Python 3.11
+    python3.11 -m ensurepip --upgrade
+    # Set Python 3.11 as default python3
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+    update-alternatives --set python3 /usr/bin/python3.11
+    # Install required packages
+    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc xrdp sudo syncthing 
+}
+
 download_agent_files() {
     # Delete any existing temp directory
     rm -rf /tmp/medulla
@@ -126,6 +138,9 @@ setup_agent() {
 
     # Setup VNC server
     echo "Setting up VNC server ..."
+    if ! [ -d "/home/pulseuser/.vnc" ]; then
+        mkdir -p /home/pulseuser/.vnc
+    fi
     x11vnc -storepasswd ${VNC_PASSWORD} /home/pulseuser/.vnc/passwd
 
     # Install CA certificates
@@ -133,11 +148,8 @@ setup_agent() {
     CERT_DIR="/usr/local/share/ca-certificates/"
     cp /tmp/medulla/medulla-ca-chain.cert.pem ${CERT_DIR}
     cp /tmp/medulla/medulla-rootca.cert.pem ${CERT_DIR}
-    # Transform to .crt if ubuntu
-    if [ "$DISTRO" == "ubuntu" ]; then
-        openssl x509 -in ${CERT_DIR}/medulla-ca-chain.cert.pem -inform PEM -out ${CERT_DIR}/medulla-ca-chain.crt
-        openssl x509 -in ${CERT_DIR}/medulla-rootca.cert.pem -inform PEM -out ${CERT_DIR}/medulla-rootca.crt
-    fi
+    openssl x509 -in ${CERT_DIR}/medulla-ca-chain.cert.pem -inform PEM -out ${CERT_DIR}/medulla-ca-chain.crt
+    openssl x509 -in ${CERT_DIR}/medulla-rootca.cert.pem -inform PEM -out ${CERT_DIR}/medulla-rootca.crt
     update-ca-certificates
 
     # Copy agent configuration files
@@ -198,9 +210,16 @@ start_agent() {
 
 check_root
 check_distro
-if [ "$DISTRO" == "ubuntu" ]; then
-    install_agent_deps_ubuntu
-fi
+case "$DISTRO" in
+    ubuntu) 
+        install_agent_deps_ubuntu 
+        ;;
+    debian)
+        if [ "$VERSION" == "12" ]; then
+            install_agent_deps_debian12
+        fi
+        ;;
+esac
 download_agent_files
 setup_agent
 install_agent
