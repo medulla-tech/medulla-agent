@@ -41,7 +41,6 @@ override_dh_auto_install:
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python3/dist-packages/pulse_xmpp_master_substitute/sessiondeploysubstitute
 	touch $(CURDIR)/debian/tmp/usr/lib/python3/dist-packages/pulse_xmpp_master_substitute/sessiondeploysubstitute/EMPTY
 	cp -fr pulse_xmpp_agent/config/systemd/* $(CURDIR)/debian/tmp/usr/lib/systemd/system
-	cp -fv ./scripts_installer/lin/*.service $(CURDIR)/debian/tmp/usr/lib/systemd/system
 	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-agent-relay.service
 	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-package-watching.service
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseplugin

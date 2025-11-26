@@ -341,7 +341,6 @@ mkdir -p %buildroot%_var/log/pulse/
 mkdir -p %buildroot%_prefix/lib/systemd/system
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp -fr pulse_xmpp_agent/config/systemd/* %buildroot%_prefix/lib/systemd/system
-cp -fv ./scripts_installer/lin/*.service %buildroot%_prefix/lib/systemd/system
 rm -fv %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseplugin
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
