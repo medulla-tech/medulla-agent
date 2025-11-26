@@ -1,36 +1,36 @@
 #!/bin/bash
 #
-# (c) 2015-2016 siveo, http://www.siveo.net
+# (c) 2016-2023 Siveo, http://www.siveo.net
+# (c) 2024-2025 Medulla, http://www.medulla-tech.io
+#
 # $Id$
 #
-# This file is part of Pulse 2, http://www.siveo.net
+# This file is part of MMC, http://www.medulla-tech.io
 #
-# Pulse 2 is free software; you can redistribute it and/or modify
+# MMC is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# the Free Software Foundation; either version 3 of the License, or
+# any later version.
 #
-# Pulse 2 is distributed in the hope that it will be useful,
+# MMC is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Pulse 2. If not, see <http://www.gnu.org/licenses/>.
-#
+# along with MMC; If not, see <http://www.gnu.org/licenses/>.
 
 # """
-# This script is designed to generate Pulse XMPP agent for Linux
+# This script is designed to generate Medulla XMPP agent for Linux
 # """
-
-# TODO: Install freerdp
-#       Make use of deb and rpm repositories for installing packages
 
 BASE_URL="@@BASE_URL@@"
 INVENTORY_TAG="@@INVENTORY_TAG@@"
 AGENT_VERSION="@@AGENT_VERSION@@"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-@@AGENT_VERSION@@.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-@@AGENT_VERSION@@.tar.gz"
+VNC_PASSWORD="@@VNC_PASSWORD@@"
+SSH_PORT="@@SSH_PORT@@"
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -47,63 +47,129 @@ check_distro() {
         VERSION=`cat /etc/os-release | grep ^VERSION_ID= | cut -f2 -d'=' | sed 's/"//g'`
     fi
     case "$DISTRO" in
-      mageia|debian|ubuntu)
-        ;;
-      *)
-  	    echo "We do not support your distribution yet"
-        exit 1
-        ;;
+        debian|ubuntu)
+            ;;
+        *)
+            echo "We do not support your distribution yet"
+            exit 1
+            ;;
     esac
 }
 
-configure_repo() {
-    case "$DISTRO" in
-      mageia)
-        ;;
-      debian|ubuntu)
-        echo "deb [trusted=yes] ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" > /etc/apt/sources.list.d/pulseagent.list
-        apt update -o Dir::Etc::sourcelist="sources.list.d/pulseagent.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
-        ;;
-      *)
-        ;;
-    esac
+install_agent_deps_ubuntu() {
+    # Install Python 3.11
+    apt update
+    apt install -y software-properties-common
+    add-apt-repository -y ppa:deadsnakes/ppa
+    apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
+    # Install pip for Python 3.11
+    python3.11 -m ensurepip --upgrade
+    # Set Python 3.11 as default python3
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+    update-alternatives --set python3 /usr/bin/python3.11
+    # Install required packages
+    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc xrdp sudo syncthing 
+    # Remove deadsnakes repository
+    apt-del-user-repository -y ppa:deadsnakes/ppa
+    apt update
+}
+
+download_agent_files() {
+    # Delete any existing temp directory
+    rm -rf /tmp/medulla
+    # Create temp directory and download files
+    mkdir -p /tmp/medulla
+    cd /tmp/medulla
+    wget ${BASE_URL}/${PULSE_AGENT_FILENAME}
+    wget ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
+    wget ${BASE_URL}/medulla-ca-chain.cert.pem
+    wget ${BASE_URL}/medulla-rootca.cert.pem
+    wget ${BASE_URL}/config/agentconf.ini
+    wget ${BASE_URL}/config/agentconf.ini.tpl
+    wget ${BASE_URL}/config/inventory.ini
+    wget ${BASE_URL}/config/manage_scheduler_machine.ini
+    wget ${BASE_URL}/config/start_machine.ini
+    wget ${BASE_URL}/config/startupdate.ini
+    wget ${BASE_URL}/config/updatebackupclient.ini
+    wget ${BASE_URL}/config/am___server_tcpip.ini
+}   
+
+setup_agent() {
+    # Create pulseuser if not exists
+    if ! id -u pulseuser >/dev/null 2>&1; then
+        echo "Creating pulseuser ..."
+        adduser --system --group --home /home/pulseuser --shell /bin/rbash --disabled-password pulseuser
+    fi
+    if ! [ -d "/home/pulseuser/.ssh" ]; then
+        echo "Creating missing SSH profile ..."
+        mkdir -p /home/pulseuser/.ssh
+    fi
+    chown -R pulseuser: /home/pulseuser
+    chmod -R 700 /home/pulseuser
+    touch /home/pulseuser/.ssh/authorized_keys
+    chmod 600 /home/pulseuser/.ssh/authorized_keys
+
+    # Setting up SSH daemon
+    echo "Setting up SSH daemon ..."
+    sed -i "s/^#?Port .*$/Port ${SSH_PORT}/" /etc/ssh/sshd_config
+    echo -e "PubkeyAcceptedAlgorithms +ssh-rsa\nHostKeyAlgorithms +ssh-rsa" > /etc/ssh/sshd_config.d/medulla.conf
+    systemctl restart ssh
+
+    # Setup sudo for pulseuser
+    echo "Setting up sudo for pulseuser ..."
+    echo "pulseuser ALL=(ALL) NOPASSWD: /usr/bin/rsync" > /etc/sudoers.d/pulseuser
+
+    # Setup RDP server
+    echo "Setting up RDP server ..."
+    systemctl enable xrdp
+    systemctl start xrdp
+
+    # Setup VNC server
+    echo "Setting up VNC server ..."
+    x11vnc -storepasswd ${VNC_PASSWORD} /home/pulseuser/.vnc/passwd
+
+    # Install CA certificates
+    echo "Installing CA certificates ..."
+    CERT_DIR="/usr/local/share/ca-certificates/"
+    cp /tmp/medulla/medulla-ca-chain.cert.pem ${CERT_DIR}
+    cp /tmp/medulla/medulla-rootca.cert.pem ${CERT_DIR}
+    # Transform to .crt if ubuntu
+    if [ "$DISTRO" == "ubuntu" ]; then
+        openssl x509 -in ${CERT_DIR}/medulla-ca-chain.cert.pem -inform PEM -out ${CERT_DIR}/medulla-ca-chain.crt
+        openssl x509 -in ${CERT_DIR}/medulla-rootca.cert.pem -inform PEM -out ${CERT_DIR}/medulla-rootca.crt
+    fi
+    update-ca-certificates
+
+    # Copy agent configuration files
+    echo "Copying agent configuration files ..."
+    CONFIG_DIR="/etc/pulse-xmpp-agent/"
+    if [ ! -d "${CONFIG_DIR}" ]; then
+        mkdir -p ${CONFIG_DIR}
+    fi
+    cp /tmp/medulla/*.ini ${CONFIG_DIR}
+    cp /tmp/medulla/agentconf.ini.tpl ${CONFIG_DIR}
 }
 
 install_agent() {
-
-    case "$DISTRO" in
-        mageia)
-        ;;
-        debian)
-            if [[ ${VERSION} == "12" ]]; then
-                apt install -y python3-setuptools python3-pycryptodome python3-wheel python3-croniter python3-lxml python3-netifaces python3-psutil python3-pycurl python3-slixmpp python3-pip pulse-agent-linux python3-cherrypy3 python3-lmdb python3-posix-ipc python3-xmltodict python3-typing-extensions python3-netifaces python3-netaddr sysstat python3-pil python3-packaging python3-yaml
-            fi
-        ;;
-        ubuntu)
-            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-pip pulse-agent-linux python-cherrypy3 python3-netifaces python3-netaddr python3-pil python3-packaging python3-yaml
-
-        ;;
-        esac
-
-python3 -m pip install --upgrade --break-system-packages --root-user-action=ignore --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
-
-[ ! -d "/var/lib/pulse2/packages" ] && mkdir -p /var/lib/pulse2/packages
-
+    echo "Installing Medulla XMPP agent ..."
+    python3.11 -m venv /opt/medulla
+    /opt/medulla/bin/python3.11 -m pip install ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}
 }
 
 create_service () {
-local PYTHON_DIR="/usr/local/lib/python3.11/dist-packages/"
-mkdir -p /usr/lib/systemd/system/
-cat <<EOF > /usr/lib/systemd/system/pulse-xmpp-agent-machine.service
+    echo "Creating systemd service for Medulla XMPP agent ..."
+    local PYTHON_EXE="/opt/medulla/bin/python3.11"
+    local PYTHON_DIR="/opt/medulla/lib/python3.11/site-packages"
+    if [ ! -d "/usr/lib/systemd/system/" ]; then
+        mkdir -p /usr/lib/systemd/system/
+    fi
+    cat <<EOF > /usr/lib/systemd/system/pulse-xmpp-agent-machine.service
 [Unit]
-Description=Pulse2 XMPP Agent ( Machine )
+Description=Medulla XMPP Agent ( Machine )
 
 [Service]
-#PIDFile=/var/run/launcher.pid
-#User=pulse
-#Group=pulse
 Type=simple
-ExecStart=$PYTHON_DIR/pulse_xmpp_agent/launcher.py -t machine
+ExecStart=${PYTHON_EXE} ${PYTHON_DIR}/pulse_xmpp_agent/launcher.py -t machine
 Restart=always
 RestartSec=1
 
@@ -112,40 +178,34 @@ WantedBy=multi-user.target
 EOF
 }
 
-configure_inventory() {
+configure_inventory_tag() {
     TAG="$1"
-    # Setup FusionInventory
-    FUSION_DIR="/etc/fusioninventory"
-    FUSION_CFG="${FUSION_DIR}/agent.cfg"
-
-    if [ -f ${FUSION_CFG} ];then
-        sed -i '/^server/d' ${FUSION_CFG}
-        echo "tag = ${TAG}" > ${FUSION_DIR}/conf.d/tag.cfg
-    else
-        echo "ERROR: Unable to find fusioninventory config file"
-        exit 1
-    fi
+    echo "Configuring inventory tag: ${TAG}"
+    crudini --set /etc/pule-xmpp-agent/inventory.ini parameters inventoytag "${TAG}"
 }
 
 start_agent() {
-    chmod +x /usr/local/lib/python3.11/dist-packages/pulse_xmpp_agent/launcher.py
+    echo "Starting Medulla XMPP agent ..."
+    chmod +x /opt/medulla/lib/python3.11/site-packages/pulse_xmpp_agent/launcher.py
     [ ! -d "/var/log/pulse" ] && mkdir /var/log/pulse
 
     # Enable and start the service
+    systemctl daemon-reload
 	systemctl enable pulse-xmpp-agent-machine.service
 	systemctl start pulse-xmpp-agent-machine.service
 }
 
-install_certificate() {
-	CERTFILE=""
-}
 
 check_root
 check_distro
-configure_repo
+if [ "$DISTRO" == "ubuntu" ]; then
+    install_agent_deps_ubuntu
+fi
+download_agent_files
+setup_agent
 install_agent
 if [[ ${INVENTORY_TAG} != "" ]]; then
-    configure_inventory ${INVENTORY_TAG}
+    configure_inventory_tag ${INVENTORY_TAG}
 fi
 create_service
 start_agent

@@ -302,7 +302,7 @@ update_config_file() {
 
 update_generation_options_file() {
     # Save arguments to file for future use
-    echo "--conf-xmppserver=${PUBLIC_XMPP_SERVER_ADDRESS} --conf-xmppport=${PUBLIC_XMPP_SERVER_PORT} --conf-xmpppasswd=${PUBLIC_XMPP_SERVER_PASSWORD} --aes-key=${AES_KEY} --xmpp-passwd=${XMPP_SERVER_PASSWORD} --chat-domain=${CHAT_DOMAIN} ${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${DISABLE_GEOLOC} ${LINUX_DISTROS} ${UPDATESERVER_OPTIONS}" > .generation_options
+    echo "--conf-xmppserver=${PUBLIC_XMPP_SERVER_ADDRESS} --conf-xmppport=${PUBLIC_XMPP_SERVER_PORT} --conf-xmpppasswd=${PUBLIC_XMPP_SERVER_PASSWORD} --aes-key=${AES_KEY} --xmpp-passwd=${XMPP_SERVER_PASSWORD} --chat-domain=${CHAT_DOMAIN} ${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${DISABLE_GEOLOC} ${UPDATESERVER_OPTIONS}" > .generation_options
     # Update generation_options var
     if [ -e .generation_options ]; then
        colored_echo blue "Extracting parameters from previous options file (.generation_options)."
@@ -337,7 +337,7 @@ extract_parameters() {
 generate_agent_win() {
 	# Generate Medulla Agent for Windows
 	colored_echo blue "Generating Medulla Agent for Windows..."
-	COMMAND="./win/generate-pulse-agent-win.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
+	COMMAND="./win/generate-pulse-agent-win.sh ${GENERATION_OPTIONS}"
 	echo "Running "${COMMAND}
 	${COMMAND}
 }
@@ -345,7 +345,7 @@ generate_agent_win() {
 generate_agent_lin() {
     # Generate Medulla Agent for Linux
 	colored_echo blue "Generating Medulla Agent for Linux..."
-	COMMAND="./lin/generate-pulse-agent-linux.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
+	COMMAND="./lin/generate-pulse-agent-linux.sh ${GENERATION_OPTIONS} --minimal"
 	echo "Running "${COMMAND}
 	${COMMAND}
 }
@@ -367,4 +367,4 @@ update_generation_options_file
 
 generate_agent_win
 generate_agent_lin
-generate_agent_mac
+#generate_agent_mac
