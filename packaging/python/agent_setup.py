@@ -37,7 +37,6 @@ setup(
     ],
     install_requires=[
         "wheel",
-        "slixmpp == 1.8.2",
         "pycurl >= 7.45.1",
         "lxml >= 4.9.1",
         "croniter >= 1.3.5",
@@ -52,6 +51,7 @@ setup(
     ]
     + (
         [
+            "slixmpp >= 1.8.2",
             "pathlib >= 1.0.1",
             "pypiwin32 >= 223",
             "comtypes >= 1.1.14",
@@ -61,6 +61,7 @@ setup(
         ]
         if "win" in sys.platform
         else [
+            "slixmpp == 1.8.2",
             "posix_ipc >= 1.0.5",
             "lmdb",
             "netifaces_plus",
