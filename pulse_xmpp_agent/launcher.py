@@ -1181,7 +1181,10 @@ def programfilepath(pathwindows):
 
 
 def start_agent(pathagent, agent="connection", console=False, typeagent="machine"):
-    pythonexec = programfilepath(psutil.Process().exe())
+    if sys.platform.startswith("win"):
+        pythonexec = programfilepath(psutil.Process().exe())
+    else:
+        pythonexec = sys.executable
     agentfunction = os.path.join(pathagent, "connectionagent.py")
 
     if agent != "connection":
