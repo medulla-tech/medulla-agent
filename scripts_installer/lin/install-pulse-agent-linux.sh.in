@@ -70,7 +70,7 @@ install_agent_deps_ubuntu() {
     # Install required packages
     apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc xrdp sudo syncthing 
     # Remove deadsnakes repository
-    apt-del-user-repository -y ppa:deadsnakes/ppa
+    rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-noble.sources
     apt update
 }
 
