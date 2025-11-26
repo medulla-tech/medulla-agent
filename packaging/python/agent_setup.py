@@ -37,7 +37,7 @@ setup(
     ],
     install_requires=[
         "wheel",
-        "slixmpp >= 1.8.2",
+        "slixmpp = 1.8.2",
         "pycurl >= 7.45.1",
         "lxml >= 4.9.1",
         "croniter >= 1.3.5",
