@@ -9,6 +9,8 @@ var/lib/pulse2/clients/config/startupdate.ini
 /var/lib/pulse2/clients/config/am___server_tcpip.ini
 var/lib/pulse2/clients/generate-agent-package
 var/lib/pulse2/clients/generate-pulse-agent.sh
+var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
+var/lib/pulse2/clients/lin/install-pulse-agent-linux.sh.in
 var/lib/pulse2/clients/mac/Info.plist.in
 var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
 var/lib/pulse2/clients/mac/net.siveo.pulse_xmpp_agent.plist
