@@ -4,6 +4,7 @@
 # SPDX-FileCopyrightText: 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
 # SPDX-FileCopyrightText: 2007-2010 Mandriva, http://www.mandriva.com
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-FileCopyrightText: 2024-2025 Medulla, http://www.medulla-tech.io
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
@@ -36,6 +37,7 @@ from lib.plugins.glpi.Glpi93 import Glpi93
 from lib.plugins.glpi.Glpi94 import Glpi94
 from lib.plugins.glpi.Glpi95 import Glpi95
 from lib.plugins.glpi.Glpi100 import Glpi100
+from lib.plugins.glpi.Glpi110 import Glpi110
 from lib.plugins.glpi.Itsmng21 import Itsmng21
 
 
@@ -119,6 +121,7 @@ class Glpi:
                 "9.4": Glpi94,
                 "9.5": Glpi95,
                 "10.0": Glpi100,
+                "11.0": Glpi110,
             }
 
             for version_prefix, cls in versions_map.items():
