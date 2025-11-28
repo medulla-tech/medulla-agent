@@ -45,9 +45,9 @@ check_distro() {
     else
         DISTRO=`cat /etc/os-release | grep ^ID= | cut -f2 -d'='`
         VERSION=`cat /etc/os-release | grep ^VERSION_ID= | cut -f2 -d'=' | sed 's/"//g'`
-    fi
+    fil
     case "$DISTRO" in
-        debian|ubuntu)
+        debian|ubuntu|zorin)
             ;;
         *)
             echo "We do not support your distribution yet"
@@ -211,7 +211,7 @@ start_agent() {
 check_root
 check_distro
 case "$DISTRO" in
-    ubuntu) 
+    ubuntu|zorin) 
         install_agent_deps_ubuntu 
         ;;
     debian)
