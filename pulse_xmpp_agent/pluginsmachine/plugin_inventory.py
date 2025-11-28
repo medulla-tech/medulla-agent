@@ -36,7 +36,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.0", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.1", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -338,7 +338,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         general_options = '/debug /force /tag="%s"' % tag
                     except NameError:
                         general_options = "/debug /force"
-                    location_option = '/xml="%s" /S' % inventoryfile
+                    # /xml option is waiting for a folder path, not a file path
+                    # The inventory is generated as machine_name-id-datetime.xml
+                    location_option = '/xml="%s" /S' % pulseTempDir()
                     if xmppobject.config.via_xmpp == "False":
                         location_option = (
                             '/server="%s"' % xmppobject.config.urlinventory
@@ -361,6 +363,20 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 msg.append(cmd)
                 logger.debug(cmd)
                 obj = utils.simplecommand(cmd)
+                # find the .xml or .ocs file into pulseTempDir (C:\Program Files\Medulla\tmp)
+                files = os.listdir(pulseTempDir())
+                xmlfile = ""
+                for file in files:
+                    if file.endswith(".xml") or file.endswith(".ocs"):
+                        xmlfile = file
+                        break
+                if xmlfile != "":
+                    try:
+                        # a file has been found: try to rename it
+                        os.rename(os.path.join(pulseTempDir(), xmlfile), inventoryfile)
+                    except:
+                        # The file already exists, means the previous inventory has not been renamed in .back
+                        pass
                 msg.append("Result return code %s: %s" % (obj["code"], obj["result"]))
                 if obj["code"] == 0:
                     break
