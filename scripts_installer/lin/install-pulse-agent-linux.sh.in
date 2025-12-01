@@ -45,7 +45,7 @@ check_distro() {
     else
         DISTRO=`cat /etc/os-release | grep ^ID= | cut -f2 -d'='`
         VERSION=`cat /etc/os-release | grep ^VERSION_ID= | cut -f2 -d'=' | sed 's/"//g'`
-    fil
+    fi
     case "$DISTRO" in
         debian|ubuntu|zorin)
             ;;
@@ -76,6 +76,7 @@ install_agent_deps_ubuntu() {
 
 install_agent_deps_debian12() {
     # Install Python 3.11
+    apt update
     apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
