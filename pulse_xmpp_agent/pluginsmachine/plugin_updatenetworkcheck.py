@@ -17,7 +17,7 @@ from lib.agentconffile import (
     rotation_file,
 )
 
-NETWORKVERSION = "5.4.3"
+NETWORKVERSION = "5.4.4"
 
 logger = logging.getLogger()
 plugin = {"VERSION": "2.7", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip

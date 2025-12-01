@@ -1,5 +1,12 @@
 # Change Log
 
+## [5.4.4](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.4) (2025-12-01)
+- [FEATURE] Support for Ubuntu distributions for clients
+- [FEATURE] Add depdendency on netifaces_plus python module for Linux clients
+- [FEATURE] Initial support for GLPI version 11
+- [BUGFIX]  Fix support for ITSM-NG version 2.1
+- [BUGFIX]  Fix entities and OUs when the path contains a /
+
 ## [5.4.3](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.3) (2025-11-19)
 - [FEATURE] Update Office and Visual Studio through Windows update module
 - [FEATURE] Add support for ITSM-NG version 2.1
