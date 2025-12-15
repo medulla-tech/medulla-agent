@@ -105,7 +105,7 @@ from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 from lib.syncthingapirest import syncthing, syncthingprogram, iddevice, conf_ars_deploy
 from lib.manage_scheduler import manage_scheduler
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows, XmppLogHandler
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
 from lib.httpserver import Controller
@@ -347,12 +347,49 @@ class MUCBot(ClientXMPP):
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
         laps_time_send_ping_to_kiosk = 350
+
+
+        # log direct
+        # attributs
+        self.Log_Request = "Log_Request"
+        self.log_context = "default context"
+        self.log_justification = "aucun"
+
+        # création du handler
+        self.loghandler = XmppLogHandler(self.send_xmpp_message_log)
+        self.loghandler.set_log_level(logging.DEBUG)
+
+        # logger agent
+        self.logger = logging.getLogger("agentxmpp")
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.addHandler(self.loghandler)   # IMPORTANT
+
+        # logger root (optionnel mais utile pour tout capter)
+        root = logging.getLogger()
+        # # root.setLevel(logging.DEBUG)
+        root.addHandler(self.loghandler)
+
+        logging.getLogger("slixmpp").propagate = False
+
+
         logging.debug(
             "check connexion xmpp %ss" % laps_time_check_established_connection
         )
         self.back_to_deploy = {}
         self.config = conf
+        if not hasattr(self.config, "sub_logger"):
+            self.sub_logger = jid.JID("master_log@pulse")
+        else:
+            if (
+                isinstance(self.config.sub_logger, list)
+                and len(self.config.sub_logger) > 0
+            ):
+                self.sub_logger = jid.JID(self.config.sub_logger[0])
+            else:
+                self.sub_logger = jid.JID(self.config.sub_logger)
 
+        # on peut utiliser le logger xmpp message log seulement quand on a donner 1 jid au logger
+        # self.loghandler.activate_for_seconds( 180)
         self.ipconnection = self.config.Server
 
         format = "%(asctime)s - %(levelname)s - (XMPP)%(message)s"
@@ -560,16 +597,10 @@ class MUCBot(ClientXMPP):
                 self.sub_subscribe_all = [jid.JID(self.config.sub_subscribe)]
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
-        if not hasattr(self.config, "sub_logger"):
-            self.sub_logger = jid.JID("master_log@pulse")
-        else:
-            if (
-                isinstance(self.config.sub_logger, list)
-                and len(self.config.sub_logger) > 0
-            ):
-                self.sub_logger = jid.JID(self.config.sub_logger[0])
-            else:
-                self.sub_logger = jid.JID(self.config.sub_logger)
+
+
+
+
 
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = jid.JID("master_subs@pulse")
@@ -2926,6 +2957,25 @@ class MUCBot(ClientXMPP):
         msgbody["session"] = sessionname
         self.send_message(mto=self.sub_logger, mbody=json.dumps(msgbody), mtype="chat")
 
+
+    def send_xmpp_message_log(self, msg: str) -> None:
+        """Fonction  pour envoyer un message XMPP."""
+        self.xmpplog(
+            msg,
+            type= "viewlog",
+            sessionname=getRandomName(4, "Log_Request"),
+            priority=1,
+            action="xmpplog",
+            who=self.boundjid.bare,
+            how=self.log_context,
+            why="log " + self.log_justification,
+            date=None,
+            module=self.Log_Request,
+            fromuser=self.boundjid.bare,
+            touser=self.log_justification,
+        )
+
+
     def xmpplog(
         self,
         text,
@@ -4643,6 +4693,8 @@ class process_xmpp_agent:
             console.setFormatter(formatter)
             console.setLevel(tglevellog)
 
+            # Création du handler
+
             file_handler = logging.FileHandler(tglogfile)
             file_handler.setLevel(tglevellog)
             file_handler.setFormatter(formatter)
@@ -4689,6 +4741,7 @@ class process_xmpp_agent:
                 self.readconfig_Marche_Arret
             except:
                 self.readconfig_Marche_Arret = True
+
 
             self.logger.debug("/---------------------------------\\")
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")

@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-
+import threading
+import time
+from typing import Optional, Callable
 # now we patch Python code to add color support to logging.StreamHandler
 
 
@@ -106,3 +108,57 @@ def add_coloring_to_emit_ansi(fn):
         return fn(*args)
 
     return new
+
+class XmppLogHandler(logging.Handler):
+    def __init__(self, xmpp_send_func: Callable[[str], None]):
+        super().__init__()
+        self.xmpp_send_func = xmpp_send_func
+        self._active = False
+        self._timer: Optional[threading.Timer] = None
+        self._lock = threading.Lock()
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if not self._active:
+            return
+
+        # Formater le message avec le niveau de log
+        msg = self.format(record)
+
+        # Récupérer le niveau de log et la date
+        log_level = record.levelname
+        log_time = datetime.datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S')
+
+        # Construire le message complet avec la date après le niveau de log
+        full_msg = f"[{log_level}] [{log_time}] {msg}"
+
+        # Envoyer le message via XMPP
+        self.xmpp_send_func(full_msg)
+
+    def set_log_level(self, level: int) -> None:
+        """Ajuste le niveau de log du handler."""
+        self.setLevel(level)
+
+    def activate_for_seconds(self, seconds: int = 180) -> None:
+        """Active le handler pour une durée donnée (en secondes).
+        Si seconds == -1, active indéfiniment.
+        Si déjà actif, réinitialise le timer.
+        """
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+
+            self._active = True
+            if seconds != -1:
+                self._timer = threading.Timer(seconds, self.deactivate_handler)
+                self._timer.start()
+
+    def deactivate_handler(self) -> None:
+        """Désactive immédiatement le handler."""
+        with self._lock:
+            self._active = False
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
+
+    def __del__(self):
+        self.deactivate_handler()
