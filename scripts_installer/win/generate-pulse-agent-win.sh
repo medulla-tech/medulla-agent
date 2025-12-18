@@ -468,7 +468,8 @@ generate_agent_installer() {
 
     for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
     do
-        cp -fv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
+        rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
+        cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
     done
 
     colored_echo green "### INFO  Generating installer... Done"
