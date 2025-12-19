@@ -19,6 +19,9 @@ plugin = {"VERSION": "1.4", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug(" PL-RDP ###################################################")
     logger.debug(" PL-RDP call %s from %s" % (plugin, message["from"]))
     logger.debug(" PL-RDP ###################################################")
