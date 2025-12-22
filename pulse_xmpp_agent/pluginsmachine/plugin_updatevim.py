@@ -47,6 +47,9 @@ plugin = {"VERSION": "1.3", "NAME": "updatevim", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug("PL-VIM ###################################################")
     logger.debug("PL-VIM call %s from %s" % (plugin, message["from"]))
     logger.debug("PL-VIM ###################################################")

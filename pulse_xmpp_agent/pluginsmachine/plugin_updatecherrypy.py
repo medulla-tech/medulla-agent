@@ -20,6 +20,9 @@ plugin = {"VERSION": "2.4", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt:
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug(" PL-CHERRYP ###################################################")
     logger.debug(" PL-CHERRYP call %s from %s" % (plugin, message["from"]))
     logger.debug(" PL-CHERRYP ###################################################")

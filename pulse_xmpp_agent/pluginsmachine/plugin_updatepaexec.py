@@ -30,6 +30,9 @@ plugin = {"VERSION": "1.54", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug(" PL-PAEXEC ###################################################")
     logger.debug(" PL-PAEXEC call %s from %s" % (plugin, message["from"]))
     logger.debug(" PL-PAEXEC ###################################################")

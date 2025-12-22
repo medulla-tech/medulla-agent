@@ -30,6 +30,9 @@ plugin = {"VERSION": "1.27", "NAME": "updatesyncthing", "TYPE": "machine"}  # fm
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")

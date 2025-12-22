@@ -19,6 +19,9 @@ plugin = {"VERSION": "1.7", "NAME": "updatebackupclient", "TYPE": "machine"}  # 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
