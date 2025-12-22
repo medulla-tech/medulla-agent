@@ -4553,8 +4553,8 @@ def doTask(
             if pid_connecteur is None:
                 # Si pid_connecteur est None, lance le programme standalone
                 pid_connecteur = launch_standalone_program()
-                with terminate_lock:
-                    shared_dict["reconnect"] = True
+                # with terminate_lock:
+                    # shared_dict["reconnect"] = True
                     # Construire le chemin du fichier
                     # force_reconfiguration = os.path.join(
                     # os.path.dirname(os.path.realpath(__file__)),

@@ -29,7 +29,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="5.4.4"
+AGENT_VERSION="5.4.5"
 BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 
 # Go to own folder

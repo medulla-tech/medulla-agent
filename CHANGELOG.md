@@ -1,5 +1,10 @@
 # Change Log
 
+## [5.4.5](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.5) (2025-12-17)
+- [FEATURE] Scheduler plugin for package watching
+- [FEATURE] Replace deprecated WMIC
+- [BUGFIX]  Fix reconnection of agent when the pid still exists but the socket is closed
+
 ## [5.4.4](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.4) (2025-12-01)
 - [FEATURE] Support for Ubuntu distributions for clients
 - [FEATURE] Add depdendency on netifaces_plus python module for Linux clients

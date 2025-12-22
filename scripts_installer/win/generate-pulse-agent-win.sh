@@ -40,7 +40,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="5.4.4"
+AGENT_VERSION="5.4.5"
 KIOSK_VERSION="1.0.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
@@ -468,7 +468,8 @@ generate_agent_installer() {
 
     for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
     do
-        cp -fv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
+        rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
+        cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
     done
 
     colored_echo green "### INFO  Generating installer... Done"
