@@ -300,6 +300,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
                 reversesshps1 = os.path.join(medullaPath(), "bin", "reversessh.ps1")
                 linecmd = [
+                    """ssh-keygen -R "[%s]:%s" """ % (data["relayserverip"], reversessh_server_port),
                     """$process = Start-Process -FilePath "%s" -ArgumentList "-t -t -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -i `"%s`" -l reversessh %s -p %s" -PassThru""" % (sshexec, reversetype, data["port"], remoteport, filekey, data["relayserverip"], reversessh_server_port),
                     """$sshPID = $process.Id""",
                     """Write-Output "SSH process PID: $sshPID" """,
