@@ -27,7 +27,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "3.4", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "3.6", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -222,7 +222,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     os.path.expanduser("~pulseuser"), ".ssh", "id_rsa"
                 )
                 dd = """#!/bin/bash
-                /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+                /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "%s" -l reversessh %s -p %s&
                 """ % (
                     reversetype,
                     data["port"],
@@ -301,7 +301,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 reversesshps1 = os.path.join(medullaPath(), "bin", "reversessh.ps1")
                 linecmd = [
                     """ssh-keygen -R "[%s]:%s" """ % (data["relayserverip"], reversessh_server_port),
-                    """$process = Start-Process -FilePath "%s" -ArgumentList "-t -t -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -i `"%s`" -l reversessh %s -p %s" -PassThru""" % (sshexec, reversetype, data["port"], remoteport, filekey, data["relayserverip"], reversessh_server_port),
+                    """$process = Start-Process -FilePath "%s" -ArgumentList "-t -t -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -i `"%s`" -l reversessh %s -p %s" -PassThru""" % (sshexec, reversetype, data["port"], remoteport, filekey, data["relayserverip"], reversessh_server_port),
                     """$sshPID = $process.Id""",
                     """Write-Output "SSH process PID: $sshPID" """,
                     """$sshPID | Out-File -FilePath "C:\\Progra~1\\Medulla\\bin\\$sshPID.pid" -Encoding ASCII""",
@@ -381,7 +381,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     os.path.expanduser("~pulseuser"), ".ssh", "id_rsa"
                 )
                 dd = """#!/bin/bash
-                /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+                /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "%s" -l reversessh %s -p %s&
                 """ % (
                     reversetype,
                     data["port"],
