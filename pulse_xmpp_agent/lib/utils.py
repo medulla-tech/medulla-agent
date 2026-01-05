@@ -3963,15 +3963,17 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         msg = f"Creation of {username} user account successful: {result}"
         # Other operations specific to Windows
         if sys.platform.startswith("win"):
+            # Désactiver l'expiration du mot de passe avec `net user`
             result = simplecommand(
                 encode_strconsole(
-                    "wmic useraccount where \"Name='%s'\" set PasswordExpires=False"
-                    % username
+                    'net user "%s" /passwordchg:no' % username
                 )
             )
             if result["code"] != 0:
                 msg = f"Error setting {username} user account to not expire: {result}"
                 return False, msg
+
+            # Masquer le compte dans l'écran de connexion
             result = simplecommand(
                 encode_strconsole(
                     'REG ADD "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList" /v "%s" /t REG_DWORD /d 0 /f'
@@ -3981,6 +3983,8 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             if result["code"] != 0:
                 msg = f"Error hiding {username} account: {result}"
                 return False, msg
+
+            # Masquer le dossier utilisateur dans l'explorateur
             user_home = getHomedrive()
             hide_from_explorer = simplecommand(
                 encode_strconsole("attrib +h %s" % user_home)
@@ -3992,7 +3996,6 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     else:
         msg = f"Creation of {username} user account failed: {result}"
         return False, msg
-
 
 def pulseuser_profile_mustexist(username="pulseuser"):
     """
