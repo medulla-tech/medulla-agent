@@ -1882,26 +1882,23 @@ def joint_compteAD(domain, password, login, group):
 
 
 def windowsservice(name, action):
-    pythoncom.CoInitialize()
-    try:
-        wmi_obj = wmi.WMI()
-        wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
-        print(wmi_sql)
-        wmi_out = wmi_obj.query(wmi_sql)
-    finally:
-        pythoncom.CoUninitialize()
-    print(len(wmi_out))
-    for dev in wmi_out:
-        print(dev.caption)
-        if action.lower() == "start":
-            dev.StartService()
-        elif action.lower() == "stop":
-            print(dev.Name)
-            dev.StopService()
-        elif action.lower() == "restart":
-            dev.StopService()
-            dev.StartService()
+    """
+    Legacy wrapper for controlling Windows services.
+    Now delegates to the modern cross-platform service_control function.
 
+    Args:
+        name (str): service name
+        action (str): 'start', 'stop', 'restart'
+
+    Returns:
+        dict: same as service_control
+    """
+
+    if not platform.system().lower() == "windows":
+        return {"code": -1, "result": ["windowsservice can only run on Windows"]}
+
+    # Delegate to service_control
+    return service_control(name, action)
 
 def methodservice():
     import pythoncom
