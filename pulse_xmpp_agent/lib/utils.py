@@ -40,7 +40,6 @@ from datetime import datetime, timedelta
 import importlib.util
 import requests
 import asyncio
-
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -1710,63 +1709,145 @@ def servicelinuxinit(name, action):
     obj["result"] = result
     return obj
 
+#
+# def service(name, action):
+#     """
+#     This function allow to send actions to the system init.
+#
+#     Windows, MacOS and linux are supported
+#
+#     Args:
+#         name: The name of the service
+#         action: The action we want to perform (stop, start, restart, reload)
+#
+#     Returns:
+#         The return code of the command
+#     """
+#
+#     obj = {}
+#     if sys.platform.startswith("linux"):
+#         system = ""
+#         p = subprocess.Popen(
+#             "cat /proc/1/comm",
+#             shell=True,
+#             stdout=subprocess.PIPE,
+#             stderr=subprocess.STDOUT,
+#         )
+#         result = p.stdout.readlines()
+#         system = result[0].rstrip("\n")
+#         if system == "init":
+#             p = subprocess.Popen(
+#                 f"/etc/init.d/{name} {action}",
+#                 shell=True,
+#                 stdout=subprocess.PIPE,
+#                 stderr=subprocess.STDOUT,
+#             )
+#             result = p.stdout.readlines()
+#             obj["code"] = p.wait()
+#             obj["result"] = result
+#         elif system == "systemd":
+#             p = subprocess.Popen(
+#                 f"systemctl {action} {name}",
+#                 shell=True,
+#                 stdout=subprocess.PIPE,
+#                 stderr=subprocess.STDOUT,
+#             )
+#             result = p.stdout.readlines()
+#             obj["code"] = p.wait()
+#             obj["result"] = result
+#     elif sys.platform.startswith("win"):
+#         pythoncom.CoInitialize()
+#         try:
+#             wmi_obj = wmi.WMI()
+#             wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
+#             wmi_out = wmi_obj.query(wmi_sql)
+#         finally:
+#             pythoncom.CoUninitialize()
+#         for dev in wmi_out:
+#             print(dev.Caption)
+#     return obj
+#
+
 
 def service(name, action):
     """
-    This function allow to send actions to the system init.
-
-    Windows, MacOS and linux are supported
+    Perform actions on a system service (start, stop, restart, reload).
+    Works on Windows, Linux (systemd/init), and macOS.
 
     Args:
-        name: The name of the service
-        action: The action we want to perform (stop, start, restart, reload)
+        name: Service name
+        action: 'start', 'stop', 'restart', 'reload'
 
     Returns:
-        The return code of the command
+        dict: {
+            "code": return code (0 = success, -1 = error),
+            "result": list of output lines or error message
+        }
     """
+    obj = {"code": -1, "result": []}
 
-    obj = {}
-    if sys.platform.startswith("linux"):
-        system = ""
-        p = subprocess.Popen(
-            "cat /proc/1/comm",
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        result = p.stdout.readlines()
-        system = result[0].rstrip("\n")
-        if system == "init":
-            p = subprocess.Popen(
-                f"/etc/init.d/{name} {action}",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            result = p.stdout.readlines()
+    try:
+        if sys.platform.startswith("linux"):
+            # Detect init system
+            p = subprocess.Popen("cat /proc/1/comm", shell=True,
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            system = p.stdout.read().decode().strip()
+
+            if system == "init":
+                cmd = f"/etc/init.d/{name} {action}"
+            elif system == "systemd":
+                cmd = f"systemctl {action} {name}"
+            else:
+                obj["result"] = [f"Unsupported init system: {system}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.readlines()
             obj["code"] = p.wait()
-            obj["result"] = result
-        elif system == "systemd":
-            p = subprocess.Popen(
-                f"systemctl {action} {name}",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            result = p.stdout.readlines()
+            obj["result"] = [line.decode().strip() for line in output]
+
+        elif sys.platform.startswith("win"):
+            # Map restart -> Stop+Start
+            ps_action = action.lower()
+            if ps_action == "restart":
+                cmd = f"powershell -Command \"Stop-Service -Name '{name}' -Force; Start-Service -Name '{name}'\""
+            elif ps_action in ("start", "stop"):
+                cmd = f"powershell -Command \"{ps_action.capitalize()}-Service -Name '{name}' -ErrorAction Stop\""
+            else:
+                obj["result"] = [f"Unsupported action: {action}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.read().decode()
+            obj["code"] = 0 if p.wait() == 0 else -1
+            obj["result"] = output.splitlines()
+
+        elif sys.platform.startswith("darwin"):
+            # macOS
+            if action.lower() == "start":
+                cmd = f"launchctl start {name}"
+            elif action.lower() == "stop":
+                cmd = f"launchctl stop {name}"
+            elif action.lower() == "restart":
+                cmd = f"launchctl stop {name}; launchctl start {name}"
+            else:
+                obj["result"] = [f"Unsupported action: {action}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.readlines()
             obj["code"] = p.wait()
-            obj["result"] = result
-    elif sys.platform.startswith("win"):
-        pythoncom.CoInitialize()
-        try:
-            wmi_obj = wmi.WMI()
-            wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
-            wmi_out = wmi_obj.query(wmi_sql)
-        finally:
-            pythoncom.CoUninitialize()
-        for dev in wmi_out:
-            print(dev.Caption)
+            obj["result"] = [line.decode().strip() for line in output]
+
+        else:
+            obj["result"] = [f"Unsupported OS: {sys.platform}"]
+
+    except Exception as e:
+        obj["code"] = -1
+        obj["result"] = [str(e)]
+
     return obj
+
 
 
 def listservice():
