@@ -1935,18 +1935,49 @@ def windowsservice(name, action):
     # Delegate to service_control
     return service_control(name, action)
 
-def methodservice():
-    import pythoncom
-    import wmi
 
-    pythoncom.CoInitialize()
+def methodservice_modern(service_name=None):
+    """
+    List available methods/actions for Windows services .
+    If service_name is given, lists methods for that service.
+    Otherwise, lists generic service methods.
+
+    Returns:
+        dict: {
+            "code": 0 if success, -1 if error,
+            "methods": list of method names
+        }
+    """
+    obj = {"code": -1, "methods": []}
+
     try:
-        c = wmi.WMI()
-        for method in c.Win32_Service._methods:
-            print(method)
-    finally:
-        pythoncom.CoUninitialize()
+        # PowerShell command to list methods of the ServiceController object
+        if service_name:
+            ps_cmd = (
+                f"powershell -Command "
+                f"$svc = Get-Service -Name '{service_name}'; "
+                f"$svc | Get-Member -MemberType Method | Select-Object -ExpandProperty Name"
+            )
+        else:
+            # Generic: get methods of one service (first found)
+            ps_cmd = (
+                "powershell -Command "
+                "$svc = Get-Service | Select-Object -First 1; "
+                "$svc | Get-Member -MemberType Method | Select-Object -ExpandProperty Name"
+            )
 
+        p = subprocess.Popen(ps_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.stdout.read().decode()
+        code = p.wait()
+
+        obj["code"] = 0 if code == 0 else -1
+        obj["methods"] = [line.strip() for line in output.splitlines() if line.strip()]
+
+    except Exception as e:
+        obj["code"] = -1
+        obj["methods"] = [str(e)]
+
+    return obj
 
 def file_get_content(path):
     with open(path, "r") as inputFile:
