@@ -1867,18 +1867,53 @@ def listservice():
         print(dev.DisplayName)
 
 
-def joint_compteAD(domain, password, login, group):
-    # https://msdn.microsoft.com/en-us/library/windows/desktop/aa392154%28v=vs.85%29.aspx
-    pythoncom.CoInitialize()
+def joint_compteAD(domain, username, password, ou=None, restart=True):
+    """
+    Join the current Windows computer to an Active Directory domain
+    using PowerShell Add-Computer
+
+    Args:
+        domain (str): Domain to join
+        username (str): Domain user with privileges
+        password (str): Password of the user
+        ou (str): Optional OU (DistinguishedName) to place computer
+        restart (bool): Restart after join (default True)
+
+    Returns:
+        dict: {
+            "code": 0 if success, -1 if error,
+            "result": list of output lines or error
+        }
+    """
+    obj = {"code": -1, "result": []}
+
     try:
-        c = wmi.WMI()
-        for computer in c.Win32_ComputerSystem():
-            if computer.PartOfDomain:
-                print(computer.Domain)  # DOMCD
-                print(computer.SystemStartupOptions)
-                computer.JoinDomainOrWorkGroup(domain, password, login, group, 3)
-    finally:
-        pythoncom.CoUninitialize()
+        # Build the PowerShell command
+        ps_cmd = [
+            "powershell", "-Command",
+            f"$pass = ConvertTo-SecureString '{password}' -AsPlainText -Force;"
+            f"$cred = New-Object System.Management.Automation.PSCredential('{username}', $pass);"
+            f"Add-Computer -DomainName '{domain}' -Credential $cred"
+        ]
+
+        if ou:
+            ps_cmd[-1] += f" -OUPath '{ou}'"
+        if restart:
+            ps_cmd[-1] += " -Restart"
+
+        # Execute
+        p = subprocess.Popen(ps_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.stdout.read().decode()
+        code = p.wait()
+
+        obj["code"] = 0 if code == 0 else -1
+        obj["result"] = output.splitlines()
+
+    except Exception as e:
+        obj["code"] = -1
+        obj["result"] = [str(e)]
+
+    return obj
 
 
 def windowsservice(name, action):
