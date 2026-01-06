@@ -266,105 +266,39 @@ def get_python_exec():
     """
     return sys.executable
 
-#
-# def os_version(brelease_windows=1, bbuild_windows=0):
-#     """
-#     Retourne le nom complet du système d'exploitation avec sa version détaillée.
-#
-#     Paramètres :
-#         brelease_windows (int) : Inclut l'identifiant de version Windows (ex : 21H2).
-#                                  1 = activé, 0 = désactivé.
-#         bbuild_windows (int)   : Inclut le numéro de build Windows.
-#                                  1 = activé, 0 = désactivé.
-#
-#     Retour :
-#         str : Description complète du système d’exploitation.
-#
-#     Exemple :
-#         >>> print(os_version())
-#         Microsoft Windows 10 Pro (21H2 - build 19044)
-#
-#     Notes :
-#         - Sous Windows, utilise WMI et la base de registre.
-#         - Sous Linux, lit les infos depuis /etc/os-release.
-#         - Sous macOS, utilise `sw_vers` et `platform.mac_ver()`.
-#     """
-#     try:
-#         # ----- WINDOWS -----
-#         if sys.platform.startswith("win"):
-#             import pythoncom
-#             import wmi
-#             pythoncom.CoInitialize()
-#             c = wmi.WMI()
-#
-#             for os_info in c.Win32_OperatingSystem():
-#                 name = os_info.Caption.strip()
-#                 version = os_info.Version
-#                 build = os_info.BuildNumber
-#                 release_id = None
-#
-#                 # Lecture du code type "21H2" via la base de registre
-#                 if brelease_windows:
-#                     try:
-#                         import winreg
-#                         key = winreg.OpenKey(
-#                             winreg.HKEY_LOCAL_MACHINE,
-#                             r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-#                         )
-#                         release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
-#                         winreg.CloseKey(key)
-#                     except Exception:
-#                         pass
-#
-#                 # Construction de la chaîne finale
-#                 parts = []
-#                 if release_id:
-#                     parts.append(release_id)
-#                 if bbuild_windows:
-#                     parts.append(f"build {build}")
-#
-#                 if parts:
-#                     return f"{name} ({' - '.join(parts)})"
-#                 else:
-#                     return name
-#
-#         # ----- LINUX -----
-#         elif sys.platform.startswith("linux"):
-#             os_release = "/etc/os-release"
-#             if os.path.exists(os_release):
-#                 with open(os_release, "r") as f:
-#                     info = {}
-#                     for line in f:
-#                         if "=" in line:
-#                             k, v = line.strip().split("=", 1)
-#                             info[k] = v.strip('"')
-#                     name = info.get("PRETTY_NAME") or info.get("NAME", "Linux")
-#                     return name
-#             else:
-#                 return platform.platform()
-#
-#         # ----- MACOS -----
-#         elif sys.platform == "darwin":
-#             try:
-#                 version, _, _ = platform.mac_ver()
-#                 name = os.popen("sw_vers -productName").read().strip()
-#                 return f"{name} {version}"
-#             except Exception:
-#                 return "macOS (version inconnue)"
-#
-#         # ----- AUTRES -----
-#         else:
-#             return platform.platform()
-#
-#     except Exception:
-#         # En cas d'erreur inattendue, on renvoie une info générique fiable
-#         return platform.platform()
-
 
 
 def os_version(brelease_windows=1, bbuild_windows=0):
     """
-    Version réécrite utilisant Get-CimInstance (CIM).
+    Version Get-CimInstance (CIM).
+    Retourne le nom complet du système d'exploitation avec sa version détaillée.
+
+    La fonction détecte automatiquement le système d'exploitation et
+    construit une chaîne descriptive incluant, selon le système et les paramètres :
+      - Windows : nom complet, DisplayVersion (ex: 21H2), numéro de build
+      - Linux : PRETTY_NAME ou NAME depuis /etc/os-release
+      - macOS : nom et version via sw_vers et platform.mac_ver()
+      - Autres systèmes : fallback sur platform.platform()
+
+    Paramètres :
+        brelease_windows (int) : Inclut l'identifiant de version Windows (ex : 21H2).
+                                 1 = activé, 0 = désactivé.
+        bbuild_windows (int)   : Inclut le numéro de build Windows.
+                                 1 = activé, 0 = désactivé.
+
+    Retour :
+        str : Description complète et lisible du système d’exploitation.
+
+    Exemple :
+        >>> print(os_version())
+        Microsoft Windows 10 Pro (21H2 - build 19044)
+
+    Notes :
+        - Sous Windows, utilise PowerShell CIM (Get-CimInstance) et la base de registre
+          pour DisplayVersion.
+        - Sous Linux, lit les informations depuis /etc/os-release si disponible.
+        - Sous macOS, combine la sortie de `sw_vers` et platform.mac_ver().
+        - En cas d’échec ou pour systèmes non standard, fallback sur platform.platform().
     """
 
     try:
@@ -4118,76 +4052,130 @@ def get_user_sid(username="pulseuser"):
         return False
 
 
-def delete_profile(username="pulseuser"):
-    if sys.platform.startswith("win"):
-        # Delete profile folder in C:\Users if any
+def get_profile_path_from_registry(sid):
+    """
+    Retourne le chemin réel du profil utilisateur depuis le registre Windows.
+
+    Cas gérés :
+      - Profil standard (SID)
+      - Profil temporaire (SID.bak)
+      - Absence de profil (retourne None)
+      - Expansion des variables (%SystemDrive%)
+
+    :param sid: SID de l'utilisateur
+    :return: Chemin absolu du profil (str) ou None
+    """
+    if not sid:
+        return None
+
+    # La "source de vérité" pour les profils Windows
+    profilelist_key = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
+
+    # On teste d'abord le SID standard, puis le SID.bak
+    for sid_key in (sid, sid + ".bak"):
         try:
-            delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive()
-            result = simplecommand(encode_strconsole(delete_folder_cmd))
-            if result["code"] == 0:
-                logger.debug("Deleted %s folder" % getHomedrive())
-            else:
-                logger.error("Error deleting %s folder" % getHomedrive())
-        except Exception as e:
-            pass
-        # Delete profile
-        userenvdll = ctypes.WinDLL("userenv.dll")
-        usersid = get_user_sid(username)
-        delete_profile_result = userenvdll.DeleteProfileA(LPCSTR(usersid))
-        if delete_profile_result == 0:
-            logger.debug("%s profile deleted." % username)
-        else:
-            logger.error(
-                "Error deleting %s profile: %s" % (username, delete_profile_result)
-            )
-    return True
+            with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                f"{profilelist_key}\\{sid_key}",
+            ) as key:
+
+                path, _ = winreg.QueryValueEx(key, "ProfileImagePath")
+                if not path:
+                    continue
+
+                # Expansion de variables d'environnement (%SystemDrive%, etc.)
+                path = os.path.expandvars(path)
+
+                return path
+
+        except FileNotFoundError:
+            continue
+        except OSError:
+            continue
+
+    # Aucun profil trouvé
+    return None
 
 
 def delete_profile(username="pulseuser"):
     """
-    Supprime le profil utilisateur spécifié en utilisant WMI (Windows Management Instrumentation).
+    Supprime complètement un profil Windows quel que soit son emplacement
+    (C:\\Users, D:\\Users, etc.).
 
-        Args:
-            - username : str. Nom de l'utilisateur dont le profil doit être supprimé.
-
-        Remarques :
-            - Cette fonction utilise WMI pour se connecter et rechercher le profil de l'utilisateur spécifié par le nom "username".
-            - Si le profil de l'utilisateur est trouvé, il sera supprimé.
-            - Assurez-vous d'exécuter le script en tant qu'administrateur pour avoir les droits nécessaires pour supprimer un profil
-                utilisateur.
-            - Cette opération est irréversible et toutes les données associées au profil seront perdues.
-
-        Exceptions:
-            - wmi.x_wmi : Une exception WMI peut être levée en cas d'erreur WMI lors de la suppression du profil.
-            - Exception : D'autres exceptions inattendues peuvent être levées en cas d'erreurs inattendues.
-
-        Returns:
-            Aucun retour. Si le profil de l'utilisateur est trouvé et supprimé avec succès, la fonction se termine sans retour. Si le
-            profil n'est pas trouvé, aucune action n'est effectuée.
+    - Utilise ProfileImagePath comme source de vérité
+    - Supprime profils indexés (.DOMAIN, .000, etc.)
+    - Supprime profils temporaires (.bak)
+    - Nettoie registre + disque
     """
+
+    if not sys.platform.startswith("win"):
+        return True
+
+    usersid = get_user_sid(username)
+    profile_paths = set()
+
+    # ------------------------------------------------------------
+    # 1) Récupération du chemin réel du profil (registre)
+    # ------------------------------------------------------------
+    if usersid:
+        path = get_profile_path_from_registry(usersid)
+        if path:
+            profile_paths.add(path)
+
+    # ------------------------------------------------------------
+    # 2) Détection profils indexés au même emplacement
+    #    Ex: D:\Users\user.DOMAIN
+    # ------------------------------------------------------------
+    for base_path in list(profile_paths):
+        parent = os.path.dirname(base_path)
+        base = os.path.basename(base_path).lower()
+
+        if not os.path.isdir(parent):
+            continue
+
+        for folder in os.listdir(parent):
+            if folder.lower().startswith(base + "."):
+                profile_paths.add(os.path.join(parent, folder))
+
+    # ------------------------------------------------------------
+    # 3) Fallback si aucun profil trouvé (ancien code)
+    # ------------------------------------------------------------
+    if not profile_paths:
+        fallback = getHomedrive(username)
+        if fallback:
+            profile_paths.add(fallback)
+
+    # ------------------------------------------------------------
+    # 4) Suppression des dossiers profils
+    # ------------------------------------------------------------
+    for path in profile_paths:
+        try:
+            delete_folder_cmd = f'rd /s /q "{path}"'
+            result = simplecommand(encode_strconsole(delete_folder_cmd))
+
+            if result["code"] == 0:
+                logger.debug(f"Deleted profile folder: {path}")
+            else:
+                logger.error(f"Error deleting folder: {path}")
+        except Exception as e:
+            logger.error(f"Exception deleting {path}: {e}")
+
+    # ------------------------------------------------------------
+    # 5) Suppression via l'API Windows (registre + cache)
+    # ------------------------------------------------------------
     try:
-        pythoncom.CoInitialize()
-        c = wmi.WMI()
+        if usersid:
+            userenvdll = ctypes.WinDLL("userenv.dll")
+            res = userenvdll.DeleteProfileA(LPCSTR(usersid), None, None)
 
-        user_profiles = c.Win32_UserProfile(Name=username)
-        if len(user_profiles) == 0:
-            logging.getLogger().error(
-                f"Le profil de l'utilisateur {username} n'a pas été trouvé."
-            )
-            return
-
-        user_profiles[0].Delete_()
-        logging.getLogger().info(
-            f"Le profil de l'utilisateur {username} a été supprimé avec succès."
-        )
-
-    except wmi.x_wmi as e:
-        logging.getLogger().error(
-            f"Erreur WMI lors de la suppression du profil : {str(e)}"
-        )
+            if res == 1:
+                logger.debug(f"{username} profile deleted via DeleteProfile API.")
+            else:
+                logger.error(f"DeleteProfile API failed for {username}: {res}")
     except Exception as e:
-        logging.getLogger().error(f"Une erreur inattendue s'est produite : {str(e)}")
+        logger.error(f"DeleteProfile API exception for {username}: {e}")
 
+    return True
 
 def create_idrsa_on_client(username="pulseuser", key=""):
     """
