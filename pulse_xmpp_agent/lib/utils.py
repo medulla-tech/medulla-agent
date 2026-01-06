@@ -40,7 +40,6 @@ from datetime import datetime, timedelta
 import importlib.util
 import requests
 import asyncio
-
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -267,67 +266,155 @@ def get_python_exec():
     """
     return sys.executable
 
+#
+# def os_version(brelease_windows=1, bbuild_windows=0):
+#     """
+#     Retourne le nom complet du système d'exploitation avec sa version détaillée.
+#
+#     Paramètres :
+#         brelease_windows (int) : Inclut l'identifiant de version Windows (ex : 21H2).
+#                                  1 = activé, 0 = désactivé.
+#         bbuild_windows (int)   : Inclut le numéro de build Windows.
+#                                  1 = activé, 0 = désactivé.
+#
+#     Retour :
+#         str : Description complète du système d’exploitation.
+#
+#     Exemple :
+#         >>> print(os_version())
+#         Microsoft Windows 10 Pro (21H2 - build 19044)
+#
+#     Notes :
+#         - Sous Windows, utilise WMI et la base de registre.
+#         - Sous Linux, lit les infos depuis /etc/os-release.
+#         - Sous macOS, utilise `sw_vers` et `platform.mac_ver()`.
+#     """
+#     try:
+#         # ----- WINDOWS -----
+#         if sys.platform.startswith("win"):
+#             import pythoncom
+#             import wmi
+#             pythoncom.CoInitialize()
+#             c = wmi.WMI()
+#
+#             for os_info in c.Win32_OperatingSystem():
+#                 name = os_info.Caption.strip()
+#                 version = os_info.Version
+#                 build = os_info.BuildNumber
+#                 release_id = None
+#
+#                 # Lecture du code type "21H2" via la base de registre
+#                 if brelease_windows:
+#                     try:
+#                         import winreg
+#                         key = winreg.OpenKey(
+#                             winreg.HKEY_LOCAL_MACHINE,
+#                             r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+#                         )
+#                         release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
+#                         winreg.CloseKey(key)
+#                     except Exception:
+#                         pass
+#
+#                 # Construction de la chaîne finale
+#                 parts = []
+#                 if release_id:
+#                     parts.append(release_id)
+#                 if bbuild_windows:
+#                     parts.append(f"build {build}")
+#
+#                 if parts:
+#                     return f"{name} ({' - '.join(parts)})"
+#                 else:
+#                     return name
+#
+#         # ----- LINUX -----
+#         elif sys.platform.startswith("linux"):
+#             os_release = "/etc/os-release"
+#             if os.path.exists(os_release):
+#                 with open(os_release, "r") as f:
+#                     info = {}
+#                     for line in f:
+#                         if "=" in line:
+#                             k, v = line.strip().split("=", 1)
+#                             info[k] = v.strip('"')
+#                     name = info.get("PRETTY_NAME") or info.get("NAME", "Linux")
+#                     return name
+#             else:
+#                 return platform.platform()
+#
+#         # ----- MACOS -----
+#         elif sys.platform == "darwin":
+#             try:
+#                 version, _, _ = platform.mac_ver()
+#                 name = os.popen("sw_vers -productName").read().strip()
+#                 return f"{name} {version}"
+#             except Exception:
+#                 return "macOS (version inconnue)"
+#
+#         # ----- AUTRES -----
+#         else:
+#             return platform.platform()
+#
+#     except Exception:
+#         # En cas d'erreur inattendue, on renvoie une info générique fiable
+#         return platform.platform()
+
+
 
 def os_version(brelease_windows=1, bbuild_windows=0):
     """
-    Retourne le nom complet du système d'exploitation avec sa version détaillée.
-
-    Paramètres :
-        brelease_windows (int) : Inclut l'identifiant de version Windows (ex : 21H2).
-                                 1 = activé, 0 = désactivé.
-        bbuild_windows (int)   : Inclut le numéro de build Windows.
-                                 1 = activé, 0 = désactivé.
-
-    Retour :
-        str : Description complète du système d’exploitation.
-
-    Exemple :
-        >>> print(os_version())
-        Microsoft Windows 10 Pro (21H2 - build 19044)
-
-    Notes :
-        - Sous Windows, utilise WMI et la base de registre.
-        - Sous Linux, lit les infos depuis /etc/os-release.
-        - Sous macOS, utilise `sw_vers` et `platform.mac_ver()`.
+    Version réécrite utilisant Get-CimInstance (CIM).
     """
+
     try:
         # ----- WINDOWS -----
         if sys.platform.startswith("win"):
-            import pythoncom
-            import wmi
-            pythoncom.CoInitialize()
-            c = wmi.WMI()
 
-            for os_info in c.Win32_OperatingSystem():
-                name = os_info.Caption.strip()
-                version = os_info.Version
-                build = os_info.BuildNumber
-                release_id = None
+            # Récupération via CIM (PowerShell)
+            ps_cmd = [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                "Get-CimInstance -ClassName Win32_OperatingSystem | "
+                "Select-Object Caption, Version, BuildNumber | ConvertTo-Json"
+            ]
 
-                # Lecture du code type "21H2" via la base de registre
-                if brelease_windows:
-                    try:
-                        import winreg
-                        key = winreg.OpenKey(
-                            winreg.HKEY_LOCAL_MACHINE,
-                            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-                        )
-                        release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
-                        winreg.CloseKey(key)
-                    except Exception:
-                        pass
+            try:
+                output = subprocess.check_output(ps_cmd, text=True, encoding="utf-8")
+                os_data = json.loads(output)
+            except Exception:
+                return platform.platform()
 
-                # Construction de la chaîne finale
-                parts = []
-                if release_id:
-                    parts.append(release_id)
-                if bbuild_windows:
-                    parts.append(f"build {build}")
+            name = os_data.get("Caption", "").strip()
+            build = os_data.get("BuildNumber")
+            version = os_data.get("Version")
 
-                if parts:
-                    return f"{name} ({' - '.join(parts)})"
-                else:
-                    return name
+            # Lecture du DisplayVersion (21H2, 22H2, etc.)
+            release_id = None
+            if brelease_windows:
+                try:
+                    import winreg
+                    key = winreg.OpenKey(
+                        winreg.HKEY_LOCAL_MACHINE,
+                        r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                    )
+                    release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
+                    winreg.CloseKey(key)
+                except Exception:
+                    pass
+
+            # Construction de la chaîne finale
+            parts = []
+            if release_id:
+                parts.append(release_id)
+            if bbuild_windows:
+                parts.append(f"build {build}")
+
+            if parts:
+                return f"{name} ({' - '.join(parts)})"
+            else:
+                return name
 
         # ----- LINUX -----
         elif sys.platform.startswith("linux"):
@@ -358,8 +445,8 @@ def os_version(brelease_windows=1, bbuild_windows=0):
             return platform.platform()
 
     except Exception:
-        # En cas d'erreur inattendue, on renvoie une info générique fiable
         return platform.platform()
+
 
 # debug decorator
 
@@ -1622,63 +1709,145 @@ def servicelinuxinit(name, action):
     obj["result"] = result
     return obj
 
+#
+# def service(name, action):
+#     """
+#     This function allow to send actions to the system init.
+#
+#     Windows, MacOS and linux are supported
+#
+#     Args:
+#         name: The name of the service
+#         action: The action we want to perform (stop, start, restart, reload)
+#
+#     Returns:
+#         The return code of the command
+#     """
+#
+#     obj = {}
+#     if sys.platform.startswith("linux"):
+#         system = ""
+#         p = subprocess.Popen(
+#             "cat /proc/1/comm",
+#             shell=True,
+#             stdout=subprocess.PIPE,
+#             stderr=subprocess.STDOUT,
+#         )
+#         result = p.stdout.readlines()
+#         system = result[0].rstrip("\n")
+#         if system == "init":
+#             p = subprocess.Popen(
+#                 f"/etc/init.d/{name} {action}",
+#                 shell=True,
+#                 stdout=subprocess.PIPE,
+#                 stderr=subprocess.STDOUT,
+#             )
+#             result = p.stdout.readlines()
+#             obj["code"] = p.wait()
+#             obj["result"] = result
+#         elif system == "systemd":
+#             p = subprocess.Popen(
+#                 f"systemctl {action} {name}",
+#                 shell=True,
+#                 stdout=subprocess.PIPE,
+#                 stderr=subprocess.STDOUT,
+#             )
+#             result = p.stdout.readlines()
+#             obj["code"] = p.wait()
+#             obj["result"] = result
+#     elif sys.platform.startswith("win"):
+#         pythoncom.CoInitialize()
+#         try:
+#             wmi_obj = wmi.WMI()
+#             wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
+#             wmi_out = wmi_obj.query(wmi_sql)
+#         finally:
+#             pythoncom.CoUninitialize()
+#         for dev in wmi_out:
+#             print(dev.Caption)
+#     return obj
+#
+
 
 def service(name, action):
     """
-    This function allow to send actions to the system init.
-
-    Windows, MacOS and linux are supported
+    Perform actions on a system service (start, stop, restart, reload).
+    Works on Windows, Linux (systemd/init), and macOS.
 
     Args:
-        name: The name of the service
-        action: The action we want to perform (stop, start, restart, reload)
+        name: Service name
+        action: 'start', 'stop', 'restart', 'reload'
 
     Returns:
-        The return code of the command
+        dict: {
+            "code": return code (0 = success, -1 = error),
+            "result": list of output lines or error message
+        }
     """
+    obj = {"code": -1, "result": []}
 
-    obj = {}
-    if sys.platform.startswith("linux"):
-        system = ""
-        p = subprocess.Popen(
-            "cat /proc/1/comm",
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        result = p.stdout.readlines()
-        system = result[0].rstrip("\n")
-        if system == "init":
-            p = subprocess.Popen(
-                f"/etc/init.d/{name} {action}",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            result = p.stdout.readlines()
+    try:
+        if sys.platform.startswith("linux"):
+            # Detect init system
+            p = subprocess.Popen("cat /proc/1/comm", shell=True,
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            system = p.stdout.read().decode().strip()
+
+            if system == "init":
+                cmd = f"/etc/init.d/{name} {action}"
+            elif system == "systemd":
+                cmd = f"systemctl {action} {name}"
+            else:
+                obj["result"] = [f"Unsupported init system: {system}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.readlines()
             obj["code"] = p.wait()
-            obj["result"] = result
-        elif system == "systemd":
-            p = subprocess.Popen(
-                f"systemctl {action} {name}",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            result = p.stdout.readlines()
+            obj["result"] = [line.decode().strip() for line in output]
+
+        elif sys.platform.startswith("win"):
+            # Map restart -> Stop+Start
+            ps_action = action.lower()
+            if ps_action == "restart":
+                cmd = f"powershell -Command \"Stop-Service -Name '{name}' -Force; Start-Service -Name '{name}'\""
+            elif ps_action in ("start", "stop"):
+                cmd = f"powershell -Command \"{ps_action.capitalize()}-Service -Name '{name}' -ErrorAction Stop\""
+            else:
+                obj["result"] = [f"Unsupported action: {action}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.read().decode()
+            obj["code"] = 0 if p.wait() == 0 else -1
+            obj["result"] = output.splitlines()
+
+        elif sys.platform.startswith("darwin"):
+            # macOS
+            if action.lower() == "start":
+                cmd = f"launchctl start {name}"
+            elif action.lower() == "stop":
+                cmd = f"launchctl stop {name}"
+            elif action.lower() == "restart":
+                cmd = f"launchctl stop {name}; launchctl start {name}"
+            else:
+                obj["result"] = [f"Unsupported action: {action}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.readlines()
             obj["code"] = p.wait()
-            obj["result"] = result
-    elif sys.platform.startswith("win"):
-        pythoncom.CoInitialize()
-        try:
-            wmi_obj = wmi.WMI()
-            wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
-            wmi_out = wmi_obj.query(wmi_sql)
-        finally:
-            pythoncom.CoUninitialize()
-        for dev in wmi_out:
-            print(dev.Caption)
+            obj["result"] = [line.decode().strip() for line in output]
+
+        else:
+            obj["result"] = [f"Unsupported OS: {sys.platform}"]
+
+    except Exception as e:
+        obj["code"] = -1
+        obj["result"] = [str(e)]
+
     return obj
+
 
 
 def listservice():
@@ -1698,54 +1867,117 @@ def listservice():
         print(dev.DisplayName)
 
 
-def joint_compteAD(domain, password, login, group):
-    # https://msdn.microsoft.com/en-us/library/windows/desktop/aa392154%28v=vs.85%29.aspx
-    pythoncom.CoInitialize()
+def joint_compteAD(domain, username, password, ou=None, restart=True):
+    """
+    Join the current Windows computer to an Active Directory domain
+    using PowerShell Add-Computer
+
+    Args:
+        domain (str): Domain to join
+        username (str): Domain user with privileges
+        password (str): Password of the user
+        ou (str): Optional OU (DistinguishedName) to place computer
+        restart (bool): Restart after join (default True)
+
+    Returns:
+        dict: {
+            "code": 0 if success, -1 if error,
+            "result": list of output lines or error
+        }
+    """
+    obj = {"code": -1, "result": []}
+
     try:
-        c = wmi.WMI()
-        for computer in c.Win32_ComputerSystem():
-            if computer.PartOfDomain:
-                print(computer.Domain)  # DOMCD
-                print(computer.SystemStartupOptions)
-                computer.JoinDomainOrWorkGroup(domain, password, login, group, 3)
-    finally:
-        pythoncom.CoUninitialize()
+        # Build the PowerShell command
+        ps_cmd = [
+            "powershell", "-Command",
+            f"$pass = ConvertTo-SecureString '{password}' -AsPlainText -Force;"
+            f"$cred = New-Object System.Management.Automation.PSCredential('{username}', $pass);"
+            f"Add-Computer -DomainName '{domain}' -Credential $cred"
+        ]
+
+        if ou:
+            ps_cmd[-1] += f" -OUPath '{ou}'"
+        if restart:
+            ps_cmd[-1] += " -Restart"
+
+        # Execute
+        p = subprocess.Popen(ps_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.stdout.read().decode()
+        code = p.wait()
+
+        obj["code"] = 0 if code == 0 else -1
+        obj["result"] = output.splitlines()
+
+    except Exception as e:
+        obj["code"] = -1
+        obj["result"] = [str(e)]
+
+    return obj
 
 
 def windowsservice(name, action):
-    pythoncom.CoInitialize()
+    """
+    Legacy wrapper for controlling Windows services.
+    Now delegates to the modern cross-platform service_control function.
+
+    Args:
+        name (str): service name
+        action (str): 'start', 'stop', 'restart'
+
+    Returns:
+        dict: same as service_control
+    """
+
+    if not platform.system().lower() == "windows":
+        return {"code": -1, "result": ["windowsservice can only run on Windows"]}
+
+    # Delegate to service_control
+    return service_control(name, action)
+
+
+def methodservice_modern(service_name=None):
+    """
+    List available methods/actions for Windows services .
+    If service_name is given, lists methods for that service.
+    Otherwise, lists generic service methods.
+
+    Returns:
+        dict: {
+            "code": 0 if success, -1 if error,
+            "methods": list of method names
+        }
+    """
+    obj = {"code": -1, "methods": []}
+
     try:
-        wmi_obj = wmi.WMI()
-        wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
-        print(wmi_sql)
-        wmi_out = wmi_obj.query(wmi_sql)
-    finally:
-        pythoncom.CoUninitialize()
-    print(len(wmi_out))
-    for dev in wmi_out:
-        print(dev.caption)
-        if action.lower() == "start":
-            dev.StartService()
-        elif action.lower() == "stop":
-            print(dev.Name)
-            dev.StopService()
-        elif action.lower() == "restart":
-            dev.StopService()
-            dev.StartService()
+        # PowerShell command to list methods of the ServiceController object
+        if service_name:
+            ps_cmd = (
+                f"powershell -Command "
+                f"$svc = Get-Service -Name '{service_name}'; "
+                f"$svc | Get-Member -MemberType Method | Select-Object -ExpandProperty Name"
+            )
+        else:
+            # Generic: get methods of one service (first found)
+            ps_cmd = (
+                "powershell -Command "
+                "$svc = Get-Service | Select-Object -First 1; "
+                "$svc | Get-Member -MemberType Method | Select-Object -ExpandProperty Name"
+            )
 
+        p = subprocess.Popen(ps_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.stdout.read().decode()
+        code = p.wait()
 
-def methodservice():
-    import pythoncom
-    import wmi
+        obj["code"] = 0 if code == 0 else -1
+        obj["methods"] = [line.strip() for line in output.splitlines() if line.strip()]
 
-    pythoncom.CoInitialize()
-    try:
-        c = wmi.WMI()
-        for method in c.Win32_Service._methods:
-            print(method)
-    finally:
-        pythoncom.CoUninitialize()
+    except Exception as e:
+        obj["code"] = -1
+        obj["methods"] = [str(e)]
 
+    return obj
 
 def file_get_content(path):
     with open(path, "r") as inputFile:
@@ -3731,15 +3963,17 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         msg = f"Creation of {username} user account successful: {result}"
         # Other operations specific to Windows
         if sys.platform.startswith("win"):
+            # Désactiver l'expiration du mot de passe avec `net user`
             result = simplecommand(
                 encode_strconsole(
-                    "wmic useraccount where \"Name='%s'\" set PasswordExpires=False"
-                    % username
+                    'net user "%s" /passwordchg:no' % username
                 )
             )
             if result["code"] != 0:
                 msg = f"Error setting {username} user account to not expire: {result}"
                 return False, msg
+
+            # Masquer le compte dans l'écran de connexion
             result = simplecommand(
                 encode_strconsole(
                     'REG ADD "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList" /v "%s" /t REG_DWORD /d 0 /f'
@@ -3749,6 +3983,8 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             if result["code"] != 0:
                 msg = f"Error hiding {username} account: {result}"
                 return False, msg
+
+            # Masquer le dossier utilisateur dans l'explorateur
             user_home = getHomedrive()
             hide_from_explorer = simplecommand(
                 encode_strconsole("attrib +h %s" % user_home)
@@ -3760,7 +3996,6 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     else:
         msg = f"Creation of {username} user account failed: {result}"
         return False, msg
-
 
 def pulseuser_profile_mustexist(username="pulseuser"):
     """
