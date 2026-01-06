@@ -25,9 +25,6 @@ from pprint import pprint
 import hashlib
 import base64
 import pickle
-
-import stat
-
 from .agentconffile import (
     conffilename,
     medullaPath,
@@ -36,16 +33,13 @@ from .agentconffile import (
     conffilenametmp,
     rotation_file,
 )
-from .manageUser import ManageUser
-
 import socket
 import psutil
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import importlib.util
 import requests
 import asyncio
-
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -77,7 +71,7 @@ DEBUGPULSE = 25
 
 
 if sys.platform.startswith("win"):
-    # import wmi
+    import wmi
     import pythoncom
     import winreg as wr
 
@@ -89,12 +83,16 @@ if sys.platform.startswith("win"):
     import win32com.client
     from win32com.client import GetObject
     from ctypes.wintypes import LPCWSTR, LPCSTR
-else:
+
+if sys.platform.startswith("linux"):
     import pwd
     import grp
     import posix_ipc
     import xmltodict
 
+if sys.platform.startswith("darwin"):
+    import pwd
+    import grp
 
 
 import inspect
@@ -269,65 +267,67 @@ def get_python_exec():
     """
     return sys.executable
 
-import sys
-import os
-import platform
-import subprocess
-import json
 
 def os_version(brelease_windows=1, bbuild_windows=0):
     """
-    Version réécrite utilisant Get-CimInstance (CIM).
-    """
+    Retourne le nom complet du système d'exploitation avec sa version détaillée.
 
+    Paramètres :
+        brelease_windows (int) : Inclut l'identifiant de version Windows (ex : 21H2).
+                                 1 = activé, 0 = désactivé.
+        bbuild_windows (int)   : Inclut le numéro de build Windows.
+                                 1 = activé, 0 = désactivé.
+
+    Retour :
+        str : Description complète du système d’exploitation.
+
+    Exemple :
+        >>> print(os_version())
+        Microsoft Windows 10 Pro (21H2 - build 19044)
+
+    Notes :
+        - Sous Windows, utilise WMI et la base de registre.
+        - Sous Linux, lit les infos depuis /etc/os-release.
+        - Sous macOS, utilise `sw_vers` et `platform.mac_ver()`.
+    """
     try:
         # ----- WINDOWS -----
         if sys.platform.startswith("win"):
+            import pythoncom
+            import wmi
+            pythoncom.CoInitialize()
+            c = wmi.WMI()
 
-            # Récupération via CIM (PowerShell)
-            ps_cmd = [
-                "powershell",
-                "-NoProfile",
-                "-Command",
-                "Get-CimInstance -ClassName Win32_OperatingSystem | "
-                "Select-Object Caption, Version, BuildNumber | ConvertTo-Json"
-            ]
+            for os_info in c.Win32_OperatingSystem():
+                name = os_info.Caption.strip()
+                version = os_info.Version
+                build = os_info.BuildNumber
+                release_id = None
 
-            try:
-                output = subprocess.check_output(ps_cmd, text=True, encoding="utf-8")
-                os_data = json.loads(output)
-            except Exception:
-                return platform.platform()
+                # Lecture du code type "21H2" via la base de registre
+                if brelease_windows:
+                    try:
+                        import winreg
+                        key = winreg.OpenKey(
+                            winreg.HKEY_LOCAL_MACHINE,
+                            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                        )
+                        release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
+                        winreg.CloseKey(key)
+                    except Exception:
+                        pass
 
-            name = os_data.get("Caption", "").strip()
-            build = os_data.get("BuildNumber")
-            version = os_data.get("Version")
+                # Construction de la chaîne finale
+                parts = []
+                if release_id:
+                    parts.append(release_id)
+                if bbuild_windows:
+                    parts.append(f"build {build}")
 
-            # Lecture du DisplayVersion (21H2, 22H2, etc.)
-            release_id = None
-            if brelease_windows:
-                try:
-                    import winreg
-                    key = winreg.OpenKey(
-                        winreg.HKEY_LOCAL_MACHINE,
-                        r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-                    )
-                    release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
-                    winreg.CloseKey(key)
-                except Exception:
-                    pass
-
-            # Construction de la chaîne finale
-            parts = []
-            if release_id:
-                parts.append(release_id)
-            if bbuild_windows:
-                parts.append(f"build {build}")
-
-            if parts:
-                return f"{name} ({' - '.join(parts)})"
-            else:
-                return name
+                if parts:
+                    return f"{name} ({' - '.join(parts)})"
+                else:
+                    return name
 
         # ----- LINUX -----
         elif sys.platform.startswith("linux"):
@@ -358,6 +358,7 @@ def os_version(brelease_windows=1, bbuild_windows=0):
             return platform.platform()
 
     except Exception:
+        # En cas d'erreur inattendue, on renvoie une info générique fiable
         return platform.platform()
 
 # debug decorator
@@ -1621,417 +1622,130 @@ def servicelinuxinit(name, action):
     obj["result"] = result
     return obj
 
-import sys
-import subprocess
 
 def service(name, action):
     """
-    Perform actions on a system service (start, stop, restart, reload).
-    Works on Windows, Linux (systemd/init), and macOS.
+    This function allow to send actions to the system init.
+
+    Windows, MacOS and linux are supported
 
     Args:
-        name: Service name
-        action: 'start', 'stop', 'restart', 'reload'
+        name: The name of the service
+        action: The action we want to perform (stop, start, restart, reload)
 
     Returns:
-        dict: {
-            "code": return code (0 = success, -1 = error),
-            "result": list of output lines or error message
-        }
-    """
-    obj = {"code": -1, "result": []}
-
-    try:
-        if sys.platform.startswith("linux"):
-            # Detect init system
-            p = subprocess.Popen("cat /proc/1/comm", shell=True,
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            system = p.stdout.read().decode().strip()
-
-            if system == "init":
-                cmd = f"/etc/init.d/{name} {action}"
-            elif system == "systemd":
-                cmd = f"systemctl {action} {name}"
-            else:
-                obj["result"] = [f"Unsupported init system: {system}"]
-                return obj
-
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            output = p.stdout.readlines()
-            obj["code"] = p.wait()
-            obj["result"] = [line.decode().strip() for line in output]
-
-        elif sys.platform.startswith("win"):
-            # Map restart -> Stop+Start
-            ps_action = action.lower()
-            if ps_action == "restart":
-                cmd = f"powershell -Command \"Stop-Service -Name '{name}' -Force; Start-Service -Name '{name}'\""
-            elif ps_action in ("start", "stop"):
-                cmd = f"powershell -Command \"{ps_action.capitalize()}-Service -Name '{name}' -ErrorAction Stop\""
-            else:
-                obj["result"] = [f"Unsupported action: {action}"]
-                return obj
-
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            output = p.stdout.read().decode()
-            obj["code"] = 0 if p.wait() == 0 else -1
-            obj["result"] = output.splitlines()
-
-        elif sys.platform.startswith("darwin"):
-            # macOS
-            if action.lower() == "start":
-                cmd = f"launchctl start {name}"
-            elif action.lower() == "stop":
-                cmd = f"launchctl stop {name}"
-            elif action.lower() == "restart":
-                cmd = f"launchctl stop {name}; launchctl start {name}"
-            else:
-                obj["result"] = [f"Unsupported action: {action}"]
-                return obj
-
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            output = p.stdout.readlines()
-            obj["code"] = p.wait()
-            obj["result"] = [line.decode().strip() for line in output]
-
-        else:
-            obj["result"] = [f"Unsupported OS: {sys.platform}"]
-
-    except Exception as e:
-        obj["code"] = -1
-        obj["result"] = [str(e)]
-
-    return obj
-
-
-
-def listservice(show=True, status=False):
-    """
-    Lists system services (Windows, Linux, macOS).
-
-    Args:
-        show (bool): print the list if True, otherwise return JSON
-        status (bool): include service status if True
-
-    Returns:
-        If show=False:
-            {
-                "status": 1,
-                "services": [
-                    {"name": "...", "status": "..."}  # if status=True
-                    {"name": "..."}                    # if status=False
-                ]
-            }
+        The return code of the command
     """
 
-    system = platform.system().lower()
-    services = []
-
-    # -----------------------------------------------------------
-    # WINDOWS
-    # -----------------------------------------------------------
-    if system == "windows":
-        cmd = (
-            'powershell -Command '
-            '"Get-Service | Select-Object Name,Status | ConvertTo-Json -Depth 2"'
+    obj = {}
+    if sys.platform.startswith("linux"):
+        system = ""
+        p = subprocess.Popen(
+            "cat /proc/1/comm",
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
-
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        raw = p.stdout.read()
-        rc = p.wait()
-
-        if rc != 0:
-            if show:
-                print("Erreur lors de la recuperation des services Windows")
-            return {"status": 0, "services": []}
-
+        result = p.stdout.readlines()
+        system = result[0].rstrip("\n")
+        if system == "init":
+            p = subprocess.Popen(
+                f"/etc/init.d/{name} {action}",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            result = p.stdout.readlines()
+            obj["code"] = p.wait()
+            obj["result"] = result
+        elif system == "systemd":
+            p = subprocess.Popen(
+                f"systemctl {action} {name}",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            result = p.stdout.readlines()
+            obj["code"] = p.wait()
+            obj["result"] = result
+    elif sys.platform.startswith("win"):
+        pythoncom.CoInitialize()
         try:
-            services_raw = json.loads(raw.decode("utf-8"))
-        except:
-            if show:
-                print("Erreur JSON PowerShell")
-            return {"status": 0, "services": []}
-
-        if isinstance(services_raw, dict):
-            services_raw = [services_raw]
-
-        for svc in services_raw:
-            entry = {"name": svc["Name"]}
-            if status:
-                entry["status"] = str(svc["Status"]).lower()
-            services.append(entry)
-
-    # -----------------------------------------------------------
-    # LINUX (systemd)
-    # -----------------------------------------------------------
-    elif system == "linux":
-        cmd = "systemctl list-units --type=service --all --no-pager --plain --no-legend"
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-        raw = p.stdout.read().decode("utf-8", errors="ignore")
-        rc = p.wait()
-
-        if rc != 0:
-            if show:
-                print("Erreur lors de l execution de systemctl")
-            return {"status": 0, "services": []}
-
-        for line in raw.splitlines():
-            parts = line.split()
-            if len(parts) >= 4:
-                name = parts[0]
-                svc_state = parts[3]
-
-                entry = {"name": name}
-                if status:
-                    entry["status"] = svc_state.lower()
-
-                services.append(entry)
-
-    # -----------------------------------------------------------
-    # macOS (launchctl)
-    # -----------------------------------------------------------
-    elif system == "darwin":
-        cmd = "launchctl list"
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-        raw = p.stdout.read().decode("utf-8", errors="ignore")
-        rc = p.wait()
-
-        if rc != 0:
-            if show:
-                print("Erreur lors de l execution de launchctl")
-            return {"status": 0, "services": []}
-
-        lines = raw.splitlines()[1:]  # skip header
-        for line in lines:
-            parts = line.split()
-            if len(parts) >= 3:
-                pid = parts[0]
-                label = parts[2]
-
-                entry = {"name": label}
-                if status:
-                    entry["status"] = "running" if pid != "-" else "stopped"
-
-                services.append(entry)
-
-    # -----------------------------------------------------------
-    # Autre OS non géré
-    # -----------------------------------------------------------
-    else:
-        if show:
-            print("OS non supporte :", system)
-        return {"status": 0, "services": []}
-
-    # -----------------------------------------------------------
-    # Sortie show=True
-    # -----------------------------------------------------------
-    if show:
-        for s in services:
-            if status:
-                print(f"{s['name']} - {s['status']}")
-            else:
-                print(s["name"])
-        return ""
-
-    # -----------------------------------------------------------
-    # Sortie show=False → return JSON
-    # -----------------------------------------------------------
-    return {"status": 1, "services": services}
-
-
-def joint_compteAD(domain, username, password, ou=None, restart=True):
-    """
-    Join the current Windows computer to an Active Directory domain
-    using PowerShell Add-Computer
-
-    Args:
-        domain (str): Domain to join
-        username (str): Domain user with privileges
-        password (str): Password of the user
-        ou (str): Optional OU (DistinguishedName) to place computer
-        restart (bool): Restart after join (default True)
-
-    Returns:
-        dict: {
-            "code": 0 if success, -1 if error,
-            "result": list of output lines or error
-        }
-    """
-    obj = {"code": -1, "result": []}
-
-    try:
-        # Build the PowerShell command
-        ps_cmd = [
-            "powershell", "-Command",
-            f"$pass = ConvertTo-SecureString '{password}' -AsPlainText -Force;"
-            f"$cred = New-Object System.Management.Automation.PSCredential('{username}', $pass);"
-            f"Add-Computer -DomainName '{domain}' -Credential $cred"
-        ]
-
-        if ou:
-            ps_cmd[-1] += f" -OUPath '{ou}'"
-        if restart:
-            ps_cmd[-1] += " -Restart"
-
-        # Execute
-        p = subprocess.Popen(ps_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = p.stdout.read().decode()
-        code = p.wait()
-
-        obj["code"] = 0 if code == 0 else -1
-        obj["result"] = output.splitlines()
-
-    except Exception as e:
-        obj["code"] = -1
-        obj["result"] = [str(e)]
-
+            wmi_obj = wmi.WMI()
+            wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
+            wmi_out = wmi_obj.query(wmi_sql)
+        finally:
+            pythoncom.CoUninitialize()
+        for dev in wmi_out:
+            print(dev.Caption)
     return obj
 
 
-def service_control(name, action):
+def listservice():
     """
-    Control a system service across Windows, Linux, macOS.
-
-    Args:
-        name (str): service name
-        action (str): 'start', 'stop', 'restart'
-
-    Returns:
-        dict: {
-            "code": 0 if success, -1 if error,
-            "result": list of output lines or error messages
-        }
+    This function lists the available windows services
     """
-    obj = {"code": -1, "result": []}
-    action = action.lower()
-    system = platform.system().lower()
 
+    pythoncom.CoInitialize()
     try:
-        if system == "windows":
-            # Map restart -> Stop+Start
-            if action == "restart":
-                cmd = f"powershell -Command \"Stop-Service -Name '{name}' -Force; Start-Service -Name '{name}'\""
-            elif action in ("start", "stop"):
-                cmd = f"powershell -Command \"{action.capitalize()}-Service -Name '{name}' -ErrorAction Stop\""
-            else:
-                obj["result"] = [f"Unsupported action: {action}"]
-                return obj
+        wmi_obj = wmi.WMI()
+        wmi_sql = "select * from Win32_Service"  # Where Name ='Alerter'"
+        wmi_out = wmi_obj.query(wmi_sql)
+    finally:
+        pythoncom.CoUninitialize()
+    for dev in wmi_out:
+        print(dev.Caption)
+        print(dev.DisplayName)
 
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            output = p.stdout.read().decode()
-            obj["code"] = 0 if p.wait() == 0 else -1
-            obj["result"] = output.splitlines()
 
-        elif system == "linux":
-            # Detect init system
-            p = subprocess.Popen("cat /proc/1/comm", shell=True,
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            init_system = p.stdout.read().decode().strip()
+def joint_compteAD(domain, password, login, group):
+    # https://msdn.microsoft.com/en-us/library/windows/desktop/aa392154%28v=vs.85%29.aspx
+    pythoncom.CoInitialize()
+    try:
+        c = wmi.WMI()
+        for computer in c.Win32_ComputerSystem():
+            if computer.PartOfDomain:
+                print(computer.Domain)  # DOMCD
+                print(computer.SystemStartupOptions)
+                computer.JoinDomainOrWorkGroup(domain, password, login, group, 3)
+    finally:
+        pythoncom.CoUninitialize()
 
-            if init_system == "init":
-                cmd = f"/etc/init.d/{name} {action}"
-            elif init_system == "systemd":
-                cmd = f"systemctl {action} {name}"
-            else:
-                obj["result"] = [f"Unsupported init system: {init_system}"]
-                return obj
-
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            output = p.stdout.readlines()
-            obj["code"] = p.wait()
-            obj["result"] = [line.decode().strip() for line in output]
-
-        elif system == "darwin":
-            # macOS
-            if action == "start":
-                cmd = f"launchctl start {name}"
-            elif action == "stop":
-                cmd = f"launchctl stop {name}"
-            elif action == "restart":
-                cmd = f"launchctl stop {name}; launchctl start {name}"
-            else:
-                obj["result"] = [f"Unsupported action: {action}"]
-                return obj
-
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            output = p.stdout.readlines()
-            obj["code"] = p.wait()
-            obj["result"] = [line.decode().strip() for line in output]
-
-        else:
-            obj["result"] = [f"Unsupported OS: {system}"]
-
-    except Exception as e:
-        obj["code"] = -1
-        obj["result"] = [str(e)]
-
-    return obj
 
 def windowsservice(name, action):
-    """
-    Legacy wrapper for controlling Windows services.
-    Now delegates to the modern cross-platform service_control function.
-
-    Args:
-        name (str): service name
-        action (str): 'start', 'stop', 'restart'
-
-    Returns:
-        dict: same as service_control
-    """
-    import platform
-
-    if not platform.system().lower() == "windows":
-        return {"code": -1, "result": ["windowsservice can only run on Windows"]}
-
-    # Delegate to service_control
-    return service_control(name, action)
-
-
-def methodservice_modern(service_name=None):
-    """
-    List available methods/actions for Windows services .
-    If service_name is given, lists methods for that service.
-    Otherwise, lists generic service methods.
-
-    Returns:
-        dict: {
-            "code": 0 if success, -1 if error,
-            "methods": list of method names
-        }
-    """
-    obj = {"code": -1, "methods": []}
-
+    pythoncom.CoInitialize()
     try:
-        # PowerShell command to list methods of the ServiceController object
-        if service_name:
-            ps_cmd = (
-                f"powershell -Command "
-                f"$svc = Get-Service -Name '{service_name}'; "
-                f"$svc | Get-Member -MemberType Method | Select-Object -ExpandProperty Name"
-            )
-        else:
-            # Generic: get methods of one service (first found)
-            ps_cmd = (
-                "powershell -Command "
-                "$svc = Get-Service | Select-Object -First 1; "
-                "$svc | Get-Member -MemberType Method | Select-Object -ExpandProperty Name"
-            )
+        wmi_obj = wmi.WMI()
+        wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
+        print(wmi_sql)
+        wmi_out = wmi_obj.query(wmi_sql)
+    finally:
+        pythoncom.CoUninitialize()
+    print(len(wmi_out))
+    for dev in wmi_out:
+        print(dev.caption)
+        if action.lower() == "start":
+            dev.StartService()
+        elif action.lower() == "stop":
+            print(dev.Name)
+            dev.StopService()
+        elif action.lower() == "restart":
+            dev.StopService()
+            dev.StartService()
 
-        p = subprocess.Popen(ps_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = p.stdout.read().decode()
-        code = p.wait()
 
-        obj["code"] = 0 if code == 0 else -1
-        obj["methods"] = [line.strip() for line in output.splitlines() if line.strip()]
+def methodservice():
+    import pythoncom
+    import wmi
 
-    except Exception as e:
-        obj["code"] = -1
-        obj["methods"] = [str(e)]
+    pythoncom.CoInitialize()
+    try:
+        c = wmi.WMI()
+        for method in c.Win32_Service._methods:
+            print(method)
+    finally:
+        pythoncom.CoUninitialize()
 
-    return obj
 
 def file_get_content(path):
     with open(path, "r") as inputFile:
@@ -2044,29 +1758,19 @@ def file_put_content(filename, contents, mode="w"):
         fh.write(contents)
 
 
+# windows
+# def listusergroup():
+# import wmi
+# c = wmi.WMI()
+# for group in c.Win32_Group():
+# print group.Caption
+# for user in group.associators("Win32_GroupUser"):
+# print "  ", user.Caption
 
 # decorateur pour simplifier les plugins
+
+
 def pluginprocess(func):
-    """
-    Décorateur pour simplifier l'exécution des plugins XMPP.
-
-    Ce décorateur :
-    - Initialise un objet `result` avec les champs standards pour renvoyer le résultat.
-    - Initialise un objet `dataerreur` pour gérer les erreurs.
-    - Exécute la fonction décorée en lui passant `result` et `dataerreur`.
-    - Encode les données en base64 si `result["base64"]` est True.
-    - Envoie le message de résultat via `objetxmpp.send_message`.
-    - En cas d'exception, envoie `dataerreur` au lieu du résultat.
-
-    Args:
-        func (callable): Fonction plugin à décorer. Signature attendue :
-            func(objetxmpp, action, sessionid, data, message, dataerreur, result)
-
-    Usage typique:
-        @pluginprocess
-        def mon_plugin(objetxmpp, action, sessionid, data, message, dataerreur, result):
-            result["data"]["msg"] = "OK"
-    """
     def wrapper(objetxmpp, action, sessionid, data, message, dataerreur):
         resultaction = f"result{action}"
         result = {}
@@ -2101,26 +1805,6 @@ def pluginprocess(func):
 
 # decorateur pour simplifier les plugins
 def pulgindeploy(func):
-    """
-    Décorateur pour simplifier le déploiement de plugins XMPP.
-
-    Fonctionnalités :
-    - Initialise un dictionnaire `result` pour la réponse standardisée.
-    - Initialise `dataerreur` pour la gestion d'erreur.
-    - Exécute la fonction décorée.
-    - Encode les données en base64 si `result["base64"]` est True.
-    - N'envoie pas le message si `result["data"]` vaut "end".
-    - En cas d'exception, envoie le message d'erreur sauf si `result["data"] == "end"`.
-
-    Args:
-        func (callable): Fonction plugin à décorer. Signature attendue :
-            func(objetxmpp, action, sessionid, data, message, dataerreur, result)
-
-    Usage typique:
-        @pulgindeploy
-        def mon_plugin(objetxmpp, action, sessionid, data, message, dataerreur, result):
-            result["data"]["msg"] = "Déploiement terminé"
-    """
     def wrapper(objetxmpp, action, sessionid, data, message, dataerreur):
         resultaction = action
         result = {}
@@ -2154,29 +1838,9 @@ def pulgindeploy(func):
 
 
 # decorateur pour simplifier les plugins
+
+
 def pulgindeploy1(func):
-    """
-    Décorateur pour simplifier le déploiement de plugins XMPP avec suivi détaillé.
-
-    Fonctionnalités :
-    - Initialise `result` et `dataerreur` comme dans les autres décorateurs.
-    - Ajoute le champ `end` à `result["data"]` si absent.
-    - Affiche des informations de debug détaillées (Devent, Dtypequery, Deventindex).
-    - N'envoie le message que si `result["data"]["end"]` est False.
-    - Encode les données en base64 si `result["base64"]` est True.
-    - En cas d'exception, envoie le message d'erreur sauf si `result["data"]["end"]` est True.
-    - Très utile pour les plugins qui font un traitement itératif ou long.
-
-    Args:
-        func (callable): Fonction plugin à décorer. Signature attendue :
-            func(objetxmpp, action, sessionid, data, message, dataerreur, result)
-
-    Usage typique:
-        @pulgindeploy1
-        def mon_plugin(objetxmpp, action, sessionid, data, message, dataerreur, result):
-            result["data"]["msg"] = "Traitement en cours"
-            result["data"]["end"] = False
-    """
     def wrapper(objetxmpp, action, sessionid, data, message, dataerreur):
         result = {}
         result["action"] = action
@@ -2430,64 +2094,30 @@ def searchippublic(site=1):
         return find_ip()
     return None
 
+
 def find_ip():
-    """
-    Détecte l'adresse IP locale de l'ordinateur en testant plusieurs réseaux publics fictifs.
-
-    La fonction crée une socket UDP et tente de se "connecter" à chaque IP de test
-    (ici des plages documentées pour tests et exemples). Même si aucune donnée n'est envoyée,
-    l'appel à `connect()` permet à la socket de déterminer automatiquement
-    l'adresse IP locale utilisée pour atteindre ce réseau.
-
-    La fonction retourne la **première IP locale détectée**, ou None si impossible.
-
-    Returns:
-        str | None: Adresse IP locale détectée, ou None si aucune IP trouvée.
-    """
-
-    candidates = []  # Liste des IP locales détectées sur chaque test
-    # Liste d'IP de test réservées aux exemples/documentation (pas réelles)
+    candidates = []
     for test_ip in ["192.0.2.0", "192.51.100.0", "203.0.113.0"]:
         try:
-            # Création d'une socket UDP
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            # La connexion ne transmet pas de données, elle sert juste à déterminer l'IP locale
             s.connect((test_ip, 80))
-            ip_adrss = s.getsockname()[0]  # Récupère l'adresse locale utilisée
-
-            # Si cette IP a déjà été trouvée, on la retourne immédiatement
+            ip_adrss = s.getsockname()[0]
             if ip_adrss in candidates:
                 return ip_adrss
             candidates.append(ip_adrss)
-
         except Exception:
-            # Ignorer les erreurs de connexion ou de socket
             pass
         finally:
-            s.close()  # Toujours fermer la socket pour libérer les ressources
-
-    # Retourne la première IP trouvée, ou None si aucune IP détectée
+            s.close()
     return candidates[0] if candidates else None
 
+
+# decorateur pour simplifier les plugins
+# verify session exist.
+# pas de session end
+
+
 def pulginmaster(func):
-    """
-    Décorateur pour les plugins XMPP qui vérifie l'existence d'une session avant d'exécuter la fonction.
-
-    - Si l'action commence par "result", on tronque les 6 premiers caractères.
-    - Vérifie si la session `sessionid` existe via `objetxmpp.session.isexist`.
-    - Récupère les données de session si elles existent, sinon None.
-    - Passe ces informations à la fonction décorée.
-
-    Args:
-        func (callable): fonction plugin à décorer.
-            Signature attendue : func(objetxmpp, action, sessionid, data, message, ret, objsessiondata)
-
-    Returns:
-        callable: wrapper qui gère la vérification de session.
-
-    💡 Commentaire :
-    - Simplifie la gestion des plugins en évitant d'avoir à vérifier la session dans chaque plugin.
-    """
     def wrapper(objetxmpp, action, sessionid, data, message, ret):
         if action.startswith("result"):
             action = action[:6]
@@ -2504,46 +2134,17 @@ def pulginmaster(func):
 
 
 def pulginmastersessionaction(sessionaction, timeminute=10):
-    """
-    Décorateur de plugin XMPP avec gestion avancée de session.
-
-    Permet de définir une action sur la session avant et après l'exécution du plugin.
-
-    Args:
-        sessionaction (str): action sur la session, ex: "clear" ou "actualise".
-        timeminute (int): durée pour actualiser la session en minutes (par défaut 10).
-
-    Usage:
-        @pulginmastersessionaction("actualise")
-        def mon_plugin(objetxmpp, action, sessionid, data, message, ret, dataobj, objsessiondata):
-            ...
-
-    Fonctionnement :
-    - Si l'action commence par "result", tronque les 6 premiers caractères.
-    - Vérifie si la session existe :
-        - "actualise" → réactualise la session avant l'exécution.
-    - Exécute la fonction décorée en lui passant `objsessiondata`.
-    - Après exécution :
-        - "clear" → supprime la session.
-        - "actualise" → réactualise la session.
-
-    💡 Commentaire :
-    - Utile pour les plugins nécessitant un suivi précis de session.
-    - Permet de centraliser la logique de maintenance des sessions.
-    """
     def decorateur(func):
         def wrapper(objetxmpp, action, sessionid, data, message, ret, dataobj):
-            # Avant l'exécution
+            # avant
             if action.startswith("result"):
                 action = action[6:]
             if objetxmpp.session.isexist(sessionid):
                 if sessionaction == "actualise":
-                    objetxmpp.session.reactualisesession(sessionid, timeminute)
+                    objetxmpp.session.reactualisesession(sessionid, 10)
                 objsessiondata = objetxmpp.session.sessionfromsessiondata(sessionid)
             else:
                 objsessiondata = None
-
-            # Exécution de la fonction décorée
             response = func(
                 objetxmpp,
                 action,
@@ -2554,13 +2155,10 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
                 dataobj,
                 objsessiondata,
             )
-
-            # Après l'exécution
             if sessionaction == "clear" and objsessiondata is not None:
                 objetxmpp.session.clear(sessionid)
             elif sessionaction == "actualise":
-                objetxmpp.session.reactualisesession(sessionid, timeminute)
-
+                objetxmpp.session.reactualisesession(sessionid, 10)
             return response
 
         return wrapper
@@ -2569,21 +2167,6 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
 
 
 def merge_dicts(*dict_args):
-    """
-    Fusionne plusieurs dictionnaires en un seul.
-
-    Si plusieurs dictionnaires contiennent la même clé, la valeur du dernier dictionnaire
-    sera utilisée (comportement du `|=` en Python 3.9+).
-
-    Args:
-        *dict_args: dictionnaires à fusionner
-
-    Returns:
-        dict: dictionnaire fusionné
-
-    💡 Commentaire :
-    - Très utile pour combiner des résultats ou configurations venant de plusieurs sources.
-    """
     result = {}
     for dictionary in dict_args:
         result |= dictionary
@@ -2591,24 +2174,6 @@ def merge_dicts(*dict_args):
 
 
 def portline(result):
-    """
-    Extrait le numéro de port à partir d'une ligne de texte formatée.
-
-    Exemple de ligne : "0.0.0.0:80 0.0.0.0:* LISTEN"
-    - Sépare la ligne en colonnes
-    - Ignore les colonnes vides
-    - Retourne le numéro de port (après le caractère ':')
-
-    Args:
-        result (str): ligne de texte contenant une adresse IP et un port
-
-    Returns:
-        str: numéro de port extrait
-
-    💡 Commentaire :
-    - Utile pour analyser la sortie de commandes comme `netstat` ou `ss`.
-    - Le code `[ -2:-1 ][0]` prend l'avant-dernière colonne de la ligne, souvent la colonne IP:Port.
-    """
     column = [x.strip() for x in result.split(" ") if x != ""]
     print(column)
     return column[-2:-1][0].split(":")[1]
@@ -2742,31 +2307,8 @@ def ipfromdns(name_domaine_or_ip):
             return ""
     return ""
 
+
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
-    """
-    Crée une structure de message standardisée pour les plugins ou communications XMPP.
-
-    Args:
-        action (str): Nom de l'action associée au message.
-        data (dict, optional): Contenu du message. Par défaut {}.
-        ret (int, optional): Code de retour. Par défaut 0.
-        base64 (bool, optional): Indique si les données doivent être encodées en base64. Par défaut False.
-        sessionid (str, optional): ID de session. Si None ou invalide, un ID est généré automatiquement.
-
-    Returns:
-        dict: dictionnaire avec la structure standard :
-            {
-                "action": str,
-                "data": dict,
-                "ret": int,
-                "base64": bool,
-                "sessionid": str
-            }
-
-    💡 Commentaires :
-    - Génère un `sessionid` unique si non fourni, basé sur l'action.
-    - Simplifie la création de messages pour l'envoi via XMPP ou autre protocole.
-    """
     if sessionid is None or sessionid == "" or not isinstance(sessionid, str):
         sessionid = action.strip().replace(" ", "")
     return {
@@ -2774,25 +2316,13 @@ def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
         "data": data,
         "ret": 0,
         "base64": False,
-        "sessionid": getRandomName(4, sessionid),  # Génère un identifiant unique
+        "sessionid": getRandomName(4, sessionid),
     }
 
 
 def check_exist_ip_port(name_domaine_or_ip, port):
-    """
-    Vérifie si un socket peut se connecter à une IP ou un nom de domaine sur un port donné.
-
-    Args:
-        name_domaine_or_ip (str): Nom de domaine ou adresse IP.
-        port (int): Numéro de port.
-
-    Returns:
-        bool: True si l'adresse et le port sont valides pour une connexion, False sinon.
-
-    💡 Commentaires :
-    - Résout le nom de domaine en IP via `ipfromdns`.
-    - Utilise `socket.getaddrinfo` pour vérifier la validité de l'adresse et du port.
-    - Les erreurs de résolution DNS ou autres exceptions retournent False.
+    """This function check if socket valid for connection
+    return True or False
     """
     ip = ipfromdns(name_domaine_or_ip)
 
@@ -2808,30 +2338,9 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return False
 
 
-# -------------------------------------------------------------
-# Fonctions spécifiques Windows pour manipuler le registre
-# -------------------------------------------------------------
 if sys.platform.startswith("win"):
 
     def set_reg(name, value, subkey, key=wr.HKEY_LOCAL_MACHINE, type=wr.REG_SZ):
-        """
-        Crée ou modifie une valeur dans le registre Windows.
-
-        Args:
-            name (str): Nom de la valeur du registre.
-            value (str/int): Valeur à enregistrer.
-            subkey (str): Chemin du sous-clé.
-            key (int, optional): Clé racine (HKEY_LOCAL_MACHINE par défaut).
-            type (int, optional): Type de valeur (ex: REG_SZ, REG_DWORD). Par défaut REG_SZ.
-
-        Returns:
-            bool: True si l'opération a réussi, False sinon.
-
-        💡 Commentaires :
-        - Crée la clé si elle n'existe pas.
-        - Utilise `wr` (winreg) pour ouvrir et écrire la valeur.
-        - Doit être exécuté avec les permissions appropriées (ex: admin pour HKEY_LOCAL_MACHINE).
-        """
         try:
             wr.CreateKey(key, subkey)
             registry_key = wr.OpenKey(wr.HKEY_CURRENT_USER, subkey, 0, wr.KEY_WRITE)
@@ -2841,23 +2350,7 @@ if sys.platform.startswith("win"):
         except WindowsError:  # skipcq: PYL-E0602
             return False
 
-
     def get_reg(name, subkey, key=wr.HKEY_LOCAL_MACHINE):
-        """
-        Lit une valeur dans le registre Windows.
-
-        Args:
-            name (str): Nom de la valeur du registre.
-            subkey (str): Chemin du sous-clé.
-            key (int, optional): Clé racine (HKEY_LOCAL_MACHINE par défaut).
-
-        Returns:
-            str/int | None: La valeur lue ou None si la clé/valeur n'existe pas.
-
-        💡 Commentaires :
-        - Utilise `wr` (winreg) pour ouvrir et lire la valeur.
-        - Peut retourner None si la clé ou la valeur n'existe pas ou si permissions insuffisantes.
-        """
         try:
             registry_key = wr.OpenKey(key, subkey, 0, wr.KEY_READ)
             value, regtype = wr.QueryValueEx(registry_key, name)
@@ -3037,32 +2530,11 @@ def encode_strconsole(string_str):
 
 
 def savejsonfile(filename, data, indent=4):
-    """
-    Sauvegarde un objet Python au format JSON dans un fichier.
-
-    Args:
-        filename (str): Chemin du fichier où sauvegarder les données.
-        data (any): Objet Python à sauvegarder (dict, list, etc.).
-        indent (int, optional): Nombre d'espaces pour l'indentation JSON. Default 4.
-
-    Returns:
-        None
-    """
     with open(filename, "w") as outfile:
         json.dump(data, outfile)
 
 
 def loadjsonfile(filename):
-    """
-    Charge un fichier JSON et retourne son contenu sous forme de structure Python.
-
-    Args:
-        filename (str): Chemin du fichier JSON à lire.
-
-    Returns:
-        dict/list/None: Contenu décodé du fichier JSON, ou None si le fichier n'existe
-        ou en cas d'erreur.
-    """
     if os.path.isfile(filename):
         with open(filename, "r") as info:
             dd = info.read()
@@ -3074,22 +2546,6 @@ def loadjsonfile(filename):
 
 
 def save_user_current(name=None):
-    """
-    Sauvegarde ou met à jour l'utilisateur courant dans un fichier temporaire JSON
-    (loginuser), et retourne le nom de l'utilisateur courant.
-
-    - Si aucun nom n'est fourni, récupère le premier utilisateur actif via psutil.
-    - Maintient une liste des 15 derniers utilisateurs les plus fréquents.
-    - Incrémente un compteur d'occurrences pour chaque utilisateur.
-    - Détermine l'utilisateur courant comme celui apparaissant le plus souvent dans la liste.
-
-    Args:
-        name (str, optional): Nom de l'utilisateur à sauvegarder. Si None, utilise le premier
-        utilisateur actif. Si "system", utilise le nom "system".
-
-    Returns:
-        str: Nom de l'utilisateur courant déterminé après mise à jour du fichier JSON.
-    """
     loginuser = os.path.join(Setdirectorytempinfo(), "loginuser")
     if name is None:
         if userlist := list({users[0] for users in psutil.users()}):
@@ -3174,139 +2630,48 @@ def test_kiosk_presence():
 
 def utc2local(utc):
     """
-    Convertit un objet datetime UTC en datetime locale.
+    utc2local transform a utc datetime object to local object.
 
-    Cette fonction prend un datetime UTC (non-naïf, c'est-à-dire avec tzinfo UTC ou supposé en UTC)
-    et retourne l'heure correspondante dans le fuseau horaire local de la machine exécutant le code.
-
-    La conversion se fait en calculant le décalage (offset) entre UTC et l'heure locale
-    au moment donné.
-
-    Args:
-        utc (datetime.datetime): objet datetime en UTC (non-naïf, tzinfo doit être UTC ou implicite)
-
+    Param:
+        utc datetime which is not naive (the utc timezone must be precised)
     Returns:
-        datetime.datetime: objet datetime converti en heure locale
-
-    Exemple:
-        >>> from datetime import datetime, timezone
-        >>> utc_time = datetime(2025, 11, 25, 12, 0, 0, tzinfo=timezone.utc)
-        >>> local_time = utc2local(utc_time)
-        >>> print(local_time)
-        2025-11-25 13:00:00  # si le fuseau local est UTC+1
-
-    💡 Commentaires :
-    - `time.mktime(utc.timetuple())` : transforme le datetime UTC en timestamp local (seconds depuis epoch)
-    - `datetime.fromtimestamp(epoch)` : interprète ce timestamp dans le fuseau local
-    - `datetime.utcfromtimestamp(epoch)` : interprète ce timestamp en UTC
-    - La différence entre les deux (`offset`) correspond au décalage horaire local
-    - On ajoute cet offset à l'heure UTC pour obtenir l'heure locale
+        datetime in local timezone
     """
-    # Transformer le datetime UTC en timestamp (secondes depuis epoch)
     epoch = time.mktime(utc.timetuple())
-
-    # Calculer le décalage entre l'heure locale et UTC
     offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
-
-    # Ajouter le décalage à l'heure UTC pour obtenir l'heure locale
     return utc + offset
 
 
-def getHomedrive(username=None):
+def getHomedrive(username="pulseuser"):
     """
-    Récupère le chemin du répertoire personnel (home) d'un utilisateur donné,
-    compatible Windows, Linux et macOS.
-
+    Retrieve the path to the home of the user `username`
     Args:
-        username (str, optional): Nom de l'utilisateur.
-            - Si None : utilise l'utilisateur courant.
+        username: The username of the user for which we are searching the homepath
 
     Returns:
-        str: Chemin complet vers le répertoire home de l'utilisateur.
-             Retourne None si le home n'a pas pu être déterminé.
-
-    Exemple:
-        >>> getHomedrive("pulseuser")
-        'C:\\Users\\pulseuser'  # sur Windows
-        '/home/pulseuser'       # sur Linux
-        '/Users/pulseuser'      # sur macOS
-
-    💡 Commentaires :
-    - Windows : lit le registre pour trouver le chemin réel du profil via le SID.
-      Si erreur ou échec, retourne `C:\\Users\\username` par défaut.
-    - Linux/macOS : utilise `pwd.getpwnam` pour obtenir le home de l'utilisateur.
-      Si username=None, utilise `os.path.expanduser("~")`.
+        It returns the path to the home of `username`
     """
-    if username is None:
-        username = os.getlogin()  # utilisateur courant si non spécifié
+    if sys.platform.startswith("win"):
+        homedrive = os.path.join("c:\\", "Users", "pulseuser")
+        usersid = get_user_sid(username)
 
-    system = platform.system().lower()
-
-    # -----------------------------
-    # Windows
-    # -----------------------------
-    if system == "windows":
-        homedrive = os.path.join("C:\\Users", username)
         try:
-            # Récupère le SID de l'utilisateur
-            usersid = get_user_sid(username)
-
-            # Requête dans le registre pour obtenir ProfileImagePath
             regquery = (
-                f'REG QUERY "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{usersid}" /v "ProfileImagePath" /s'
+                'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" /v "ProfileImagePath" /s'
+                % usersid
             )
-
             resultquery = simplecommand(encode_strconsole(regquery))
 
-            if resultquery["code"] == 0:
-                # La ligne contenant le chemin du profil est généralement -3 de la sortie
-                homedrive = resultquery["result"][-3].split("    ")[-1].replace("\r\n", "")
-
         except Exception as e:
-            logger.error("Erreur lors de la recuperation du home Windows : %s", e)
+            logger.error("An error occured whil trying to %s" % (str(e)))
+
+        if resultquery["code"] == 0:
+            homedrive = resultquery["result"][-3].split("    ")[-1].replace("\r\n", "")
 
         return homedrive.lower()
 
-    # -----------------------------
-    # Linux / macOS
-    # -----------------------------
-    elif system in ["linux", "darwin"]:
-        try:
-            if username:
-                homedrive = pwd.getpwnam(username).pw_dir
-            else:
-                homedrive = os.path.expanduser("~")
-            return homedrive
-        except KeyError:
-            logger.error("Utilisateur %s non trouve sur le systeme", username)
-            return None
-
-    else:
-        logger.error("OS non supporté pour getHomedrive: %s", system)
-        return None
-
-
 
 def keypub():
-    """
-    Retourne la clé publique SSH (id_rsa.pub) pour l'utilisateur root ou pulseuser selon l'OS.
-
-    - Si la clé privée n'existe pas, elle est générée automatiquement avec ssh-keygen (RSA 2048 bits).
-    - Supporte Linux, Windows et macOS.
-
-    Comportement par OS :
-        - Linux : utilise /root/.ssh/id_rsa
-        - Windows : utilise .ssh dans le répertoire de pulseuser ou fallback vers medullaPath()
-        - macOS : utilise /var/root/.ssh/id_rsa
-
-    Returns:
-        str: Contenu de la clé publique SSH (id_rsa.pub).
-
-    Notes:
-        - La clé privée est générée avec une passphrase vide (-N "").
-        - La fonction dépend de `simplecommand()` pour exécuter ssh-keygen
-          et de `file_get_contents()` pour lire le fichier.
-    """
     keypubstring = ""
     if sys.platform.startswith("linux"):
         if not os.path.isfile("/root/.ssh/id_rsa"):
@@ -3317,7 +2682,7 @@ def keypub():
     elif sys.platform.startswith("win"):
         try:
             win32net.NetUserGetInfo("", "pulseuser", 0)
-            pathkey = os.path.join(getHomedrive(pulseuser), ".ssh")
+            pathkey = os.path.join(getHomedrive(), ".ssh")
         except:
             pathkey = os.path.join(medullaPath(), ".ssh")
         if not os.path.isfile(os.path.join(pathkey, "id_rsa")):
@@ -3333,20 +2698,11 @@ def keypub():
             )
         return file_get_contents("/var/root/.ssh/id_rsa.pub")
 
+
+# use function for relayserver
+
+
 def deletekey(file, key, back=True):
-    """
-    Supprime une ligne contenant `key` dans un fichier texte.
-
-    Args:
-        file (str): Chemin du fichier.
-        key (str): Mot-clé à supprimer.
-        back (bool, optional): Si True, crée un fichier de sauvegarde (.bak) avant modification. Default True.
-
-    💡 Commentaires :
-    - Utilise `sed` pour modifier le fichier directement.
-    - Sur Linux/macOS, le fichier est modifié en place.
-    - `simplecommand` exécute la commande shell et retourne le résultat.
-    """
     if os.path.isfile(file):
         if back:
             simplecommand(f"sed -i.bak '/{key}/d' {file}")
@@ -3355,37 +2711,13 @@ def deletekey(file, key, back=True):
 
 
 def installkey(file, key, back=True):
-    """
-    Ajoute une ligne contenant `key` à la fin d'un fichier texte.
-    Supprime d'abord les occurrences existantes pour éviter les doublons.
-
-    Args:
-        file (str): Chemin du fichier.
-        key (str): Contenu à ajouter.
-        back (bool, optional): Si True, crée un fichier de sauvegarde lors de la suppression. Default True.
-
-    💡 Commentaires :
-    - Appelle `deletekey` avant d'ajouter pour assurer l'unicité.
-    - Utilise `echo >>` pour ajouter la ligne à la fin.
-    """
     deletekey(file, key, back=back)
     simplecommand(f'echo "{key}" >> {file}')
 
 
 def connection_established(Port):
-    """
-    Vérifie si une connexion TCP sur un port donné est établie.
-
-    Args:
-        Port (int or str): Numéro de port à vérifier.
-
-    Returns:
-        bool: True si une connexion ESTABLISHED est trouvée, False sinon.
-
-    💡 Commentaires :
-    - Utilise `netstat` ou `findstr` selon le système.
-    - Filtre les connexions TCP établies et ignore IPv6 sur Linux.
-    - Avertit via logger si aucune connexion trouvée.
+    """verify connection etablish
+    return true if etablish
     """
     if sys.platform.startswith("linux"):
         obj = simplecommandstr(
@@ -3395,7 +2727,6 @@ def connection_established(Port):
         obj = simplecommandstr(f"netstat -an | findstr {Port} | findstr ESTABLISHED")
     elif sys.platform.startswith("darwin"):
         obj = simplecommandstr(f"netstat -an |grep {Port} | grep ESTABLISHED")
-
     if "ESTABLISHED" in obj["result"]:
         return True
     logger.warning("connection xmpp low")
@@ -3403,25 +2734,9 @@ def connection_established(Port):
 
 
 def showlinelog(nbline=200, logfile=None):
-    """
-    Lit les dernières lignes d'un fichier log.
-
-    Args:
-        nbline (int, optional): Nombre de lignes à lire. Default 200.
-        logfile (str, optional): Chemin du fichier log. Si None, prend le log par défaut du système.
-
-    Returns:
-        str: Contenu des dernières lignes du fichier log.
-
-    💡 Commentaires :
-    - Windows : utilise PowerShell `Get-Content | select -last`.
-    - Linux : utilise `cat | tail -n`.
-    - Retourne une chaîne vide si le fichier n'existe pas.
-    """
     obj = {"result": ""}
     if logfile is not None:
         na = logfile
-
     if sys.platform.startswith("win"):
         if logfile is None:
             na = os.path.join(
@@ -3433,7 +2748,7 @@ def showlinelog(nbline=200, logfile=None):
         if os.path.isfile(na):
             obj = simplecommandstr(
                 encode_strconsole(
-                    f"powershell \"Get-Content '{na}' | select -last {nbline}\""
+                    "powershell \"Get-Content '%s' | select -last %s\"" % (na, nbline)
                 )
             )
     elif sys.platform.startswith("linux"):
@@ -3441,24 +2756,10 @@ def showlinelog(nbline=200, logfile=None):
             na = os.path.join("/", "var", "log", "pulse", "xmpp-agent-machine.log")
         if os.path.isfile(na):
             obj = simplecommandstr(f"cat {na} | tail -n {nbline}")
-
     return obj["result"]
 
 
 def is_findHostfromHostname(hostname):
-    """
-    Vérifie si un nom d'hôte peut être résolu en adresse IP.
-
-    Args:
-        hostname (str): Nom de domaine ou hostname à vérifier.
-
-    Returns:
-        bool: True si le hostname est résolu, False sinon.
-
-    💡 Commentaires :
-    - Utilise `socket.gethostbyname`.
-    - Les exceptions sont ignorées, renvoie False si échec.
-    """
     try:
         host = socket.gethostbyname(hostname)
         return True
@@ -3468,19 +2769,6 @@ def is_findHostfromHostname(hostname):
 
 
 def is_findHostfromIp(ip):
-    """
-    Vérifie si une adresse IP peut être résolue en nom d'hôte.
-
-    Args:
-        ip (str): Adresse IP à vérifier.
-
-    Returns:
-        bool: True si l'IP est résolue, False sinon.
-
-    💡 Commentaires :
-    - Utilise `socket.gethostbyaddr`.
-    - Les exceptions sont ignorées, renvoie False si échec.
-    """
     try:
         host = socket.gethostbyaddr(ip)
         return True
@@ -3490,20 +2778,6 @@ def is_findHostfromIp(ip):
 
 
 def is_connectedServer(ip, port):
-    """
-    Vérifie si une connexion TCP peut être établie vers un serveur et port donnés.
-
-    Args:
-        ip (str): Adresse IP du serveur.
-        port (int or str): Port TCP du serveur.
-
-    Returns:
-        bool: True si la connexion est réussie, False sinon.
-
-    💡 Commentaires :
-    - Utilise `socket.socket` avec timeout de 5 secondes.
-    - Ferme toujours le socket dans le bloc `finally`.
-    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(5.0)
     port = int(port)
@@ -3514,6 +2788,7 @@ def is_connectedServer(ip, port):
         return False
     finally:
         sock.close()
+
 
 class Program:
     def __init__(self):
@@ -3595,40 +2870,6 @@ def check_socket_status(port):
     else:
         raise OSError(f"Système d'exploitation non supporté : {system}")
 
-def get_process_using_port_details(port):
-    """
-    Obtient le processus utilisant un port spécifié, multi-OS.
-
-    Args:
-        port (int): Numéro du port TCP ou UDP.
-
-    Returns:
-        dict: Informations sur le processus utilisant le port.
-              Exemple : {"pid": 1234, "name": "python", "status": "running"}
-              Si aucun processus n’utilise le port, retourne None.
-
-    Notes:
-        - Sur Linux/macOS : utilise psutil pour lister les connections.
-        - Sur Windows : utilise psutil aussi pour éviter les commandes netstat externes.
-    """
-    port = int(port)
-    system = platform.system().lower()
-
-    for conn in psutil.net_connections(kind='inet'):
-        if conn.laddr.port == port:
-            try:
-                proc = psutil.Process(conn.pid)
-                return {
-                    "pid": conn.pid,
-                    "name": proc.name(),
-                    "status": proc.status(),
-                    "local_address": f"{conn.laddr.ip}:{conn.laddr.port}",
-                    "remote_address": f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else None,
-                    "type": conn.type
-                }
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                return {"pid": conn.pid, "name": None, "status": None}
-    return None
 
 def get_process_using_port(port):
     """
@@ -3671,18 +2912,20 @@ def get_process_using_port(port):
 
 def process_exists(pid):
     """
-    Vérifie si un processus existe, multi-OS.
+    Vérifie si un processus existe.
 
     Args:
-        pid (int): Identifiant du processus à vérifier.
+        pid (int): L'identifiant du processus à vérifier.
 
     Returns:
         bool: True si le processus existe, False sinon.
-
-    Notes:
-        - Utilise psutil pour être compatible Linux, macOS et Windows.
     """
-    return psutil.pid_exists(pid)
+    try:
+        process = psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        return False
+    else:
+        return True
 
 
 def kill_process(pid):
@@ -3706,23 +2949,23 @@ def kill_process(pid):
             return True
         except subprocess.CalledProcessError as e:
             logger.error(
-                f"Echec de la tentative de tuer le processus avec le PID {pid} sur Windows : {e}"
+                f"Échec de la tentative de tuer le processus avec le PID {pid} sur Windows : {e}"
             )
             return False
     elif system in ["Linux", "Darwin"]:
         try:
             subprocess.run(["kill", "-9", str(pid)], check=True)
             logger.debug(
-                f"Le processus avec le PID {pid} a ete tue sur un systeme Unix-like."
+                f"Le processus avec le PID {pid} a été tué sur un système Unix-like."
             )
             return True
         except subprocess.CalledProcessError as e:
             logger.error(
-                f"Echec de la tentative de tuer le processus avec le PID {pid} sur un systeme Unix-like : {e}"
+                f"Échec de la tentative de tuer le processus avec le PID {pid} sur un système Unix-like : {e}"
             )
             return False
     else:
-        logger.error(f"Systeme d exploitation non supporte : {system}")
+        logger.error(f"Système d'exploitation non supporté : {system}")
         return False
 
 
@@ -3757,146 +3000,57 @@ def kill_process_tree(pid, parentprocess=False):
     except psutil.NoSuchProcess:
         pass
     except psutil.AccessDenied:
-        logger.error(f"Permission refusee pour terminer le processus {pid}")
+        logger.error(f"Permission refusée pour terminer le processus {pid}")
     except psutil.TimeoutExpired:
         logger.error(
-            f"Delai d attente expire lors de la tentative de terminer le processus {pid}"
+            f"Délai d'attente expiré lors de la tentative de terminer le processus {pid}"
         )
 
+
 class AESCipher:
-    """
-    Classe pour chiffrer et déchiffrer des données avec AES en mode CBC.
-
-    Args:
-        key (str or bytes): Clé de chiffrement AES. Doit être 16, 24 ou 32 octets.
-        BS (int, optional): Taille du bloc AES. Par défaut 32.
-
-    Méthodes principales :
-        - encrypt(raw): chiffre une chaîne et retourne une chaîne Base64.
-        - encrypt_base64_byte(raw): chiffre une chaîne et retourne bytes Base64.
-        - decrypt(enc): déchiffre une chaîne Base64 en texte.
-        - decrypt_base64_byte(enc): déchiffre et retourne bytes.
-
-    Notes :
-        - CBC nécessite un vecteur d'initialisation (IV) aléatoire pour chaque chiffrement.
-        - Les données sont remplies (_padding_) pour que la longueur soit un multiple du bloc.
-        - Utilise PKCS#7 padding.
-    """
-
     def __init__(self, key, BS=32):
-        # Assurer que la clé est en bytes
         self.key = key.encode("utf-8") if isinstance(key, str) else key
-        self.BS = BS  # Taille du bloc AES
+        self.BS = BS
 
     def _bchr(self, s):
-        """Retourne un octet correspondant à un entier s (0-255)."""
         return bytes([s])
 
     def bord(self, s):
-        """Méthode placeholder, retourne simplement s inchangé."""
         return s
 
     def pad(self, data_to_pad):
-        """
-        Ajoute du padding PKCS#7 pour que la longueur soit un multiple de BS.
-
-        Args:
-            data_to_pad (bytes): Données à chiffrer.
-
-        Returns:
-            bytes: Données avec padding ajouté.
-        """
-        padding_len = self.BS - len(data_to_pad) % self.BS  # calcul du padding
+        padding_len = self.BS - len(data_to_pad) % self.BS
         padding = self._bchr(padding_len) * padding_len
         return data_to_pad + padding
 
     def encrypt_base64_byte(self, raw):
-        """
-        Chiffre les données et retourne le résultat en Base64 (bytes).
-
-        Args:
-            raw (str or bytes): Données à chiffrer.
-
-        Returns:
-            bytes: Données chiffrées en Base64.
-        """
         if isinstance(raw, str):
             raw = raw.encode("utf-8")
-        iv = Random.new().read(AES.block_size)  # vecteur d'initialisation aléatoire
+        iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        result = iv + cipher.encrypt(self.pad(raw))  # IV + données chiffrées
+        result = iv + cipher.encrypt(self.pad(raw))
         return base64.b64encode(result)
 
     def encrypt(self, raw):
-        """
-        Chiffre une chaîne et retourne une chaîne Base64.
-
-        Args:
-            raw (str): Données à chiffrer.
-
-        Returns:
-            str: Données chiffrées en Base64 sous forme de chaîne.
-        """
         return self.encrypt_base64_byte(raw).decode("utf-8")
 
     def decrypt(self, enc):
-        """
-        Déchiffre une chaîne ou bytes encodée en Base64.
-
-        Args:
-            enc (str or bytes): Données chiffrées Base64.
-
-        Returns:
-            str: Données déchiffrées (texte UTF-8).
-        """
         if isinstance(enc, str):
             enc = enc.encode("utf-8")
         enc = base64.b64decode(enc)
-        iv = enc[:AES.block_size]  # récupérer le vecteur d'initialisation
+        iv = enc[: AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size:]))
+        return self._unpad(cipher.decrypt(enc[AES.block_size :]))
 
     def decrypt_base64_byte(self, enc):
-        """
-        Déchiffre une chaîne Base64 et retourne bytes.
-
-        Args:
-            enc (str or bytes): Données chiffrées Base64.
-
-        Returns:
-            bytes: Données déchiffrées en bytes.
-        """
-        return self.decrypt(enc).encode("utf-8")
+        return self.decrypt_base64_str(enc).encode("utf-8")
 
     def _unpad(self, s):
-        """
-        Retire le padding PKCS#7 après déchiffrement.
-
-        Args:
-            s (bytes): Données chiffrées.
-
-        Returns:
-            str: Données déchiffrées en UTF-8.
-        """
-        # ord(s[-1:]) donne la valeur de padding ajoutée
-        dtrdata = s[:-ord(s[-1:])]
+        dtrdata = s[: -ord(s[-1:])]
         return dtrdata.decode("utf-8")
 
+
 def setgetcountcycle(data=None):
-    """
-    Lit ou met à jour le compteur de cycle alternatif stocké dans un fichier.
-
-    Comportement :
-        - Si data est None : réinitialise le compteur à 0 et retourne 0.
-        - Si data est -1 : retourne la valeur actuelle sans modification.
-        - Si data >= 0 : ajoute data au compteur existant et retourne la nouvelle valeur.
-
-    Args:
-        data (int, optional): Valeur à ajouter ou code spécial (-1, None). Default None.
-
-    Returns:
-        int: Valeur actuelle du compteur après traitement.
-    """
     chemin = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         "..",
@@ -3920,20 +3074,6 @@ def setgetcountcycle(data=None):
 
 
 def setgetrestart(data=None):
-    """
-    Lit ou met à jour le flag de redémarrage stocké dans un fichier.
-
-    Comportement :
-        - Si data est None ou 0 : réinitialise le flag à 0 et retourne 0.
-        - Si data est -1 : retourne la valeur actuelle sans modification.
-        - Si data est 1 : met le flag à 1 et retourne 1.
-
-    Args:
-        data (int, optional): Valeur du flag (-1, 0, 1). Default None.
-
-    Returns:
-        int: Valeur actuelle du flag après traitement.
-    """
     chemin = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "..", "cycle", "restart"
     )
@@ -3951,90 +3091,52 @@ def setgetrestart(data=None):
         file_put_contents(chemin, "1")
         return 1
 
+
 def detectantivirus():
-    """
-    Detecte les produits de sécurité installés sur Windows : Antivirus, Firewall et AntiSpyware.
-
-    Utilise PowerShell et Get-CimInstance pour interroger l'espace de noms SecurityCenter2,
-    récupère les propriétés principales et décode l'état du produit.
-
-    Returns:
-        dict: Un dictionnaire contenant les informations de chaque type de protection.
-              Exemple :
-              {
-                  "Antivirus": [ {...}, {...} ],
-                  "Firewall": [ {...} ],
-                  "AntiSpyware": [ {...} ]
-              }
-    """
-
     def SECURITY_PROVIDER(keyobject, data):
-        """
-        Décode le fournisseur de sécurité depuis les 2 premiers caractères de productState hex.
-
-        Args:
-            keyobject (str): Le type de produit (Antivirus, Firewall, AntiSpyware)
-            data (str): productState en hex
-
-        Returns:
-            str: Nom du fournisseur de sécurité ou 'NONE'
-        """
-        prefix = data[:2]
-        mapping = {
-            "00": "NONE",
-            "01": "FIREWALL",
-            "02": "AUTOUPDATE_SETTINGS",
-            "04": "ANTIVIRUS",
-            "08": "ANTISPYWARE",
-            "16": "INTERNET_SETTINGS",
-            "32": "USER_ACCOUNT_CONTROL",
-            "64": "SERVICE",
-        }
-        return mapping.get(prefix, keyobject.upper())
+        str = data[:2]
+        if str == "00":
+            return "NONE"
+        elif str == "01":
+            return "FIREWALL"
+        elif str == "02":
+            return "AUTOUPDATE_SETTINGS"
+        elif str == "04":
+            return "ANTIVIRUS"
+        elif str == "08":
+            return "ANTISPYWARE"
+        elif str == "16":
+            return "INTERNET_SETTINGS"
+        elif str == "32":
+            return "USER_ACCOUNT_CONTROL"
+        elif str == "64":
+            return "SERVICE"
+        else:
+            return keyobject.upper()
 
     def SECURITY_PRODUCT_STATE(data):
-        """
-        Décode l'état du produit depuis les caractères 3-4 du productState hex.
-
-        Args:
-            data (str): productState en hex
-
-        Returns:
-            str: Etat du produit (OFF, ON, EXPIRED, SNOOZED, UNKNOWN)
-        """
-        code = data[2:4]
-        mapping = {
-            "00": "OFF",
-            "01": "EXPIRED",
-            "10": "ON",
-            "11": "SNOOZED",
-        }
-        return mapping.get(code, "UNKNOWN")
+        str = data[2:4]
+        if str == "00":
+            return "OFF"
+        elif str == "01":
+            return "EXPIRED"
+        elif str == "10":
+            return "ON"
+        elif str == "11":
+            return "SNOOZED"
+        else:
+            return "UNKNOWN"
 
     def SECURITY_SIGNATURE_STATUS(data):
-        """
-        Décode l'état de la signature depuis les caractères 5-6 du productState hex.
-
-        Args:
-            data (str): productState en hex
-
-        Returns:
-            str: Etat de la signature (UP_TO_DATE, OUT_OF_DATE, UNKNOWN)
-        """
-        code = data[4:6]
-        mapping = {
-            "00": "UP_TO_DATE",
-            "10": "OUT_OF_DATE",
-        }
-        return mapping.get(code, "UNKNOWN")
+        str = data[4:6]
+        if str == "00":
+            return "UP_TO_DATE"
+        elif str == "10":
+            return "OUT_OF_DATE"
+        else:
+            return "UNKNOWN"
 
     def elemenstructure():
-        """
-        Structure vide pour un produit de sécurité.
-
-        Returns:
-            dict: dictionnaire avec toutes les clés par défaut.
-        """
         return {
             "displayName": "",
             "instanceGuid": "",
@@ -4048,230 +3150,337 @@ def detectantivirus():
             "timestamp": "",
         }
 
-    if not sys.platform.startswith("win"):
-        raise EnvironmentError("Cette fonction est uniquement disponible sur Windows.")
-
-    result = {}
-    # Pour chaque type de produit, exécuter Get-CimInstance via PowerShell et récupérer JSON
-    product_classes = {
-        "Antivirus": "AntiVirusProduct",
-        "Firewall": "FirewallProduct",
-        "AntiSpyware": "AntiSpywareProduct",
-    }
-
-    for key, cls in product_classes.items():
-        cmd = (
-            f"powershell -Command "
-            f"\"Get-CimInstance -Namespace root/SecurityCenter2 -ClassName {cls} | ConvertTo-Json\""
-        )
-        p = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-
-        try:
-            # Convertir la sortie JSON en liste
-            data_list = json.loads(p.stdout)
-            if isinstance(data_list, dict):
-                data_list = [data_list]
-        except json.JSONDecodeError:
-            data_list = []
-
-        result[key] = []
-
-        for item in data_list:
-            infoprotection = elemenstructure()
-            # Remplir les propriétés disponibles
-            infoprotection["displayName"] = item.get("displayName", "").strip()
-            infoprotection["instanceGuid"] = item.get("instanceGuid", "").strip()
-            infoprotection["pathToSignedProductExe"] = item.get("pathToSignedProductExe", "").strip()
-            infoprotection["pathToSignedReportingExe"] = item.get("pathToSignedReportingExe", "").strip()
-            infoprotection["productState"] = item.get("productState", 0)
-            # Convertir en hex et décoder les états
-            infoprotection["hex"] = f"{infoprotection['productState']:06x}"
-            infoprotection["SECURITY_PROVIDER"] = SECURITY_PROVIDER(key, infoprotection["hex"])
-            infoprotection["SECURITY_PRODUCT_STATE"] = SECURITY_PRODUCT_STATE(infoprotection["hex"])
-            infoprotection["SECURITY_SIGNATURE_STATUS"] = SECURITY_SIGNATURE_STATUS(infoprotection["hex"])
-            infoprotection["timestamp"] = item.get("timestamp", "").strip()
-            result[key].append(infoprotection)
-
-    return result
+    if sys.platform.startswith("win"):
+        result = {}
+        objWMI = {
+            "Antivirus": GetObject("winmgmts:\\\\.\\root\\SecurityCenter2").InstancesOf(
+                "AntiVirusProduct"
+            ),
+            "Firewall": GetObject("winmgmts:\\\\.\\root\\SecurityCenter2").InstancesOf(
+                "FirewallProduct"
+            ),
+            "AntiSpyware": GetObject(
+                "winmgmts:\\\\.\\root\\SecurityCenter2"
+            ).InstancesOf("AntiSpywareProduct"),
+        }
+        for key in objWMI:
+            result[key] = []
+            for i in objWMI[key]:
+                infoprotection = elemenstructure()
+                try:
+                    infoprotection["displayName"] = i.displayName.strip()
+                except Exception:
+                    pass
+                try:
+                    infoprotection["instanceGuid"] = i.instanceGuid.strip()
+                except Exception:
+                    pass
+                try:
+                    infoprotection["pathToSignedProductExe"] = (
+                        i.pathToSignedProductExe.strip()
+                    )
+                except Exception:
+                    pass
+                try:
+                    infoprotection["pathToSignedReportingExe"] = (
+                        i.pathToSignedReportingExe.strip()
+                    )
+                except Exception:
+                    pass
+                try:
+                    infoprotection["productState"] = i.productState
+                    infoprotection["hex"] = "%06x" % i.productState
+                    infoprotection["SECURITY_PROVIDER"] = SECURITY_PROVIDER(
+                        key, infoprotection["hex"]
+                    )
+                    infoprotection["SECURITY_PRODUCT_STATE"] = SECURITY_PRODUCT_STATE(
+                        infoprotection["hex"]
+                    )
+                    infoprotection["SECURITY_SIGNATURE_STATUS"] = (
+                        SECURITY_SIGNATURE_STATUS(infoprotection["hex"])
+                    )
+                except Exception:
+                    pass
+                try:
+                    infoprotection["timestamp"] = i.timestamp.strip()
+                except Exception:
+                    pass
+                result[key].append(infoprotection)
+        return result
 
 
 def information_machine():
-    """
-    Récupère les informations de la classe Win32_ComputerSystem via Get-CimInstance
-    et retourne un dictionnaire contenant les propriétés de la machine.
-
-    Returns:
-        dict: Un dictionnaire contenant les propriétés de Win32_ComputerSystem.
-    """
     result = {}
 
-    # Vérifie si le système est Windows
+    def WMIDateStringToDate(dtmDate):
+        strDateTime = ""
+        if dtmDate[4] == 0:
+            strDateTime = f"{dtmDate[5]}/"
+        else:
+            strDateTime = dtmDate[4] + dtmDate[5] + "/"
+        if dtmDate[6] == 0:
+            strDateTime = strDateTime + dtmDate[7] + "/"
+        else:
+            strDateTime = strDateTime + dtmDate[6] + dtmDate[7] + "/"
+            strDateTime = (
+                strDateTime
+                + dtmDate[0]
+                + dtmDate[1]
+                + dtmDate[2]
+                + dtmDate[3]
+                + " "
+                + dtmDate[8]
+                + dtmDate[9]
+                + ":"
+                + dtmDate[10]
+                + dtmDate[11]
+                + ":"
+                + dtmDate[12]
+                + dtmDate[13]
+            )
+        return strDateTime
+
     if sys.platform.startswith("win"):
-        # Commande PowerShell pour récupérer les informations via Get-CimInstance
-        ps_command = (
-            "powershell -Command "
-            "\"Get-CimInstance -ClassName Win32_ComputerSystem | ConvertTo-Json -Depth 3\""
-        )
+        strComputer = "."
+        objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+        objSWbemServices = objWMIService.ConnectServer(strComputer, "root\\cimv2")
+        colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_ComputerSystem")
+        for objItem in colItems:
+            if objItem.AdminPasswordStatus is not None:
+                result["AdminPasswordStatus"] = objItem.AdminPasswordStatus
+            if objItem.AutomaticResetBootOption is not None:
+                result["AutomaticResetBootOption"] = objItem.AutomaticResetBootOption
+            if objItem.AutomaticResetCapability is not None:
+                result["AutomaticResetCapability"] = objItem.AutomaticResetCapability
+            if objItem.BootOptionOnLimit is not None:
+                result["BootOptionOnLimit"] = objItem.BootOptionOnLimit
+            if objItem.BootOptionOnWatchDog is not None:
+                result["BootOptionOnWatchDog"] = objItem.BootOptionOnWatchDog
+            if objItem.BootROMSupported is not None:
+                result["BootROMSupported"] = objItem.BootROMSupported
+            if objItem.BootupState is not None:
+                result["BootupState"] = objItem.BootupState
+            if objItem.Caption is not None:
+                result["Caption"] = objItem.Caption
+            if objItem.ChassisBootupState is not None:
+                result["ChassisBootupState"] = objItem.ChassisBootupState
+            if objItem.CreationClassName is not None:
+                result["CreationClassName"] = objItem.CreationClassName
+            if objItem.CurrentTimeZone is not None:
+                result["CurrentTimeZone"] = objItem.CurrentTimeZone
+            if objItem.DaylightInEffect is not None:
+                result["DaylightInEffect"] = objItem.DaylightInEffect
+            if objItem.Description is not None:
+                result["Description"] = objItem.Description
+            if objItem.DNSHostName is not None:
+                result["DNSHostName"] = objItem.DNSHostName
+            if objItem.Domain is not None:
+                result["Domain"] = objItem.Domain
+            if objItem.DomainRole is not None:
+                result["DomainRole"] = objItem.DomainRole
+            if objItem.EnableDaylightSavingsTime is not None:
+                result["EnableDaylightSavingsTime"] = objItem.EnableDaylightSavingsTime
+            if objItem.FrontPanelResetStatus is not None:
+                result["FrontPanelResetStatus"] = objItem.FrontPanelResetStatus
+            if objItem.InfraredSupported is not None:
+                result["InfraredSupported"] = objItem.InfraredSupported
 
-        # Exécute la commande PowerShell et récupère le résultat en JSON
-        try:
-            output = subprocess.check_output(ps_command, shell=True, text=True)
-            # Parse le JSON pour obtenir un dictionnaire Python
-            cim_data = json.loads(output)
+            strList = "null"
+            try:
+                strList = ",".join([str(x) for x in objItem.InitialLoadInfo])
+            except BaseException:
+                pass
+            result["InitialLoadInfo"] = strList
 
-            # Remplit le dictionnaire de résultat avec les propriétés disponibles
-            for prop in cim_data["CimInstanceProperties"]:
-                name = prop["Name"]
-                value = prop["Value"]
-                # Ignore les valeurs None ou NullValue
-                if value is not None and not prop.get("Flags", "").endswith("NullValue"):
-                    result[name] = value
+            if objItem.InstallDate is not None:
+                result["InstallDate"] = WMIDateStringToDate(objItem.InstallDate)
+            if objItem.KeyboardPasswordStatus is not None:
+                result["KeyboardPasswordStatus"] = objItem.KeyboardPasswordStatus
+            if objItem.LastLoadInfo is not None:
+                result["LastLoadInfo"] = objItem.LastLoadInfo
+            if objItem.Manufacturer is not None:
+                result["Manufacturer"] = objItem.Manufacturer
+            if objItem.Model is not None:
+                result["Model"] = objItem.Model
+            if objItem.Name is not None:
+                result["Name"] = objItem.Name
+            if objItem.NameFormat is not None:
+                result["NameFormat"] = objItem.NameFormat
+            if objItem.NetworkServerModeEnabled is not None:
+                result["NetworkServerModeEnabled"] = objItem.NetworkServerModeEnabled
+            if objItem.NumberOfProcessors is not None:
+                result["NumberOfProcessors"] = objItem.NumberOfProcessors
 
-            # Ajoute les propriétés directes (non imbriquées dans CimInstanceProperties)
-            for key, value in cim_data.items():
-                if key not in ["CimInstanceProperties", "CimSystemProperties", "CimClass"] and value is not None:
-                    result[key] = value
+            strList = "null"
+            try:
+                strList = ",".join([str(x) for x in objItem.OEMLogoBitmap])
+            except BaseException:
+                pass
+            result["OEMLogoBitmap"] = strList
 
-        except subprocess.CalledProcessError as e:
-            print(f"Erreur lors de l execution de la commande PowerShell: {e}")
-        except json.JSONDecodeError as e:
-            print(f"Erreur lors du decodage du JSON: {e}")
+            strList = "null"
+            try:
+                strList = ",".join([str(x) for x in objItem.OEMStringArray])
+            except BaseException:
+                pass
+            result["OEMStringArray"] = strList
 
+            if objItem.PartOfDomain is not None:
+                result["PartOfDomain"] = objItem.PartOfDomain
+            if objItem.PauseAfterReset is not None:
+                result["PauseAfterReset"] = objItem.PauseAfterReset
+
+            strList = "null"
+            try:
+                strList = ",".join(
+                    [str(x) for x in objItem.PowerManagementCapabilities]
+                )
+            except BaseException:
+                pass
+            result["PowerManagementCapabilities"] = strList
+
+            if objItem.PowerManagementSupported is not None:
+                result["PowerManagementSupported"] = objItem.PowerManagementSupported
+            if objItem.PowerOnPasswordStatus is not None:
+                result["PowerOnPasswordStatus"] = objItem.PowerOnPasswordStatus
+            if objItem.PowerState is not None:
+                result["PowerState"] = objItem.PowerState
+            if objItem.PowerSupplyState is not None:
+                result["PowerSupplyState"] = objItem.PowerSupplyState
+            if objItem.PrimaryOwnerContact is not None:
+                result["PrimaryOwnerContact"] = objItem.PrimaryOwnerContact
+            if objItem.PrimaryOwnerName is not None:
+                result["PrimaryOwnerName"] = objItem.PrimaryOwnerName
+            if objItem.ResetCapability is not None:
+                result["ResetCapability"] = objItem.ResetCapability
+            if objItem.ResetCount is not None:
+                result["ResetCount"] = objItem.ResetCount
+            if objItem.ResetLimit is not None:
+                result["ResetLimit"] = objItem.ResetLimit
+
+            strList = "null"
+            try:
+                strList = ",".join([str(x) for x in objItem.Roles])
+            except BaseException:
+                pass
+            result["Roles"] = strList
+
+            if objItem.Status is not None:
+                result["Status"] = objItem.Status
+
+            strList = "null"
+            try:
+                strList = ",".join([str(x) for x in objItem.SupportContactDescription])
+            except BaseException:
+                pass
+            result["SupportContactDescription"] = strList
+
+            if objItem.SystemStartupDelay is not None:
+                result["SystemStartupDelay"] = objItem.SystemStartupDelay
+
+            strList = "null"
+            try:
+                strList = ",".join([str(x) for x in objItem.SystemStartupOptions])
+            except BaseException:
+                pass
+            result["SystemStartupOptions"] = strList
+
+            if objItem.SystemStartupSetting is not None:
+                result["SystemStartupSetting"] = objItem.SystemStartupSetting
+            if objItem.SystemType is not None:
+                result["SystemType"] = objItem.SystemType
+            if objItem.ThermalState is not None:
+                result["ThermalState"] = objItem.ThermalState
+            if objItem.TotalPhysicalMemory is not None:
+                result["TotalPhysicalMemory"] = objItem.TotalPhysicalMemory
+            if objItem.UserName is not None:
+                result["UserName"] = objItem.UserName
+            if objItem.WakeUpType is not None:
+                result["WakeUpType"] = objItem.WakeUpType
+            if objItem.Workgroup is not None:
+                result["Workgroup"] = objItem.Workgroup
     return result
 
+
 def sshdup():
-    """
-    Vérifie si le service SSH (sshd) est en cours d'exécution sur la machine.
-
-    Cette fonction est multiplateforme et fonctionne sur Linux, macOS (Darwin) et Windows.
-    Elle utilise des commandes système spécifiques à chaque OS pour détecter si le service SSH est actif.
-
-    Returns:
-        bool: True si le service SSH est en cours d'exécution, False sinon.
-    """
     if sys.platform.startswith("linux"):
-        # Sur Linux, on vérifie si le processus "sshd" est présent (en excluant les faux positifs comme "grep")
+        # verify sshd up
         cmd = "ps aux | grep sshd | grep -v grep | grep -v pts"
         result = simplecommand(cmd)
-        return result["code"] == 0  # Code 0 signifie que le processus est trouvé
-
+        return result["code"] == 0
     elif sys.platform.startswith("darwin"):
-        # Sur macOS, on utilise launchctl pour vérifier si le service com.openssh.sshd est chargé
         cmd = "launchctl list com.openssh.sshd"
         result = simplecommand(cmd)
-        return result["code"] == 0  # Code 0 signifie que le service est actif
-
+        return result["code"] == 0
     elif sys.platform.startswith("win"):
-        # Sur Windows, on utilise TASKLIST pour vérifier si "sshd" est dans la liste des processus
         cmd = "TASKLIST | FINDSTR sshd"
         result = simplecommand(cmd)
         if len(result["result"]) > 0:
-            return True  # Le processus "sshd" est trouvé
-
-    return False  # Par défaut, retourne False si le service n'est pas détecté
+            return True
+    return False
 
 
 def restartsshd():
-    """
-    Redémarre le service SSH (sshd) si celui-ci n'est pas en cours d'exécution.
-
-    Cette fonction est multiplateforme et utilise des commandes spécifiques à chaque OS pour redémarrer le service SSH.
-    Elle vérifie d'abord si le service est actif avec `sshdup()`. Si ce n'est pas le cas, elle tente de le redémarrer.
-    """
     if sys.platform.startswith("linux"):
-        # Sur Linux, on redémarre le service sshd avec systemctl
+        # verify sshd up
         if not sshdup():
-            cmd = "systemctl restart sshd"  # Note: "systemctrl" est une faute de frappe, corrigée en "systemctl"
+            cmd = "systemctrl restart sshd"
             result = simplecommand(cmd)
-
     elif sys.platform.startswith("darwin"):
-        # Sur macOS, on redémarre le service SSH via launchctl
         if not sshdup():
             cmd = "launchctl restart /System/Library/LaunchDaemons/ssh.plist"
             result = simplecommand(cmd)
-
     elif sys.platform.startswith("win"):
-        # Sur Windows, on cherche le nom exact du service SSH et on le démarre
         if not sshdup():
-            # Récupère le nom du service SSH (ex: "sshd" ou "OpenSSH Server")
+            # on cherche le nom reel du service pour sshd.
             cmd = 'sc query state= all | findstr "sshd" | findstr "SERVICE_NAME"'
             result = simplecommand(cmd)
             if len(result["result"]) > 0:
                 try:
-                    # Extrait le nom du service depuis la sortie de la commande
                     nameservice = result["result"][0].split()[1]
-                    # Démarre le service
                     cmd = f'sc start "{nameservice}"'
                     result = simplecommand(cmd)
                 except Exception:
-                    # En cas d'erreur, on ignore silencieusement
                     pass
+
 
 def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
     """
-    Crée une archive compressée au format tar.gz ou tar.bz2 à partir d'un répertoire source.
-
-    Args:
-        output_file_gz_bz2 (str): Chemin complet du fichier de sortie (ex: "/chemin/vers/archive.tar.gz").
-        source_dir (str): Répertoire source à archiver.
-        compresstype (str, optional): Type de compression. Valeurs possibles : "gz" (par défaut) ou "bz2".
-
-    Returns:
-        bool: True si l'archivage a réussi, False en cas d'erreur.
+    creation archive tar.gz or tar.bz2
+    compresstype "gz" or "bz2"
     """
     try:
-        # Ouvre le fichier de sortie en mode écriture avec le type de compression spécifié
         with tarfile.open(output_file_gz_bz2, f"w:{compresstype}") as tar:
-            # Ajoute le répertoire source à l'archive, en utilisant le nom de base du répertoire comme nom dans l'archive
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
     except Exception as e:
-        # En cas d'erreur, log l eur et retourne False
-        logger.error(f"Erreur lors de la creation de l archive tar.{compresstype} : {str(e)}")
+        logger.error(f"Error creating tar.{compresstype} archive : {str(e)}")
         return False
 
-def extract_file(input_file_gz_bz2, to_directory=".", compresstype="gz"):
+
+def extract_file(imput_file__gz_bz2, to_directory=".", compresstype="gz"):
     """
-    Extrait une archive compressée (tar.gz ou tar.bz2) dans un répertoire de destination.
-
-    Args:
-        input_file_gz_bz2 (str): Chemin complet du fichier d'archive à extraire.
-        to_directory (str, optional): Répertoire de destination pour l'extraction. Par défaut, le répertoire courant (".").
-        compresstype (str, optional): Type de compression de l'archive. Valeurs possibles : "gz" (par défaut) ou "bz2".
-
-    Returns:
-        bool: True si l'extraction a réussi, False en cas d'erreur.
+    extract archive tar.gz or tar.bz2
+    compresstype "gz" or "bz2"
     """
-    cwd = os.getcwd()  # Sauvegarde le répertoire courant
-    absolutepath = os.path.abspath(input_file_gz_bz2)  # Convertit le chemin en chemin absolu
-
+    cwd = os.getcwd()
+    absolutepath = os.path.abspath(imput_file__gz_bz2)
     try:
-        # Change le répertoire de travail pour la destination d'extraction
         os.chdir(to_directory)
-        # Ouvre l'archive et extrait tout son contenu
         with tarfile.open(absolutepath, f"r:{compresstype}") as tar:
             tar.extractall()
         return True
     except Exception as e:
-        # En cas d'erreur, log l eur et retourne False
-        logger.error(f"Erreur lors de l extraction de l archive tar.{compresstype} : {str(e)}")
+        logger.error(f"Error extracting tar.{str(e)} : {compresstype}")
         return False
     finally:
-        # Restaure le répertoire de travail initial
         os.chdir(cwd)
+    return True
 
 
 def find_files(directory, pattern):
     """
-    Génère tous les fichiers dans un répertoire et ses sous-répertoires
-    qui correspondent à un motif donné (wildcard).
-
-    Args:
-        directory (str): Répertoire de départ pour la recherche.
-        pattern (str): Motif de fichier à rechercher (ex: '*.txt').
-
-    Yields:
-        str: Chemin complet des fichiers correspondant au motif.
+    use f
     """
     for root, dirs, files in os.walk(directory):
         for basename in files:
@@ -4280,16 +3489,6 @@ def find_files(directory, pattern):
 
 
 def listfile(directory, abspath=True):
-    """
-    Liste tous les fichiers dans un répertoire et ses sous-répertoires.
-
-    Args:
-        directory (str): Répertoire de départ.
-        abspath (bool): Si True, retourne le chemin absolu, sinon juste le nom du fichier.
-
-    Returns:
-        list: Liste des fichiers trouvés.
-    """
     listfile = []
     for root, dirs, files in os.walk(directory):
         for basename in files:
@@ -4299,41 +3498,21 @@ def listfile(directory, abspath=True):
                 listfile.append(os.path.join(basename))
     return listfile
 
+
 def md5folder(directory):
-    """
-    Calcule le hash MD5 de tous les fichiers dans un répertoire et ses sous-répertoires.
-    Le hash final est un MD5 cumulatif des MD5 de chaque fichier.
-
-    Args:
-        directory (str): Répertoire dont on veut calculer le hash.
-
-    Returns:
-        str: MD5 cumulatif de tous les fichiers.
-    """
     hash = hashlib.md5()
+    strmdr = []
     for root, dirs, files in os.walk(directory):
         for basename in files:
-            hash.update(md5(os.path.join(root, basename)))  # md5() doit renvoyer le hash du fichier
+            hash.update(md5(os.path.join(root, basename)))
     return hash.hexdigest()
 
-def _path_package():
-    """
-    Renvoie le chemin du répertoire des packages principaux.
 
-    Returns:
-        str: Chemin absolu vers /var/lib/pulse2/packages
-    """
+def _path_package():
     return os.path.join("/", "var", "lib", "pulse2", "packages")
 
 
 def _path_packagequickaction():
-    """
-    Renvoie le chemin du répertoire pour les quick deployment packages.
-    Crée le répertoire s'il n'existe pas.
-
-    Returns:
-        str: Chemin absolu vers /var/lib/pulse2/qpackages
-    """
     pathqd = os.path.join("/", "var", "lib", "pulse2", "qpackages")
     if not os.path.isdir(pathqd):
         try:
@@ -4346,28 +3525,6 @@ def _path_packagequickaction():
 
 
 def qdeploy_generate(folder, max_size_stanza_xmpp):
-    """
-    Génère un quick deployment package (.xmpp) pour un dossier de package donné.
-
-    Vérifie plusieurs conditions :
-        - Si le package a des dépendances, aucun package rapide n'est généré.
-        - Si un package rapide existe et a moins de 10 minutes, il est mis à jour.
-        - Si la taille du package dépasse max_size_stanza_xmpp, aucun package rapide n'est généré.
-        - Sinon, génère le package rapide et calcule le MD5 pour détection de modifications.
-
-    Args:
-        folder (str): Chemin du dossier du package.
-        max_size_stanza_xmpp (int): Taille maximale du package pour quick deployment.
-
-    Returns:
-        int: Code de retour :
-            0 : package généré avec succès
-            1 : package déjà existant et identique
-            2 : package existant récent, pas besoin de régénération
-            3 : package a des dépendances, pas de package rapide
-            6 : package trop volumineux
-            100 : erreur lors de la génération
-    """
     try:
         namepackage = os.path.basename(folder)
         pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
@@ -4454,16 +3611,7 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
 
 
 def get_message_xmpp_quick_deploy(folder, sessionid):
-    """
-    Lit le message XMPP généré pour un package rapide et remplace le placeholder de session.
-
-    Args:
-        folder (str): Chemin du dossier du package.
-        sessionid (str): Identifiant de session à insérer dans le message.
-
-    Returns:
-        str: Message XMPP final avec sessionid.
-    """
+    # read le fichier
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
     with open(f"{pathaqpackage}.xmpp", "r") as f:
@@ -4472,15 +3620,7 @@ def get_message_xmpp_quick_deploy(folder, sessionid):
 
 
 def get_template_message_xmpp_quick_deploy(folder):
-    """
-    Lit le template du message XMPP pour un package rapide (sans session).
-
-    Args:
-        folder (str): Chemin du dossier du package.
-
-    Returns:
-        str: Contenu du template XMPP.
-    """
+    # read le fichier
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
     with open(f"{pathaqpackage}.xmpp", "r") as f:
@@ -4489,49 +3629,19 @@ def get_template_message_xmpp_quick_deploy(folder):
 
 
 def get_xmpp_message_with_sessionid(template_message, sessionid):
-    """
-    Remplace le placeholder de session dans un template XMPP avec la session donnée.
-
-    Args:
-        template_message (str): Contenu du template XMPP.
-        sessionid (str): Identifiant de session à insérer.
-
-    Returns:
-        str: Message XMPP final avec sessionid.
-    """
+    # read le fichier
     return template_message.replace("@-TEMPLSESSQUICKDEPLOY@", sessionid, 1)
 
+
 def create_msg_xmpp_quick_deploy(folder, create=False):
-    """
-    Crée ou met à jour un message XMPP pour le quick deployment d'un package.
-
-    Cette fonction fait les étapes suivantes :
-    1. Crée une archive compressée (.gz) du dossier du package si nécessaire.
-    2. Encode le fichier compressé en Base64.
-    3. Génère un message XMPP JSON avec le contenu Base64 et le nom du package.
-    4. Sauvegarde le message dans un fichier .xmpp.
-    5. Supprime le fichier compressé temporaire.
-
-    Args:
-        folder (str): Chemin du dossier contenant le package.
-        create (bool, optional): Si True, force la création du package même s'il existe déjà.
-    """
-    # Nom du package basé sur le dossier
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
-
-    # Vérifie si le fichier .xmpp existe déjà ou si on force la création
+    # create compress file folder
     if not os.path.exists(f"{pathaqpackage}.xmpp") or create:
         logger.debug(f"Creating compressed archive {pathaqpackage}.gz")
-
-        # Crée une archive tar compressée du dossier (gzip)
         make_tarfile(f"{pathaqpackage}.gz", folder, compresstype="gz")
-
-        # Lit le contenu de l'archive et l'encode en Base64
         with open(f"{pathaqpackage}.gz", "rb") as f:
             dataraw = base64.b64encode(f.read())
-
-        # Prépare le message XMPP en JSON
         msgxmpptemplate = """{"sessionid": "@-TEMPLSESSQUICKDEPLOY@",
                               "action": "qdeploy",
                               "data": {"nbpart": 1,
@@ -4541,21 +3651,18 @@ def create_msg_xmpp_quick_deploy(folder, create=False):
             namepackage,
             dataraw,
         )
-
-        # Écrit le message dans le fichier .xmpp
         try:
-            logger.debug(f"Writing new quick deployment package {pathaqpackage}.xmpp")
+            logger.debug(f"Writing new quick deployment pakage {pathaqpackage}.xmpp")
             with open(f"{pathaqpackage}.xmpp", "w") as f:
                 f.write(msgxmpptemplate)
-
-            # Supprime le fichier compressé temporaire
+            # The compressed file is useless
             if os.path.exists(f"{pathaqpackage}.gz"):
                 os.remove(f"{pathaqpackage}.gz")
         except Exception:
             logger.error(f"{traceback.format_exc()}")
     else:
-        # Si le package existe déjà et que create=False
         logger.debug(f"Quick deployment package {pathaqpackage}.xmpp found")
+
 
 def pulseuser_useraccount_mustexist(username="pulseuser"):
     """
@@ -4624,17 +3731,15 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         msg = f"Creation of {username} user account successful: {result}"
         # Other operations specific to Windows
         if sys.platform.startswith("win"):
-            # Désactiver l'expiration du mot de passe avec `net user`
             result = simplecommand(
                 encode_strconsole(
-                    'net user "%s" /passwordchg:no' % username
+                    "wmic useraccount where \"Name='%s'\" set PasswordExpires=False"
+                    % username
                 )
             )
             if result["code"] != 0:
                 msg = f"Error setting {username} user account to not expire: {result}"
                 return False, msg
-
-            # Masquer le compte dans l'écran de connexion
             result = simplecommand(
                 encode_strconsole(
                     'REG ADD "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList" /v "%s" /t REG_DWORD /d 0 /f'
@@ -4644,8 +3749,6 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             if result["code"] != 0:
                 msg = f"Error hiding {username} account: {result}"
                 return False, msg
-
-            # Masquer le dossier utilisateur dans l'explorateur
             user_home = getHomedrive()
             hide_from_explorer = simplecommand(
                 encode_strconsole("attrib +h %s" % user_home)
@@ -4670,35 +3773,51 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         profile already exists, it return False otherwise.
     """
     if sys.platform.startswith("win"):
-        usersid = get_user_sid(username)
-        regdel = ('REG DELETE "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\%s.bak" /f'
-                 % usersid)
-        logging.getLogger().info(regdel)
-        resultdel = simplecommand(encode_strconsole(regdel))
-        if resultdel["code"] == 0:
-            logging.getLogger().info("We correctly removed the backup profile")
-        else:
-            logging.getLogger().info("No backup profile (.bak) to delete")
-
         # We define the sid
-        mu = ManageUser()
-        infos = mu.get_user_info(username)
-        if not mu.user_exists(username) or not infos:
-            directorysearch=[]
-            # il n'y a pas de profils ou pas de comptes
-            mu.delete_user(username)
-            passwdchars = f"{string.hexdigits}-$#,_"
-            userpassword = "".join(random.sample(list(passwdchars), 14))
-            logging.getLogger().debug(f"Recreation compte {username} userpassword {userpassword}")
-            creationinfo = mu.create_user(username, password=userpassword)
-            creationprofile = mu.create_profile(username,password=userpassword)
-            logging.getLogger().info(creationprofile)
-            logging.getLogger().debug(f"Profile Machine")
-            directorysearch = mu.get_dir("c:\\users")
-            mu.display_dir(directorysearch)
-            return creationprofile['success'], creationprofile['stdout'] + " " + creationprofile['stderr']
-        return True, f"compte {username} exist"
+        usersid = get_user_sid(username)
 
+        regquery = (
+            'REG QUERY "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\%s.bak" /v "ProfileImagePath" /s'
+            % usersid
+        )
+        resultquery = simplecommand(encode_strconsole(regquery))
+        if resultquery["code"] == 0:
+            # There a .bak entry, we need to remove the it
+            regdel = (
+                'REG DELETE "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\%s.bak" /f'
+                % usersid
+            )
+            resultdel = simplecommand(encode_strconsole(regdel))
+            if resultdel["code"] == 0:
+                logging.getLogger().info("We correctly removed the backup profile")
+            else:
+                logging.getLogger().error("Error while deleting the backup profile")
+        else:
+            logging.getLogger().debug("There is not .bak entry, we have nothing to do")
+
+        userenvdll = ctypes.WinDLL("userenv.dll")
+        # Define profile path that is needed
+        defined_profilepath = getHomedrive()
+        # Get user profile as created on the machine
+        profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
+        if not profile_location or profile_location != defined_profilepath:
+            delete_profile(username)
+            ptr_profilepath = ctypes.create_unicode_buffer(260)
+            userenvdll.CreateProfile(
+                LPCWSTR(usersid), LPCWSTR(username), ptr_profilepath, 240
+            )
+            if (
+                os.path.normpath(ptr_profilepath.value).strip().lower()
+                == defined_profilepath
+            ):
+                msg = f"{username} profile created successfully at {ptr_profilepath.value}"
+                return True, msg
+            else:
+                msg = f"Error creating {username} profile at {ptr_profilepath.value}"
+                return False, msg
+        else:
+            msg = f"{username} profile already exists at {profile_location}. Nothing to do."
+            return True, msg
     elif sys.platform.startswith("linux"):
         try:
             uid = pwd.getpwnam(username).pw_uid
@@ -4768,12 +3887,12 @@ def delete_profile(username="pulseuser"):
     if sys.platform.startswith("win"):
         # Delete profile folder in C:\Users if any
         try:
-            delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive(username)
+            delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive()
             result = simplecommand(encode_strconsole(delete_folder_cmd))
             if result["code"] == 0:
-                logger.debug("Deleted %s folder" % getHomedrive(username))
+                logger.debug("Deleted %s folder" % getHomedrive())
             else:
-                logger.error("Error deleting %s folder" % getHomedrive(username))
+                logger.error("Error deleting %s folder" % getHomedrive())
         except Exception as e:
             pass
         # Delete profile
@@ -4789,24 +3908,58 @@ def delete_profile(username="pulseuser"):
     return True
 
 
-def delete_profile(name_user_profile="pulseuser"):
-    result={}
+def delete_profile(username="pulseuser"):
+    """
+    Supprime le profil utilisateur spécifié en utilisant WMI (Windows Management Instrumentation).
+
+        Args:
+            - username : str. Nom de l'utilisateur dont le profil doit être supprimé.
+
+        Remarques :
+            - Cette fonction utilise WMI pour se connecter et rechercher le profil de l'utilisateur spécifié par le nom "username".
+            - Si le profil de l'utilisateur est trouvé, il sera supprimé.
+            - Assurez-vous d'exécuter le script en tant qu'administrateur pour avoir les droits nécessaires pour supprimer un profil
+                utilisateur.
+            - Cette opération est irréversible et toutes les données associées au profil seront perdues.
+
+        Exceptions:
+            - wmi.x_wmi : Une exception WMI peut être levée en cas d'erreur WMI lors de la suppression du profil.
+            - Exception : D'autres exceptions inattendues peuvent être levées en cas d'erreurs inattendues.
+
+        Returns:
+            Aucun retour. Si le profil de l'utilisateur est trouvé et supprimé avec succès, la fonction se termine sans retour. Si le
+            profil n'est pas trouvé, aucune action n'est effectuée.
+    """
     try:
-        manager = ManageUser()
-        # Activer le contrôle de dureté du mot de passe
-        # manager.controle_durete_mot_de_passe = True
-        result = manager.delete_profile(name_user_profile)
-        logging.getLogger().debug(f"delete profile utilisateur {name_user_profile} : {result}")
+        pythoncom.CoInitialize()
+        c = wmi.WMI()
+
+        user_profiles = c.Win32_UserProfile(Name=username)
+        if len(user_profiles) == 0:
+            logging.getLogger().error(
+                f"Le profil de l'utilisateur {username} n'a pas été trouvé."
+            )
+            return
+
+        user_profiles[0].Delete_()
+        logging.getLogger().info(
+            f"Le profil de l'utilisateur {username} a été supprimé avec succès."
+        )
+
+    except wmi.x_wmi as e:
+        logging.getLogger().error(
+            f"Erreur WMI lors de la suppression du profil : {str(e)}"
+        )
     except Exception as e:
-        logging.getLogger().error(f"Une erreur inattendue s est produite : {str(e)}")
-    print("delete_profile utilisateur :", result)
+        logging.getLogger().error(f"Une erreur inattendue s'est produite : {str(e)}")
+
 
 def create_idrsa_on_client(username="pulseuser", key=""):
     """
     Used on client machine for connecting to relay server
     """
     if sys.platform.startswith("win"):
-        id_rsa_path = os.path.join(getHomedrive(username), ".ssh", "id_rsa")
+        id_rsa_path = os.path.join(getHomedrive(), ".ssh", "id_rsa")
     else:
         id_rsa_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "id_rsa")
     delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
@@ -4821,275 +3974,73 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     msg = f"Key {id_rsa_path} successfully created"
     return True, msg
 
-def set_windows_permissions(path, username="pulseuser"):
-    """
-    Applique les permissions complètes à un fichier/dossier sous Windows
-    en utilisant icacls.
-    """
-    try:
-        import subprocess
-        # Donner les droits complets à l'utilisateur sur le fichier
-        cmd = f'icacls "{path}" /grant {username}:F /inheritance:r'
-        subprocess.run(cmd, shell=True, check=True)
-        # Donner les droits complets à l'utilisateur sur le dossier parent (.ssh)
-        ssh_dir = os.path.dirname(path)
-        cmd = f'icacls "{ssh_dir}" /grant {username}:F /inheritance:r'
-        subprocess.run(cmd, shell=True, check=True)
-        return True, f"Permissions appliquées avec succès pour {username} sur {path}."
-    except subprocess.CalledProcessError as e:
-        return False, f"Erreur lors de l'application des permissions avec icacls: {e}"
-    except Exception as e:
-        return False, f"Erreur inattendue: {e}"
 
 def apply_perms_sshkey(path, private=True):
     """
-    Applique les permissions correctes sur un fichier de clé SSH.
+    Apply permissions on ssh key.
+    If private = True, the permissions are based on the user that is executing Medulla Agent
+    If private = False, the permissions are based on pulseuser
     """
     if not os.path.isfile(path):
         msg = f"Error: File {path} does not exist"
         return False, msg
-
     if sys.platform.startswith("win"):
+        username = win32api.GetUserName().lower() if private is True else "pulseuser"
         try:
-            import win32api
-            import win32security
-            import ntsecuritycon
-
-            username = win32api.GetUserName().lower() if private else "pulseuser"
-
-            # Appliquer les permissions pour l'utilisateur
-            sd = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
+            sd = win32security.GetFileSecurity(
+                path, win32security.DACL_SECURITY_INFORMATION
+            )
             dacl = win32security.ACL()
             user, domain, type = win32security.LookupAccountName("", username)
-            dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, user)
+            dacl.AddAccessAllowedAce(
+                win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, user
+            )
             sd.SetSecurityDescriptorDacl(1, dacl, 0)
-            win32security.SetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION, sd)
-
-            # Si private=False, accorder aussi les droits au compte SYSTEM
-            if not private:
-                user, domain, type = win32security.LookupAccountName("", "SYSTEM")
-                dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, user)
+            win32security.SetFileSecurity(
+                path, win32security.DACL_SECURITY_INFORMATION, sd
+            )
+            if private is False:
+                user, domain, type = win32security.LookupAccountName("", "system")
+                dacl.AddAccessAllowedAce(
+                    win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, user
+                )
                 sd.SetSecurityDescriptorDacl(1, dacl, 0)
-                win32security.SetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION, sd)
-
-            return True, f"Permissions appliquées avec succès pour {username} sur {path}."
+                win32security.SetFileSecurity(
+                    path, win32security.DACL_SECURITY_INFORMATION, sd
+                )
         except Exception as e:
-            msg = f"Error setting permissions on {path} for user {username}: {str(e)}"
+            msg = f"Error setting permissions on {path} for user {user}: {str(e)}"
             return False, msg
+    else:
+        # The owner must be pulseuser
+        username = "pulseuser"
+        uid = pwd.getpwnam(username).pw_uid
+        gid = grp.getgrnam(username).gr_gid
 
-    else:  # Linux/macOS
         try:
-            import pwd
-            import grp
-            username = "pulseuser"
-            uid = pwd.getpwnam(username).pw_uid
-            gid = grp.getgrnam(username).gr_gid
             os.chown(os.path.dirname(path), uid, gid)
             os.chown(path, uid, gid)
             os.chmod(os.path.dirname(path), 0o700)
             os.chmod(path, 0o600)
-            return True, f"Permissions appliquées avec succès pour {username} sur {path}."
         except Exception as e:
-            msg = f"Error setting permissions on {path} for user {username}: {str(e)}"
+            msg = f"Error setting permissions on {path} for user {pwd.getpwuid(uid).pw_name}: {str(e)}"
             return False, msg
 
-def set_windows_permissions(
-    target,
-    owner=None,               # Ex: "pulseuser"
-    grants=None,              # Ex: ["pulseuser:F", "Administrateurs:R"]
-    recursive=True
-):
-    """
-    Applique des ACL Windows sur un fichier ou dossier en utilisant takeown + icacls.
-    Fonction générique pour remplacer fix_windows_authorized_keys.
-    """
-
-    # Normalisation
-    target = os.path.normpath(target)
-    dirname = target if os.path.isdir(target) else os.path.dirname(target)
-
-    # Options /T pour récursif
-    rec = "/T" if recursive else ""
-
-    # -------------------------
-    # 1. Take Ownership (groupe Administrators)
-    # -------------------------
-    subprocess.run(
-        ["powershell", "-NoLogo", "-NoProfile",
-         f"takeown /F '{target}' /A {('/R' if recursive else '')}"],
-        capture_output=True
-    )
-
-    # -------------------------
-    # 2. Définir nouveau propriétaire (si demandé)
-    # -------------------------
-    if owner:
-        subprocess.run(
-            ["powershell", "-NoLogo", "-NoProfile",
-             f"icacls '{target}' /setowner {owner} {rec}"],
-            capture_output=True
+    if sys.platform.startswith("win"):
+        list_perms_cmd = (
+            'powershell "(get-acl %s).access '
+            '| ft IdentityReference,FileSystemRights,AccessControlType"' % path
         )
+    elif sys.platform.startswith("linux"):
+        list_perms_cmd = f"getfacl {path}"
+    elif sys.platform.startswith("darwin"):
+        list_perms_cmd = f"ls -e -l {path}"
+    result = simplecommand(encode_strconsole(list_perms_cmd))
+    logger.debug(f"Permissions on file {path}:")
+    logger.debug(f'{"".join(result["result"])}')
+    msg = f"Success applying permissions to file {path}"
+    return True, msg
 
-    # -------------------------
-    # 3. Donner des permissions personnalisées
-    # -------------------------
-    if grants:
-        for rule in grants:
-            # Exemple : "pulseuser:F", "Administrateurs:RX"
-            subprocess.run(
-                ["powershell", "-NoLogo", "-NoProfile",
-                 f"icacls '{target}' /grant {rule} {rec}"],
-                capture_output=True
-            )
-
-    return True
-
-def fix_unix_permissions(path, username, mode="ssh"):
-    """
-    Applique des permissions standard selon un profil :
-    - mode="ssh"      : 700 pour dossier, 600 pour fichiers
-    - mode="readonly" : 755 pour dossiers, 644 pour fichiers
-    - mode="full"     : 755 pour dossiers, 755 pour fichiers
-    """
-
-    # Profils de permissions
-    profiles = {
-        "ssh": {
-            "dir_mode": 0o700,
-            "file_mode": 0o600
-        },
-        "readonly": {
-            "dir_mode": 0o755,
-            "file_mode": 0o644
-        },
-        "full": {
-            "dir_mode": 0o755,
-            "file_mode": 0o755
-        }
-    }
-
-    if mode not in profiles:
-        raise ValueError(f"Mode invalide : {mode}. Choisissez parmi {list(profiles.keys())}")
-
-    pm = profiles[mode]
-
-    # Détermine si c'est un fichier ou un dossier
-    is_dir = os.path.isdir(path)
-    folder = path if is_dir else os.path.dirname(path)
-
-    # Créer le dossier si nécessaire
-    os.makedirs(folder, exist_ok=True)
-
-    # Récupère UID/GID
-    try:
-        pw = pwd.getpwnam(username)
-        uid, gid = pw.pw_uid, pw.pw_gid
-    except KeyError:
-        raise ValueError(f"L’utilisateur '{username}' n’existe pas sur ce système")
-
-    # Change ownership récursivement si dossier
-    if is_dir:
-        for root, dirs, files in os.walk(path):
-            os.chown(root, uid, gid)
-            os.chmod(root, pm["dir_mode"])
-            for f in files:
-                full = os.path.join(root, f)
-                os.chown(full, uid, gid)
-                os.chmod(full, pm["file_mode"])
-
-    else:
-        # Applique au dossier parent
-        os.chown(folder, uid, gid)
-        os.chmod(folder, pm["dir_mode"])
-
-        # Applique au fichier si existant
-        if os.path.exists(path):
-            os.chown(path, uid, gid)
-            os.chmod(path, pm["file_mode"])
-        else:
-            open(path, "a").close()   # crée le fichier
-            os.chown(path, uid, gid)
-            os.chmod(path, pm["file_mode"])
-
-def delete_ssh_directory(dossier):
-    """
-    Supprime le dossier .ssh en s'assurant de prendre la propriété et d'appliquer les droits.
-    Utilise takeown + icacls (outils windows) puis supprime le dossier en Python.
-    Retour: (success: bool, message: str, details: dict)
-    """
-    details = {"stdout": "", "stderr": ""}
-
-    # Normaliser le chemin
-    dossier = os.path.normpath(dossier)
-
-    if not os.path.exists(dossier):
-        return True, f"Le dossier {dossier} n'existe pas.", details
-
-    try:
-        # 1) Prendre la propriété avec takeown (nécessite élévation)
-        cmd_takeown = ["takeown", "/F", dossier, "/R", "/A"]  # /A = assign to administrators
-        logger.debug("Lancement: %s", " ".join(cmd_takeown))
-        p = subprocess.run(cmd_takeown, capture_output=True, text=True)
-        details["takeown_stdout"] = p.stdout
-        details["takeown_stderr"] = p.stderr
-        logger.debug("takeown stdout: %s", p.stdout)
-        logger.debug("takeown stderr: %s", p.stderr)
-
-        # 2) Donner le contrôle total aux Administrateurs avec icacls
-        # Note: 'Administrators' ou 'Administrateurs' selon la langue du système.
-        # On appelle icacls avec le SID BUILTIN\Administrators pour plus de robustesse (S-1-5-32-544)
-        cmd_icacls = ["icacls", dossier, "/grant", "S-1-5-32-544:(OI)(CI)F", "/T", "/C"]
-        logger.debug("Lancement: %s", " ".join(cmd_icacls))
-        p2 = subprocess.run(cmd_icacls, capture_output=True, text=True)
-        details["icacls_stdout"] = p2.stdout
-        details["icacls_stderr"] = p2.stderr
-        logger.debug("icacls stdout: %s", p2.stdout)
-        logger.debug("icacls stderr: %s", p2.stderr)
-
-        # 3) Supprimer le dossier en Python (plus fiable que Remove-Item via powershell pour reporting)
-        # On essaye d'abord shutil.rmtree (peut échouer si fichiers verrouillés)
-        try:
-            shutil.rmtree(dossier)
-            details["rm_method"] = "shutil.rmtree"
-            return True, f"Dossier {dossier} supprimé avec succès.", details
-        except Exception as e_sh:
-            logger.warning("shutil.rmtree a échoué: %s", e_sh)
-            details["rmtree_exception"] = str(e_sh)
-            # Comme fallback, utiliser PowerShell Remove-Item avec ExecutionPolicy Bypass depuis un .ps1 temporaire
-            ps_script = f"""
-            Remove-Item -LiteralPath '{dossier}' -Force -Recurse -ErrorAction Stop
-            """
-            tf = tempfile.NamedTemporaryFile(delete=False, suffix=".ps1", mode="w", encoding="utf-8")
-            tf.write(ps_script)
-            tf.close()
-            cmd_ps = [
-                "powershell",
-                "-NoProfile",
-                "-ExecutionPolicy", "Bypass",
-                "-File", tf.name
-            ]
-            logger.debug("Lancement PowerShell fallback: %s", " ".join(cmd_ps))
-            p3 = subprocess.run(cmd_ps, capture_output=True, text=True)
-            details["ps_rm_stdout"] = p3.stdout
-            details["ps_rm_stderr"] = p3.stderr
-            # supprimer le fichier temporaire de script
-            try:
-                os.unlink(tf.name)
-            except Exception:
-                pass
-
-            if p3.returncode == 0:
-                return True, f"Dossier {dossier} supprimé via PowerShell fallback.", details
-            else:
-                # Tout a échoué, renvoyer message d'erreur détaillé
-                msg = ("Impossible de supprimer le dossier. "
-                       "Voir détails pour takeown/icacls/powershell outputs.")
-                return False, msg, details
-
-    except Exception as e:
-        logger.exception("Erreur inattendue lors de la suppression de %s", dossier)
-        details["exception"] = str(e)
-        return False, f"Erreur inattendue : {e}", details
 
 def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     """
@@ -5103,16 +4054,16 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
         message sent telling if the key have been well copied or not.
     """
     if sys.platform.startswith("win"):
-        ssh_directory = os.path.join(getHomedrive(username), ".ssh")
-        authorized_keys_path = os.path.join(ssh_directory, "authorized_keys")
-        delete_ssh_directory(ssh_directory )
+        authorized_keys_path = os.path.join(getHomedrive(), ".ssh", "authorized_keys")
     else:
         authorized_keys_path = os.path.join(
             os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys"
         )
+
     # Create directory if it doesn't exist
-    if not os.path.isdir(os.path.dirname(ssh_directory)):
-        os.makedirs(os.path.dirname(ssh_directory), 0o700)
+    if not os.path.isdir(os.path.dirname(authorized_keys_path)):
+        os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
+
     # Read existing authorized_keys content
     authorized_keys_content = ""
     if os.path.isfile(authorized_keys_path):
@@ -5127,6 +4078,7 @@ def add_key_to_authorizedkeys_on_client(username="pulseuser", key=""):
     # Append the key to authorized_keys file
     logger.debug(f"Adding key to {authorized_keys_path}")
     file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
+
     # Check if key is now present
     authorized_keys_content = file_get_contents(authorized_keys_path)
     if key.strip(" \t\n\r") in authorized_keys_content:
@@ -5531,38 +4483,35 @@ def minifyjsonstring(strjson):
 
 
 def serialnumbermachine():
-    """
-    Retourne le UUID/serial number de la machine selon le système.
-    Windows utilise PowerShell, Linux et macOS comme avant.
-    """
     serial_uuid_machine = ""
     try:
         if sys.platform.startswith("win"):
-            # PowerShell command to get UUID
-            ps_cmd = 'powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_ComputerSystemProduct | Select-Object -ExpandProperty UUID"'
-            result = simplecommand(ps_cmd)
+            result = simplecommand("wmic csproduct get uuid")
             if result["code"] == 0 and result["result"]:
-                serial_uuid_machine = "".join(result["result"]).strip()
-
+                serial_uuid_machine = (
+                    "".join(result["result"]).replace("UUID", "").strip()
+                )
         elif sys.platform.startswith("linux"):
             result = simplecommand("dmidecode -s system-uuid")
             if result["code"] == 0 and result["result"]:
                 serial_uuid_machine = "".join(result["result"]).strip()
-
         elif sys.platform.startswith("darwin"):
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
             result = simplecommand(cmd)
             if result["code"] == 0 and result["result"]:
-                serial_uuid_machine = "".join(result["result"]).strip()
-
+                serial_uuid_machine = (
+                    "".join(result["result"]).replace("UUID", "").strip()
+                )
         else:
-            logger.warning(f"serialnumbermachine not implemented for OS: {sys.platform}")
-
+            logger.warning(
+                f"the serialnumbermachine function is not implemented for your os: {sys.platform}"
+            )
     except Exception:
-        logger.error("Error in serialnumbermachine:\n%s" % traceback.format_exc())
-
+        logger.error(
+            "An error occured while using the serialnumbermachine function \n we got the error below \n%s"
+            % (traceback.format_exc())
+        )
     return serial_uuid_machine
-
 
 
 def base64strencode(data):
@@ -6105,59 +5054,27 @@ class offline_search_kb:
             compactlist.append(t["HotFixID"][2:])
         return "(" + ",".join(compactlist) + ")"
 
-
     def searchpackage(self):
         endresult = []
         if sys.platform.startswith("win"):
             try:
-                # Commande PowerShell JSON propre
-                ps_cmd = (
-                    'powershell -NoProfile -Command '
-                    '"Get-HotFix | '
-                    "Select-Object @{Name='Source';Expression={$_.PSComputerName}}, "
-                    "Description, HotFixID, InstalledBy, "
-                    "@{Name='InstalledOn';Expression={$_.InstalledOn.ToString('MM/dd/yyyy')}} | "
-                    'ConvertTo-Json -Depth 3"'
+                ret = simplecommand(
+                    encode_strconsole("wmic qfe list brief /format:texttablewsys")
                 )
-
-                ret = simplecommand(encode_strconsole(ps_cmd))
-                if ret["code"] != 0:
-                    return endresult
-
-                # Reconstituer la sortie PowerShell
-                text = "".join([decode_strconsole(l) for l in ret["result"]]).strip()
-
-                # Certaines versions ajoutent du texte avant/après → extraction du JSON
-                try:
-                    data = json.loads(text)
-                except json.JSONDecodeError:
-                    import re
-                    m = re.search(r'(\[.*\]|\{.*\})', text, flags=re.S)
-                    if not m:
-                        return endresult
-                    data = json.loads(m.group(1))
-
-                # Normaliser en liste
-                if isinstance(data, dict):
-                    data = [data]
-
-                for entry in data:
-                    hotfix = entry.get("HotFixID", "") or ""
-                    if not hotfix.startswith("KB"):  # filtrer uniquement les KB
-                        continue
-
-                    endresult.append({
-                        "Source": (entry.get("Source") or "").strip(),
-                        "description": (entry.get("Description") or "").strip(),
-                        "HotFixID": hotfix.strip(),
-                        "InstalledBy": (entry.get("InstalledBy") or "").strip(),
-                        "InstalledOn": (entry.get("InstalledOn") or "").strip(),
-                    })
-
+                if ret["code"] == 0:
+                    for t in ret["result"]:
+                        t = decode_strconsole(t)
+                        resultat = {}
+                        resultat["description"] = t[0:16].strip()
+                        resultat["HotFixID"] = t[30:40].strip()
+                        if not resultat["HotFixID"].startswith("KB"):
+                            continue
+                        resultat["InstalledBy"] = t[54:74].strip()
+                        resultat["InstalledOn"] = t[75:87].strip()
+                        endresult.append(resultat)
             except Exception as e:
-                print(f"searchpackage : {e}")
-                print(traceback.format_exc())
-
+                logger.error("searchpackage : %s" % e)
+                logger.error(traceback.format_exc())
         return endresult
 
     def search_malicious_software_removal_tool(self):
@@ -6980,7 +5897,7 @@ class convert:
     def compare_yaml(yaml_string1, yaml_string2):
         """
         Dans cette fonction compare_yaml, nous appelons la fonction yaml_string_to_dict pour convertir chaque chaîne YAML en dictionnaire.
-        Si une exception ValueError est levée lors de la conversion, nous affichons l eur et retournons False.
+        Si une exception ValueError est levée lors de la conversion, nous affichons l'erreur et retournons False.
         nous utilisons la fonction compare_dicts pour comparer les dictionnaires obtenus.
         Si les dictionnaires sont égaux, la fonction compare_yaml retourne True, sinon elle retourne False.
         """
@@ -7663,67 +6580,55 @@ def clean_update_directories():
             "Le fichier BOOL_CLEAN_UPDATE n'a pas été trouvé. Aucune action n'est requise."
         )
 
+
 def eject_cdrom_drives():
     """
-    Récupère la liste des lecteurs CD/DVD via CIM en utilisant :
-        Get-CimInstance -ClassName Win32_CDROMDrive
-    Puis tente de les éjecter via l'API Shell.Application.
+    Cette fonction récupère tous les lecteurs logiques avec WMI, filtre ceux dont la description contient "CD-ROM",
+    et tente de les démonter/éjecter.
+
+    La fonction utilise WMI pour interagir avec les lecteurs logiques et Shell.Application pour démonter les lecteurs CD-ROM.
+    Elle initialise et finalise COM pour assurer une utilisation correcte des objets COM.
+
+    :return: None
     """
-
-    # Exécute Get-CimInstance et récupère les données en JSON
-    ps_command = [
-        "powershell",
-        "-NoProfile",
-        "-Command",
-        "Get-CimInstance -ClassName Win32_CDROMDrive | "
-        "Select-Object Drive, Name | "
-        "ConvertTo-Json"
-    ]
-
-    try:
-        result = subprocess.check_output(ps_command, text=True, encoding="utf-8")
-    except subprocess.CalledProcessError as e:
-        logger.debug(f"Erreur PowerShell : {e}")
-        return
-
-    # Parse le JSON PowerShell (peut être un dict ou une liste)
-    try:
-        cdrom_list = json.loads(result)
-    except json.JSONDecodeError:
-        logger.debug("Aucun lecteur CD/DVD détecté par Get-CimInstance.")
-        return
-
-    # Normalise pour toujours avoir une liste
-    if isinstance(cdrom_list, dict):
-        cdrom_list = [cdrom_list]
-
-    if not cdrom_list:
-        logger.debug("Aucun lecteur CD/DVD trouvé via CIM.")
-        return
-
+    # Initialisation de l'objet WMI
     pythoncom.CoInitialize()
     try:
-        for drive in cdrom_list:
-            device_id = drive.get("Drive")
-            name = drive.get("Name")
+        c = wmi.WMI()
 
-            logger.debug(f"Lecteur trouvé : {device_id} - {name}")
+        # Récupère tous les lecteurs logiques
+        logical_disks = c.query("SELECT * FROM Win32_LogicalDisk")
 
-            if not device_id:
-                continue
+        # Filtre les lecteurs où la description contient "CD-ROM"
+        cdrom_disks = [disk for disk in logical_disks if "CD-ROM" in disk.Description]
 
-            try:
-                shell = win32com.client.Dispatch("Shell.Application")
-                cd_drive = shell.Namespace(17).ParseName(device_id)
+        # Vérifie si des lecteurs correspondants ont été trouvés
+        if not cdrom_disks:
+            logger.debug(
+                "Aucun lecteur avec une description contenant 'CD-ROM' n'a été trouvé."
+            )
+        else:
+            for disk in cdrom_disks:
+                logger.debug(
+                    f"Lecteur trouvé : {disk.DeviceID} - Description : {disk.Description}"
+                )
 
-                if cd_drive:
-                    cd_drive.InvokeVerb("Eject")
-                    logger.debug(f"Le lecteur {device_id} a été éjecté avec succès.")
-                else:
-                    logger.debug(f"Impossible de localiser {device_id} via Shell.Application.")
-
-            except Exception as e:
-                logger.debug(f"Erreur lors de l'éjection de {device_id} : {e}")
-
+                # Tente de démonter/éjecter le lecteur
+                try:
+                    shell_app = win32com.client.Dispatch("Shell.Application")
+                    cd_drive = shell_app.Namespace(17).ParseName(disk.DeviceID)
+                    if cd_drive:
+                        cd_drive.InvokeVerb("Eject")
+                        logger.debug(
+                            f"Le lecteur {disk.DeviceID} a été démonté avec succès."
+                        )
+                    else:
+                        logger.debug(
+                            f"Impossible de trouver le lecteur {disk.DeviceID} pour le démonter."
+                        )
+                except Exception as e:
+                    logger.debug(
+                        f"Erreur lors du démontage du lecteur {disk.DeviceID}. Message : {e}"
+                    )
     finally:
         pythoncom.CoUninitialize()

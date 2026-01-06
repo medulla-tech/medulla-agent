@@ -14,7 +14,7 @@ for scheme in list(INSTALL_SCHEMES.values()):
 
 setup(
     name="pulse_machine_plugins",
-    version="5.4.5",
+    version="5.4.6",
     author="SIVEO",
     author_email="contact@medulla-tech.io",
     description="XMPP Machine agent plugins for Medulla",
