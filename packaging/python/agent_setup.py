@@ -67,6 +67,8 @@ setup(
             "netifaces_plus",
             "pycryptodomex >= 3.15.0",
             "xmltodict",
+            "aiofiles",
+            "websockets",
         ]
     ),
 )
