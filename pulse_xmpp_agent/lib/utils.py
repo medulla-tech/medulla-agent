@@ -70,7 +70,6 @@ DEBUGPULSE = 25
 
 
 if sys.platform.startswith("win"):
-    import wmi
     import pythoncom
     import winreg as wr
 
