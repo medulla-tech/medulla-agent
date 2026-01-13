@@ -340,6 +340,8 @@ def os_version(brelease_windows=1, bbuild_windows=0):
                             k, v = line.strip().split("=", 1)
                             info[k] = v.strip('"')
                     name = info.get("PRETTY_NAME") or info.get("NAME", "Linux")
+                    if 'linux' not in name.lower():
+                        name += ' linux'
                     return name
             else:
                 return platform.platform()
