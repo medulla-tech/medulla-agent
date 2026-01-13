@@ -87,7 +87,7 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
             'We will force the configuration by using "pulse" for confdomain.'
         )
 
-    Config.set("configuration_server", "confdomain", "pulse")
+    # Config.set("configuration_server", "confdomain", "pulse")
     Config.set("chat", "domain", domain)
     Config.set("connection", "port", str(port))
     Config.set("connection", "server", ipfromdns(str(ipserver)))
@@ -95,6 +95,40 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
     Config.set("type", "guacamole_baseurl", str(baseurlguacamole))
     with open(conffile, "w") as configfile:
         Config.write(configfile)
+
+
+def update_domain_config(conffile):
+    config = configparser.ConfigParser()
+    config.read(conffile)
+
+    # Vérifier si la section et le paramètre existent
+    if "configuration_server" in config and "alternativeconfdomain" in config["configuration_server"]:
+        alternative_domains = config["configuration_server"]["alternativeconfdomain"]
+
+        # Vérifier si la liste n'est pas vide
+        if alternative_domains.strip():
+            domains = [domain.strip() for domain in alternative_domains.split(",") if domain.strip()]
+
+            # Vérifier si la liste contient des éléments
+            if domains:
+                # Réorganiser la liste en plaçant le dernier élément en premier
+                new_domains = [domains[-1]] + domains[:-1]
+
+                # Mettre à jour la liste des domaines alternatifs
+                config.set("configuration_server", "alternativeconfdomain", ", ".join(new_domains))
+
+                # Mettre à jour confdomain avec le nouvel élément en premier
+                config.set("configuration_server", "confdomain", new_domains[0])
+
+                # Sauvegarder les modifications dans le fichier de configuration
+                with open(conffile, 'w') as configfile:
+                    config.write(configfile)
+            else:
+                logger.warning("La liste alternativeconfdomain est vide.")
+        else:
+            logger.warning("Le paramètre alternativeconfdomain est vide.")
+    else:
+        logger.warning("Le paramètre alternativeconfdomain n'existe pas dans la configuration.")
 
 
 def alternativeclusterconnection(conffile, data):

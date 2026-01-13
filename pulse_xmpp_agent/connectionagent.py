@@ -43,6 +43,8 @@ from lib.configuration import (
     nextalternativeclusterconnection,
     substitutelist,
     changeconfigurationsubtitute,
+    update_domain_config
+
 )
 from lib.agentconffile import (
     conffilename,
@@ -112,6 +114,8 @@ class MUCBot(ClientXMPP):
         Args:
             conf: Configuration object containing necessary parameters.
         """
+        global host_unknown
+        host_unknown = False
         self.agent_machine_name = conf.jidagent
         newjidconf = conf.jidagent.split("@")
         resourcejid = newjidconf[1].split("/")
@@ -179,7 +183,8 @@ class MUCBot(ClientXMPP):
         self.add_event_handler("connected", self.handle_connected)
 
         # _______________________ Getion connection agent _____________________
-
+        self.add_event_handler("stream_error", self.on_stream_error)
+        self.add_event_handler("failed_auth", self.on_failed_auth)
         self.add_event_handler("stream_error", self.stream_error1)
         try:
             self.config.syncthing_on
@@ -278,6 +283,65 @@ class MUCBot(ClientXMPP):
                 self.send_message(
                     mto=self.sub_assessor, mbody=json.dumps(confsyncthing), mtype="chat"
                 )
+
+    def handle_host_unknown_error(self):
+        logger.error("Possible remedies for <host-unknown> error:")
+        logger.error("  1. Check if the ejabberd virtual host exists.")
+        logger.error("    --- Run: ejabberdctl registered_vhosts")
+        logger.error("  2. Verify the domain in the JID used in the agent's configuration.")
+        logger.error("    --- Example: [configuration_server]")
+        logger.error("    --- confdomain = pulse1")
+        logger.error("  3. Check DNS SRV records for the domain.")
+        logger.error("    --- Use: dig SRV _xmpp-client._tcp.yourdomain.com")
+        logger.error("  4. Verify the SSL/TLS certificate for the domain.")
+        logger.error("    --- Ensure it covers the domain and is not expired.")
+        logger.error("  5. Add an entry to /etc/hosts if the domain is local.")
+        logger.error("    --- Example: 127.0.0.1   yourdomain.com")
+
+    def handle_channel_binding_error(self):
+        """Gérer l'erreur 'Invalid channel binding'."""
+        logging.warning("  1. Désactiver le Channel Binding côté serveur (ejabberd) :")
+        logging.warning("    --- Éditer /etc/ejabberd/ejabberd.yml et ajouter 'channel_binding: false'.")
+        logging.warning("  2. Utiliser un mécanisme SASL sans Channel Binding (moins sécurisé) :")
+        logging.warning("    --- Définir 'self.auth_mechanism = \"PLAIN\"'.")
+        logging.warning("  3. Vérifier la configuration TLS :")
+        logging.warning("    --- Assurez-vous que le certificat est valide et que la connexion utilise TLS.")
+        # quand les xep seront pris en charge par slixmpp pas encore le cas.
+        # logging.error("  2. Configurer le client Slixmpp pour le Channel Binding :")
+        # logging.error("    --- Utiliser les plugins 'xep_0368' et 'xep_0388'.")
+
+    def on_stream_error(self, error):
+        global host_unknown
+        if hasattr(error, "name")and error.name == "error":
+            for child in error.xml:
+                tag_error_text = re.sub(r'\{.*\}', '', child.tag)
+                logger.error(f"Nom de l'erreur : {tag_error_text}")  # Affiche "host-unknown"
+                # logger.error(f"Erreur tag: {child.tag}")
+                # logger.error(f"Erreur text: {child.text}")
+                # logger.error(f"Erreur tail : {child.tail }")
+                # logger.error(f"Erreur attribut : {child.attrib }")
+                if tag_error_text == "host-unknown":
+                    logger.error(f"  - Cause: Domaine non reconnu par le serveur.{conffilenametmp(opts.typemachine)}")
+                    self.handle_host_unknown_error()
+                    update_domain_config(conffilename(opts.typemachine))
+                    host_unknown = True
+
+    def on_failed_auth(self, event):
+        # logging.error(f"Échec de l'authentification : {event}")
+
+        # Vérifier si l'événement contient une stanza de type 'failure'
+        if hasattr(event, 'xml') and event.xml.tag.endswith('failure'):
+            # Parcourir les éléments enfants de la stanza 'failure'
+            for child in event.xml:
+                # Vérifier si l'élément est de type 'text'
+                if child.tag.endswith('text'):
+                    error_text = child.text
+                    if error_text == "Invalid channel binding" :
+                        logging.warning(f"Échec de l'authentification tls avec option channel_binding: {event}")
+                        logging.warning(f"TLS sans option channel_binding voir")
+                        self.handle_channel_binding_error()
+                        # logging.error(f"Texte d'erreur : {error_text}")
+                        # on applique 1 nouveau domain si il existe dans la conf.
 
     def handle_assessor_timeout(self):
         """
@@ -1094,124 +1158,132 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         tglevellog: Log level.
         tglogfile: Log file.
     """
-    file_put_contents(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "INFOSTMP",
-            "pidconnection",
-        ),
-        f"{os.getpid()}",
-    )
-    if sys.platform.startswith("win"):
-        try:
-            result = subprocess.check_output(
-                [
-                    "icacls",
-                    os.path.join(
-                        os.path.dirname(os.path.realpath(__file__)),
-                        "INFOSTMP",
-                        "pidconnection",
-                    ),
-                    "/setowner",
-                    "pulse",
-                    "/t",
-                ],
-                stderr=subprocess.STDOUT,
+
+    global host_unknown
+    try_host_unknown = 0 # Initialisation du compteur de tentatives pour host_unknown
+    while try_host_unknown < 5:  # Limitation à 5 host_unknown
+        host_unknown = False
+        logger.error(f"incremente host_unknown et host_unknown compteur connect {host_unknown} {try_host_unknown}")
+        try_host_unknown += 1  # Incrémente le compteur
+        file_put_contents(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                "INFOSTMP",
+                "pidconnection",
+            ),
+            f"{os.getpid()}",
+        )
+        if sys.platform.startswith("win"):
+            try:
+                result = subprocess.check_output(
+                    [
+                        "icacls",
+                        os.path.join(
+                            os.path.dirname(os.path.realpath(__file__)),
+                            "INFOSTMP",
+                            "pidconnection",
+                        ),
+                        "/setowner",
+                        "pulse",
+                        "/t",
+                    ],
+                    stderr=subprocess.STDOUT,
+                )
+            except subprocess.CalledProcessError as e:
+                pass
+
+        if optstypemachine.lower() in ["machine"]:
+            sys.path.append(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
             )
-        except subprocess.CalledProcessError as e:
-            pass
-
-    if optstypemachine.lower() in ["machine"]:
-        sys.path.append(
-            os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
-        )
-    else:
-        sys.path.append(
-            os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
-        )
-    # Setup the command line arguments.
-    tg = confParameter(optstypemachine)
-    logger.debug(
-        "Parameter to connect. (%s : %s) on xmpp server."
-        " %s" % (tg.confserver, tg.confport, tg.confserver),
-    )
-
-    if optstypemachine.lower() in ["machine"]:
-        tg.pathplugins = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"
-        )
-    else:
-        tg.pathplugins = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"
-        )
-
-    attempts = 0  # Initialisation du compteur de tentatives
-
-    while attempts < 5:  # Limitation à 5 essais
-        if not tg.confserver.strip():
-            tg = confParameter(optstypemachine)
-
-        ip_server = ipfromdns(tg.confserver)  # Résolution de l'IP à partir du DNS
-        if ip_server and check_exist_ip_port(ip_server, tg.confport):
-            break  # Sort de la boucle si connexion réussie
-
-        # Log d'erreur avec tentative et détails
-        logger.error(
-            f"Attempt {attempts + 1}: Connection failed - IP: {ip_server or 'N/A'}, Port: {tg.confport}"
-        )
-
-        attempts += 1  # Incrémente le compteur
-        time.sleep(2)  # Pause de 2 secondes entre chaque tentative
-    else:
-        # Si toutes les tentatives échouent, consigne un log et quitte le programme
-        logger.error("Maximum retry limit reached. Unable to establish a connection.")
-        sys.exit(1)  # Quitte le programme avec un code d'erreur
-
-    if tg.agenttype != "relayserver":
-        logger.debug(f"connect {ip_server} {tg.confport}")
-        xmpp = MUCBot(tg)
-        xmpp.register_plugin("xep_0030")  # Service Discovery
-        xmpp.register_plugin("xep_0045")  # Multi-User Chat
-        xmpp.register_plugin("xep_0004")  # Data Forms
-        xmpp.register_plugin("xep_0050")  # Adhoc Commands
-        xmpp.register_plugin(
-            "xep_0199",
-            {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
-        )
-        xmpp.register_plugin("xep_0077")  # In-band Registration
-        xmpp["xep_0077"].force_registration = True
-
-        # Connect to the XMPP server and start processing XMPP
-        logger.debug(f"Connecting to {ip_server}:{tg.confport}")
-        logger.debug(f"The jid for the configuration is : {tg.jidagent}")
-
-        xmpp.IP_or_FQDN_connect = ip_server
-        xmpp.Port_connect = tg.confport
-
-        xmpp.address = (ip_server, int(tg.confport))
-        logger.debug("-----------------------------------------")
-        logger.debug("----- CONNECTION XMPP CONFIGURATEUR -----")
-        logger.debug("-----------------------------------------")
-        try:
-            xmpp.connect(address=xmpp.address, force_starttls=None)
-        except Exception as e:
-            logging.error("Connection failed: %s. Retrying..." % e)
-            logging.error("Connection to: IP %s, Port %s." % (ip_server, tg.confport))
-        try:
-            xmpp.loop.run_forever()
-        except RuntimeError:
-            logging.error("RuntimeError during connection")
-        finally:
-            logger.debug("bye bye connecteur")
-            namefilebool = os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR"
+        else:
+            sys.path.append(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
             )
-            fichier = open(namefilebool, "w")
-            fichier.close()
-            # xmpp.loop.close()
+        # Setup the command line arguments.
+        tg = confParameter(optstypemachine)
 
-            logger.debug("bye bye connecteur")
-            # sys.exit(0)  # Quitte le programme avec un code d'erreur
+        logger.debug(
+            "Parameter to connect. (%s : %s) on xmpp server."
+            " %s" % (tg.confserver, tg.confport, tg.confserver),
+        )
+
+        if optstypemachine.lower() in ["machine"]:
+            tg.pathplugins = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"
+            )
+        else:
+            tg.pathplugins = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"
+            )
+
+        attempts = 0  # Initialisation du compteur de tentatives
+
+        while attempts < 5:  # Limitation à 5 essais
+            if not tg.confserver.strip():
+                tg = confParameter(optstypemachine)
+            ip_server = ipfromdns(tg.confserver)  # Résolution de l'IP à partir du DNS
+            if ip_server and check_exist_ip_port(ip_server, tg.confport):
+                break  # Sort de la boucle si connexion réussie
+
+            # Log d'erreur avec tentative et détails
+            logger.error(
+                f"Attempt {attempts + 1}: Connection failed - IP: {ip_server or 'N/A'}, Port: {tg.confport}"
+            )
+
+            attempts += 1  # Incrémente le compteur
+            time.sleep(2)  # Pause de 2 secondes entre chaque tentative
+        else:
+            # Si toutes les tentatives échouent, consigne un log et quitte le programme
+            logger.error("Maximum retry limit reached. Unable to establish a connection.")
+            sys.exit(1)  # Quitte le programme avec un code d'erreur
+
+        if tg.agenttype != "relayserver":
+            logger.error(f"host_unknown et host_unknown compteur connect {host_unknown} {try_host_unknown}")
+            logger.debug(f"connect {ip_server} {tg.confport}")
+            xmpp = MUCBot(tg)
+            xmpp.register_plugin("xep_0030")  # Service Discovery
+            xmpp.register_plugin("xep_0045")  # Multi-User Chat
+            xmpp.register_plugin("xep_0004")  # Data Forms
+            xmpp.register_plugin("xep_0050")  # Adhoc Commands
+            xmpp.register_plugin(
+                "xep_0199",
+                {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
+            )
+            xmpp.register_plugin("xep_0077")  # In-band Registration
+            xmpp["xep_0077"].force_registration = True
+
+            # Connect to the XMPP server and start processing XMPP
+            logger.debug(f"Connecting to {ip_server}:{tg.confport}")
+            logger.debug(f"The jid for the configuration is : {tg.jidagent}")
+
+            xmpp.IP_or_FQDN_connect = ip_server
+            xmpp.Port_connect = tg.confport
+
+            xmpp.address = (ip_server, int(tg.confport))
+            logger.debug("-----------------------------------------")
+            logger.debug("----- CONNECTION XMPP CONFIGURATEUR -----")
+            logger.debug("-----------------------------------------")
+            try:
+                xmpp.connect(address=xmpp.address, force_starttls=None)
+            except Exception as e:
+                logging.error("Connection failed: %s. Retrying..." % e)
+                logging.error("Connection to: IP %s, Port %s." % (ip_server, tg.confport))
+            try:
+                xmpp.loop.run_forever()
+            except RuntimeError:
+                logging.error("RuntimeError during connection")
+            finally:
+                if host_unknown == False:
+                    logger.debug("bye bye connecteur")
+                    namefilebool = os.path.join(
+                        os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR"
+                    )
+                    fichier = open(namefilebool, "w")
+                    fichier.close()
+                    # xmpp.loop.close()
+                    logger.debug("bye bye connecteur")
+                    try_host_unknown = 10  # Quitte le programme avec un code
     else:
         logger.debug(
             "Warning: A relay server holds a Static "
