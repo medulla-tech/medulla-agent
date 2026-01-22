@@ -74,6 +74,12 @@ class DateTimebytesEncoderjson(json.JSONEncoder):
             encoded_object = json.JSONEncoder.default(self, obj)
         return encoded_object
 
+def is_ipv6_enabled_in_kernel():
+    try:
+        with open("/proc/sys/net/ipv6/conf/all/disable_ipv6", "r") as f:
+            return int(f.read().strip()) == 0
+    except Exception:
+        return False
 
 def action(xmppobject, action):
     try:
@@ -132,41 +138,44 @@ def action(xmppobject, action):
                             xmppobject.server_mmc_master_server_port_ipv4,
                         )
                     )
-                try:
-                    # Création du socket TCP/IP avec IPv6
-                    server_socket_ipv6 = socket.socket(
-                        socket.AF_INET6, socket.SOCK_STREAM
-                    )
-                    # Activation de l'option pour réutiliser l'adresse
-                    server_socket_ipv6.setsockopt(
-                        socket.SOL_SOCKET, socket.SO_REUSEADDR, 1
-                    )
-                    # ecoute sur toutes les interfae ipv6
-                    server_socket_ipv6.bind(
-                        (
-                            xmppobject.server_mmc_master_server_host_ipv6,
-                            xmppobject.server_mmc_master_server_port_ipv6,
-                        )
-                    )
-                    # connexions simultane 10
-                    server_socket_ipv6.listen(connexions_simultane)
 
-                    xmppobject.sockets_mmc.append(server_socket_ipv6)
-                except Exception as e:
-                    logger.error(
-                        "create socket ipv6\nWe obtained the backtrace %s"
-                        % traceback.format_exc()
-                    )
-                    logger.error(
-                        "le serveur master n est pas "
-                        "fonctionel en ipv6 sur "
-                        "interface %s et le port %s"
-                        % (
-                            xmppobject.server_mmc_master_server_host_ipv6,
-                            xmppobject.server_mmc_master_server_port_ipv6,
+                if is_ipv6_enabled_in_kernel():
+                    try:
+                        # Création du socket TCP/IP avec IPv6
+                        server_socket_ipv6 = socket.socket(
+                            socket.AF_INET6, socket.SOCK_STREAM
                         )
-                    )
+                        # Activation de l'option pour réutiliser l'adresse
+                        server_socket_ipv6.setsockopt(
+                            socket.SOL_SOCKET, socket.SO_REUSEADDR, 1
+                        )
+                        # ecoute sur toutes les interfae ipv6
+                        server_socket_ipv6.bind(
+                            (
+                                xmppobject.server_mmc_master_server_host_ipv6,
+                                xmppobject.server_mmc_master_server_port_ipv6,
+                            )
+                        )
+                        # connexions simultane 10
+                        server_socket_ipv6.listen(connexions_simultane)
 
+                        xmppobject.sockets_mmc.append(server_socket_ipv6)
+                    except Exception as e:
+                        logger.error(
+                            "create socket ipv6\nWe obtained the backtrace %s"
+                            % traceback.format_exc()
+                        )
+                        logger.error(
+                            "le serveur master n est pas "
+                            "fonctionel en ipv6 sur "
+                            "interface %s et le port %s"
+                            % (
+                                xmppobject.server_mmc_master_server_host_ipv6,
+                                xmppobject.server_mmc_master_server_port_ipv6,
+                            )
+                        )
+                else:
+                    logger.info("IPv6 n'est pas activé ou configuré sur ce système, le socket IPv6 ne sera pas créé.")
                 ### Liste des sockets à surveiller
                 # xmppobject.sockets_mmc = [server_socket_ipv4, server_socket_ipv6]
 
