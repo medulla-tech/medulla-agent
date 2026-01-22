@@ -213,7 +213,8 @@ def action(xmppobject, action):
             finally:
                 # Fermeture du socket lorsque la boucle se termine
                 # xmppobject.stop_server()
-                server_socket_ipv6.close()
+                if is_ipv6_enabled_in_kernel():
+                    server_socket_ipv6.close()
                 server_socket_ipv4.close()
     except Exception as e:
         pass
