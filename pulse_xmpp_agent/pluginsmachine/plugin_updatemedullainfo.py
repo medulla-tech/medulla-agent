@@ -24,7 +24,7 @@ if sys.platform.startswith("win"):
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.9", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.10", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 
 class Compatibilite:
@@ -231,10 +231,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("PL-MEDULLAINFO ###################################################")
 
     if sys.platform.startswith("win"):
-        try:
-            update_medulla_info_update_notification(xmppobject)
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
+        #try:
+        #    update_medulla_info_update_notification(xmppobject)
+        #except Exception:
+        #    logger.error("\n%s" % (traceback.format_exc()))
         try:
             execute_medulla_info_update()
         except Exception:
