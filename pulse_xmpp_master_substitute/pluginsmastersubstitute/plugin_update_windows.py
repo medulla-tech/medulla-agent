@@ -398,6 +398,7 @@ def list_products_on(xmppobject, data):
         if "office" in system_info:
             office_info = system_info["office"]
             # Construction des noms de packages pour Office et Visual Studio
+            produitbrute= [p["name_procedure"] for p in list_produits]
             packageofficename = None
             OfficeVersion = office_info.get("version")
             if OfficeVersion and "year" in office_info:
