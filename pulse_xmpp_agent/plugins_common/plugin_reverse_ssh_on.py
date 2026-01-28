@@ -27,7 +27,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "3.6", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "3.7", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -288,29 +288,69 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     touser="",
                 )
             elif sys.platform.startswith("win"):
-                ################# win reverse #################
-                try:
-                    win32net.NetUserGetInfo("", "pulseuser", 0)
-                    filekey = os.path.join(utils.getHomedrive(), ".ssh", "id_rsa")
-                except BaseException:
-                    filekey = os.path.join(medullaPath(), ".ssh", "id_rsa")
-                # Define the permissions depending on the user running the agent (admin or system)
-                utils.apply_perms_sshkey(filekey, private=True)
+                ############################################################
+                # WINDOWS – Reverse SSH avec PowerShell + logs
+                ############################################################
 
+                # ----------------------------------------------------------
+                # 1) Détermination de la clé SSH à utiliser
+                # ----------------------------------------------------------
+                try:
+                    # Si l’utilisateur pulseuser existe, utiliser son HOME
+                    win32net.NetUserGetInfo("", "pulseuser", 0)
+                    filekey = os.path.join(
+                        utils.getHomedrive("pulseuser"),
+                        ".ssh",
+                        "id_rsa"
+                    )
+                except BaseException:
+                    # Sinon, fallback sur le home Medulla
+                    filekey = os.path.join(medullaPath(), ".ssh", "id_rsa")
+
+                # Appliquer les permissions correctes sur la clé privée
+                utils.apply_perms_sshkey(filekey, private=True)
                 sshexec = os.path.join("c:\\", "progra~1", "OpenSSH", "ssh.exe")
                 reversesshps1 = os.path.join(medullaPath(), "bin", "reversessh.ps1")
+
+                binpath = os.path.join("C:\\Progra~1", "Medulla", "bin")
+                level = logger.getEffectiveLevel()
+                debugmode=""
+                if level <= logging.DEBUG:
+                    debugmode="-v"
+
                 linecmd = [
+                    # Nettoyage de la clé connue
                     """ssh-keygen -R "[%s]:%s" """ % (data["relayserverip"], reversessh_server_port),
-                    """$process = Start-Process -FilePath "%s" -ArgumentList "-t -t -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -i `"%s`" -l reversessh %s -p %s" -PassThru""" % (sshexec, reversetype, data["port"], remoteport, filekey, data["relayserverip"], reversessh_server_port),
+
+                    # Définition des fichiers stdout / stderr
+                    """$stdout = Join-Path "%s" "reverse_ssh_stdout.log" """ % binpath,
+                    """$stderr = Join-Path "%s" "reverse_ssh_stderr.log" """ % binpath,
+
+                    # Lancement du SSH avec redirections
+                    """$process = Start-Process -FilePath "%s" -ArgumentList "-N -T -%s %s:127.0.0.1:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -i `"%s`" -l reversessh %s -p %s %s" -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru""" % (
+                        sshexec,
+                        reversetype,
+                        data["port"],
+                        remoteport,
+                        filekey,
+                        data["relayserverip"],
+                        reversessh_server_port,
+                        debugmode
+                    ),
+
+                    # PID
                     """$sshPID = $process.Id""",
                     """Write-Output "SSH process PID: $sshPID" """,
-                    """$sshPID | Out-File -FilePath "C:\\Progra~1\\Medulla\\bin\\$sshPID.pid" -Encoding ASCII""",
+
+                    # Fichier PID
+                    """$sshPID | Out-File -FilePath "%s\\$sshPID.pid" -Encoding ASCII""" % binpath,
                 ]
-                cmd = "\r\n".join(linecmd)
+
+                cmd1 = "\r\n".join(linecmd)
 
                 if not os.path.exists(os.path.join(medullaPath(), "bin")):
                     os.makedirs(os.path.join(medullaPath(), "bin"))
-                utils.file_put_contents(reversesshps1, cmd)
+                utils.file_put_contents(reversesshps1, cmd1)
                 if "persistence" not in data:
                     data["persistence"] = "no"
                 # clear tout les reverse ssh
@@ -340,6 +380,70 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         touser="",
                     )
                 result = utils.powerschellscriptps1(reversesshps1)
+                reverse_ssh_stdout = os.path.join(binpath, "reverse_ssh_stdout.log")
+                reverse_ssh_stderr = os.path.join(binpath, "reverse_ssh_stderr.log")
+                reversessh_debug_content_out = None
+                reversessh_debug_content_err = None
+
+                # DEBUG ou plus verbeux
+                if level <= logging.DEBUG:
+
+                    objectxmpp.xmpplog(
+                            "script reverse : %s"%cmd1,
+                            type="deploy",
+                            sessionname=sessionid,
+                            priority=-1,
+                            action="xmpplog",
+                            who=objectxmpp.boundjid.bare,
+                            how="",
+                            why="",
+                            module="Notify | Reversessh",
+                            date=None,
+                            fromuser="",
+                            touser="",
+                        )
+
+                    if os.path.isfile(reverse_ssh_stdout) and os.path.getsize(reverse_ssh_stdout) > 0:
+
+                        with open(reverse_ssh_stdout, "r", encoding="utf-8", errors="replace") as f:
+                            reversessh_debug_content_out = f.read()
+                        objectxmpp.xmpplog(
+                            "reversessh info : %s"%reversessh_debug_content_out,
+                            type="deploy",
+                            sessionname=sessionid,
+                            priority=-1,
+                            action="xmpplog",
+                            who=objectxmpp.boundjid.bare,
+                            how="",
+                            why="",
+                            module="Notify | Reversessh",
+                            date=None,
+                            fromuser="",
+                            touser="",
+                        )
+                    else:
+                        logger.debug("############### reverse_ssh_stdout vide #####################")
+                    if os.path.isfile(reverse_ssh_stderr) and os.path.getsize(reverse_ssh_stderr) > 0:
+                        logger.debug("############### STDERR #####################")
+                        with open(reverse_ssh_stderr, "r", encoding="utf-8", errors="replace") as f:
+                            reversessh_debug_content_err = f.read()
+                        objectxmpp.xmpplog(
+                            "reversessh error : %s"%reversessh_debug_content_err,
+                            type="deploy",
+                            sessionname=sessionid,
+                            priority=-1,
+                            action="xmpplog",
+                            who=objectxmpp.boundjid.bare,
+                            how="",
+                            why="",
+                            module="Notify | Reversessh",
+                            date=None,
+                            fromuser="",
+                            touser="",
+                        )
+                    else:
+                        logger.debug("############### reverse_ssh_stdout vide #####################")
+
                 time.sleep(2)
                 for f in [
                     os.path.join(medullaPath(), "bin", x)
