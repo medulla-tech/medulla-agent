@@ -147,15 +147,17 @@ def set_logging_level(func):
 
 
 class Env(object):
-    agenttype = None  # Non specified by default
+    agenttype = None  # global runtime context
 
     @staticmethod
     def user_dir():
         """Get the user folder for linux OS."""
         if Env.agenttype is None:
             raise NotImplementedError(
-                "The class attribute aggenttype need to be initialized\neg:  Env.agenttype = 'machine'"
+                "Env.agenttype must be initialized "
+                "(eg: Env.agenttype = 'machine' or 'relayserver')"
             )
+
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
 
@@ -651,7 +653,7 @@ def createfingerprintnetwork():
     md5network = ""
     command_mapping = {
         "win32": "ipconfig",
-        "linux": "LANG=C ip a | egrep '.*(inet|HWaddr).*' | grep -v inet6",
+        "linux": "LANG=C ip addr | egrep '.*(inet|HWaddr).*' | grep -v inet6",
         "darwin": "ipconfig",
     }
 
@@ -1502,16 +1504,6 @@ def powerschellscriptps1(namescript):
     return simplecommandstr(
         encode_strconsole(f"powershell -ExecutionPolicy Bypass -File {namescript}")
     )
-
-
-def powerschellscript1ps1(namescript):
-    namescript = windowspath(namescript)
-    obj = {"code": -1, "result": ""}
-    try:
-        obj = simplecommand(f"powershell -ExecutionPolicy Bypass -File {namescript}")
-    except Exception:
-        logger.error("\n%s" % (traceback.format_exc()))
-    return obj
 
 
 class shellcommandtimeout:
@@ -5205,6 +5197,69 @@ def powerschellscript1ps1(namescript):
     return obj
 
 
+
+    def get_system_locale_linux():
+        """
+        Renvoie la locale actuelle du système, quelque soit la distribution Linux.
+
+        Returns:
+            str: Code de la locale actuelle (ex: 'fr_FR.UTF-8').
+                Retourne 'C' ou 'POSIX' si aucune locale n'est définie.
+        """
+        if sys.platform.startswith("linux"):
+            # 1. Vérifier la variable d'environnement LANG
+            lang = os.environ.get('LANG')
+            if lang:
+                return lang
+
+            # 2. Vérifier la variable d'environnement LC_ALL
+            lc_all = os.environ.get('LC_ALL')
+            if lc_all:
+                return lc_all
+
+            # 3. Vérifier les fichiers de configuration des locales
+            locale_files = [
+                '/etc/default/locale',      # Debian/Ubuntu
+                '/etc/locale.conf',          # Arch Linux, CentOS, Fedora, openSUSE
+                '/etc/sysconfig/language',   # openSUSE (ancienne méthode)
+                '/etc/environment',          # Certaines distributions
+            ]
+
+            for file_path in locale_files:
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, 'r') as file:
+                            for line in file:
+                                line = line.strip()
+                                if line.startswith(('LANG=', 'LC_ALL=')):
+                                    locale = line.split('=', 1)[1].strip().strip('"')
+                                    return locale
+                    except Exception:
+                        continue
+
+            # 4. Utiliser la commande `locale` pour obtenir la locale
+            try:
+                result = subprocess.run(['locale', 'LANG'], capture_output=True, text=True, check=True)
+                lang = result.stdout.strip().split('=')[1].strip('"')
+                if lang:
+                    return lang
+            except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
+                pass
+
+            # 5. Utiliser `localectl` si disponible
+            try:
+                result = subprocess.run(['localectl', 'status'], capture_output=True, text=True, check=True)
+                for line in result.stdout.splitlines():
+                    if 'System Locale:' in line:
+                        lang = line.split(':')[1].strip()
+                        if lang != 'n/a':
+                            return lang
+            except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
+                pass
+
+            # Si aucune locale n'est trouvée, retourner 'C' (locale par défaut)
+            return 'C'
+
 class offline_search_kb:
     def __init__(self):
         self.info_package = {
@@ -5462,6 +5517,7 @@ class offline_search_kb:
                     if len(lcmd) == 3:
                         return lcmd[2]
         return ""
+
 
     def search_system_info_reg(self):
         result_cmd = {}

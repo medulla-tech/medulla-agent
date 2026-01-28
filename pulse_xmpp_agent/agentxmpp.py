@@ -729,7 +729,7 @@ class MUCBot(ClientXMPP):
                 self.remove_sessionid_in_ban_deploy_sessionid_list,
                 repeat=True,
             )
-        self.Deploybasesched = ManageDbScheduler()
+        self.Deploybasesched = ManageDbScheduler(agenttype=self.config.agenttype)
         self.eventkiosk = manage_kiosk_message(self.queue_recv_tcp_to_xmpp, self)
         self.infolauncherkiook = manageskioskdb()
         self.kiosk_presence = "False"
