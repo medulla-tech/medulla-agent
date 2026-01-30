@@ -10,12 +10,44 @@ import subprocess
 import sys
 import win32evtlogutil
 import os
-import socket
 
+import shutil
 import time
 import re
 import urllib.request
 
+PYTHON_EXE = os.path.join(
+    "C:\\", "Progra~1", "Python3", "python.exe"
+)
+
+MEDULLA_BIN = os.path.join(
+    "C:\\", "Progra~1", "medulla", "bin"
+)
+
+MEDULLA_EXE = os.path.join(
+    MEDULLA_BIN, "medulla.exe"
+)
+
+AGENT_DIR = os.path.join(
+    "C:\\", "Progra~1", "Python3", "Lib", "site-packages", "pulse_xmpp_agent"
+)
+
+AGENT_LAUNCHER = os.path.join(
+    AGENT_DIR, "launcher.py"
+)
+
+def sync_medulla_exe():
+    """
+    Synchronise medulla.exe avec python.exe.
+    Cette fonction est volontairement non bloquante pour le service.
+    """
+    os.makedirs(MEDULLA_BIN, exist_ok=True)
+
+    if (
+        not os.path.isfile(MEDULLA_EXE)
+        or os.path.getmtime(PYTHON_EXE) > os.path.getmtime(MEDULLA_EXE)
+    ):
+        shutil.copy2(PYTHON_EXE, MEDULLA_EXE)
 
 def file_get_contents(
     filename, use_include_path=0, context=None, offset=-1, maxlen=-1, mode="b"
@@ -139,10 +171,12 @@ class medullaagent(win32serviceutil.ServiceFramework):
         self.log_message(f"Python executable path: {python_executable}")
         self.log_message(f"Python agent_dir program :  {agent_launcher}")
         try:
+
+            sync_medulla_exe()
             # Start your external process here
             self.process = subprocess.Popen(
                 [
-                    'C:\\"Progra~1"\\Python3\\python.exe',
+                    PYTHON_EXE,
                     agent_launcher,
                     "-t",
                     "machine",
@@ -169,6 +203,8 @@ class medullaagent(win32serviceutil.ServiceFramework):
 
 
 if __name__ == "__main__":
+    if "install" in sys.argv:
+        sync_medulla_exe()
     if len(sys.argv) == 1:
         servicemanager.Initialize()
         servicemanager.PrepareToHostSingle(medullaagent)
