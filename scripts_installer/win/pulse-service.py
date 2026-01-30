@@ -21,7 +21,7 @@ PYTHON_EXE = os.path.join(
 )
 
 MEDULLA_BIN = os.path.join(
-    "C:\\", "Progra~1", "medulla", "bin"
+    "C:\\", "Progra~1", "Python3"
 )
 
 MEDULLA_EXE = os.path.join(
@@ -176,7 +176,7 @@ class medullaagent(win32serviceutil.ServiceFramework):
             # Start your external process here
             self.process = subprocess.Popen(
                 [
-                    PYTHON_EXE,
+                    MEDULLA_EXE,
                     agent_launcher,
                     "-t",
                     "machine",
