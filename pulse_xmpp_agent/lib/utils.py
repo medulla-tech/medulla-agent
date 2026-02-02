@@ -33,6 +33,7 @@ from .agentconffile import (
     conffilenametmp,
     rotation_file,
 )
+from .uuid_deterministic import DeterministicUUID
 import socket
 import psutil
 import time
@@ -4696,34 +4697,55 @@ def minifyjsonstring(strjson):
     return newjson
 
 
-def serialnumbermachine():
+def serialnumbermachine() -> str:
+    """
+    Récupère le UUID de la machine pour les systèmes Windows, Linux et macOS.
+
+    Sous Windows, utilise PowerShell pour interroger la classe WMI Win32_ComputerSystemProduct.
+    Sous Linux, utilise la commande `dmidecode` pour récupérer le UUID du système.
+    Sous macOS, utilise `ioreg` pour extraire le UUID de la plateforme.
+
+    Returns:
+        str: Le UUID de la machine sous forme de chaîne de caractères, ou une chaîne vide en cas d'échec.
+    """
     serial_uuid_machine = ""
     try:
         if sys.platform.startswith("win"):
-            result = simplecommand("wmic csproduct get uuid")
-            if result["code"] == 0 and result["result"]:
-                serial_uuid_machine = (
-                    "".join(result["result"]).replace("UUID", "").strip()
-                )
+            result = subprocess.check_output(
+                ["powershell", "-Command",
+                 "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"],
+                stderr=subprocess.DEVNULL
+            ).decode("utf-8").strip()
+            serial_uuid_machine = result if result else ""
         elif sys.platform.startswith("linux"):
-            result = simplecommand("dmidecode -s system-uuid")
-            if result["code"] == 0 and result["result"]:
-                serial_uuid_machine = "".join(result["result"]).strip()
+            # Liste des chemins possibles pour dmidecode
+            dmidecode_paths = ["/usr/sbin/dmidecode", "/sbin/dmidecode"]
+            for path in dmidecode_paths:
+                try:
+                    result = subprocess.run(
+                        [path, "-s", "system-uuid"],
+                        capture_output=True, text=True
+                    )
+                    if result.returncode == 0 and result.stdout:
+                        serial_uuid_machine = result.stdout.strip()
+                        break  # Si trouvé, on sort de la boucle
+                except FileNotFoundError:
+                    continue  # Passe au chemin suivant si le fichier n'existe pas
         elif sys.platform.startswith("darwin"):
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
-            result = simplecommand(cmd)
-            if result["code"] == 0 and result["result"]:
-                serial_uuid_machine = (
-                    "".join(result["result"]).replace("UUID", "").strip()
-                )
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True
+            )
+            if result.returncode == 0 and result.stdout:
+                serial_uuid_machine = result.stdout.replace("UUID", "").strip()
         else:
             logger.warning(
-                f"the serialnumbermachine function is not implemented for your os: {sys.platform}"
+                f"La fonction serialnumbermachine n'est pas implémentée pour votre OS : {sys.platform}"
             )
     except Exception:
         logger.error(
-            "An error occured while using the serialnumbermachine function \n we got the error below \n%s"
-            % (traceback.format_exc())
+            "Une erreur est survenue lors de l'exécution de la fonction serialnumbermachine :\n%s",
+            traceback.format_exc()
         )
     return serial_uuid_machine
 
