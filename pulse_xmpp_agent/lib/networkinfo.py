@@ -137,73 +137,63 @@ class networkagentinfo:
             self.messagejson["dnshostname"] = platform.node()
             return self.messagejson
 
-        elif sys.platform.startswith("win"):
+
             """revoit objet reseau windows"""
-            # interface active only
-            # pythoncom.CoInitialize()
-            # try:
-            # wmi_obj = wmi.WMI()
-            # wmi_sql = "select * from Win32_NetworkAdapterConfiguration where IPEnabled=TRUE"
-            # wmi_out = wmi_obj.query(wmi_sql)
-            # finally:
-            # pythoncom.CoUninitialize()
-            # for dev in wmi_out:
-            # objnet = {}
-            # objnet['macaddress'] = dev.MACAddress
-            # objnet['ipaddress'] = dev.IPAddress[0]
-            # try:
-            # objnet['gateway'] = dev.DefaultIPGateway[0]
-            # except BaseException:
-            # objnet['gateway'] = ""
-            # objnet['mask'] = dev.IPSubnet[0]
-            # objnet['dhcp'] = dev.DHCPEnabled
-            # objnet['dhcpserver'] = dev.DHCPServer
-            # self.messagejson['listipinfo'].append(objnet)
-            # try:
-            # self.messagejson['listdns'].append(
-            # dev.DNSServerSearchOrder[0])
-            # except BaseException:
-            # pass
-            # self.messagejson['dnshostname'] = dev.DNSHostName
-            # self.messagejson['msg'] = platform.system()
-            # all interface
-            wmi_obj = wmi.WMI()
-            wmi_sql = "select * from Win32_NetworkAdapterConfiguration"
-            wmi_out = wmi_obj.query(wmi_sql)
-            for dev in wmi_out:
-                if dev.MACAddress is None:
-                    continue
-                objnet = {"macaddress": dev.MACAddress, "Description": dev.Description}
-                try:
-                    objnet["ipaddress"] = dev.IPAddress[0]
-                except BaseException:
-                    objnet["ipaddress"] = None
-                try:
-                    objnet["gateway"] = dev.DefaultIPGateway[0]
-                except BaseException:
-                    objnet["gateway"] = ""
-                try:
-                    objnet["mask"] = dev.IPSubnet[0]
-                except BaseException:
-                    objnet["mask"] = None
-                try:
-                    objnet["dhcp"] = dev.DHCPEnabled
-                except BaseException:
-                    objnet["dhcp"] = None
-                try:
-                    objnet["dhcpserver"] = dev.DHCPServer
-                except BaseException:
-                    objnet["dhcpserver"] = None
-                self.messagejson["listipinfo"].append(objnet)
-                try:
-                    self.messagejson["listdns"].append(dev.DNSServerSearchOrder[0])
-                except BaseException:
-                    pass
-                try:
-                    self.messagejson["dnshostname"] = dev.DNSHostName
-                except BaseException:
-                    pass
-            return self.messagejson
+        elif sys.platform.startswith("win"):
+            try:
+                cmd = [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    "Get-CimInstance Win32_NetworkAdapterConfiguration | "
+                    "Where-Object {$_.MACAddress -ne $null} | "
+                    "Select-Object MACAddress, Description, IPAddress, "
+                    "DefaultIPGateway, IPSubnet, DHCPEnabled, DHCPServer, "
+                    "DNSServerSearchOrder, DNSHostName | "
+                    "ConvertTo-Json -Depth 3"
+                ]
+
+                result = subprocess.run(cmd, capture_output=True, text=True)
+
+                if result.returncode != 0:
+                    self.messagejson["msg"] = result.stderr
+                    return self.messagejson
+
+                if not result.stdout.strip():
+                    return self.messagejson
+
+                data = json.loads(result.stdout)
+
+                # Si une seule interface → PowerShell renvoie un dict au lieu d’une liste
+                if isinstance(data, dict):
+                    data = [data]
+
+                for dev in data:
+                    objnet = {
+                        "macaddress": dev.get("MACAddress"),
+                        "Description": dev.get("Description"),
+                        "ipaddress": (dev.get("IPAddress") or [None])[0],
+                        "gateway": (dev.get("DefaultIPGateway") or [""])[0],
+                        "mask": (dev.get("IPSubnet") or [None])[0],
+                        "dhcp": dev.get("DHCPEnabled"),
+                        "dhcpserver": dev.get("DHCPServer"),
+                    }
+
+                    self.messagejson["listipinfo"].append(objnet)
+
+                    dns = dev.get("DNSServerSearchOrder")
+                    if dns:
+                        self.messagejson["listdns"].append(dns[0])
+
+                    if dev.get("DNSHostName"):
+                        self.messagejson["dnshostname"] = dev["DNSHostName"]
+
+                return self.messagejson
+
+            except Exception as e:
+                self.messagejson["msg"] = str(e)
+                return self.messagejson
+
         elif sys.platform.startswith("darwin"):
             return self.MacOsNetworkInfo()
         else:
