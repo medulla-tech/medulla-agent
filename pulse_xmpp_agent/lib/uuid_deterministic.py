@@ -2,7 +2,7 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
-# file pulse_xmpp_agent/lib/update_linux.py
+# file pulse_xmpp_agent/lib/uuid_deterministic.py
 import socket
 import uuid
 import subprocess
