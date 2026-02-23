@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 import socket
-
+from typing import Optional, Dict, List, Union, Any
 import glob
 import sys
 import os
@@ -56,7 +56,6 @@ from lib.managedbkiosk import manageskioskdb
 from lib.iq_custom import iq_custom_xep, iq_value, Myiq
 from lib.utils import (
     DEBUGPULSE,
-    getIpXmppInterface,
     NetworkInfoxmpp,
     refreshfingerprint,
     getRandomName,
@@ -2697,13 +2696,41 @@ class MUCBot(ClientXMPP):
             touser="",
         )
 
+    def _get_local_ip_from_transport(self):
+        """
+        Récupère l'adresse IP locale à partir de la socket associée au transport asyncio.
+
+        Cette méthode tente d'extraire l'adresse IP locale depuis la socket sous-jacente
+        du transport asyncio, si celui-ci est disponible et valide.
+
+        Returns:
+            str | None: L'adresse IP locale si elle est trouvée, sinon None.
+        """
+        self.sockxmpp = None
+        try:
+            if hasattr(self, "transport") and self.transport:
+                self.sockxmpp = self.transport.get_extra_info("socket")
+                if self.sockxmpp:
+                    local_ip = self.sockxmpp.getsockname()[0]
+                    logger.debug(f"Adresse IP locale récupérée depuis le transport : {local_ip}")
+                    return local_ip
+        except Exception as e:
+            logger.error(f"Erreur dans _get_local_ip_from_transport : {e}")
+            pass
+        return None
+
     async def start(self, event):
+        self.local_ip = self._get_local_ip_from_transport()
+        if hasattr(self, "sockxmpp") and self.sockxmpp is not None:
+            logger.info("local ip xmpp %s" % self.local_ip)
+        else:
+            logger.error("local ip xmpp non determine")
         self.send_presence()
         await self.get_roster()
         # send iq to subscribe
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         # machine connected
-        self.config.ipxmpp = getIpXmppInterface(self.config)
+        self.config.ipxmpp = self.local_ip
         # nettoy les fichiers de mise a jour windows
         clean_update_directories()
         self.__clean_message_box()
@@ -3748,9 +3775,8 @@ class MUCBot(ClientXMPP):
         er.messagejson["privatekeyname"] = self.RSA.get_name_key()[1]
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
-
-        self.config.ipxmpp = getIpXmppInterface(self.config)
-        NetworkInfos = NetworkInfoxmpp(self.config.Port)
+        self.config.ipxmpp = self.local_ip
+        NetworkInfos = NetworkInfoxmpp(port=self.config.Port, sock=self.sockxmpp  )
         portconnection = self.config.Port
         if NetworkInfos.ip_address and NetworkInfos.details:
             if not self.config.ipxmpp:

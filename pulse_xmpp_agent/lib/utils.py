@@ -5,6 +5,28 @@
 """
     This file contains shared functions use in pulse client/server agents.
 """
+from typing import (
+    Any,               # Type générique pour n'importe quel type
+    Callable,          # Type pour les fonctions et méthodes appelables
+    Dict,              # Type pour les dictionnaires (ex: Dict[str, int])
+    FrozenSet,         # Type pour les ensembles immuables (frozen sets)
+    Generic,           # Classe de base pour créer des classes génériques
+    Iterable,          # Type pour les objets itérables (ex: list, tuple)
+    Iterator,          # Type pour les itérateurs
+    List,              # Type pour les listes (ex: List[str])
+    Optional,          # Type pour les valeurs optionnelles (ex: Optional[str] = str | None)
+    Set,               # Type pour les ensembles (sets)
+    Tuple,             # Type pour les tuples (ex: Tuple[int, str])
+    Type,              # Type pour les classes et types (ex: Type[MyClass])
+    TypeVar,           # Variable de type pour les génériques
+    Union,             # Type pour les unions de types (ex: Union[int, str])
+    cast,              # Fonction pour forcer le type d'une valeur
+    no_type_check,     # Décorateur pour désactiver la vérification de type sur une fonction
+    overload,          # Décorateur pour surcharger les signatures de fonction
+)
+
+
+
 import shutil
 import sys
 import urllib.request as urllib2
@@ -41,6 +63,11 @@ from datetime import datetime, timedelta
 import importlib.util
 import requests
 import asyncio
+
+import platform
+import ipaddress
+from xml.dom.minidom import parseString
+
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -57,13 +84,11 @@ except:
 import tarfile
 from functools import wraps
 import string
-import platform
 import urllib
 import yaml
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
 import gzip
-from xml.dom.minidom import parseString
 
 logger = logging.getLogger()
 
@@ -2051,157 +2076,24 @@ def pulgindeploy1(func):
 
     return wrapper
 
-
-def getIpXmppInterface(config):
+def getIpXmppInterface(xmpp_client):
     """
-    This function is used to retrieve the local IP from the client which is talking
-    with the ejabberd server.
-    For this we need to use netstat.
-    It returns:
-        TCP    10.16.53.17:49711      10.16.24.239:5222      ESTABLISHED
-    and we split to obtain the first IP of the line.
+    Récupère l'IP locale utilisée par la connexion XMPP active via la socket transport.
 
     Args:
-        config (object): The configuration object containing server and port information.
+        xmpp_client: instance de ClientXMPP ou équivalent avec transport asyncio.
 
     Returns:
-        str: The local IP from the client which is talking with the ejabberd server.
+        str ou None: IP locale réellement utilisée.
     """
-    resultip = ""
-
-    # Validate xmpp_server_ipaddress_or_dns
-    def is_valid_url_or_ipv4(value):
-        try:
-            # Check if it's a valid IPv4
-            if is_valid_ipv4(value):
-                return True
-            # Check if it's a valid URL
-            parsed = urlparse(value)
-            return bool(parsed.scheme and parsed.netloc)
-        except Exception:
-            return False
-
-    if hasattr(config, "Server") and is_valid_url_or_ipv4(config.Server):
-        xmpp_server_ipaddress_or_dns = config.Server
-    elif hasattr(config, "confserver") and is_valid_url_or_ipv4(config.confserver):
-        xmpp_server_ipaddress_or_dns = config.confserver
-    else:
-        logger.error(
-            "Invalid server configuration. Neither 'Server' nor 'confserver' is valid."
-        )
-        return None
-
-    # Control on the Port variable
-    if (
-        hasattr(config, "Port")
-        and isinstance(config.Port, int)
-        and 0 <= config.Port <= 65535
-    ):
-        Port = config.Port
-    elif (
-        hasattr(config, "confPort")
-        and isinstance(config.confPort, int)
-        and 0 <= config.confPort <= 65535
-    ):
-        Port = config.confPort
-    else:
-        Port = 5222
-
-    # Get the list of network interfaces
-    interfaces = netifaces.interfaces()
-
-    # Filter interfaces to keep only those with valid IPv4 addresses, excluding loopback addresses
-    valid_interfaces = []
-    for interface in interfaces:
-        if interface == "":
-            continue
-        addrs = netifaces.ifaddresses(interface)
-        if netifaces.AF_INET in addrs:
-            for addr_info in addrs[netifaces.AF_INET]:
-                ip = addr_info["addr"]
-                if ip != "127.0.0.1" and is_valid_ipv4(ip):
-                    valid_interfaces.append(interface)
-                    logger.debug(f"Valid interface found: {interface} with IP: {ip}")
-                    break
-
-    # If there is only one valid interface, use its IPv4 address
-    if len(valid_interfaces) == 1:
-        addrs = netifaces.ifaddresses(valid_interfaces[0])
-        if netifaces.AF_INET in addrs:
-            for addr_info in addrs[netifaces.AF_INET]:
-                ip = addr_info["addr"]
-                if ip != "127.0.0.1" and is_valid_ipv4(ip):
-                    resultip = ip
-                    logger.debug(f"Using IP from the only valid interface: {ip}")
-                    break
-
-    if not resultip:
-        xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
-        logger.debug(
-            "Searching with which IP the agent is connected to the Ejabberd server"
-        )
-        if sys.platform.startswith("linux"):
-            obj = simplecommand(
-                f"netstat -an | grep {Port} | grep ESTABLISHED | grep -v tcp6"
-            )
-            if obj["code"] != 0:
-                logging.getLogger().error(f'error command netstat : {obj["result"]}')
-                logging.getLogger().error("error install package net-tools")
-            if len(obj["result"]) != 0:
-                for i in range(len(obj["result"])):
-                    obj["result"][i] = obj["result"][i].rstrip("\n")
-                a = "\n".join(obj["result"])
-                if b := [x for x in a.split(" ") if x != ""]:
-                    resultip = b[3].split(":")[0]
-        elif sys.platform.startswith("win"):
-            obj = simplecommand(
-                f'netstat -an | findstr {Port} | findstr "ESTABLISHED SYN_SENT SYN_RECV"'
-            )
-            if len(obj["result"]) != 0:
-                for i in range(len(obj["result"])):
-                    obj["result"][i] = obj["result"][i].rstrip("\n")
-                a = "\n".join(obj["result"])
-                if b := [x for x in a.split(" ") if x != ""]:
-                    resultip = b[1].split(":")[0]
-        elif sys.platform.startswith("darwin"):
-            obj = simplecommand(f"netstat -an | grep {Port} | grep ESTABLISHED")
-            if len(obj["result"]) != 0:
-                for i in range(len(obj["result"])):
-                    obj["result"][i] = obj["result"][i].rstrip("\n")
-                a = "\n".join(obj["result"])
-                if b := [x for x in a.split(" ") if x != ""]:
-                    resultip = b[3][: b[3].rfind(".")]
-        else:
-            obj = simplecommand(f"netstat -a | grep {Port} | grep ESTABLISHED")
-            if len(obj["result"]) != 0:
-                for i in range(len(obj["result"])):
-                    obj["result"][i] = obj["result"][i].rstrip("\n")
-                a = "\n".join(obj["result"])
-                if b := [x for x in a.split(" ") if x != ""]:
-                    resultip = b[1].split(":")[0]
-
-    if not resultip:
-        if (
-            sys.platform.startswith("linux")
-            and config.agenttype == "relayserver"
-            and hasattr(config, "public_ip")
-        ):
-            resultip = config.public_ip
-            logger.debug(f"Using public IP from configuration: {resultip}")
-        else:
-            # Determine the most probable network interface
-            for interface in interfaces:
-                if interface == "":
-                    continue
-                addrs = netifaces.ifaddresses(interface)
-                if netifaces.AF_INET in addrs:
-                    resultip = addrs[netifaces.AF_INET][0]["addr"]
-                    logger.debug(
-                        f"Using IP from the most probable interface: {resultip}"
-                    )
-                    break
-    return resultip
-
+    try:
+        sock = xmpp_client.transport.get_extra_info("socket")
+        if sock:
+            local_ip = sock.getsockname()[0]
+            return local_ip
+    except Exception as e:
+        logging.getLogger().error(f"Impossible de récupérer IP depuis la socket : {e}")
+    return None
 
 # 3 functions used for subnet network
 def ipV4toDecimal(ipv4):
@@ -6730,100 +6622,313 @@ class convert:
         return formatted_xml
 
 
-class NetworkInfoxmpp:
-    def __init__(self, port: int):
-        self.port = int(port)
-        self.ip_address = self._get_established_ipv4_connection_on_port()
-        if self.ip_address:
-            self.details = self._get_interface_details()
-        else:
-            self.details = None
 
-    def _get_established_ipv4_connection_on_port(self) -> str:
-        connections = psutil.net_connections(kind="inet")
-        for conn in connections:
+class NetworkInfoxmpp:
+    """
+    Classe pour récupérer les informations réseau d'une machine, notamment l'adresse IP, les détails de l'interface,
+    la passerelle, et l'adresse MAC.
+
+    Cette classe peut être initialisée avec un port ou une socket pour récupérer les informations réseau associées.
+
+    Attributes:
+        port (int | None): Le port utilisé pour la connexion réseau.
+        socket (socket.socket | None): La socket utilisée pour la connexion réseau.
+        ip_address (str | None): L'adresse IP locale obtenue.
+        details (dict | None): Les détails de l'interface réseau (adresse IP, masque, passerelle, etc.).
+    """
+    def __init__(self, port: int | None = None, sock: socket.socket | None = None):
+        """
+        Initialise une instance de NetworkInfoxmpp avec un port ou une socket.
+
+        Args:
+            port (int | None): Le port réseau à utiliser pour récupérer les informations.
+            sock (socket.socket | None): La socket réseau à utiliser pour récupérer les informations.
+
+        Raises:
+            ValueError: Si ni le port ni la socket ne sont fournis.
+        """
+        logger.debug(f"Initialisation de NetworkInfoxmpp avec port={port}, sock={sock}")
+        if not port and not sock:
+            logger.error("Ni port ni socket fournis !")
+            raise ValueError("You must provide either a port or a socket")
+
+        self.port = int(port) if port else None
+        self.socket = sock
+        logger.debug(f"Port défini à {self.port}, socket définie à {self.socket}")
+
+        # Priorité à la socket
+        if self.socket:
+            logger.debug("Utilisation de la socket pour obtenir l'adresse IP.")
+            self.ip_address = self._get_ipv4_from_socket()
+            # Log des infos de la socket
+            self.log_socket_info(self.socket)
+        else:
+            logger.debug(f"Utilisation du port {self.port} pour obtenir l'adresse IP.")
+            self.ip_address = self._get_established_ipv4_connection_on_port()
+
+        logger.debug(f"Adresse IP obtenue : {self.ip_address}")
+        self.details = self._get_interface_details() if self.ip_address else None
+        logger.debug(f"Détails de l'interface : {self.details}")
+
+    # ---------------------------------------------------
+    # Récupération IP
+    # ---------------------------------------------------
+
+    def _get_ipv4_from_socket(self) -> str | None:
+        """
+        Récupère l'adresse IP locale à partir d'une socket.
+
+        Returns:
+            str | None: L'adresse IP locale si elle est trouvée, sinon None.
+        """
+        try:
+            local_addr = self.socket.getsockname()
+            logger.debug(f"Adresse locale de la socket : {local_addr}")
+            if isinstance(local_addr, tuple):
+                return local_addr[0]
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de l'IP depuis la socket : {e}")
+            return None
+        return None
+
+    def _get_established_ipv4_connection_on_port(self) -> str | None:
+        """
+        Récupère l'adresse IP locale à partir d'une connexion établie sur un port spécifique.
+
+        Cette méthode parcourt les connexions réseau établies pour trouver une connexion
+        correspondant au port spécifié.
+
+        Returns:
+            str | None: L'adresse IP locale si une connexion établie est trouvée, sinon None.
+        """
+        for conn in psutil.net_connections(kind="inet"):
+            logger.debug(f"Connexion inspectée : {conn}")
             if (
                 conn.family == socket.AF_INET
                 and conn.status == psutil.CONN_ESTABLISHED
                 and conn.raddr
                 and conn.raddr.port == self.port
             ):
+                logger.debug(f"Connexion établie trouvée : {conn.laddr.ip}")
                 return conn.laddr.ip
+        logger.debug("Aucune connexion établie trouvée sur le port spécifié.")
         return None
 
+    # ---------------------------------------------------
+    # Détails interface
+    # ---------------------------------------------------
+
     def _get_interface_details(self):
+        """
+        Récupère les détails de l'interface réseau associée à l'adresse IP locale.
+
+        Les détails incluent l'adresse IP, le masque de sous-réseau, l'adresse de diffusion,
+        la passerelle, et l'adresse MAC.
+
+        Returns:
+            dict | None: Un dictionnaire contenant les détails de l'interface réseau si elle est trouvée,
+                        sinon None.
+        """
         details = {}
         interface_name = None
 
-        # Find the interface for the given IPv4 address
         for interface, addrs in psutil.net_if_addrs().items():
             for addr in addrs:
                 if addr.family == socket.AF_INET and addr.address == self.ip_address:
                     interface_name = interface
-                    details["ip_address"] = self.ip_address
+                    details["ip_address"] = addr.address
                     details["netmask"] = addr.netmask
                     details["broadcast"] = addr.broadcast
+                    logger.debug(f"Interface trouvée : {interface_name}, détails : {details}")
                     break
             if interface_name:
                 break
 
         if not interface_name:
+            logger.error("Aucune interface réseau correspondante trouvée.")
             return None
 
-        # Calculate network address
-        if "ip_address" in details and "netmask" in details:
-            ip = int.from_bytes(socket.inet_aton(details["ip_address"]), "big")
-            netmask = int.from_bytes(socket.inet_aton(details["netmask"]), "big")
-            network = socket.inet_ntoa((ip & netmask).to_bytes(4, "big"))
-            details["network"] = network
+        try:
+            network = ipaddress.IPv4Network(
+                f"{details['ip_address']}/{details['netmask']}",
+                strict=False
+            )
+            details["network"] = str(network.network_address)
+        except Exception as e:
+            logger.error(f"Erreur lors de la création du réseau IPv4 : {e}")
 
-        # Get the gateway
-        gateway = self._get_gateway()
-        details["gateway"] = gateway
+        details["gateway"] = self._get_gateway()
+        details["dhcp_server"] = None
+        details["dhcp_client"] = None
 
-        # Get the DHCP server and client addresses
-        details["dhcp_server"] = None  # Update this for your environment
-        details["dhcp_client"] = None  # Update this for your environment
-        # Get the MAC address
         details["macnotshortened"] = self._get_mac_address(interface_name)
-        details["macaddress"] = self.reduction_mac(details["macnotshortened"])
+        details["macaddress"] = (
+            self.reduction_mac(details["macnotshortened"])
+            if details["macnotshortened"]
+            else None
+        )
+
         return details
 
+    # ---------------------------------------------------
+    # Gateway
+    # ---------------------------------------------------
     def _get_gateway(self):
-        system = platform.system()
-        if system == "Windows":
-            gateway = (
-                os.popen('ipconfig | findstr /C:"Default Gateway"')
-                .read()
-                .strip()
-                .split(":")[-1]
-                .strip()
-            )
-        elif system == "Linux":
-            gateway = (
-                os.popen("ip route | grep default | awk '{print $3}'").read().strip()
-            )
-        elif system == "Darwin":  # macOS
-            gateway = (
-                os.popen("netstat -nr | grep default | awk '{print $2}'").read().strip()
-            )
-        else:
-            gateway = None
-        return gateway
+        """
+        Récupère l'adresse IP de la passerelle par défaut du système.
+
+        Cette méthode utilise des approches spécifiques à chaque système d'exploitation :
+        - Sous Linux, elle lit le fichier `/proc/net/route`.
+        - Sous Windows, elle utilise la commande `netsh interface ipv4 show route`.
+        - Sous macOS, elle utilise la commande `netstat -rn`.
+
+        Returns:
+            str | None: L'adresse IP de la passerelle si elle est trouvée, sinon None.
+        """
+        try:
+            if platform.system() == "Linux":
+                with open("/proc/net/route") as f:
+                    for line in f.readlines()[1:]:
+                        fields = line.strip().split()
+                        if fields[1] == "00000000":
+                            return socket.inet_ntoa(bytes.fromhex(fields[2])[::-1])
+            elif platform.system() == "Windows":
+                import subprocess
+                result = subprocess.run(["netsh", "interface", "ipv4", "show", "route"], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "0.0.0.0" in line and "Interface" in line:
+                        gateway = line.split()[3]
+                        return gateway
+            elif platform.system() == "Darwin":  # macOS
+                import subprocess
+                result = subprocess.run(["netstat", "-rn"], capture_output=True, text=True)
+                for line in result.stdout.splitlines():
+                    if "default" in line:
+                        gateway = line.split()[1]
+                        return gateway
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de la passerelle : {e}")
+        return None
+
+    # ---------------------------------------------------
+    # MAC
+    # ---------------------------------------------------
 
     def _get_mac_address(self, interface):
-        try:
-            mac_address = psutil.net_if_addrs()[interface][0].address
-            return mac_address
-        except KeyError:
-            return None
+        """
+        Récupère l'adresse MAC d'une interface réseau donnée.
+
+        Args:
+            interface (str): Le nom de l'interface réseau (par exemple, 'eth0', 'wlan0').
+
+        Returns:
+            str | None: L'adresse MAC de l'interface si elle est trouvée, sinon None.
+        """
+        for addr in psutil.net_if_addrs().get(interface, []):
+            if addr.family == psutil.AF_LINK:
+                logger.debug(f"Adresse MAC trouvée pour {interface} : {addr.address}")
+                return addr.address
+        logger.error(f"Aucune adresse MAC trouvée pour l'interface {interface}.")
+        return None
 
     def reduction_mac(self, mac):
-        mac = mac.lower()
-        mac = mac.replace(":", "")
-        mac = mac.replace("-", "")
-        mac = mac.replace(" ", "")
-        return mac
+        """
+        Réduit une adresse MAC en supprimant les séparateurs et en la mettant en minuscules.
+
+        Cette méthode prend une adresse MAC sous n'importe quel format (par exemple, '00:1A:2B:3C:4D:5E',
+        '00-1A-2B-3C-4D-5E', '001A2B3C4D5E') et retourne une version normalisée sans séparateurs et en minuscules.
+
+        Args:
+            mac (str): L'adresse MAC à réduire.
+
+        Returns:
+            str: L'adresse MAC réduite, sans séparateurs et en minuscules.
+        """
+        reduced = (
+            mac.lower()
+            .replace(":", "")
+            .replace("-", "")
+            .replace(" ", "")
+        )
+        logger.debug(f"Adresse MAC réduite : {reduced}")
+        return reduced
+
+    # ---------------------------------------------------
+    # Log des informations de la socket
+    # ---------------------------------------------------
+    def log_socket_info(self, sock):
+        """
+        Affiche les informations détaillées d'une socket réseau.
+
+        Cette méthode parse et affiche les informations d'une socket, telles que :
+        - Le type de socket.
+        - Le descripteur de fichier (fd).
+        - La famille d'adresses (IPv4/IPv6).
+        - Le type et le protocole de la socket.
+        - Les adresses locales et distantes (IP et port).
+        - Une analyse de la connexion (locale ou distante).
+        - Des informations supplémentaires sur les ports utilisés.
+
+        Args:
+            sock: La socket à analyser (par exemple, une instance de `asyncio.TransportSocket`).
+        """
+        sock_info = str(sock)
+        logger.info(f"Informations de la socket : {sock_info}")
+
+        # Parsing des informations
+        parts = sock_info.split(", ")
+        info_dict = {}
+        for part in parts:
+            if "=" in part:
+                key, value = part.split("=", 1)
+                info_dict[key.strip()] = value.strip()
+
+        # Extraction des adresses locales et distantes
+        laddr_str = info_dict.get("laddr", "").strip("()")
+        raddr_str = info_dict.get("raddr", "").strip("()")
+
+        # Gestion des cas où laddr_str ou raddr_str ne sont pas bien formatés
+        try:
+            laddr_ip, laddr_port = laddr_str.split(",") if "," in laddr_str else (laddr_str, "N/A")
+            laddr_ip = laddr_ip.strip("' ")
+            laddr_port = laddr_port.strip(") ")
+        except Exception as e:
+            logger.error(f"Erreur lors du parsing de l'adresse locale : {e}")
+            laddr_ip, laddr_port = "N/A", "N/A"
+
+        try:
+            raddr_ip, raddr_port = raddr_str.split(",") if "," in raddr_str else (raddr_str, "N/A")
+            raddr_ip = raddr_ip.strip("' ")
+            raddr_port = raddr_port.strip(") ")
+        except Exception as e:
+            logger.error(f"Erreur lors du parsing de l'adresse distante : {e}")
+            raddr_ip, raddr_port = "N/A", "N/A"
+
+        # Affichage des informations
+        logger.info("\n--- Détails de la connexion ---")
+        logger.info(f"Type de socket : {sock.__class__.__name__}")
+        logger.info(f"Descripteur de fichier (fd) : {info_dict.get('fd', 'N/A')}")
+        logger.info(f"Famille d'adresses : {'IPv4' if info_dict.get('family') == '2' else 'Inconnu'}")
+        logger.info(f"Type de socket : {'TCP (SOCK_STREAM)' if info_dict.get('type') == '1' else 'Inconnu'}")
+        logger.info(f"Protocole : {'TCP' if info_dict.get('proto') == '6' else 'Inconnu'}")
+        logger.info(f"Adresse locale (IP:Port) : ({laddr_ip}:{laddr_port})")
+        logger.info(f"Adresse distante (IP:Port) : ({raddr_ip}:{raddr_port})")
+
+        # Précision sur la connexion locale
+        if laddr_ip != "N/A" and raddr_ip != "N/A" and laddr_ip == raddr_ip:
+            logger.info("\n--- Analyse ---")
+            logger.info(f"L'agent et le serveur sont sur la même machine (IP : {laddr_ip}).")
+            logger.info(f"Port local utilisé : {laddr_port}")
+            logger.info(f"Port distant (service) : {raddr_port} (port standard pour XMPP).")
+            logger.info(" boucle locale (loopback)")
+        elif laddr_ip != "N/A" and raddr_ip != "N/A":
+            logger.info("\n--- Analyse ---")
+            logger.info("L'agent et le serveur sont sur des machines différentes.")
+
+        # Autres informations intéressantes
+        logger.info("\n--- Informations supplémentaires ---")
+        logger.info(f"Le port {raddr_port} est utilisé pour le protocole XMPP (Jabber).")
+        logger.info(f"Le port local {laddr_port} est attribué dynamiquement par le système pour cette connexion.")
 
 
 def clean_update_directories():
