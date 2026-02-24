@@ -865,7 +865,10 @@ class MUCBot(ClientXMPP):
         Returns:
             dict: Machine information.
         """
-        er = networkagentinfo("config", "inforegle")
+        try:
+            er = networkagentinfo("config", "inforegle")
+        except Exception as e:
+            informationerror = traceback.format_exc()
         er.messagejson["info"] = self.config.information
         for t in er.messagejson["listipinfo"]:
             if t["ipaddress"] == self.config.ipxmpp:
@@ -1290,10 +1293,11 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             xmpp.Port_connect = tg.confport
 
             xmpp.address = (ip_server, int(tg.confport))
-            logger.debug("-----------------------------------------")
-            logger.debug("----- CONNECTION XMPP CONFIGURATEUR -----")
-            logger.debug("-----------------------------------------")
+            logger.debug("---------------------------------------------------------------------")
+            logger.debug("----- CONNECTION XMPP CONFIGURATEUR {ip_server}:{tg.confport}   -----")
+            logger.debug("---------------------------------------------------------------------")
             try:
+                logger.debug("connect TO ")
                 xmpp.connect(address=xmpp.address, force_starttls=None)
             except Exception as e:
                 logging.error("Connection failed: %s. Retrying..." % e)

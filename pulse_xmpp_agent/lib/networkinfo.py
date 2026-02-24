@@ -136,63 +136,66 @@ class networkagentinfo:
             self.messagejson["listipinfo"] = self.getLocalIipAddress()
             self.messagejson["dnshostname"] = platform.node()
             return self.messagejson
-
-
-            """revoit objet reseau windows"""
         elif sys.platform.startswith("win"):
-            try:
-                cmd = [
-                    "powershell",
-                    "-NoProfile",
-                    "-Command",
-                    "Get-CimInstance Win32_NetworkAdapterConfiguration | "
-                    "Where-Object {$_.MACAddress -ne $null} | "
-                    "Select-Object MACAddress, Description, IPAddress, "
-                    "DefaultIPGateway, IPSubnet, DHCPEnabled, DHCPServer, "
-                    "DNSServerSearchOrder, DNSHostName | "
-                    "ConvertTo-Json -Depth 3"
-                ]
+            # Recuperation compete ipconfig
+            ipconfig_output = subprocess.check_output(
+                "ipconfig /all", shell=True
+            ).decode(errors="ignore")
 
-                result = subprocess.run(cmd, capture_output=True, text=True)
+            interfaces = psutil.net_if_addrs()
+            stats = psutil.net_if_stats()
 
-                if result.returncode != 0:
-                    self.messagejson["msg"] = result.stderr
-                    return self.messagejson
+            # Extraction DNS globaux
+            dns_matches = re.findall(r"DNS Servers.*?:\s+([0-9.]+)", ipconfig_output)
+            self.messagejson["listdns"] = dns_matches
 
-                if not result.stdout.strip():
-                    return self.messagejson
+            # Extraction DHCP global
+            if "DHCP Enabled" in ipconfig_output:
+                if "DHCP Enabled. . . . . . . . . . . : Yes" in ipconfig_output:
+                    self.messagejson["dhcp"] = "True"
 
-                data = json.loads(result.stdout)
+            # Extraction DHCP server
+            dhcp_server_match = re.search(
+                r"DHCP Server.*?:\s+([0-9.]+)", ipconfig_output
+            )
+            dhcp_server = (
+                dhcp_server_match.group(1) if dhcp_server_match else "0.0.0.0"
+            )
 
-                # Si une seule interface → PowerShell renvoie un dict au lieu d’une liste
-                if isinstance(data, dict):
-                    data = [data]
+            # Extraction Gateway
+            gateway_match = re.search(
+                r"Default Gateway.*?:\s+([0-9.]+)", ipconfig_output
+            )
+            gateway = gateway_match.group(1) if gateway_match else "0.0.0.0"
 
-                for dev in data:
-                    objnet = {
-                        "macaddress": dev.get("MACAddress"),
-                        "Description": dev.get("Description"),
-                        "ipaddress": (dev.get("IPAddress") or [None])[0],
-                        "gateway": (dev.get("DefaultIPGateway") or [""])[0],
-                        "mask": (dev.get("IPSubnet") or [None])[0],
-                        "dhcp": dev.get("DHCPEnabled"),
-                        "dhcpserver": dev.get("DHCPServer"),
-                    }
+            # Parcours interfaces
+            for interface_name, addrs in interfaces.items():
 
+                if not stats[interface_name].isup:
+                    continue
+
+                objnet = {
+                    "macaddress": None,
+                    "Description": interface_name,
+                    "ipaddress": None,
+                    "gateway": gateway,
+                    "mask": None,
+                    "dhcp": self.messagejson["dhcp"],
+                    "dhcpserver": dhcp_server,
+                }
+
+                for addr in addrs:
+                    if addr.family == psutil.AF_LINK:
+                        objnet["macaddress"] = addr.address
+                    elif addr.family == socket.AF_INET:
+                        objnet["ipaddress"] = addr.address
+                        objnet["mask"] = addr.netmask
+
+                # Ignore interfaces sans IP
+                if objnet["ipaddress"] is not None:
                     self.messagejson["listipinfo"].append(objnet)
 
-                    dns = dev.get("DNSServerSearchOrder")
-                    if dns:
-                        self.messagejson["listdns"].append(dns[0])
-
-                    if dev.get("DNSHostName"):
-                        self.messagejson["dnshostname"] = dev["DNSHostName"]
-
-                return self.messagejson
-
-            except Exception as e:
-                self.messagejson["msg"] = str(e)
-                return self.messagejson
+            return self.messagejson
 
         elif sys.platform.startswith("darwin"):
             return self.MacOsNetworkInfo()
