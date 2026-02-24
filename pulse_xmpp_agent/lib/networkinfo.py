@@ -19,9 +19,9 @@ from lib.utils import simplecommand, powerschellscript1ps1
 from . import utils
 
 import traceback
-
-if sys.platform.startswith("win"):
-    import wmi
+#
+# if sys.platform.startswith("win"):
+#     import wmi
 
 logger = logging.getLogger()
 
@@ -735,18 +735,26 @@ def powershellgetlastuser():
 
 def isMachineInDomain():
     """
-    returns if the machine is part of an AD domain or not
+    Returns if the machine is part of an AD domain or not.
+    Uses CIM (modern replacement for WMI) via PowerShell.
     """
     try:
-        output = subprocess.check_output(
-            ["powershell.exe", """(gwmi win32_computersystem).partofdomain"""],
-            shell=True,
+        # Utilisation de Get-CimInstance au lieu de Get-WmiObject
+        ps_command = "(Get-CimInstance -ClassName Win32_ComputerSystem).PartOfDomain"
+        result = subprocess.run(
+            ["powershell.exe", "-Command", ps_command],
+            capture_output=True,
+            text=True,
+            check=True,
         )
-        return output.strip() == "true"
+        # Nettoyage de la sortie (suppression des espaces et sauts de ligne)
+        output = result.stdout.strip().lower()
+        return output == "true"
     except subprocess.CalledProcessError as e:
-        logger.error(f"subproces isMachineInDomain.output = {e.output}")
+        logger.error(f"Error in isMachineInDomain: {e.stderr}")
+    except Exception as e:
+        logger.error(f"Unexpected error in isMachineInDomain: {e}")
     return False
-
 
 def organizationbymachine():
     """
@@ -935,17 +943,17 @@ def getsystemressource():
     return result[0].rstrip("\n")
 
 
-def getWindowsNameInterfaceForMacadress(macadress):
-    obj = utils.simplecommand("wmic NIC get MACAddress,NetConnectionID")
-    for lig in obj["result"]:
-        l = lig.lower()
-        mac = macadress.lower()
-        if l.startswith(mac):
-            element = lig.split(" ")
-            element[0] = ""
-            fin = [x for x in element if x.strip() != ""]
-            return " ".join(fin)
-
+def getWindowsNameInterfaceForMacadress(mac_address):
+    """
+    Retourne le nom de l'interface réseau correspondant à une adresse MAC donnée.
+    Utilise le module `psutil` pour une approche native et multiplateforme.
+    """
+    mac_address = mac_address.lower().replace("-", ":")
+    for interface, addrs in psutil.net_if_addrs().items():
+        for addr in addrs:
+            if hasattr(addr, 'address') and addr.address.lower() == mac_address:
+                return interface
+    return None
 
 def getUserName():
     """
