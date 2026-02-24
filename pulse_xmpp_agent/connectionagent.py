@@ -365,6 +365,29 @@ class MUCBot(ClientXMPP):
             )
             self.disconnect(wait=5)
 
+    def _get_local_ip_from_transport(self):
+        """
+        Récupère l'adresse IP locale à partir de la socket associée au transport asyncio.
+
+        Cette méthode tente d'extraire l'adresse IP locale depuis la socket sous-jacente
+        du transport asyncio, si celui-ci est disponible et valide.
+
+        Returns:
+            str | None: L'adresse IP locale si elle est trouvée, sinon None.
+        """
+        self.sockxmpp = None
+        try:
+            if hasattr(self, "transport") and self.transport:
+                self.sockxmpp = self.transport.get_extra_info("socket")
+                if self.sockxmpp:
+                    local_ip = self.sockxmpp.getsockname()[0]
+                    logger.debug(f"Adresse IP locale récupérée depuis le transport : {local_ip}")
+                    return local_ip
+        except Exception as e:
+            logger.error(f"Erreur dans _get_local_ip_from_transport : {e}")
+            pass
+        return None
+
     async def start(self, event):
         """
         Start the XMPP connection and send presence.
@@ -372,6 +395,12 @@ class MUCBot(ClientXMPP):
         Args:
             event: The event triggering the start.
         """
+        self.local_ip = self._get_local_ip_from_transport()
+        if hasattr(self, "sockxmpp") and self.sockxmpp is not None:
+            logger.info("local ip xmpp %s" % self.local_ip)
+        else:
+            logger.error("local ip xmpp non determine")
+
         self.send_presence()
         await self.get_roster()
         self.xmpplog(
@@ -385,7 +414,7 @@ class MUCBot(ClientXMPP):
             fromuser=self.boundjid.bare,
             touser="",
         )
-        self.config.ipxmpp = getIpXmppInterface(self.config)
+        self.config.ipxmpp = self.local_ip
         self.infos_machine_assessor()
 
     def xmpplog(
