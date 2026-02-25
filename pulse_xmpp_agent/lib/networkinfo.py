@@ -45,20 +45,26 @@ class networkagentinfo:
             self.messagejson["listipinfo"] = dd
 
     def reduction_mac(self, mac):
-        """
-        Reduce the MAC address to lowercase and remove any separators like colons, dashes, or spaces.
+            """
+            Reduce the MAC address to lowercase and remove any separators like colons, dashes, or spaces.
 
-        :param mac: The MAC address to be reduced.
-        :type mac: str
+            :param mac: The MAC address to be reduced.
+            :type mac: str
 
-        :return: The reduced MAC address.
-        :rtype: str
-        """
-        mac = mac.lower()
-        mac = mac.replace(":", "")
-        mac = mac.replace("-", "")
-        mac = mac.replace(" ", "")
-        return mac
+            :return: The reduced MAC address.
+            :rtype: str
+            """
+            if not mac:
+                return None
+
+            if not isinstance(mac, str):
+                mac = str(mac)
+
+            mac = mac.lower()
+            mac = mac.replace(":", "")
+            mac = mac.replace("-", "")
+            mac = mac.replace(" ", "")
+            return mac
 
     def getuser(self):
         return list({users[0] for users in psutil.users()})

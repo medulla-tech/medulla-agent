@@ -868,7 +868,7 @@ class MUCBot(ClientXMPP):
         try:
             er = networkagentinfo("config", "inforegle")
         except Exception as e:
-            informationerror = traceback.format_exc()
+            logger.error(f"networkagentinfo {traceback.format_exc()}")
         er.messagejson["info"] = self.config.information
         for t in er.messagejson["listipinfo"]:
             if t["ipaddress"] == self.config.ipxmpp:
