@@ -32,7 +32,7 @@ import time
 # import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.55", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.56", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
 
 params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.
@@ -165,6 +165,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     interfaceblacklistdata = []
                     for interface in data["information"]["listipinfo"]:
                         # exclude mac address from table network
+                        if not interface["macnotshortened"]:
+                            # on ne s'occupe pas des interface sans macadress
+                            continue
                         if test_mac_address_black_list(
                             interface["macnotshortened"],
                             xmppobject.blacklisted_mac_addresses,
