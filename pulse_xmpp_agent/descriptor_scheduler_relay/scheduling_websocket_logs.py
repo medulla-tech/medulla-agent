@@ -13,7 +13,7 @@ import configparser
 from lib.agentconffile import directoryconffile
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "scheduling_websocket_logs", "TYPE": "all", "SCHEDULED": True}
+plugin = {"VERSION": "1.2", "NAME": "scheduling_websocket_logs", "TYPE": "relayserver", "SCHEDULED": True}
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}
 
 def schedule_main(objectxmpp):
