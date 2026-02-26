@@ -1195,7 +1195,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     try_host_unknown = 0 # Initialisation du compteur de tentatives pour host_unknown
     while try_host_unknown < 5:  # Limitation à 5 host_unknown
         host_unknown = False
-        logger.error(f"incremente host_unknown et host_unknown compteur connect {host_unknown} {try_host_unknown}")
+        logger.debug(f"incremente host_unknown et host_unknown compteur connect {host_unknown} {try_host_unknown}")
         try_host_unknown += 1  # Incrémente le compteur
         file_put_contents(
             os.path.join(
@@ -1271,7 +1271,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             sys.exit(1)  # Quitte le programme avec un code d'erreur
 
         if tg.agenttype != "relayserver":
-            logger.error(f"host_unknown et host_unknown compteur connect {host_unknown} {try_host_unknown}")
+            logger.debug(f"host_unknown et host_unknown compteur connect {host_unknown} {try_host_unknown}")
             logger.debug(f"connect {ip_server} {tg.confport}")
             xmpp = MUCBot(tg)
             xmpp.register_plugin("xep_0030")  # Service Discovery
