@@ -95,7 +95,7 @@ def updatecacertversion(version):
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
                 '/v "DisplayName" /t REG_SZ  /d "Medulla CA Cert" /f',
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
-                '/v "Publisher" /t REG_SZ  /d "NATSU" /f',
+                '/v "Publisher" /t REG_SZ  /d "Medulla" /f',
                 f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
                 f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f',
             ]

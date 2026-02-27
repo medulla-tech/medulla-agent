@@ -143,7 +143,7 @@ def updateversion(version):
                 APPNAME,
             )
             utils.simplecommand(cmdDisplay)
-            cmd = 'REG ADD "%s" /v "Publisher" /t REG_SZ  /d "NATSU" /f' % REGKEY
+            cmd = 'REG ADD "%s" /v "Publisher" /t REG_SZ  /d "Medulla" /f' % REGKEY
             utils.simplecommand(cmd)
 
 

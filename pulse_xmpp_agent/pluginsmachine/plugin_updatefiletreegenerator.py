@@ -85,7 +85,7 @@ def updatefiletreegeneratorversion(version):
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse Filetree Generator" '
-                '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
+                '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
             )
 
             utils.simplecommand(cmd)
