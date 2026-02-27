@@ -25,7 +25,7 @@ from xml.etree import ElementTree
 SYNCTHINGVERSION = "1.23.4"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.27", "NAME": "updatesyncthing", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.28", "NAME": "updatesyncthing", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -100,7 +100,7 @@ def updatesyncthingversion(version):
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
             )
 
             utils.simplecommand(cmd)

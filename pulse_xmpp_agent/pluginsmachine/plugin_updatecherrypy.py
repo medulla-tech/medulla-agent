@@ -15,7 +15,7 @@ from lib.agentconffile import (
 CHERRYPYVERSION = "18.8.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.4", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.5", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -81,7 +81,7 @@ def updatecherrypyversion(version):
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Medulla CherryPy" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
             )
 
             utils.simplecommand(cmd)
