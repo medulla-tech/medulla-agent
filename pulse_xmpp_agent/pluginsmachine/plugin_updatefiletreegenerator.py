@@ -19,7 +19,7 @@ from lib.agentconffile import (
 FILETREEVERSION = "0.1"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "0.5", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "0.6", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -85,7 +85,7 @@ def updatefiletreegeneratorversion(version):
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse Filetree Generator" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
             )
 
             utils.simplecommand(cmd)

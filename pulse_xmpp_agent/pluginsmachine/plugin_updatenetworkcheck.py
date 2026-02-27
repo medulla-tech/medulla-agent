@@ -20,7 +20,7 @@ from lib.agentconffile import (
 NETWORKVERSION = "5.4.6"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.7", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.8", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -180,7 +180,7 @@ def updatenetworkcheckversion(version):
 
         cmd = (
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
-            '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
         )
 
         utils.simplecommand(cmd)

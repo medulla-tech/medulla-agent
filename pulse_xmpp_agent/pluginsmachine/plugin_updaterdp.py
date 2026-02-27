@@ -14,7 +14,7 @@ from lib.agentconffile import (
 RDPVERSION = "0.3"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.4", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -73,7 +73,7 @@ def updaterdpversion(version):
 
         cmdEditor = (
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
-            '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
         )
         utils.simplecommand(cmdiEditor)
         if result["code"] == 0:

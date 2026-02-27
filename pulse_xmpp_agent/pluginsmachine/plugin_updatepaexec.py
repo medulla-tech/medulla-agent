@@ -25,7 +25,7 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.54", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.55", "NAME": "updatepaexec", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -126,7 +126,7 @@ def updateversion(version):
                 APPNAME,
             )
             utils.simplecommand(cmdDisplay)
-            cmd = 'REG ADD "%s" /v "Publisher" /t REG_SZ  /d "SIVEO" /f' % REGKEY
+            cmd = 'REG ADD "%s" /v "Publisher" /t REG_SZ  /d "NATSU" /f' % REGKEY
             utils.simplecommand(cmd)
 
 
