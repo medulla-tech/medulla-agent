@@ -165,7 +165,7 @@ def updateopensshversion(version):
 
         cmd = (
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '
-            '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
+            '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
         )
         utils.simplecommand(cmd)
 

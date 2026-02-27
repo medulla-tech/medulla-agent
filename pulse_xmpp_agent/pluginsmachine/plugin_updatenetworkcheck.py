@@ -180,7 +180,7 @@ def updatenetworkcheckversion(version):
 
         cmd = (
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
-            '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
+            '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
         )
 
         utils.simplecommand(cmd)

@@ -73,7 +73,7 @@ def updaterdpversion(version):
 
         cmdEditor = (
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
-            '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
+            '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
         )
         utils.simplecommand(cmdiEditor)
         if result["code"] == 0:

@@ -100,7 +100,7 @@ def updatesyncthingversion(version):
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" '
-                '/v "Publisher" /t REG_SZ  /d "NATSU" /f'
+                '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
             )
 
             utils.simplecommand(cmd)
