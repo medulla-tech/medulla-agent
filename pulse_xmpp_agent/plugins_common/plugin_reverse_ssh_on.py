@@ -27,7 +27,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "4.0", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "4.1", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -561,6 +561,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     for x in os.listdir(searchreversesshprocess)
                     if x[-4:] == ".pid"
                 ]:
+                    # Add an Exception rule for kiosk. The kiosk defines a kiosk.pid file in path/to/Medulla/bin and it is included in this loop.
+                    # So on every action done on kiosk (install update or delete), the kiosk launch a deployment which will call this plugin.
+                    # This plugin comes here and kill the kiosk. The good news is the action (deployment) is done outside the kiosk.
+                    if f.endswith("kiosk.pid"):
+                        continue
                     pid = utils.file_get_contents(f).strip(" \n\r\t")
                     cmd = "taskkill /F /PID %s" % str(pid)
                     logger.info(cmd)
