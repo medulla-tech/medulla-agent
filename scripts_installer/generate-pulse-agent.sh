@@ -335,9 +335,17 @@ extract_parameters() {
 }
 
 generate_agent_win() {
-	# Generate Medulla Agent for Windows
-	colored_echo blue "Generating Medulla Agent for Windows..."
+	# Generate Medulla Agent for Windows (x64)
+	colored_echo blue "Generating Medulla Agent for Windows (x64)..."
 	COMMAND="./win/generate-pulse-agent-win.sh ${GENERATION_OPTIONS}"
+	echo "Running "${COMMAND}
+	${COMMAND}
+}
+
+generate_agent_win_arm64() {
+	# Generate Medulla Agent for Windows (ARM64)
+	colored_echo blue "Generating Medulla Agent for Windows (ARM64)..."
+	COMMAND="./win/generate-pulse-agent-win.sh --arch=arm64 ${GENERATION_OPTIONS}"
 	echo "Running "${COMMAND}
 	${COMMAND}
 }
@@ -366,5 +374,6 @@ update_config_file
 update_generation_options_file
 
 generate_agent_win
+#generate_agent_win_arm64
 generate_agent_lin
 #generate_agent_mac

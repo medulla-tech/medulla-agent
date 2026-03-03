@@ -197,8 +197,8 @@ class networkagentinfo:
                         objnet["ipaddress"] = addr.address
                         objnet["mask"] = addr.netmask
 
-                # Ignore interfaces sans IP
-                if objnet["ipaddress"] is not None:
+                # Ignore interfaces sans IP ou sans MAC
+                if objnet["ipaddress"] is not None and objnet["macaddress"] is not None:
                     self.messagejson["listipinfo"].append(objnet)
 
             return self.messagejson

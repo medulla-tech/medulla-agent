@@ -903,7 +903,8 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
                 agentsubscription = response["substitute"]["subscription"][0]
                 listmacadress = []
                 for mac in data["information"]["listipinfo"]:
-                    listmacadress.append(mac["macaddress"])
+                    if mac["macaddress"] is not None:
+                        listmacadress.append(mac["macaddress"])
                 XmppMasterDatabase().setuplistSubscription(
                     listmacadress, agentsubscription
                 )

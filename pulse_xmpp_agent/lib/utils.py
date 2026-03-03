@@ -97,6 +97,7 @@ DEBUGPULSE = 25
 
 if sys.platform.startswith("win"):
     import pythoncom
+    import winreg
     import winreg as wr
 
     import win32api

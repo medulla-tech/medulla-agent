@@ -36,6 +36,9 @@
 # To be defined for minimal install
 BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 
+# Target architecture: x64 (default) or arm64
+TARGET_ARCH="x64"
+
 # Go to own folder
 cd "`dirname $0`"
 
@@ -113,8 +116,87 @@ lmdb-1.4.1-cp311-cp311-win_amd64.whl \
 netaddr-0.8.0-py2.py3-none-any.whl \
 packaging-24.1-py3-none-any.whl \
 pillow-10.4.0-cp311-cp311-win_amd64.whl \
+websockets-16.0-cp311-cp311-win_amd64.whl \
+aiofiles-25.1.0-py3-none-any.whl \
 "
 WHEEL_FILENAME="wheel-0.42.0-py3-none-any.whl"
+
+# ARM64-specific variables (used when --arch=arm64)
+PYTHON64_ARM64_FILENAME="python-3.11.9-arm64.exe"
+LIBCURL_ARM64_DL_FILENAME="curl-8.18.0_5-win64a-mingw.zip"
+LIBCURL_ARM64_FILENAME="libcurl-arm64.dll"
+# ARM64 wheels: platform-specific ones use versions that provide win_arm64 on PyPI
+# Pure python wheels (py3-none-any) are shared with x64
+# Note: pycurl has NO ARM64 wheel on PyPI - must be compiled separately or excluded
+# Note: PyYAML 6.0.1 has no cp311 ARM64 wheel - using 6.0.1.tar.gz (built from source)
+PY_MODULES_ARM64_FILENAMES="CherryPy-18.8.0-py2.py3-none-any.whl \
+cheroot-9.0.0-py2.py3-none-any.whl \
+python_dateutil-2.8.2-py2.py3-none-any.whl \
+pynacl-1.6.2-cp38-abi3-win_arm64.whl \
+comtypes-1.1.14-py2.py3-none-any.whl \
+paramiko-3.1.0-py3-none-any.whl \
+pytz-2023.3-py2.py3-none-any.whl \
+croniter-1.3.14-py2.py3-none-any.whl \
+pathlib-1.0.1-py3-none-any.whl \
+pywin32-311-cp311-cp311-win_arm64.whl \
+cryptography-46.0.3-cp311-abi3-win_arm64.whl \
+ply-3.11-py2.py3-none-any.whl \
+repoze.lru-0.7-py3-none-any.whl \
+ecdsa-0.18.0-py2.py3-none-any.whl \
+portend-3.1.0-py3-none-any.whl \
+requests-2.28.2-py3-none-any.whl \
+Routes-2.5.1-py2.py3-none-any.whl \
+idna-3.4-py3-none-any.whl \
+psutil-7.2.2-cp37-abi3-win_arm64.whl \
+simplejson-3.19.1-py3-none-any.whl \
+WMI-1.5.1-py2.py3-none-any.whl \
+inflect-6.0.4-py3-none-any.whl \
+pyasn1-0.5.0-py2.py3-none-any.whl \
+sip-6.8.1-py3-none-any.whl \
+WebOb-1.8.7-py2.py3-none-any.whl \
+jaraco.classes-3.2.3-py3-none-any.whl \
+pyasn1_modules-0.3.0-py2.py3-none-any.whl \
+six-1.16.0-py2.py3-none-any.whl \
+aiodns-3.0.0-py3-none-any.whl \
+jaraco.collections-4.1.0-py3-none-any.whl \
+pycares-4.11.0-cp311-cp311-win_arm64.whl \
+slixmpp-1.8.5.tar.gz \
+autocommand-2.2.2-py3-none-any.whl \
+jaraco.context-4.3.0-py3-none-any.whl \
+pycparser-2.21-py2.py3-none-any.whl \
+syncthing2-2.4.4-py3-none-any.whl \
+bcrypt-5.0.0-cp39-abi3-win_arm64.whl \
+jaraco.functools-3.6.0-py3-none-any.whl \
+pycryptodome-3.23.0-cp37-abi3-win_arm64.whl \
+tempora-5.2.2-py3-none-any.whl \
+certifi-2022.12.7-py3-none-any.whl \
+jaraco.text-3.11.1-py3-none-any.whl \
+pycurl-7.45.1-cp311-cp311-win_arm64.whl \
+toml-0.10.2-py2.py3-none-any.whl \
+cffi-2.0.0-cp311-cp311-win_arm64.whl \
+lxml-6.0.2-cp311-cp311-win_arm64.whl \
+pydantic-1.10.7-py3-none-any.whl \
+typing_extensions-4.5.0-py3-none-any.whl \
+chardet-5.1.0-py3-none-any.whl \
+more_itertools-9.1.0-py3-none-any.whl \
+pyparsing-3.0.9-py3-none-any.whl \
+urllib3-1.26.15-py2.py3-none-any.whl \
+charset_normalizer-3.4.4-cp311-cp311-win_arm64.whl \
+netifaces_plus-0.12.5-cp311-cp311-win_arm64.whl \
+zc.lockfile-3.0.post1-py3-none-any.whl \
+pypiwin32-223-py3-none-any.whl \
+PyYAML-6.0-cp311-cp311-win_arm64.whl \
+lmdb-1.7.5-cp311-cp311-win_arm64.whl \
+netaddr-0.8.0-py2.py3-none-any.whl \
+packaging-24.1-py3-none-any.whl \
+pillow-10.4.0-cp311-cp311-win_arm64.whl \
+pyqt6-6.9.1-cp39-abi3-win_arm64.whl \
+pyqt6_qt6-6.9.2-py3-none-win_arm64.whl \
+PyQt6_sip-13.9.1-cp311-cp311-win_arm64.whl \
+websockets-16.0-py3-none-any.whl \
+aiofiles-25.1.0-py3-none-any.whl \
+"
+
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwrsync_6.2.8_x64_free.zip"
 RSYNC_FILENAME="rsync.zip"
@@ -155,7 +237,8 @@ CACERT_VERSION="1.1"
 VIM_NAME="Medulla Vim"
 # Display usage
 display_usage() {
-    echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
+    echo -e "\nUsage:\n$0 [--arch=<x64|arm64>]\n"
+    echo -e "\t [--inventory-tag=<Tag added to the inventory>]\n"
     echo -e "\t [--minimal [--base-url=<URL for downloading agent and dependencies from>]]\n"
     echo -e "\t [--disable-vnc [Disable VNC Server]\n"
     echo -e "\t [--vnc-port=<Default port 5900>]\n"
@@ -168,6 +251,10 @@ display_usage() {
 check_arguments() {
 	for i in "$@"; do
 		case $i in
+            --arch=*)
+                TARGET_ARCH="${i#*=}"
+                shift
+                ;;
             --inventory-tag=*)
                 INVENTORY_TAG="${i#*=}"
                 shift
@@ -247,6 +334,22 @@ check_arguments() {
 			colored_echo red "The base-url parameter is not valid"
 			colored_echo red "We will use ${BASE_URL}"
 		fi
+	fi
+}
+
+apply_arch_settings() {
+	if [ "${TARGET_ARCH}" = "arm64" ]; then
+		colored_echo blue "### INFO Building for ARM64 architecture"
+		PYTHON64_FILENAME="${PYTHON64_ARM64_FILENAME}"
+		LIBCURL_DL_FILENAME="${LIBCURL_ARM64_DL_FILENAME}"
+		LIBCURL_FILENAME="${LIBCURL_ARM64_FILENAME}"
+		PY_MODULES_64_FILENAMES="${PY_MODULES_ARM64_FILENAMES}"
+		NSI_TEMPLATE="agent-installer-arm64.nsi.in"
+		NSI_OUTPUT="agent-installer-arm64.nsi"
+	else
+		colored_echo blue "### INFO Building for x64 architecture"
+		NSI_TEMPLATE="agent-installer.nsi.in"
+		NSI_OUTPUT="agent-installer.nsi"
 	fi
 }
 
@@ -344,9 +447,18 @@ prepare_mandatory_includes() {
 	# libcurl
 	if [ -e ${DOWNLOADS_DIR}/${LIBCURL_DL_FILENAME} ]; then
 		pushd ${DOWNLOADS_DIR}
-		tar xJf ${LIBCURL_DL_FILENAME}
-        mv usr/bin/cygcurl-4.dll bin
-        rm -rf usr
+		if [ "${TARGET_ARCH}" = "arm64" ]; then
+			# ARM64: extract from native curl zip (curl.se/windows/)
+			CURL_FOLDERNAME="${LIBCURL_DL_FILENAME%.*}"
+			unzip -o -q ${LIBCURL_DL_FILENAME} -d ${CURL_FOLDERNAME}
+			cp ${CURL_FOLDERNAME}/*/bin/libcurl*.dll bin/${LIBCURL_FILENAME}
+			rm -rf ${CURL_FOLDERNAME}
+		else
+			# x64: extract from cygwin tar.xz
+			tar xJf ${LIBCURL_DL_FILENAME}
+			mv usr/bin/cygcurl-4.dll bin
+			rm -rf usr
+		fi
 		popd
 	else
 		colored_echo red "${LIBCURL_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
@@ -438,46 +550,67 @@ update_nsi_script() {
         -e "s/@@VIM_NAME@@/${VIM_NAME}/" \
         -e "s/@@CACERTIFICATE@@/${CACERTIFICATE_FILENAME}/" \
         -e "s/@@ROOTCERTIFICATE@@/${ROOTCERTIFICATE_FILENAME}/" \
-		agent-installer.nsi.in \
-		> agent-installer.nsi
+		${NSI_TEMPLATE} \
+		> ${NSI_OUTPUT}
 
     # Replace XOXOXOX with new line
     sed -i 's/XOXOXOX/\
-/g' agent-installer.nsi
+/g' ${NSI_OUTPUT}
 
     cp -f ../config/agentconf.ini ../config/agentconf.ini.tpl
 	colored_echo green "### INFO Updating NSIS script.. Done"
 }
 
+
 generate_agent_installer() {
-	colored_echo blue "### INFO Generating installer..."
-	makensis -V2 agent-installer.nsi
+	colored_echo blue "### INFO Generating ${TARGET_ARCH} installer..."
+	makensis -V2 ${NSI_OUTPUT}
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Generation of agent failed. Please restart"
+		colored_echo red "### ER... Generation of ${TARGET_ARCH} agent failed. Please restart"
 		exit 1
 	fi
 
-    # Create symlinks to latest version
-    if [[ ${INVENTORY_TAG} == '' ]]; then
-        if [[ ${MINIMAL} -eq 1 ]]; then
-	    ln -s -f Medulla-Agent-windows-MINIMAL-${AGENT_VERSION}.exe Medulla-Agent-windows-MINIMAL-latest.exe
-        else
-	    ln -s -f Medulla-Agent-windows-FULL-${AGENT_VERSION}.exe Medulla-Agent-windows-FULL-latest.exe
+    if [ "${TARGET_ARCH}" = "arm64" ]; then
+        # ARM64 symlinks
+        if [[ ${INVENTORY_TAG} == '' ]]; then
+            if [[ ${MINIMAL} -eq 1 ]]; then
+                ln -s -f Medulla-Agent-windows-ARM64-MINIMAL-${AGENT_VERSION}.exe Medulla-Agent-windows-ARM64-MINIMAL-latest.exe
+            else
+                ln -s -f Medulla-Agent-windows-ARM64-FULL-${AGENT_VERSION}.exe Medulla-Agent-windows-ARM64-FULL-latest.exe
+            fi
         fi
+
+        for package in Medulla-Agent-windows-ARM64-MINIMAL-latest Medulla-Agent-windows-ARM64-FULL-latest;
+        do
+            rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
+            if [ -e /var/lib/pulse2/clients/win/${package}.exe ]; then
+                cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
+            fi
+        done
+    else
+        # x64 symlinks (original behavior)
+        if [[ ${INVENTORY_TAG} == '' ]]; then
+            if [[ ${MINIMAL} -eq 1 ]]; then
+	            ln -s -f Medulla-Agent-windows-MINIMAL-${AGENT_VERSION}.exe Medulla-Agent-windows-MINIMAL-latest.exe
+            else
+	            ln -s -f Medulla-Agent-windows-FULL-${AGENT_VERSION}.exe Medulla-Agent-windows-FULL-latest.exe
+            fi
+        fi
+
+        for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
+        do
+            rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
+            cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
+        done
     fi
 
-    for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
-    do
-        rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
-        cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
-    done
-
-    colored_echo green "### INFO  Generating installer... Done"
+    colored_echo green "### INFO  Generating ${TARGET_ARCH} installer... Done"
 
 }
 
 # Run the script
 check_arguments "$@"
+apply_arch_settings
 prepare_mandatory_includes
 if [[ ${MINIMAL} -eq 1 ]]; then
 	compute_parameters_dl

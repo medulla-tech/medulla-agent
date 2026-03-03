@@ -278,6 +278,10 @@ def execute_medulla_info_update():
     architecture = read_reg_value(r"System\CurrentControlSet\Control\Session Manager\Environment", "PROCESSOR_ARCHITECTURE", winreg.REG_SZ)
     if architecture == "AMD64":
         archi = "x64"
+    elif architecture == "ARM64":
+        archi = "ARM64"
+    else:
+        archi = architecture
     install_language = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
     install_language_fallback = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
     default_lang = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "Default", winreg.REG_SZ)

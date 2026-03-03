@@ -1072,7 +1072,7 @@ class MUCBot(ClientXMPP):
                     # An error has occurred related to a previous message sent
                     # by the sender
                     logger.error(f"Stanza message from {msgfrom}")
-                    self.errorhandlingstanza(msg, msgfrom, msgkey)
+                    self._errorhandlingstanza(msg, msgfrom, msgkey)
                     return False, "error"
                 elif type == "groupchat":
                     # The message is sent in the context of a multi-user chat

@@ -1,0 +1,871 @@
+; SPDX-FileCopyrightText: 2016-2024 Siveo <support@siveo.net>
+; SPDX-License-Identifier: GPL-3.0-or-later
+; ARM64 variant of the Medulla Agent installer
+
+; Make sure the installer runs as admin
+RequestExecutionLevel admin
+
+Unicode True
+
+; Define a few variables
+!define PRODUCT_NAME "Medulla Agent"
+!define PRODUCT_PUBLISHER "Medulla"
+!define PRODUCT_WEB_SITE "http://www.siveo.net"
+!define AGENT_VERSION "@@AGENT_VERSION@@"
+!define PRODUCT_DIR_REGKEY "Software\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_ROOT_KEY "HKLM"
+!define AGENT_DEPS_NAME "${PRODUCT_NAME} dependencies"
+!define PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_DEPS_NAME}"
+
+!define OLD_PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Agent"
+!define OLD_PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Agent dependencies"
+!define OLD_PRODUCT_NETNOTIF_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla network notify"
+
+!define PULSE_PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent"
+!define PULSE_PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse Agent dependencies"
+!define PULSE_PAEXEC_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PAExec"
+!define PULSE_CHERRYPY_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pulse CherryPy"
+
+; Variables replaced by the script calling the nsi
+!define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
+!define PYTHON_VERSION "@@PYTHON_VERSION@@"
+!define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
+
+!define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
+!define PULSE_AGENT_CONFFILE_TPL "@@PULSE_AGENT_CONFFILE_TPL@@"
+!define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
+!define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
+!define KIOSK_FILENAME "@@KIOSK_FILENAME@@"
+!define KIOSK_INTERFACE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla kiosk interface"
+!define KIOSK_LAUNCHER_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla kiosk launcher"
+!define WHEEL_FILENAME "@@WHEEL_FILENAME@@"
+!define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
+!define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
+!define PULSE_UPDATEBACKUPCLIENT_CONFFILE "@@PULSE_UPDATEBACKUPCLIENT_CONFFILE@@"
+!define PULSE_SCHEDULER_CONFFILE "@@PULSE_SCHEDULER_CONFFILE@@"
+!define PULSE_INVENTORY_CONFFILE "@@PULSE_INVENTORY_CONFFILE@@"
+!define PULSE_STARTUPDATE_CONFFILE "@@PULSE_STARTUPDATE_CONFFILE@@"
+!define PULSE_START_CONFFILE "@@PULSE_START_CONFFILE@@"
+!define PULSE_TCPIPSERVER_CONFFILE "@@PULSE_TCPIPSERVER_CONFFILE@@"
+!define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
+!define PULSE_AGENT_TASK_XML_FILENAME "@@PULSE_AGENT_TASK_XML_FILENAME@@"
+!define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
+!define SSH_PORT "@@SSH_PORT@@"
+!define INVENTORY_TAG "@@INVENTORY_TAG@@"
+!define GENERATED_SIZE "@@GENERATED_SIZE@@"
+!define RFB_PORT "@@RFB_PORT@@"
+!define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
+!define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
+!define CHERRYPY_NAME "@@CHERRYPY_NAME@@"
+!define CHERRYPY_VERSION "@@CHERRYPY_VERSION@@"
+!define PRODUCT_CHERRYPY_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${CHERRYPY_NAME}"
+!define CACERT_NAME "@@CACERT_NAME@@"
+!define CACERT_VERSION "@@CACERT_VERSION@@"
+!define PRODUCT_CACERT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${CACERT_NAME}"
+!define NETWORK_NAME "@@NETWORK_NAME@@"
+!define NETWORK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETWORK_NAME}"
+!define OPENSSH_NAME "@@OPENSSH_NAME@@"
+!define OPENSSH_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${OPENSSH_NAME}"
+!define RDP_NAME "@@RDP_NAME@@"
+!define RDP_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RDP_NAME}"
+!define SYNCTHING_NAME "@@SYNCTHING_NAME@@"
+!define SYNCTHING_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SYNCTHING_NAME}"
+!define FILETREE_NAME "@@FILETREE_NAME@@"
+!define FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${FILETREE_NAME}"
+!define PAEXEC_NAME "@@PAEXEC_NAME@@"
+!define PAEXEC_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PAEXEC_NAME}"
+!define ROOTCERTIFICATE "@@ROOTCERTIFICATE@@"
+!define CACERTIFICATE "@@CACERTIFICATE@@"
+!define VIM_NAME "@@VIM_NAME@@"
+!define VIM_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${VIM_NAME}"
+
+SetCompressor lzma
+
+; Modern UI installer stuff
+!include "MUI2.nsh"
+!define MUI_ABORTWARNING
+#!define MUI_ICON "artwork/install.ico"
+!define MUI_WELCOMEPAGE_TITLE_3LINES
+#!define MUI_HEADERIMAGE
+#!define MUI_HEADERIMAGE_RIGHT
+#!define MUI_HEADERIMAGE_BITMAP "artwork/header.bmp"
+#!define MUI_WELCOMEFINISHPAGE_BITMAP "artwork/wizard.bmp"
+
+; UI pages
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_COMPONENTS
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_LANGUAGE "English"
+
+; Other useful modules
+!addincludedir libs
+!include "WinVer.nsh"
+!include "FileFunc.nsh"
+; Needed on newer nsis but does not seems to work on stretch nsis
+!include /CHARSET=CP1252 zipdll.nsh
+!include "LogicLib.nsh"
+!Include "LogString.nsh"
+!Include "psexec.nsh"
+!include "x64.nsh"
+!include "arm64.nsh"
+!include "TextReplace.nsh"
+!include "TextFunc.nsh"
+!include "Junction.nsh"
+
+Var FIREWALL
+
+Name "${PRODUCT_NAME} ${AGENT_VERSION}"
+!If "${INVENTORY_TAG}" == ''
+  OutFile "Medulla-Agent-windows-ARM64-${GENERATED_SIZE}-${AGENT_VERSION}.exe"
+!Else
+  OutFile "Medulla-Agent-windows-ARM64-${GENERATED_SIZE}-${AGENT_VERSION}-${INVENTORY_TAG}.exe"
+!EndIf
+Icon "artwork/install.ico"
+!If "$PROGRAMFILES64" != ""
+  InstallDir "$PROGRAMFILES64\Medulla"
+!Else
+  InstallDir "$PROGRAMFILES\Medulla"
+!EndIf
+InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
+ShowInstDetails show
+
+; Define a few settings
+Section -SETTINGS
+  SetOutPath "$INSTDIR"
+SectionEnd
+
+!define DownloadFile "!insertmacro DownloadFile"
+!macro DownloadFile url filename
+  ${LogString} "Downloading ${url}"
+  inetc::get /NOCANCEL ${url} ${filename} /END
+  Pop $0 ;Get the return value
+  StrCmp $0 "OK" +8
+    ${LogString} "Download failed: $0"
+    ${IfNot} ${Silent}
+      MessageBox MB_OK|MB_ICONSTOP "Download of ${url} failed: $0$\n\
+      Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 103
+    Quit
+  ${LogString} "Return code was: $0"
+!macroend
+
+
+; ####################### Python installation #######################
+Section "Python" sec_py
+  SetOutPath "$INSTDIR\tmp"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
+  @@FULL_OR_DL_PYTHON64@@
+  @@FULL_OR_DL_LIBCURL@@
+  ${LogString} "Python Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Install of Python
+  ; Get location
+  Var /GLOBAL PYTHON_FILENAME
+  StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
+
+  ; Check Python version
+  Var /GLOBAL PYTHON_INSTALLED_VERSION
+  Var /GLOBAL PYTHON_VERSION
+  StrCpy $PYTHON_INSTALLED_VERSION "0"
+  StrCpy $PYTHON_VERSION "0"
+  nsExec::ExecToStack "c:\Program Files\Python3\python.exe -V"
+  Pop $0
+  Pop $1
+  StrCpy $0 $1 "" -8
+  ${LogString} "Python installed version is $0" 
+  IntCmp $0 $PYTHON_VERSION SkipPythonInstall done SkipPythonInstall 
+  done:
+
+  ; Install Python
+  InstallPython:
+  StrCpy $0 `"$INSTDIR\tmp\$PYTHON_FILENAME" /quiet InstallAllUsers=1 Include_pip=0 TargetDir="c:\Program Files\Python3"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "3010"
+        StrCpy $0 `Return code : 3010 OK`
+        ;3010 ERROR_SUCCESS_REBOOT_REQUIRED
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 104
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+  SkipPythonInstall:
+
+  ; Install pip
+  StrCpy $0 `$PROGRAMFILES64\Python3\python.exe -m ensurepip --upgrade`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+
+    ; Seems Python is installed.
+    ${LogString} "Uninstalling 64bit python 2.7 if found..."
+    StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813233} /qn /norestart`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    IfFileExists "C:\Python27" 0 +2
+      ; Delete previous python27 folder
+      RMDir /r "C:\Python27"
+    ${LogString} "Uninstalling 64bit python 3.11 if found..."
+    StrCpy $0 `msiexec /x {34795B45-E434-46E9-8FAD-C1E77BFAEFDC} /qn /norestart`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+
+    ; Clear Python is missed configured
+    ${LogString} "Clearing python if found..."
+    StrCpy $0 `taskkill /F /IM python*`
+    nsExec::ExecToLog $0
+    StrCpy $0 `taskkill /F /IM syncthing*`
+    nsExec::ExecToLog $0
+    StrCpy $0 `attrib -r -s -h -a "$PROGRAMFILES64\Python3"`
+    nsExec::ExecToLog $0
+    StrCpy $0 `rd /s /q "$PROGRAMFILES64\Python3"`
+    nsExec::ExecToLog $0
+    ${LogString} `Return code 0: $0`
+    Goto InstallPython
+  ${EndIf}
+
+  ; Copy libcurl DLL to system32 folder
+  ClearErrors
+  CopyFiles /SILENT "$INSTDIR\tmp\${LIBCURL_FILENAME}" "$SYSDIR"
+  ; This requires a reboot
+  SetRebootFlag true
+  ${If} ${Errors}
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "libcurl dll installation failed. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 107
+    Quit
+  ${EndIf}
+
+  Delete $INSTDIR\tmp\${PYTHON64_FILENAME}
+  Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
+
+  ; ####################### Prevent from previous Medulla installation #######################
+  ; Previously stop service
+  nsExec::Exec 'sc stop pulseagent'
+  nsExec::Exec 'sc delete pulseagent'
+
+  nsExec::Exec 'sc stop pulsenetworknotify'
+  nsExec::Exec 'sc delete pulsenetworknotify'
+
+  nsExec::Exec 'sc stop medullaagent'
+  nsExec::Exec 'sc stop medullanetnotify'
+
+  ; Delete previous rescue folder if any
+  RMDir /r C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\agentrescue
+  RMDir /r C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\img_agent
+
+  ; Prevent agentrescue to be run at first launcher execution
+  FileOpen $0 "C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\BOOL_FILE_INSTALL" w
+  FileClose $0
+
+  ; Remove old three random characters for unicity
+  Delete C:\progra~1\Python3\Lib\site-packages\pulse_xmpp_agent\lib\INFOSTMP\JIDSUFFIXE
+SectionEnd
+; ####################### Installation of Medulla Agent #######################
+Section "!${PRODUCT_NAME}" sec_app
+  SetOutPath "$INSTDIR\tmp"
+  DeleteRegKey HKLM "${OLD_PRODUCT_UNINST_KEY}"
+  DeleteRegKey HKLM "${OLD_PRODUCT_DEPS_UNINST_KEY}"
+  DeleteRegKey HKLM "${OLD_PRODUCT_NETNOTIF_UNINST_KEY}"
+  ; Remove old Pulse key
+  DeleteRegKey HKLM "${PULSE_PRODUCT_UNINST_KEY}"
+  DeleteRegKey HKLM "${PULSE_PRODUCT_DEPS_UNINST_KEY}"
+  DeleteRegKey HKLM "${PULSE_PAEXEC_UNINST_KEY}"
+  DeleteRegKey HKLM "${PULSE_CHERRYPY_UNINST_KEY}"
+  File "../${PULSE_AGENT_FILENAME}"
+  File "../${AGENT_PLUGINS_FILENAME}"
+  File "../${KIOSK_FILENAME}"
+  File "downloads/python_modules/${WHEEL_FILENAME}"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
+  @@FULL_OR_DL_PY_MODULES_64_FILENAMES@@
+
+  ${LogString} "Medulla Agent Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Remove previous Medulla configuration if present
+  ClearErrors
+  IfFileExists "C:\Progra~1\Pulse" 0 +2
+    ; Delete previous install folder ( when it was called pulse )
+     RMDir /r "C:\Progra~1\Pulse"
+  IfFileExists "C:\Progra~1\Medulla" 0 +9
+    ; Delete previous Medulla configuration parameters
+    Delete "$INSTDIR\etc\*.*"
+    ; Delete previous Medulla binaries
+    Delete "$INSTDIR\bin\*.py*"
+    ; Delete previous Medulla log files
+    Delete "$INSTDIR\var\log\*.*"
+    ; Delete previous packages folder
+    RMDir /r "$INSTDIR\var\tmp\packages"
+
+  ; Install of Medulla agent
+  StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${WHEEL_FILENAME}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Medulla Agent: The installation of Wheel failed. $\n\
+    Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 128
+    Quit
+  ${EndIf}
+
+  ; Pre-install all Python wheel dependencies explicitly
+  ; This ensures platform-specific wheels (ARM64) are installed before the agent
+  ; pip with --find-links resolves package names to local wheel files
+  StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" cryptography bcrypt PyNaCl cffi lxml pillow psutil PyYAML pywin32 pycares pycurl pycryptodome charset_normalizer lmdb netifaces_plus pydantic PyQt6`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${LogString} "Warning: Some wheel dependencies may have failed to install (return code: $1)"
+  ${EndIf}
+
+  ; Install of Medulla agent
+  StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Medulla Agent installation failed. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 128
+    Quit
+  ${EndIf}
+
+  ; Install of Kiosk
+  StrCpy $0 `$PROGRAMFILES64\Python3\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${KIOSK_FILENAME}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Medulla Kiosk installation failed. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 128
+    Quit
+  ${EndIf}
+
+  ; Copy of agent config file
+  ClearErrors
+  SetOutPath "$INSTDIR\etc"
+  File "../config/${PULSE_AGENT_CONFFILE}"
+  File "../config/${PULSE_AGENT_CONFFILE_TPL}"
+  ; Copy of agent scheduler config file only if it does not already exist (using overwrite flag)
+  SetOutPath "$INSTDIR\etc"
+  SetOverwrite off
+  File "../config/${PULSE_SCHEDULER_CONFFILE}"
+  SetOverwrite on
+  ; Copy of inventory config file
+  SetOutPath "$INSTDIR\etc"
+  File "../config/${PULSE_INVENTORY_CONFFILE}"
+  ; Copy of start update plugins config files
+  File "../config/${PULSE_STARTUPDATE_CONFFILE}"
+  File "../config/${PULSE_START_CONFFILE}"
+  ; Copy of update plugins conf file
+  File "../config/${PULSE_UPDATEOPENSSH_CONFFILE}"
+  File "../config/${PULSE_UPDATETIGHTVNC_CONFFILE}"
+  File "../config/${PULSE_UPDATEBACKUPCLIENT_CONFFILE}"
+  File "../config/${PULSE_TCPIPSERVER_CONFFILE}"
+  ${If} ${Errors}
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Creation of agent config files failed. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 133
+    Quit
+  ${EndIf}
+
+  ; Install of CA Certificates
+  ClearErrors
+  SetOutPath "$INSTDIR\tmp"
+  File "../${ROOTCERTIFICATE}"
+  File "../${CACERTIFICATE}"
+  StrCpy $0 `certutil -addstore root "$INSTDIR\tmp\${ROOTCERTIFICATE}"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  StrCpy $0 `certutil -addstore ca "$INSTDIR\tmp\${CACERTIFICATE}"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+    SectionIn RO
+  WriteUninstaller $INSTDIR\uninstall.exe
+  ; Add ourselves to Add/remove programs (ARM64 is always 64-bit)
+  SetRegView 64
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "DisplayName" "${CACERT_NAME}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "DisplayVersion" "${CACERT_VERSION}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error installing CA Certificate. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 138
+    Quit
+  ${EndIf}
+
+  ; Create log folder to hold agent logs
+  CreateDirectory $INSTDIR\var\log
+
+  ; Create Medulla service
+  SetOutPath "$INSTDIR\bin"
+  File "${PULSE_SERVICE_FILENAME}"
+  File "artwork/install.ico"
+  StrCpy $0 `SCHTASKS /Delete /TN "${PRODUCT_NAME}" /F`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "1"
+        ;1 The system cannot find the file specified..
+        StrCpy $0 `No Medulla Agent task was found`
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Medulla Agent tasks removal failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 102
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  CopyFiles /SILENT "$PROGRAMFILES64\Python3\Lib\site-packages\pywin32_system32\pywintypes27.dll" "$PROGRAMFILES64\Python3\Lib\site-packages\win32\"
+  StrCpy $0 `$PROGRAMFILES64\Python3\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error installing Medulla Agent service. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 134
+    Quit
+  ${EndIf}
+
+  ; Create packages folder to hold packages to be deployed on client
+  CreateDirectory $INSTDIR\var\tmp\packages
+  StrCpy $0 `icacls "$INSTDIR\var\tmp\packages" /grant "*S-1-5-32-545:(OI)(CI)F" /T`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error installing Medulla Agent service. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 139
+    Quit
+  ${EndIf}
+  ; Create bin folder
+  CreateDirectory $INSTDIR\bin
+
+  StrCpy $0 `$PROGRAMFILES64\Python3\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error updating Medulla Agent service. $\n\
+    Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 135
+    Quit
+  ${EndIf}
+
+  StrCpy $0 `$PROGRAMFILES64\Python3\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error restarting Medulla Agent service. $\n\
+    Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 136
+    Quit
+  ${EndIf}
+
+  SectionIn RO
+  WriteUninstaller $INSTDIR\uninstall.exe
+  ; Add ourselves to Add/remove programs (ARM64 is always 64-bit)
+  SetRegView 64
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
+  WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoModify" 1
+  WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoRepair" 1
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayIcon" "$INSTDIR\bin\install.ico"
+
+  ; Write the version installed in registry (ARM64 is always 64-bit)
+  SetRegView 64
+  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "CurrentVersion" "${AGENT_VERSION}"
+  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
+
+  Delete $INSTDIR\tmp\${PULSE_AGENT_FILENAME}
+  Delete $INSTDIR\tmp\${AGENT_PLUGINS_FILENAME}
+  Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML_FILENAME}
+  @@DELETE_PY_MODULES_FILENAMES@@
+
+  ; ARM64 is always 64-bit, clean up any 32-bit leftovers
+  RMDir /r "$PROGRAMFILES\Medulla"
+
+  Sleep 20000
+SectionEnd
+
+; What needs to be done for uninstalling
+Section "Uninstall"
+
+  ; Ensure service is running
+  StrCpy $0 `net start medullaagent`
+  nsExec::ExecToLog $0
+
+  RMDir /r /REBOOTOK "$INSTDIR"
+
+  DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+  DeleteRegKey HKLM "${NETWORK_UNINST_KEY}"
+  DeleteRegKey HKLM "${OPENSSH_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_CHERRYPY_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_CACERT_UNINST_KEY}"
+  DeleteRegKey HKLM "${RDP_UNINST_KEY}"
+  DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
+  DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
+  DeleteRegKey HKLM "${PAEXEC_UNINST_KEY}"
+  DeleteRegKey HKLM "${VIM_UNINST_KEY}"
+  DeleteRegKey HKLM "${KIOSK_LAUNCHER_UNINST_KEY}"
+  DeleteRegKey HKLM "${KIOSK_INTERFACE_UNINST_KEY}"
+
+  ; Stop all Medulla services
+  Call un.StopMedullaServices
+SectionEnd
+
+; Functions
+
+Function .onInit
+  ; Windows 10 or later required for ARM64
+  ${IfNot} ${AtLeastWin10}
+    MessageBox MB_OK|MB_ICONSTOP "Windows 10 and above required for running ${PRODUCT_NAME} on ARM64"
+    SetErrorLevel 137
+    Quit
+  ${EndIf}
+
+  ; Make sure client is ARM64
+  ${IfNot} ${IsARM64}
+    ${IfNot} ${Silent}
+    MessageBox MB_OK|MB_ICONSTOP "This installer is for ARM64 architecture only. Please use the x64 installer."
+    ${EndIf}
+    SetErrorLevel 666
+    Quit
+  ${EndIf}
+
+  ; Make sure we are running as admin
+  UserInfo::GetAccountType
+  pop $0
+  ${If} $0 != "admin" ;Require admin rights on NT4+
+    MessageBox MB_OK|MB_ICONSTOP "Administrator rights required!"
+    SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
+    Quit
+  ${EndIf}
+
+  ; Create registry keys in 64bit section
+  SetRegView 64
+
+  ; Install log initialization
+  !If "$PROGRAMFILES64" != ""
+    StrCpy $INSTDIR "$PROGRAMFILES64\Medulla"
+  !Else
+    StrCpy $INSTDIR "$PROGRAMFILES\Medulla"
+  !EndIf
+  CreateDirectory "$INSTDIR\tmp"
+  ${LogInit} "$INSTDIR\tmp\install.log"
+  ${LogString} "Starting install..."
+  !insertmacro GetTime
+  ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
+  ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
+
+  ; Unlock Powershell
+  ${LogString} ""
+  ${LogString} "Backup and unlock powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  CreateDirectory "$INSTDIR\bin"
+  SetOutPath "$INSTDIR\bin"
+
+  ; Detect Firewall status
+  StrCpy $0 `netsh advfirewall show allprofiles`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  StrCpy $FIREWALL $0
+  ${LogString} "Firewall status is : $FIREWALL"
+
+FunctionEnd
+
+Function un.onInit
+  ; Create registry keys in 64bit section
+  SetRegView 64
+FunctionEnd
+
+Function .onGUIEnd
+  ; Write the log file
+  !insertmacro Log_Close
+FunctionEnd
+
+Function .onMouseOverSection
+  ; Find which section the mouse is over, and set the corresponding description.
+  FindWindow $R0 "#32770" "" $HWNDPARENT
+  GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
+
+  StrCmp $0 ${sec_py} 0 +3
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
+          This is required for ${PRODUCT_NAME} to run."
+
+  StrCmp $0 ${sec_app} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+FunctionEnd
+
+; Macro Stop all Medulla services
+!macro StopMedullaServices UN
+  Function ${UN}StopMedullaServices
+
+  StrCpy $0 `sc query sshd`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop sshd`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Old sshd agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 143
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  StrCpy $0 `sc query ssh-agent`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop ssh-agent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Old ssh-agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 143
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  StrCpy $0 `sc query medullaagent`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop medullaagent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Case} "1062"
+        ;1062 The service has not been started
+        StrCpy $0 `Service is already stopped`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Medulla agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 144
+        Quit
+  ${EndSwitch}
+
+  StrCpy $0 `sc delete medullaagent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been removed`
+            ${Break}
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `The service does not exists`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Medulla agent service uninstall failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 145
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  StrCpy $0 `sc query medullanetnotify`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop medullanetnotify`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Network Notify stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 144
+        Quit
+  ${EndSwitch}
+
+  StrCpy $0 `sc delete medullanetnotify`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been removed`
+            ${Break}
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `The service does not exists`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Network Notify service uninstall failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 145
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+  FunctionEnd
+
+!macroend
+!insertmacro StopMedullaServices "un."
