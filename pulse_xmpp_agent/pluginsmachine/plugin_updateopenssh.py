@@ -31,12 +31,15 @@ OPENSSHVERSION = "9.8.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.24", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.25", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug(" PL-SSH ###################################################")
     logger.debug(" PL-SSH call %s from %s" % (plugin, message["from"]))
     logger.debug(" PL-SSH ###################################################")
@@ -162,7 +165,7 @@ def updateopensshversion(version):
 
         cmd = (
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla SSH" '
-            '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
         )
         utils.simplecommand(cmd)
 

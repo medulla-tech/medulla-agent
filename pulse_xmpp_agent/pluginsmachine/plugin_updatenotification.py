@@ -17,15 +17,18 @@ from lib.agentconffile import (
     rotation_file,
 )
 
-NOTIFICATIONVERSION = "5.4.4"
+NOTIFICATIONVERSION = "5.4.6"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.8", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.9", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
@@ -128,7 +131,7 @@ def updatenotificationversion(version):
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse notification" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
             )
 
             utils.simplecommand(cmd)

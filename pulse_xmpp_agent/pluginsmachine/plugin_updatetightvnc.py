@@ -22,6 +22,9 @@ plugin = {"VERSION": "2.10", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug("###################################################")
     logger.debug(f"PL-TIGHT call {plugin} from {message['from']}")
     logger.debug("###################################################")

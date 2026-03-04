@@ -117,9 +117,9 @@ setup_agent() {
         echo "Creating missing SSH profile ..."
         mkdir -p /home/pulseuser/.ssh
     fi
+    touch /home/pulseuser/.ssh/authorized_keys
     chown -R pulseuser: /home/pulseuser
     chmod -R 700 /home/pulseuser
-    touch /home/pulseuser/.ssh/authorized_keys
     chmod 600 /home/pulseuser/.ssh/authorized_keys
 
     # Setting up SSH daemon

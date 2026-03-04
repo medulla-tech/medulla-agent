@@ -17,14 +17,17 @@ from lib.agentconffile import (
     rotation_file,
 )
 
-NETWORKVERSION = "5.4.4"
+NETWORKVERSION = "5.4.6"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.7", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.8", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug(" PL-NETNOT ###################################################")
     logger.debug(" PL-NETNOT call %s from %s" % (plugin, message["from"]))
     logger.debug(" PL-NETNOT ###################################################")
@@ -177,7 +180,7 @@ def updatenetworkcheckversion(version):
 
         cmd = (
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla network notify" '
-            '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
         )
 
         utils.simplecommand(cmd)

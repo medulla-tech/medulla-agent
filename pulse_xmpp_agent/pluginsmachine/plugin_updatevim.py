@@ -43,10 +43,13 @@ REGKEY = "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\%s" % A
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updatevim", "TYPE": "machine"}
+plugin = {"VERSION": "1.4", "NAME": "updatevim", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug("PL-VIM ###################################################")
     logger.debug("PL-VIM call %s from %s" % (plugin, message["from"]))
     logger.debug("PL-VIM ###################################################")
@@ -140,7 +143,7 @@ def updateversion(version):
                 APPNAME,
             )
             utils.simplecommand(cmdDisplay)
-            cmd = 'REG ADD "%s" /v "Publisher" /t REG_SZ  /d "SIVEO" /f' % REGKEY
+            cmd = 'REG ADD "%s" /v "Publisher" /t REG_SZ  /d "Medulla" /f' % REGKEY
             utils.simplecommand(cmd)
 
 

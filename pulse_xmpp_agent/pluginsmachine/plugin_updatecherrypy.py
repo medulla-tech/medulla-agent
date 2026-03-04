@@ -15,11 +15,14 @@ from lib.agentconffile import (
 CHERRYPYVERSION = "18.8.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.4", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.5", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug(" PL-CHERRYP ###################################################")
     logger.debug(" PL-CHERRYP call %s from %s" % (plugin, message["from"]))
     logger.debug(" PL-CHERRYP ###################################################")
@@ -78,7 +81,7 @@ def updatecherrypyversion(version):
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Medulla CherryPy" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
             )
 
             utils.simplecommand(cmd)

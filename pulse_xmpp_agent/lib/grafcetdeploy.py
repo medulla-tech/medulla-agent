@@ -764,74 +764,391 @@ class grafcet:
                 tab = listresult[:nb1]
                 workingstepinfo[t] = os.linesep.join(tab)
 
-    def __Go_to_by_jump_succes_and_error__(self, returncode):
+    def __jump_to_label__(self, label: str) -> bool:
         """
-        Directs the flow to the appropriate step based on the provided return code.
+        Jump to a step having actionlabel == label.
+        Returns True if a jump occurred, otherwise False.
+        """
+        logger = logging.getLogger()
 
-        - If `returncode` is `0`, the function checks for any remaining steps in the sequence:
-            - If additional steps are available, it proceeds to the next step in sequence.
-            - If no further steps are available, it transitions to the step labeled `END_SUCCESS`.
-        - If `returncode` is not `0`, the function searches for a defined `gotoreturncode@<code>` rule:
-            - If a matching rule exists, it jumps to the specified step or label.
-            - If no matching rule is found, it transitions to the step labeled `END_ERROR`.
+        for step in self.sequence:
+            if step.get("actionlabel") == label:
+                self.__log_and_notify__("debug",f"Branching to {label} at step {step['step']}")
+                self.__search_Next_step_int__(step["step"])
+                self.__execstep__()
+                return True
+
+        self.__log_and_notify__("warning",f"Label '{label}' not found in sequence.")
+        return False
+
+    def __jump_on_returncode_success__(self, returncode: int) -> bool:
+        """
+        If returncode == 0 → END_SUCCESS
+        Else → END_ERROR (optional if you want)
+        """
+        if returncode == 0:
+            return self.__jump_to_label__("END_SUCCESS")
+        else:
+            return self.__jump_to_label__("END_ERROR")
+
+    def __jump_to_next_step__(self) -> bool:
+        """
+        Jump to next step in sequence.
+        If next step contains special action sections,
+        jump to END_SUCCESS instead.
+        """
+        logger = logging.getLogger()
+
+        current_step_number = self.workingstep["step"]
+
+        # Trouver prochaine étape
+        next_steps = [
+            step for step in self.sequence
+            if step.get("step") > current_step_number
+        ]
+
+        if not next_steps:
+            self.__log_and_notify__("debug","No next step found.")
+            return False
+
+        # Prendre la plus proche
+        next_step = sorted(next_steps, key=lambda x: x["step"])[0]
+
+        self.__log_and_notify__("debug",f"Next step detected: {next_step['step']}")
+
+        # Vérification des sections spéciales
+        special_sections = {
+            "action_section_install",
+            "action_section_uninstall",
+            "action_section_update",
+        }
+
+        if any(section in next_step for section in special_sections):
+            self.__log_and_notify__("debug",
+                "Next step contains install/uninstall/update section. "
+                "Redirecting to END_SUCCESS."
+            )
+            return self.__jump_to_label__("END_SUCCESS")
+
+        # Sinon saut normal
+        self.__log_and_notify__("debug", f"Branching to next step {next_step['step']}")
+        self.__search_Next_step_int__(next_step["step"])
+        self.__execstep__()
+        return True
+
+
+    def __log_and_notify__(self, level: str, message: str):
+        """
+        Central logging + notification handler.
 
         Parameters:
-        - returncode (int): The return code of the executed command.
+            level   : "debug", "info", "warning", "error"
+            message : message body (without prefix formatting)
+
+        Behavior:
+            - Always logs via Python logger
+            - Sends notification via __affiche_message
+            - DEBUG notifications are sent only if logger level allows DEBUG
+        """
+
+        logger = logging.getLogger()
+
+        formatted_message = (
+            f'[{self.data["name"]}]-[{self.workingstep["step"]}]: {message}'
+        )
+
+        level = level.lower()
+
+        # -----------------------------
+        # DEBUG
+        # -----------------------------
+        if level == "debug":
+            logger.debug(formatted_message)
+
+            if logger.isEnabledFor(logging.DEBUG):
+                self.__affiche_message(
+                    formatted_message,
+                    module="Deployment | Execution | Debug",
+                )
+
+        # -----------------------------
+        # INFO
+        # -----------------------------
+        elif level == "info":
+            logger.info(formatted_message)
+            self.__affiche_message(
+                formatted_message,
+                module="Deployment | Execution | Info",
+            )
+
+        # -----------------------------
+        # WARNING
+        # -----------------------------
+        elif level == "warning":
+            logger.warning(formatted_message)
+            self.__affiche_message(
+                formatted_message,
+                module="Deployment | Execution | Warning",
+            )
+
+        # -----------------------------
+        # ERROR
+        # -----------------------------
+        elif level == "error":
+            logger.error(formatted_message)
+            self.__affiche_message(
+                formatted_message,
+                module="Deployment | Execution | Error",
+            )
+
+        else:
+            logger.error(
+                f"Invalid log level '{level}' used in __log_and_notify__"
+            )
+
+    def __Go_to_by_jump_succes_and_error__(self, returncode):
+        """
+        Evaluate branching rules based on a return code.
+
+        Logic overview:
+        ----------------
+        1. Normalize the return code to an integer.
+        If invalid → default to 0 and log WARNING.
+
+        2. Evaluate all keys in self.workingstep starting with:
+            "gotoreturncode@<condition>"
+
+        Supported condition syntaxes:
+
+        Simple comparisons:
+            n               → equivalent to == n
+            ==n, =n         → equal to n
+            !=n, !n         → different from n
+            <n, <=n
+            >n, >=n
+
+        Interval comparisons (comma separator required):
+            INn1,n2         → n1 <= returncode <= n2
+            OUTn1,n2        → returncode < n1 OR returncode > n2
+
+        Notes:
+        - Interval separator MUST be a comma.
+        - Negative numbers are supported.
+        - Conditions are evaluated in declaration order.
+        - First matching condition triggers a jump.
+        - Invalid conditions are ignored but logged as WARNING
+            and notified to Deployment manager.
+
+        3. If no condition matches:
+            - If returncode == 0 → jump to END_SUCCESS
+            - Otherwise → jump to next step in sequence
 
         Returns:
-        - bool: True if a valid step transition was executed, False if no appropriate step was found.
+            True  → a jump was executed
+            False → no jump possible
         """
-        # Mark the step as completed
+
+        logger = logging.getLogger()
+        self.__log_and_notify__("debug",f"[GoTo] Received return code: {returncode}")
+
+        # ==========================================================
+        # Package presence check (notification level only)
+        # ==========================================================
+        # package_uuid = self.workingstep.get("packageuuid")
+        #
+        # if not package_uuid:
+        #     logger.warning("[GoTo] Missing package UUID in working step.")
+        #
+        #     self.__affiche_message(
+        #         f'[{self.data["name"]}]-[{self.workingstep["step"]}]: '
+        #         f'WARNING - Missing package UUID in working step.',
+        #         module="Deployment | Execution | Warning",
+        #     )
+
+        # ==========================================================
+        # 1️⃣ Normalize return code
+        # ==========================================================
+        try:
+            returncode = int(returncode)
+        except (TypeError, ValueError):
+            logger.warning(
+                f"[GoTo] Invalid return code '{returncode}'. "
+                "Return code must be convertible to integer. Defaulting to 0."
+            )
+
+            self.__affiche_message(
+                f'[{self.data["name"]}]-[{self.workingstep["step"]}]: '
+                f'WARNING - Invalid return code "{returncode}" received. '
+                f'Defaulting to 0.',
+                module="Deployment | Execution | Warning",
+            )
+
+            returncode = 0
+        self.__log_and_notify__("debug", f"[GoTo] Normalized return code: {returncode}")
+
         self.workingstep["completed"] = True
-        logging.getLogger().debug(f"Return code: {returncode}")
-        # If the return code is 0, check if there are following steps to play
-        if returncode == 0:
-            self.workingstep["successed"] = True
-            next_steps = [
-                step
-                for step in self.sequence
-                if step.get("step") > self.data["stepcurrent"]
-            ]
+        self.workingstep["successed"] = True
 
-            if next_steps:
-                # Go to the first step available after the current step
-                self.__search_Next_step_int__(next_steps[0]["step"])
-                self.__execstep__()
-                return True
+        # ==========================================================
+        # 2️⃣ Comparison operators
+        # ==========================================================
+        operators = {
+            "=": lambda a, b: a == b,
+            "==": lambda a, b: a == b,
+            "!=": lambda a, b: a != b,
+            "!": lambda a, b: a != b,
+            ">": lambda a, b: a > b,
+            "<": lambda a, b: a < b,
+            ">=": lambda a, b: a >= b,
+            "<=": lambda a, b: a <= b,
+        }
+
+        # ==========================================================
+        # 3️⃣ Evaluate gotoreturncode@ conditions
+        # ==========================================================
+        for key in self.workingstep:
+
+            if not key.startswith("gotoreturncode@"):
+                continue
+
+            condition_part = key.split("@", 1)[1].strip()
+            logger.debug(f"[GoTo] Evaluating condition: '{condition_part}'")
+
+            # ======================================================
+            # 3.1️⃣ Interval handling
+            # ======================================================
+            if condition_part.upper().startswith(("IN", "OUT")):
+
+                interval_match = re.match(
+                    r'^(IN|OUT)\s*(-?\d+)\s*,\s*(-?\d+)$',
+                    condition_part,
+                    re.IGNORECASE,
+                )
+
+                if not interval_match:
+                    logger.warning(
+                        f"[GoTo] Invalid interval format '{condition_part}'."
+                    )
+
+                    self.__affiche_message(
+                        f'[{self.data["name"]}]-[{self.workingstep["step"]}]: '
+                        f'WARNING - Invalid interval format "{condition_part}". '
+                        f'Expected INn1,n2 or OUTn1,n2.',
+                        module="Deployment | Execution | Warning",
+                    )
+                    continue
+
+                op_symbol = interval_match.group(1).upper()
+                start = int(interval_match.group(2))
+                end = int(interval_match.group(3))
+
+                self.__log_and_notify__("debug", f"[GoTo] Interval detected: {op_symbol} {start},{end}")
+                if start > end:
+                    logger.warning(
+                        f"[GoTo] Invalid interval '{condition_part}' "
+                        f"(start greater than end)."
+                    )
+
+                    self.__affiche_message(
+                        f'[{self.data["name"]}]-[{self.workingstep["step"]}]: '
+                        f'WARNING - Invalid interval "{condition_part}" '
+                        f'(start greater than end).',
+                        module="Deployment | Execution | Warning",
+                    )
+                    continue
+
+                matched = (
+                    start <= returncode <= end
+                    if op_symbol == "IN"
+                    else returncode < start or returncode > end
+                )
+
+                if matched:
+                    self.__log_and_notify__("debug",
+                                             f"[GoTo] Interval MATCHED → Jumping to '{self.workingstep[key]}'"
+                    )
+                    return self.__jump_to_label__(self.workingstep[key])
+
+                self.__log_and_notify__("debug","[GoTo] Interval NOT matched")
+                continue
+
+            # ======================================================
+            # 3.2️⃣ Simple comparison
+            # ======================================================
+            if condition_part.lstrip("-").isdigit():
+                op_symbol = "=="
+                value = int(condition_part)
+                self.__log_and_notify__("debug",f"[GoTo] Default equality comparison: == {value}")
             else:
-                # If no next step is defined, go to END_SUCCESS
-                for step_in_sequence in self.sequence:
-                    if step_in_sequence.get("actionlabel") == "END_SUCCESS":
-                        self.__search_Next_step_int__(step_in_sequence["step"])
-                        self.__execstep__()
-                        return True
-        else:
-            # Mark the step as stranded
-            self.workingstep["successed"] = False
+                match = re.match(
+                    r'(==|!=|>=|<=|>|<|=|!)?\s*(-?\d+)$',
+                    condition_part,
+                )
 
-        # If the return code is not 0 and a rule exists, follow this rule
-        for t in self.workingstep:
-            if t.startswith("gotoreturncode"):
-                tab = t.split("@")
-                if len(tab) == 2:
-                    val = int(tab[1])
-                    if val == returncode:
-                        step_or_label = self.workingstep[t]
-                        if step_or_label.isdigit():
-                            self.__search_Next_step_int__(int(step_or_label))
-                        else:
-                            self.__search_Next_step_int__(step_or_label)
-                        self.__execstep__()
-                        return True
+                if not match:
+                    logger.warning(
+                        f"[GoTo] Invalid condition format '{condition_part}'."
+                    )
 
-        # If no specific rule is defined, go to END_ERROR
-        for step_in_sequence in self.sequence:
-            if step_in_sequence.get("actionlabel") == "END_ERROR":
-                self.__search_Next_step_int__(step_in_sequence["step"])
-                self.__execstep__()
-                return True
+                    self.__affiche_message(
+                        f'[{self.data["name"]}]-[{self.workingstep["step"]}]: '
+                        f'WARNING - Invalid condition format "{condition_part}".',
+                        module="Deployment | Execution | Warning",
+                    )
+                    continue
 
-        return False
+                op_symbol = match.group(1) or "=="
+                value = int(match.group(2))
+
+                if op_symbol not in operators:
+                    logger.warning(
+                        f"[GoTo] Unsupported operator '{op_symbol}'."
+                    )
+
+                    self.__affiche_message(
+                        f'[{self.data["name"]}]-[{self.workingstep["step"]}]: '
+                        f'WARNING - Unsupported operator "{op_symbol}" '
+                        f'in condition "{condition_part}".',
+                        module="Deployment | Execution | Warning",
+                    )
+                    continue
+
+                self.__log_and_notify__("debug",f"[GoTo] Operator detected: {op_symbol} {value}")
+
+            # ======================================================
+            # 3.3️⃣ Evaluate operator
+            # ======================================================
+            if operators[op_symbol](returncode, value):
+                self.__log_and_notify__("debug",
+                    f"[GoTo] Condition MATCHED → Jumping to '{self.workingstep[key]}'"
+                )
+                return self.__jump_to_label__(self.workingstep[key])
+
+            self.__log_and_notify__("debug","[GoTo] Condition NOT matched")
+
+        # ==========================================================
+        # 4️⃣ No condition matched
+        # ==========================================================
+        # politique decider
+        # self.__log_and_notify__("debug","[GoTo] No explicit condition matched.")
+        #
+        # if self.__jump_on_returncode_success__(returncode):
+        #     self.__log_and_notify__("debug","[GoTo] Jump executed via __jump_on_returncode_success__.")
+        #     return True
+
+        self.__log_and_notify__("debug","[GoTo] Attempting jump to next step.")
+        result = self.__jump_to_next_step__()
+
+        if not result:
+            logger.error("[GoTo] No jump destination found.")
+            self.__affiche_message(
+                f'[{self.data["name"]}]-[{self.workingstep["step"]}]: '
+                f'ERROR - No valid jump destination found.',
+                module="Deployment | Execution | Error",
+            )
+
+        return result
+
 
     def __Go_to_by_jump__(self, result):
         if "goto" in self.workingstep:
@@ -1699,7 +2016,7 @@ class grafcet:
         except Exception as e:
             self.steplog()
             logging.getLogger().error(str(e))
-            logger.error("\n%s" % (traceback.format_exc()))
+            logging.getLogger().error("\n%s" % (traceback.format_exc()))
             self.terminate(
                 -1,
                 False,

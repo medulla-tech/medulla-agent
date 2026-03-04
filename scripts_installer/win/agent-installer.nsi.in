@@ -8,7 +8,7 @@ Unicode True
 
 ; Define a few variables
 !define PRODUCT_NAME "Medulla Agent"
-!define PRODUCT_PUBLISHER "SIVEO"
+!define PRODUCT_PUBLISHER "Medulla"
 !define PRODUCT_WEB_SITE "http://www.siveo.net"
 !define AGENT_VERSION "@@AGENT_VERSION@@"
 !define PRODUCT_DIR_REGKEY "Software\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}"

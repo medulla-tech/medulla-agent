@@ -1,3 +1,9 @@
+#!/usr/bin/python3
+# -*- coding: utf-8; -*-
+# SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+
 import sqlite3
 import threading
 import logging
@@ -12,8 +18,10 @@ class ManageDb:
 
     def __new__(kls, *args, **kwargs):
         if kls not in ManageDb.instances:
-            self = object.__new__(kls, *args, **kwargs)
-            kls.instances[kls] = self
+            # self = object.__new__(kls, *args, **kwargs)
+            self = object.__new__(kls)   # ✅ PAS d'args
+            # kls.instances[kls] = self
+            ManageDb.instances[kls] = self
         return ManageDb.instances[kls]
 
     def __init__(self):

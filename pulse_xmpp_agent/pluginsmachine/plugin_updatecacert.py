@@ -17,7 +17,7 @@ CACERTVERSION = "1.2"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "updatecacert", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -95,7 +95,7 @@ def updatecacertversion(version):
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
                 '/v "DisplayName" /t REG_SZ  /d "Medulla CA Cert" /f',
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f',
+                '/v "Publisher" /t REG_SZ  /d "Medulla" /f',
                 f'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla CA Cert" '
                 f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f',
             ]

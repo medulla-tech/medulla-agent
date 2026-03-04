@@ -14,11 +14,14 @@ from lib.agentconffile import (
 RDPVERSION = "0.3"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.4", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug(" PL-RDP ###################################################")
     logger.debug(" PL-RDP call %s from %s" % (plugin, message["from"]))
     logger.debug(" PL-RDP ###################################################")
@@ -27,6 +30,15 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         installed_version = checkrdpversion()
         if StrictVersion(installed_version) < StrictVersion(RDPVERSION):
             updaterdp(xmppobject, installed_version)
+        # Ensure Publisher exists (was never set due to previous bug)
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" /v "Publisher"'
+        result = utils.simplecommand(cmd)
+        if result["code"] != 0:
+            utils.simplecommand(
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
+                '/v "Publisher" /t REG_SZ /d "Medulla" /f'
+            )
+            logger.info(" PL-RDP Publisher added to Medulla RDP registry key")
     except Exception:
         pass
 
@@ -70,12 +82,12 @@ def updaterdpversion(version):
 
         cmdEditor = (
             'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" '
-            '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
         )
-        utils.simplecommand(cmdiEditor)
+        utils.simplecommand(cmdEditor)
         if result["code"] == 0:
             logger.info(
-                " PL-RDP We successfully updated Medulla RDP to version " % RDPVERSION
+                " PL-RDP We successfully updated Medulla RDP to version %s" % RDPVERSION
             )
 
 

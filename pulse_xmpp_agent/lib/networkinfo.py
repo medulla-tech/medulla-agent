@@ -19,9 +19,9 @@ from lib.utils import simplecommand, powerschellscript1ps1
 from . import utils
 
 import traceback
-
-if sys.platform.startswith("win"):
-    import wmi
+#
+# if sys.platform.startswith("win"):
+#     import wmi
 
 logger = logging.getLogger()
 
@@ -45,20 +45,26 @@ class networkagentinfo:
             self.messagejson["listipinfo"] = dd
 
     def reduction_mac(self, mac):
-        """
-        Reduce the MAC address to lowercase and remove any separators like colons, dashes, or spaces.
+            """
+            Reduce the MAC address to lowercase and remove any separators like colons, dashes, or spaces.
 
-        :param mac: The MAC address to be reduced.
-        :type mac: str
+            :param mac: The MAC address to be reduced.
+            :type mac: str
 
-        :return: The reduced MAC address.
-        :rtype: str
-        """
-        mac = mac.lower()
-        mac = mac.replace(":", "")
-        mac = mac.replace("-", "")
-        mac = mac.replace(" ", "")
-        return mac
+            :return: The reduced MAC address.
+            :rtype: str
+            """
+            if not mac:
+                return None
+
+            if not isinstance(mac, str):
+                mac = str(mac)
+
+            mac = mac.lower()
+            mac = mac.replace(":", "")
+            mac = mac.replace("-", "")
+            mac = mac.replace(" ", "")
+            return mac
 
     def getuser(self):
         return list({users[0] for users in psutil.users()})
@@ -136,74 +142,67 @@ class networkagentinfo:
             self.messagejson["listipinfo"] = self.getLocalIipAddress()
             self.messagejson["dnshostname"] = platform.node()
             return self.messagejson
-
         elif sys.platform.startswith("win"):
-            """revoit objet reseau windows"""
-            # interface active only
-            # pythoncom.CoInitialize()
-            # try:
-            # wmi_obj = wmi.WMI()
-            # wmi_sql = "select * from Win32_NetworkAdapterConfiguration where IPEnabled=TRUE"
-            # wmi_out = wmi_obj.query(wmi_sql)
-            # finally:
-            # pythoncom.CoUninitialize()
-            # for dev in wmi_out:
-            # objnet = {}
-            # objnet['macaddress'] = dev.MACAddress
-            # objnet['ipaddress'] = dev.IPAddress[0]
-            # try:
-            # objnet['gateway'] = dev.DefaultIPGateway[0]
-            # except BaseException:
-            # objnet['gateway'] = ""
-            # objnet['mask'] = dev.IPSubnet[0]
-            # objnet['dhcp'] = dev.DHCPEnabled
-            # objnet['dhcpserver'] = dev.DHCPServer
-            # self.messagejson['listipinfo'].append(objnet)
-            # try:
-            # self.messagejson['listdns'].append(
-            # dev.DNSServerSearchOrder[0])
-            # except BaseException:
-            # pass
-            # self.messagejson['dnshostname'] = dev.DNSHostName
-            # self.messagejson['msg'] = platform.system()
-            # all interface
-            wmi_obj = wmi.WMI()
-            wmi_sql = "select * from Win32_NetworkAdapterConfiguration"
-            wmi_out = wmi_obj.query(wmi_sql)
-            for dev in wmi_out:
-                if dev.MACAddress is None:
+            # Recuperation compete ipconfig
+            ipconfig_output = subprocess.check_output(
+                "ipconfig /all", shell=True
+            ).decode(errors="ignore")
+
+            interfaces = psutil.net_if_addrs()
+            stats = psutil.net_if_stats()
+
+            # Extraction DNS globaux
+            dns_matches = re.findall(r"DNS Servers.*?:\s+([0-9.]+)", ipconfig_output)
+            self.messagejson["listdns"] = dns_matches
+
+            # Extraction DHCP global
+            if "DHCP Enabled" in ipconfig_output:
+                if "DHCP Enabled. . . . . . . . . . . : Yes" in ipconfig_output:
+                    self.messagejson["dhcp"] = "True"
+
+            # Extraction DHCP server
+            dhcp_server_match = re.search(
+                r"DHCP Server.*?:\s+([0-9.]+)", ipconfig_output
+            )
+            dhcp_server = (
+                dhcp_server_match.group(1) if dhcp_server_match else "0.0.0.0"
+            )
+
+            # Extraction Gateway
+            gateway_match = re.search(
+                r"Default Gateway.*?:\s+([0-9.]+)", ipconfig_output
+            )
+            gateway = gateway_match.group(1) if gateway_match else "0.0.0.0"
+
+            # Parcours interfaces
+            for interface_name, addrs in interfaces.items():
+
+                if not stats[interface_name].isup:
                     continue
-                objnet = {"macaddress": dev.MACAddress, "Description": dev.Description}
-                try:
-                    objnet["ipaddress"] = dev.IPAddress[0]
-                except BaseException:
-                    objnet["ipaddress"] = None
-                try:
-                    objnet["gateway"] = dev.DefaultIPGateway[0]
-                except BaseException:
-                    objnet["gateway"] = ""
-                try:
-                    objnet["mask"] = dev.IPSubnet[0]
-                except BaseException:
-                    objnet["mask"] = None
-                try:
-                    objnet["dhcp"] = dev.DHCPEnabled
-                except BaseException:
-                    objnet["dhcp"] = None
-                try:
-                    objnet["dhcpserver"] = dev.DHCPServer
-                except BaseException:
-                    objnet["dhcpserver"] = None
-                self.messagejson["listipinfo"].append(objnet)
-                try:
-                    self.messagejson["listdns"].append(dev.DNSServerSearchOrder[0])
-                except BaseException:
-                    pass
-                try:
-                    self.messagejson["dnshostname"] = dev.DNSHostName
-                except BaseException:
-                    pass
+
+                objnet = {
+                    "macaddress": None,
+                    "Description": interface_name,
+                    "ipaddress": None,
+                    "gateway": gateway,
+                    "mask": None,
+                    "dhcp": self.messagejson["dhcp"],
+                    "dhcpserver": dhcp_server,
+                }
+
+                for addr in addrs:
+                    if addr.family == psutil.AF_LINK:
+                        objnet["macaddress"] = addr.address
+                    elif addr.family == socket.AF_INET:
+                        objnet["ipaddress"] = addr.address
+                        objnet["mask"] = addr.netmask
+
+                # Ignore interfaces sans IP
+                if objnet["ipaddress"] is not None:
+                    self.messagejson["listipinfo"].append(objnet)
+
             return self.messagejson
+
         elif sys.platform.startswith("darwin"):
             return self.MacOsNetworkInfo()
         else:
@@ -742,18 +741,26 @@ def powershellgetlastuser():
 
 def isMachineInDomain():
     """
-    returns if the machine is part of an AD domain or not
+    Returns if the machine is part of an AD domain or not.
+    Uses CIM (modern replacement for WMI) via PowerShell.
     """
     try:
-        output = subprocess.check_output(
-            ["powershell.exe", """(gwmi win32_computersystem).partofdomain"""],
-            shell=True,
+        # Utilisation de Get-CimInstance au lieu de Get-WmiObject
+        ps_command = "(Get-CimInstance -ClassName Win32_ComputerSystem).PartOfDomain"
+        result = subprocess.run(
+            ["powershell.exe", "-Command", ps_command],
+            capture_output=True,
+            text=True,
+            check=True,
         )
-        return output.strip() == "true"
+        # Nettoyage de la sortie (suppression des espaces et sauts de ligne)
+        output = result.stdout.strip().lower()
+        return output == "true"
     except subprocess.CalledProcessError as e:
-        logger.error(f"subproces isMachineInDomain.output = {e.output}")
+        logger.error(f"Error in isMachineInDomain: {e.stderr}")
+    except Exception as e:
+        logger.error(f"Unexpected error in isMachineInDomain: {e}")
     return False
-
 
 def organizationbymachine():
     """
@@ -942,17 +949,17 @@ def getsystemressource():
     return result[0].rstrip("\n")
 
 
-def getWindowsNameInterfaceForMacadress(macadress):
-    obj = utils.simplecommand("wmic NIC get MACAddress,NetConnectionID")
-    for lig in obj["result"]:
-        l = lig.lower()
-        mac = macadress.lower()
-        if l.startswith(mac):
-            element = lig.split(" ")
-            element[0] = ""
-            fin = [x for x in element if x.strip() != ""]
-            return " ".join(fin)
-
+def getWindowsNameInterfaceForMacadress(mac_address):
+    """
+    Retourne le nom de l'interface réseau correspondant à une adresse MAC donnée.
+    Utilise le module `psutil` pour une approche native et multiplateforme.
+    """
+    mac_address = mac_address.lower().replace("-", ":")
+    for interface, addrs in psutil.net_if_addrs().items():
+        for addr in addrs:
+            if hasattr(addr, 'address') and addr.address.lower() == mac_address:
+                return interface
+    return None
 
 def getUserName():
     """

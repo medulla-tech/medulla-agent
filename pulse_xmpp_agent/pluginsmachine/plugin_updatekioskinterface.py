@@ -15,11 +15,14 @@ KIOSKINTERFACEVERSION = "1.0.0"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.6", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
+
+    if not sys.platform.startswith("win"):
+        return
     logger.debug("PL-KIOSK ###################################################")
     logger.debug("PL-KIOSK call %s from %s" % (plugin, message["from"]))
     logger.debug("PL-KIOSK ###################################################")
@@ -78,7 +81,7 @@ def updatekioskinterfaceversion(version):
 
             cmd = (
                 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla kiosk interface" '
-                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "Medulla" /f'
             )
 
             utils.simplecommand(cmd)

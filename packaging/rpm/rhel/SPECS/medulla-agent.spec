@@ -17,7 +17,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		medulla-agent
-Version:	5.4.4
+Version:	5.4.6
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -76,6 +76,8 @@ Requires:       python3.11-cheroot
 Requires:       python3.11-portend
 Requires:       python3.11-tempora
 Requires:       python3.11-posix-ipc
+Requires:       python3.11-aiofiles
+Requires:       python3.11-websockets
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
 

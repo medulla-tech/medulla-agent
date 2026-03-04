@@ -164,31 +164,126 @@ class manageschedulerdeploy:
 
         return data
 
-
 class ManageDbScheduler(ManageDb):
-    tablename = "scheduler"
-    path = os.path.join(medullaPath(), "var", "tmp", "BDDeploy", "scheduler.db")
+    """
+    Manage the Scheduler SQLite database.
 
-    def __init__(self):
+    This class is a per-class singleton (inherited from ManageDb).
+    Only one instance of ManageDbScheduler can exist per Python process.
+
+    ⚠ IMPORTANT:
+    - The first instantiation defines the agenttype and database path.
+    - Subsequent instantiations will return the same instance and will NOT
+      reconfigure the database, even if a different agenttype is provided.
+    - This design assumes a single agent context per process.
+    """
+
+
+    tablename = "scheduler"   # ✅ NOM DE TABLE
+    filename = "scheduler.db"
+
+    def __init__(self, agenttype: str):
+        """
+        Initialize the Scheduler database manager.
+
+        Parameters
+        ----------
+        agenttype : str
+            Type of agent running the process.
+            Expected values:
+            - "machine"
+            - "relayserver"
+
+        Raises
+        ------
+        RuntimeError
+            If the operating system is not supported.
+
+        Notes
+        -----
+        This initializer is protected against multiple executions due to the
+        singleton pattern. Only the first call has effect.
+        """
+
+        if getattr(self, "_initialized", False):
+            return  # Prevent singleton reinitialization
+
+        self._initialized = True
+
+        # Global runtime context (required by Env)
+        Env.agenttype = agenttype
+
+        # Compute and prepare database directory
+        bddir = self.create_bddir()
+        self._ensure_directory(bddir)
+
+        # Full database path
+        self.path = os.path.join(bddir, self.filename)
+
         super().__init__()
-        bddir_path = self.create_bddir()
 
-        if not os.path.exists(bddir_path):
-            try:
-                os.makedirs(bddir_path, mode=0o700)
-                logger.info(f"Created directory: {bddir_path}")
-            except Exception as e:
-                logger.error(f"Failed to create directory {bddir_path}: {str(e)}")
+
 
     def create_bddir(self):
         """
-        This function returns the appropriate directory for BDDeploy based on the platform.
+        Return the BDDeploy directory depending on the operating system
+        and the current agent type.
+
+        Returns
+        -------
+        str
+            Absolute path to the BDDeploy directory.
+
+        Raises
+        ------
+        RuntimeError
+            If the platform is not supported.
+
+        Warnings
+        --------
+        - On Linux, this method relies on Env.agenttype being initialized.
+        - The returned path does NOT guarantee that the directory exists.
+          Use `_ensure_directory()` before accessing the database.
         """
         if sys.platform.startswith("linux"):
             return os.path.join(Env.user_dir(), "BDDeploy")
+
         elif sys.platform.startswith("win"):
-            return os.path.join(medullaPath(), "var", "tmp", "BDDeploy")
+            return os.path.join(
+                medullaPath(), "var", "tmp", "BDDeploy"
+            )
+
         elif sys.platform.startswith("darwin"):
             return os.path.join("/opt", "Pulse", "BDDeploy")
+
         else:
-            return None
+            raise RuntimeError(f"Unsupported platform: {sys.platform}")
+
+
+
+    def _ensure_directory(self, path):
+        """
+        Ensure that the given directory exists.
+
+        Parameters
+        ----------
+        path : str
+            Directory path to create if it does not exist.
+
+        Raises
+        ------
+        OSError
+            If the directory cannot be created.
+
+        Notes
+        -----
+        - Directory permissions are set to 0700.
+        - This method is safe to call multiple times.
+        """
+        if not os.path.exists(path):
+            try:
+                os.makedirs(path, mode=0o700)
+                logger.info(f"Created directory: {path}")
+            except Exception as e:
+                logger.error(f"Failed to create directory {path}: {e}")
+                raise

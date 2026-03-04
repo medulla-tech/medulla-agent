@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 import socket
-
+from typing import Optional, Dict, List, Union, Any
 import glob
 import sys
 import os
@@ -56,7 +56,6 @@ from lib.managedbkiosk import manageskioskdb
 from lib.iq_custom import iq_custom_xep, iq_value, Myiq
 from lib.utils import (
     DEBUGPULSE,
-    getIpXmppInterface,
     NetworkInfoxmpp,
     refreshfingerprint,
     getRandomName,
@@ -105,7 +104,7 @@ from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 from lib.syncthingapirest import syncthing, syncthingprogram, iddevice, conf_ars_deploy
 from lib.manage_scheduler import manage_scheduler
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows, XmppLogHandler
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
 from lib.httpserver import Controller
@@ -347,12 +346,49 @@ class MUCBot(ClientXMPP):
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
         laps_time_send_ping_to_kiosk = 350
+
+
+        # log direct
+        # attributs
+        self.Log_Request = "Log_Request"
+        self.log_context = "default context"
+        self.log_justification = "aucun"
+
+        # création du handler
+        self.loghandler = XmppLogHandler(self.send_xmpp_message_log)
+        self.loghandler.set_log_level(logging.DEBUG)
+
+        # logger agent
+        self.logger = logging.getLogger("agentxmpp")
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.addHandler(self.loghandler)   # IMPORTANT
+
+        # logger root (optionnel mais utile pour tout capter)
+        root = logging.getLogger()
+        # # root.setLevel(logging.DEBUG)
+        root.addHandler(self.loghandler)
+
+        logging.getLogger("slixmpp").propagate = False
+
+
         logging.debug(
             "check connexion xmpp %ss" % laps_time_check_established_connection
         )
         self.back_to_deploy = {}
         self.config = conf
+        if not hasattr(self.config, "sub_logger"):
+            self.sub_logger = jid.JID("master_log@pulse")
+        else:
+            if (
+                isinstance(self.config.sub_logger, list)
+                and len(self.config.sub_logger) > 0
+            ):
+                self.sub_logger = jid.JID(self.config.sub_logger[0])
+            else:
+                self.sub_logger = jid.JID(self.config.sub_logger)
 
+        # on peut utiliser le logger xmpp message log seulement quand on a donner 1 jid au logger
+        # self.loghandler.activate_for_seconds( 180)
         self.ipconnection = self.config.Server
 
         format = "%(asctime)s - %(levelname)s - (XMPP)%(message)s"
@@ -560,16 +596,10 @@ class MUCBot(ClientXMPP):
                 self.sub_subscribe_all = [jid.JID(self.config.sub_subscribe)]
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
-        if not hasattr(self.config, "sub_logger"):
-            self.sub_logger = jid.JID("master_log@pulse")
-        else:
-            if (
-                isinstance(self.config.sub_logger, list)
-                and len(self.config.sub_logger) > 0
-            ):
-                self.sub_logger = jid.JID(self.config.sub_logger[0])
-            else:
-                self.sub_logger = jid.JID(self.config.sub_logger)
+
+
+
+
 
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = jid.JID("master_subs@pulse")
@@ -698,7 +728,7 @@ class MUCBot(ClientXMPP):
                 self.remove_sessionid_in_ban_deploy_sessionid_list,
                 repeat=True,
             )
-        self.Deploybasesched = ManageDbScheduler()
+        self.Deploybasesched = ManageDbScheduler(agenttype=self.config.agenttype)
         self.eventkiosk = manage_kiosk_message(self.queue_recv_tcp_to_xmpp, self)
         self.infolauncherkiook = manageskioskdb()
         self.kiosk_presence = "False"
@@ -2666,13 +2696,41 @@ class MUCBot(ClientXMPP):
             touser="",
         )
 
+    def _get_local_ip_from_transport(self):
+        """
+        Récupère l'adresse IP locale à partir de la socket associée au transport asyncio.
+
+        Cette méthode tente d'extraire l'adresse IP locale depuis la socket sous-jacente
+        du transport asyncio, si celui-ci est disponible et valide.
+
+        Returns:
+            str | None: L'adresse IP locale si elle est trouvée, sinon None.
+        """
+        self.sockxmpp = None
+        try:
+            if hasattr(self, "transport") and self.transport:
+                self.sockxmpp = self.transport.get_extra_info("socket")
+                if self.sockxmpp:
+                    local_ip = self.sockxmpp.getsockname()[0]
+                    logger.debug(f"Adresse IP locale récupérée depuis le transport : {local_ip}")
+                    return local_ip
+        except Exception as e:
+            logger.error(f"Erreur dans _get_local_ip_from_transport : {e}")
+            pass
+        return None
+
     async def start(self, event):
+        self.local_ip = self._get_local_ip_from_transport()
+        if hasattr(self, "sockxmpp") and self.sockxmpp is not None:
+            logger.info("local ip xmpp %s" % self.local_ip)
+        else:
+            logger.error("local ip xmpp non determine")
         self.send_presence()
         await self.get_roster()
         # send iq to subscribe
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         # machine connected
-        self.config.ipxmpp = getIpXmppInterface(self.config)
+        self.config.ipxmpp = self.local_ip
         # nettoy les fichiers de mise a jour windows
         clean_update_directories()
         self.__clean_message_box()
@@ -2925,6 +2983,25 @@ class MUCBot(ClientXMPP):
         msgbody["sessionid"] = sessionname
         msgbody["session"] = sessionname
         self.send_message(mto=self.sub_logger, mbody=json.dumps(msgbody), mtype="chat")
+
+
+    def send_xmpp_message_log(self, msg: str) -> None:
+        """Fonction  pour envoyer un message XMPP."""
+        self.xmpplog(
+            msg,
+            type= "viewlog",
+            sessionname=getRandomName(4, "Log_Request"),
+            priority=1,
+            action="xmpplog",
+            who=self.boundjid.bare,
+            how=self.log_context,
+            why="log " + self.log_justification,
+            date=None,
+            module=self.Log_Request,
+            fromuser=self.boundjid.bare,
+            touser=self.log_justification,
+        )
+
 
     def xmpplog(
         self,
@@ -3698,9 +3775,8 @@ class MUCBot(ClientXMPP):
         er.messagejson["privatekeyname"] = self.RSA.get_name_key()[1]
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
-
-        self.config.ipxmpp = getIpXmppInterface(self.config)
-        NetworkInfos = NetworkInfoxmpp(self.config.Port)
+        self.config.ipxmpp = self.local_ip
+        NetworkInfos = NetworkInfoxmpp(port=self.config.Port, sock=self.sockxmpp  )
         portconnection = self.config.Port
         if NetworkInfos.ip_address and NetworkInfos.details:
             if not self.config.ipxmpp:
@@ -4503,8 +4579,8 @@ def doTask(
             if pid_connecteur is None:
                 # Si pid_connecteur est None, lance le programme standalone
                 pid_connecteur = launch_standalone_program()
-                with terminate_lock:
-                    shared_dict["reconnect"] = True
+                # with terminate_lock:
+                    # shared_dict["reconnect"] = True
                     # Construire le chemin du fichier
                     # force_reconfiguration = os.path.join(
                     # os.path.dirname(os.path.realpath(__file__)),
@@ -4643,6 +4719,8 @@ class process_xmpp_agent:
             console.setFormatter(formatter)
             console.setLevel(tglevellog)
 
+            # Création du handler
+
             file_handler = logging.FileHandler(tglogfile)
             file_handler.setLevel(tglevellog)
             file_handler.setFormatter(formatter)
@@ -4689,6 +4767,7 @@ class process_xmpp_agent:
                 self.readconfig_Marche_Arret
             except:
                 self.readconfig_Marche_Arret = True
+
 
             self.logger.debug("/---------------------------------\\")
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
