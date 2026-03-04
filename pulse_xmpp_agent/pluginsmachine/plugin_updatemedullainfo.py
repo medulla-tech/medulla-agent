@@ -24,7 +24,7 @@ if sys.platform.startswith("win"):
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.11", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.12", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 
 class Compatibilite:
@@ -231,10 +231,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("PL-MEDULLAINFO ###################################################")
 
     if sys.platform.startswith("win"):
-        #try:
-        #    update_medulla_info_update_notification(xmppobject)
-        #except Exception:
-        #    logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            migrate_registry_publisher(("SIVEO", "NATSU"), "Medulla")
+        except Exception:
+            logger.error("migrate_registry_publisher error:\n%s" % (traceback.format_exc()))
+
         try:
             execute_medulla_info_update()
         except Exception:
@@ -401,4 +402,52 @@ def create_reg_key(key_path):
         winreg.CloseKey(key)
     except Exception as e:
         logger.error(f"PL-MEDULLAINFO Erreur lors de la creation de la cle {key_path}: {e}")
+
+
+def migrate_registry_publisher(old_publishers, new_publisher):
+    """
+    Migrate the Publisher registry value from any of old_publishers to new_publisher
+    in all Uninstall keys.
+    old_publishers can be a string or a tuple/list of strings.
+    """
+    if isinstance(old_publishers, str):
+        old_publishers = (old_publishers,)
+
+    uninstall_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+    try:
+        uninstall_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, uninstall_path)
+    except OSError:
+        return
+
+    i = 0
+    subkeys = []
+    while True:
+        try:
+            subkeys.append(winreg.EnumKey(uninstall_key, i))
+            i += 1
+        except OSError:
+            break
+    winreg.CloseKey(uninstall_key)
+
+    for subkey_name in subkeys:
+        key_path = f"{uninstall_path}\\{subkey_name}"
+        try:
+            key = winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE, key_path, 0,
+                winreg.KEY_READ | winreg.KEY_WRITE
+            )
+            try:
+                publisher, reg_type = winreg.QueryValueEx(key, "Publisher")
+                if publisher in old_publishers:
+                    winreg.SetValueEx(key, "Publisher", 0, reg_type, new_publisher)
+                    logger.info(
+                        "PL-MEDULLAINFO Migrated Publisher '%s' -> '%s' in %s"
+                        % (publisher, new_publisher, subkey_name)
+                    )
+            except OSError:
+                pass
+            finally:
+                winreg.CloseKey(key)
+        except OSError:
+            pass
 
