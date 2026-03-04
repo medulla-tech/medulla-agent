@@ -4,33 +4,243 @@
 
 import logging
 import json
-from lib.utils import set_logging_level
+import os
+import base64
+import zlib
 
 plugin = {"VERSION": "0.1", "NAME": "resultdiskmastering", "TYPE": "relayserver"}  # fmt: skip
 
 logger = logging.getLogger()
 
 
-@set_logging_level
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
-    logging.getLogger().debug("###################################################")
-    logging.getLogger().debug("call %s from %s session id %s" % (plugin, message["from"], sessionid))
-    logging.getLogger().debug("###################################################")
+    logger.debug("###################################################")
+    logger.debug("call %s from %s session id %s" % (plugin, message["from"], sessionid))
+    logger.debug("###################################################")
 
+    if "subaction" in data:
+        if data["subaction"] == "ping":
+            """Recv
+            - action    : resultdiskmastering / ping
+            - desc      : Receive a ping message from davos client. The message contains some info from the client . It's the equivalent to registration on agents.
+            - data:
+                - uuid      : the machine UUID
+                - mac       : the machine mac address
+                - manifest  : the list of plugins and their version launched on davos
+            - resp
+                - to        : davos client
+                - action    : resultping/pong
+                - manifest  : list of plugins to update on davos client
+            """
+
+            uuid = data["uuid"]
+            mac = data["mac"]
+
+            # Get the manifest for the canonic list of plugins
+
+            davos_manifest = {}
+            if "manifest" in data:
+                davos_manifest = data["manifest"]
+
+            # Generate a list of plugins to update on davos.
+            manifest = get_plugins_manifest(objectxmpp, davos_manifest)
+
+            datasend = {
+                "from":objectxmpp.boundjid.bare,
+                "sessionid": sessionid,
+                "ret": 0,
+                "base64": False,
+                "agenttype": objectxmpp.config.agenttype,
+                "action": "resultping" ,
+                "data": {
+                    "subaction":"pong",
+                    "manifest": manifest
+                }
+            }
+
+            objectxmpp.send_message(mto=message["from"], mbody=json.dumps(datasend, indent=4), mtype="chat")
+
+        if data["subaction"] == "askworkflow":
+            """Recv
+            - action    : resultdiskmastering / askworkflow
+            - desc      : The machine has updated its plugins and is ready to work. In this state, the machine is asking what to do.
+            - data:
+                - uuid      : the machine UUID
+                - mac       : the machine mac address
+                - id        : the id of the action associated to the machine, found when booting
+            - resp
+                - to            : master_dma@pulse
+                - action        : diskmastering / askworkflow
+                - manifest      : list of plugins to update on davos client
+                - client_jid    : the davos client jid to return the workflow
+                - action_id     : the action id found when booting
+                - server        : relay (here). Equivalent to from
+            """
+            uuid = data["uuid"]
+            mac = data["mac"]
+            # Transfer the data to the master_img
+            ask_workflow(objectxmpp, sessionid, message["from"].bare, uuid, mac, data["id"])
+
+
+def ask_workflow(objectxmpp, sessionid, client_jid, uuid, mac, action_id):
+    """Send a workflow request to the substitute diskmastering.
+
+    Args:
+        objectxmpp (ClientXMPP): Instance of ClientXMPP Object.
+        sessionid (str): The current sessionid. Keep the same sessionid through the whole process (for one machine).
+        client_jid (str): The davos client jid, to know where the substitute diskmastering has to send the workflow.
+        uuid (str): davos client UUID. Usefull to identify the machine.
+        mac (str): Extra info, can be usefull to have it.
+        action_id (int): The id of the action to execute on the machine. It's a reference to the whole workflow to execute."""
     datasend = {
         "from":objectxmpp.boundjid.bare,
+        "to":"master_dma@pulse",
         "sessionid": sessionid,
         "ret": 0,
+        "action": "diskmastering",
+        "agenttype": objectxmpp.config.agenttype,
+        "data":{
+            "client_jid": client_jid,
+            "subaction":"askworkflow",
+            "sessionid":sessionid,
+            "server": objectxmpp.boundjid.bare,
+            "action_id":action_id,
+            "uuid": uuid,
+            "mac": mac,
+        },
         "base64": False,
-        "agenttype": objectxmpp.config.agenttype
     }
 
-    # Message received from davos client
-    if "subaction" in data:
+    objectxmpp.send_message(mto="master_dma@pulse", mbody=json.dumps(datasend, indent=4), mtype="chat")
 
-        # when a davos client connects to the ejabber server, it send a ping message to explicitely tell to the relay a machine has booted on davos
-        # The server send back a pong message to tells davos client "I'm ready to work with you"
-        if data["subaction"] == "ping":
-            datasend["action"] = "pong"
 
-    objectxmpp.send_message(mto=message["from"], mbody=json.dumps(datasend, indent=4), mtype="chat")
+def get_plugins_manifest(objectxmpp, davos_manifest):
+    """Generate a list of plugins to update on davos client.
+
+    Args:
+        objectxmpp (ClientXMPP) : Instance of ClientXMPP Object.
+        davos_manifest (dict) : Davos client plugins list. Has the shape:
+            {
+            "plugin_aaa": "0.1",
+            "plugin_bbb": "0.1"
+            }
+
+    Returns:
+        dict: the list of plugins which have to be updated on davos client. It has the shape:
+            {
+                "plugin_aaa": {
+                    "VERSION":"0.1",
+                    "NAME":"aaa",
+                    "TYPE":"davos",
+                    "content": compressed and encoded plugin_content
+                }
+            }"""
+    # The davos plugins are located in /var/lib/pulse2/imaging/davos/plugins, see /etc/pulse_xmpp_agent/diskmastering.ini, diskmastering_path to get it
+    base_path=""
+    if hasattr(objectxmpp.config, "diskmastering_path"):
+        base_path = objectxmpp.config.diskmastering_path
+    # Can't generate manifest : updates not available
+    if base_path == "":
+        return {}
+
+    plugins_path = ""
+    plugins_path = os.path.join(base_path, "davos", "xmpp_plugins")
+
+    # Test if the plugins folder exists
+    if os.path.isdir(plugins_path) is False:
+        return {}
+
+    # get the plugins list
+    raws = [x for x in os.listdir(plugins_path) if x.startswith("plugin") and x.endswith(".py")]
+    manifest = {}
+    for file in raws:
+        filename = os.path.join(plugins_path, file)
+        plugin_str = ""
+        plugin = {}
+        content = ""
+
+        # Get the whole content of the plugin
+        with open(filename, "r") as fb:
+            content = fb.read()
+            fb.close()
+
+        # We want the line: plugin = {"VERSION":"x.y.z", "NAME":"aaa", "TYPE": "davos"}
+        lines = content.split("\n")
+        for line in lines:
+            if line.startswith("plugin"):
+                plugin_str = line.split("=")[1]
+                try:
+                    # Get the plugin meta datas
+                    plugin = json.loads(plugin_str)
+                except:
+                    pass
+                finally:
+                    # No need to go further
+                    break
+
+        # For file, the plugin meta are empty : next file
+        if plugin == {}:
+            continue
+        if "TYPE" not in plugin or "NAME" not in plugin or "VERSION" not in plugin:
+            continue
+        if plugin["TYPE"] != "davos":
+            continue
+
+        # In davos_manifest there is the list of module_names, we will continue to use module_name
+
+        # name = <name>
+        # module_name = plugin_<name>
+        # plugin_file = plugin_<name>.py
+        module_name = "plugin_%s"%plugin["NAME"]
+        # Davos doesn't have this plugin : add it
+        if module_name not in davos_manifest:
+            manifest[module_name] = plugin
+            manifest[module_name]["content"] = compress_encode(content)
+        else:
+            logger.error(davos_manifest[module_name])
+            logger.error(plugin)
+            # logger.debug("%s present in davos: check version %s <> %s"%(module_name, davos_manifest[module_name]["VERSION"], plugin["VERSION"]))
+
+            # Davos has this plugin, and the davos version is higher : continue
+            if compare_version(davos_manifest[module_name], plugin["VERSION"]) is False:
+                # Add the plugin in the manifest
+                manifest[module_name] = plugin
+                manifest[module_name]["content"] = compress_encode(content)
+            else:
+                continue
+
+    return manifest
+
+
+def compress_encode(content):
+    """Compress with zlib and encode in base64 the incoming content.
+
+    Args:
+        content (str) : the content to compress and encode
+
+    Returns:
+        str: the content compressed and encoded in base64."""
+
+    result = base64.b64encode(zlib.compress(content.encode("utf-8"))).decode("utf-8")
+    return result
+
+def compare_version(davos, canonic):
+    """Compare the davos version with the canonic version. If davos is higher returns True. We can assimilate False result to : need to update
+
+    Args:
+        davos (str): davos plugin version in X.Y format
+        canonic (str): canonic plugin version  in X.Y format
+
+    Returns:
+        bool: True if the davos version is higher than the canonic version. Else False.
+    """
+    try:
+        davos = float(davos)
+    except:
+        davos = 0.0
+
+    try:
+        canonic = float(canonic)
+    except:
+        canonic = 0.0
+    return davos >= canonic
