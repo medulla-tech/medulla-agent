@@ -65,7 +65,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 for e in result["result"]:
                     e = e.decode("utf-8")
                     if e.startswith("master_dma"):
-                        substitute_diskmastering_jid = e
+                        substitute_diskmastering_jid = e.split("/")[0]
                         break
 
             datasend["data"]["substitute_jid"] = substitute_diskmastering_jid
@@ -78,7 +78,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             - data:
                 - uuid      : the machine UUID
                 - mac       : the machine mac address
-                - id        : the id of the action associated to the machine, found when booting
+                - action_id        : the id of the action associated to the machine, found when booting
             - resp
                 - to            : master_dma@pulse
                 - action        : diskmastering / askworkflow
