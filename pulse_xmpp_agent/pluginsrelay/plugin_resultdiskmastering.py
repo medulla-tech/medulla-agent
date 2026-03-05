@@ -7,6 +7,7 @@ import json
 import os
 import base64
 import zlib
+from mmc.plugins.xmppmaster.master.lib.utils import simplecommand
 
 plugin = {"VERSION": "0.1", "NAME": "resultdiskmastering", "TYPE": "relayserver"}  # fmt: skip
 
@@ -32,9 +33,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 - action    : resultping/pong
                 - manifest  : list of plugins to update on davos client
             """
-
             uuid = data["uuid"]
             mac = data["mac"]
+            server = data["server"]
 
             # Get the manifest for the canonic list of plugins
 
@@ -42,7 +43,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             if "manifest" in data:
                 davos_manifest = data["manifest"]
 
-            # Generate a list of plugins to update on davos.
             manifest = get_plugins_manifest(objectxmpp, davos_manifest)
 
             datasend = {
@@ -58,6 +58,17 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 }
             }
 
+            # Get the substitut diskmastering jid
+            result = simplecommand("ejabberdctl connected_users")
+            substitute_diskmastering_jid = "master_dma@pulse"
+            if result["code"] == 0:
+                for e in result["result"]:
+                    e = e.decode("utf-8")
+                    if e.startswith("master_dma"):
+                        substitute_diskmastering_jid = e
+                        break
+
+            datasend["data"]["substitute_jid"] = substitute_diskmastering_jid
             objectxmpp.send_message(mto=message["from"], mbody=json.dumps(datasend, indent=4), mtype="chat")
 
         if data["subaction"] == "askworkflow":
@@ -197,8 +208,6 @@ def get_plugins_manifest(objectxmpp, davos_manifest):
             manifest[module_name] = plugin
             manifest[module_name]["content"] = compress_encode(content)
         else:
-            logger.error(davos_manifest[module_name])
-            logger.error(plugin)
             # logger.debug("%s present in davos: check version %s <> %s"%(module_name, davos_manifest[module_name]["VERSION"], plugin["VERSION"]))
 
             # Davos has this plugin, and the davos version is higher : continue
@@ -208,7 +217,6 @@ def get_plugins_manifest(objectxmpp, davos_manifest):
                 manifest[module_name]["content"] = compress_encode(content)
             else:
                 continue
-
     return manifest
 
 
