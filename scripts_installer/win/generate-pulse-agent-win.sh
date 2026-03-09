@@ -120,6 +120,9 @@ RSYNC_DL_FILENAME="cwrsync_6.2.8_x64_free.zip"
 RSYNC_FILENAME="rsync.zip"
 OPENSSH_NAME="Medulla SSH"
 OPENSSH_VERSION="8.9"
+INVAGENT_NAME="GLPI Agent"
+INVAGENT_VERSION="1.12"
+INVAGENT_FILENAME="GLPI-Agent-${INVAGENT_VERSION}-x64.msi"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 DOWNLOADS_DIR="downloads"
 SSH_PORT="22"
@@ -263,6 +266,7 @@ compute_parameters_full() {
     FULL_OR_DL_PY_MODULES_64_FILENAMES=$(sed_escape ${PY_MODULES_64})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
     FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
+    FULL_OR_DL_INVAGENT=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${INVAGENT_FILENAME}'"')
     GENERATED_SIZE='FULL'
 }
 
@@ -281,6 +285,7 @@ compute_parameters_dl() {
     FULL_OR_DL_PY_MODULES_64_FILENAMES=$(sed_escape ${PY_MODULES_64})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
     FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
+    FULL_OR_DL_INVAGENT=$(sed_escape '${DownloadFile} '${DL_URL}'/'${INVAGENT_FILENAME}' '${INVAGENT_FILENAME})
     GENERATED_SIZE='MINIMAL'
 }
 
@@ -419,6 +424,9 @@ update_nsi_script() {
         -e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
         -e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
         -e "s/@@OPENSSH_VERSION@@/${OPENSSH_VERSION}/" \
+        -e "s/@@INVAGENT_NAME@@/${INVAGENT_NAME}/" \
+        -e "s/@@INVAGENT_FILENAME@@/${INVAGENT_FILENAME}/" \
+        -e "s/@@FULL_OR_DL_INVAGENT@@/${FULL_OR_DL_INVAGENT}/" \
         -e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
         -e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
         -e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
