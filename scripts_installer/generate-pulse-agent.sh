@@ -27,7 +27,7 @@
 # """
 
 # To be defined for minimal install
-# If server in not accessibe, BASE_URL="https://agents.siveo.net" can be used
+# If server in not accessibe, BASE_URL="https://agents.medulla-tech.io" can be used
 # Find out the FQDN of the server - Overridden if --base-url is defined
 dig `hostname -f` +nosearch +short | tail -n1 | grep -q -E '([0-9]{1,3}\.){3}[0-9]{1,3}'
 if [ $? -eq 0 ]; then

@@ -34,7 +34,7 @@
 #	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
 
 # To be defined for minimal install
-BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
+BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
 cd "`dirname $0`"

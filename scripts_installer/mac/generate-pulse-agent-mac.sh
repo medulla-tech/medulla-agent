@@ -55,7 +55,7 @@
 #   https://files.pythonhosted.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl
 
 # To be defined for minimal install
-BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
+BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
 cd "`dirname $0`"
