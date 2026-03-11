@@ -15,6 +15,7 @@ import subprocess
 import psutil
 import math
 import re
+import json
 
 import traceback
 # Importer winreg uniquement si le système d'exploitation est Windows
@@ -24,7 +25,7 @@ if sys.platform.startswith("win"):
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.12", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.13", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 LATEST_WIN10 = "22H2"
 LATEST_WIN11 = "25H2"
 LATEST_SERVER_ISO = "2025_24H2"
@@ -347,7 +348,7 @@ def execute_medulla_info_update():
             iso_name = iso_name.removesuffix('.iso').removesuffix('.ISO')
         if DisplayVersion == "":
             DisplayVersion = major_name
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
 
     # WINDOWS 10
     elif major_name == 10:
@@ -375,7 +376,7 @@ def execute_medulla_info_update():
             iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
             update = f"{correspondence_text.get(install_language, 'English')}-11"
 
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
     # WINDOWS 11
     elif major_name == 11:
         if DisplayVersion.upper() != LATEST_WIN11:
@@ -384,14 +385,10 @@ def execute_medulla_info_update():
         else:
             iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
             update = f"{correspondence_text.get(install_language, 'English')}-11"
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
-     and DisplayVersion.upper() != LATEST_WIN11:
-        update = f"{correspondence_text.get(install_language, 'English')}-11"
-        iso_name = f"Win{major_name}_24H2_{language_codes.get(install_language, 'English')}_{archi}"
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
     else:
         update = ""
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
 
     medule_info = f"Medulla_{comments_value}"
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayName", medule_info, winreg.REG_SZ)
