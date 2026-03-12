@@ -287,7 +287,7 @@ def execute_medulla_info_update():
     key_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info"
     delete_subkey(key_path)
     current_date = datetime.now().strftime("%Y%m%d")
-    ProductName = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", winreg.REG_SZ)
+    ProductName = get_os_product_name()
 
 
     server_annee=None
@@ -394,6 +394,39 @@ def execute_medulla_info_update():
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayName", medule_info, winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language_fallback}", winreg.REG_SZ)
     logger.debug("PL-MEDULLAINFO Mise a jour du registre terminee.")
+
+def get_os_product_name():
+    """
+    Récupère le nom du système d'exploitation (ex: "Microsoft Windows 11 Pro")
+    en utilisant PowerShell et Get-CimInstance.
+    Retourne une chaîne de caractères ou None en cas d'erreur.
+    """
+    try:
+        # Commande PowerShell pour récupérer le nom du système d'exploitation
+        command = [
+            "powershell",
+            "-Command",
+            "Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object -ExpandProperty Caption"
+        ]
+
+        # Exécute la commande et capture la sortie
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+
+        # Retourne la sortie (en supprimant les espaces et sauts de ligne inutiles)
+        return result.stdout.strip()
+
+    except subprocess.CalledProcessError as e:
+        print(f"Erreur lors de l'exécution de la commande PowerShell : {e.stderr}")
+        return None
+    except Exception as e:
+        print(f"Erreur inattendue : {e}")
+        return None
 
 
 def update_medulla_info_update_notification(xmppobject):
