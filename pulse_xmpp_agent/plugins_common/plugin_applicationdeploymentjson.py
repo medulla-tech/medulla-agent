@@ -1708,7 +1708,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 fromuser=data["login"],
                 touser="",
             )
-            timeoutmax = 20  # timeout 20 seconde
+            timeoutmax = 60  # // Wait 60s for the reverse SSH connection to be established before timeout and cancel the deployment
             cmdreverse = "netstat -van4 | grep %s" % remoteport
             timeattente = 1
             objectxmpp.xmpplog(
