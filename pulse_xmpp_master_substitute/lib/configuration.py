@@ -478,7 +478,7 @@ class confParameter:
 
         # This will be used to configure the machine table from glpi
         # The reg_key_ shown are displayed as reg_key_1 reg_key_2
-        self.summary = ["cn", "description", "os", "type", "user", "entity"]
+        self.summary = ["cn", "description", "os", "user", "entity"]
         if confiobject.has_option("computer_list", "summary"):
             self.summary = confiobject.get("computer_list", "summary").split(" ")
 
