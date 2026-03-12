@@ -438,7 +438,6 @@ def read_reg_value(key_path, value_name, value_type, defaut_valeur=""):
     try:
         key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path)
         value, regtype = winreg.QueryValueEx(key, value_name)
-        logger.debug(f"PL-MEDULLAINFO Erreur : regtype {regtype} value_type {value_type} ")
         winreg.CloseKey(key)
         if regtype == value_type:
             return value
