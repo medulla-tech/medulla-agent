@@ -397,9 +397,9 @@ def execute_medulla_info_update():
 
 def get_os_product_name():
     """
-    Récupère le nom du système d'exploitation (ex: "Microsoft Windows 11 Pro")
+    Recupere le nom du systeme d'exploitation (ex: "Microsoft Windows 11 Pro")
     en utilisant PowerShell et Get-CimInstance.
-    Retourne une chaîne de caractères ou None en cas d'erreur.
+    Retourne une chaine de caracteres ou None en cas d'erreur.
     """
     try:
         # Commande PowerShell pour récupérer le nom du système d'exploitation
