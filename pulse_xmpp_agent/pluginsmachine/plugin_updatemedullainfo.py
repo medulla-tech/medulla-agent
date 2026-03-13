@@ -422,7 +422,7 @@ def get_os_product_name():
         return result.stdout.strip()
 
     except subprocess.CalledProcessError as e:
-        print(f"Erreur lors de l'exécution de la commande PowerShell : {e.stderr}")
+        print(f"Erreur lors de l'execution de la commande PowerShell : {e.stderr}")
         return None
     except Exception as e:
         print(f"Erreur inattendue : {e}")
