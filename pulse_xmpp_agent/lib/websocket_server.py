@@ -39,12 +39,12 @@ class LogTailer:
         self.subscribers.discard(websocket)
 
     async def tail_loop(self):
-        async with aiofiles.open(self.filepath, 'r') as f:
-            await f.seek(0, 2)
+        with open(self.filepath, 'r') as f:
+            f.seek(0, 2)
             while True:
-                line = await f.readline()
+                line = f.readline()
                 if not line:
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.2)
                     continue
                 message = json.dumps({
                     "type": "log",
@@ -54,7 +54,7 @@ class LogTailer:
                     try:
                         await subscriber.send(message)
                     except Exception as e:
-                        logger.error(f"Unexpected error:", {e})
+                        logger.error(f"Unexpected error: {e}")
                         self.remove_subscriber(subscriber)
 
 class WebSocketHandler:
