@@ -425,15 +425,17 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                 )
                                 if hive == "HKEY_CURRENT_USER":
                                     if hasattr(xmppobject.config, "current_user"):
+                                        # Utilisation de PowerShell pour obtenir le SID de l'utilisateur
                                         process = subprocess.Popen(
-                                            "wmic useraccount where name = '%s' "
-                                            "get sid" % xmppobject.config.current_user,
-                                            shell=True,
+                                            ["powershell", "-Command",
+                                            "$user = Get-LocalUser -Name '" + xmppobject.config.current_user + "'; "
+                                            "$sid = $user.SID; Write-Output $sid"],
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT,
+                                            shell=True,
                                         )
-                                        output = process.stdout.readlines()
-                                        sid = output[1].rstrip(" \t\n\r")
+                                        output, _ = process.communicate()
+                                        sid = output.decode("utf-8").strip()
                                         hive = "HKEY_USERS"
                                         path = sid + "\\" + path
                                     else:
@@ -441,6 +443,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                             DEBUGPULSEPLUGIN,
                                             "HKEY_CURRENT_USER hive defined but current_user config parameter is not",
                                         )
+
                                 logging.log(DEBUGPULSEPLUGIN, "hive: %s" % hive)
                                 logging.log(DEBUGPULSEPLUGIN, "path: %s" % path)
                                 logging.log(DEBUGPULSEPLUGIN, "sub_key: %s" % sub_key)
