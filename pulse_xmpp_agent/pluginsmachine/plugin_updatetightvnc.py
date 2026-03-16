@@ -17,36 +17,7 @@ TIGHTVNC = "2.8.81"
 COMPLETETIGHTVNC = "2.8.81.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.1", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
-
-
-def get_tightvnc_identifying_number():
-    """
-    Return the MSI identifying number (ProductCode) of TightVNC
-    using the Windows registry instead of WMIC.
-    """
-
-    ps_cmd = r"""
-$paths = @(
-'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
-'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
-)
-
-$app = Get-ItemProperty $paths |
-Where-Object {$_.DisplayName -like "*TightVNC*"} |
-Select-Object -First 1 PSChildName
-
-if ($app) { $app.PSChildName }
-"""
-
-    cmd = f'powershell -ExecutionPolicy Bypass -Command "{ps_cmd}"'
-
-    result = utils.simplecommand(cmd)
-
-    if result["code"] == 0 and result["result"]:
-        return result["result"][0].strip()
-
-    return None
+plugin = {"VERSION": "2.10", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -59,10 +30,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     if sys.platform.startswith("win"):
         try:
-
-            identifyingnumber = get_tightvnc_identifying_number()
-            if identifyingnumber:
-
+            identifyingnumber_cmd = (
+                'wmic product get name,identifyingnumber | find "TightVNC"'
+            )
+            identifyingnumber_result = utils.simplecommand(identifyingnumber_cmd)
+            if identifyingnumber_result["code"] == 0:
+                identifyingnumber = (
+                    identifyingnumber_result["result"][0].strip().split()[0]
+                )
                 installed_version = checktightvncversion(identifyingnumber)
 
                 if Version(installed_version) < Version(COMPLETETIGHTVNC):
@@ -250,12 +225,9 @@ def updatetightvnc(xmppobject):
             filename,
         )
         logger.debug(f"PL-TIGHT Downloading {dl_url}")
-        downloader = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename))
-
-        # Appel de la méthode downloadurl
-        result, txtmsg = downloader.downloadurl()
-
-
+        result, txtmsg = utils.downloadfile(
+            dl_url, os.path.join(install_tempdir, filename)
+        ).downloadurl()
         if result:
             # Download success
             logger.info(f"PL-TIGHT {txtmsg}")

@@ -4554,8 +4554,7 @@ class downloadfile:
         except (
             BaseException
         ):  # handle other exceptions such as attribute errors skipcq: FLK-E722
-            # return False, "Unexpected error: %s", sys.exc_info()[0]
-            return False, f"Unexpected error: {sys.exc_info()[0]}"
+            return False, "Unexpected error: %s", sys.exc_info()[0]
 
 
 def minifyjsonstring(strjson):
@@ -5248,53 +5247,26 @@ class offline_search_kb:
         return "(" + ",".join(compactlist) + ")"
 
     def searchpackage(self):
-        """
-        Récupère la liste des KB installés sur Windows
-        Retour : liste de dictionnaires avec
-            - description
-            - HotFixID
-            - InstalledBy
-            - InstalledOn (M/d/yyyy)
-        """
         endresult = []
-
         if sys.platform.startswith("win"):
             try:
-                # Commande PowerShell avec date universelle M/d/yyyy
-                ps_command = (
-                    'Get-HotFix | '
-                    'Select-Object HotFixID, Description, InstalledBy, '
-                    '@{Name="InstalledOn";Expression={$_.InstalledOn.ToString("M/d/yyyy")}} | '
-                    'ConvertTo-Json'
+                ret = simplecommand(
+                    encode_strconsole("wmic qfe list brief /format:texttablewsys")
                 )
-
-                result = subprocess.run(
-                    ["powershell", "-Command", ps_command],
-                    capture_output=True,
-                    text=True
-                )
-
-                output = result.stdout
-
-                # Conversion JSON en liste de dict
-                try:
-                    kb_list = json.loads(output)
-                except json.JSONDecodeError:
-                    kb_list = []
-
-                # Transformation pour correspondre à la structure attendue
-                for kb in kb_list:
-                    endresult.append({
-                        "description": kb.get("Description", ""),
-                        "HotFixID": kb.get("HotFixID", ""),
-                        "InstalledBy": kb.get("InstalledBy", ""),
-                        "InstalledOn": kb.get("InstalledOn", "")
-                    })
-
+                if ret["code"] == 0:
+                    for t in ret["result"]:
+                        t = decode_strconsole(t)
+                        resultat = {}
+                        resultat["description"] = t[0:16].strip()
+                        resultat["HotFixID"] = t[30:40].strip()
+                        if not resultat["HotFixID"].startswith("KB"):
+                            continue
+                        resultat["InstalledBy"] = t[54:74].strip()
+                        resultat["InstalledOn"] = t[75:87].strip()
+                        endresult.append(resultat)
             except Exception as e:
                 logger.error("searchpackage : %s" % e)
                 logger.error(traceback.format_exc())
-
         return endresult
 
     def search_malicious_software_removal_tool(self):
