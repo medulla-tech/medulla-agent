@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2020-2024 Siveo <support@siveo.net>
+# SPDX-FileCopyrightText: 2025-2026 NATSU <support@medulla-tech.io>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import sys
@@ -27,7 +28,7 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.13", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 LATEST_WIN10 = "22H2"
-LATEST_WIN11 = "25H2"
+LATEST_WIN11 = "26H2"
 LATEST_SERVER_ISO = "2025_24H2"
 
 class Windows11Compatibility:
@@ -325,11 +326,11 @@ def execute_medulla_info_update():
     value_data = r'"C:\Program Files\Python3\python.exe" "C:\Program Files\Medulla\bin\uninstall_pulse2_update_notification.py"'
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayVersion", "1.0.0", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Language", int(install_language, 16), winreg.REG_DWORD)
-    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Publisher", "SIVEO", winreg.REG_SZ)
+    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Publisher", "Medulla", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "UninstallString", value_data, winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayIcon", r"C:\Program Files\Medulla\bin\install.ico", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "InstallLocation", r"C:\Program Files\Medulla\bin", winreg.REG_SZ)
-    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "URLInfoAbout", "http://www.siveo.net", winreg.REG_SZ)
+    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "URLInfoAbout", "https://medulla-tech.io", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "NoModify", 1, winreg.REG_DWORD)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "MajorVersion", "1", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "MinorVersion", "1", winreg.REG_SZ)
@@ -381,7 +382,7 @@ def execute_medulla_info_update():
     elif major_name == 11:
         if DisplayVersion.upper() != LATEST_WIN11:
             update = f"{correspondence_text.get(install_language, 'English')}-11"
-            iso_name = f"Win{major_name}_24H2_{language_codes.get(install_language, 'English')}_{archi}"
+            iso_name = f"Win{major_name}_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
         else:
             iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
             update = f"{correspondence_text.get(install_language, 'English')}-11"
