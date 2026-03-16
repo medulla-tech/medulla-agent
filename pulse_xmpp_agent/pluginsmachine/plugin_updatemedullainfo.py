@@ -26,7 +26,7 @@ if sys.platform.startswith("win"):
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.14", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.13", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 LATEST_WIN10 = "22H2"
 LATEST_WIN11 = "26H2"
 LATEST_SERVER_ISO = "2025_24H2"
