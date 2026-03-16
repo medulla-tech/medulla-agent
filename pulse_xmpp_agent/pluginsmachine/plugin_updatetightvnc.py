@@ -17,7 +17,7 @@ TIGHTVNC = "2.8.81"
 COMPLETETIGHTVNC = "2.8.81.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.1", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.11", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 def get_tightvnc_identifying_number():
