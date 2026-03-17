@@ -39,23 +39,30 @@ class LogTailer:
         self.subscribers.discard(websocket)
 
     async def tail_loop(self):
-        with open(self.filepath, 'r') as f:
-            f.seek(0, 2)
-            while True:
-                line = f.readline()
-                if not line:
-                    await asyncio.sleep(0.2)
-                    continue
-                message = json.dumps({
-                    "type": "log",
-                    "data": line.rstrip()
-                })
-                for subscriber in list(self.subscribers):
-                    try:
-                        await subscriber.send(message)
-                    except Exception as e:
-                        logger.error(f"Unexpected error: {e}")
-                        self.remove_subscriber(subscriber)
+        while True:
+            try:
+                with open(self.filepath, 'r') as f:
+                    f.seek(0, 2)
+                    while True:
+                        line = f.readline()
+                        if not line:
+                            await asyncio.sleep(0.2)
+                            continue
+                        message = json.dumps({
+                            "type": "log",
+                            "data": line.rstrip()
+                        })
+                        for subscriber in list(self.subscribers):
+                            try:
+                                await subscriber.send(message)
+                            except Exception as e:
+                                logger.error(f"Unexpected error: {e}")
+                                self.remove_subscriber(subscriber)
+            except FileNotFoundError:
+                await asyncio.sleep(5)
+            except Exception as e:
+                logger.error(f"Error in tail_loop for {self.filepath}: {e}")
+                await asyncio.sleep(5)
 
 class WebSocketHandler:
     def __init__(self, websocket):
@@ -222,6 +229,14 @@ async def main():
         return
 
     load_log_tailers_from_args(args.log_path)
+
+    # Built-in tailer for medulla update log
+    update_log = "/var/log/medulla_update.log"
+    if "medulla" not in log_tailers:
+        log_tailers["medulla"] = {}
+    if "medulla_update" not in log_tailers["medulla"]:
+        log_tailers["medulla"]["medulla_update"] = LogTailer(update_log)
+        print(f"Logtailer added for medulla/medulla_update -> {update_log}")
 
     for group in log_tailers.values():
         if isinstance(group, dict):
