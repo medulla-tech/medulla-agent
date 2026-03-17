@@ -360,6 +360,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     for x in os.listdir(searchreversesshprocess)
                     if x[-4:] == ".pid"
                 ]:
+                    # Add an exception for kiosk.pid, if not, the kiosk is killed too
                     if f.endswith("kiosk.pid"):
                         continue
                     pid = utils.file_get_contents(f).strip(" \n\r\t")
