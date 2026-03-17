@@ -7,6 +7,8 @@ import json
 import os
 import base64
 import zlib
+import time
+
 from mmc.plugins.xmppmaster.master.lib.utils import simplecommand
 
 plugin = {"VERSION": "0.1", "NAME": "resultdiskmastering", "TYPE": "relayserver"}  # fmt: skip
@@ -20,6 +22,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
 
     if "subaction" in data:
+        if data["subaction"] == "log":
+            # TODO: save logs associated to the data["action_id"] + data["uuid"]
+            pass
+
         if data["subaction"] == "ping":
             """Recv
             - action    : resultdiskmastering / ping
@@ -59,8 +65,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             }
 
             # Get the substitut diskmastering jid
+            substitute_diskmastering_jid = ""
             result = simplecommand("ejabberdctl connected_users")
-            substitute_diskmastering_jid = "master_dma@pulse"
             if result["code"] == 0:
                 for e in result["result"]:
                     e = e.decode("utf-8")
@@ -76,9 +82,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             - action    : resultdiskmastering / askworkflow
             - desc      : The machine has updated its plugins and is ready to work. In this state, the machine is asking what to do.
             - data:
-                - uuid      : the machine UUID
-                - mac       : the machine mac address
-                - action_id        : the id of the action associated to the machine, found when booting
+                - uuid          : the machine UUID
+                - mac           : the machine mac address
+                - action_id     : the id of the action associated to the machine, found when booting
+                - client_jid    : the davos client jid to return the workflow
             - resp
                 - to            : master_dma@pulse
                 - action        : diskmastering / askworkflow
@@ -90,7 +97,25 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             uuid = data["uuid"]
             mac = data["mac"]
             # Transfer the data to the master_img
-            ask_workflow(objectxmpp, sessionid, message["from"].bare, uuid, mac, data["id"])
+            ask_workflow(objectxmpp, sessionid, message["from"].bare, uuid, mac, data["action_id"])
+
+        if data["subaction"] == "register":
+            datasend = {
+                "action":"resultinventory",
+                "from": objectxmpp.boundjid.bare,
+                "to": "master_inv@pulse",
+                "sessionid": sessionid,
+                "ret": 0,
+                "base64":False,
+                "data":{
+                    "inventory": data["inventory"],
+                }
+            }
+            # Send inventory to master_inv@pulse
+            objectxmpp.send_message(mto="master_inv@pulse", mbody=json.dumps(datasend, indent=4), mtype="chat")
+            time.sleep(5)
+
+        # TODO: what to do on <step execution done> event
 
 
 def ask_workflow(objectxmpp, sessionid, client_jid, uuid, mac, action_id):
@@ -114,7 +139,6 @@ def ask_workflow(objectxmpp, sessionid, client_jid, uuid, mac, action_id):
             "client_jid": client_jid,
             "subaction":"askworkflow",
             "sessionid":sessionid,
-            "server": objectxmpp.boundjid.bare,
             "action_id":action_id,
             "uuid": uuid,
             "mac": mac,
@@ -148,17 +172,24 @@ def get_plugins_manifest(objectxmpp, davos_manifest):
             }"""
     # The davos plugins are located in /var/lib/pulse2/imaging/davos/plugins, see /etc/pulse_xmpp_agent/diskmastering.ini, diskmastering_path to get it
     base_path=""
-    if hasattr(objectxmpp.config, "diskmastering_path"):
+    plugins_path = ""
+
+    if hasattr(objectxmpp.config, "diskmastering_path_plugin_base"):
+        plugins_path = objectxmpp.config.diskmastering_path_plugin_base
+    elif hasattr(objectxmpp.config, "diskmastering_path"):
         base_path = objectxmpp.config.diskmastering_path
-    # Can't generate manifest : updates not available
-    if base_path == "":
+
+    if plugins_path == "" and base_path == "":
+        logger.warning("%s or %s empty"%(plugins_path, base_path))
         return {}
 
-    plugins_path = ""
-    plugins_path = os.path.join(base_path, "davos", "xmpp_plugins")
+    # Generate the plugins path from base path if plugins path is empty
+    if plugins_path == "":
+        plugins_path = os.path.join(base_path, "davos", "xmpp_plugins")
 
     # Test if the plugins folder exists
     if os.path.isdir(plugins_path) is False:
+        logger.warning("%s doesn't exists"%plugins_path)
         return {}
 
     # get the plugins list
@@ -231,6 +262,13 @@ def compress_encode(content):
 
     result = base64.b64encode(zlib.compress(content.encode("utf-8"))).decode("utf-8")
     return result
+
+
+def decode_decompress(content):
+    """Decode base64 content string, then decompress the binary"""
+    result = zlib.decompress(base64.b64decode(content)).decode("utf-8")
+    return result
+
 
 def compare_version(davos, canonic):
     """Compare the davos version with the canonic version. If davos is higher returns True. We can assimilate False result to : need to update
