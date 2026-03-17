@@ -27,7 +27,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "4.2", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "4.3", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -360,6 +360,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     for x in os.listdir(searchreversesshprocess)
                     if x[-4:] == ".pid"
                 ]:
+                    if f.endswith("kiosk.pid"):
+                        continue
                     pid = utils.file_get_contents(f).strip(" \n\r\t")
                     cmd = "taskkill /F /PID %s" % str(pid)
                     logger.info(cmd)
