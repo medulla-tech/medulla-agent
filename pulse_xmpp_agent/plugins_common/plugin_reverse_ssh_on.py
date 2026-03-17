@@ -27,7 +27,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "4.1", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "4.2", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -389,7 +389,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 if level <= logging.DEBUG:
 
                     objectxmpp.xmpplog(
-                            "Reverse sse script : %s"%cmd1,
+                            "Reverse ssh script : %s"%cmd1,
                             type="deploy",
                             sessionname=sessionid,
                             priority=-1,
