@@ -38,7 +38,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                 result["date_end"] = result["date_end"].strftime("%Y-%m-%d %H:%M:%S")
 
                 # result["content"] contains the workflow
-                result["content"]
                 workflow = json.loads(result["content"])
 
                 # Modify the json
@@ -50,7 +49,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                         else:
                             step["data"] = ""
                 
-                del result["content"]
+                del(result["content"])
 
                 result["workflow"] = workflow
                 
