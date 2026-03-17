@@ -1,5 +1,26 @@
 # Change Log
 
+## [5.5.0](https://github.com/medulla-tech/medulla-agent/releases/tag/5.5.0) (2026-03-17)
+- [FEATURE] Improve debugging by logging ssh errors directly on deployment audit page
+- [FEATURE] Allow having multiple XMPP chat domains on clients
+- [FEATURE] Rename Medulla agent processes on Windows to medulla.exe
+- [FEATURE] Schedule CVE security scans on relay agents
+- [FEATURE] Define Medulla for registry records for Medulla agent packages
+- [FEATURE] Integrate websocket logs for server logs
+- [FEATURE] Improve the GoTo branching in deployment grafcet
+- [FEATURE] Install inventory agent by Medulla agents installer for faster inventories
+- [FEATURE] Wait up to one minute for letting the reverse ssh connection to be established
+- [FEATURE] Remove Type column from default Computers view for better readability
+- [BUGFIX]  Replace deprecated ifconfig command
+- [BUGFIX]  Fix permissions on ssh authorized_keys file on Linux clients
+- [BUGFIX]  Replace deprecated wmic command
+- [BUGFIX]  Improve network information collection for XMPP
+- [BUGFIX]  Fix reversessh connection persistency for the Kiosk
+- [BUGFIX]  Fix calls to medulla-tech.io servers
+- [BUGFIX]  Improve detection of Windows versions
+- [BUGFIX]  Fix installation of SSH key for pulseuser
+- [BUGFIX]  Fix Linux agent version reporting 5.4.3
+
 ## [5.4.6](https://github.com/medulla-tech/medulla-agent/releases/tag/5.4.6) (2025-12-31)
 - [BUGFIX]  Copy agent installer to imaging postinst folder
 - [BUGFIX]  Fix permissions on ssh authorized_keys in agent installer for Linux
