@@ -388,7 +388,8 @@ def list_products_on(xmppobject, data):
     # En cas d'erreur, on retourne la liste des table mise à jour sous forme de dictionnaires
     try:
         system_info = data.get("system_info")
-        platform_type = system_info["platform_info"].get("type", None)
+        # platform_type = system_info["platform_info"].get("type", None)
+        platform_type = system_info["platform_info"].get("type", "").lower()
         # Récupération de la valeur de machine_arch
         machine_arch = system_info["platform_info"].get("machine", None)
         ProductName =  system_info["infobuild"].get("ProductName", None)
@@ -451,9 +452,9 @@ def list_products_on(xmppobject, data):
                         f"platform_type: {platform_type}, arch: {machine_arch}, "
                         f"DisplayVersion: {DisplayVersion}"
                     )
-        elif "Windows 10" in platform_type:
+        elif "windows 10" in platform_type:
             os_name = "Win10"
-        elif "Windows 11" in platform_type:
+        elif "windows 11" in platform_type:
             os_name = "Win11"
         else:
             raise ValueError(

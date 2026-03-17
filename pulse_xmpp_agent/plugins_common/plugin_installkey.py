@@ -8,7 +8,7 @@ from lib import utils
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "4.2", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "4.3", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -37,10 +37,14 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         if result is False:
             logger.error(msglog)
         msg = [msglog]
-        result, msglog = utils.pulseuser_profile_mustexist(username)
-        if result is False:
-            logger.error(msglog)
-        msg.append(msglog)
+        try:
+            result, msglog = utils.pulseuser_profile_mustexist(username)
+            if result is False:
+                logger.error(msglog)
+            msg.append(msglog)
+        except Exception as e:
+            logger.error("installkey: profile check failed: %s" % str(e))
+            msg.append("Profile check failed: %s" % str(e))
 
         # Add the key to pulseuser account
         relayserver_pubkey = data["key"]

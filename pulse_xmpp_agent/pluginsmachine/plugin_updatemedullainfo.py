@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2020-2024 Siveo <support@siveo.net>
+# SPDX-FileCopyrightText: 2025-2026 NATSU <support@medulla-tech.io>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import sys
@@ -15,6 +16,7 @@ import subprocess
 import psutil
 import math
 import re
+import json
 
 import traceback
 # Importer winreg uniquement si le système d'exploitation est Windows
@@ -24,128 +26,152 @@ if sys.platform.startswith("win"):
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.12", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.14", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+LATEST_WIN10 = "22H2"
+LATEST_WIN11 = "26H2"
+LATEST_SERVER_ISO = "2025_24H2"
 
+class Windows11Compatibility:
 
-class Compatibilite:
     def __init__(self, debug=False):
-        """
-        Initialize the Compatibilite class with an optional debug parameter.
-
-        Parameters:
-            debug (bool): If True, print debug information. Default is False.
-        """
         self.debug = debug
 
-    def is_uefi(self):
-        """
-        Check if the system is using UEFI.
-
-        Returns:
-            bool: True if UEFI is detected, False otherwise.
-        """
+    def check_ram(self):
         try:
-            result = os.path.exists(r"C:\Windows\System32\efi")
+            ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+            result = ram_gb >= 4
+
             if self.debug:
-                print(f"UEFI Check: {result}")
+                logger.debug(f"RAM check: {ram_gb:.2f} GB -> {result}")
+
             return result
-        except Exception as e:
-            if self.debug:
-                print(f"UEFI Check Error: {e}")
+
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
             return False
 
-    def has_tpm_2(self):
-        """
-        Check if the system has TPM version 2.0 or higher using PowerShell.
-
-        Returns:
-            bool: True if TPM 2.0 or higher is detected, False otherwise.
-        """
-        pattern = '|'.join(map(re.escape, [",", ";", ":", "|", " "]))
+    def check_disk(self):
         try:
-            result = subprocess.run(
-                ['powershell', 'Get-WmiObject -Namespace "root\\cimv2\\security\\microsofttpm" -Class Win32_Tpm | Select-Object SpecVersion'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            result=[x for x in result.stdout.splitlines() if x !=""]
+            total, _, _ = shutil.disk_usage("C:\\")
+            disk_gb = total / (1024 ** 3)
+            result = disk_gb >= 64
 
-            tpm_2_detected = False
-            for line in result:
-                # Extract the version number from the line
-                version = re.split(pattern, line)
-                if version:
-                    # version = line.split()[-1].strip()
-                    try:
-                        if float(version[0]) >= 2.0:
-                            tpm_2_detected = True
-                            break
-                    except ValueError:
-                        # Handle cases where conversion to float fails
-                        continue
             if self.debug:
-                print(f"TPM 2.0 Check: {tpm_2_detected}")
-            return tpm_2_detected
-        except Exception as e:
-            if self.debug:
-                print(f"TPM 2.0 Check Error: {e}")
-            return False
+                logger.debug(f"Disk check: {disk_gb:.2f} GB -> {result}")
 
-    def has_more_than_4gb_ram(self):
-        """
-        Check if the system has more than 4GB of RAM.
-
-        Returns:
-            bool: True if more than 4GB of RAM is detected, False otherwise.
-        """
-        try:
-            total_ram_bytes = psutil.virtual_memory().total
-            total_ram_gb = math.ceil(total_ram_bytes / (1024 ** 3))
-            result = total_ram_gb >= 4
-            if self.debug:
-                print(f"RAM Check: {result} (Total RAM: {total_ram_gb:.2f}GB)")
             return result
-        except Exception as e:
-            if self.debug:
-                print(f"RAM Check Error: {e}")
+
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
             return False
 
-    def is_disk_c_ge_80gb(self):
-        """
-        Check if the C: drive has a total capacity of 80GB or more.
-
-        Returns:
-            bool: True if the C: drive capacity is 80GB or more, False otherwise.
-        """
+    def check_uefi(self):
         try:
-            total_bytes, _, _ = shutil.disk_usage("C:\\")
-            total_gb = total_bytes / (1024 ** 3)
-            result = total_gb >= 80
+            cmd = [
+                "powershell",
+                "-Command",
+                "(Get-CimInstance -ClassName Win32_ComputerSystem).BootupState"
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            output = result.stdout.lower()
+
+            is_uefi = "efi" in output
+
             if self.debug:
-                print(f"Disk C: Check: {result} (Total Disk Size: {total_gb:.2f}GB)")
-            return result
-        except Exception as e:
-            if self.debug:
-                print(f"Disk C: Check Error: {e}")
+                logger.debug(f"UEFI check: {output.strip()} -> {is_uefi}")
+
+            return is_uefi
+
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
             return False
 
-    def system_meets_requirements(self):
-        """
-        Check if the system meets all the specified requirements.
+    def check_tpm(self):
+        try:
+            cmd = [
+                "powershell",
+                "-Command",
+                "Get-Tpm | ConvertTo-Json"
+            ]
 
-        Returns:
-            bool: True if all requirements are met, False otherwise.
-        """
-        result = (
-            self.is_disk_c_ge_80gb() and
-            self.has_more_than_4gb_ram() and
-            self.has_tpm_2() and
-            self.is_uefi()
-        )
-        if self.debug:
-            print(f"System Meets Requirements: {result}")
-        return result
+            result = subprocess.run(cmd, capture_output=True, text=True)
+
+            if not result.stdout:
+                return False
+
+            tpm = json.loads(result.stdout)
+
+            present = tpm.get("TpmPresent", False)
+            spec = tpm.get("SpecVersion", "")
+
+            tpm_ok = present and "2.0" in spec
+
+            if self.debug:
+                logger.debug(f"TPM check: present={present} spec={spec} -> {tpm_ok}")
+
+            return tpm_ok
+
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+            return False
+
+    def check_cpu(self):
+        try:
+            cpu = platform.processor().lower()
+
+            if self.debug:
+                logger.debug(f"CPU detected: {cpu}")
+
+            # Intel
+            intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
+            if intel_match:
+                generation = int(intel_match.group(1)[:2])
+                result = generation >= 8
+
+                if self.debug:
+                    logger.debug(f"Intel generation {generation} -> {result}")
+
+                return result
+
+            # AMD Ryzen
+            amd_match = re.search(r'ryzen\s*(\d)', cpu)
+            if amd_match:
+                generation = int(amd_match.group(1))
+                result = generation >= 2
+
+                if self.debug:
+                    logger.debug(f"AMD Ryzen generation {generation} -> {result}")
+
+                return result
+
+            return False
+
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+            return False
+
+    def is_compatible(self):
+        try:
+
+            checks = [
+                self.check_ram(),
+                self.check_disk(),
+                self.check_uefi(),
+                self.check_tpm(),
+                self.check_cpu()
+            ]
+
+            result = all(checks)
+
+            if self.debug:
+                logger.debug(f"Windows 11 compatibility result: {result}")
+
+            return result
+
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+            return False
 # "0409": "EnglishInternational",
 # Tableau de correspondance entre les codes Windows et les langues
 # "0409": "EnglishInternational",
@@ -156,13 +182,13 @@ language_codes = {
     "0406": "Danish",
     "0407": "German",
     "0408": "Greek",
-    "0809": "English",
-    "0409": "English",
+    "0809": "English_UK",
+    "0409": "English_US",
     "040A": "Spanish",
     "080A": "Spanish_Mexico",
     "0425": "Estonian",
-    "040E": "Finnish",
-    "0C0C": "FrenchCanadian",
+    "040B": "Finnish",
+    "0C0C": "French_Canadian",
     "040C": "French",
     "040D": "Hebrew",
     "0439": "Hindi",
@@ -176,16 +202,20 @@ language_codes = {
     "0414": "Norwegian",
     "0413": "Dutch",
     "0415": "Polish",
-    "0416": "Portuguese",
+    "0816": "Portuguese_Portugal",
+    "0416": "Portuguese_Brazil",
     "0419": "Russian",
     "041D": "Swedish",
     "041E": "Thai",
     "041F": "Turkish",
     "0422": "Ukrainian",
     "7C04": "Chinese_Traditional",
-    "0804": "Chinese_Simplified"
+    "0804": "Chinese_Simplified",
+    "041B": "Slovak",
+    "0424": "Slovenian",
+    "0403": "Catalan",
+    "0429": "Farsi"
 }
-
 # Tableau de correspondance entre les codes Windows et les textes de correspondance
 correspondence_text = {
     "0401": "ar-SA",
@@ -199,7 +229,7 @@ correspondence_text = {
     "040A": "es-ES",
     "080A": "es-MX",
     "0425": "et-EE",
-    "040E": "fi-FI",
+    "040B": "fi-FI",
     "0C0C": "fr-CA",
     "040C": "fr-FR",
     "040D": "he-IL",
@@ -214,14 +244,19 @@ correspondence_text = {
     "0414": "nb-NO",
     "0413": "nl-NL",
     "0415": "pl-PL",
-    "0416": "pt-PT",
+    "0816": "pt-PT",
+    "0416": "pt-BR",
     "0419": "ru-RU",
     "041D": "sv-SE",
     "041E": "th-TH",
     "041F": "tr-TR",
     "0422": "uk-UA",
     "7C04": "zh-CHT",
-    "0804": "zh-CN"
+    "0804": "zh-CN",
+    "041B": "sk-SK",
+    "0424": "sl-SI",
+    "0403": "ca-ES",
+    "0429": "fa-IR"
 }
 
 @utils.set_logging_level
@@ -244,14 +279,16 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 
 def execute_medulla_info_update():
-    compatibilite = Compatibilite(debug=False)
-    compatiblew11=compatibilite.system_meets_requirements()
-    compatibleWin11=1
+    compat = Windows11Compatibility(debug=False)
+    compatible=compat.is_compatible()
+    # compatibleWin11 = int(compatible) #  1 ou 0
+    update = ""
+    iso_name = ""
 
     key_path = r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info"
     delete_subkey(key_path)
     current_date = datetime.now().strftime("%Y%m%d")
-    ProductName = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", winreg.REG_SZ)
+    ProductName = get_os_product_name()
 
 
     server_annee=None
@@ -265,17 +302,19 @@ def execute_medulla_info_update():
     except Exception:
         DisplayVersion = read_reg_value(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", winreg.REG_SZ)
 
+    major_name = None
     if "Windows Server" in ProductName:
         major_name = "MSO"+ server_annee[-2:]
     elif "Windows 10" in ProductName:
         major_name = 10
-        compatibleWin11 = compatiblew11
     elif "Windows 11" in ProductName:
         major_name = 11
     elif "Windows 12" in ProductName:
         major_name = 12
-    elif "Windows 12" in ProductName:
+    elif "Windows 13" in ProductName:
         major_name = 13
+    else:
+        major_name = None
     architecture = read_reg_value(r"System\CurrentControlSet\Control\Session Manager\Environment", "PROCESSOR_ARCHITECTURE", winreg.REG_SZ)
     if architecture == "AMD64":
         archi = "x64"
@@ -291,16 +330,18 @@ def execute_medulla_info_update():
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "UninstallString", value_data, winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayIcon", r"C:\Program Files\Medulla\bin\install.ico", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "InstallLocation", r"C:\Program Files\Medulla\bin", winreg.REG_SZ)
-    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "URLInfoAbout", "http://www.siveo.net", winreg.REG_SZ)
+    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "URLInfoAbout", "https://medulla-tech.io", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "NoModify", 1, winreg.REG_DWORD)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "MajorVersion", "1", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "MinorVersion", "1", winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "InstallDate", current_date, winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Readme", "", winreg.REG_SZ)
-
+    # SERVER
     if isinstance(major_name, str) and major_name.startswith("MSO"):
-        update = f"{correspondence_text.get(install_language, 'Unknown')}-MSO25"
-        iso_name = "SW_DVD9_Win_Server_STD_CORE_2025_24H2_64Bit_English_DC_STD_MLF_X23-81891"
+        update = f"{correspondence_text.get(install_language, 'English')}-MSO25"
+        iso_name = f"SW_DVD9_Win_Server_STD_CORE_{LATEST_SERVER_ISO}_64Bit_{language_codes.get(install_language, 'English')}"
+        # iso_name = "SW_DVD9_Win_Server_STD_CORE_2025_24H2_64Bit_English_DC_STD_MLF_X23-81891"
+
         if major_name[3:] in ['12', '16', '19', '22', '25']: # les serveur suivant sont mis a jour avec l iso 2025
             update = f"{correspondence_text.get(install_language, 'English')}-MSO25"
             iso_name = f"SW_DVD9_Win_Server_STD_CORE_2025_24H2_64Bit_{language_codes.get(install_language, 'English')}_DC_STD_MLF_X23-81893.ISO"
@@ -308,29 +349,86 @@ def execute_medulla_info_update():
             iso_name = iso_name.removesuffix('.iso').removesuffix('.ISO')
         if DisplayVersion == "":
             DisplayVersion = major_name
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
-    elif major_name == 10 and DisplayVersion.upper() != "22H2":
-        if DisplayVersion == "":
-            DisplayVersion = "1906"
-        update = f"{correspondence_text.get(install_language, 'Unknown')}-10"
-        iso_name = f"Win{major_name}_22H2_{language_codes.get(install_language, 'Unknown')}_{archi}"
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'Unknown')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
-    elif major_name == 10 and DisplayVersion.upper() == "22H2":
-        update = f"{correspondence_text.get(install_language, 'Unknown')}-11"
-        iso_name = f"Win{major_name+1}_24H2_{language_codes.get(install_language, 'Unknown')}_{archi}"
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'Unknown')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
-    elif major_name == 11 and DisplayVersion.upper() != "24H2":
-        update = f"{correspondence_text.get(install_language, 'Unknown')}-11"
-        iso_name = f"Win{major_name}_24H2_{language_codes.get(install_language, 'Unknown')}_{archi}"
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'Unknown')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
+
+    # WINDOWS 10
+    elif major_name == 10:
+        if DisplayVersion.upper() != LATEST_WIN10:
+            # Version marketing	ReleaseId
+            # 1507	1507
+            # 1511	1511
+            # 1607	1607
+            # 1703	1703
+            # 1709	1709
+            # 1803	1803
+            # 1809	1809
+            # 1903	1903
+            # 1909	1909
+            # 2004	2004
+            # puis adoption
+            # Les builds sont 19041, 19042, 19043, 19044, 19045.
+            # 21H2	19044
+            # 22H2	19045
+            if DisplayVersion == "":
+                DisplayVersion = "1909"
+                iso_name = f"Win10_{LATEST_WIN10}_{language_codes.get(install_language, 'English')}_{archi}"
+                update = f"{correspondence_text.get(install_language, 'English')}-10"
+        else:
+            iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
+            update = f"{correspondence_text.get(install_language, 'English')}-11"
+
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
+    # WINDOWS 11
+    elif major_name == 11:
+        if DisplayVersion.upper() != LATEST_WIN11:
+            update = f"{correspondence_text.get(install_language, 'English')}-11"
+            iso_name = f"Win{major_name}_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
+        else:
+            iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
+            update = f"{correspondence_text.get(install_language, 'English')}-11"
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
     else:
         update = ""
-        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'Unknown')}@{install_language}@{iso_name}@{compatibleWin11}@{update}"
+        comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
 
     medule_info = f"Medulla_{comments_value}"
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayName", medule_info, winreg.REG_SZ)
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language_fallback}", winreg.REG_SZ)
     logger.debug("PL-MEDULLAINFO Mise a jour du registre terminee.")
+
+def get_os_product_name():
+    """
+    Recupere le nom du systeme d'exploitation (ex: "Microsoft Windows 11 Pro")
+    en utilisant PowerShell et Get-CimInstance.
+    Retourne une chaine de caracteres ou None en cas d'erreur.
+    """
+    try:
+        # Commande PowerShell pour récupérer le nom du système d'exploitation
+        command = [
+            "powershell",
+            "-Command",
+            "Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object -ExpandProperty Caption"
+        ]
+
+        # Exécute la commande et capture la sortie
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+
+        # Retourne la sortie (en supprimant les espaces et sauts de ligne inutiles)
+        return result.stdout.strip()
+
+    except subprocess.CalledProcessError as e:
+        print(f"Erreur lors de l'execution de la commande PowerShell : {e.stderr}")
+        return None
+    except Exception as e:
+        print(f"Erreur inattendue : {e}")
+        return None
+
 
 def update_medulla_info_update_notification(xmppobject):
     if sys.platform.startswith("win"):
@@ -374,7 +472,6 @@ def read_reg_value(key_path, value_name, value_type, defaut_valeur=""):
     try:
         key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path)
         value, regtype = winreg.QueryValueEx(key, value_name)
-        logger.debug(f"PL-MEDULLAINFO Erreur : regtype {regtype} value_type {value_type} ")
         winreg.CloseKey(key)
         if regtype == value_type:
             return value

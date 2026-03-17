@@ -30,7 +30,7 @@
 
 # To be defined
 AGENT_VERSION="5.4.6"
-BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
+BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
 cd "$(dirname $0)"
