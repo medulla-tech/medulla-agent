@@ -113,60 +113,6 @@ if [ -f "/usr/lib/python3.5/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ];
     rm -f /usr/lib/python3.5/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT
 fi
 
-if systemctl -q is-enabled pulse-xmpp-master-substitute-inventory ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-inventory service..."
-    systemctl restart pulse-xmpp-master-substitute-inventory
-    echo "..done"
-fi
-
-if systemctl -q is-enabled pulse-xmpp-master-substitute-registration ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-registration service..."
-    systemctl restart pulse-xmpp-master-substitute-registration
-    echo "..done"
-fi
-
-if systemctl -q is-enabled pulse-xmpp-master-substitute-assessor ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-assessor service..."
-    systemctl restart pulse-xmpp-master-substitute-assessor
-    echo "..done"
-fi
-
-if systemctl -q is-enabled pulse-xmpp-master-substitute-deployment ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-deployment service..."
-    systemctl restart pulse-xmpp-master-substitute-deployment
-    echo "..done"
-fi
-
-if systemctl -q is-enabled pulse-xmpp-master-substitute-subscription ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-subscription service..."
-    systemctl restart pulse-xmpp-master-substitute-subscription
-    echo "..done"
-fi
-
-if systemctl -q is-enabled pulse-xmpp-master-substitute-logger ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-logger service..."
-    systemctl restart pulse-xmpp-master-substitute-logger
-    echo "..done"
-fi
-
-if systemctl -q is-enabled pulse-xmpp-master-substitute-reconfigurator ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-reconfigurator service..."
-    systemctl restart pulse-xmpp-master-substitute-reconfigurator
-    echo "..done"
-fi
-
-if systemctl -q is-enabled pulse-xmpp-master-substitute-monitoring ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-monitoring service..."
-    systemctl restart pulse-xmpp-master-substitute-monitoring
-    echo "..done"
-fi
-
-if systemctl -q is-enabled pulse-xmpp-master-substitute-updates ; then
-    echo -n "Restarting pulse-xmpp-master-substitute-updates service..."
-    systemctl restart pulse-xmpp-master-substitute-updates
-    echo "..done"
-fi
-
 %files -n pulse-xmpp-agent-relay
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_prefix/lib/systemd/system/pulse-package-watching.service

@@ -28,16 +28,6 @@ case "$1" in
             chmod 600 /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys
             echo "..done"
         fi
-        if systemctl -q is-enabled pulse-xmpp-agent-relay ; then
-            echo -n "Restarting pulse-xmpp-agent-relay service..."
-            systemctl restart pulse-xmpp-agent-relay
-            echo "..done"
-        fi
-        if systemctl -q is-enabled pulse-package-watching ; then
-            echo -n "Restarting pulse-package-watching service..."
-            systemctl restart pulse-package-watching
-            echo "..done"
-        fi
         ;;
 esac
 
