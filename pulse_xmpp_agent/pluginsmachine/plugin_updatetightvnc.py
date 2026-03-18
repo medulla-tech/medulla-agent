@@ -17,7 +17,7 @@ TIGHTVNC = "2.8.81"
 COMPLETETIGHTVNC = "2.8.81.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.11", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.12", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 def get_tightvnc_identifying_number():
@@ -66,19 +66,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 installed_version = checktightvncversion(identifyingnumber)
 
                 if Version(installed_version) < Version(COMPLETETIGHTVNC):
-                    updatetightvnc(xmppobject)
-                elif Version(installed_version) > Version("2.8.81"):
-                    uninstall_cmd = f"msiexec /x {identifyingnumber} /quiet /qn"
-                    uninstall_result = utils.simplecommand(uninstall_cmd)
-                    if uninstall_result["code"] == 0:
-                        logger.info(
-                            f"PL-TIGHT Version {installed_version} uninstalled with success."
-                        )
-                    else:
-                        logger.error(
-                            f"PL-TIGHT Error when uninstalling the version {installed_version}: {uninstall_result['result']}"
-                        )
-                        return
                     updatetightvnc(xmppobject)
             else:
                 updatetightvnc(xmppobject)
