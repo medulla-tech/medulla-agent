@@ -2908,8 +2908,8 @@ class MUCBot(ClientXMPP):
 
             if not os.path.isfile(self.fichierconfsyncthing):
                 logger.warning(
-                    "Syncthing config file not found: %s. "
-                    "Syncthing will run in degraded mode." % self.fichierconfsyncthing
+                    "Syncthing config not found: %s. Using degraded mode."
+                    % self.fichierconfsyncthing
                 )
                 return
 

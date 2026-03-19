@@ -5455,7 +5455,6 @@ class offline_search_kb:
             if line:
                 for sline in line:
                     lcmd = [x for x in sline.split(" ") if x != ""]
-                    logging.getLogger().error(lcmd)
                     if len(lcmd) == 3:
                         return lcmd[2]
         return ""
