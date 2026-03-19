@@ -2906,6 +2906,13 @@ class MUCBot(ClientXMPP):
             )
             self.Ctrlsyncthingprogram.restart_syncthing()
 
+            if not os.path.isfile(self.fichierconfsyncthing):
+                logger.warning(
+                    "Syncthing config file not found: %s. "
+                    "Syncthing will run in degraded mode." % self.fichierconfsyncthing
+                )
+                return
+
             try:
                 self.syncthing = syncthing(
                     configfile=self.fichierconfsyncthing,

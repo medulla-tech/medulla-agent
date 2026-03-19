@@ -233,30 +233,15 @@ class MUCBot(ClientXMPP):
             )
             self.Ctrlsyncthingprogram.restart_syncthing()
             time.sleep(4)
-            try:
-                self.syncthing = syncthing(configfile=self.fichierconfsyncthing)
-                if logger.level <= 10:
-                    self.syncthing.save_conf_to_file(tmpfile)
-                else:
-                    try:
-                        os.remove(tmpfile)
-                    except Exception:
-                        pass
-                time.sleep(1)
-                if os.path.isfile(self.fichierconfsyncthing):
-                    try:
-                        self.deviceid = iddevice(configfile=self.fichierconfsyncthing)
-                    except Exception:
-                        pass
 
-                logger.debug(f"device local syncthing : [{self.deviceid}]")
-
-            except KeyError as keyerror:
-                logger.error(
-                    f"The {keyerror} key is missing in your syncthing config file"
+            if not os.path.isfile(self.fichierconfsyncthing):
+                logger.warning(
+                    "Syncthing config file not found after restart: %s. "
+                    "Syncthing will run in degraded mode." % self.fichierconfsyncthing
                 )
-                informationerror = traceback.format_exc()
-                logger.error("\n%s" % informationerror)
+                informationerror = (
+                    "Syncthing config file not found: %s" % self.fichierconfsyncthing
+                )
                 confsyncthing = {
                     "action": "resultconfsyncthing",
                     "sessionid": getRandomName(6, "confsyncthing"),
@@ -266,23 +251,57 @@ class MUCBot(ClientXMPP):
                 self.send_message(
                     mto=self.sub_assessor, mbody=json.dumps(confsyncthing), mtype="chat"
                 )
+            else:
+                try:
+                    self.syncthing = syncthing(configfile=self.fichierconfsyncthing)
+                    if logger.level <= 10:
+                        self.syncthing.save_conf_to_file(tmpfile)
+                    else:
+                        try:
+                            os.remove(tmpfile)
+                        except Exception:
+                            pass
+                    time.sleep(1)
+                    if os.path.isfile(self.fichierconfsyncthing):
+                        try:
+                            self.deviceid = iddevice(configfile=self.fichierconfsyncthing)
+                        except Exception:
+                            pass
 
-            except Exception as e:
-                logger.error(
-                    f"The initialisation of syncthing failed. We got the error {str(e)}"
-                )
-                informationerror = traceback.format_exc()
-                logger.error("\n%s" % informationerror)
-                logger.error("Syncthing is not functionnal. Using the degraded mode")
-                confsyncthing = {
-                    "action": "resultconfsyncthing",
-                    "sessionid": getRandomName(6, "confsyncthing"),
-                    "ret": 255,
-                    "data": {"errorsyncthingconf": informationerror},
-                }
-                self.send_message(
-                    mto=self.sub_assessor, mbody=json.dumps(confsyncthing), mtype="chat"
-                )
+                    logger.debug(f"device local syncthing : [{self.deviceid}]")
+
+                except KeyError as keyerror:
+                    logger.error(
+                        f"The {keyerror} key is missing in your syncthing config file"
+                    )
+                    informationerror = traceback.format_exc()
+                    logger.error("\n%s" % informationerror)
+                    confsyncthing = {
+                        "action": "resultconfsyncthing",
+                        "sessionid": getRandomName(6, "confsyncthing"),
+                        "ret": 255,
+                        "data": {"errorsyncthingconf": informationerror},
+                    }
+                    self.send_message(
+                        mto=self.sub_assessor, mbody=json.dumps(confsyncthing), mtype="chat"
+                    )
+
+                except Exception as e:
+                    logger.error(
+                        f"The initialisation of syncthing failed. We got the error {str(e)}"
+                    )
+                    informationerror = traceback.format_exc()
+                    logger.error("\n%s" % informationerror)
+                    logger.error("Syncthing is not functionnal. Using the degraded mode")
+                    confsyncthing = {
+                        "action": "resultconfsyncthing",
+                        "sessionid": getRandomName(6, "confsyncthing"),
+                        "ret": 255,
+                        "data": {"errorsyncthingconf": informationerror},
+                    }
+                    self.send_message(
+                        mto=self.sub_assessor, mbody=json.dumps(confsyncthing), mtype="chat"
+                    )
 
     def handle_host_unknown_error(self):
         logger.error("Possible remedies for <host-unknown> error:")

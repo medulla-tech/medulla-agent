@@ -194,6 +194,8 @@ class syncthingapi:
         # bash command xmllint --xpath "//configuration/gui/apikey/text()" /var/lib/syncthing/.config/syncthing/config.xml
 
     def taille_config_xml(self):
+        if not os.path.isfile(self.configfile):
+            return 0
         return os.path.getsize(self.configfile)
 
     def getpathconfigfile(self):
