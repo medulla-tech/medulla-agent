@@ -181,6 +181,7 @@ update_installer_scripts() {
 		-e "s/@@SSH_PORT@@/${SSH_PORT}/" \
 		install-pulse-agent-linux.sh.in \
 		> ${GENERATED_FILE}
+    chmod a+r /var/lib/pulse2/clients/lin/Medulla-Agent-linux-*.sh
 
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then

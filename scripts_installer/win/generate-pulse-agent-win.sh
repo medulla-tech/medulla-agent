@@ -464,6 +464,7 @@ generate_agent_installer() {
 		colored_echo red "### ER... Generation of agent failed. Please restart"
 		exit 1
 	fi
+    chmod a+r /var/lib/pulse2/clients/win/Medulla-Agent-windows-*.exe
 
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then
