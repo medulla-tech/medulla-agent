@@ -14,6 +14,7 @@ import psutil
 import os
 import sys
 import ipaddress
+import re
 
 from lib.utils import simplecommand, powerschellscript1ps1
 from . import utils
@@ -683,30 +684,97 @@ def powershellfqdnwindowscommandbyuser(user):
     return ""
 
 
-def powershellfinduseradgroups(user):
+def powershellfinduseradgroups(user, mode="strict"):
+    """
+    Récupère les groupes Active Directory d'un utilisateur via PowerShell.
+
+    Args:
+        user (str): samAccountName de l'utilisateur
+        mode (str): "strict" (par défaut) ou "soft"
+            - strict : autorise uniquement [A-Za-z0-9_- ]
+            - soft   : autorise aussi . et '
+
+    Returns:
+        list: Liste des groupes formatés (ex: "Groupe@@SousGroupe")
+    """
+
     result = []
+
     try:
-        for line in subprocess.check_output(
-            [
-                "powershell.exe",
-                f"""([adsisearcher]"(&(objectClass=user)(samaccountname={user}))").findone().Properties.memberof""",
-            ],
-            shell=True,
-        ).split("\n"):
-            line = line.decode("cp850")
+        ps_command = (
+            f'([adsisearcher]"(&(objectClass=user)(samaccountname={user}))")'
+            ".findone().Properties.memberof"
+        )
+
+        raw_output = subprocess.check_output(
+            ["powershell.exe", ps_command],
+            stderr=subprocess.STDOUT
+        )
+
+        # Gestion encodage robuste
+        if isinstance(raw_output, bytes):
+            try:
+                data = raw_output.decode("utf-8")
+            except UnicodeDecodeError:
+                try:
+                    data = raw_output.decode("utf-16")
+                except UnicodeDecodeError:
+                    data = raw_output.decode("cp850", errors="ignore")
+        else:
+            data = str(raw_output)
+
+        # Normalisation retours ligne
+        data = data.replace("\r\n", "\n").replace("\r", "\n")
+
+        # Choix du mode de filtrage
+        # -----------------------------------------
+        # Mode STRICT (sécurité maximale)
+        # -> uniquement lettres, chiffres, _, -, espace
+        if mode == "strict":
+            pattern = r"[A-Za-z0-9_\- ]+"
+
+        # Mode SOFT (plus permissif, adapté AD réel)
+        # -> ajoute . et '
+        elif mode == "soft":
+            pattern = r"[A-Za-z0-9_\- .']+"
+
+        # Fallback sécurité
+        else:
+            logger.warning(f"Mode inconnu '{mode}', fallback en strict")
+            pattern = r"[A-Za-z0-9_\- ]+"
+        # -----------------------------------------
+
+        for line in data.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+
+            # Extraction CN
             lcn = [x.replace("CN=", "") for x in line.split(",") if "CN=" in x]
+
+            # Filtrage selon mode choisi
             outcn = [
-                y for y in lcn if not re.findall("[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\\(\\)]", y)
+                y for y in lcn
+                if y.isascii() and re.fullmatch(pattern, y)
             ]
-            if len(outcn) != 0:
+
+            if outcn:
                 outcn.reverse()
                 result.append("@@".join(outcn))
-        logger.debug(f"AD Groups: {result}")
-        return result
-    except subprocess.CalledProcessError as e:
-        logger.error(f"subproces powershellfinduseradgroups.output = {e.output}")
-    return ""
 
+        logger.debug(f"AD Groups for user '{user}' ({mode}): {result}")
+        return result
+
+    except subprocess.CalledProcessError as e:
+        logger.error(
+            f"[powershellfinduseradgroups] Erreur subprocess pour '{user}': {e.output}"
+        )
+    except Exception as e:
+        logger.exception(
+            f"[powershellfinduseradgroups] Erreur inattendue pour '{user}': {e}"
+        )
+
+    return []
 
 def powershellgetlastuser():
     if sys.platform.startswith("win"):
