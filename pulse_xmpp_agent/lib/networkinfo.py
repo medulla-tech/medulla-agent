@@ -191,6 +191,8 @@ class networkagentinfo:
                 }
 
                 for addr in addrs:
+                    if not addr.address:
+                        continue
                     if addr.family == psutil.AF_LINK:
                         objnet["macaddress"] = addr.address
                     elif addr.family == socket.AF_INET:
