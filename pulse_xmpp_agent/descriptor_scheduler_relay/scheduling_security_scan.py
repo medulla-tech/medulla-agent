@@ -20,7 +20,7 @@ from datetime import datetime
 logger = logging.getLogger()
 
 plugin = {
-    "VERSION": "1.0",
+    "VERSION": "1.1",
     "NAME": "scheduling_security_scan",
     "TYPE": "relayserver",
     "SCHEDULED": True
