@@ -26,14 +26,12 @@ plugin = {
     "SCHEDULED": True
 }
 
-# Default: every day at 4:00 AM
+# Cron: tous les jours a 4h du matin, nb=-1 = repetition infinie
 SCHEDULE = {"schedule": "0 4 * * *", "nb": -1}
 
 
 def schedule_main(objectxmpp):
-    """
-    Main scheduled function - run CVE security scan
-    """
+    """Fonction principale du scheduler. Lance un scan CVE global."""
     date = datetime.now()
     logger.info(f"=== {plugin['NAME']} started at {date} ===")
 
@@ -58,7 +56,6 @@ def schedule_main(objectxmpp):
         # Try to import MMC security modules
         try:
             from mmc.plugins.security.scanner import run_cve_scan
-            from mmc.plugins.security.config import SecurityConfig
         except ImportError as e:
             logger.error(f"Cannot import MMC security modules: {e}")
             logger.error("Make sure mmc-agent and security plugin are installed")
@@ -66,21 +63,8 @@ def schedule_main(objectxmpp):
             return
 
         # Run the CVE scan
-        logger.info("Starting CVE security scan...")
-
-        # Get optional filters from config
-        entity_id = config.get('entity_id')
-        group_id = config.get('group_id')
-
-        if entity_id:
-            logger.info(f"Scanning entity ID: {entity_id}")
-            result = run_cve_scan(entity_id=entity_id)
-        elif group_id:
-            logger.info(f"Scanning group ID: {group_id}")
-            result = run_cve_scan(group_id=group_id)
-        else:
-            logger.info("Running global scan (all machines)")
-            result = run_cve_scan()
+        logger.info("Starting CVE security scan (global)...")
+        result = run_cve_scan()
 
         # Log results
         if result.get('status') == 'completed':
@@ -115,8 +99,6 @@ def read_config_plugin(objectxmpp):
 
     config = {
         'enabled': False,
-        'entity_id': None,
-        'group_id': None,
     }
 
     # Read config files
@@ -132,23 +114,7 @@ def read_config_plugin(objectxmpp):
             if parser.has_section('security_scan'):
                 config['enabled'] = parser.getboolean('security_scan', 'enabled', fallback=False)
 
-                # Optional: filter by entity
-                if parser.has_option('security_scan', 'entity_id'):
-                    entity_id = parser.get('security_scan', 'entity_id', fallback='')
-                    if entity_id and entity_id.strip():
-                        config['entity_id'] = int(entity_id.strip())
-
-                # Optional: filter by group
-                if parser.has_option('security_scan', 'group_id'):
-                    group_id = parser.get('security_scan', 'group_id', fallback='')
-                    if group_id and group_id.strip():
-                        config['group_id'] = int(group_id.strip())
-
             logger.info(f"Security scan config loaded: enabled={config['enabled']}")
-            if config['entity_id']:
-                logger.info(f"  Filter: entity_id={config['entity_id']}")
-            if config['group_id']:
-                logger.info(f"  Filter: group_id={config['group_id']}")
 
         except Exception as e:
             logger.error(f"Error reading config: {e}")
