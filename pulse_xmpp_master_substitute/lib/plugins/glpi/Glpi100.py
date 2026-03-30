@@ -6004,6 +6004,75 @@ AND
         return result
 
 
+    @DatabaseHelper._sessionm
+    def find_software_info_for_machine(self, session, machine_uuid, pkg):
+        def escape_chars(string):
+            string = string.replace("(", "\\\\(")
+            string = string.replace(")", "\\\\)")
+            string = string.replace(".", "\\\\.")
+            string = string.replace("-", "\\\\-")
+            string = string.replace("+", "\\\\+")
+            string = string.replace("{", "\\\\{")
+            string = string.replace("}", "\\\\}")
+            string = string.replace("[", "\\\\[")
+            string = string.replace("]", "\\\\]")
+            string = string.replace("*", "\\\\*")
+            return string
+
+        softwares_str = ""
+
+        filter_software = ""
+        filter_version = ""
+        filter_manufacturer = ""
+
+        software = escape_chars(pkg["software"])
+        version = escape_chars(pkg["version_software"])
+        manufacturer = escape_chars(pkg["vendor"])
+
+        if pkg["software"] != "":
+            filter_software = """AND s.name REGEXP "%s" """ % software
+
+        if pkg["version_software"] != "":
+            filter_version = """AND sv.name REGEXP "%s" """ % version
+
+        if pkg["vendor"] != "":
+            filter_manufacturer = """AND m.name REGEXP "%s" """ % manufacturer
+
+        sql="""SELECT
+    s.name as software,
+    sv.name as version,
+    m.name as manufacturer
+FROM
+    glpi_computers_pulse c
+INNER JOIN
+    glpi_items_softwareversions isv on isv.items_id = c.id and isv.itemtype = 'Computer'
+INNER JOIN
+    glpi_softwareversions sv on sv.id = isv.softwareversions_id
+INNER JOIN
+    glpi_softwares s on s.id = sv.softwares_id
+INNER JOIN
+    glpi_manufacturers m on m.id = s.manufacturers_id
+where concat("UUID", c.id) = "%s"
+%s
+%s
+%s
+"""%(machine_uuid, filter_software, filter_version, filter_manufacturer)
+
+        res = session.execute(sql)
+        if res == None:
+            return []
+
+        result = []
+        for element in res:
+            result.append({
+                "software": element.software,
+                "version": element.version,
+                "manufacturer": element.manufacturer
+            })
+
+        return result
+
+
 # Class for SQLalchemy mapping
 class Machine(object):
     __tablename__ = "glpi_computers_pulse"
