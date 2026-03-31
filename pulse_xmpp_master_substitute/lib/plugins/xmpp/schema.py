@@ -12,6 +12,7 @@ from sqlalchemy import (
     Text,
     Enum,
 )
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -933,6 +934,26 @@ class Users_adgroups(Base):
     adname = Column(String(255), nullable=False, primary_key=True)
 
 
+class Up_machine_activated(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_machine_activated"
+    # ====== Fields =============================
+    kb = Column(String(45), default="")
+    id_machine = Column(Integer, primary_key=True)
+    glpi_id = Column(Integer, nullable=False)
+    hostname = Column(String(45))
+    jid = Column(String(255))
+    entities_id = Column(Integer, default=0)
+    update_id = Column(String(45), nullable=False, primary_key=True)
+    curent_deploy = Column(Boolean, nullable=True, default=0)
+    required_deploy =Column(Boolean, nullable=True, default=0)
+    start_date =Column(DateTime, default=None)
+    end_date =Column(DateTime, default=None)
+    intervals =Column(String(255), nullable=True)
+    msrcseverity =Column(String(16))
+    list = Column(String(5), nullable=False)
+    
+    
 """
 This code is kept here as a comment, "if" we need to use it
 and not use the automatic table anymore.
@@ -961,3 +982,35 @@ class Ban_machine(Base, XmppMasterDBObj):
     date  =  Column(DateTime, default=datetime.datetime.now)
     ars_server     = Column(String(255), nullable=False,default="")
 """
+
+
+# -- Cette table permet quand on deploy 1 uninstall de kb 
+# -- pour 1 machine on peut etre dans 1 cas 
+# -- ou la mise a jour ne peut pas etre deinstalle.
+# -- REASON_DETAIL:
+# --   SSU : mise à jour système critique (Servicing Stack), non désinstallable
+# --   CUMULATIVE : mise à jour cumulative, incluse dans une version plus récente
+# --   GPO : désinstallation bloquée par stratégie de groupe
+# --   WSUS : désinstallation bloquée par gestion centralisée des mises à jour
+# --   CBS_ERROR : échec technique lors de la désinstallation (erreur système)
+# --   ISO : mise à jour intégrée via image ISO / upgrade système, non désinstallable individuellement
+class UpWindowsKbUninstall(Base):
+    __tablename__ = "up_windows_kb_uninstall"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    updateid = Column(String(38), nullable=False)
+    hostname = Column(String(45), nullable=False)
+
+    kb = Column(String(45), default="")
+    jid = Column(String(255))
+    entities_id = Column(Integer, default=0)
+    count_uninstall = Column(Integer, default=0)
+    status = Column(String(255))
+
+    __table_args__ = (
+        UniqueConstraint("updateid", "hostname", name="uniq_update_host"),
+    )
+
+    
+    
