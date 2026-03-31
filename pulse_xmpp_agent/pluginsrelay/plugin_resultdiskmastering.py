@@ -9,7 +9,7 @@ import base64
 import zlib
 import time
 
-from mmc.plugins.xmppmaster.master.lib.utils import simplecommand
+from lib.utils import simplecommand
 
 plugin = {"VERSION": "0.1", "NAME": "resultdiskmastering", "TYPE": "relayserver"}  # fmt: skip
 
@@ -60,21 +60,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 "action": "resultping" ,
                 "data": {
                     "subaction":"pong",
-                    "manifest": manifest
+                    "manifest": manifest,
+                    "substitute_jid": "master_dma@pulse",
                 }
             }
 
-            # Get the substitut diskmastering jid
-            substitute_diskmastering_jid = ""
-            result = simplecommand("ejabberdctl connected_users")
-            if result["code"] == 0:
-                for e in result["result"]:
-                    e = e.decode("utf-8")
-                    if e.startswith("master_dma"):
-                        substitute_diskmastering_jid = e.split("/")[0]
-                        break
-
-            datasend["data"]["substitute_jid"] = substitute_diskmastering_jid
             objectxmpp.send_message(mto=message["from"], mbody=json.dumps(datasend, indent=4), mtype="chat")
 
         if data["subaction"] == "askworkflow":
@@ -179,6 +169,7 @@ def get_plugins_manifest(objectxmpp, davos_manifest):
     elif hasattr(objectxmpp.config, "diskmastering_path"):
         base_path = objectxmpp.config.diskmastering_path
 
+
     if plugins_path == "" and base_path == "":
         logger.warning("%s or %s empty"%(plugins_path, base_path))
         return {}
@@ -229,7 +220,6 @@ def get_plugins_manifest(objectxmpp, davos_manifest):
             continue
 
         # In davos_manifest there is the list of module_names, we will continue to use module_name
-
         # name = <name>
         # module_name = plugin_<name>
         # plugin_file = plugin_<name>.py
@@ -248,6 +238,7 @@ def get_plugins_manifest(objectxmpp, davos_manifest):
                 manifest[module_name]["content"] = compress_encode(content)
             else:
                 continue
+
     return manifest
 
 
