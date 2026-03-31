@@ -12,6 +12,7 @@ from sqlalchemy import (
     MetaData,
     select,
     func,
+    exists,
     and_,
     desc,
     or_,
@@ -95,6 +96,8 @@ from lib.plugins.xmpp.schema import (
     Up_history,
     Users_adgroups,
     Up_auto_approve_rules,
+    UpWindowsKbUninstall,
+    Up_machine_activated,
 )
 
 # Imported last
@@ -9396,12 +9399,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             return (msg, -1)
         except Exception as e:
             msg = (
-                "[binding device rule %s error %s] in binding:\n%s\ "
+                "[binding device rule %s error %s] in binding:\n%s "
                 "on data\n%s"
                 % (device_type, str(e), bindingstring, json.dumps(data, indent=4))
             )
             return (msg, -1)
-        msg = "[ %s : result binding %s for binding:\n%s\ " "on data\n%s" % (
+        msg = "[ %s : result binding %s for binding:\n%s on data\n%s" % (
             device_type,
             resultbinding,
             bindingstring,
@@ -10712,6 +10715,128 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
         return ret
 
+    @DatabaseHelper._sessionm
+    def select_updatepackageid_produit_table(self, session, tableproduct="", str_kb_list="", forced_kb_list=None):
+        """
+        Retourne la liste des updateid présents dans une table produit (ex: up_packages_Win11_X64_25H2)
+        en fonction d'une liste de KB, en excluant ceux présents dans la blacklist.
+
+        Args:
+            session: Session SQLAlchemy
+            tableproduct (dict): Dictionnaire contenant le nom de la table produit (clé "name_procedure")
+            str_kb_list (str): Chaîne de KB séparés par des virgules (ex: "5066128,5050575")
+            forced_kb_list (list | None): Liste de KB à imposer dans la recherche.
+
+        Returns:
+            list: Liste des updateid filtrés, ou [] en cas d'erreur ou de paramètres invalides
+        """
+        logger = logging.getLogger()
+        try:
+            # 1. Validation des paramètres
+            table_name = tableproduct.get("name_procedure", "") if tableproduct else ""
+            logger.debug(
+                "select_updatepackageid_produit_table debut table=%s nb_kb_forcees=%s",
+                table_name,
+                len(forced_kb_list) if forced_kb_list else 0,
+            )
+            if not table_name:
+                logger.warning("select_updatepackageid_produit_table ignoree: aucun nom de table valide")
+                return []
+
+            kb_list_str = str(str_kb_list).strip() if str_kb_list is not None else ""
+            if not kb_list_str:
+                logger.debug(
+                    "select_updatepackageid_produit_table ignoree table=%s: liste de KB vide",
+                    table_name,
+                )
+                return []
+            logger.debug(
+                "select_updatepackageid_produit_table entree table=%s taille_chaine_kb=%s",
+                table_name,
+                len(kb_list_str),
+            )
+
+            # Liste muette de KB forcees passee par l'appelant.
+            # None evite de partager une liste mutable entre appels.
+            forced_kb_list = forced_kb_list or []
+            if forced_kb_list:
+                logger.debug(
+                    "select_updatepackageid_produit_table kb_forcees=%s",
+                    forced_kb_list,
+                )
+
+            # 2. Nettoyage et transformation de la liste de KB
+            # ➜ suppression des parenthèses + espaces
+            kb_list_str = kb_list_str.replace("(", "").replace(")", "")
+            kb_list = [kb.strip() for kb in kb_list_str.split(",") if kb.strip()]
+            logger.debug(
+                "select_updatepackageid_produit_table apres_analyse table=%s nb_kb_parsees=%s",
+                table_name,
+                len(kb_list),
+            )
+
+            if not kb_list:
+                logger.debug(
+                    "select_updatepackageid_produit_table ignoree table=%s: aucune KB valide apres analyse",
+                    table_name,
+                )
+                return []
+
+            # 2bis. Ajout des KB forcees (sans doublons)
+            kb_list = list(set(kb_list + forced_kb_list))
+            logger.debug(
+                "select_updatepackageid_produit_table liste_effective table=%s nb_kb_effectives=%s",
+                table_name,
+                len(kb_list),
+            )
+
+            # 3. Construction de la requête SQLAlchemy
+            from sqlalchemy import text
+            placeholders = ", ".join([f":kb{i}" for i in range(len(kb_list))])
+            params = {f"kb{i}": kb for i, kb in enumerate(kb_list)}
+
+            sql = text(f"""
+                SELECT tb.updateid, tb.kb, tb.title
+                FROM xmppmaster.{table_name} tb
+                JOIN xmppmaster.up_black_list bl
+                    ON bl.updateid_or_kb = tb.updateid
+                WHERE tb.kb IN ({placeholders})
+            """)
+
+            logger.debug(
+                "select_updatepackageid_produit_table requete_prete table=%s nb_parametres=%s",
+                table_name,
+                len(params),
+            )
+
+            # 4. Exécution de la requête
+            req = session.execute(sql, params)
+            session.commit()
+
+            # 5. Transformation du résultat
+            result = req.fetchall()
+            updateid_list = [[row[0], row[1], row[2]] for row in result]
+            logger.debug(
+                "select_updatepackageid_produit_table resultat table=%s nb_resultats=%s",
+                table_name,
+                len(updateid_list),
+            )
+            if updateid_list:
+                logger.debug(
+                    "select_updatepackageid_produit_table echantillon_resultat=%s",
+                    updateid_list[:5],
+                )
+            return updateid_list
+
+        except Exception as e:
+            logger.error(
+                "select_updatepackageid_produit_table en echec table=%s nb_kb_forcees=%s\n%s",
+                tableproduct.get("name_procedure", "") if tableproduct else "",
+                len(forced_kb_list) if forced_kb_list else 0,
+                traceback.format_exc(),
+            )
+            return []
+        
     def search_update_by_products(self, tableproduct="", str_kb_list=""):
         """
         cette fonction renvoi update en fonction des produits
@@ -10752,7 +10877,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         finally:
             connection.close()
         return result
-
+        
     @DatabaseHelper._sessionm
     def is_exist_value_in_table(
         self, session, valchamp, namefield="updateid", tablename="up_gray_list"
@@ -11854,7 +11979,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
                                     'W11to11'
                                 WHEN
                                     xma.platform LIKE '%Windows%'
-                                        AND xma.platform NOT REGEXP '\[[0-9]{2}H[0-9]\]$'
+                                        AND xma.platform NOT REGEXP '\\[[0-9]{2}H[0-9]\\]$'
                                 THEN
                                     'winVers_missing'
                                 ELSE 'not_win'
@@ -12056,5 +12181,137 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
         return result
 
+    @DatabaseHelper._sessionm
+    def add_uninstall_kb_machine(self, session, updateid: str, hostname: str,
+                kb="", jid="", entities_id=0, status=""):
+        """
+        Add a machine uninstall entry or increment its counter if it already exists.
+
+        This function performs an UPSERT operation:
+        - If the (updateid, hostname) pair does not exist, a new record is created
+        with count_uninstall initialized to 1.
+        - If the record already exists, the count_uninstall field is incremented by 1.
+
+        Args:
+            session (Session): SQLAlchemy session provided by the decorator.
+            updateid (str): Identifier of the update (KB / package UUID).
+            hostname (str): Machine hostname.
+            kb (str, optional): Knowledge base identifier. Defaults to "".
+            jid (str, optional): Machine JID. Defaults to "".
+            entities_id (int, optional): Entity identifier. Defaults to 0.
+            status (str, optional): Status of the uninstall operation. Defaults to "".
+
+        Returns:
+            int: Valeur courante de count_uninstall apres insertion ou mise a jour.
+
+        Raises:
+            Exception: Propagates any database or execution error after rollback.
+        """
+        try:
+            sql = text("""
+                INSERT INTO xmppmaster.up_windows_kb_uninstall
+                    (updateid, hostname, kb, jid, entities_id, status, count_uninstall)
+                VALUES
+                    (:updateid, :hostname, :kb, :jid, :entities_id, :status, 1)
+                ON DUPLICATE KEY UPDATE
+                    count_uninstall = count_uninstall + 1
+            """)
+
+            session.execute(sql, {
+                "updateid": updateid,
+                "hostname": hostname,
+                "kb": kb,
+                "jid": jid,
+                "entities_id": entities_id,
+                "status": status
+            })
+
+            session.commit()
+            return self.get_uninstall_kb_machine_count(updateid, hostname)
+
+        except Exception as e:
+            session.rollback()
+            raise e
+            
+    @DatabaseHelper._sessionm
+    def delete_uninstall_kb_machine(self, session, updateid: str, hostname: str):
+        """
+        Delete a machine uninstall entry for a given updateid and hostname.
+
+        This removes the record corresponding to the specified (updateid, hostname)
+        pair from the up_windows_kb_uninstall table.
+
+        Args:
+            session (Session): SQLAlchemy session provided by the decorator.
+            updateid (str): Identifier of the update (KB / package UUID).
+            hostname (str): Machine hostname.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: Propagates any database or execution error after rollback.
+        """
+        try:
+            sql = text("""
+                DELETE FROM xmppmaster.up_windows_kb_uninstall
+                WHERE updateid = :updateid
+                AND hostname = :hostname
+            """)
+
+            session.execute(sql, {
+                "updateid": updateid,
+                "hostname": hostname
+            })
+
+            session.commit()
+
+        except Exception as e:
+            session.rollback()
+            raise e
+    
+    @DatabaseHelper._sessionm
+    def get_uninstall_kb_machine_count(self, session, updateid: str, hostname: str) -> int:
+        """
+        Retrieve the uninstall counter for a given machine and update.
+
+        This function returns the value of count_uninstall for the specified
+        (updateid, hostname) pair.
+
+        If the entry does not exist, the function returns 0.
+
+        Args:
+            session (Session): SQLAlchemy session provided by the decorator.
+            updateid (str): Identifier of the update (KB / package UUID).
+            hostname (str): Machine hostname.
+
+        Returns:
+            int: The uninstall counter if the entry exists, otherwise 0.
+
+        Raises:
+            Exception: Any unexpected error is caught and results in a return value of 0.
+        """
+        try:
+            sql = text("""
+                SELECT count_uninstall
+                FROM xmppmaster.up_windows_kb_uninstall
+                WHERE updateid = :updateid
+                AND hostname = :hostname
+                LIMIT 1
+            """)
+
+            result = session.execute(sql, {
+                "updateid": updateid,
+                "hostname": hostname
+            }).fetchone()
+
+            if result is None:
+                return 0
+
+            return result[0]
+
+        except Exception:
+            return 0
+        
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [rowproxy._asdict() for rowproxy in resultproxy]
