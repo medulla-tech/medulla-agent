@@ -13,7 +13,7 @@ from lib.utils import set_logging_level
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.35", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.36", "NAME": "kiosk", "TYPE": "machine"}  # fmt: skip
 
 
 @set_logging_level
@@ -184,7 +184,9 @@ def associate_launchers_to_datas(data):
     kioskdb = manageskioskdb()
     if "packages_list" in data:
         for package in data["packages_list"]:
-            launcher = kioskdb.get_cmd_launch(package["uuid"])
+            launcher = None
+            if "uuid" in package:
+                launcher = kioskdb.get_cmd_launch(package["uuid"])
 
             if "Launch" in package["action"]:
                 # If no launcher in database

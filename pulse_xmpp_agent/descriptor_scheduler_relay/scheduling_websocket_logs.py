@@ -13,7 +13,7 @@ import configparser
 from lib.agentconffile import directoryconffile
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.2", "NAME": "scheduling_websocket_logs", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.4", "NAME": "scheduling_websocket_logs", "TYPE": "relayserver", "SCHEDULED": True}
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}
 
 def schedule_main(objectxmpp):
@@ -179,8 +179,10 @@ def start_websocket_server(log_config):
             )
         else:
             process = subprocess.Popen(
-                [get_python_command(), '-m', 'pulse_xmpp_agent.lib.websocket_server', '--log_path', json_config],
-                preexec_fn=os.setsid
+                ['systemd-run', '--unit=pulse-websocket-logs', '--scope', get_python_command(), '-m', 'pulse_xmpp_agent.lib.websocket_server', '--log_path', json_config],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
             )
         logger.info(f"WebSocket server launched (PID: {process.pid})")
     except Exception as e:

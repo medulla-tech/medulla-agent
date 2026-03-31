@@ -40,7 +40,7 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
 PREFIX_COMMAND = "commandkiosk"
 
 
@@ -236,12 +236,11 @@ def handlerkioskpresence(
     except:
         logger.error("Impossible to find the machine")
 
+    structuredatakiosk = {}
     try:
-        structuredatakiosk = get_packages_for_machine(
-            machine, showinfobool=showinfobool
-        )
-    except:
-        logger.error("impossible to find packages for the machine %s" % jid)
+        structuredatakiosk = get_packages_for_machine(machine)
+    except Exception as e:
+        logger.error("impossible to find packages for the machine %s: %s" % (jid, e))
 
     datas = {"subaction": "initialisation_kiosk", "data": structuredatakiosk}
     message_to_machine = data_struct_message(
@@ -256,8 +255,22 @@ def handlerkioskpresence(
 
 
 def last_inventory(data, message, xmppobject):
+    """Ask an inventory from the machine. Retrive the last inventory date for the machine. The ask inventory call is async, so it's normal if the inventory date is not updated.
+
+    Args:
+        data(dict): Data from the machine. Should contain the subaction "inventory".
+        message(dict): The XMPP message from the machine. Should contain the "from" field with the machine JID.
+        xmppobject: The XMPP object to send the message to the machine.
+
+    Returns:
+        str: The last inventory date for the machine, or None if not found."""
+
     machine = XmppMasterDatabase().getMachinefromjid(message["from"])
 
+    # Force inventory update
+    callinventory(xmppobject, message["from"])
+    # Add a tempo on inventory call to let the server breath.
+    time.sleep(5)
     if machine and "uuid_inventorymachine" in machine:
         machine_uuid = machine["uuid_inventorymachine"]
 
@@ -308,7 +321,7 @@ def getdescriptor(package_uuid):
     return package
 
 
-def get_packages_for_machine(machine, showinfobool=True):
+def get_packages_for_machine(machine):
     """Get a list of the packages for the concerned machine.
     Param:
         machine : dict of the machine datas.
@@ -317,16 +330,29 @@ def get_packages_for_machine(machine, showinfobool=True):
     Returns:
         list of the packages"""
 
-    try:
-        machine_entity = XmppMasterDatabase().getmachineentityfromjid(machine["jid"])
+    # We have to check the packages OS from profiles list, and verify if they are compatible with the current machine
+    # Get the machine OS
+    platform = "win"
+    mach_platform = ""
+    if "platform" in machine:
+        # Because re is picky, we have to use an independant str
+        mach_platform = machine["platform"]
+        if re.match("Microsoft", mach_platform) is not None:
+            platform = "win"
+        elif re.match("Darwin", mach_platform) is not None or re.match("MacOS", mach_platform) is not None:
+            platform = "mac"
+        else:
+            platform = "linux"
 
-        machine_entity = (
-            machine_entity.completename.replace(" > ", ">>")
-            if machine_entity is not None
-            else None
-        )
-    except Exception as e:
-        logging.getLogger().error(e)
+    #
+    # Setting up the sources datas info
+    #
+    entity = XmppMasterDatabase().getmachineentityfromjid(machine["jid"])
+    machine_entity =  ""
+    if hasattr(entity, "complete_name"):
+        entity.complete_name.replace(" > ", ">>") if entity is not None else None
+    else:
+        entity.completename.replace(" > ", ">>") if entity is not None else None
     OUmachine = (
         machine["ad_ou_machine"].replace("\n", "").replace("\r", "").replace("@@", ">>")
     )
@@ -334,7 +360,6 @@ def get_packages_for_machine(machine, showinfobool=True):
         machine["ad_ou_user"].replace("\n", "").replace("\r", "").replace("@@", ">>")
     )
     group = XmppMasterDatabase().get_ad_group_for_lastuser(machine["lastuser"])
-
     if OUmachine == "":
         OUmachine = None
     if OUuser == "":
@@ -350,153 +375,118 @@ def get_packages_for_machine(machine, showinfobool=True):
         "group": group,
         "entity": machine_entity,
     }
-
     # remove empty values and delete the temp _sources variable
     sources = {key: _sources[key] for key in _sources if _sources[key] != None}
 
     # we find all profiles with the specified sources
     profiles = KioskDatabase().get_profiles_by_sources(sources)
 
-    # search packages for the applied profiles
-    list_profile_packages = KioskDatabase().get_profile_list_for_profiles_list(profiles)
-    if list_profile_packages is None:
+    # search packages and acknowledgements for the applied profiles
+    list_profile_packages = KioskDatabase().get_packages_for_profile_list(profiles)
+    if list_profile_packages is None or list_profile_packages == []:
         return []
 
-    granted_packages = []
-    for element in list_profile_packages:
-        granted_packages += KioskDatabase().get_acknowledges_for_package_profile(
-            element[9], element[6], machine["lastuser"]
-        )
-    list_software_glpi = []
-    softwareonmachine = Glpi().getLastMachineInventoryPart(
-        machine["uuid_inventorymachine"],
-        "Softwares",
-        0,
-        -1,
-        "",
-        {"hide_win_updates": True, "history_delta": ""},
-    )
-    for x in softwareonmachine:
-        list_software_glpi.append([x[0][1], x[1][1], x[2][1]])
+    # TODO: put this path into a conf
+    # Define the path for the packages list. Needed to find some info from xmppdeploy.json
+    pkg_dir = os.path.join("/", "var","lib", "pulse2", "packages")
+
+
+    # pkg_statuses is the cleaned up list of packages associated to the profiles list.
+    #   We will determine some info from packages and machine:
+    #       such OS compatibility between package and machine,
+    #       if the uninstall section is pecified,
+    #       if the launcher command is specified ...
+    #       the rights allowed, acknowledged, rejected ....
+
+    pkg_statuses = {}
+    for pkg in list_profile_packages:
+        # get a shortcut to package uuid
+        uuid = pkg["package_uuid"]
+
+        ### Check if the packages found are OS compatible
+        depl = {}
+        pkg_path = os.path.join(pkg_dir, uuid, "xmppdeploy.json")
+        try:
+            with open(pkg_path, "r") as fb:
+                try:
+                    depl = json.load(fb)
+                except:
+                    depl = {}
+                finally:
+                    fb.close()
+        except:
+            # Can't read xmppdeploy.json : probably corrupted package : skip
+            continue
+
+        # Check if the machine OS is compatible with the package
+        if platform not in pkg["os"]:
+            continue
+
+        # Check if the uninstall section is present
+        uninstall_section_present = False
+        update_section_present = False
+        for action_name in depl["metaparameter"][platform]["label"]:
+            if action_name == action_name.startswith("upd_"):
+                uninstall_section_present = True
+            if action_name == "label_section_uninstall" or action_name.startswith("Uninst_"):
+                uninstall_section_present = True
+
+        # Check if the launcher is specified
+        launcher = ""
+        if depl["info"]["launcher"] != "":
+            launcher = depl["info"]["launcher"]
+
+        # Check if the package is installed on the machine
+        found = Glpi().find_software_info_for_machine(machine["uuid_inventorymachine"],  pkg)
+        installed = True if found != [] else False
+        # create a new entry for this package if not existing in pkg_statuses
+        if uuid not in pkg_statuses:
+            # By default set to restricted
+            pkg_statuses[uuid] = {
+                "icon": "kiosk.png",
+                "right": "restricted",
+                "launcher" : launcher,
+                "uninstall" : uninstall_section_present,
+                "update": update_section_present,
+                "installed" : installed,
+                "uuid" : uuid,
+                "version_software": pkg["version_software"],
+                "vendor": pkg["vendor"],
+                "version": pkg["version_package"],
+                "software": pkg["software"],
+                "description": pkg["description"],
+                "name":pkg["name_package"],
+                "action": []
+            }
+
+        # We will find some info from profile rights
+        if pkg["package_status"] == "allowed":
+            pkg_statuses[uuid]["right"] = "allowed"
+
+        elif pkg["package_status"] == "restricted" and pkg["status"] == "allowed":
+            pkg_statuses[uuid]["right"] = "allowed"
+
+        # We fully know the package rights and states: we can put actions on it
+        pkg_statuses[uuid]["action"] = []
+
+        if installed == False:
+            if pkg_statuses[uuid]["right"] == "allowed":
+                pkg_statuses[uuid]["action"].append("Install")
+            else:
+                pkg_statuses[uuid]["action"].append("Ask")
+        else:
+            if pkg_statuses[uuid]["launcher"] != "":
+                pkg_statuses[uuid]["action"].append("Launch")
+            if pkg_statuses[uuid]["uninstall"] is True:
+                pkg_statuses[uuid]["action"].append("Delete")
+            if pkg_statuses[uuid]["update"] is True:
+                if LooseVersion(found[0][2]) < LooseVersion(pkg["version"]):
+                    pkg_statuses[uuid]["action"].append("Update")
 
     structuredatakiosk = []
-    indexed = {}
-    # Create structuredatakiosk for initialization
-    for packageprofile in list_profile_packages:
-        spkg = __search_software_in_glpi(
-            list_software_glpi, granted_packages, packageprofile
-        )
-
-        if spkg["name"] not in indexed:
-            structuredatakiosk.append(spkg)
-            indexed[spkg["name"]] = {
-                "action": spkg["action"],
-                "id": len(structuredatakiosk) - 1,
-            }
-        else:
-            # ask < install < delete
-            # check if indexed has more rights than spkg
-            if (
-                "Delete" in indexed[spkg["name"]]["action"]
-                and "Delete" not in spkg["action"]
-            ):
-                # spkg["name"]][id] = id of spkg in structuredatakiosk
-                # change the action of the package stored in structuredatakiosk
-                structuredatakiosk[indexed[spkg["name"]][id]]["action"] = ["Delete"]
-                if "Launch" in indexed[spkg["name"]]["action"]:
-                    structuredatakiosk[indexed[spkg["name"]][id]]["action"].append(
-                        "Launch"
-                    )
-
-            elif (
-                "Install" in indexed[spkg["name"]] and "Ask" in indexed[spkg["action"]]
-            ):
-                continue
-    logger.debug(
-        "initialisation kiosk %s on machine %s"
-        % (structuredatakiosk, machine["hostname"])
-    )
-
+    for uuid in pkg_statuses:
+        structuredatakiosk.append(pkg_statuses[uuid])
     return structuredatakiosk
-
-
-def __search_software_in_glpi(
-    list_software_glpi, list_granted_packages, packageprofile
-):
-    structuredatakioskelement = {
-        "name": packageprofile[0],
-        "action": [],
-        "uuid": packageprofile[6],
-        "description": packageprofile[2],
-        "version": packageprofile[3],
-        "profile": packageprofile[1],
-        "launcher_cmd": "",
-    }
-
-    descriptor = getdescriptor(packageprofile[6])
-    if "launcher" in descriptor["info"]:
-        structuredatakioskelement["launcher_cmd"] = descriptor["info"]["launcher"]
-    else:
-        pass
-
-    patternname = re.compile(
-        "(?i)"
-        + packageprofile[4]
-        .replace("+", "\+")
-        .replace("*", "\*")
-        .replace("(", "\(")
-        .replace(")", "\)")
-        .replace(".", "\.")
-    )
-    for soft_glpi in list_software_glpi:
-        if (
-            patternname.match(str(soft_glpi[0]))
-            or patternname.match(str(soft_glpi[1]))
-            or (soft_glpi[1] == packageprofile[4] and soft_glpi[2] == packageprofile[5])
-        ):
-            # Process with this package which is installed on the machine
-            # The package could be deleted
-            structuredatakioskelement["icon"] = "kiosk.png"
-            for step in descriptor.get("win", {}).get("sequence", []):
-                if step.get("action") == "action_section_uninstall":
-                    structuredatakioskelement["action"].append("Delete")
-                    break
-            structuredatakioskelement["action"].append("Launch")
-            # verification if update
-            # compare the version
-            # TODO
-            # For now we use the package version. Later the software version will be needed into the pulse package
-            if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
-                structuredatakioskelement["action"].append("Update")
-                logger.debug(
-                    "the software version is superior "
-                    "to that installed on the machine %s : %s < %s"
-                    % (packageprofile[0], soft_glpi[2], LooseVersion(packageprofile[3]))
-                )
-            break
-    if len(structuredatakioskelement["action"]) == 0:
-        # The package defined for this profile is absent from the machine:
-        if packageprofile[8] == "allowed":
-            structuredatakioskelement["action"].append("Install")
-        else:
-            trigger = False
-            for ack in list_granted_packages:
-                if ack["package_uuid"] == structuredatakioskelement["uuid"]:
-                    if ack["id_package_has_profil"] != packageprofile[9]:
-                        continue
-                    else:
-                        if ack["status"] == "allowed":
-                            structuredatakioskelement["action"].append("Install")
-                        elif ack["status"] == "waiting":
-                            trigger = True
-                        elif ack["status"] == "rejected":
-                            trigger = True
-                else:
-                    continue
-
-            if len(structuredatakioskelement["action"]) == 0 and trigger is False:
-                structuredatakioskelement["action"].append("Ask")
-    return structuredatakioskelement
 
 
 #### ancine plugin master resultkiosk
@@ -1819,3 +1809,15 @@ def get_ou_for_user(user):
         returns False for some issues
     """
     return False
+
+
+def callinventory(xmppobject, to):
+    try:
+        body = {
+            "action": "inventory",
+            "sessionid": getRandomName(5, "inventory"),
+            "data": {"forced": "forced"},
+        }
+        xmppobject.send_message(mto=to, mbody=json.dumps(body), mtype="chat")
+    except Exception:
+        logger.error("\n%s" % (traceback.format_exc()))

@@ -1,34 +1,42 @@
-# What is Medulla XMPP Agent?
+[English](README.md)
+[Français](README.fr.md)
 
-Medulla XMPP Agent is a project that provides a realtime, smart and multi-platform agent to Medulla RMM solution. 
 
-Medulla XMPP Agent relies on open source technologies like python, ejabberd ssh and even more.
+# Medulla RMM
 
-With Medulla XMPP Agent you are be able to:
+Medulla RMM is a radically simple IT automation and lifecycle management tool that offers the ability to handle repetitive tasks, quickly deploy applications, operating system and proactively manage them all where ever they are. 
 
-* Provides real time the states of nodes
-* Receive real time commands
-* Scheduling task
-* Bypass any type of network
-* Interact with user
-* And so much more to come!
+Medulla provides a real-time management solution for complex and distributed environments.
 
-## Community
+## Main feature :
 
-* Discuss on Discord Channel: https://discord.gg/Mj8wGGp4yH
-* Website : <[http://www.medulla-tech.io](https://medulla-tech.io/)>
-* Bugtracker : <https://github.com/medulla-tech/medulla-agent/issues>
+* Imaging and Multicast
+  * System Configuration Builder
+  * Driver extraction and injection
+* Package deployment
+  * Auto-packaging wizard
+  * Compliance management
+  * Auto remediation
+* Complete inventory
+* Remote control
+* Backup and Restore
+* Update management
+* Self-service kiosk
 
 ## Installation
 
-Installation had been simplified to easily try and use, just [download](https://medulla-tech.io/dl/)
+Want to test Medulla?
+We offer an installable version of Medulla, allowing you to evaluate the solution directly in your own environment.
 
-If you find some errors, please feel free to contribute.
+To obtain the installation file and receive deployment instructions, submit your request here:
+https://medulla-tech.io/?ff_landing=22
 
-Thanks
-   
-# License
+Our team is available for any questions or demonstration requests.
 
-Medulla XMPP Agent is distributed under GPL v3. 
+## Supported clients
 
---
+Manage your Windows (from version 10 to lastest CBB and LTSB) and Linux systems
+
+## Documentation
+
+Read [documentation](https://docs.medulla-tech.io/) 

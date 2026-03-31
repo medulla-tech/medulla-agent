@@ -29,7 +29,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="5.4.6"
+AGENT_VERSION="5.5.0"
 BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
@@ -181,6 +181,7 @@ update_installer_scripts() {
 		-e "s/@@SSH_PORT@@/${SSH_PORT}/" \
 		install-pulse-agent-linux.sh.in \
 		> ${GENERATED_FILE}
+    chmod a+r /var/lib/pulse2/clients/lin/Medulla-Agent-linux-*.sh
 
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then

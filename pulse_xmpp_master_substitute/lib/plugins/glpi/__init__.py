@@ -199,3 +199,5 @@ class Glpi:
             computers_id, registry_id, key, value
         )
 
+    def find_software_info_for_machine(self, machine_uuid, pkg):
+        return self.version_instance.find_software_info_for_machine(machine_uuid, pkg)

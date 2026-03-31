@@ -1588,14 +1588,13 @@ class shellcommandtimeout:
         """
         try:
             if sys.platform == "win32":
-                # Windows text=True indique texte doit être traité en tant que chaîne de caractères (UTF-8 par défaut).
-                # Cela permet d'interpréter correctement les caractères spéciaux.
+                # Windows console uses CP850 encoding for command output
                 self.process = subprocess.Popen(
                     self.cmd,
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    text=True,
+                    encoding="cp850",
                 )
             else:
                 # Linux ou macOS
@@ -5458,7 +5457,6 @@ class offline_search_kb:
             if line:
                 for sline in line:
                     lcmd = [x for x in sline.split(" ") if x != ""]
-                    logging.getLogger().error(lcmd)
                     if len(lcmd) == 3:
                         return lcmd[2]
         return ""

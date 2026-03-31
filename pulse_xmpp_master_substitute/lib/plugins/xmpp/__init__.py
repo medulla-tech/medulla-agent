@@ -7125,7 +7125,7 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoloadbalancerforcluster(self, session):
         sql = """
-            SELECT 
+            SELECT
                 COUNT(*) - 1 AS nb, `machines`.`groupdeploy`
             FROM
                 xmppmaster.machines
@@ -11735,19 +11735,11 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
     @DatabaseHelper._sessionm
     def getmachineentityfromjid(self, session, jid):
-        query = (
-            session.query(self.Local_glpi_entities)
-            .join(
-                self.Local_glpi_machines,
-                self.Local_glpi_entities.id == self.Local_glpi_machines.entities_id
-            )
-            .join(
-                Machines,
-                self.Local_glpi_machines.id == Machines.id_glpi
-            )
-            .filter(Machines.jid == jid)
+        query = session.query(Glpi_entity)\
+            .join(self.Local_glpi_filters, self.Local_glpi_filters.entities_id == Glpi_entity.glpi_id)\
+            .join(Machines, "UUID%s"%self.Local_glpi_filters.id == Machines.uuid_inventorymachine)\
+            .filter(Machines.jid == jid)\
             .first()
-        )
         return query
 
     @DatabaseHelper._sessionm

@@ -40,7 +40,7 @@ BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="5.4.6"
+AGENT_VERSION="5.5.0"
 KIOSK_VERSION="1.0.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
@@ -464,6 +464,7 @@ generate_agent_installer() {
 		colored_echo red "### ER... Generation of agent failed. Please restart"
 		exit 1
 	fi
+    chmod a+r /var/lib/pulse2/clients/win/Medulla-Agent-windows-*.exe
 
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then

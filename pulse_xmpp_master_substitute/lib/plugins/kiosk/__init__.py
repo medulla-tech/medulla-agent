@@ -27,6 +27,9 @@ import time
 from lib.configuration import confParameter
 import functools
 from datetime import datetime
+import json
+import re
+import base64
 
 try:
     from sqlalchemy.orm.util import _entity_descriptor
@@ -634,51 +637,82 @@ class KioskDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def get_profiles_by_sources(self, session, sources):
-        """get the list of profiles concerned by the specified sources
-        - params: sources dict with the form {"source_name": [list of ous]}
-        """
-        profiles = []
-        profile_ids = []
+        """Find all kiosk profiles matching the specified sources. The sources is a dict with the following form:
+        "ou_machine": "value_ou,
+        "ou_user": "value_ou",
+        "ldap": "value_ldap",
+        "group": "value_group",
+        "entity": "value_entity",
+        }
+        The sources is designed to exclude all empty values. This way we can reduce the number of criterions.
 
+        Args:
+            self (KioskDatabase): The instance of the KioskDatabase class.
+            session (sqlalchemy.orm.Session): The SQLAlchemy session to use for the database query.
+            sources (dict): A dictionary containing the sources to filter the profiles.
+
+        Returns:
+            list: A list of profiles matching the specified sources."""
+        query = session.query(Profiles)\
+            .join(Profile_has_ou, Profile_has_ou.profile_id == Profiles.id)\
+            .filter(Profiles.active == 1)
+
+        filters = []
         for source in sources:
-            try:
-                query = (
-                    session.query(Profiles)
-                    .join(Profile_has_ou, Profile_has_ou.profile_id == Profiles.id)
-                    .filter(
-                        and_(
-                            Profiles.source == source,
-                            Profiles.active == 1,
-                            Profile_has_ou.ou.like("%s%%" % sources[source]),
-                        )
-                    )
-                    .group_by(Profiles.id)
-                )
-                query = query.all()
-            except Exception as e:
-                logging.getLogger().error("Error during profile selection : %s" % e)
+            filters.append(and_(
+                Profiles.source == source,
+                Profile_has_ou.ou.like("%s%%" % sources[source]),
+            ))
 
-            if query is not None:
-                for row in query:
-                    profiles.append(
-                        {
-                            "id": row.id,
-                            "name": row.name,
-                            "owner": row.owner,
-                            "source": row.source,
-                            "active": row.active if row.active is not None else False,
-                        }
-                    )
+        query = query.filter(or_(*filters))
+        query = query.group_by(Profiles.id)
+        query = query.all()
+
+        profiles = []
+        if query is not None:
+            for row in query:
+                profiles.append(
+                    {
+                        "id": row.id,
+                        "name": row.name,
+                        "owner": row.owner,
+                        "source": row.source,
+                        "active": row.active if row.active is not None else False,
+                    }
+                )
+
         return profiles
 
     @DatabaseHelper._sessionm
-    def get_profile_list_for_profiles_list(self, session, profiles):
-        profiles_ids = [profile["id"] for profile in profiles]
-        if len(profiles_ids) == 0:
+    def get_packages_for_profile_list(self, session, profiles):
+        """
+        Get the packages list for all the given profiles. The packages list contains acknowledgements
+
+        Args:
+            self (KioskDatabase): Instance of KioskDatabase object.
+            session (sqlalchemy.orm.session): The sql session to execute queries.
+            profiles (list): the list of profiles contained as dict. The dict follows the db structure.
+
+        Returns:
+            list: List of packages with acknowledgements. This list is not cleaned up. So it is possible to have the same package twice, from profile A and B."""
+
+        # Determine once the ids list (the old version had to generate 3 lists for the same result)
+        c = 0
+        profiles_ids_str = ""
+        for p in profiles:
+            # Ignore empty values
+            if p["id"] is not None and p["id"] != "":
+                profiles_ids_str += "%s,"%(p["id"])
+            c += 1
+        # Cleanup the last ',' at the end of the str
+        profiles_ids_str = profiles_ids_str.strip(',')
+
+        # The counter is 0: no profile found : no need to execute the request.
+        if c == 0:
             # return le profils par default
             return []
 
-        profiles_ids_str = ",".join(["%s" % profile["id"] for profile in profiles])
+        # profiles_ids_str = ",".join(["%s" % profile["id"] for profile in profiles])
         sql = (
             """
             SELECT
@@ -687,28 +721,60 @@ class KioskDatabase(DatabaseHelper):
                 kiosk.profiles.name as 'name_profile',
                 pkgs.packages.description,
                 pkgs.packages.version version_package,
+                pkgs.packages.Qvendor as vendor,
                 pkgs.packages.Qsoftware as software,
                 pkgs.packages.Qversion version_software,
                 pkgs.packages.uuid as package_uuid,
                 pkgs.packages.os,
                 kiosk.package_has_profil.package_status,
-                kiosk.package_has_profil.id as id_package_has_profil
+                kiosk.package_has_profil.id as id_package_has_profil,
+                ack.*
             FROM
                 pkgs.packages
                   inner join
                 kiosk.package_has_profil on pkgs.packages.uuid = kiosk.package_has_profil.package_uuid
                   inner join
                 kiosk.profiles on profiles.id = kiosk.package_has_profil.profil_id
+                  left join
+                kiosk.acknowledgements ack on ack.id_package_has_profil = kiosk.package_has_profil.id
             WHERE
                 kiosk.package_has_profil.profil_id in (%s)
                     """
             % profiles_ids_str
         )
+
         try:
             result = session.execute(sql)
             session.commit()
             session.flush()
-            l = [x.decode("utf-8") if isinstance(x, bytes) else x for x in result]
+
+            if result is None:
+                return []
+
+            l = []
+            for element in result:
+                tmp = {
+                    "name_package": element[0],
+                    "name_profile": element[1],
+                    "description": element[2],
+                    "version_package": element[3],
+                    "vendor": element[4],
+                    "software": element[5],
+                    "version_software": element[6],
+                    "package_uuid": element[7],
+                    "os": element[8],
+                    "package_status": element[9],
+                    "id_package_has_profil": element[10],
+                    "ack_id": element[11] if element[11] is not None else "",
+                    "askuser": element[13] if element[13] is not None else "",
+                    "askdate": element[14].strftime("%Y-%m-%d %H:%M:%S") if element[14] is not None else "",
+                    "acknowledgedbyuser": element[15] if element[15] is not None else "",
+                    "startdate": element[16].strftime("%Y-%m-%d %H:%M:%S") if element[16] is not None else "",
+                    "enddate": element[17].strftime("%Y-%m-%d %H:%M:%S") if element[17] is not None else "",
+                    "status": element[18] if element[18] is not None else "",
+                }
+                l.append(tmp)
+            # l = [x for x in result]
             return l
         except Exception as e:
             logging.getLogger().error("get_profile_list_for_profiles_list")
