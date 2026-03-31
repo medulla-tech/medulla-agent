@@ -5,6 +5,8 @@
 import json
 import traceback
 import logging
+import base64
+
 # from lib.plugins.glpi import Glpi
 from lib.plugins.diskmastering import DiskMasteringDatabase
 from datetime import datetime

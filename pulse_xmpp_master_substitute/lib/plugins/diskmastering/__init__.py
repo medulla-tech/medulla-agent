@@ -113,6 +113,7 @@ class DiskMasteringDatabase(DatabaseHelper):
                 self.config.diskmastering_dbpooltimeout,
             )
         )
+
         try:
             self.engine_mastering_base = create_engine(
                 "mysql://%s:%s@%s:%s/%s?charset=%s"
@@ -129,7 +130,7 @@ class DiskMasteringDatabase(DatabaseHelper):
                 pool_timeout=self.config.diskmastering_dbpooltimeout,
                 convert_unicode=True,
             )
-            self.Sessionmastering = sessionmaker(bind=self.engine_mastering_base)
+            self.sessionmastering = sessionmaker(bind=self.engine_mastering_base)
 
             Base = automap_base()
             Base.prepare(self.engine_mastering_base, reflect=True)
