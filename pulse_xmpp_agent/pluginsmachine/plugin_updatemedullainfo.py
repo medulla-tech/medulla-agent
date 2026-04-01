@@ -4,6 +4,8 @@
 
 import sys
 import os
+import codecs
+import locale
 import logging
 from lib import utils
 import platform
@@ -17,6 +19,8 @@ import psutil
 import math
 import re
 import json
+import tempfile
+import xml.etree.ElementTree as ET
 
 import traceback
 # Importer winreg uniquement si le système d'exploitation est Windows
@@ -26,7 +30,7 @@ if sys.platform.startswith("win"):
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.14", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.15", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 LATEST_WIN10 = "22H2"
 LATEST_WIN11 = "26H2"
 LATEST_SERVER_ISO = "2025_24H2"
@@ -35,6 +39,156 @@ class Windows11Compatibility:
 
     def __init__(self, debug=False):
         self.debug = debug
+        self._dxdiag_cache = None
+
+    def _decode_subprocess_output(self, data):
+        """Decode une sortie subprocess de facon robuste sur Windows."""
+        if data is None:
+            return ""
+        if isinstance(data, str):
+            return data.strip()
+
+        if data.startswith(codecs.BOM_UTF16_LE) or data.startswith(codecs.BOM_UTF16_BE):
+            try:
+                return data.decode("utf-16").strip()
+            except UnicodeDecodeError:
+                pass
+
+        encodings = ["utf-8-sig", "utf-8"]
+        preferred_encoding = locale.getpreferredencoding(False)
+        if preferred_encoding and preferred_encoding.lower() not in {
+            encoding.lower() for encoding in encodings
+        }:
+            encodings.append(preferred_encoding)
+        encodings.extend(["cp850", "cp1252", "latin-1"])
+
+        for encoding in encodings:
+            try:
+                return data.decode(encoding).strip()
+            except UnicodeDecodeError:
+                continue
+
+        return data.decode("utf-8", errors="replace").strip()
+
+    def _run_powershell_json(self, command, default=None, check=True):
+        """Execute une commande PowerShell et retourne le JSON decode."""
+        wrapped_command = (
+            "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+            "$OutputEncoding = [System.Text.Encoding]::UTF8; "
+            f"{command}"
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", wrapped_command],
+            capture_output=True,
+            text=False,
+        )
+        stdout = self._decode_subprocess_output(result.stdout)
+        stderr = self._decode_subprocess_output(result.stderr)
+
+        if self.debug:
+            logger.debug(
+                "PowerShell rc=%s cmd=%s stdout=%s stderr=%s",
+                result.returncode,
+                command,
+                stdout,
+                stderr,
+            )
+
+        if check and result.returncode != 0:
+            raise RuntimeError(stderr or stdout or f"PowerShell exit code {result.returncode}")
+        if not stdout:
+            return default
+        try:
+            return json.loads(stdout)
+        except json.JSONDecodeError:
+            if check:
+                raise
+            return default
+
+    def _coerce_float(self, value):
+        """Convertit une valeur en flottant si possible."""
+        try:
+            if value in (None, ""):
+                return None
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _coerce_int(self, value):
+        """Convertit une valeur en entier si possible."""
+        try:
+            if value in (None, ""):
+                return None
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _extract_numeric_version(self, value):
+        """Extrait une version numerique simple depuis une chaine."""
+        match = re.search(r"([0-9]+(?:\.[0-9]+)?)", str(value or ""))
+        if not match:
+            return None
+        return self._coerce_float(match.group(1))
+
+    def _screen_diagonal_inches(self, width_cm, height_cm):
+        """Calcule la diagonale d'un ecran a partir de ses dimensions actives."""
+        width_value = self._coerce_float(width_cm)
+        height_value = self._coerce_float(height_cm)
+        if not width_value or not height_value:
+            return None
+        return round((((width_value ** 2) + (height_value ** 2)) ** 0.5) / 2.54, 2)
+
+    def _get_dxdiag_info(self):
+        """Retourne les informations DXDiag utiles aux verifications video."""
+        if self._dxdiag_cache is not None:
+            return self._dxdiag_cache
+
+        result = {"system": {}, "display_devices": [], "error": ""}
+        dxdiag_path = shutil.which("dxdiag")
+        if not dxdiag_path:
+            result["error"] = "dxdiag-not-found"
+            self._dxdiag_cache = result
+            return result
+
+        xml_path = ""
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".xml") as handle:
+                xml_path = handle.name
+
+            process = subprocess.run(
+                [dxdiag_path, "/whql:off", "/x", xml_path],
+                capture_output=True,
+                text=False,
+                timeout=90,
+            )
+            stdout = self._decode_subprocess_output(process.stdout)
+            stderr = self._decode_subprocess_output(process.stderr)
+            if process.returncode != 0:
+                result["error"] = stderr or stdout or f"dxdiag exit code {process.returncode}"
+            else:
+                root = ET.parse(xml_path).getroot()
+                system_node = root.find("./DxDiagSystemInfo")
+                if system_node is not None:
+                    result["system"] = {
+                        child.tag: (child.text or "").strip() for child in system_node
+                    }
+                result["display_devices"] = [
+                    {child.tag: (child.text or "").strip() for child in node}
+                    for node in root.findall("./DisplayDevices/DisplayDevice")
+                ]
+        except Exception as exc:
+            result["error"] = str(exc)
+            if self.debug:
+                logger.debug("DXDiag Error: %s", exc)
+        finally:
+            if xml_path:
+                try:
+                    os.unlink(xml_path)
+                except OSError:
+                    pass
+
+        self._dxdiag_cache = result
+        return result
 
     def check_ram(self):
         try:
@@ -67,19 +221,30 @@ class Windows11Compatibility:
 
     def check_uefi(self):
         try:
-            cmd = [
-                "powershell",
-                "-Command",
-                "(Get-CimInstance -ClassName Win32_ComputerSystem).BootupState"
-            ]
+            result = subprocess.run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+                    "$OutputEncoding = [System.Text.Encoding]::UTF8; "
+                    "Confirm-SecureBootUEFI",
+                ],
+                capture_output=True,
+                text=False,
+            )
+            stdout = self._decode_subprocess_output(result.stdout).lower()
+            stderr = self._decode_subprocess_output(result.stderr).lower()
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            output = result.stdout.lower()
-
-            is_uefi = "efi" in output
+            if "true" in stdout or "false" in stdout:
+                is_uefi = True
+            elif result.returncode != 0 or "cmdlet" in stderr:
+                is_uefi = False
+            else:
+                is_uefi = True
 
             if self.debug:
-                logger.debug(f"UEFI check: {output.strip()} -> {is_uefi}")
+                logger.debug(f"UEFI check: stdout={stdout.strip()} stderr={stderr.strip()} -> {is_uefi}")
 
             return is_uefi
 
@@ -89,26 +254,33 @@ class Windows11Compatibility:
 
     def check_tpm(self):
         try:
-            cmd = [
-                "powershell",
-                "-Command",
-                "Get-Tpm | ConvertTo-Json"
-            ]
+            tpm = self._run_powershell_json(
+                "Get-CimInstance -Namespace Root\\CIMv2\\Security\\MicrosoftTpm -Class Win32_Tpm | "
+                "Select-Object SpecVersion, IsEnabled_InitialValue, IsActivated_InitialValue | ConvertTo-Json -Compress",
+                default={},
+                check=False,
+            ) or {}
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
-
-            if not result.stdout:
+            if not tpm:
                 return False
-
-            tpm = json.loads(result.stdout)
-
-            present = tpm.get("TpmPresent", False)
             spec = tpm.get("SpecVersion", "")
-
-            tpm_ok = present and "2.0" in spec
+            version = spec.split(",")[0].strip() if spec else ""
+            version_number = self._coerce_float(version)
+            tpm_ok = bool(
+                version_number is not None
+                and version_number >= 2.0
+                and tpm.get("IsEnabled_InitialValue") is not False
+                and tpm.get("IsActivated_InitialValue") is not False
+            )
 
             if self.debug:
-                logger.debug(f"TPM check: present={present} spec={spec} -> {tpm_ok}")
+                logger.debug(
+                    "TPM check: spec=%s enabled=%s activated=%s -> %s",
+                    spec,
+                    tpm.get("IsEnabled_InitialValue"),
+                    tpm.get("IsActivated_InitialValue"),
+                    tpm_ok,
+                )
 
             return tpm_ok
 
@@ -151,6 +323,112 @@ class Windows11Compatibility:
             logger.error("\n%s" % (traceback.format_exc()))
             return False
 
+    def check_graphics(self):
+        """Verifie la compatibilite du GPU avec DirectX 12 et WDDM 2.0.
+
+        Si l'information manque ou n'est pas exploitable, la verification est consideree comme OK.
+        """
+        try:
+            dxdiag = self._get_dxdiag_info()
+            devices = dxdiag.get("display_devices", [])
+            directx_version = (dxdiag.get("system", {}).get("DirectXVersion") or "").lower()
+
+            if not devices:
+                if self.debug:
+                    logger.debug("Graphics check: OK par defaut (aucun resultat)")
+                return True
+
+            for device in devices:
+                feature_levels = [
+                    item.strip()
+                    for item in str(device.get("FeatureLevels") or "").split(",")
+                    if item.strip()
+                ]
+                ddi_version = self._extract_numeric_version(device.get("DDIVersion"))
+                wddm_version = self._extract_numeric_version(device.get("DriverModel"))
+
+                directx_ok = any(level.startswith("12") for level in feature_levels)
+                if not directx_ok and ddi_version is not None:
+                    directx_ok = ddi_version >= 12.0
+                if not directx_ok and directx_version:
+                    directx_ok = "directx 12" in directx_version
+
+                wddm_ok = wddm_version is None or wddm_version >= 2.0
+
+                if directx_ok and wddm_ok:
+                    if self.debug:
+                        logger.debug("Graphics check: True")
+                    return True
+
+            if self.debug:
+                logger.debug("Graphics check: False")
+            return False
+
+        except Exception:
+            if self.debug:
+                logger.debug("Graphics check error, OK par defaut")
+            return True
+
+    def check_display(self):
+        """Verifie la compatibilite de l'affichage pour Windows 11.
+
+        Si l'information manque ou n'est pas exploitable, la verification est consideree comme OK.
+        """
+        try:
+            screens = self._run_powershell_json(
+                "Add-Type -AssemblyName System.Windows.Forms; "
+                "[System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "
+                "[pscustomobject]@{ Width = $_.Bounds.Width; Height = $_.Bounds.Height; BitsPerPixel = $_.BitsPerPixel } } | "
+                "ConvertTo-Json -Depth 4 -Compress",
+                default=[],
+                check=False,
+            )
+            basic_params = self._run_powershell_json(
+                "Get-CimInstance -Namespace root\\wmi -Class WmiMonitorBasicDisplayParams | "
+                "Select-Object MaxHorizontalImageSize, MaxVerticalImageSize | ConvertTo-Json -Depth 4 -Compress",
+                default=[],
+                check=False,
+            )
+
+            if not isinstance(screens, list):
+                screens = [] if screens is None else [screens]
+            if not isinstance(basic_params, list):
+                basic_params = [] if basic_params is None else [basic_params]
+
+            if not screens:
+                if self.debug:
+                    logger.debug("Display check: OK par defaut (aucun resultat)")
+                return True
+
+            for index, screen in enumerate(screens):
+                width = self._coerce_int(screen.get("Width"))
+                height = self._coerce_int(screen.get("Height"))
+                bits_per_pixel = self._coerce_int(screen.get("BitsPerPixel"))
+                diagonal_inches = None
+                if index < len(basic_params):
+                    diagonal_inches = self._screen_diagonal_inches(
+                        basic_params[index].get("MaxHorizontalImageSize"),
+                        basic_params[index].get("MaxVerticalImageSize"),
+                    )
+
+                resolution_ok = width is None or height is None or (width >= 1280 and height >= 720)
+                color_ok = bits_per_pixel is None or bits_per_pixel >= 24
+                size_ok = diagonal_inches is None or diagonal_inches > 9.0
+
+                if resolution_ok and color_ok and size_ok:
+                    if self.debug:
+                        logger.debug("Display check: True")
+                    return True
+
+            if self.debug:
+                logger.debug("Display check: False")
+            return False
+
+        except Exception:
+            if self.debug:
+                logger.debug("Display check error, OK par defaut")
+            return True
+
     def is_compatible(self):
         try:
 
@@ -159,7 +437,9 @@ class Windows11Compatibility:
                 self.check_disk(),
                 self.check_uefi(),
                 self.check_tpm(),
-                self.check_cpu()
+                self.check_cpu(),
+                self.check_graphics(),
+                self.check_display(),
             ]
 
             result = all(checks)
