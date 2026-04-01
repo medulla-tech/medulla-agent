@@ -202,3 +202,19 @@ class DiskMasteringDatabase(DatabaseHelper):
             result["date_end"] = e.date_end
 
         return result
+
+    @DatabaseHelper._sessionm
+    def push_log(self, session, action_id, uuid, log="", date=None):
+        if date is None:
+            sql = """INSERT INTO results (action_id, uuid, content) VALUES(:action_id, :uuid, :content)"""
+            bindings = {"action_id": action_id, "uuid": uuid, "content": log}
+        else:
+            sql = """INSERT INTO results (action_id, uuid, content, creation_date) VALUES(:action_id, :uuid, :content, :creation_date)"""
+            bindings = {"action_id": action_id, "uuid": uuid, "content": log, "creation_date": date}
+        try:
+            session.execute(sql, bindings)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error(e)
+        return
