@@ -21,10 +21,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("call %s from %s session id %s" % (plugin, message["from"], sessionid))
     logger.debug("###################################################")
 
+
     if "subaction" in data:
         if data["subaction"] == "log":
-            # TODO: save logs associated to the data["action_id"] + data["uuid"]
-            pass
+            push_log(objectxmpp, data)
+            return
 
         if data["subaction"] == "ping":
             """Recv
@@ -84,6 +85,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 - action_id     : the action id found when booting
                 - server        : relay (here). Equivalent to from
             """
+            logger.info("Asking workflow for machine %s with action_id %s from relay"%(data["uuid"], data["action_id"]))
             uuid = data["uuid"]
             mac = data["mac"]
             # Transfer the data to the master_img
@@ -281,3 +283,35 @@ def compare_version(davos, canonic):
     except:
         canonic = 0.0
     return davos >= canonic
+
+
+def push_log(objectxmpp, data):
+    _logger = logger.info
+
+    if "level" in data and data["level"] in ["debug", "info", "warning", "error", "fatal"]:
+        if data["level"] == "debug":
+            _logger = logger.debug
+        elif data["level"] == "info":
+            _logger = logger.info
+        elif data["level"] == "warning":
+            _logger = logger.warning
+        elif data["level"] == "error":
+            _logger = logger.error
+        elif data["level"] == "fatal":
+            _logger = logger.fatal
+        _logger(">>%s"%data["msg"])
+
+    if "uuid" not in data or "action_id" not in data:
+        return
+
+    datasend = {
+        "from":objectxmpp.boundjid.bare,
+        "to":"master_dma@pulse",
+        "sessionid": data["sessionid"],
+        "ret": 0,
+        "action": "diskmastering",
+        "agenttype": objectxmpp.config.agenttype,
+        "data": data,
+        "base64": False,
+    }
+    objectxmpp.send_message(mto="master_dma@pulse", mbody=json.dumps(datasend, indent=4), mtype="chat")
