@@ -204,13 +204,19 @@ class DiskMasteringDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def push_log(self, session, action_id, uuid, log="", date=None):
+    def push_log(self, session, session_id, action_id, uuid, log="", date=None):
         if date is None:
-            sql = """INSERT INTO results (action_id, uuid, content) VALUES(:action_id, :uuid, :content)"""
-            bindings = {"action_id": action_id, "uuid": uuid, "content": log}
+            sql = """INSERT INTO results (action_id, session_id, uuid, content) VALUES(:action_id, :session_id, :uuid, :content)"""
+            bindings = {"action_id": action_id, "session_id": session_id, "uuid": uuid, "content": log}
         else:
-            sql = """INSERT INTO results (action_id, uuid, content, creation_date) VALUES(:action_id, :uuid, :content, :creation_date)"""
-            bindings = {"action_id": action_id, "uuid": uuid, "content": log, "creation_date": date}
+            sql = """INSERT INTO results (action_id, session_id, uuid, content, creation_date) VALUES(:action_id, :session_id, :uuid, :content, :creation_date)"""
+            bindings = {
+                "action_id": action_id,
+                "uuid": uuid,
+                "content": log,
+                "creation_date": date,
+                "session_id": session_id,
+            }
         try:
             session.execute(sql, bindings)
             session.commit()

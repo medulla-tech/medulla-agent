@@ -78,7 +78,6 @@ def get_mastering_script(xmppobject, step):
 
 
 def push_log(xmppobject, data):
-    logger.error(2)
 
     _logger = logger.info
 
@@ -99,6 +98,6 @@ def push_log(xmppobject, data):
         return
 
     try:
-        DiskMasteringDatabase().push_log(data["action_id"], data["uuid"], data["msg"])
+        DiskMasteringDatabase().push_log(data["sessionid"], data["action_id"], data["uuid"], data["msg"])
     except Exception as e:
         logger.error(e)
