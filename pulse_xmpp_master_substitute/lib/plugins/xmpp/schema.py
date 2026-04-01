@@ -11,8 +11,8 @@ from sqlalchemy import (
     DateTime,
     Text,
     Enum,
+    UniqueConstraint,
 )
-from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
