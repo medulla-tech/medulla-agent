@@ -2588,12 +2588,14 @@ def savejsonfile(filename, data, indent=4):
 
 def loadjsonfile(filename):
     if os.path.isfile(filename):
-        with open(filename, "r") as info:
-            dd = info.read()
         try:
+            with open(filename, "r") as info:
+                dd = info.read()
             return json.loads(decode_strconsole(dd))
         except Exception as e:
             logger.error(f"filename {filename} error decodage [{str(e)}]")
+    else:
+        logger.error(f"The file {filename} does not exist")
     return None
 
 
