@@ -2,6 +2,7 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_agent/lib/managepackage.py
 
 import sys
 import os
@@ -21,6 +22,8 @@ logger = logging.getLogger()
 
 
 class managepackage:
+    """Manage package storage paths and descriptor lookups for the agent."""
+
     # variable de classe
     agenttype = "relayserver"
 
@@ -121,15 +124,22 @@ class managepackage:
             It returns the content of the JSON file
         """
         if os.path.exists(filename):
-            with open(filename, "r") as file:
-                data = json.load(file)
-                return data
+            try:
+                with open(filename, "r") as file:
+                    data = json.load(file)
+                    return data
+            except Exception as e:
+                logger.error(f"We failed to decode the file {filename}")
+                logger.error(f"we encountered the error: {str(e)}")
+                return None
         else:
             logger.error(f"The json file {filename} is missing.")
             return None
 
     @staticmethod
     def getdescriptorpackagename(packagename):
+        """Return the deployment descriptor matching a package name."""
+
         for package in managepackage.listpackages():
             if not os.path.isfile(os.path.join(package, "xmppdeploy.json")):
                 logger.error(
@@ -316,6 +326,8 @@ class managepackage:
 
     @staticmethod
     def getnamepackagefromuuidpackage(uuidpackage):
+        """Return the package display name associated with a package UUID."""
+
         pathpackage = os.path.join(
             managepackage.packagedir(), uuidpackage, "xmppdeploy.json"
         )
@@ -328,6 +340,8 @@ class managepackage:
 
     @staticmethod
     def getdescriptorpackageuuid(packageuuid):
+        """Return the deployment descriptor associated with a package UUID."""
+
         jsonfile = os.path.join(
             managepackage.packagedir(), packageuuid, "xmppdeploy.json"
         )
@@ -335,7 +349,9 @@ class managepackage:
             try:
                 return managepackage.loadjsonfile(jsonfile)
             except Exception as error_loading:
-                logger.error(f"An error occured while loading the file {jsonfile}")
+                logger.error(
+                    f"Failed to load package descriptor {jsonfile}: {str(error_loading)}"
+                )
                 return None
         else:
             logger.error(f"The file {jsonfile} is missing")
@@ -343,6 +359,8 @@ class managepackage:
 
     @staticmethod
     def getpathpackage(uuidpackage):
+        """Return the filesystem path of a package from its UUID."""
+
         return os.path.join(managepackage.packagedir(), uuidpackage)
 
 
