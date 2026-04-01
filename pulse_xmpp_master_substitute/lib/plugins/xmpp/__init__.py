@@ -12180,17 +12180,21 @@ where d.jidmachine='%s' and c.package_id = '%s'
             ]
 
         return result
-
+    
     @DatabaseHelper._sessionm
     def add_uninstall_kb_machine(self, session, updateid: str, hostname: str,
-                kb="", jid="", entities_id=0, status=""):
+                                kb="", jid="", entities_id=0, status="") -> int:
         """
-        Add a machine uninstall entry or increment its counter if it already exists.
+                Add or update a machine uninstall entry and return the current uninstall counter.
 
-        This function performs an UPSERT operation:
-        - If the (updateid, hostname) pair does not exist, a new record is created
-        with count_uninstall initialized to 1.
-        - If the record already exists, the count_uninstall field is incremented by 1.
+                This function performs an UPSERT operation on the
+                `xmppmaster.up_windows_kb_uninstall` table:
+                - If the `(updateid, hostname)` pair does not exist, a new record is created
+                    with `count_uninstall` initialized to 1.
+                - If the record already exists, the `count_uninstall` field is incremented by 1.
+
+                After the UPSERT, the function reads back the row and returns the current
+                value of `count_uninstall` for the specified `(updateid, hostname)` pair.
 
         Args:
             session (Session): SQLAlchemy session provided by the decorator.
@@ -12202,22 +12206,21 @@ where d.jidmachine='%s' and c.package_id = '%s'
             status (str, optional): Status of the uninstall operation. Defaults to "".
 
         Returns:
-            int: Valeur courante de count_uninstall apres insertion ou mise a jour.
+            int: Current value of `count_uninstall` after insert or update.
 
         Raises:
             Exception: Propagates any database or execution error after rollback.
         """
         try:
-            sql = text("""
+            # UPSERT
+            session.execute(text("""
                 INSERT INTO xmppmaster.up_windows_kb_uninstall
                     (updateid, hostname, kb, jid, entities_id, status, count_uninstall)
                 VALUES
                     (:updateid, :hostname, :kb, :jid, :entities_id, :status, 1)
                 ON DUPLICATE KEY UPDATE
                     count_uninstall = count_uninstall + 1
-            """)
-
-            session.execute(sql, {
+            """), {
                 "updateid": updateid,
                 "hostname": hostname,
                 "kb": kb,
@@ -12226,13 +12229,29 @@ where d.jidmachine='%s' and c.package_id = '%s'
                 "status": status
             })
 
+            # Retrieve the current count
+            result = session.execute(text("""
+                SELECT count_uninstall
+                FROM xmppmaster.up_windows_kb_uninstall
+                WHERE updateid = :updateid
+                AND hostname = :hostname
+                LIMIT 1
+            """), {
+                "updateid": updateid,
+                "hostname": hostname
+            })
+
+            row = result.fetchone()
+            count = row[0] if row else 0
+
             session.commit()
-            return self.get_uninstall_kb_machine_count(updateid, hostname)
+            
+            return int(count)
 
         except Exception as e:
-            session.rollback()
+            session.rollback()            
             raise e
-            
+
     @DatabaseHelper._sessionm
     def delete_uninstall_kb_machine(self, session, updateid: str, hostname: str):
         """
