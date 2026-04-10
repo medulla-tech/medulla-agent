@@ -61,7 +61,7 @@ install_agent_deps_ubuntu() {
     apt update
     apt install -y software-properties-common
     add-apt-repository -y ppa:deadsnakes/ppa
-	apt update
+apt update
     apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
