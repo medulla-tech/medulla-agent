@@ -19,12 +19,7 @@ from datetime import datetime
 
 logger = logging.getLogger()
 
-plugin = {
-    "VERSION": "1.1",
-    "NAME": "scheduling_security_scan",
-    "TYPE": "relayserver",
-    "SCHEDULED": True
-}
+plugin = { "VERSION": "1.1","NAME": "scheduling_security_scan","TYPE": "relayserver","SCHEDULED": True}
 
 # Cron: tous les jours a 4h du matin, nb=-1 = repetition infinie
 SCHEDULE = {"schedule": "0 4 * * *", "nb": -1}
