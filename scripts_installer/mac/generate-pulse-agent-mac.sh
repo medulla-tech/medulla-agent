@@ -61,7 +61,7 @@ BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="5.5.0"
+AGENT_VERSION="5.5.1"
 HOMEBREW_VERSION="1.5.12"
 FUSION_INVENTORY_AGENT_NAME="FusionInventory-Agent"
 FUSION_INVENTORY_AGENT_VERSION="2.4-1"

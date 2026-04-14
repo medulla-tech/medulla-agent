@@ -1,5 +1,17 @@
 # Change Log
 
+## [5.5.1](https://github.com/medulla-tech/medulla-agent/releases/tag/5.5.1) (2026-04-14)
+- [FEATURE] Add support for Linux Mint clients
+- [FEATURE] Improve Windows 10 to Windows 11 update diagnostic tool
+- [FEATURE] Uninstall an update if blacklisted
+- [FEATURE] Improve kiosk packages matching
+- [FEATURE] Improve CVE scanning
+- [BUGFIX]  Fix TightVNC installation plugin
+- [BUGFIX]  Fix Medulla updates log viewing
+- [BUGFIX]  Fix Syncthing traceback in agent when Syncthing is not present
+- [BUGFIX]  Fix permissions on generated agent installers
+- [BUGFIX]  Ignore network interfaces that do not have a mac address
+
 ## [5.5.0](https://github.com/medulla-tech/medulla-agent/releases/tag/5.5.0) (2026-03-17)
 - [FEATURE] Improve debugging by logging ssh errors directly on deployment audit page
 - [FEATURE] Allow having multiple XMPP chat domains on clients
