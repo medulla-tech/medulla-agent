@@ -31,6 +31,9 @@ PULSE_AGENT_FILENAME="pulse-xmpp-agent-@@AGENT_VERSION@@.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-@@AGENT_VERSION@@.tar.gz"
 VNC_PASSWORD="@@VNC_PASSWORD@@"
 SSH_PORT="@@SSH_PORT@@"
+GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
+GLPI_AGENT_FILENAME="glpi-agent-@@GLPI_AGENT_VERSION@@-1.noarch.rpm"
+GLPI_AGENT_BASE_URL="@@GLPI_AGENT_BASE_URL@@"
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -43,11 +46,13 @@ check_distro() {
     if [ ! -e /etc/os-release ]; then
         echo "We are not able to find your linux distibution"
     else
-        DISTRO=`cat /etc/os-release | grep ^ID= | cut -f2 -d'='`
-        VERSION=`cat /etc/os-release | grep ^VERSION_ID= | cut -f2 -d'=' | sed 's/"//g'`
+        DISTRO=$(grep ^ID= /etc/os-release | cut -f2 -d'=' | sed 's/"//g')
+        VERSION=$(grep ^VERSION_ID= /etc/os-release | cut -f2 -d'=' | sed 's/"//g')
     fi
     case "$DISTRO" in
         debian|ubuntu|zorin|linuxmint)
+            ;;
+        almalinux)
             ;;
         *)
             echo "We do not support your distribution yet"
@@ -88,6 +93,30 @@ install_agent_deps_debian12() {
     apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc xrdp sudo syncthing 
 }
 
+install_agent_deps_almalinux() {
+    # Enable EPEL repository (required for crudini, x11vnc, xrdp, fusioninventory-agent)
+    dnf install -y epel-release
+    # Enable CRB (crb sur AlmaLinux 9, powertools sur AlmaLinux 8) pour les paquets -devel
+    dnf config-manager --set-enabled crb 2>/dev/null || \
+        dnf config-manager --set-enabled powertools 2>/dev/null || true
+    # Install Python 3.11 (disponible dans AppStream depuis AlmaLinux 8.8 et 9.x)
+    dnf install -y python3.11 python3.11-devel
+    # Install pip for Python 3.11
+    python3.11 -m ensurepip --upgrade
+    # Set Python 3.11 as default python3
+    alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+    alternatives --set python3 /usr/bin/python3.11
+    # Install required packages
+    dnf install -y crudini wget net-tools openssh-server rsync x11vnc xrdp sudo syncthing
+    # Install GLPI Agent from RPM
+    echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
+    wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
+    dnf install -y /tmp/medulla/${GLPI_AGENT_FILENAME}
+    # Enable and start SSH daemon
+    systemctl enable sshd
+    systemctl start sshd
+}
+
 download_agent_files() {
     # Delete any existing temp directory
     rm -rf /tmp/medulla
@@ -112,7 +141,15 @@ setup_agent() {
     # Create pulseuser if not exists
     if ! id -u pulseuser >/dev/null 2>&1; then
         echo "Creating pulseuser ..."
-        adduser --system --group --home /home/pulseuser --shell /bin/rbash --disabled-password pulseuser
+        case "$DISTRO" in
+            almalinux)
+                groupadd -r pulseuser 2>/dev/null || true
+                useradd -r -m -d /home/pulseuser -s /bin/rbash -g pulseuser pulseuser
+                ;;
+            *)
+                adduser --system --group --home /home/pulseuser --shell /bin/rbash --disabled-password pulseuser
+                ;;
+        esac
     fi
     if ! [ -d "/home/pulseuser/.ssh" ]; then
         echo "Creating missing SSH profile ..."
@@ -127,7 +164,10 @@ setup_agent() {
     echo "Setting up SSH daemon ..."
     sed -i "s/^#?Port .*$/Port ${SSH_PORT}/" /etc/ssh/sshd_config
     echo -e "PubkeyAcceptedAlgorithms +ssh-rsa\nHostKeyAlgorithms +ssh-rsa" > /etc/ssh/sshd_config.d/medulla.conf
-    systemctl restart ssh
+    case "$DISTRO" in
+        almalinux) systemctl restart sshd ;;
+        *)         systemctl restart ssh  ;;
+    esac
 
     # Setup sudo for pulseuser
     echo "Setting up sudo for pulseuser ..."
@@ -147,12 +187,22 @@ setup_agent() {
 
     # Install CA certificates
     echo "Installing CA certificates ..."
-    CERT_DIR="/usr/local/share/ca-certificates/"
-    cp /tmp/medulla/medulla-ca-chain.cert.pem ${CERT_DIR}
-    cp /tmp/medulla/medulla-rootca.cert.pem ${CERT_DIR}
-    openssl x509 -in ${CERT_DIR}/medulla-ca-chain.cert.pem -inform PEM -out ${CERT_DIR}/medulla-ca-chain.crt
-    openssl x509 -in ${CERT_DIR}/medulla-rootca.cert.pem -inform PEM -out ${CERT_DIR}/medulla-rootca.crt
-    update-ca-certificates
+    case "$DISTRO" in
+        almalinux)
+            CERT_DIR="/etc/pki/ca-trust/source/anchors/"
+            cp /tmp/medulla/medulla-ca-chain.cert.pem ${CERT_DIR}
+            cp /tmp/medulla/medulla-rootca.cert.pem ${CERT_DIR}
+            update-ca-trust extract
+            ;;
+        *)
+            CERT_DIR="/usr/local/share/ca-certificates/"
+            cp /tmp/medulla/medulla-ca-chain.cert.pem ${CERT_DIR}
+            cp /tmp/medulla/medulla-rootca.cert.pem ${CERT_DIR}
+            openssl x509 -in ${CERT_DIR}/medulla-ca-chain.cert.pem -inform PEM -out ${CERT_DIR}/medulla-ca-chain.crt
+            openssl x509 -in ${CERT_DIR}/medulla-rootca.cert.pem -inform PEM -out ${CERT_DIR}/medulla-rootca.crt
+            update-ca-certificates
+            ;;
+    esac
 
     # Copy agent configuration files
     echo "Copying agent configuration files ..."
@@ -213,13 +263,16 @@ start_agent() {
 check_root
 check_distro
 case "$DISTRO" in
-    ubuntu|zorin|linuxmint) 
-        install_agent_deps_ubuntu 
+    ubuntu|zorin|linuxmint)
+        install_agent_deps_ubuntu
         ;;
     debian)
         if [ "$VERSION" == "12" ]; then
             install_agent_deps_debian12
         fi
+        ;;
+    almalinux)
+        install_agent_deps_almalinux
         ;;
 esac
 download_agent_files
