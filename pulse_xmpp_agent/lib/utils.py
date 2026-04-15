@@ -5183,6 +5183,8 @@ class offline_search_kb:
             "history_package_uuid": [],
             "version_net": {},
             "kb_installed": [],
+            "defender": {},
+            "windows_disk_encryption": [],
             "version_edge": "",
             "infobuild": {},
             "platform_info": {},
@@ -5223,6 +5225,14 @@ class offline_search_kb:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
             self.info_package["version_net"] = self.search_net_info_reg()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            self.info_package["defender"] = self.search_defender_info()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            self.info_package["windows_disk_encryption"] = self.search_windows_disk_encryption_info()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
@@ -5276,6 +5286,7 @@ class offline_search_kb:
         ps_targets = ", ".join("'%s'" % kb for kb in hotfix_ids)
         ps_command = (
             "$ErrorActionPreference = 'SilentlyContinue'; "
+            "try { "
             f"$targets = @({ps_targets}); "
             "$session = New-Object -ComObject Microsoft.Update.Session; "
             "$searcher = $session.CreateUpdateSearcher(); "
@@ -5286,7 +5297,8 @@ class offline_search_kb:
             "$hit = $history | Where-Object { $_.Title -match $regex } | Sort-Object Date -Descending | Select-Object -First 1; "
             "if ($hit) { [pscustomobject]@{ HotFixID = $target; Description = if ([string]::IsNullOrWhiteSpace($hit.Description)) { 'Update' } else { $hit.Description }; InstalledBy = 'Windows Update History'; InstalledOn = $hit.Date.ToString('M/d/yyyy') } } "
             "}; "
-            "$results | ConvertTo-Json -Compress"
+            "$results | ConvertTo-Json -Compress "
+            "} catch { @() | ConvertTo-Json -Compress }"
         )
 
         try:
@@ -5302,6 +5314,109 @@ class offline_search_kb:
         except Exception:
             logger.error("_search_hotfixes_in_update_history : %s" % traceback.format_exc())
             return []
+
+    def _run_powershell_json(self, ps_command, timeout=30):
+        if not sys.platform.startswith("win"):
+            return None
+
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_command],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+            output = (result.stdout or "").strip()
+            if not output:
+                return None
+            return json.loads(output)
+        except subprocess.TimeoutExpired:
+            logger.warning("_run_powershell_json timeout exceeded")
+            return None
+        except Exception:
+            logger.error("_run_powershell_json : %s" % traceback.format_exc())
+            return None
+
+    def search_defender_info(self):
+        defender_info = {
+            "status": {},
+            "latest_security_intelligence_update": {},
+            "latest_platform_update": {},
+        }
+
+        if not sys.platform.startswith("win"):
+            return defender_info
+
+        status_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            "if (Get-Command Get-MpComputerStatus -ErrorAction SilentlyContinue) { "
+            "try { "
+            "Get-MpComputerStatus | "
+            "Select-Object AMProductVersion, AMServiceVersion, AntivirusSignatureVersion, AntivirusSignatureLastUpdated, "
+            "AntispywareSignatureVersion, AntispywareSignatureLastUpdated, NISSignatureVersion, NISSignatureLastUpdated | "
+            "ConvertTo-Json -Compress "
+            "} catch { @{} | ConvertTo-Json -Compress } "
+            "} else { @{} | ConvertTo-Json -Compress }"
+        )
+        status_payload = self._run_powershell_json(status_command)
+        if isinstance(status_payload, dict):
+            defender_info["status"] = status_payload
+
+        history_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            "try { "
+            "$session = New-Object -ComObject Microsoft.Update.Session; "
+            "$searcher = $session.CreateUpdateSearcher(); "
+            "$total = $searcher.GetTotalHistoryCount(); "
+            "$history = if ($total -gt 0) { $searcher.QueryHistory(0, [Math]::Min($total, 200)) } else { @() }; "
+            "$security = $history | Where-Object { $_.Title -match '2267602|Security Intelligence|Defender Antivirus' -or $_.Title -match 'sélection disjointe' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+            "$platform = $history | Where-Object { $_.Title -match '5007651|Windows Security platform|Defender Antivirus platform' -or $_.Title -match 'plateforme anti-programme malveillant' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+            "[pscustomobject]@{ latest_security_intelligence_update = $security; latest_platform_update = $platform } | ConvertTo-Json -Compress -Depth 4 "
+            "} catch { [pscustomobject]@{ latest_security_intelligence_update = $null; latest_platform_update = $null } | ConvertTo-Json -Compress -Depth 4 }"
+        )
+        history_payload = self._run_powershell_json(history_command)
+        if isinstance(history_payload, dict):
+            if isinstance(history_payload.get("latest_security_intelligence_update"), dict):
+                defender_info["latest_security_intelligence_update"] = history_payload["latest_security_intelligence_update"]
+            if isinstance(history_payload.get("latest_platform_update"), dict):
+                defender_info["latest_platform_update"] = history_payload["latest_platform_update"]
+
+        return defender_info
+
+    def search_windows_disk_encryption_info(self):
+        if not sys.platform.startswith("win"):
+            return []
+
+        ps_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            "if (Get-Command Get-BitLockerVolume -ErrorAction SilentlyContinue) { "
+            "try { "
+            "$volumes = Get-BitLockerVolume; "
+            "if (-not $volumes) { @() | ConvertTo-Json -Compress } else { "
+            "$volumes | ForEach-Object { "
+            "[pscustomobject]@{ "
+            "MountPoint = $_.MountPoint; "
+            "VolumeType = $_.VolumeType; "
+            "VolumeStatus = $_.VolumeStatus; "
+            "ProtectionStatus = $_.ProtectionStatus; "
+            "EncryptionMethod = $_.EncryptionMethod; "
+            "EncryptionPercentage = $_.EncryptionPercentage; "
+            "AutoUnlockEnabled = $_.AutoUnlockEnabled; "
+            "LockStatus = $_.LockStatus; "
+            "KeyProtectorTypes = @($_.KeyProtector | ForEach-Object { $_.KeyProtectorType }); "
+            "KeyProtectorIds = @($_.KeyProtector | ForEach-Object { $_.KeyProtectorId }) "
+            "} "
+            "} | ConvertTo-Json -Compress -Depth 4 } "
+            "} catch { @() | ConvertTo-Json -Compress } "
+            "} else { @() | ConvertTo-Json -Compress }"
+        )
+
+        payload = self._run_powershell_json(ps_command)
+        if isinstance(payload, dict):
+            return [payload]
+        if isinstance(payload, list):
+            return payload
+        return []
 
     def searchpackage(self):
         """
@@ -5402,6 +5517,34 @@ class offline_search_kb:
                         )
                 except:
                     logging.getLogger().error(("%s" % (traceback.format_exc())))
+
+                history_payload = self._run_powershell_json(
+                    "$ErrorActionPreference = 'SilentlyContinue'; "
+                    "try { "
+                    "$session = New-Object -ComObject Microsoft.Update.Session; "
+                    "$searcher = $session.CreateUpdateSearcher(); "
+                    "$total = $searcher.GetTotalHistoryCount(); "
+                    "$history = if ($total -gt 0) { $searcher.QueryHistory(0, [Math]::Min($total, 200)) } else { @() }; "
+                    "$hit = $history | Where-Object { $_.Title -match 'KB890830|Windows Malicious Software Removal Tool' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+                    "if ($hit) { $hit | ConvertTo-Json -Compress } else { @{} | ConvertTo-Json -Compress } "
+                    "} catch { @{} | ConvertTo-Json -Compress }"
+                )
+                if isinstance(history_payload, dict) and history_payload.get("Date"):
+                    result_cmd["UpdateDate"] = str(history_payload.get("Date", ""))
+                    result_cmd["UpdateTitle"] = str(history_payload.get("Title", ""))
+                    result_cmd["UpdateDateSource"] = "Windows Update History"
+                else:
+                    file_payload = self._run_powershell_json(
+                        "$ErrorActionPreference = 'SilentlyContinue'; "
+                        "try { "
+                        "Get-Item 'C:\\Windows\\System32\\mrt.exe' | "
+                        "Select-Object @{Name='UpdateDate';Expression={$_.LastWriteTime.ToString('s')}} | "
+                        "ConvertTo-Json -Compress "
+                        "} catch { @{} | ConvertTo-Json -Compress }"
+                    )
+                    if isinstance(file_payload, dict) and file_payload.get("UpdateDate"):
+                        result_cmd["UpdateDate"] = str(file_payload.get("UpdateDate", ""))
+                        result_cmd["UpdateDateSource"] = "mrt.exe LastWriteTime"
         return result_cmd
 
     def search_version_edge(self):
