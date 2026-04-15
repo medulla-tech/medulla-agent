@@ -5248,6 +5248,61 @@ class offline_search_kb:
             compactlist.append(t["HotFixID"][2:])
         return "(" + ",".join(compactlist) + ")"
 
+    def _normalize_hotfix_entries(self, raw_entries):
+        if isinstance(raw_entries, dict):
+            raw_entries = [raw_entries]
+        elif not isinstance(raw_entries, list):
+            raw_entries = []
+
+        normalized = []
+        for kb in raw_entries:
+            hotfix_id = str(kb.get("HotFixID", "") or "").strip()
+            if not hotfix_id.startswith("KB"):
+                continue
+            normalized.append(
+                {
+                    "description": str(kb.get("Description", "") or kb.get("description", "") or "").strip(),
+                    "HotFixID": hotfix_id,
+                    "InstalledBy": str(kb.get("InstalledBy", "") or "").strip(),
+                    "InstalledOn": str(kb.get("InstalledOn", "") or "").strip(),
+                }
+            )
+        return normalized
+
+    def _search_hotfixes_in_update_history(self, hotfix_ids):
+        if not sys.platform.startswith("win") or not hotfix_ids:
+            return []
+
+        ps_targets = ", ".join("'%s'" % kb for kb in hotfix_ids)
+        ps_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            f"$targets = @({ps_targets}); "
+            "$session = New-Object -ComObject Microsoft.Update.Session; "
+            "$searcher = $session.CreateUpdateSearcher(); "
+            "$total = $searcher.GetTotalHistoryCount(); "
+            "$history = if ($total -gt 0) { $searcher.QueryHistory(0, $total) } else { @() }; "
+            "$results = foreach ($target in $targets) { "
+            "$regex = [regex]::Escape($target); "
+            "$hit = $history | Where-Object { $_.Title -match $regex } | Sort-Object Date -Descending | Select-Object -First 1; "
+            "if ($hit) { [pscustomobject]@{ HotFixID = $target; Description = if ([string]::IsNullOrWhiteSpace($hit.Description)) { 'Update' } else { $hit.Description }; InstalledBy = 'Windows Update History'; InstalledOn = $hit.Date.ToString('M/d/yyyy') } } "
+            "}; "
+            "$results | ConvertTo-Json -Compress"
+        )
+
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_command],
+                capture_output=True,
+                text=True,
+            )
+            output = (result.stdout or "").strip()
+            if not output:
+                return []
+            return self._normalize_hotfix_entries(json.loads(output))
+        except Exception:
+            logger.error("_search_hotfixes_in_update_history : %s" % traceback.format_exc())
+            return []
+
     def searchpackage(self):
         """
         Récupère la liste des KB installés sur Windows
@@ -5283,14 +5338,15 @@ class offline_search_kb:
                 except json.JSONDecodeError:
                     kb_list = []
 
-                # Transformation pour correspondre à la structure attendue
-                for kb in kb_list:
-                    endresult.append({
-                        "description": kb.get("Description", ""),
-                        "HotFixID": kb.get("HotFixID", ""),
-                        "InstalledBy": kb.get("InstalledBy", ""),
-                        "InstalledOn": kb.get("InstalledOn", "")
-                    })
+                endresult.extend(self._normalize_hotfix_entries(kb_list))
+
+                # KB5007651 (Windows Security platform) n'apparait pas toujours dans Get-HotFix.
+                missing_hotfix_ids = [
+                    hotfix_id
+                    for hotfix_id in ("KB5007651",)
+                    if hotfix_id not in {item["HotFixID"] for item in endresult}
+                ]
+                endresult.extend(self._search_hotfixes_in_update_history(missing_hotfix_ids))
 
             except Exception as e:
                 logger.error("searchpackage : %s" % e)
