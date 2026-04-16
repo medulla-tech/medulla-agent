@@ -21,8 +21,43 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("call %s from %s session id %s" % (plugin, message["from"], sessionid))
     logger.debug("###################################################")
 
-
     if "subaction" in data:
+
+        if data["subaction"] == "create_master":
+            """Recv
+            - action    : resultdiskmastering / create_master
+            - desc      : The machine has finished the mastering process and is sending the master image to the relay. The relay will forward it to the master_img.
+            - data:
+                - uuid          : the machine UUID
+                - mac           : the machine mac address
+                - action_id     : the id of the action associated to the machine, found when booting
+                - client_jid    : the davos client jid to return the workflow
+                - master_uuid   : the master uuid
+                - sessionid     : the sessionid of the whole process"""
+            try:
+                datasend = {
+                    "from":objectxmpp.boundjid.bare,
+                    "to":"master_dma@pulse",
+                    "sessionid": sessionid,
+                    "ret": 0,
+                    "action": "diskmastering",
+                    "agenttype": objectxmpp.config.agenttype,
+                    "data":{
+                        "client_jid": message["from"].bare,
+                        "subaction":"create_master",
+                        "sessionid":sessionid,
+                        "action_id":data["action_id"],
+                        "uuid": data["uuid"],
+                        "mac": data["mac"],
+                        "master_uuid": data["master_uuid"],
+                    },
+                    "base64": False,
+                }
+            except Exception as e:
+                logger.error(e)
+            objectxmpp.send_message(mto="master_dma@pulse", mbody=json.dumps(datasend, indent=4), mtype="chat")
+            return
+
         if data["subaction"] == "log":
             push_log(objectxmpp, data)
             return
@@ -107,8 +142,34 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.send_message(mto="master_inv@pulse", mbody=json.dumps(datasend, indent=4), mtype="chat")
             time.sleep(5)
 
-        # TODO: what to do on <step execution done> event
-
+        if data["subaction"] == "workflow_done":
+            """Recv
+            - action    : resultdiskmastering / workflow_done
+            - desc      : The machine has finished the whole workflow. The relay can now send the signal to reboot the machine.
+            - data:
+                - uuid      : the machine UUID
+                - mac       : the machine mac address
+                - action_id : the action id found when booting
+            """
+            datasend = {
+                "from":objectxmpp.boundjid.bare,
+                "to":"master_dma@pulse",
+                "sessionid": sessionid,
+                "ret": 0,
+                "action": "diskmastering",
+                "agenttype": objectxmpp.config.agenttype,
+                "data":{
+                    "subaction":"workflow_done",
+                    "sessionid": sessionid,
+                    "uuid": data["uuid"],
+                    "mac": data["mac"],
+                    "server": data["server"],
+                    "action_id": data["action_id"]
+                },
+                "base64": False,
+            }
+            # transfert the action to the master diskmastering to save the result status in database.
+            objectxmpp.send_message(mto="master_dma@pulse", mbody=json.dumps(datasend, indent=4), mtype="chat")
 
 def ask_workflow(objectxmpp, sessionid, client_jid, uuid, mac, action_id):
     """Send a workflow request to the substitute diskmastering.

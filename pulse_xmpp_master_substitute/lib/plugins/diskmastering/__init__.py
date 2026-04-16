@@ -9,7 +9,7 @@ Mastering database handler
 from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import DBAPIError
-
+import json
 # PULSE2 modules
 # from mmc.database.database_helper import DatabaseHelper
 # from mmc.plugins.pkgs import get_xmpp_package, xmpp_packages_list, package_exists
@@ -192,7 +192,7 @@ class DiskMasteringDatabase(DatabaseHelper):
             result["server_id"] = e.server_id
             result["gid"] = e.gid
             result["uuid"] = e.uuid
-            result["session_id"] = e.session_id
+            result["target"] = e.target
             result["name"] = e.name
             result["config"] = e.config
             result["content"] = e.content
@@ -224,3 +224,97 @@ class DiskMasteringDatabase(DatabaseHelper):
         except Exception as e:
             logging.getLogger().error(e)
         return
+
+    @DatabaseHelper._sessionm
+    def create_master(self, session, sessionid,  uuid, action_id, master_uuid, master_size=0, master_path=""):
+
+        # Get action details to retrive configuration for this master
+        sql = """SELECT
+            actions.entity_id,
+            actions.server_id,
+            actions.config,
+            servers.jid,
+            servers.entity_id
+         from actions join servers on servers.id = actions.server_id where actions.id =:action_id"""
+        binds = {"action_id": action_id}
+        query = session.execute(sql, binds).all()
+        if query == None:
+            return
+
+        entity_id = -1
+        server_id = 0
+        action_config = {}
+        jid = ""
+        server_entity_id = 0
+        for e in query:
+            entity_id = e[0] if e[0] != -1 else e[4]
+            server_id = e[1] if e[1] is not None else 0
+            try:
+                action_config = json.loads(e[2]) if e[2] is not None else {}
+            except Exception as e:
+                logger.error(e)
+                action_config = {}
+            jid = e[3] if e[3] is not None else ""
+
+        master_name = ""
+        master_description = ""
+        if "name" in action_config["mastering"]:
+            master_name = action_config["mastering"]["name"]
+        if "description" in action_config["mastering"]:
+            master_description = action_config["mastering"]["description"]
+
+        # Get master size and path are given by the relay.
+
+        # Insert new master in database
+        sql = """INSERT INTO masters (name, description, uuid, path, size) VALUES(:name, :description, :uuid, :path, :size)"""
+        binds = {"name": master_name, "description": master_description, "uuid": master_uuid, "path": master_path, "size": master_size}
+        try:
+            session.execute(sql, binds)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            session.rollback()
+            logging.getLogger().error(e)
+            return
+
+        # Get this new master id
+        master_id = 0
+        sql = """SELECT id from masters where uuid = :uuid"""
+        binds = {"uuid": master_uuid}
+        query = session.execute(sql, binds).all()
+        if query == None:
+             return
+        for e in query:
+            master_id = e[0]
+
+        # Associate this master to the entity found
+        sql = """INSERT INTO mastersEntities (master_id, entity_id) VALUES(:master_id, :entity_id)"""
+        binds = {"master_id": master_id, "entity_id": entity_id}
+
+    @DatabaseHelper._sessionm
+    def set_action_status(self, session, sessionid, action_id, uuid, status="DONE"):
+
+        sql = """SELECT count(id) from actionStatus where action_id = :action_id and uuid =:uuid"""
+        binds = {"action_id": action_id, "uuid": uuid}
+        query = session.execute(sql, binds).scalar()
+        mode = "update"
+        if query is None or query == 0:
+            # No status, create it
+            mode = "insert"
+
+        binds["status"] = status
+        if mode == "update":
+            sql = """UPDATE actionStatus set status = :status where action_id = :action_id and uuid =:uuid"""
+        else:
+            sql = """INSERT INTO actionStatus (action_id, uuid, status) VALUES(:action_id, :uuid, :status)"""
+
+        try:
+            session.execute(sql, binds)
+
+        except Exception as e:
+            session.rollback()
+            logging.getLogger().error(e)
+            return
+
+        session.commit()
+        session.flush()

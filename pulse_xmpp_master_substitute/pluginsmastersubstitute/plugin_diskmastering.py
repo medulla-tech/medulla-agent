@@ -21,6 +21,16 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
 
 
     if "subaction" in data:
+
+        if data["subaction"] == "workflow_done":
+            try:
+                DiskMasteringDatabase().set_action_status(data["sessionid"], data["action_id"], data["uuid"], "DONE")
+            except Exception as e:
+                logger.error(e)
+
+        if data["subaction"] == "create_master":
+            DiskMasteringDatabase().create_master(data["sessionid"], data["uuid"], data["action_id"], data["master_uuid"])
+
         if data["subaction"] == "log":
             push_log(xmppobject, data)
             return
@@ -33,11 +43,15 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                 "sessionid": data["sessionid"],
                 "result": {},
             }
+
             if "action_id" in data:
                 try:
                     result = DiskMasteringDatabase().get_action_details(data["action_id"])
                 except Exception as e:
                     logger.error(e)
+
+                # Setup the new status WORKING for the selected action
+                DiskMasteringDatabase().set_action_status(data["sessionid"], data["action_id"], data["uuid"], "WORKING")
 
                 result["date_creation"] = result["date_creation"].strftime("%Y-%m-%d %H:%M:%S")
                 result["date_start"] = result["date_start"].strftime("%Y-%m-%d %H:%M:%S")
@@ -56,7 +70,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                             step["data"] = ""
 
                 del(result["content"])
-
                 result["workflow"] = workflow
 
                 datasend = {
