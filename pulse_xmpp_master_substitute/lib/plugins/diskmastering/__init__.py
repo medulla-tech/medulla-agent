@@ -226,7 +226,7 @@ class DiskMasteringDatabase(DatabaseHelper):
         return
 
     @DatabaseHelper._sessionm
-    def create_master(self, session, sessionid,  uuid, action_id, master_uuid, master_size=0, master_path=""):
+    def create_master(self, session, sessionid,  uuid, action_id, master_uuid, master_path="", master_size=0):
 
         # Get action details to retrive configuration for this master
         sql = """SELECT
@@ -290,6 +290,18 @@ class DiskMasteringDatabase(DatabaseHelper):
         # Associate this master to the entity found
         sql = """INSERT INTO mastersEntities (master_id, entity_id) VALUES(:master_id, :entity_id)"""
         binds = {"master_id": master_id, "entity_id": entity_id}
+
+        try:
+            session.execute(sql, binds)
+
+        except Exception as e:
+            session.rollback()
+            logging.getLogger().error(e)
+
+            return
+        session.commit()
+        session.flush()
+
 
     @DatabaseHelper._sessionm
     def set_action_status(self, session, sessionid, action_id, uuid, status="DONE"):

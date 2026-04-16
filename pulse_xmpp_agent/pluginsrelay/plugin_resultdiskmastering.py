@@ -33,6 +33,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 - action_id     : the id of the action associated to the machine, found when booting
                 - client_jid    : the davos client jid to return the workflow
                 - master_uuid   : the master uuid
+                - master_path   : the master path on the davos client
+                - master_fullpath   : the master full path on the davos client
+                - master_size   : the master size in bytes
                 - sessionid     : the sessionid of the whole process"""
             try:
                 datasend = {
@@ -50,6 +53,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         "uuid": data["uuid"],
                         "mac": data["mac"],
                         "master_uuid": data["master_uuid"],
+                        "master_path": data["master_path"],
+                        "master_fullpath": data["master_fullpath"],
+                        "master_size": data["master_size"],
                     },
                     "base64": False,
                 }

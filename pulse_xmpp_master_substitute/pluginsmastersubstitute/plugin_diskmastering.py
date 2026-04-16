@@ -29,7 +29,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                 logger.error(e)
 
         if data["subaction"] == "create_master":
-            DiskMasteringDatabase().create_master(data["sessionid"], data["uuid"], data["action_id"], data["master_uuid"])
+            DiskMasteringDatabase().create_master(data["sessionid"], data["uuid"], data["action_id"], data["master_uuid"], data["master_fullpath"], data["master_size"])
 
         if data["subaction"] == "log":
             push_log(xmppobject, data)
