@@ -25,7 +25,7 @@
 
 AGENT_VERSION="5.5.0"
 PYTHON_VERSION="3.11"
-GLPI_AGENT_VERSION="1.12"
+GLPI_AGENT_VERSION="1.17"
 
 # Go to own folder
 cd "$(dirname $0)"
