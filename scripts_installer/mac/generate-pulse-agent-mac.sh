@@ -2,432 +2,685 @@
 # -*- coding: utf-8 -*-
 #
 # (c) 2017 siveo, http://www.siveo.net
-# $Id$
+# (c) 2024-2025 Medulla, http://www.medulla-tech.io
 #
-# This file is part of Pulse 2, http://www.siveo.net
+# This file is part of Medulla, http://www.medulla-tech.io
 #
-# Pulse 2 is free software; you can redistribute it and/or modify
+# Medulla is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
-# Pulse 2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# This script generates a .pkg installer for the Medulla XMPP agent on macOS.
+# Target: ARM64 (Apple Silicon: M1, M2, M3, M4)
+# It runs on the Medulla server (Linux) and produces a .pkg that can be deployed on Macs.
+# The user just double-clicks the .pkg, enters admin password, and the agent is installed.
 #
-# You should have received a copy of the GNU General Public License
-# along with Pulse 2. If not, see <http://www.gnu.org/licenses/>.
-#
+# Requirements on the server:
+#   - xar + mkbom (for building .pkg on Linux)
+#   - Python wheels in /var/lib/pulse2/clients/mac/downloads/python_modules/
+#   - Agent code in /usr/lib/python3/dist-packages/pulse_xmpp_agent/
+#   - Certificates in /var/lib/pulse2/clients/medulla-{rootca,ca-chain}.cert.pem
+#   - Config in /var/lib/pulse2/clients/config/agentconf.ini
 
-# """
-# This script is designed to generate Pulse XMPP agent for MacOS
-# It downloads the necessary dependencies, modifies the postflight file and finally
-# creates the .pkg
-# """
-
-#	Files needed for the full version of the installer:
-#	In /var/lib/pulse2/clients/mac/downloads/:
-# https://github.com/Homebrew/brew/archive/1.5.12.tar.gz
-# https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.4/FusionInventory-Agent-2.4-1.pkg.tar.gz
-# https://github.com/stweil/OSXvnc/releases/download/V5_2_1/OSXvnc-5.2.1.dmg
-#   https://github.com/syncthing/syncthing/releases/download/v1.1.0/syncthing-macos-amd64-v1.1.0.tar.gz
-#	In /var/lib/pulse2/clients/mac/downloads/python_modules/:
-#	https://pypi.python.org/packages/a7/4c/8e0771a59fd6e55aac993a7cc1b6a0db993f299514c464ae6a1ecf83b31d/netifaces-0.10.5.tar.gz
-#	https://pypi.python.org/packages/7c/69/c2ce7e91c89dc073eb1aa74c0621c3eefbffe8216b3f9af9d3885265c01c/configparser-3.5.0.tar.gz
-#	https://pypi.python.org/packages/2e/33/7adcc8d6b35cb72f9cc56785a3d9c63d540200c476b0cb3a0926f5b51102/sleekxmpp-1.3.1.tar.gz
-#	https://pypi.python.org/packages/77/d9/d272b38e6e25d2686e22f6058820298dadead69340b1c57ff84c87ef81f0/pycurl-7.43.0.1.tar.gz
-#	https://pypi.python.org/packages/f1/c7/e19d317cc948095abc872a6e6ae78ac80260f2b45771dfa7a7ce86865f5b/lxml-3.6.0.tar.gz
-#	https://pypi.python.org/packages/60/db/645aa9af249f059cc3a368b118de33889219e0362141e75d4eaf6f80f163/pycrypto-2.6.1.tar.gz
-#	https://files.pythonhosted.org/packages/4b/0d/7ed381ab4fe80b8ebf34411d14f253e1cf3e56e2820ffa1d8844b23859a2/python_dateutil-2.6.1-py2.py3-none-any.whl
-# https://pypi.python.org/packages/c8/0a/b6723e1bc4c516cb687841499455a8505b44607ab535be01091c0f24f079/six-1.10.0-py2.py3-none-any.whl
-# https://pypi.python.org/packages/58/2a/17d003f2a9a0188cf9365d63b3351c6522b7d83996b70270c65c789e35b9/croniter-0.3.16.tar.gz
-# https://pypi.python.org/packages/e2/e1/600326635f97fee89bf8426fef14c5c29f4849c79f68fd79f433d8c1bd96/psutil-5.4.4.tar.gz
-# https://pypi.python.org/packages/28/df/755dab9f83c37031aea1cd9915673b5633665c575d649e812657df95b944/plyvel-1.0.1.tar.gz
-#   https://files.pythonhosted.org/packages/36/60/45f30390a38b1f92e0a8cf4de178cd7c2bc3f874c85430e40ccf99df8fe7/pysftp-0.2.9.tar.gz
-#	https://files.pythonhosted.org/packages/95/a8/72f860ff71bc260a4c815f50c65e04d69b9c5a3e51ff82afe3cd6757faa9/paramiko-1.18.5-py2.py3-none-any.whl
-#	https://files.pythonhosted.org/packages/63/f4/73669d51825516ce8c43b816c0a6b64cd6eb71d08b99820c00792cb42222/ecdsa-0.13-py2.py3-none-any.whl
-#   https://files.pythonhosted.org/packages/ef/4e/9f04fc58040cbf05984d7ca9393ff2dbc8b6909b163a768fc28786eacf06/syncthing-2.3.1.tar.gz
-#	https://files.pythonhosted.org/packages/49/df/50aa1999ab9bde74656c2919d9c0c085fd2b3775fd3eca826012bef76d8c/requests-2.18.4-py2.py3-none-any.whl
-#	https://files.pythonhosted.org/packages/27/cc/6dd9a3869f15c2edfab863b992838277279ce92663d334df9ecf5106f5c6/idna-2.6-py2.py3-none-any.whl
-#	https://files.pythonhosted.org/packages/63/cb/6965947c13a94236f6d4b8223e21beb4d576dc72e8130bd7880f600839b8/urllib3-1.22-py2.py3-none-any.whl
-#   https://files.pythonhosted.org/packages/60/75/f692a584e85b7eaba0e03827b3d51f45f571c2e793dd731e598828d380aa/certifi-2019.3.9-py2.py3-none-any.whl
-#   https://files.pythonhosted.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl
-
-# To be defined for minimal install
-BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
+AGENT_VERSION="5.5.0"
+PYTHON_VERSION="3.11"
+GLPI_AGENT_VERSION="1.12"
 
 # Go to own folder
-cd "`dirname $0`"
+cd "$(dirname $0)"
 
-# To be defined
-AGENT_VERSION="5.5.0"
-HOMEBREW_VERSION="1.5.12"
-FUSION_INVENTORY_AGENT_NAME="FusionInventory-Agent"
-FUSION_INVENTORY_AGENT_VERSION="2.4-1"
-PY_NETIFACES_MODULE="netifaces"
-PY_NETIFACES_VERSION="0.10.5"
-PY_CONFIGPARSER_MODULE="configparser"
-PY_CONFIGPARSER_VERSION="3.5.0"
-PY_UTILS_MODULE="utils"
-PY_SLEEKXMPP_MODULE="sleekxmpp"
-PY_SLEEKXMPP_VERSION="1.3.1"
-PY_ZIPFILE_VERSION="0.0.12"
-PY_CURL_MODULE="pycurl"
-PY_CURL_VERSION="7.43.0.5"
-PY_LXML_MODULE="lxml"
-PY_LXML_VERSION="3.6.0"
-PY_CRYPTO_MODULE="pycrypto"
-PY_CRYPTO_VERSION="2.6.1"
-PY_CRON_MODULE="croniter"
-PY_CRON_VERSION="0.3.16"
-PY_CRON_DEPS_1_MODULE="python_dateutil"
-PY_CRON_DEPS_1_VERSION="2.6.1"
-PY_CRON_DEPS_2_MODULE="six"
-PY_CRON_DEPS_2_VERSION="1.10.0"
-PY_PSUTIL_MODULE="psutil"
-PY_PSUTIL_VERSION="5.4.4"
-PY_PLYVEL_MODULE="plyvel"
-PY_PLYVEL_VERSION="1.2.0"
-PY_SFTP_MODULE="pysftp"
-PY_SFTP_VERSION="0.2.9"
-PY_SFTP_DEPS_1_MODULE="paramiko"
-PY_SFTP_DEPS_1_VERSION="1.18.5"
-PY_SFTP_DEPS_2_MODULE="ecdsa"
-PY_SFTP_DEPS_2_VERSION="0.13"
-PY_SYNCTHING_MODULE="syncthing"
-PY_SYNCTHING_VERSION="2.3.1"
-PY_REQUESTS_MODULE="requests"
-PY_REQUESTS_VERSION="2.18.4"
-PY_REQUESTS_DEPS_1_MODULE="idna"
-PY_REQUESTS_DEPS_1_VERSION="2.6"
-PY_REQUESTS_DEPS_2_MODULE="urllib3"
-PY_REQUESTS_DEPS_2_VERSION="1.22"
-PY_REQUESTS_DEPS_3_MODULE="certifi"
-PY_REQUESTS_DEPS_3_VERSION="2019.3.9"
-PY_REQUESTS_DEPS_4_MODULE="chardet"
-PY_REQUESTS_DEPS_4_VERSION="3.0.4"
-PULSE_AGENT_NAME="pulse-xmpp-agent"
-PULSE_AGENT_MODULE="pulse_xmpp_agent"
-SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
-PKG_FOLDER_TMP="mac_package_tmp"
-VNC_SERVER_NAME="OSXvnc"
-VNC_SERVER_VERSION="5.2.1"
-VNC_SERVER_MOUNTED="VineServer"
-VNC_SERVER_APP="Vine Server.app"
-SYNCTHING_NAME="syncthing"
-SYNCTHING_VERSION="1.6.1"
-VNC_PORT="5900"
-SSH_PORT="22"
+# Paths
+CLIENTS_DIR="/var/lib/pulse2/clients"
+MAC_DIR="${CLIENTS_DIR}/mac"
+WHEELS_DIR="${MAC_DIR}/downloads/python_modules"
+CONFIG_DIR="${CLIENTS_DIR}/config"
+AGENT_SRC="/usr/lib/python3/dist-packages/pulse_xmpp_agent"
+BUILD_DIR="/tmp/medulla-mac-build"
+DMG_STAGING="${BUILD_DIR}/dmg"
+# ARM64 = Apple Silicon (M1, M2, M3, M4)
+# Pour Mac Intel, utiliser des wheels x86_64 et changer en Medulla-Agent-mac-x86_64
+PKG_NAME="Medulla-Agent-mac-ARM64"
 
-
-# Display usage
+# ============================================================
+# Arguments (same interface as win/linux generate scripts)
+# ============================================================
 display_usage() {
-	echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
-	echo -e "\t [--minimal [--base-url=<URL for downloading agent and dependencies from>]]\n"
-    echo -e "\t [--vnc-port=<Default port 5900>]\n"
-    echo -e "\t [--vnc-password=<DES-encrypted VNC password>]"
-    echo -e "\t [--ssh-port=<Default port 22>]\n"
+    echo "Usage: $0 --minimal [options]"
+    echo "  --conf-xmppserver=<server>    XMPP server (read from config if not set)"
+    echo "  --conf-xmppport=<port>        XMPP port (default: 5222)"
+    echo "  --conf-xmpppasswd=<passwd>    XMPP password"
+    echo "  --aes-key=<key>               AES key (32 chars)"
+    echo "  --xmpp-passwd=<passwd>        XMPP connection password"
+    echo "  --chat-domain=<domain>        XMPP domain (default: pulse)"
+    echo "  --base-url=<url>              Base URL for downloads"
+    echo "  --inventory-tag=<tag>         Inventory tag"
+    echo "  --minimal                     Minimal install (required)"
 }
 
 check_arguments() {
-	for i in "$@"; do
-		case $i in
-            --inventory-tag=*)
-                INVENTORY_TAG="${i#*=}"
-                shift
-                ;;
-            --minimal*)
-                MINIMAL=1
-                shift
-                ;;
-            --base-url*)
-                TEST_URL="${i#*=}"
-                shift
-                ;;
-            --disable-vnc*)
-                DISABLE_VNC=1
-                shift
-                ;;
-            --vnc-port*)
-                VNC_PORT="${i#*=}"
-                shift
-                ;;
-            --vnc-password*)
-                VNC_PASSWORD="${i#*=}"
-                shift
-                ;;
-            --ssh-port*)
-                SSH_PORT="${i#*=}"
-                shift
-                ;;
-            --disable-rdp*)
-                DISABLE_RDP=1
-                shift
-                ;;
-            --disable-inventory*)
-                DISABLE_INVENTORY=1
-                shift
-                ;;
-            --disable-geoloc*)
-                DISABLE_GEOLOC=1
-                shift
-                ;;
-            --linux-distros*)
-                shift
-                ;;
-            --conf-xmppserver*)
-                shift
-                ;;
-            --conf-xmppport*)
-                shift
-                ;;
-            --conf-xmpppasswd*)
-                shift
-                ;;
-            --aes-key*)
-                shift
-                ;;
-            --xmpp-passwd*)
-                shift
-                ;;
-            --chat-domain*)
-                shift
-                ;;
-            --updateserver*)
-                shift
-                ;;
-			*)
-                # unknown option
-                display_usage
-                exit 0
-            	;;
-		esac
-	done
-	if [[ ${MINIMAL} ]] && [[ ${TEST_URL} ]]; then
-		URL_REGEX='^https?://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
-		if [[ ${TEST_URL} =~ ${URL_REGEX} ]]; then
-			BASE_URL=${TEST_URL}
-		else
-			colored_echo red "The base-url parameter is not valid"
-			colored_echo red "We will use ${BASE_URL}"
-		fi
-	fi
-	if [[ ! ${MINIMAL} ]]; then
-        echo "we only support minimal installer"
-		exit 0 # Remove when we support full version as well
-	fi
-}
+    for i in "$@"; do
+        case $i in
+            --conf-xmppserver=*)  CONF_SERVER="${i#*=}" ;;
+            --conf-xmppport=*)    CONF_PORT="${i#*=}" ;;
+            --conf-xmpppasswd=*)  CONF_PASSWORD="${i#*=}" ;;
+            --aes-key=*)          AES_KEY="${i#*=}" ;;
+            --xmpp-passwd=*)      XMPP_PASSWORD="${i#*=}" ;;
+            --chat-domain=*)      CONF_DOMAIN="${i#*=}" ;;
+            --base-url=*)         BASE_URL="${i#*=}" ;;
+            --inventory-tag=*)    INVENTORY_TAG="${i#*=}" ;;
+            --minimal*)           MINIMAL=1 ;;
+            --disable-vnc*)       ;;
+            --vnc-port*)          ;;
+            --vnc-password*)      ;;
+            --ssh-port*)          ;;
+            --disable-rdp*)       ;;
+            --disable-inventory*) ;;
+            --disable-geoloc*)    ;;
+            --linux-distros*)     ;;
+            --updateserver*)      ;;
+            --help|-h)            display_usage; exit 0 ;;
+            *)                    ;;
+        esac
+    done
 
-compute_parameters() {
-	HOMEBREW_FILENAME="${HOMEBREW_VERSION}.tar.gz"
-	PYTHON_FILENAME="python-${PYTHON_VERSION}-macosx10.6.pkg"
-	PY_NETIFACES_FILENAME="${PY_NETIFACES_MODULE}-${PY_NETIFACES_VERSION}.tar.gz"
-	PY_CONFIGPARSER_FILENAME="${PY_CONFIGPARSER_MODULE}-${PY_CONFIGPARSER_VERSION}.tar.gz"
-	PY_SLEEKXMPP_FILENAME="${PY_SLEEKXMPP_MODULE}-${PY_SLEEKXMPP_VERSION}.tar.gz"
-	PY_ZIPFILE_FILENAME="${PY_ZIPFILE_MODULE}-${PY_ZIPFILE_VERSION}-py2.py3-none-any.whl"
-	PY_CURL_FILENAME="${PY_CURL_MODULE}-${PY_CURL_VERSION}.tar.gz"
-	PY_LXML_FILENAME="${PY_LXML_MODULE}-${PY_LXML_VERSION}.tar.gz"
-	PY_CRYPTO_FILENAME="${PY_CRYPTO_MODULE}-${PY_CRYPTO_VERSION}.tar.gz"
-	PY_CRON_FILENAME="${PY_CRON_MODULE}-${PY_CRON_VERSION}.tar.gz"
-	PY_CRON_DEPS_1_FILENAME="${PY_CRON_DEPS_1_MODULE}-${PY_CRON_DEPS_1_VERSION}-py2.py3-none-any.whl"
-	PY_CRON_DEPS_2_FILENAME="${PY_CRON_DEPS_2_MODULE}-${PY_CRON_DEPS_2_VERSION}-py2.py3-none-any.whl"
-	PY_PSUTIL_FILENAME="${PY_PSUTIL_MODULE}-${PY_PSUTIL_VERSION}.tar.gz"
-	PY_PLYVEL_FILENAME="${PY_PLYVEL_MODULE}-${PY_PLYVEL_VERSION}.tar.gz"
-	PY_SFTP_FILENAME="${PY_SFTP_MODULE}-${PY_SFTP_VERSION}.tar.gz"
-	PY_SFTP_DEPS_1_FILENAME="${PY_SFTP_DEPS_1_MODULE}-${PY_SFTP_DEPS_1_VERSION}-py2.py3-none-any.whl"
-	PY_SFTP_DEPS_2_FILENAME="${PY_SFTP_DEPS_2_MODULE}-${PY_SFTP_DEPS_2_VERSION}-py2.py3-none-any.whl"
-	PY_SYNCTHING_FILENAME="${PY_SYNCTHING_MODULE}-${PY_SYNCTHING_VERSION}.tar.gz"
-	PY_REQUESTS_FILENAME="${PY_REQUESTS_MODULE}-${PY_REQUESTS_VERSION}-py2.py3-none-any.whl"
-	PY_REQUESTS_DEPS_1_FILENAME="${PY_REQUESTS_DEPS_1_MODULE}-${PY_REQUESTS_DEPS_1_VERSION}-py2.py3-none-any.whl"
-	PY_REQUESTS_DEPS_2_FILENAME="${PY_REQUESTS_DEPS_2_MODULE}-${PY_REQUESTS_DEPS_2_VERSION}-py2.py3-none-any.whl"
-	PY_REQUESTS_DEPS_3_FILENAME="${PY_REQUESTS_DEPS_3_MODULE}-${PY_REQUESTS_DEPS_3_VERSION}-py2.py3-none-any.whl"
-	PY_REQUESTS_DEPS_4_FILENAME="${PY_REQUESTS_DEPS_4_MODULE}-${PY_REQUESTS_DEPS_4_VERSION}-py2.py3-none-any.whl"
-	PULSE_AGENT_FILENAME="${PULSE_AGENT_NAME}-${AGENT_VERSION}.tar.gz"
-	PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
-	PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
-	PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
-	FUSION_INVENTORY_AGENT_PKG="${FUSION_INVENTORY_AGENT_NAME}-${FUSION_INVENTORY_AGENT_VERSION}.pkg"
-	FUSION_INVENTORY_AGENT_ARCHIVE="${FUSION_INVENTORY_AGENT_PKG}.tar.gz"
-	VNC_SERVER_FILENAME="${VNC_SERVER_NAME}-${VNC_SERVER_VERSION}.dmg"
-    SYNCTHING_FILENAME="${SYNCTHING_NAME}-macos-amd64-v${SYNCTHING_VERSION}.zip"
-	V_MAJOR=`echo ${AGENT_VERSION} | cut -d. -f1`
-	V_MINOR=`echo ${AGENT_VERSION} | cut -d. -f2`
-	BUILD_DATE=$(date +'%Y-%m-%dT%H:%M:%SZ')
-}
+    # Read defaults from existing config if not provided
+    if [ -f "${CONFIG_DIR}/agentconf.ini" ]; then
+        [ -z "$CONF_SERVER" ] && CONF_SERVER=$(grep "^confserver" "${CONFIG_DIR}/agentconf.ini" | cut -d= -f2 | tr -d ' ')
+        [ -z "$CONF_PORT" ] && CONF_PORT=$(grep "^confport" "${CONFIG_DIR}/agentconf.ini" | cut -d= -f2 | tr -d ' ')
+        [ -z "$CONF_PASSWORD" ] && CONF_PASSWORD=$(grep "^confpassword" "${CONFIG_DIR}/agentconf.ini" | cut -d= -f2 | tr -d ' ')
+        [ -z "$CONF_DOMAIN" ] && CONF_DOMAIN=$(grep "^confdomain" "${CONFIG_DIR}/agentconf.ini" | cut -d= -f2 | tr -d ' ')
+        [ -z "$AES_KEY" ] && AES_KEY=$(grep "^keyAES32" "${CONFIG_DIR}/agentconf.ini" | cut -d= -f2 | tr -d ' ')
+        [ -z "$XMPP_PASSWORD" ] && XMPP_PASSWORD=$(grep "^password" "${CONFIG_DIR}/agentconf.ini" | head -1 | cut -d= -f2 | tr -d ' ')
+    fi
 
-create_folder_structure() {
-	# Clean temporary folder
-	if [ -d ${PKG_FOLDER_TMP} ]; then
-		rm -rf ${PKG_FOLDER_TMP}
-	fi
-	# Create folder structure and add necessary files
-	if ! [ -d ${PKG_FOLDER_TMP}/Contents ]; then
-		mkdir -p ${PKG_FOLDER_TMP}/Contents
-	fi
-	if ! [ -d ${PKG_FOLDER_TMP}/Contents/Resources ]; then
-		mkdir -p ${PKG_FOLDER_TMP}/Contents/Resources
-	fi
-	# Copy restricted shell
-	cp rbash ${PKG_FOLDER_TMP}/Contents/Resources/
-	# Copy Pulse public key
-	if [ -f ${SSH_PUB_KEY} ]; then
-		cp ${SSH_PUB_KEY} ${PKG_FOLDER_TMP}/Contents/Resources/id_rsa.pub
-	else
-		colored_echo red "The SSH public key could not be found."
-		colored_echo red "Please make sure there is a valid key at ${SSH_PUB_KEY}."
-		exit 0
-	fi
-	# Copy config files
-	cp ../config/${PULSE_AGENT_CONFFILE_FILENAME} ${PKG_FOLDER_TMP}/Contents/Resources/
-	cp ../config/${PULSE_SCHEDULER_CONFFILE_FILENAME} ${PKG_FOLDER_TMP}/Contents/Resources/
-	cp ../config/${PULSE_INVENTORY_CONFFILE_FILENAME} ${PKG_FOLDER_TMP}/Contents/Resources/
-	# Create package_version
-	echo "Major: ${V_MAJOR}" > ${PKG_FOLDER_TMP}/Contents/package_version
-	echo "Minor: ${V_MINOR}" >> ${PKG_FOLDER_TMP}/Contents/package_version
-	# Copy service descriptor
-	cp net.siveo.pulse_xmpp_agent.plist ${PKG_FOLDER_TMP}/Contents/Resources/
-	# Copy launcher
-	cp runpulseagent ${PKG_FOLDER_TMP}/Contents/Resources/
-	# Copy pulse filetree generator
-	cp pulse-filetree-generator ${PKG_FOLDER_TMP}/Contents/Resources/
+    [ -z "$CONF_PORT" ] && CONF_PORT="5222"
+    [ -z "$CONF_DOMAIN" ] && CONF_DOMAIN="pulse"
+    [ -z "$XMPP_PASSWORD" ] && XMPP_PASSWORD="$CONF_PASSWORD"
 }
 
 colored_echo() {
-    local color=$1;
-    if ! [[ $color =~ '^[0-9]$' ]] ; then
-        case $(echo $color | tr '[:upper:]' '[:lower:]') in
-			black) color=0 ;;
-			red) color=1 ;;
-			green) color=2 ;;
-			yellow) color=3 ;;
-			blue) color=4 ;;
-			magenta) color=5 ;;
-			cyan) color=6 ;;
-			white|*) color=7 ;; # white or invalid color
-		esac
+    local color=$1; shift
+    case $(echo $color | tr '[:upper:]' '[:lower:]') in
+        red) tput setaf 1 2>/dev/null ;; green) tput setaf 2 2>/dev/null ;;
+        blue) tput setaf 4 2>/dev/null ;; yellow) tput setaf 3 2>/dev/null ;;
+    esac
+    echo "$@"
+    tput sgr0 2>/dev/null
+}
+
+# ============================================================
+# Build the DMG contents
+# ============================================================
+build_dmg_contents() {
+    colored_echo blue "Preparing DMG contents..."
+
+    rm -rf ${BUILD_DIR}
+    mkdir -p ${DMG_STAGING}
+
+    # -- 1. Wheels (hidden) --
+    if [ -d "${WHEELS_DIR}" ]; then
+        cp -r "${WHEELS_DIR}" "${DMG_STAGING}/.wheels"
+        colored_echo green "  Wheels: $(ls ${DMG_STAGING}/.wheels/ | wc -l) files"
+    else
+        colored_echo red "  ERROR: No wheels in ${WHEELS_DIR}"
+        exit 1
     fi
-    tput setaf $color;
-    echo "${@:2}";
-    tput sgr0;
-}
 
-exit_code() {
-    return=$?
-    if [ $return -ne 0 ];then colored_echo red "### DEBUG Exit code" $return; fi
-}
-
-sed_escape() {
-	echo "$@" |sed -e 's/[\/&\$"]/\\&/g'
-}
-
-update_postflight_script_mini() {
-	colored_echo blue "### INFO Updating postflight script..."
-	sed -e "s/@@BASE_URL@@/$(sed_escape ${BASE_URL})/" \
-		-e "s/@@FUSION_INVENTORY_AGENT_PKG@@/${FUSION_INVENTORY_AGENT_PKG}/" \
-		-e "s/@@FUSION_INVENTORY_AGENT_ARCHIVE@@/${FUSION_INVENTORY_AGENT_ARCHIVE}/" \
-		-e "s/@@VNC_SERVER_FILENAME@@/${VNC_SERVER_FILENAME}/" \
-		-e "s/@@VNC_SERVER_MOUNTED@@/${VNC_SERVER_MOUNTED}/" \
-		-e "s/@@VNC_SERVER_APP@@/${VNC_SERVER_APP}/" \
-		-e "s/@@SYNCTHING_FILENAME@@/${SYNCTHING_FILENAME}/" \
-		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
-		-e "s/@@HOMEBREW_FILENAME@@/${HOMEBREW_FILENAME}/" \
-		-e "s/@@PYTHON_FILENAME@@/${PYTHON_FILENAME}/" \
-		-e "s/@@PY_NETIFACES_FILENAME@@/${PY_NETIFACES_FILENAME}/" \
-		-e "s/@@PY_CONFIGPARSER_FILENAME@@/${PY_CONFIGPARSER_FILENAME}/" \
-		-e "s/@@PY_SLEEKXMPP_FILENAME@@/${PY_SLEEKXMPP_FILENAME}/" \
-		-e "s/@@PY_ZIPFILE_FILENAME@@/${PY_ZIPFILE_FILENAME}/" \
-		-e "s/@@PY_CURL_FILENAME@@/${PY_CURL_FILENAME}/" \
-		-e "s/@@PY_LXML_FILENAME@@/${PY_LXML_FILENAME}/" \
-		-e "s/@@PY_CRYPTO_FILENAME@@/${PY_CRYPTO_FILENAME}/" \
-		-e "s/@@PY_CRON_FILENAME@@/${PY_CRON_FILENAME}/" \
-		-e "s/@@PY_CRON_DEPS_1_FILENAME@@/${PY_CRON_DEPS_1_FILENAME}/" \
-		-e "s/@@PY_CRON_DEPS_2_FILENAME@@/${PY_CRON_DEPS_2_FILENAME}/" \
-		-e "s/@@PY_PSUTIL_FILENAME@@/${PY_PSUTIL_FILENAME}/" \
-		-e "s/@@PY_PLYVEL_FILENAME@@/${PY_PLYVEL_FILENAME}/" \
-		-e "s/@@PY_SFTP_FILENAME@@/${PY_SFTP_FILENAME}/" \
-		-e "s/@@PY_SFTP_DEPS_1_FILENAME@@/${PY_SFTP_DEPS_1_FILENAME}/" \
-		-e "s/@@PY_SFTP_DEPS_2_FILENAME@@/${PY_SFTP_DEPS_2_FILENAME}/" \
-		-e "s/@@PY_SYNCTHING_FILENAME@@/${PY_SYNCTHING_FILENAME}/" \
-		-e "s/@@PY_REQUESTS_FILENAME@@/${PY_REQUESTS_FILENAME}/" \
-		-e "s/@@PY_REQUESTS_DEPS_1_FILENAME@@/${PY_REQUESTS_DEPS_1_FILENAME}/" \
-		-e "s/@@PY_REQUESTS_DEPS_2_FILENAME@@/${PY_REQUESTS_DEPS_2_FILENAME}/" \
-		-e "s/@@PY_REQUESTS_DEPS_3_FILENAME@@/${PY_REQUESTS_DEPS_3_FILENAME}/" \
-		-e "s/@@PY_REQUESTS_DEPS_4_FILENAME@@/${PY_REQUESTS_DEPS_4_FILENAME}/" \
-		-e "s/@@PULSE_AGENT_FILENAME@@/${PULSE_AGENT_FILENAME}/" \
-        -e "s/@@AGENT_PLUGINS_FILENAME@@/${AGENT_PLUGINS_FILENAME}/" \
-		-e "s/@@PULSE_AGENT_CONFFILE_FILENAME@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
-		-e "s/@@PULSE_SCHEDULER_CONFFILE_FILENAME@@/${PULSE_SCHEDULER_CONFFILE_FILENAME}/" \
-		-e "s/@@PULSE_INVENTORY_CONFFILE_FILENAME@@/${PULSE_INVENTORY_CONFFILE_FILENAME}/" \
-        -e "s/@@VNC_PORT@@/${VNC_PORT}/" \
-        -e "s/@@VNC_PASSWORD@@/${VNC_PASSWORD}/" \
-        -e "s/@@SSH_PORT@@/${SSH_PORT}/" \
-		postflight.in \
-		> ${PKG_FOLDER_TMP}/Contents/Resources/postflight
-	chmod 0755 ${PKG_FOLDER_TMP}/Contents/Resources/postflight
-	colored_echo green "### INFO Updating postflight script... Done"
-}
-
-update_postflight_script_full() {
-	#TBD
-	colored_echo blue "### INFO Updating postflight script..."
-	colored_echo green "### INFO Updating postflight script... Done"
-}
-
-update_info_plist() {
-	colored_echo blue "### INFO Updating Info.plist..."
-	sed -e "s/@@AGENT_VERSION@@/${AGENT_VERSION}/" \
-		-e "s/@@V_MAJOR@@/${V_MAJOR}/" \
-		-e "s/@@V_MINOR@@/${V_MINOR}/" \
-		-e "s/@@BUILD_DATE@@/${BUILD_DATE}/" \
-		Info.plist.in \
-		> ${PKG_FOLDER_TMP}/Contents/Info.plist
-	colored_echo green "### INFO Updating Info.plist... Done"
-}
-
-generate_agent_pkg() {
-	colored_echo blue "### INFO Generating installer..."
-	# generate package
-	if [[ ${MINIMAL} -eq 1 ]]; then
-		if [ -f Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg ]; then
-			rm -rf Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
-		fi
-		mv ${PKG_FOLDER_TMP} Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
-		tar -cf Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg.tar.gz Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
-		rm -rf Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg
-	else
-		if [ -f Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg ]; then
-			rm -rf Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg
-		fi
-		mv ${PKG_FOLDER_TMP} Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg
-		tar -cf Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg.tar.gz Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg
-		rm -rf Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg
-	fi
-	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Generation of agent failed. Please restart"
-		exit 1
-	fi
-
-    # Create symlinks to latest version
-    if [[ ${INVENTORY_TAG} == '' ]]; then
-        if [[ ${MINIMAL} -eq 1 ]]; then
-            ln -s -f Medulla-Agent-mac-MINIMAL-${AGENT_VERSION}.pkg.tar.gz Medulla-Agent-mac-MINIMAL-latest.pkg.tar.gz
+    # -- 2. Agent code (hidden) --
+    if [ -d "${AGENT_SRC}" ]; then
+        cp -r "${AGENT_SRC}" "${DMG_STAGING}/.pulse_xmpp_agent"
+        # Pre-install base plugins (needed for bootstrap - server sends plugins via installplugin)
+        BASEPLUGINS="/var/lib/pulse2/xmpp_baseplugin"
+        if [ -d "$BASEPLUGINS" ]; then
+            cp ${BASEPLUGINS}/plugin_*.py "${DMG_STAGING}/.pulse_xmpp_agent/pluginsmachine/" 2>/dev/null
+            colored_echo green "  Agent code: OK (with $(ls ${DMG_STAGING}/.pulse_xmpp_agent/pluginsmachine/plugin_*.py 2>/dev/null | wc -l | tr -d ' ') base plugins)"
         else
-            ln -s -f Medulla-Agent-mac-FULL-${AGENT_VERSION}.pkg.tar.gz Medulla-Agent-mac-FULL-latest.pkg.tar.gz
+            colored_echo green "  Agent code: OK"
         fi
+    else
+        colored_echo red "  ERROR: Agent code not found in ${AGENT_SRC}"
+        exit 1
     fi
 
-	colored_echo green "### INFO  Generating installer... Done"
+    # -- 2b. Python 3.11 pkg (embedded, installed if missing) --
+    PYTHON_PKG="${MAC_DIR}/downloads/python-3.11.9-macos11.pkg"
+    if [ -f "$PYTHON_PKG" ]; then
+        cp "$PYTHON_PKG" "${DMG_STAGING}/.python3.11.pkg"
+        colored_echo green "  Python 3.11: embedded"
+    else
+        colored_echo yellow "  WARN: Python pkg not found at ${PYTHON_PKG}"
+    fi
+
+    # -- 2c. GLPI Agent pkg (embedded, not downloaded at install) --
+    GLPI_PKG="${MAC_DIR}/downloads/GLPI-Agent-${GLPI_AGENT_VERSION}_arm64.pkg"
+    if [ -f "$GLPI_PKG" ]; then
+        cp "$GLPI_PKG" "${DMG_STAGING}/.glpi-agent.pkg"
+        colored_echo green "  GLPI Agent: embedded"
+    else
+        colored_echo yellow "  WARN: GLPI Agent pkg not found at ${GLPI_PKG}"
+    fi
+
+    # -- 3. Certificates (hidden) --
+    mkdir -p "${DMG_STAGING}/.certs"
+    for cert in medulla-rootca.cert.pem medulla-ca-chain.cert.pem; do
+        if [ -f "${CLIENTS_DIR}/${cert}" ]; then
+            cp "${CLIENTS_DIR}/${cert}" "${DMG_STAGING}/.certs/"
+        fi
+    done
+    colored_echo green "  Certificates: $(ls ${DMG_STAGING}/.certs/ 2>/dev/null | wc -l) files"
+
+    # -- 4. Configuration (hidden) --
+    mkdir -p "${DMG_STAGING}/.config"
+    for ini in agentconf.ini agentconf.ini.tpl inventory.ini manage_scheduler_machine.ini \
+               start_machine.ini startupdate.ini updatebackupclient.ini am___server_tcpip.ini; do
+        [ -f "${CONFIG_DIR}/${ini}" ] && cp "${CONFIG_DIR}/${ini}" "${DMG_STAGING}/.config/"
+    done
+    # Override server in agentconf.ini if provided
+    if [ -n "$CONF_SERVER" ] && [ -f "${DMG_STAGING}/.config/agentconf.ini" ]; then
+        sed -i'' "s/^server =.*/server = ${CONF_SERVER}/" "${DMG_STAGING}/.config/agentconf.ini"
+    fi
+    colored_echo green "  Config: $(ls ${DMG_STAGING}/.config/ | wc -l) files"
+
+    # -- 5. Volume icon --
+    if [ -f "${MAC_DIR}/downloads/VolumeIcon.icns" ]; then
+        cp "${MAC_DIR}/downloads/VolumeIcon.icns" "${DMG_STAGING}/.VolumeIcon.icns"
+    fi
+
+    # -- 6. Postinstall script --
+    mkdir -p "${DMG_STAGING}/.scripts"
+    generate_install_script "${DMG_STAGING}/.scripts"
+    # Rename to postinstall (convention .pkg)
+    mv "${DMG_STAGING}/.scripts/install-medulla-agent.sh" "${DMG_STAGING}/.scripts/postinstall"
+    colored_echo green "  Postinstall script: OK"
 }
 
-# Run the script
-check_arguments "$@"
-compute_parameters
-create_folder_structure
-if [[ ${MINIMAL} -eq 1 ]]; then
-	update_postflight_script_mini
-else
-	update_postflight_script_full
+# ============================================================
+# Generate a clickable .app wrapper (double-click to install)
+# ============================================================
+generate_installer_app() {
+    APP_DIR="${DMG_STAGING}/Installer Medulla Agent.app"
+    mkdir -p "${APP_DIR}/Contents/MacOS"
+    mkdir -p "${APP_DIR}/Contents/Resources"
+
+    # Copy icon if available
+    if [ -f "${DMG_STAGING}/.VolumeIcon.icns" ]; then
+        cp "${DMG_STAGING}/.VolumeIcon.icns" "${APP_DIR}/Contents/Resources/AppIcon.icns"
+    fi
+
+    # Info.plist
+    cat > "${APP_DIR}/Contents/Info.plist" <<PLISTEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>launcher</string>
+    <key>CFBundleIdentifier</key>
+    <string>io.medulla.agent.installer</string>
+    <key>CFBundleName</key>
+    <string>Installer Medulla Agent</string>
+    <key>CFBundleVersion</key>
+    <string>${AGENT_VERSION}</string>
+    <key>CFBundleShortVersionString</key>
+    <string>${AGENT_VERSION}</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>
+PLISTEOF
+
+    # Launcher script - asks for admin password via osascript then runs install
+    cat > "${APP_DIR}/Contents/MacOS/launcher" <<'LAUNCHEOF'
+#!/bin/bash
+# Find the DMG mount point (parent of the .app)
+DMG_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+INSTALL_SCRIPT="$(dirname "$0")/../Resources/install-medulla-agent.sh"
+
+if [ ! -f "$INSTALL_SCRIPT" ]; then
+    osascript -e 'display alert "Erreur" message "Script introuvable." as critical'
+    exit 1
 fi
-update_info_plist
-generate_agent_pkg
+
+# Run install with admin privileges, passing the DMG path
+osascript <<EOF
+do shell script "bash '${INSTALL_SCRIPT}' '${DMG_DIR}'" with administrator privileges
+EOF
+
+if [ $? -eq 0 ]; then
+    osascript -e 'display alert "Installation terminee" message "L'\''agent Medulla a ete installe avec succes." as informational'
+else
+    osascript -e 'display alert "Erreur" message "L'\''installation a echoue. Consultez les logs dans /var/log/medulla/" as critical'
+fi
+LAUNCHEOF
+
+    chmod +x "${APP_DIR}/Contents/MacOS/launcher"
+
+    # Put the install script inside the .app Resources
+    generate_install_script "${APP_DIR}/Contents/Resources"
+}
+
+# ============================================================
+# Generate the install script (runs on the Mac)
+# ============================================================
+generate_install_script() {
+    local DEST_DIR="${1:-${DMG_STAGING}}"
+    cat > "${DEST_DIR}/install-medulla-agent.sh" <<'INSTALLEOF'
+#!/bin/bash
+# Medulla Agent macOS ARM64 - Installer
+# Called by the .app launcher with the DMG path as $1
+
+INSTALL_DIR="/opt/medulla-agent"
+CONF_DIR="/etc/pulse-xmpp-agent"
+LOG_DIR="/var/log/medulla"
+PLIST_PATH="/Library/LaunchDaemons/io.medulla.agent.plist"
+PYTHON_VERSION="3.11"
+GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
+
+[ "$(id -u)" -ne 0 ] && echo "Lancez avec: sudo bash $0" && exit 1
+[ "$(uname)" != "Darwin" ] && echo "macOS uniquement" && exit 1
+
+# Le .pkg installe les fichiers dans /opt/medulla-agent/ (pkg_install_location)
+DIR="${INSTALL_DIR}"
+log() { echo "[Medulla] $1"; }
+
+# ---- Stop existing ----
+launchctl bootout system/io.medulla.agent 2>/dev/null
+killall -9 Python 2>/dev/null
+sleep 1
+
+# ---- Xcode Command Line Tools (needed to compile netifaces, slixmpp) ----
+if ! xcode-select -p &>/dev/null; then
+    log "Installation des Xcode Command Line Tools..."
+    touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+    XCODE_PKG=$(softwareupdate -l 2>/dev/null | grep -o ".*Command Line Tools.*" | head -1 | sed 's/^[* ]*//')
+    if [ -n "$XCODE_PKG" ]; then
+        softwareupdate -i "$XCODE_PKG" 2>/dev/null
+    fi
+    rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+fi
+
+# ---- Homebrew + Python 3.11 (native ARM64, required for ARM64 wheels) ----
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# Install Homebrew if missing
+if [ ! -x /opt/homebrew/bin/brew ] && [ ! -x /usr/local/bin/brew ]; then
+    log "Installation de Homebrew..."
+    # Homebrew cannot install as root, find the console user
+    CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null)
+    if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
+        sudo -u "$CONSOLE_USER" /bin/bash -c 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"' 2>&1 | tail -3
+    fi
+fi
+
+# Install Python 3.11 via Homebrew if missing
+PYTHON_BIN=""
+for p in /opt/homebrew/opt/python@${PYTHON_VERSION}/bin/python${PYTHON_VERSION} \
+         /opt/homebrew/bin/python${PYTHON_VERSION} \
+         /usr/local/opt/python@${PYTHON_VERSION}/bin/python${PYTHON_VERSION}; do
+    [ -x "$p" ] && PYTHON_BIN="$p" && break
+done
+if [ -z "$PYTHON_BIN" ]; then
+    log "Installation de Python ${PYTHON_VERSION} via Homebrew..."
+    CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null)
+    if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
+        sudo -u "$CONSOLE_USER" /opt/homebrew/bin/brew install python@${PYTHON_VERSION} 2>&1 | tail -3
+    fi
+    for p in /opt/homebrew/opt/python@${PYTHON_VERSION}/bin/python${PYTHON_VERSION} \
+             /opt/homebrew/bin/python${PYTHON_VERSION}; do
+        [ -x "$p" ] && PYTHON_BIN="$p" && break
+    done
+fi
+
+# Install Python from embedded pkg or download from python.org
+if [ -z "$PYTHON_BIN" ]; then
+    if [ -f "${DIR}/.python3.11.pkg" ]; then
+        log "Installation de Python ${PYTHON_VERSION} depuis le pkg embarque..."
+        installer -pkg "${DIR}/.python3.11.pkg" -target / 2>/dev/null
+    else
+        log "Telechargement de Python ${PYTHON_VERSION} depuis python.org..."
+        PYTHON_DL="/tmp/python-${PYTHON_VERSION}.pkg"
+        curl -sLo "$PYTHON_DL" "https://www.python.org/ftp/python/3.11.9/python-3.11.9-macos11.pkg"
+        [ -f "$PYTHON_DL" ] && [ -s "$PYTHON_DL" ] && installer -pkg "$PYTHON_DL" -target / 2>/dev/null
+        rm -f "$PYTHON_DL"
+    fi
+    PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/bin/python${PYTHON_VERSION}"
+fi
+
+if [ ! -x "$PYTHON_BIN" ]; then
+    log "ERREUR: Python ${PYTHON_VERSION} introuvable"
+    exit 1
+fi
+log "Python: $PYTHON_BIN"
+
+# ---- Directories ----
+log "Creation de l'arborescence..."
+mkdir -p ${INSTALL_DIR}/{var/log,tmp,etc,certs}
+mkdir -p ${INSTALL_DIR}/pulse_xmpp_agent/lib/INFOSTMP
+chmod 777 ${INSTALL_DIR}/pulse_xmpp_agent/lib/INFOSTMP
+mkdir -p ${CONF_DIR} ${LOG_DIR}
+[ ! -L /opt/Medulla ] && ln -sf ${INSTALL_DIR} /opt/Medulla
+
+# ---- Copy config (from pkg payload to /etc) ----
+log "Installation de la configuration..."
+for ini in "${DIR}"/config/*.ini "${DIR}"/config/*.tpl; do
+    [ -f "$ini" ] && cp "$ini" ${CONF_DIR}/
+done
+ln -sf ${CONF_DIR}/* ${INSTALL_DIR}/etc/ 2>/dev/null
+
+# ---- Copy certificates ----
+log "Installation des certificats..."
+cp "${DIR}"/certs/*.pem ${INSTALL_DIR}/certs/ 2>/dev/null
+
+# ---- Venv + dependencies ----
+log "Creation du venv Python..."
+rm -rf ${INSTALL_DIR}/venv 2>/dev/null
+# Force ARM64 architecture (pkg sandbox may run under Rosetta x86_64)
+arch -arm64 ${PYTHON_BIN} -m venv ${INSTALL_DIR}/venv
+chmod -R 755 ${INSTALL_DIR}/venv
+PIP="${INSTALL_DIR}/venv/bin/pip"
+arch -arm64 ${PIP} install --upgrade pip setuptools wheel 2>/dev/null
+
+log "Installation des dependances..."
+# Force ARM64 for all pip operations (pkg sandbox may use Rosetta)
+APIP="arch -arm64 ${PIP}"
+# List all wheel files and install in one pip command
+WHEEL_LIST=$(ls ${DIR}/wheels/*.whl 2>/dev/null | tr '\n' ' ')
+if [ -n "$WHEEL_LIST" ]; then
+    log "Found $(echo $WHEEL_LIST | wc -w | tr -d ' ') wheels"
+    ${APIP} install ${WHEEL_LIST} 2>&1 | tail -5
+fi
+# Source packages (slixmpp, netifaces - need compilation)
+for src in ${DIR}/wheels/*.tar.gz; do
+    [ -f "$src" ] && ${APIP} install "$src" 2>&1 | tail -2
+done
+# Verify and fallback from PyPI if needed
+MISSING=""
+for mod in psutil pycryptodome yaml lxml cherrypy croniter netaddr lmdb posix_ipc requests OpenSSL configparser distro netifaces slixmpp; do
+    arch -arm64 ${INSTALL_DIR}/venv/bin/python3 -c "import $mod" 2>/dev/null || MISSING="$MISSING $mod"
+done
+if [ -n "$MISSING" ]; then
+    log "Modules manquants:$MISSING - installation depuis PyPI..."
+    ${APIP} install psutil pycryptodome PyYAML lxml cherrypy croniter netaddr \
+        lmdb posix_ipc requests pyOpenSSL configparser distro netifaces-plus slixmpp==1.8.5 2>&1 | tail -5
+fi
+log "Dependances installees ($(${PIP} list 2>/dev/null | wc -l | tr -d ' ') packages)"
+
+# System Python: install deps if using Homebrew Python (subprocess uses sys.executable)
+SYSPIP=""
+for sp in /opt/homebrew/opt/python@${PYTHON_VERSION}/bin/pip${PYTHON_VERSION} \
+          /opt/homebrew/bin/pip${PYTHON_VERSION}; do
+    [ -x "$sp" ] && SYSPIP="$sp" && break
+done
+if [ -n "$SYSPIP" ]; then
+    log "Installation dependances systeme (Homebrew)..."
+    ${SYSPIP} install slixmpp==1.8.5 pycryptodome pyyaml lxml cherrypy \
+        croniter netaddr lmdb posix_ipc netifaces psutil requests pyOpenSSL 2>/dev/null || true
+fi
+
+# ---- Certificates in trust store ----
+log "Ajout des certificats au trust store..."
+
+# 1. Create the OpenSSL cert.pem if missing (python.org installer doesn't include it)
+OPENSSL_DIR="/Library/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/etc/openssl"
+OPENSSL_CERT="${OPENSSL_DIR}/cert.pem"
+if [ -d "$OPENSSL_DIR" ] && [ ! -f "$OPENSSL_CERT" ]; then
+    # Copy certifi bundle as base, then append Medulla certs
+    CERTIFI_SRC=$(${INSTALL_DIR}/venv/bin/python3 -c "import certifi; print(certifi.where())" 2>/dev/null)
+    if [ -n "$CERTIFI_SRC" ] && [ -f "$CERTIFI_SRC" ]; then
+        cp "$CERTIFI_SRC" "$OPENSSL_CERT"
+        log "Cree $OPENSSL_CERT depuis certifi"
+    fi
+fi
+
+# 2. Add Medulla certs to all known CA locations
+for CA_FILE in \
+    "$OPENSSL_CERT" \
+    $(${INSTALL_DIR}/venv/bin/python3 -c "import certifi; print(certifi.where())" 2>/dev/null) \
+    /opt/homebrew/etc/openssl@3/cert.pem \
+    /etc/ssl/cert.pem; do
+    if [ -n "$CA_FILE" ] && [ -f "$CA_FILE" ] && ! grep -qi "medulla" "$CA_FILE" 2>/dev/null; then
+        for cert in ${INSTALL_DIR}/certs/*.pem; do
+            echo "" >> "$CA_FILE"
+            echo "# Medulla CA - $(basename $cert)" >> "$CA_FILE"
+            cat "$cert" >> "$CA_FILE"
+        done
+        log "Certificats ajoutes a $CA_FILE"
+    fi
+done
+
+# 3. Try macOS keychain
+for cert in ${INSTALL_DIR}/certs/*.pem; do
+    security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$cert" 2>/dev/null || true
+done
+
+# ---- GLPI Agent ----
+log "Installation de GLPI Agent ${GLPI_AGENT_VERSION}..."
+if [ ! -f "/Applications/GLPI-Agent/bin/glpi-agent" ]; then
+    GLPI_SRC="${DIR}/.glpi-agent.pkg"
+    if [ -f "$GLPI_SRC" ]; then
+        # Extract payload manually (installer -pkg fails inside pkg sandbox)
+        GLPI_TMP=$(mktemp -d)
+        cd "$GLPI_TMP"
+        xar -xf "$GLPI_SRC" 2>/dev/null
+        # Find the component pkg (GLPI-Agent-*_arm64.pkg/Payload)
+        COMPONENT=$(find . -name "Payload" -path "*/GLPI-Agent*" | head -1)
+        if [ -n "$COMPONENT" ]; then
+            mkdir -p payload_root && cd payload_root
+            cat "../${COMPONENT}" | gunzip -c | cpio -id 2>/dev/null
+            # Copy to / (install-location is /)
+            cp -R Applications/* /Applications/ 2>/dev/null
+            log "GLPI Agent extrait et installe"
+            # Run GLPI postinstall if exists
+            GLPI_SCRIPTS=$(find "$GLPI_TMP" -name "Scripts" -path "*/GLPI-Agent*" | head -1)
+            if [ -n "$GLPI_SCRIPTS" ]; then
+                GLPI_SCRIPTS_DIR=$(mktemp -d)
+                cd "$GLPI_SCRIPTS_DIR"
+                cat "${GLPI_TMP}/$(dirname $COMPONENT)/Scripts" | gunzip -c | cpio -id 2>/dev/null
+                [ -f postinstall ] && chmod +x postinstall && ./postinstall 2>/dev/null || true
+                rm -rf "$GLPI_SCRIPTS_DIR"
+            fi
+        fi
+        rm -rf "$GLPI_TMP"
+    else
+        # Fallback: download from GitHub
+        GLPI_PKG="/tmp/glpi-agent-arm64.pkg"
+        curl -sLo "$GLPI_PKG" \
+            "https://github.com/glpi-project/glpi-agent/releases/download/${GLPI_AGENT_VERSION}/GLPI-Agent-${GLPI_AGENT_VERSION}_arm64.pkg"
+        [ -f "$GLPI_PKG" ] && [ -s "$GLPI_PKG" ] && installer -pkg "$GLPI_PKG" -target / 2>/dev/null
+        rm -f "$GLPI_PKG"
+    fi
+fi
+mkdir -p /opt/fusioninventory-agent/bin
+ln -sf /Applications/GLPI-Agent/bin/glpi-inventory /opt/fusioninventory-agent/bin/fusioninventory-inventory
+
+# ---- ARD ----
+log "Configuration d'Apple Remote Desktop..."
+/System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+    -activate -configure -access -on -privs -all -restart -agent -menu 2>/dev/null || true
+
+# ---- LaunchDaemon ----
+log "Creation du LaunchDaemon..."
+cat > ${PLIST_PATH} <<PLISTEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>${INSTALL_DIR}/venv/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>PYTHONPATH</key>
+		<string>${INSTALL_DIR}</string>
+		<key>VIRTUAL_ENV</key>
+		<string>${INSTALL_DIR}/venv</string>
+	</dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>io.medulla.agent</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>${INSTALL_DIR}/venv/bin/python3</string>
+		<string>${INSTALL_DIR}/pulse_xmpp_agent/launcher.py</string>
+		<string>-t</string>
+		<string>machine</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/var/log/medulla/medulla-agent.err</string>
+	<key>StandardOutPath</key>
+	<string>/var/log/medulla/medulla-agent.log</string>
+	<key>ThrottleInterval</key>
+	<integer>30</integer>
+	<key>WorkingDirectory</key>
+	<string>${INSTALL_DIR}</string>
+</dict>
+</plist>
+PLISTEOF
+
+# ---- Start ----
+log "Demarrage du service..."
+launchctl bootstrap system ${PLIST_PATH} 2>/dev/null
+sleep 2
+if ps aux | grep -q "[l]auncher.py -t machine"; then
+    log "Agent demarre avec succes"
+else
+    log "WARN: L'agent ne semble pas demarrer. Verifiez: tail -f ${LOG_DIR}/medulla-agent.err"
+fi
+
+log "Installation terminee."
+INSTALLEOF
+
+    chmod +x "${DEST_DIR}/install-medulla-agent.sh"
+
+    # Replace placeholders
+    sed -i'' "s/@@GLPI_AGENT_VERSION@@/${GLPI_AGENT_VERSION}/g" "${DEST_DIR}/install-medulla-agent.sh"
+}
+
+# ============================================================
+# Create the .dmg
+# ============================================================
+create_pkg() {
+    colored_echo blue "Creating DMG..."
+
+    if [ -n "${INVENTORY_TAG}" ]; then
+        OUTPUT="${PKG_NAME}-${AGENT_VERSION}-${INVENTORY_TAG}.dmg"
+    else
+        OUTPUT="${PKG_NAME}-${AGENT_VERSION}.dmg"
+    fi
+
+    OUTPUT="${PKG_NAME}-${AGENT_VERSION}.pkg"
+    if [ -n "${INVENTORY_TAG}" ]; then
+        OUTPUT="${PKG_NAME}-${AGENT_VERSION}-${INVENTORY_TAG}.pkg"
+    fi
+
+    # Build flat .pkg with xar + mkbom
+    TMPDIR=$(mktemp -d)
+    PAYLOAD_ROOT="${TMPDIR}/root"
+    mkdir -p "${PAYLOAD_ROOT}"
+
+    # Payload: files installed to /opt/medulla-agent/
+    for d in .wheels .pulse_xmpp_agent .certs .config; do
+        [ -d "${DMG_STAGING}/${d}" ] && cp -R "${DMG_STAGING}/${d}" "${PAYLOAD_ROOT}/${d#.}"
+    done
+    # Python + GLPI Agent pkgs
+    [ -f "${DMG_STAGING}/.python3.11.pkg" ] && cp "${DMG_STAGING}/.python3.11.pkg" "${PAYLOAD_ROOT}/.python3.11.pkg"
+    [ -f "${DMG_STAGING}/.glpi-agent.pkg" ] && cp "${DMG_STAGING}/.glpi-agent.pkg" "${PAYLOAD_ROOT}/.glpi-agent.pkg"
+
+    # Payload cpio.gz
+    (cd "${PAYLOAD_ROOT}" && find . | cpio -o --format odc 2>/dev/null | gzip -c > "${TMPDIR}/Payload")
+
+    # Scripts cpio.gz
+    mkdir -p "${TMPDIR}/scripts_root"
+    cp "${DMG_STAGING}/.scripts/postinstall" "${TMPDIR}/scripts_root/postinstall"
+    chmod 755 "${TMPDIR}/scripts_root/postinstall"
+    (cd "${TMPDIR}/scripts_root" && find . | cpio -o --format odc 2>/dev/null | gzip -c > "${TMPDIR}/Scripts")
+
+    # Bom
+    mkbom "${PAYLOAD_ROOT}" "${TMPDIR}/Bom" 2>/dev/null
+
+    # PackageInfo
+    PAYLOAD_KB=$(du -sk "${PAYLOAD_ROOT}" | awk '{print $1}')
+    NUM_FILES=$(find "${PAYLOAD_ROOT}" -type f | wc -l)
+    cat > "${TMPDIR}/PackageInfo" <<PKGEOF
+<?xml version="1.0" encoding="utf-8"?>
+<pkg-info format-version="2" identifier="io.medulla.agent" version="${AGENT_VERSION}" install-location="/opt/medulla-agent" auth="root">
+    <payload installKBytes="${PAYLOAD_KB}" numberOfFiles="${NUM_FILES}"/>
+    <scripts>
+        <postinstall file="./postinstall"/>
+    </scripts>
+</pkg-info>
+PKGEOF
+
+    # Distribution XML (required for macOS Installer to recognize the .pkg)
+    cat > "${TMPDIR}/Distribution" <<DISTEOF
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>Medulla Agent ${AGENT_VERSION}</title>
+    <options customize="never" require-scripts="false"/>
+    <domains enable_localSystem="true"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="io.medulla.agent"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="io.medulla.agent" visible="false">
+        <pkg-ref id="io.medulla.agent"/>
+    </choice>
+    <pkg-ref id="io.medulla.agent" version="${AGENT_VERSION}" installKBytes="${PAYLOAD_KB}" onConclusion="none">#io.medulla.agent.pkg</pkg-ref>
+</installer-gui-script>
+DISTEOF
+
+    # Structure identique au GLPI Agent .pkg :
+    # - Distribution (racine)
+    # - io.medulla.agent.pkg/ (sous-dossier avec Bom, Payload, Scripts, PackageInfo)
+    mkdir -p "${TMPDIR}/flat/io.medulla.agent.pkg"
+    cp "${TMPDIR}/PackageInfo" "${TMPDIR}/Payload" "${TMPDIR}/Scripts" "${TMPDIR}/Bom" "${TMPDIR}/flat/io.medulla.agent.pkg/"
+    cp "${TMPDIR}/Distribution" "${TMPDIR}/flat/"
+    (cd "${TMPDIR}/flat" && xar --compression=gzip -cf "${TMPDIR}/output.pkg" Distribution io.medulla.agent.pkg)
+
+    cp "${TMPDIR}/output.pkg" "${OUTPUT}"
+    rm -rf "${TMPDIR}"
+
+    chmod a+r "${OUTPUT}"
+    colored_echo green "Generated: ${OUTPUT} ($(du -h "${OUTPUT}" | awk '{print $1}'))"
+
+    # Symlink latest
+    if [ -z "${INVENTORY_TAG}" ]; then
+        ln -sf "${OUTPUT}" "${PKG_NAME}-latest.pkg" 2>/dev/null
+    fi
+
+    # Copy to downloads
+    if [ -d "${MAC_DIR}/downloads" ]; then
+        cp "${OUTPUT}" "${MAC_DIR}/downloads/"
+        colored_echo green "Copied to ${MAC_DIR}/downloads/"
+    fi
+
+    rm -rf ${BUILD_DIR}
+}
+
+# ============================================================
+# Main
+# ============================================================
+colored_echo blue "============================================"
+colored_echo blue " Medulla Agent macOS ARM64 - Generator"
+colored_echo blue " Version: ${AGENT_VERSION}"
+colored_echo blue "============================================"
+
+check_arguments "$@"
+build_dmg_contents
+create_pkg
+
+echo ""
+echo "To install on a Mac:"
+echo "  1. Copy the .pkg to the Mac"
+echo "  2. Double-click on the .pkg"
+echo "  3. Follow the installer (enter admin password)"
+echo ""

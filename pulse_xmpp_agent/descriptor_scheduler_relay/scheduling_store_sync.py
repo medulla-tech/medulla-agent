@@ -30,12 +30,7 @@ except ImportError:
 
 logger = logging.getLogger()
 
-plugin = {
-    "VERSION": "2.0",
-    "NAME": "scheduling_store_sync",
-    "TYPE": "relayserver",
-    "SCHEDULED": True
-}
+plugin = { "VERSION": "2.0","NAME": "scheduling_store_sync","TYPE": "relayserver","SCHEDULED": True }
 
 # Default: every 5 hours (matches Kestra version check interval)
 SCHEDULE = {"schedule": "0 */5 * * *", "nb": -1}

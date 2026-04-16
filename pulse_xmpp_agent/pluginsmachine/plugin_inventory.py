@@ -153,6 +153,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         os.rename(inventoryfile, "%s.back" % inventoryfile)
 
     if sys.platform.startswith("linux"):
+        if agent == "glpiagent":
+            agent_bin = "glpi-agent"
+        else:
+            agent_bin = "fusioninventory-agent"
         try:
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s" % (nbcmd, timeoutfusion))
@@ -166,13 +170,15 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 if xmppobject.config.via_xmpp == "False":
                     location_option = '--server="%s"' % xmppobject.config.urlinventory
                 if namefilexml and os.path.exists(namefilexml):
-                    cmd = "fusioninventory-agent %s %s " "--additional-content=%s" % (
+                    cmd = "%s %s %s --additional-content=%s" % (
+                        agent_bin,
                         general_options,
                         location_option,
                         namefilexml,
                     )
                 else:
-                    cmd = "fusioninventory-agent %s %s" % (
+                    cmd = "%s %s %s" % (
+                        agent_bin,
                         general_options,
                         location_option,
                     )
@@ -246,7 +252,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     "If the Medulla agent just started, this error is normal"
                 )
                 logger.warning(
-                    "But if it starts for a while please check that FusionInventory is correctly installed and working"
+                    "But if it starts for a while please check that %s is correctly installed and working" % agent_bin
                 )
         except Exception as e:
             dataerreur["data"]["msg"] = "Plugin inventory error %s : %s" % (

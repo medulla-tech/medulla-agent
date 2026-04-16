@@ -683,7 +683,7 @@ def createfingerprintnetwork():
     command_mapping = {
         "win32": "ipconfig",
         "linux": "LANG=C ip addr | egrep '.*(inet|HWaddr).*' | grep -v inet6",
-        "darwin": "ipconfig",
+        "darwin": "LANG=C ifconfig | egrep '.*(inet|ether).*' | grep -v inet6",
     }
 
     platform = sys.platform
@@ -5185,6 +5185,8 @@ class offline_search_kb:
             "history_package_uuid": [],
             "version_net": {},
             "kb_installed": [],
+            "defender": {},
+            "windows_disk_encryption": [],
             "version_edge": "",
             "infobuild": {},
             "platform_info": {},
@@ -5228,6 +5230,14 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
+            self.info_package["defender"] = self.search_defender_info()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            self.info_package["windows_disk_encryption"] = self.search_windows_disk_encryption_info()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
             searchkb = self.searchpackage()
             self.info_package["kb_installed"] = searchkb
             self.info_package["kb_list"] = self.compact_kb(searchkb)
@@ -5249,6 +5259,166 @@ class offline_search_kb:
         for t in listkb:
             compactlist.append(t["HotFixID"][2:])
         return "(" + ",".join(compactlist) + ")"
+
+    def _normalize_hotfix_entries(self, raw_entries):
+        if isinstance(raw_entries, dict):
+            raw_entries = [raw_entries]
+        elif not isinstance(raw_entries, list):
+            raw_entries = []
+
+        normalized = []
+        for kb in raw_entries:
+            hotfix_id = str(kb.get("HotFixID", "") or "").strip()
+            if not hotfix_id.startswith("KB"):
+                continue
+            normalized.append(
+                {
+                    "description": str(kb.get("Description", "") or kb.get("description", "") or "").strip(),
+                    "HotFixID": hotfix_id,
+                    "InstalledBy": str(kb.get("InstalledBy", "") or "").strip(),
+                    "InstalledOn": str(kb.get("InstalledOn", "") or "").strip(),
+                }
+            )
+        return normalized
+
+    def _search_hotfixes_in_update_history(self, hotfix_ids):
+        if not sys.platform.startswith("win") or not hotfix_ids:
+            return []
+
+        ps_targets = ", ".join("'%s'" % kb for kb in hotfix_ids)
+        ps_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            "try { "
+            f"$targets = @({ps_targets}); "
+            "$session = New-Object -ComObject Microsoft.Update.Session; "
+            "$searcher = $session.CreateUpdateSearcher(); "
+            "$total = $searcher.GetTotalHistoryCount(); "
+            "$history = if ($total -gt 0) { $searcher.QueryHistory(0, $total) } else { @() }; "
+            "$results = foreach ($target in $targets) { "
+            "$regex = [regex]::Escape($target); "
+            "$hit = $history | Where-Object { $_.Title -match $regex } | Sort-Object Date -Descending | Select-Object -First 1; "
+            "if ($hit) { [pscustomobject]@{ HotFixID = $target; Description = if ([string]::IsNullOrWhiteSpace($hit.Description)) { 'Update' } else { $hit.Description }; InstalledBy = 'Windows Update History'; InstalledOn = $hit.Date.ToString('M/d/yyyy') } } "
+            "}; "
+            "$results | ConvertTo-Json -Compress "
+            "} catch { @() | ConvertTo-Json -Compress }"
+        )
+
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_command],
+                capture_output=True,
+                text=True,
+            )
+            output = (result.stdout or "").strip()
+            if not output:
+                return []
+            return self._normalize_hotfix_entries(json.loads(output))
+        except Exception:
+            logger.error("_search_hotfixes_in_update_history : %s" % traceback.format_exc())
+            return []
+
+    def _run_powershell_json(self, ps_command, timeout=30):
+        if not sys.platform.startswith("win"):
+            return None
+
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_command],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+            output = (result.stdout or "").strip()
+            if not output:
+                return None
+            return json.loads(output)
+        except subprocess.TimeoutExpired:
+            logger.warning("_run_powershell_json timeout exceeded")
+            return None
+        except Exception:
+            logger.error("_run_powershell_json : %s" % traceback.format_exc())
+            return None
+
+    def search_defender_info(self):
+        defender_info = {
+            "status": {},
+            "latest_security_intelligence_update": {},
+            "latest_platform_update": {},
+        }
+
+        if not sys.platform.startswith("win"):
+            return defender_info
+
+        status_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            "if (Get-Command Get-MpComputerStatus -ErrorAction SilentlyContinue) { "
+            "try { "
+            "Get-MpComputerStatus | "
+            "Select-Object AMProductVersion, AMServiceVersion, AntivirusSignatureVersion, AntivirusSignatureLastUpdated, "
+            "AntispywareSignatureVersion, AntispywareSignatureLastUpdated, NISSignatureVersion, NISSignatureLastUpdated | "
+            "ConvertTo-Json -Compress "
+            "} catch { @{} | ConvertTo-Json -Compress } "
+            "} else { @{} | ConvertTo-Json -Compress }"
+        )
+        status_payload = self._run_powershell_json(status_command)
+        if isinstance(status_payload, dict):
+            defender_info["status"] = status_payload
+
+        history_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            "try { "
+            "$session = New-Object -ComObject Microsoft.Update.Session; "
+            "$searcher = $session.CreateUpdateSearcher(); "
+            "$total = $searcher.GetTotalHistoryCount(); "
+            "$history = if ($total -gt 0) { $searcher.QueryHistory(0, [Math]::Min($total, 200)) } else { @() }; "
+            "$security = $history | Where-Object { $_.Title -match '2267602|Security Intelligence|Defender Antivirus' -or $_.Title -match 'sélection disjointe' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+            "$platform = $history | Where-Object { $_.Title -match '5007651|Windows Security platform|Defender Antivirus platform' -or $_.Title -match 'plateforme anti-programme malveillant' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+            "[pscustomobject]@{ latest_security_intelligence_update = $security; latest_platform_update = $platform } | ConvertTo-Json -Compress -Depth 4 "
+            "} catch { [pscustomobject]@{ latest_security_intelligence_update = $null; latest_platform_update = $null } | ConvertTo-Json -Compress -Depth 4 }"
+        )
+        history_payload = self._run_powershell_json(history_command)
+        if isinstance(history_payload, dict):
+            if isinstance(history_payload.get("latest_security_intelligence_update"), dict):
+                defender_info["latest_security_intelligence_update"] = history_payload["latest_security_intelligence_update"]
+            if isinstance(history_payload.get("latest_platform_update"), dict):
+                defender_info["latest_platform_update"] = history_payload["latest_platform_update"]
+
+        return defender_info
+
+    def search_windows_disk_encryption_info(self):
+        if not sys.platform.startswith("win"):
+            return []
+
+        ps_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            "if (Get-Command Get-BitLockerVolume -ErrorAction SilentlyContinue) { "
+            "try { "
+            "$volumes = Get-BitLockerVolume; "
+            "if (-not $volumes) { @() | ConvertTo-Json -Compress } else { "
+            "$volumes | ForEach-Object { "
+            "[pscustomobject]@{ "
+            "MountPoint = $_.MountPoint; "
+            "VolumeType = $_.VolumeType; "
+            "VolumeStatus = $_.VolumeStatus; "
+            "ProtectionStatus = $_.ProtectionStatus; "
+            "EncryptionMethod = $_.EncryptionMethod; "
+            "EncryptionPercentage = $_.EncryptionPercentage; "
+            "AutoUnlockEnabled = $_.AutoUnlockEnabled; "
+            "LockStatus = $_.LockStatus; "
+            "KeyProtectorTypes = @($_.KeyProtector | ForEach-Object { $_.KeyProtectorType }); "
+            "KeyProtectorIds = @($_.KeyProtector | ForEach-Object { $_.KeyProtectorId }) "
+            "} "
+            "} | ConvertTo-Json -Compress -Depth 4 } "
+            "} catch { @() | ConvertTo-Json -Compress } "
+            "} else { @() | ConvertTo-Json -Compress }"
+        )
+
+        payload = self._run_powershell_json(ps_command)
+        if isinstance(payload, dict):
+            return [payload]
+        if isinstance(payload, list):
+            return payload
+        return []
 
     def searchpackage(self):
         """
@@ -5285,14 +5455,15 @@ class offline_search_kb:
                 except json.JSONDecodeError:
                     kb_list = []
 
-                # Transformation pour correspondre à la structure attendue
-                for kb in kb_list:
-                    endresult.append({
-                        "description": kb.get("Description", ""),
-                        "HotFixID": kb.get("HotFixID", ""),
-                        "InstalledBy": kb.get("InstalledBy", ""),
-                        "InstalledOn": kb.get("InstalledOn", "")
-                    })
+                endresult.extend(self._normalize_hotfix_entries(kb_list))
+
+                # KB5007651 (Windows Security platform) n'apparait pas toujours dans Get-HotFix.
+                missing_hotfix_ids = [
+                    hotfix_id
+                    for hotfix_id in ("KB5007651",)
+                    if hotfix_id not in {item["HotFixID"] for item in endresult}
+                ]
+                endresult.extend(self._search_hotfixes_in_update_history(missing_hotfix_ids))
 
             except Exception as e:
                 logger.error("searchpackage : %s" % e)
@@ -5348,6 +5519,34 @@ class offline_search_kb:
                         )
                 except:
                     logging.getLogger().error(("%s" % (traceback.format_exc())))
+
+                history_payload = self._run_powershell_json(
+                    "$ErrorActionPreference = 'SilentlyContinue'; "
+                    "try { "
+                    "$session = New-Object -ComObject Microsoft.Update.Session; "
+                    "$searcher = $session.CreateUpdateSearcher(); "
+                    "$total = $searcher.GetTotalHistoryCount(); "
+                    "$history = if ($total -gt 0) { $searcher.QueryHistory(0, [Math]::Min($total, 200)) } else { @() }; "
+                    "$hit = $history | Where-Object { $_.Title -match 'KB890830|Windows Malicious Software Removal Tool' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+                    "if ($hit) { $hit | ConvertTo-Json -Compress } else { @{} | ConvertTo-Json -Compress } "
+                    "} catch { @{} | ConvertTo-Json -Compress }"
+                )
+                if isinstance(history_payload, dict) and history_payload.get("Date"):
+                    result_cmd["UpdateDate"] = str(history_payload.get("Date", ""))
+                    result_cmd["UpdateTitle"] = str(history_payload.get("Title", ""))
+                    result_cmd["UpdateDateSource"] = "Windows Update History"
+                else:
+                    file_payload = self._run_powershell_json(
+                        "$ErrorActionPreference = 'SilentlyContinue'; "
+                        "try { "
+                        "Get-Item 'C:\\Windows\\System32\\mrt.exe' | "
+                        "Select-Object @{Name='UpdateDate';Expression={$_.LastWriteTime.ToString('s')}} | "
+                        "ConvertTo-Json -Compress "
+                        "} catch { @{} | ConvertTo-Json -Compress }"
+                    )
+                    if isinstance(file_payload, dict) and file_payload.get("UpdateDate"):
+                        result_cmd["UpdateDate"] = str(file_payload.get("UpdateDate", ""))
+                        result_cmd["UpdateDateSource"] = "mrt.exe LastWriteTime"
         return result_cmd
 
     def search_version_edge(self):

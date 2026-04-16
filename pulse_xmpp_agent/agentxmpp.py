@@ -3782,7 +3782,8 @@ class MUCBot(ClientXMPP):
         er.messagejson["privatekeyname"] = self.RSA.get_name_key()[1]
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
-        self.config.ipxmpp = self.local_ip
+        if hasattr(self, "local_ip"):
+            self.config.ipxmpp = self.local_ip
         NetworkInfos = NetworkInfoxmpp(port=self.config.Port, sock=self.sockxmpp  )
         portconnection = self.config.Port
         if NetworkInfos.ip_address and NetworkInfos.details:
