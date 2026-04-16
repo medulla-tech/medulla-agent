@@ -681,7 +681,7 @@ def createfingerprintnetwork():
     command_mapping = {
         "win32": "ipconfig",
         "linux": "LANG=C ip addr | egrep '.*(inet|HWaddr).*' | grep -v inet6",
-        "darwin": "ipconfig",
+        "darwin": "LANG=C ifconfig | egrep '.*(inet|ether).*' | grep -v inet6",
     }
 
     platform = sys.platform

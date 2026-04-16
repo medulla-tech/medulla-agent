@@ -395,6 +395,8 @@ class networkagentinfo:
                         ],
                     }
                     for line in result:
+                        if isinstance(line, bytes):
+                            line = line.decode("utf-8", errors="ignore")
                         line = line.rstrip("\n")
                         colonne = line.split("=")
                         if len(colonne) != 2:
@@ -420,6 +422,15 @@ class networkagentinfo:
                             continue
                     try:
                         if partinfo["ipaddress"] != "":
+                            # Completer avec les infos de netifaces (broadcast, macnotshortened)
+                            if "broadcast" not in partinfo:
+                                try:
+                                    inet = netifaces.ifaddresses(i).get(netifaces.AF_INET, [{}])[0]
+                                    partinfo["broadcast"] = inet.get("broadcast", "")
+                                except Exception:
+                                    partinfo["broadcast"] = ""
+                            if "macnotshortened" not in partinfo:
+                                partinfo["macnotshortened"] = partinfo.get("macaddress", "")
                             self.messagejson["listipinfo"].append(partinfo)
                     except BaseException:
                         pass
