@@ -189,6 +189,8 @@ class Env(object):
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
 
+        if sys.platform.startswith("darwin"):
+            return os.path.expanduser("~medullauser")
         return os.path.expanduser("~pulseuser")
 
 
@@ -3789,7 +3791,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     elif sys.platform.startswith("darwin"):
         try:
             uid = pwd.getpwnam(username).pw_uid
-            gid = grp.getgrnam(username).gr_gid
+            gid = pwd.getpwnam(username).pw_gid
             msg = f"{username} user account already exists. Nothing to do."
             return True, msg
         except Exception:
@@ -3797,7 +3799,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             userpassword = "".join(random.sample(list(passwdchars), 14))
             adduser_cmd = (
                 "dscl . -create /Users/%s "
-                "UserShell /usr/local/bin/rbash && "
+                "UserShell /bin/bash && "
                 "dscl . -passwd /Users/%s %s" % (username, username, userpassword)
             )
     # Create the account
@@ -3919,7 +3921,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
     elif sys.platform.startswith("darwin"):
         try:
             uid = pwd.getpwnam(username).pw_uid
-            gid = grp.getgrnam(username).gr_gid
+            gid = pwd.getpwnam(username).pw_gid
             homedir = os.path.expanduser(f"~{username}")
         except Exception as e:
             msg = f"Error getting information for creating home folder for user {username}"
@@ -3931,7 +3933,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         packagedir = os.path.join(homedir, "packages")
         if not os.path.isdir(packagedir):
             os.makedirs(packagedir, 0o764)
-        gidroot = grp.getgrnam("root").gr_gid
+        gidroot = grp.getgrnam("wheel").gr_gid
         os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
         msg = f"{username} profile created successfully at {homedir}"
@@ -4092,18 +4094,27 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     """
     if sys.platform.startswith("win"):
         id_rsa_path = os.path.join(getHomedrive(), ".ssh", "id_rsa")
+        delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
+        simplecommand(encode_strconsole(delete_keyfile_cmd))
     else:
+        if sys.platform.startswith("darwin"):
+            username = "medullauser"
         id_rsa_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "id_rsa")
-    delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
-    result = simplecommand(encode_strconsole(delete_keyfile_cmd))
-    logger.debug(f"Creating id_rsa file in {id_rsa_path}")
+        if os.path.isfile(id_rsa_path):
+            os.remove(id_rsa_path)
+    logger.info(f"Creating id_rsa file in {id_rsa_path}")
     if not os.path.isdir(os.path.dirname(id_rsa_path)):
         os.makedirs(os.path.dirname(id_rsa_path), 0o700)
     file_put_contents(id_rsa_path, key)
+    if not os.path.isfile(id_rsa_path):
+        msg = f"Error: file_put_contents failed to create {id_rsa_path}"
+        logger.error(msg)
+        return False, msg
     result, logs = apply_perms_sshkey(id_rsa_path, True)
     if result is False:
         return False, logs
     msg = f"Key {id_rsa_path} successfully created"
+    logger.info(msg)
     return True, msg
 
 
@@ -4144,10 +4155,13 @@ def apply_perms_sshkey(path, private=True):
             msg = f"Error setting permissions on {path} for user {user}: {str(e)}"
             return False, msg
     else:
-        # The owner must be pulseuser
-        username = "pulseuser"
+        # The owner must be pulseuser (medullauser on macOS)
+        username = "medullauser" if sys.platform.startswith("darwin") else "pulseuser"
         uid = pwd.getpwnam(username).pw_uid
-        gid = grp.getgrnam(username).gr_gid
+        if sys.platform.startswith("darwin"):
+            gid = pwd.getpwnam(username).pw_gid
+        else:
+            gid = grp.getgrnam(username).gr_gid
 
         try:
             os.chown(os.path.dirname(path), uid, gid)

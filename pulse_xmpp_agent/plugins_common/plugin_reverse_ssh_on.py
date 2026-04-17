@@ -27,7 +27,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "4.3", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "4.4", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -169,8 +169,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         )
 
         if data["options"] == "createreversessh":
-            # Add the keys to pulseuser account
-            username = "pulseuser"
+            # Add the keys to pulseuser account (medullauser on macOS)
+            username = "medullauser" if sys.platform.startswith("darwin") else "pulseuser"
             result, msglog = utils.create_idrsa_on_client(username, data["key"])
             if result is False:
                 logger.error(msglog)
@@ -485,11 +485,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     )
             elif sys.platform.startswith("darwin"):
                 filekey = os.path.join(
-                    os.path.expanduser("~pulseuser"), ".ssh", "id_rsa"
+                    os.path.expanduser("~medullauser"), ".ssh", "id_rsa"
                 )
-                dd = """#!/bin/bash
-                /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "%s" -l reversessh %s -p %s&
-                """ % (
+                dd = "#!/bin/bash\nexec /usr/bin/ssh -N -T -%s %s:localhost:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -i \"%s\" -l reversessh %s -p %s\n" % (
                     reversetype,
                     data["port"],
                     remoteport,
@@ -498,7 +496,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     reversessh_server_port,
                 )
                 reversesshsh = os.path.join(
-                    os.path.expanduser("~pulseuser"), "reversessh.sh"
+                    os.path.expanduser("~medullauser"), "reversessh.sh"
                 )
                 utils.file_put_contents(reversesshsh, dd)
                 os.chmod(reversesshsh, 0o700)

@@ -43,7 +43,7 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {"VERSION": "6.3", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "6.4", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
@@ -1856,7 +1856,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         logger.debug("os client machine %s" % data_in_session["os"])
                         data_in_session["os_version"] = data["os_version"]
                         # set  user ssh
-                        data_in_session["userssh"] = "pulseuser"
+                        if data_in_session["os"].lower().startswith("darwin"):
+                            data_in_session["userssh"] = "medullauser"
+                        else:
+                            data_in_session["userssh"] = "pulseuser"
                         if data_in_session["os"].startswith("linux"):
                             data_in_session["rsyncpath"] = "rsync"
                         elif data_in_session["os"].startswith("win"):
@@ -2387,7 +2390,7 @@ def add_chargeapparente(objectxmpp, ars):
 
 def changown_dir_of_file(dest, nameuser=None):
     if nameuser is None:
-        nameuser = "pulseuser"
+        nameuser = "medullauser" if sys.platform.startswith("darwin") else "pulseuser"
 
     dest = os.path.dirname(dest)
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):

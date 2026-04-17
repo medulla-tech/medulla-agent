@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
+import sys
 import logging
 from lib import utils
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "4.3", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "4.4", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -32,7 +33,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.send_message_agent(message["from"], dataerreur, mtype="chat")
             return
         # Make sure user account and profile exists
-        username = "pulseuser"
+        username = "medullauser" if sys.platform.startswith("darwin") else "pulseuser"
         result, msglog = utils.pulseuser_useraccount_mustexist(username)
         if result is False:
             logger.error(msglog)

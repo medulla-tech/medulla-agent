@@ -130,11 +130,17 @@ build_dmg_contents() {
     # -- 2. Agent code (hidden) --
     if [ -d "${AGENT_SRC}" ]; then
         cp -r "${AGENT_SRC}" "${DMG_STAGING}/.pulse_xmpp_agent"
-        # Pre-install base plugins (needed for bootstrap - server sends plugins via installplugin)
+        # Create setup.py so pip install -e works (registers pulse_xmpp_agent as a package)
+        cat > "${DMG_STAGING}/.setup.py" <<'SETUPEOF'
+from setuptools import setup
+setup(name="pulse_xmpp_agent", version="5.5.0", packages=["pulse_xmpp_agent"])
+SETUPEOF
+        # Pre-install only bootstrap plugins (server sends the rest via installplugin)
         BASEPLUGINS="/var/lib/pulse2/xmpp_baseplugin"
         if [ -d "$BASEPLUGINS" ]; then
-            cp ${BASEPLUGINS}/plugin_*.py "${DMG_STAGING}/.pulse_xmpp_agent/pluginsmachine/" 2>/dev/null
-            colored_echo green "  Agent code: OK (with $(ls ${DMG_STAGING}/.pulse_xmpp_agent/pluginsmachine/plugin_*.py 2>/dev/null | wc -l | tr -d ' ') base plugins)"
+            cp ${BASEPLUGINS}/plugin_installplugin.py "${DMG_STAGING}/.pulse_xmpp_agent/pluginsmachine/" 2>/dev/null
+            cp ${BASEPLUGINS}/plugin_installpluginscheduled.py "${DMG_STAGING}/.pulse_xmpp_agent/pluginsmachine/" 2>/dev/null
+            colored_echo green "  Agent code: OK (with bootstrap plugins)"
         else
             colored_echo green "  Agent code: OK"
         fi
@@ -274,8 +280,8 @@ generate_install_script() {
 # Medulla Agent macOS ARM64 - Installer
 # Called by the .app launcher with the DMG path as $1
 
-INSTALL_DIR="/opt/medulla-agent"
-CONF_DIR="/etc/pulse-xmpp-agent"
+INSTALL_DIR="/opt/medulla"
+CONF_DIR="/etc/medulla"
 LOG_DIR="/var/log/medulla"
 PLIST_PATH="/Library/LaunchDaemons/io.medulla.agent.plist"
 PYTHON_VERSION="3.11"
@@ -284,7 +290,7 @@ GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
 [ "$(id -u)" -ne 0 ] && echo "Lancez avec: sudo bash $0" && exit 1
 [ "$(uname)" != "Darwin" ] && echo "macOS uniquement" && exit 1
 
-# Le .pkg installe les fichiers dans /opt/medulla-agent/ (pkg_install_location)
+# Le .pkg installe les fichiers dans /opt/medulla/ (pkg_install_location)
 DIR="${INSTALL_DIR}"
 log() { echo "[Medulla] $1"; }
 
@@ -357,13 +363,34 @@ if [ ! -x "$PYTHON_BIN" ]; then
 fi
 log "Python: $PYTHON_BIN"
 
+# ---- Create medullauser (same as Linux) ----
+if ! id -u medullauser >/dev/null 2>&1; then
+    log "Creation de l'utilisateur medullauser..."
+    sysadminctl -addUser medullauser -fullName "Medulla User" -shell /bin/bash -home /var/lib/medulla 2>/dev/null || \
+    dscl . -create /Users/medullauser 2>/dev/null
+    dscl . -create /Users/medullauser UserShell /bin/bash 2>/dev/null
+    dscl . -create /Users/medullauser NFSHomeDirectory /var/lib/medulla 2>/dev/null
+    dscl . -create /Users/medullauser UniqueID 499 2>/dev/null
+    dscl . -create /Users/medullauser PrimaryGroupID 20 2>/dev/null
+fi
+# Ensure shell is /bin/bash (needed for rsync/SSH)
+dscl . -change /Users/medullauser UserShell /usr/bin/false /bin/bash 2>/dev/null
+# Allow SSH access for medullauser
+dseditgroup -o edit -a medullauser -t user com.apple.access_ssh 2>/dev/null
+mkdir -p /var/lib/medulla/.ssh
+touch /var/lib/medulla/.ssh/authorized_keys
+chmod 700 /var/lib/medulla/.ssh
+chmod 600 /var/lib/medulla/.ssh/authorized_keys
+chown -R medullauser:staff /var/lib/medulla/.ssh 2>/dev/null
+
 # ---- Directories ----
 log "Creation de l'arborescence..."
-mkdir -p ${INSTALL_DIR}/{var/log,tmp,etc,certs}
+mkdir -p ${INSTALL_DIR}/{var/log,tmp,etc,certs,packages}
 mkdir -p ${INSTALL_DIR}/pulse_xmpp_agent/lib/INFOSTMP
 chmod 777 ${INSTALL_DIR}/pulse_xmpp_agent/lib/INFOSTMP
+chown medullauser:staff ${INSTALL_DIR}/packages
 mkdir -p ${CONF_DIR} ${LOG_DIR}
-[ ! -L /opt/Medulla ] && ln -sf ${INSTALL_DIR} /opt/Medulla
+# INSTALL_DIR is already /opt/medulla, no symlink needed
 
 # ---- Copy config (from pkg payload to /etc) ----
 log "Installation de la configuration..."
@@ -400,15 +427,22 @@ for src in ${DIR}/wheels/*.tar.gz; do
 done
 # Verify and fallback from PyPI if needed
 MISSING=""
-for mod in psutil pycryptodome yaml lxml cherrypy croniter netaddr lmdb posix_ipc requests OpenSSL configparser distro netifaces slixmpp; do
+for mod in psutil pycryptodome yaml lxml cherrypy croniter netaddr lmdb posix_ipc requests OpenSSL configparser distro netifaces slixmpp pycurl wakeonlan aiofiles websockets; do
     arch -arm64 ${INSTALL_DIR}/venv/bin/python3 -c "import $mod" 2>/dev/null || MISSING="$MISSING $mod"
 done
 if [ -n "$MISSING" ]; then
     log "Modules manquants:$MISSING - installation depuis PyPI..."
     ${APIP} install psutil pycryptodome PyYAML lxml cherrypy croniter netaddr \
-        lmdb posix_ipc requests pyOpenSSL configparser distro netifaces-plus slixmpp==1.8.5 2>&1 | tail -5
+        lmdb posix_ipc requests pyOpenSSL configparser distro netifaces-plus \
+        slixmpp==1.8.5 pycurl wakeonlan aiofiles websockets 2>&1 | tail -5
 fi
 log "Dependances installees ($(${PIP} list 2>/dev/null | wc -l | tr -d ' ') packages)"
+
+# Register pulse_xmpp_agent as a Python package (same as deb does with setup.py install)
+if [ -f "${INSTALL_DIR}/setup.py" ]; then
+    ${APIP} install -e "${INSTALL_DIR}" --no-deps 2>/dev/null
+    log "Package pulse_xmpp_agent enregistre"
+fi
 
 # System Python: install deps if using Homebrew Python (subprocess uses sys.executable)
 SYSPIP=""
@@ -503,6 +537,24 @@ log "Configuration d'Apple Remote Desktop..."
 /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
     -activate -configure -access -on -privs -all -restart -agent -menu 2>/dev/null || true
 
+# ---- Wrapper script (clean orphan processes before launch) ----
+mkdir -p ${INSTALL_DIR}/bin
+log "Creation du wrapper de demarrage..."
+cat > ${INSTALL_DIR}/bin/medulla-agent.sh <<'WRAPEOF'
+#!/bin/bash
+exec /opt/medulla/venv/bin/python3 /opt/medulla/pulse_xmpp_agent/launcher.py -t machine
+WRAPEOF
+chmod +x ${INSTALL_DIR}/bin/medulla-agent.sh
+
+# ---- Restart helper ----
+cat > /usr/local/bin/medulla-restart <<'RESTEOF'
+#!/bin/bash
+killall -9 Python 2>/dev/null
+sleep 1
+launchctl kickstart -kp system/io.medulla.agent
+RESTEOF
+chmod +x /usr/local/bin/medulla-restart
+
 # ---- LaunchDaemon ----
 log "Creation du LaunchDaemon..."
 cat > ${PLIST_PATH} <<PLISTEOF
@@ -525,15 +577,12 @@ cat > ${PLIST_PATH} <<PLISTEOF
 	<string>io.medulla.agent</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>${INSTALL_DIR}/venv/bin/python3</string>
-		<string>${INSTALL_DIR}/pulse_xmpp_agent/launcher.py</string>
-		<string>-t</string>
-		<string>machine</string>
+		<string>${INSTALL_DIR}/bin/medulla-agent.sh</string>
 	</array>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>StandardErrorPath</key>
-	<string>/var/log/medulla/medulla-agent.err</string>
+	<string>/var/log/medulla/medulla-agent.log</string>
 	<key>StandardOutPath</key>
 	<string>/var/log/medulla/medulla-agent.log</string>
 	<key>ThrottleInterval</key>
@@ -585,13 +634,14 @@ create_pkg() {
     PAYLOAD_ROOT="${TMPDIR}/root"
     mkdir -p "${PAYLOAD_ROOT}"
 
-    # Payload: files installed to /opt/medulla-agent/
+    # Payload: files installed to /opt/medulla/
     for d in .wheels .pulse_xmpp_agent .certs .config; do
         [ -d "${DMG_STAGING}/${d}" ] && cp -R "${DMG_STAGING}/${d}" "${PAYLOAD_ROOT}/${d#.}"
     done
-    # Python + GLPI Agent pkgs
+    # Python + GLPI Agent pkgs + setup.py
     [ -f "${DMG_STAGING}/.python3.11.pkg" ] && cp "${DMG_STAGING}/.python3.11.pkg" "${PAYLOAD_ROOT}/.python3.11.pkg"
     [ -f "${DMG_STAGING}/.glpi-agent.pkg" ] && cp "${DMG_STAGING}/.glpi-agent.pkg" "${PAYLOAD_ROOT}/.glpi-agent.pkg"
+    [ -f "${DMG_STAGING}/.setup.py" ] && cp "${DMG_STAGING}/.setup.py" "${PAYLOAD_ROOT}/setup.py"
 
     # Payload cpio.gz
     (cd "${PAYLOAD_ROOT}" && find . | cpio -o --format odc 2>/dev/null | gzip -c > "${TMPDIR}/Payload")
@@ -610,7 +660,7 @@ create_pkg() {
     NUM_FILES=$(find "${PAYLOAD_ROOT}" -type f | wc -l)
     cat > "${TMPDIR}/PackageInfo" <<PKGEOF
 <?xml version="1.0" encoding="utf-8"?>
-<pkg-info format-version="2" identifier="io.medulla.agent" version="${AGENT_VERSION}" install-location="/opt/medulla-agent" auth="root">
+<pkg-info format-version="2" identifier="io.medulla.agent" version="${AGENT_VERSION}" install-location="/opt/medulla" auth="root">
     <payload installKBytes="${PAYLOAD_KB}" numberOfFiles="${NUM_FILES}"/>
     <scripts>
         <postinstall file="./postinstall"/>
