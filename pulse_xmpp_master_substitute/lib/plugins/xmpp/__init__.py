@@ -10234,6 +10234,109 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return result
 
     @DatabaseHelper._sessionm
+    def search_update_windows_security_platform(
+        self,
+        session,
+        kbsearch,
+        installed_on_date,
+        tableproduct="up_packages_Windows_Security_platform",
+    ):
+        """
+        Retourne la derniere update Windows Security platform a deployer
+        pour une KB donnee si sa date creationdate est strictement superieure
+        a installed_on_date.
+
+        Parametres:
+            kbsearch (str): numero de KB cible (ex: 5007651, 2267602, 4052623).
+            installed_on_date (str): date ISO AAAA-MM-JJ de la KB remontee par la machine.
+            tableproduct (str): table produit cible, par defaut up_packages_Windows_Security_platform.
+        """
+        result = []
+        colonnename = self._colonne_name_update()
+
+        try:
+            if not kbsearch or not installed_on_date:
+                return result
+
+            kbsearch = re.sub(r"\D", "", str(kbsearch))
+            if not kbsearch:
+                logging.getLogger().warning(
+                    "search_update_windows_security_platform ignoree: kbsearch invalide=%s",
+                    kbsearch,
+                )
+                return result
+
+            # Validation minimale du format de date attendu.
+            datetime.strptime(str(installed_on_date), "%Y-%m-%d")
+
+            if tableproduct != "up_packages_Windows_Security_platform":
+                logging.getLogger().warning(
+                    "search_update_windows_security_platform ignoree: table non autorisee=%s",
+                    tableproduct,
+                )
+                return result
+
+            sql = text(
+                """
+                SELECT
+                    updateid,
+                    revisionid,
+                    creationdate,
+                    compagny,
+                    product,
+                    productfamily,
+                    updateclassification,
+                    prerequisite,
+                    title,
+                    description,
+                    msrcseverity,
+                    msrcnumber,
+                    kb,
+                    languages,
+                    category,
+                    supersededby,
+                    supersedes,
+                    payloadfiles,
+                    revisionnumber,
+                    bundledby_revision,
+                    isleaf,
+                    issoftware,
+                    deploymentaction,
+                    title_short
+                FROM xmppmaster.up_packages_Windows_Security_platform
+                WHERE REPLACE(UPPER(kb), 'KB', '') = :kbsearch
+                  AND DATE(creationdate) > :installed_on_date
+                ORDER BY revisionid DESC
+                LIMIT 1
+                """
+            )
+            req = session.execute(
+                sql,
+                {
+                    "kbsearch": kbsearch,
+                    "installed_on_date": installed_on_date,
+                },
+            )
+            rows = list(req)
+
+            for lineresult in rows:
+                dictline = {}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lr, datetime):
+                        lr = lr.isoformat()
+                    dictline[value] = lr
+                dictline["tableproduct"] = tableproduct
+                result.append(dictline)
+
+            session.commit()
+            session.flush()
+        except Exception:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+
+        return result
+
+    @DatabaseHelper._sessionm
     def history_list_kb(self, session, list_updateid):
         """
         Cette onction renvoi les numero de kb en fonction d'une list python des updateid des update
