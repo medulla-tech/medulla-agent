@@ -6,9 +6,10 @@ import sys
 import json
 import asyncio
 import logging
-import aiofiles
 import argparse
-import websockets
+if sys.platform.startswith("linux"):
+    import aiofiles
+    import websockets
 
 logger = logging.getLogger()
 log_tailers = {}
