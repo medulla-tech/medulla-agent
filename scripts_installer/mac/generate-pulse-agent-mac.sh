@@ -377,6 +377,7 @@ fi
 dscl . -change /Users/medullauser UserShell /usr/bin/false /bin/bash 2>/dev/null
 # Allow SSH access for medullauser
 dseditgroup -o edit -a medullauser -t user com.apple.access_ssh 2>/dev/null
+dseditgroup -o edit -a medullauser -t user com.apple.access_screensharing 2>/dev/null
 mkdir -p /var/lib/medulla/.ssh
 touch /var/lib/medulla/.ssh/authorized_keys
 chmod 700 /var/lib/medulla/.ssh
@@ -415,19 +416,22 @@ arch -arm64 ${PIP} install --upgrade pip setuptools wheel 2>/dev/null
 log "Installation des dependances..."
 # Force ARM64 for all pip operations (pkg sandbox may use Rosetta)
 APIP="arch -arm64 ${PIP}"
-# List all wheel files and install in one pip command
-WHEEL_LIST=$(ls ${DIR}/wheels/*.whl 2>/dev/null | tr '\n' ' ')
-if [ -n "$WHEEL_LIST" ]; then
-    log "Found $(echo $WHEEL_LIST | wc -w | tr -d ' ') wheels"
-    ${APIP} install ${WHEEL_LIST} 2>&1 | tail -5
-fi
-# Source packages (slixmpp, netifaces - need compilation)
+# Install wheels one by one with --no-deps to avoid dependency conflicts
+WHEEL_COUNT=0
+for whl in ${DIR}/wheels/*.whl; do
+    [ -f "$whl" ] && ${APIP} install --no-deps "$whl" 2>/dev/null && WHEEL_COUNT=$((WHEEL_COUNT+1))
+done
+log "Installed $WHEEL_COUNT wheels from package"
+# Source packages (slixmpp - needs compilation)
 for src in ${DIR}/wheels/*.tar.gz; do
     [ -f "$src" ] && ${APIP} install "$src" 2>&1 | tail -2
 done
+# Install sub-dependencies not included in wheels (--no-deps skipped them)
+${APIP} install --upgrade pip setuptools 2>/dev/null
+${APIP} install certifi requests urllib3 charset-normalizer idna cherrypy 2>/dev/null
 # Verify and fallback from PyPI if needed
 MISSING=""
-for mod in psutil pycryptodome yaml lxml cherrypy croniter netaddr lmdb posix_ipc requests OpenSSL configparser distro netifaces slixmpp pycurl wakeonlan aiofiles websockets; do
+for mod in psutil Crypto yaml lxml cherrypy croniter netaddr lmdb posix_ipc requests OpenSSL configparser distro netifaces slixmpp pycurl wakeonlan aiofiles websockets; do
     arch -arm64 ${INSTALL_DIR}/venv/bin/python3 -c "import $mod" 2>/dev/null || MISSING="$MISSING $mod"
 done
 if [ -n "$MISSING" ]; then
@@ -532,10 +536,9 @@ fi
 mkdir -p /opt/fusioninventory-agent/bin
 ln -sf /Applications/GLPI-Agent/bin/glpi-inventory /opt/fusioninventory-agent/bin/fusioninventory-inventory
 
-# ---- ARD ----
-log "Configuration d'Apple Remote Desktop..."
-/System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
-    -activate -configure -access -on -privs -all -restart -agent -menu 2>/dev/null || true
+# ---- Screen Sharing (VNC) ----
+# macOS Tahoe+ : le partage d'ecran doit etre active manuellement
+# Reglages > General > Partage > Partage d'ecran
 
 # ---- Wrapper script (clean orphan processes before launch) ----
 mkdir -p ${INSTALL_DIR}/bin

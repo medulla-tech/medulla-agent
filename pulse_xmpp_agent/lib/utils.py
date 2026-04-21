@@ -2346,10 +2346,10 @@ class protodef:
                             protport["rdp"] = port
 
         elif sys.platform.startswith("darwin"):
-            for process in psutil.process_iter():
-                if "ARDAgent" in process.name():
-                    protport["vnc"] = "5900"
+            # Detect VNC (Screen Sharing or ARD) on port 5900
             for cux in psutil.net_connections():
+                if cux.laddr.port == 5900 and cux.status == psutil.CONN_LISTEN:
+                    protport["vnc"] = "5900"
                 if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
                     protport["ssh"] = "22"
 
