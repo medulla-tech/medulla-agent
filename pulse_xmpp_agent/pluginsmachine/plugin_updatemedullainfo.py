@@ -30,7 +30,9 @@ if sys.platform.startswith("win"):
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.17", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+
+plugin = {"VERSION": "1.2", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+
 LATEST_WIN10 = "22H2"
 LATEST_WIN11 = "25H2"
 LATEST_SERVER_ISO = "2025_24H2"
@@ -650,25 +652,30 @@ def execute_medulla_info_update():
             # 22H2	19045
             if DisplayVersion == "":
                 DisplayVersion = "1909"
-            if archi:
+            try:
                 iso_name = f"Win10_{LATEST_WIN10}_{language_codes.get(install_language, 'English')}_{archi}"
                 update = f"{correspondence_text.get(install_language, 'English')}-10"
+            except Exception:
+                logger.warning("PL-MEDULLAINFO Win10 : impossible de construire iso_name (archi=%s)" % archi)
         else:
-            # Win10 déjà à jour (22H2) → proposer migration vers Win11
-            if archi:
+            try:
                 iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
                 update = f"{correspondence_text.get(install_language, 'English')}-11"
+            except Exception:
+                logger.warning("PL-MEDULLAINFO Win10->Win11 : impossible de construire iso_name (archi=%s)" % archi)
 
         comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
     # WINDOWS 11
     elif major_name == 11:
-        if archi:
+        try:
             if DisplayVersion.upper() != LATEST_WIN11:
                 update = f"{correspondence_text.get(install_language, 'English')}-11"
                 iso_name = f"Win{major_name}_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
             else:
                 iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
                 update = f"{correspondence_text.get(install_language, 'English')}-11"
+        except Exception:
+            logger.warning("PL-MEDULLAINFO Win11 : impossible de construire iso_name (archi=%s)" % archi)
         comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
     else:
         update = ""
@@ -721,7 +728,6 @@ def update_medulla_info_update_notification(xmppobject):
         for filename in listfilename:
             pathfilename = os.path.join(script_dir, filename)
             if not os.path.exists(pathfilename):
-                txtmsg = ""
                 try:
                     dl_url = "%s/downloads/win/%s" % (xmppobject.config.update_server, filename)
                     logger.debug("PL-MEDULLAINFO install %s from %s" % (filename, dl_url))
@@ -731,8 +737,7 @@ def update_medulla_info_update_notification(xmppobject):
                 except Exception as e:
                     # logger.error("\n%s" % (traceback.format_exc()))
                     logger.error(f"{e}")
-                    if txtmsg:
-                        logger.error("PL-MEDULLAINFO %s" % txtmsg)
+                    logger.error("PL-MEDULLAINFO %s" % txtmsg)
             else:
                 logger.debug(f"PL-MEDULLAINFO {filename} already exists. Skipping download.")
 
