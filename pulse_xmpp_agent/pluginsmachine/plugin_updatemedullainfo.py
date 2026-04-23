@@ -30,7 +30,7 @@ if sys.platform.startswith("win"):
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.161", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.16", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 LATEST_WIN10 = "22H2"
 LATEST_WIN11 = "25H2"
 LATEST_SERVER_ISO = "2025_24H2"
@@ -592,13 +592,8 @@ def execute_medulla_info_update():
     architecture = read_reg_value(r"System\CurrentControlSet\Control\Session Manager\Environment", "PROCESSOR_ARCHITECTURE", winreg.REG_SZ)
     if architecture == "AMD64":
         archi = "x64"
-    else:
-        # ARM64, x86 : pas d'ISO de mise a jour majeure disponible dans la base
-        logger.warning(f"PL-MEDULLAINFO Architecture non supportee pour mise a jour majeure : {architecture}")
-        archi = None
     install_language = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
-    if not install_language:
-        install_language = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "Default", winreg.REG_SZ)
+    install_language_fallback = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "InstallLanguage", winreg.REG_SZ)
     default_lang = read_reg_value(r"SYSTEM\CurrentControlSet\Control\Nls\Language", "Default", winreg.REG_SZ)
     logger.debug(f"PL-MEDULLAINFO Install Language: {install_language} :default lang {default_lang} : language : {correspondence_text.get(install_language, 'Unknown')}")
     create_reg_key(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info")
@@ -650,25 +645,21 @@ def execute_medulla_info_update():
             # 22H2	19045
             if DisplayVersion == "":
                 DisplayVersion = "1909"
-            if archi:
                 iso_name = f"Win10_{LATEST_WIN10}_{language_codes.get(install_language, 'English')}_{archi}"
                 update = f"{correspondence_text.get(install_language, 'English')}-10"
         else:
-            # Win10 déjà à jour (22H2) → proposer migration vers Win11
-            if archi:
-                iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
-                update = f"{correspondence_text.get(install_language, 'English')}-11"
+            iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
+            update = f"{correspondence_text.get(install_language, 'English')}-11"
 
         comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
     # WINDOWS 11
     elif major_name == 11:
-        if archi:
-            if DisplayVersion.upper() != LATEST_WIN11:
-                update = f"{correspondence_text.get(install_language, 'English')}-11"
-                iso_name = f"Win{major_name}_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
-            else:
-                iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
-                update = f"{correspondence_text.get(install_language, 'English')}-11"
+        if DisplayVersion.upper() != LATEST_WIN11:
+            update = f"{correspondence_text.get(install_language, 'English')}-11"
+            iso_name = f"Win{major_name}_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
+        else:
+            iso_name = f"Win11_{LATEST_WIN11}_{language_codes.get(install_language, 'English')}_{archi}"
+            update = f"{correspondence_text.get(install_language, 'English')}-11"
         comments_value = f"{major_name}@{DisplayVersion}@{correspondence_text.get(install_language, 'English')}@{install_language}@{iso_name}@{compatible}@{update}"
     else:
         update = ""
@@ -676,7 +667,7 @@ def execute_medulla_info_update():
 
     medule_info = f"Medulla_{comments_value}"
     write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "DisplayName", medule_info, winreg.REG_SZ)
-    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language}", winreg.REG_SZ)
+    write_reg_value(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info", "Comments", f"{comments_value}+{install_language_fallback}", winreg.REG_SZ)
     logger.debug("PL-MEDULLAINFO Mise a jour du registre terminee.")
 
 def get_os_product_name():
@@ -721,7 +712,6 @@ def update_medulla_info_update_notification(xmppobject):
         for filename in listfilename:
             pathfilename = os.path.join(script_dir, filename)
             if not os.path.exists(pathfilename):
-                txtmsg = ""
                 try:
                     dl_url = "%s/downloads/win/%s" % (xmppobject.config.update_server, filename)
                     logger.debug("PL-MEDULLAINFO install %s from %s" % (filename, dl_url))
@@ -731,8 +721,7 @@ def update_medulla_info_update_notification(xmppobject):
                 except Exception as e:
                     # logger.error("\n%s" % (traceback.format_exc()))
                     logger.error(f"{e}")
-                    if txtmsg:
-                        logger.error("PL-MEDULLAINFO %s" % txtmsg)
+                    logger.error("PL-MEDULLAINFO %s" % txtmsg)
             else:
                 logger.debug(f"PL-MEDULLAINFO {filename} already exists. Skipping download.")
 
