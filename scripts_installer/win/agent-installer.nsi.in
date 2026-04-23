@@ -80,6 +80,8 @@ Unicode True
 !define CACERTIFICATE "@@CACERTIFICATE@@"
 !define VIM_NAME "@@VIM_NAME@@"
 !define VIM_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${VIM_NAME}"
+!define MEDULLA_UPDATE_INFO_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info"
+!define MEDULLA_EXTRACT_DRIVERS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Extract Drivers"
 
 SetCompressor lzma
 
@@ -650,6 +652,8 @@ Section "Uninstall"
   DeleteRegKey HKLM "${VIM_UNINST_KEY}"
   DeleteRegKey HKLM "${KIOSK_LAUNCHER_UNINST_KEY}"
   DeleteRegKey HKLM "${KIOSK_INTERFACE_UNINST_KEY}"
+  DeleteRegKey HKLM "${MEDULLA_UPDATE_INFO_UNINST_KEY}"
+  DeleteRegKey HKLM "${MEDULLA_EXTRACT_DRIVERS_UNINST_KEY}"
 
   ; Stop all Medulla services
   Call un.StopMedullaServices
