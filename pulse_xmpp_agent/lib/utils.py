@@ -5230,6 +5230,7 @@ class offline_search_kb:
             "platform_info": {},
             "office" :{},
             "visual" : {},
+            "win11_compatibility": {},
         }
 
         try:
@@ -5294,6 +5295,10 @@ class offline_search_kb:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
             self.info_package["infobuild"] = self.search_system_info_reg()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -6236,6 +6241,158 @@ class offline_search_kb:
             else:
                 logging.getLogger().error("systeminfo error")
         return res
+
+    def check_windows11_compatibility(self):
+        """
+        Verifie la conformite du materiel pour Windows 11.
+        Retourne un dictionnaire avec le resultat de chaque critere.
+        Fonctionne uniquement sur Windows.
+        """
+        result = {
+            "compatible": False,
+            "ram": None,
+            "disk": None,
+            "uefi": None,
+            "tpm": None,
+            "cpu": None,
+            "graphics": None,
+            "display": None,
+        }
+        if not sys.platform.startswith("win"):
+            return result
+
+        # RAM >= 4 Go
+        try:
+            ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+            result["ram"] = {"ok": ram_gb >= 4, "value_gb": round(ram_gb, 2)}
+        except Exception:
+            result["ram"] = {"ok": False, "value_gb": None}
+
+        # Disque C:\ >= 64 Go
+        try:
+            total, _, _ = shutil.disk_usage("C:\\")
+            disk_gb = total / (1024 ** 3)
+            result["disk"] = {"ok": disk_gb >= 64, "value_gb": round(disk_gb, 2)}
+        except Exception:
+            result["disk"] = {"ok": False, "value_gb": None}
+
+        # UEFI
+        try:
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+                 "Confirm-SecureBootUEFI"],
+                capture_output=True, text=False,
+            )
+            stdout = r.stdout.decode("utf-8", errors="replace").strip().lower()
+            stderr = r.stderr.decode("utf-8", errors="replace").strip().lower()
+            if "true" in stdout or "false" in stdout:
+                is_uefi = True
+            elif r.returncode != 0 or "cmdlet" in stderr:
+                is_uefi = False
+            else:
+                is_uefi = True
+            result["uefi"] = {"ok": is_uefi}
+        except Exception:
+            result["uefi"] = {"ok": False}
+
+        # TPM 2.0
+        try:
+            ps_tpm = (
+                "Get-CimInstance -Namespace Root\\CIMv2\\Security\\MicrosoftTpm "
+                "-Class Win32_Tpm | "
+                "Select-Object SpecVersion, IsEnabled_InitialValue, IsActivated_InitialValue | "
+                "ConvertTo-Json -Compress"
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_tpm],
+                capture_output=True, text=True,
+            )
+            tpm = json.loads(r.stdout.strip()) if r.stdout.strip() else {}
+            spec = tpm.get("SpecVersion", "") or ""
+            version_str = spec.split(",")[0].strip() if spec else ""
+            try:
+                version_num = float(version_str)
+            except (ValueError, TypeError):
+                version_num = 0.0
+            tpm_ok = (
+                version_num >= 2.0
+                and tpm.get("IsEnabled_InitialValue") is not False
+                and tpm.get("IsActivated_InitialValue") is not False
+            )
+            result["tpm"] = {"ok": tpm_ok, "spec_version": spec}
+        except Exception:
+            result["tpm"] = {"ok": False, "spec_version": ""}
+
+        # CPU
+        try:
+            cpu = platform.processor().lower()
+            cpu_ok = False
+            intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
+            if intel_match:
+                cpu_ok = int(intel_match.group(1)[:2]) >= 8
+            else:
+                amd_match = re.search(r'ryzen\s*(\d)', cpu)
+                if amd_match:
+                    cpu_ok = int(amd_match.group(1)) >= 2
+            result["cpu"] = {"ok": cpu_ok, "processor": cpu}
+        except Exception:
+            result["cpu"] = {"ok": False, "processor": ""}
+
+        # DirectX 12 + GPU
+        try:
+            ps_gpu = (
+                "$ErrorActionPreference='SilentlyContinue'; "
+                "Get-CimInstance Win32_VideoController | "
+                "Select-Object Name, DriverVersion | "
+                "ConvertTo-Json -Compress"
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_gpu],
+                capture_output=True, text=True,
+            )
+            gpu_data = json.loads(r.stdout.strip()) if r.stdout.strip() else []
+            if isinstance(gpu_data, dict):
+                gpu_data = [gpu_data]
+            result["graphics"] = {
+                "ok": True,
+                "devices": [
+                    {"name": g.get("Name", ""), "driver_version": g.get("DriverVersion", "")}
+                    for g in gpu_data
+                ],
+            }
+        except Exception:
+            result["graphics"] = {"ok": True, "devices": []}
+
+        # Affichage >= 1280x720
+        try:
+            ps_screen = (
+                "Add-Type -AssemblyName System.Windows.Forms; "
+                "[System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "
+                "[pscustomobject]@{ Width = $_.Bounds.Width; Height = $_.Bounds.Height } } | "
+                "ConvertTo-Json -Compress"
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_screen],
+                capture_output=True, text=True,
+            )
+            screens = json.loads(r.stdout.strip()) if r.stdout.strip() else []
+            if isinstance(screens, dict):
+                screens = [screens]
+            display_ok = any(
+                (s.get("Width") or 0) >= 1280 and (s.get("Height") or 0) >= 720
+                for s in screens
+            ) if screens else True
+            result["display"] = {"ok": display_ok, "screens": screens}
+        except Exception:
+            result["display"] = {"ok": True, "screens": []}
+
+        result["compatible"] = all(
+            result[k]["ok"]
+            for k in ("ram", "disk", "uefi", "tpm", "cpu", "graphics", "display")
+            if result[k] is not None
+        )
+        return result
 
 
 def get_extracted_driver_key():
