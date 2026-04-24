@@ -390,6 +390,7 @@ chmod +x %buildroot%_var/lib/pulse2/clients/win/generate-pulse-agent-win.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp scripts_installer/lin/generate-pulse-agent-linux.sh %buildroot%_var/lib/pulse2/clients/lin
 chmod +x %buildroot%_var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
+cp scripts_installer/lin/uninstall-medulla-agent-linux.sh %buildroot%_var/lib/pulse2/clients/lin/
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
 cp scripts_installer/mac/generate-pulse-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
 chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
@@ -414,6 +415,7 @@ cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/powershell-policy-remotesigned.pol %buildroot%_var/lib/pulse2/clients/win/
+cp scripts_installer/win/uninstall-medulla-agent-windows.ps1 %buildroot%_var/lib/pulse2/clients/win/
 mkdir -p %buildroot%_var/lib/pulse2/script_monitoring
 cp -fv contrib/monitoring/readme %buildroot%_var/lib/pulse2/script_monitoring/
 cp -fv contrib/monitoring/schema_mon_pulsesystem.sql %buildroot%_var/lib/pulse2/script_monitoring/

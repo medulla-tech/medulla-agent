@@ -156,6 +156,7 @@ override_dh_auto_install:
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
 	cp scripts_installer/lin/generate-pulse-agent-linux.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
+	cp scripts_installer/lin/uninstall-medulla-agent-linux.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
 	cp scripts_installer/mac/generate-pulse-agent-mac.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
@@ -180,6 +181,7 @@ override_dh_auto_install:
 	cp scripts_installer/win/netcheck-service.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/networkevents.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/powershell-policy-remotesigned.pol $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
+	cp scripts_installer/win/uninstall-medulla-agent-windows.ps1 $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/script_monitoring
 	cp -fv contrib/monitoring/* $(CURDIR)/debian/tmp/var/lib/pulse2/script_monitoring/
 	cp pulse_xmpp_agent/bin/pulse2_update_notification.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
