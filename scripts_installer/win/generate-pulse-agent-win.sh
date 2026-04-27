@@ -446,6 +446,7 @@ update_nsi_script() {
         -e "s/@@VIM_NAME@@/${VIM_NAME}/" \
         -e "s/@@CACERTIFICATE@@/${CACERTIFICATE_FILENAME}/" \
         -e "s/@@ROOTCERTIFICATE@@/${ROOTCERTIFICATE_FILENAME}/" \
+        -e "s/@@DISABLE_INVENTORY@@/${DISABLE_INVENTORY}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
