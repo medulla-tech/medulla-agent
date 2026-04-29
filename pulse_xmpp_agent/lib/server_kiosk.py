@@ -39,6 +39,19 @@ if sys.platform.startswith("win"):
 
 
 class process_serverPipe:
+    """
+    DEPRECATED: Windows named pipe server for network interface change events.
+    
+    TODO_REMOVABLE: This class is now superseded by the TCP plugin server
+    (__server_tcpip.py) which receives network events from networkevent1.py.
+    
+    REMOVAL CRITERIA:
+    - TCP/plugin route validated and stable in production
+    - networkevent1.py fully deployed and tested
+    - No more named pipe clients connected
+    
+    REMOVAL DATE: To be determined after validation period.
+    """
     def __init__(
         self,
         optstypemachine,
@@ -108,12 +121,16 @@ class process_serverPipe:
                 finally:
                     self.pipe_handle.Close()
                 if len(data) >= 2:
-                    if data[1] == "terminate":
+                    payload = data[1]
+                    if isinstance(payload, bytes):
+                        payload = payload.decode("utf-8", "ignore")
+                    payload = payload.strip("\x00\r\n ")
+                    if payload == "terminate":
                         self.logger.debug("Terminate event network listen Server")
-                    else:
+                    elif payload:
                         try:
-                            self.logger.debug(f"_____________{data[1]}")
-                            self.queue_recv_tcp_to_xmpp.put(data[1])
+                            self.logger.debug(f"_____________{payload}")
+                            self.queue_recv_tcp_to_xmpp.put(payload)
                         except Exception as e:
                             self.logger.warning(
                                 f"read input from Pipe nammed error {str(e)}"
@@ -121,6 +138,19 @@ class process_serverPipe:
 
 
 class process_tcp_serveur:
+    """
+    DEPRECATED: Legacy TCP server for kiosk messages (server_kiosk.py style).
+    
+    TODO_REMOVABLE: This class is NOT currently used in production.
+    The active TCP server is now in plugins_common/plugin___server_tcpip.py
+    which is async-based and handles all TCP communication via asyncio.
+    
+    REMOVAL CRITERIA:
+    - Confirm no code references this class in production paths
+    - TCP plugin route fully validated
+    
+    REMOVAL DATE: Can be removed once legacy path migration is complete.
+    """
     def __init__(
         self,
         port,
@@ -273,6 +303,24 @@ def minifyjsonstringrecv(strjson):
 
 
 class manage_kiosk_message:
+    """
+    Message queue consumer for kiosk and network interface events.
+    
+    NOTE_REMOVABLE: This class currently consumes from queue_recv_tcp_to_xmpp
+    which receives messages from:
+    1. DEPRECATED: process_serverPipe (named pipe server)
+    2. CURRENT: plugins_common/plugin___server_tcpip.py (TCP plugin server)
+    
+    Once process_serverPipe is removed and all events flow through TCP plugin,
+    this consumer can be simplified or integrated directly into the plugin flow.
+    
+    REMOVAL/REFACTOR CRITERIA:
+    - Named pipe server (process_serverPipe) removed
+    - All network events routed through TCP plugin queue
+    - Consumer pattern can be migrated to async handler if needed
+    
+    PLANNED REFACTOR DATE: Post-validation of TCP-only architecture.
+    """
     def __init__(self, queue_in, objectxmpp, key_quit="quit_server_kiosk"):
         self.logger = logging.getLogger()
         self.queue_in = queue_in
@@ -300,7 +348,7 @@ class manage_kiosk_message:
                 if event == self.key_quit:
                     self.logger.debug("Quit server manage event kiosk")
                     break
-                self.handle_client_connection(str(event))
+                self.handle_client_connection(event)
             except Queue.Empty:
                 self.logger.debug("The loop is empty")
             except KeyboardInterrupt:
@@ -348,10 +396,13 @@ class manage_kiosk_message:
                 "base64": False,
                 "data": {},
             }
-            msg = str(recv_msg_from_kiosk.decode("utf-8", "ignore"))
+            if isinstance(recv_msg_from_kiosk, bytes):
+                msg = recv_msg_from_kiosk.decode("utf-8", "ignore")
+            else:
+                msg = str(recv_msg_from_kiosk)
             ##############
             if isBase64(msg):
-                msg = base64.b64decode(msg)
+                msg = base64.b64decode(msg).decode("utf-8", "ignore")
             try:
                 _result = json.loads(minifyjsonstringrecv(msg))
                 result = self.runjson(_result)
