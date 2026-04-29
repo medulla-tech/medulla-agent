@@ -44,20 +44,23 @@ logger = logging.getLogger()
 plugin = {"VERSION": "1.1", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
 
 
+def _is_network_event_payload(payload):
+    """Detecte un message de changement d'interface envoye par networkevent."""
+    if not isinstance(payload, dict):
+        return False
+    required_keys = {"interface", "additionalinterface", "removedinterface"}
+    return required_keys.issubset(payload.keys())
+
+
 @set_logging_level
 def action(xmppobject, action):
     try:
-        logger.debug("=====================================================")
         logger.debug(f"call plugin code {plugin} ")
-        logger.debug("=====================================================")
         compteurcallplugin = getattr(xmppobject, f"num_call{action}")
 
         if compteurcallplugin == 0:
-            logger.debug("====================================")
-            logger.debug("========== INITIALIZATION ==========")
-            logger.debug("====================================")
+            logger.debug("INITIALIZATION")
             read_conf_server_tcpip_agent_machine(xmppobject)
-            logger.debug("====================================")
 
             asyncio.run(run_server(xmppobject))
 
@@ -387,6 +390,25 @@ async def handle_client(client, xmppobject):
             # Handle dictionary requests
             if isinstance(requestobj, dict):
                 try:
+                    # Compatibilite avec le chemin historique pipe: on route les
+                    # evenements reseau dans la meme queue de traitement.
+                    if _is_network_event_payload(requestobj):
+                        logger.info(
+                            "changement interface: interface=%s additionalinterface=%s removedinterface=%s",
+                            requestobj.get("interface", []),
+                            requestobj.get("additionalinterface", []),
+                            requestobj.get("removedinterface", []),
+                        )
+                        if hasattr(xmppobject, "queue_recv_tcp_to_xmpp"):
+                            xmppobject.queue_recv_tcp_to_xmpp.put(
+                                json.dumps(requestobj)
+                            )
+                            await loop.sock_sendall(client, "no result".encode("utf-8"))
+                            break
+                        logger.warning(
+                            "Network event received on TCP but queue_recv_tcp_to_xmpp is missing; fallback to direct handler"
+                        )
+
                     # Delegate request handling to the xmppobject
                     codeerror, result = xmppobject.handle_client_connection(
                         json.dumps(requestobj)

@@ -328,6 +328,10 @@ class MUCBot(ClientXMPP):
         self.mutex = threading.Lock()
         self.mutexslotquickactioncount = threading.Lock()
         self.eventkilltcp = eventkilltcp
+        # TODO_REMOVABLE: eventkillpipe is used only to signal the deprecated
+        # process_serverPipe (named pipe server) to stop. Once the pipe server
+        # is removed, this event can be removed.
+        # REMOVAL CRITERIA: Named pipe server (process_serverPipe) removed.
         self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp
         self.queueout = queueout
@@ -1240,6 +1244,10 @@ class MUCBot(ClientXMPP):
                 logger.debug(f"handle_disconnected TERMINATE")
                 if sys.platform.startswith("win"):
                     try:
+                        # TODO_REMOVABLE: Send terminate to legacy named pipe server.
+                        # This code unblocks the deprecated process_serverPipe on shutdown.
+                        # REMOVAL CRITERIA: Named pipe server (process_serverPipe) removed,
+                        # all network events routed through TCP plugin server.
                         # on debloque le pipe
                         fileHandle = win32file.CreateFile(
                             "\\\\.\\pipe\\interfacechang",
@@ -1384,6 +1392,10 @@ class MUCBot(ClientXMPP):
         time.sleep(1)
         if sys.platform.startswith("win"):
             try:
+                # TODO_REMOVABLE: Send terminate to legacy named pipe server.
+                # This code unblocks the deprecated process_serverPipe during shutdown.
+                # REMOVAL CRITERIA: Named pipe server (process_serverPipe) removed,
+                # all network events routed through TCP plugin server.
                 # on debloque le pipe
                 fileHandle = win32file.CreateFile(
                     "\\\\.\\pipe\\interfacechang",
@@ -4821,9 +4833,14 @@ def terminateserver(xmpp):
     # termine server kiosk
     xmpp.eventkiosk.quit()
     xmpp.eventkilltcp.set()
+    # TODO_REMOVABLE: eventkillpipe is only needed for the deprecated
+    # Windows named pipe server (process_serverPipe).
+    # REMOVAL CRITERIA: Named pipe server removed and TCP-only path validated.
     xmpp.eventkillpipe.set()
     if sys.platform.startswith("win"):
         try:
+            # TODO_REMOVABLE: Legacy named pipe unblock during shutdown.
+            # REMOVAL CRITERIA: Named pipe server removed and TCP-only path validated.
             # on debloque le pipe
             fileHandle = win32file.CreateFile(
                 "\\\\.\\pipe\\interfacechang",
