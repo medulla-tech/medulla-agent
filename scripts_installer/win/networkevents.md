@@ -155,22 +155,46 @@ Cette section permet de verifier en conditions reelles que :
 
 L objectif est d avoir une interface reseau de laboratoire, sans toucher a l interface physique principale.
 
-Procedure recommandee :
+#### Etape 1 : Ouvrir le Gestionnaire de peripheriques
 
-1. Ouvrir `hdwwiz.exe` en administrateur.
-2. Choisir `Installer le materiel que je selectionne manuellement dans une liste`.
-3. Selectionner `Cartes reseau`.
-4. Choisir le constructeur `Microsoft`.
-5. Choisir `Microsoft KM-TEST Loopback Adapter` ou `Microsoft Loopback Adapter` selon la version de Windows.
-6. Terminer l assistant.
-7. Ouvrir `ncpa.cpl`.
-8. Renommer l interface creee en `Ethernet 2` si vous voulez reutiliser directement le script PowerShell ci-dessous.
+Deux methodes :
 
-Commande utile pour verifier le nom reel de l interface :
+- Appuyer sur `Win + X` et selectionner `Gestionnaire de peripheriques`
+- Ou executer `devmgmt.msc` via la boite de dialogue `Executer` (`Win + R`)
+
+#### Etape 2 : Ajouter l adaptateur Loopback
+
+1. Dans le Gestionnaire de peripheriques, cliquer sur `Action` > `Ajouter un materiel herite`.
+2. Dans l assistant, cliquer sur `Suivant`.
+3. Selectionner `Installer le materiel que je selectionne manuellement dans une liste`, puis `Suivant`.
+4. Faire defiler la liste et selectionner `Adaptateurs reseau`, puis `Suivant`.
+5. Dans la liste des fabricants, choisir `Microsoft`.
+6. Dans la liste des modeles, selectionner `Adaptateur reseau Microsoft Loopback` (ou `Microsoft KM-TEST Loopback Adapter` selon la version de Windows).
+7. Cliquer sur `Suivant` puis `Terminer` pour installer l adaptateur.
+
+#### Etape 3 : Verifier l interface dans PowerShell
+
+Ouvrir une console PowerShell et executer :
+
+```powershell
+Get-NetAdapter | Where-Object { $_.Name -like "*Loopback*" -or $_.InterfaceDescription -like "*Loopback*" }
+```
+
+Puis pour voir toutes les interfaces avec leur statut :
 
 ```powershell
 Get-NetAdapter | Sort-Object Name | Format-Table Name, InterfaceDescription, Status
 ```
+
+#### Etape 4 : Renommer l interface (recommande pour les tests)
+
+Renommer l interface en `Ethernet 2` pour pouvoir utiliser directement le script PowerShell ci-dessous sans modification :
+
+```powershell
+Rename-NetAdapter -Name "Loopback Adapter" -NewName "Ethernet 2"
+```
+
+Remplacer `Loopback Adapter` par le nom reel affiche a l etape 3.
 
 ### 2. Script PowerShell de test cyclique
 
