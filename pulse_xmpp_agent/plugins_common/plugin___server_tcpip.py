@@ -41,7 +41,15 @@ from lib.utils import (
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
+
+
+def _is_network_event_payload(payload):
+    """Detecte un message de changement d'interface envoye par networkevent."""
+    if not isinstance(payload, dict):
+        return False
+    required_keys = {"interface", "additionalinterface", "removedinterface"}
+    return required_keys.issubset(payload.keys())
 
 
 def _is_network_event_payload(payload):
@@ -250,37 +258,37 @@ def _convert_string(data):
                 If conversion fails, the original data is returned.
     """
 
-    # Vérification et traitement des données de type bytes
+    # Verification et traitement des donnees de type bytes
     if isinstance(data, bytes):
-        # Décodage Base64 si applicable
+        # Decodage Base64 si applicable
         if isBase64(data):
             try:
                 data = base64.b64decode(data)
                 logger.debug(f"Data decoded from Base64, type: {type(data)}")
             except Exception as e:
-                logger.error(f"Erreur lors du décodage Base64 : {e}")
+                logger.error(f"Erreur lors du decodage Base64 : {e}")
                 return None
 
-        # Tentative de désérialisation avec pickle
+        # Tentative de deserialisation avec pickle
         try:
             return pickle.loads(data)
         except pickle.UnpicklingError as e:
             logger.debug(f"Data is not a pickle object: {e}")
         except Exception as e:
-            logger.error(f"Erreur lors de la désérialisation pickle : {e}")
+            logger.error(f"Erreur lors de la deserialisation pickle : {e}")
             return None
 
-        # Tentative de décodage en chaîne UTF-8
+        # Tentative de decodage en chaîne UTF-8
         try:
             data = data.decode("utf-8")
             logger.debug("Data decoded to UTF-8 string")
         except UnicodeDecodeError as e:
-            logger.error(f"Erreur lors du décodage UTF-8 : {e}")
+            logger.error(f"Erreur lors du decodage UTF-8 : {e}")
             return None
 
-    # Vérification et traitement des données de type str
+    # Verification et traitement des donnees de type str
     if isinstance(data, str):
-        # Tentative d'évaluation littérale (list, dict, tuple, set)
+        # Tentative d'evaluation litterale (list, dict, tuple, set)
         try:
             requestdata = ast.literal_eval(data)
             if isinstance(requestdata, (list, dict, tuple, set)):
@@ -305,7 +313,7 @@ def _convert_string(data):
         except yaml.YAMLError as e:
             logger.debug(f"Data is not a valid YAML string: {e}")
 
-    # Si aucune des tentatives n'a réussi, retourner les données d'origine
+    # Si aucune des tentatives n'a reussi, retourner les donnees d'origine
     logger.debug("Data could not be converted, returning original")
     return data
 

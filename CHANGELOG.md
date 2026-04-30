@@ -1,5 +1,14 @@
 # Change Log
 
+## [5.5.2](https://github.com/medulla-tech/medulla-agent/releases/tag/5.5.2) (2026-04-25)
+- [FEATURE] Improve compatibility checks for updating to latest windows 11 version
+- [FEATURE] Improve uninstallation of Medulla agent
+- [BUGFIX]  Fix automatic updating of agent
+- [BUGFIX]  Improve detection of updates needed
+- [BUGFIX]  Fix inventory command on linux clients to support glpi-agent
+- [BUGFIX]  Fix detection of architecture and language for windows major updates
+- [BUGFIX]  Fix inventory for new CPUs that do not send correct information
+
 ## [5.5.1](https://github.com/medulla-tech/medulla-agent/releases/tag/5.5.1) (2026-04-14)
 - [FEATURE] Add support for Linux Mint clients
 - [FEATURE] Improve Windows 10 to Windows 11 update diagnostic tool
