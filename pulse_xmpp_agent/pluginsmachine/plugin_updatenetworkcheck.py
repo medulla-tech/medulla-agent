@@ -20,7 +20,7 @@ from lib.agentconffile import (
 NETWORKVERSION = "5.5.2"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.8", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.9", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
