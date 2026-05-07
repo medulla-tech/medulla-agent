@@ -4023,12 +4023,18 @@ AGENT %s ERROR TERMINATE""" % (
         if len(userlist) > 0:
             lastusersession = userlist[0]
         if lastusersession != "":
-            dataobj["adorgbyuser"] = base64.b64encode(
-                organizationbyuser(lastusersession).encode("utf-8")
-            ).decode("utf-8")
-            dataobj["adusergroups"] = base64.b64encode(
-                adusergroups(lastusersession).encode("utf-8")
-            ).decode("utf-8")
+            try:
+                dataobj["adorgbyuser"] = base64.b64encode(
+                    organizationbyuser(lastusersession).encode("utf-8")
+                ).decode("utf-8")
+            except Exception:
+                logging.warning("Unable to get organization by user for %s" % (lastusersession))
+            try:
+                dataobj["adusergroups"] = base64.b64encode(
+                    adusergroups(lastusersession).encode("utf-8")
+                ).decode("utf-8")
+            except Exception:
+                logging.warning("Unable to get user groups for %s" % (lastusersession))
 
         dataobj["lastusersession"] = lastusersession
         sys.path.append(self.config.pathplugins)
