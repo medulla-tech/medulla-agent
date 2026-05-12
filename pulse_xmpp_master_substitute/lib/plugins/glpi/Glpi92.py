@@ -2511,6 +2511,7 @@ class Glpi92(DatabaseHelper):
             .add_column(self.glpi_networks.c.name)
             .add_column(self.entities.c.completename)
             .add_column(self.glpi_operatingsystemarchitectures.c.name)
+            .add_column(self.entities.c.id)
             .select_from(
                 self.machine.outerjoin(self.glpi_operatingsystems)
                 .outerjoin(self.glpi_operatingsystemservicepacks)
@@ -2537,6 +2538,7 @@ class Glpi92(DatabaseHelper):
             "network": 8,
             "entity": 9,
             "os_arch": 10,
+            "entity_id": 11,
         }  # 'entreprise':9
         for m in query:
             ma1 = m[0].to_a()
