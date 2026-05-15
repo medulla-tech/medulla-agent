@@ -14,7 +14,7 @@ from lib.agentconffile import (
 RDPVERSION = "0.3"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.6", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -39,6 +39,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 '/v "Publisher" /t REG_SZ /d "Medulla" /f'
             )
             logger.info(" PL-RDP Publisher added to Medulla RDP registry key")
+        # Delete firewall rule if exists (in case it was created by a previous version of the plugin)
+        utils.simplecommand(
+            'netsh advfirewall firewall delete rule name="Remote Desktop for Medulla RDP"'
+        )
     except Exception:
         pass
 
@@ -118,9 +122,5 @@ def updaterdp(xmppobject, installed_version):
             '/v "SecurityLayer" /t REG_DWORD  /d "0x00000000" /f'
         )
         utils.simplecommand(cmd)
-
-        utils.simplecommand(
-            'netsh advfirewall firewall add rule name="Remote Desktop for Medulla RDP" dir=in action=allow protocol=TCP localport=3389'
-        )
 
         updaterdpversion(RDPVERSION)

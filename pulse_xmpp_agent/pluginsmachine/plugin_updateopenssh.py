@@ -31,7 +31,7 @@ OPENSSHVERSION = "9.8.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.25", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.26", "NAME": "updateopenssh", "TYPE": "machine"}  # fmt: skip
 programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
 
@@ -52,6 +52,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         else:
             configure_ssh(xmppobject)
         StartAndFixSshdaemon()
+        # Delete firewall rule if exists (in case it was created by a previous version of the plugin)
+        utils.simplecommand(
+            'netsh advfirewall firewall delete rule name="SSH for Medulla"'
+        )
     except Exception:
         pass
 
@@ -402,10 +406,6 @@ def updateopenssh(xmppobject, installed_version):
 
             configure_ssh(xmppobject)
             start_sshdaemon()
-            utils.simplecommand(
-                'netsh advfirewall firewall add rule name="SSH for Medulla" dir=in action=allow protocol=TCP localport=%s'
-                % Used_ssh_port
-            )
         else:
             # Download error
             logger.error(" PL-SSH %s" % txtmsg)

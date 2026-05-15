@@ -17,7 +17,7 @@ TIGHTVNC = "2.8.81"
 COMPLETETIGHTVNC = "2.8.81.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.12", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.14", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 def get_tightvnc_identifying_number():
@@ -70,6 +70,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             else:
                 updatetightvnc(xmppobject)
             check_tightvnc_configuration(xmppobject)
+            # Delete firewall rule if exists (in case it was created by a previous version of the plugin)
+            utils.simplecommand(
+                'netsh advfirewall firewall delete rule name="Remote Desktop for Pulse VNC"'
+            )
+            utils.simplecommand(
+                'netsh advfirewall firewall delete rule name="TightVNC"'
+            )
         except Exception as error_plugin:
             logger.debug(f"PL-TIGHT failed with the error {error_plugin}")
             logger.error(
@@ -333,11 +340,6 @@ def updatetightvnc(xmppobject):
                     logger.error("PL-TIGHT Failed to install %s after several attempts." % filename)
                     break
                 time.sleep(60)
-
-            utils.simplecommand(
-                'netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=%s'
-                % Used_rfb_port
-            )
         else:
             # Download error
             logger.error(f"PL-TIGHT {txtmsg}")
