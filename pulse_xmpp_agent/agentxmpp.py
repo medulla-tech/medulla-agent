@@ -757,7 +757,7 @@ class MUCBot(ClientXMPP):
                 )
 
         if not hasattr(self.config, "geolocalisation"):
-            self.config.geolocalisation = True
+            self.config.geolocalisation = False
         if not hasattr(self.config, "request_type"):
             self.config.request_type = "public"
 

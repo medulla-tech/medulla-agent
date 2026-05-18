@@ -76,6 +76,7 @@ check_arguments() {
             --ssh-port*)          ;;
             --disable-rdp*)       ;;
             --disable-inventory*) ;;
+            --enable-geoloc*)     ;;
             --disable-geoloc*)    ;;
             --linux-distros*)     ;;
             --updateserver*)      ;;

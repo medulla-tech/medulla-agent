@@ -2766,7 +2766,7 @@ class geolocalisation_agent:
     def __init__(
         self,
         typeuser="public",
-        geolocalisation=True,
+        geolocalisation=False,
         ip_public=None,
         strlistgeoserveur="",
     ):

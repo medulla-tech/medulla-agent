@@ -708,7 +708,7 @@ class confParameter:
         self.public_ip = ""
         self.public_ip_relayserver = ""
         self.geoservers = "if.medulla-tech.io"
-        self.geolocalisation = True
+        self.geolocalisation = False
 
         if Config.has_option("type", "public_ip"):
             self.public_ip = Config.get("type", "public_ip")
