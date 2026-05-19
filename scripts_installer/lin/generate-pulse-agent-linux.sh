@@ -29,7 +29,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="5.5.1"
+AGENT_VERSION="5.5.2"
 BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
@@ -83,8 +83,11 @@ check_arguments() {
                 DISABLE_INVENTORY=1
                 shift
                 ;;
+            --enable-geoloc*)
+                ENABLE_GEOLOC=1
+                shift
+                ;;
             --disable-geoloc*)
-                DISABLE_GEOLOC=1
                 shift
                 ;;
             --linux-distros*)

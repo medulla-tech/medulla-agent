@@ -13,7 +13,7 @@ class GuacamoleError(Exception):
     pass
 
 
-plugin = {"VERSION": "2.22", "NAME": "guacamoleconf", "TYPE": "relayserver"}  # fmt: skip
+plugin = {"VERSION": "2.23", "NAME": "guacamoleconf", "TYPE": "relayserver"}  # fmt: skip
 logger = logging.getLogger()
 
 
@@ -278,17 +278,41 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             )
 
                         else:
+                            # Detect macOS machine
+                            machine_platform = data.get("platform", "")
+                            if not machine_platform:
+                                info = data.get("information", {})
+                                if isinstance(info, dict):
+                                    machine_platform = info.get("info", {}).get("platform", "")
+                            is_macos = "macos" in machine_platform.lower() or "darwin" in machine_platform.lower()
+
                             # Update account for the os
                             if option[4:] == "username":
-                                username = "pulseuser"
-
-                                cursor.execute(
-                                    insertparameter(
-                                        result["data"]["connection"][proto.upper()],
-                                        "username",
-                                        username,
+                                if is_macos and proto.lower() == "vnc":
+                                    # macOS VNC: don't set username, Guacamole will prompt
+                                    pass
+                                elif is_macos:
+                                    username = "medullauser"
+                                    cursor.execute(
+                                        insertparameter(
+                                            result["data"]["connection"][proto.upper()],
+                                            "username",
+                                            username,
+                                        )
                                     )
-                                )
+                                else:
+                                    username = "pulseuser"
+                                    cursor.execute(
+                                        insertparameter(
+                                            result["data"]["connection"][proto.upper()],
+                                            "username",
+                                            username,
+                                        )
+                                    )
+
+                            elif option[4:] == "password" and is_macos and proto.lower() == "vnc":
+                                # macOS VNC: don't set password, Guacamole will prompt
+                                pass
 
                             else:
                                 cursor.execute(

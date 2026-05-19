@@ -291,7 +291,7 @@ class functionsynchroxmpp:
                 data["data"]["msg_error"] = ["error format message"]
                 return json.dumps(data, indent=4)
             # Make sure user account and profile exists
-            username = "pulseuser"
+            username = "medullauser" if sys.platform.startswith("darwin") else "pulseuser"
             result, msglog = pulseuser_useraccount_mustexist(username)
             if result is False:
                 logger.error(msglog)

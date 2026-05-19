@@ -65,6 +65,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         dataobj (object): Data object.
 
     """
+    logger.debug("action %s" % json.dumps(data,indent=4))
     try:
         if not isinstance(data, dict):
             logger.error(
@@ -300,6 +301,52 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         )
         return os.path.isdir(chemin_package)
 
+    def parse_installed_on_date(raw_value):
+        """Convertit InstalledOn en date ISO AAAA-MM-JJ quand possible."""
+        if not raw_value:
+            return None
+        value = str(raw_value).strip()
+        for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d", "%m/%d/%y", "%d/%m/%y"):
+            try:
+                return datetime.datetime.strptime(value, fmt).date().isoformat()
+            except ValueError:
+                continue
+        return None
+
+    def get_kb_installed_on(system_info_dict, kb_number):
+        """Retourne InstalledOn (format ISO) pour une KB donnee.
+
+        Cherche d'abord dans kb_installed (Get-HotFix).
+        Si absent, cherche dans kb_list_history_windows_update (Windows Update History)
+        dont le format est: ([5007651,4/8/2026],[2267602,4/16/2026],...)
+        """
+        expected_kb = str(kb_number).replace("KB", "").strip()
+
+        # 1) kb_installed (Get-HotFix)
+        for kb_item in system_info_dict.get("kb_installed", []):
+            current_kb = str(kb_item.get("HotFixID", "")).upper().replace("KB", "").strip()
+            if current_kb == expected_kb:
+                result = parse_installed_on_date(kb_item.get("InstalledOn", ""))
+                if result:
+                    return result
+
+        # 2) fallback: kb_list_history_windows_update
+        history_str = system_info_dict.get("kb_list_history_windows_update", "") or ""
+        for m in re.finditer(r"\[(\d+),([^\]]+)\]", history_str):
+            kb_in_history = m.group(1).strip()
+            date_in_history = m.group(2).strip()
+            if kb_in_history == expected_kb:
+                result = parse_installed_on_date(date_in_history)
+                if result:
+                    logger.debug(
+                        "get_kb_installed_on: KB%s not in kb_installed, found date in kb_list_history_windows_update: %s",
+                        expected_kb,
+                        result,
+                    )
+                    return result
+
+        return None
+
     # Mapping JID -> machine inventaire, necessaire pour retrouver l'entite et ses regles.
     system_info = data.get("system_info")
     if not isinstance(system_info, dict):
@@ -336,6 +383,11 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         entity_id,
         len(data['list_produits']) if data['list_produits'] else 0,
     )
+    logger.debug(
+        "Configured product procedures entity_id=%s: %s",
+        entity_id,
+        [p.get("name_procedure") for p in data['list_produits'] if isinstance(p, dict)],
+    )
     # logger.debug("Machine %s \n liste produit %s" % (msg["from"], data['list_produits']))
     if not data['list_produits']:
         logger.warning(f"Pas de produits windows sélectionnés pour l'entité {entity_id}")
@@ -356,6 +408,11 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         "Selected product tables for machine=%s count=%s",
         msg["from"],
         len(list_table_product_select),
+    )
+    logger.debug(
+        "Selected product procedures for machine=%s: %s",
+        msg["from"],
+        [p.get("name_procedure") for p in list_table_product_select if isinstance(p, dict)],
     )
 
     # si on prend en compte l'historique des mises à jours on ajoute a la liste des kb installer la list des kb historique. history_list_kb
@@ -407,6 +464,12 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
     
     list_deinstall_update = []
     for t in list_table_product_select:
+        current_table = t.get("name_procedure", "<unknown>")
+        logger.debug(
+            "Evaluating product table machine=%s table=%s",
+            msg["from"],
+            current_table,
+        )
         
         if t['name_procedure'] == "up_packages_Win_Malicious_X64":
             # cas pour le traitement des mise à jour pour malveillant (malware) détecté ou catégorisé.
@@ -437,6 +500,12 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                     )
                 )
                 
+                logger.debug(
+                    "Malicious tool lookup table=%s machine=%s candidates=%s",
+                    current_table,
+                    msg["from"],
+                    len(list_update),
+                )
                 res_update.extend(
                     exclude_update_in_select(msg, exclude_update, list_update)
                 )
@@ -446,10 +515,85 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                     msg["from"],
                 )
             continue
+
+        if t['name_procedure'] == "up_packages_Windows_Security_platform":
+            # Cas special Windows Security platform:
+            # on boucle sur plusieurs KB de reference et on compare InstalledOn
+            # avec la derniere revision de la meme KB en base.
+            kb_windows_security_platform_candidates = ["5007651", "2267602", "4052623"]
+
+            # Extrait tous les identifiants numeriques de KB depuis la chaine kb_list.
+            kb_tokens = re.findall(r"\d+", str(system_info.get("kb_list", "")))
+            logger.debug(
+                "Windows Security platform precheck machine=%s table=%s candidate_kbs=%s kb_tokens_count=%s",
+                msg["from"],
+                current_table,
+                kb_windows_security_platform_candidates,
+                len(kb_tokens),
+            )
+
+            selected_updates = []
+            seen_update_ids = set()
+
+            for kb_windows_security_platform in kb_windows_security_platform_candidates:
+                if kb_windows_security_platform not in kb_tokens:
+                    logger.debug(
+                        "Skipping Windows Security platform for %s: KB%s not found in kb_list",
+                        msg["from"],
+                        kb_windows_security_platform,
+                    )
+                    continue
+
+                installed_on_iso = get_kb_installed_on(system_info, kb_windows_security_platform)
+                if not installed_on_iso:
+                    logger.warning(
+                        "Skipping Windows Security platform for %s: KB%s present in kb_list but InstalledOn is missing/invalid",
+                        msg["from"],
+                        kb_windows_security_platform,
+                    )
+                    continue
+
+                logger.debug(
+                    "Windows Security platform date machine=%s kb=%s installed_on_iso=%s",
+                    msg["from"],
+                    kb_windows_security_platform,
+                    installed_on_iso,
+                )
+
+                list_update = XmppMasterDatabase().search_update_windows_security_platform(
+                    kbsearch=kb_windows_security_platform,
+                    installed_on_date=installed_on_iso,
+                )
+
+                logger.debug(
+                    "Windows Security platform lookup machine=%s kb=%s installed_on=%s install_count=%s",
+                    msg["from"],
+                    kb_windows_security_platform,
+                    installed_on_iso,
+                    len(list_update),
+                )
+
+                for upd in list_update:
+                    update_id = str(upd.get("updateid", "") or "")
+                    if update_id and update_id in seen_update_ids:
+                        continue
+                    if update_id:
+                        seen_update_ids.add(update_id)
+                    selected_updates.append(upd)
+
+            res_update.extend(
+                exclude_update_in_select(msg, exclude_update, selected_updates)
+            )
+            continue
+
         list_update = []
         logger.debug(
-            "Looking for product %s (%s)"
-            % (t["name_procedure"], system_info["kb_list"])
+            "Looking for product table=%s machine=%s kb_list_chars=%s"
+            % (
+                t["name_procedure"],
+                msg["from"],
+                len(system_info["kb_list"]) if system_info.get("kb_list") else 0,
+            )
         )
         # on cherche si il y a des mise à jour pour cette machine en fonction des kb renvoye et de la table produit
         list_update = XmppMasterDatabase().search_update_by_products(
@@ -469,7 +613,15 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         if list_deinstall:
             list_deinstall_update.extend(list_deinstall)
         # on recupere la liste des mise a jour a faire sur la machine en tenant cimpte des mise a jour que l'on a exclut'
-        res_update.extend(exclude_update_in_select(msg, exclude_update, list_update))
+        selected_updates = exclude_update_in_select(msg, exclude_update, list_update)
+        logger.debug(
+            "Selection result table=%s machine=%s kept=%s filtered=%s",
+            t["name_procedure"],
+            msg["from"],
+            len(selected_updates),
+            max(0, len(list_update) - len(selected_updates)),
+        )
+        res_update.extend(selected_updates)
         logger.debug("Accumulated install candidates for %s: %s", msg["from"], len(res_update))
        
     
@@ -570,6 +722,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
             )
             )
 
+
         data["uuid"] = package_deinstll[0]
         data["kb"] = package_deinstll[1]
         data["titleuninstall"] = package_deinstll[2]
@@ -638,15 +791,15 @@ def list_products_on(xmppobject, data):
     if not list_produits:
         logger.warning("pas de liste produits de selectionner" )
         return
-    basepack = []
-    #     p["name_procedure"]
-    #     for p in list_produits
-    #     # Vérification que le nom ne commence par aucun des préfixes exclus
-    #     if not any(
-    #         p["name_procedure"].startswith(f"up_packages_{os_prefix}")
-    #         for os_prefix in data['excluded_prefixes_os']
-    #     )
-    # ]
+    basepack = [
+        p["name_procedure"]
+        for p in list_produits
+        if p.get("name_procedure")
+        and not any(
+            p["name_procedure"].startswith(f"up_packages_{os_prefix}")
+            for os_prefix in data['excluded_prefixes_os']
+        )
+    ]
     # En cas d'erreur, on retourne la liste des table mise à jour sous forme de dictionnaires
     try:
         system_info = data.get("system_info")

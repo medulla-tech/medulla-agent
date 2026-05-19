@@ -41,23 +41,34 @@ from lib.utils import (
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
+
+
+def _is_network_event_payload(payload):
+    """Detecte un message de changement d'interface envoye par networkevent."""
+    if not isinstance(payload, dict):
+        return False
+    required_keys = {"interface", "additionalinterface", "removedinterface"}
+    return required_keys.issubset(payload.keys())
+
+
+def _is_network_event_payload(payload):
+    """Detecte un message de changement d'interface envoye par networkevent."""
+    if not isinstance(payload, dict):
+        return False
+    required_keys = {"interface", "additionalinterface", "removedinterface"}
+    return required_keys.issubset(payload.keys())
 
 
 @set_logging_level
 def action(xmppobject, action):
     try:
-        logger.debug("=====================================================")
         logger.debug(f"call plugin code {plugin} ")
-        logger.debug("=====================================================")
         compteurcallplugin = getattr(xmppobject, f"num_call{action}")
 
         if compteurcallplugin == 0:
-            logger.debug("====================================")
-            logger.debug("========== INITIALIZATION ==========")
-            logger.debug("====================================")
+            logger.debug("INITIALIZATION")
             read_conf_server_tcpip_agent_machine(xmppobject)
-            logger.debug("====================================")
 
             asyncio.run(run_server(xmppobject))
 
@@ -247,37 +258,37 @@ def _convert_string(data):
                 If conversion fails, the original data is returned.
     """
 
-    # Vérification et traitement des données de type bytes
+    # Verification et traitement des donnees de type bytes
     if isinstance(data, bytes):
-        # Décodage Base64 si applicable
+        # Decodage Base64 si applicable
         if isBase64(data):
             try:
                 data = base64.b64decode(data)
                 logger.debug(f"Data decoded from Base64, type: {type(data)}")
             except Exception as e:
-                logger.error(f"Erreur lors du décodage Base64 : {e}")
+                logger.error(f"Erreur lors du decodage Base64 : {e}")
                 return None
 
-        # Tentative de désérialisation avec pickle
+        # Tentative de deserialisation avec pickle
         try:
             return pickle.loads(data)
         except pickle.UnpicklingError as e:
             logger.debug(f"Data is not a pickle object: {e}")
         except Exception as e:
-            logger.error(f"Erreur lors de la désérialisation pickle : {e}")
+            logger.error(f"Erreur lors de la deserialisation pickle : {e}")
             return None
 
-        # Tentative de décodage en chaîne UTF-8
+        # Tentative de decodage en chaîne UTF-8
         try:
             data = data.decode("utf-8")
             logger.debug("Data decoded to UTF-8 string")
         except UnicodeDecodeError as e:
-            logger.error(f"Erreur lors du décodage UTF-8 : {e}")
+            logger.error(f"Erreur lors du decodage UTF-8 : {e}")
             return None
 
-    # Vérification et traitement des données de type str
+    # Verification et traitement des donnees de type str
     if isinstance(data, str):
-        # Tentative d'évaluation littérale (list, dict, tuple, set)
+        # Tentative d'evaluation litterale (list, dict, tuple, set)
         try:
             requestdata = ast.literal_eval(data)
             if isinstance(requestdata, (list, dict, tuple, set)):
@@ -302,7 +313,7 @@ def _convert_string(data):
         except yaml.YAMLError as e:
             logger.debug(f"Data is not a valid YAML string: {e}")
 
-    # Si aucune des tentatives n'a réussi, retourner les données d'origine
+    # Si aucune des tentatives n'a reussi, retourner les donnees d'origine
     logger.debug("Data could not be converted, returning original")
     return data
 
@@ -387,6 +398,25 @@ async def handle_client(client, xmppobject):
             # Handle dictionary requests
             if isinstance(requestobj, dict):
                 try:
+                    # Compatibilite avec le chemin historique pipe: on route les
+                    # evenements reseau dans la meme queue de traitement.
+                    if _is_network_event_payload(requestobj):
+                        logger.info(
+                            "changement interface: interface=%s additionalinterface=%s removedinterface=%s",
+                            requestobj.get("interface", []),
+                            requestobj.get("additionalinterface", []),
+                            requestobj.get("removedinterface", []),
+                        )
+                        if hasattr(xmppobject, "queue_recv_tcp_to_xmpp"):
+                            xmppobject.queue_recv_tcp_to_xmpp.put(
+                                json.dumps(requestobj)
+                            )
+                            await loop.sock_sendall(client, "no result".encode("utf-8"))
+                            break
+                        logger.warning(
+                            "Network event received on TCP but queue_recv_tcp_to_xmpp is missing; fallback to direct handler"
+                        )
+
                     # Delegate request handling to the xmppobject
                     codeerror, result = xmppobject.handle_client_connection(
                         json.dumps(requestobj)

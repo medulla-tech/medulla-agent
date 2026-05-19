@@ -40,7 +40,7 @@ BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="5.5.1"
+AGENT_VERSION="5.5.2"
 KIOSK_VERSION="1.0.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
@@ -207,8 +207,11 @@ check_arguments() {
                 DISABLE_INVENTORY=1
                 shift
                 ;;
+            --enable-geoloc*)
+                ENABLE_GEOLOC=1
+                shift
+                ;;
             --disable-geoloc*)
-                DISABLE_GEOLOC=1
                 shift
                 ;;
             --linux-distros*)
@@ -446,6 +449,7 @@ update_nsi_script() {
         -e "s/@@VIM_NAME@@/${VIM_NAME}/" \
         -e "s/@@CACERTIFICATE@@/${CACERTIFICATE_FILENAME}/" \
         -e "s/@@ROOTCERTIFICATE@@/${ROOTCERTIFICATE_FILENAME}/" \
+        -e "s/@@DISABLE_INVENTORY@@/${DISABLE_INVENTORY}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 

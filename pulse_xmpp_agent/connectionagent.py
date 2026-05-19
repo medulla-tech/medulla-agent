@@ -622,7 +622,7 @@ class MUCBot(ClientXMPP):
                         if data["ssh_public_key"]:
                             try:
                                 # Make sure user account and profile exists
-                                username = "pulseuser"
+                                username = "medullauser" if sys.platform.startswith("darwin") else "pulseuser"
                                 result, message = pulseuser_useraccount_mustexist(
                                     username
                                 )

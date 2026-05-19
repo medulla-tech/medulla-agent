@@ -63,6 +63,7 @@ from datetime import datetime, timedelta
 import importlib.util
 import requests
 import asyncio
+import unicodedata
 
 import platform
 import ipaddress
@@ -188,6 +189,8 @@ class Env(object):
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
 
+        if sys.platform.startswith("darwin"):
+            return os.path.expanduser("~medullauser")
         return os.path.expanduser("~pulseuser")
 
 
@@ -1805,19 +1808,41 @@ def service(name, action):
 
 def listservice():
     """
-    This function lists the available windows services
+    This function lists the available windows services using PowerShell
+    (WMI is obsolete on Windows 11, replaced with modern WMI via PowerShell).
     """
+    if not sys.platform.startswith("win"):
+        logger.warning("listservice() is Windows-only")
+        return []
 
-    pythoncom.CoInitialize()
     try:
-        wmi_obj = wmi.WMI()
-        wmi_sql = "select * from Win32_Service"  # Where Name ='Alerter'"
-        wmi_out = wmi_obj.query(wmi_sql)
-    finally:
-        pythoncom.CoUninitialize()
-    for dev in wmi_out:
-        print(dev.Caption)
-        print(dev.DisplayName)
+        ps_command = (
+            "powershell -Command "
+            "Get-Service | Select-Object @{Name='Caption';Expression={$_.DisplayName}}, "
+            "@{Name='DisplayName';Expression={$_.Name}} | "
+            "ConvertTo-Json -Compress"
+        )
+        result = subprocess.run(
+            ps_command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            services = json.loads(result.stdout)
+            if not isinstance(services, list):
+                services = [services]
+            for service in services:
+                print(f"{service.get('Caption', 'N/A')}")
+                print(f"{service.get('DisplayName', 'N/A')}")
+            return services
+        else:
+            logger.warning("Failed to list services: %s", result.stderr)
+            return []
+    except Exception as e:
+        logger.error("listservice error: %s", str(e))
+        return []
 
 
 def joint_compteAD(domain, username, password, ou=None, restart=True):
@@ -2323,10 +2348,10 @@ class protodef:
                             protport["rdp"] = port
 
         elif sys.platform.startswith("darwin"):
-            for process in psutil.process_iter():
-                if "ARDAgent" in process.name():
-                    protport["vnc"] = "5900"
+            # Detect VNC (Screen Sharing or ARD) on port 5900
             for cux in psutil.net_connections():
+                if cux.laddr.port == 5900 and cux.status == psutil.CONN_LISTEN:
+                    protport["vnc"] = "5900"
                 if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
                     protport["ssh"] = "22"
 
@@ -3768,7 +3793,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     elif sys.platform.startswith("darwin"):
         try:
             uid = pwd.getpwnam(username).pw_uid
-            gid = grp.getgrnam(username).gr_gid
+            gid = pwd.getpwnam(username).pw_gid
             msg = f"{username} user account already exists. Nothing to do."
             return True, msg
         except Exception:
@@ -3776,7 +3801,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             userpassword = "".join(random.sample(list(passwdchars), 14))
             adduser_cmd = (
                 "dscl . -create /Users/%s "
-                "UserShell /usr/local/bin/rbash && "
+                "UserShell /bin/bash && "
                 "dscl . -passwd /Users/%s %s" % (username, username, userpassword)
             )
     # Create the account
@@ -3898,7 +3923,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
     elif sys.platform.startswith("darwin"):
         try:
             uid = pwd.getpwnam(username).pw_uid
-            gid = grp.getgrnam(username).gr_gid
+            gid = pwd.getpwnam(username).pw_gid
             homedir = os.path.expanduser(f"~{username}")
         except Exception as e:
             msg = f"Error getting information for creating home folder for user {username}"
@@ -3910,7 +3935,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         packagedir = os.path.join(homedir, "packages")
         if not os.path.isdir(packagedir):
             os.makedirs(packagedir, 0o764)
-        gidroot = grp.getgrnam("root").gr_gid
+        gidroot = grp.getgrnam("wheel").gr_gid
         os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
         msg = f"{username} profile created successfully at {homedir}"
@@ -4071,18 +4096,27 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     """
     if sys.platform.startswith("win"):
         id_rsa_path = os.path.join(getHomedrive(), ".ssh", "id_rsa")
+        delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
+        simplecommand(encode_strconsole(delete_keyfile_cmd))
     else:
+        if sys.platform.startswith("darwin"):
+            username = "medullauser"
         id_rsa_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "id_rsa")
-    delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
-    result = simplecommand(encode_strconsole(delete_keyfile_cmd))
-    logger.debug(f"Creating id_rsa file in {id_rsa_path}")
+        if os.path.isfile(id_rsa_path):
+            os.remove(id_rsa_path)
+    logger.info(f"Creating id_rsa file in {id_rsa_path}")
     if not os.path.isdir(os.path.dirname(id_rsa_path)):
         os.makedirs(os.path.dirname(id_rsa_path), 0o700)
     file_put_contents(id_rsa_path, key)
+    if not os.path.isfile(id_rsa_path):
+        msg = f"Error: file_put_contents failed to create {id_rsa_path}"
+        logger.error(msg)
+        return False, msg
     result, logs = apply_perms_sshkey(id_rsa_path, True)
     if result is False:
         return False, logs
     msg = f"Key {id_rsa_path} successfully created"
+    logger.info(msg)
     return True, msg
 
 
@@ -4123,10 +4157,13 @@ def apply_perms_sshkey(path, private=True):
             msg = f"Error setting permissions on {path} for user {user}: {str(e)}"
             return False, msg
     else:
-        # The owner must be pulseuser
-        username = "pulseuser"
+        # The owner must be pulseuser (medullauser on macOS)
+        username = "medullauser" if sys.platform.startswith("darwin") else "pulseuser"
         uid = pwd.getpwnam(username).pw_uid
-        gid = grp.getgrnam(username).gr_gid
+        if sys.platform.startswith("darwin"):
+            gid = pwd.getpwnam(username).pw_gid
+        else:
+            gid = grp.getgrnam(username).gr_gid
 
         try:
             os.chown(os.path.dirname(path), uid, gid)
@@ -4284,7 +4321,7 @@ class geolocalisation_agent:
     def __init__(
         self,
         typeuser="public",
-        geolocalisation=True,
+        geolocalisation=False,
         ip_public=None,
         strlistgeoserveur="",
     ):
@@ -5185,13 +5222,17 @@ class offline_search_kb:
             "history_package_uuid": [],
             "version_net": {},
             "kb_installed": [],
+            "kb_list_history": "()",
+            "kb_list_history_windows_update": "()",
             "defender": {},
+            "system_center_endpoint_protection": {},
             "windows_disk_encryption": [],
             "version_edge": "",
             "infobuild": {},
             "platform_info": {},
             "office" :{},
             "visual" : {},
+            "win11_compatibility": {},
         }
 
         try:
@@ -5234,17 +5275,32 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
+            self.info_package["system_center_endpoint_protection"] = self.search_scep_info()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
             self.info_package["windows_disk_encryption"] = self.search_windows_disk_encryption_info()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
             searchkb = self.searchpackage()
+            searchkb = self._merge_defender_kb_into_installed(searchkb, self.info_package.get("defender", {}))
             self.info_package["kb_installed"] = searchkb
             self.info_package["kb_list"] = self.compact_kb(searchkb)
+            self.info_package["kb_list_history"] = self.compact_kb_with_dates(searchkb)
+            history_kb = [
+                item for item in searchkb
+                if str(item.get("InstalledBy", "") or "").strip() == "Windows Update History"
+            ]
+            self.info_package["kb_list_history_windows_update"] = self.compact_kb_with_dates(history_kb)
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
             self.info_package["infobuild"] = self.search_system_info_reg()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        try:
+            self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -5260,6 +5316,196 @@ class offline_search_kb:
             compactlist.append(t["HotFixID"][2:])
         return "(" + ",".join(compactlist) + ")"
 
+    def compact_kb_with_dates(self, listkb):
+        compactlist = []
+        for t in listkb:
+            hotfix = str(t.get("HotFixID", "") or "").strip()
+            if hotfix.startswith("KB"):
+                hotfix = hotfix[2:]
+            installed_on = str(t.get("InstalledOn", "") or "").strip()
+            if hotfix:
+                compactlist.append(f"[{hotfix},{installed_on}]")
+        return "(" + ",".join(compactlist) + ")"
+
+    def _convert_ms_json_date_to_mdy(self, value):
+        """Convertit /Date(1776367799000)/ en M/D/YYYY pour rester coherent avec kb_installed."""
+        raw = str(value or "").strip()
+        if not raw:
+            return ""
+
+        match = re.search(r"/Date\((\d+)\)/", raw)
+        if not match:
+            return raw
+
+        try:
+            epoch_ms = int(match.group(1))
+            dt_obj = datetime.fromtimestamp(epoch_ms / 1000)
+            return f"{dt_obj.month}/{dt_obj.day}/{dt_obj.year}"
+        except Exception:
+            return raw
+
+    def _merge_defender_kb_into_installed(self, installed_kb, defender_info):
+        """Ajoute les KB presentes dans le bloc Defender au format kb_installed si absentes."""
+        merged = list(installed_kb or [])
+        existing_hotfixes = {
+            str(item.get("HotFixID", "") or "").strip().upper()
+            for item in merged
+            if str(item.get("HotFixID", "") or "").strip()
+        }
+
+        for key in ("latest_security_intelligence_update", "latest_platform_update"):
+            update_info = defender_info.get(key, {}) if isinstance(defender_info, dict) else {}
+            if not isinstance(update_info, dict):
+                continue
+
+            kb_field = str(update_info.get("KB", "") or "")
+            if not kb_field:
+                continue
+
+            installed_on = self._convert_ms_json_date_to_mdy(update_info.get("Date", ""))
+            kb_numbers = re.findall(r"\d+", kb_field)
+            for kb_number in kb_numbers:
+                hotfix_id = f"KB{kb_number}"
+                hotfix_key = hotfix_id.upper()
+                if hotfix_key in existing_hotfixes:
+                    continue
+
+                merged.append(
+                    {
+                        "description": "Update",
+                        "HotFixID": hotfix_id,
+                        "InstalledBy": "Windows Update History",
+                        "InstalledOn": installed_on,
+                    }
+                )
+                existing_hotfixes.add(hotfix_key)
+
+        return merged
+
+    def _sanitize_text_value(self, value):
+        """Normalize text payloads and repair common UTF-8/Latin-1 mojibake."""
+        text_value = str(value or "").strip()
+        if not text_value:
+            return ""
+
+        if "Ã" in text_value or "â" in text_value:
+            try:
+                repaired = text_value.encode("latin-1").decode("utf-8")
+                if repaired:
+                    return repaired
+            except Exception:
+                pass
+
+        return text_value
+
+    def _normalize_to_ascii(self, value):
+        """
+        Remove accents, diacritics and common typographic characters from text.
+        - Accented letters: é è ê à ç ü -> e e e a c u
+        - En dash / em dash (U+2013, U+2014) -> hyphen -
+        - Non-breaking space (U+00A0) -> regular space
+        - Thin space, narrow no-break space (U+202F, U+2009) -> regular space
+        """
+        text_value = self._sanitize_text_value(value)
+        if not text_value:
+            return ""
+
+        try:
+            # Replace typographic characters before NFD decomposition
+            replacements = {
+                "\u2013": "-",   # en dash -> hyphen
+                "\u2014": "-",   # em dash -> hyphen
+                "\u00a0": " ",   # non-breaking space -> space
+                "\u202f": " ",   # narrow no-break space -> space
+                "\u2009": " ",   # thin space -> space
+                "\u2026": "...", # ellipsis -> three dots
+            }
+            for char, replacement in replacements.items():
+                text_value = text_value.replace(char, replacement)
+
+            # Normalize to NFD (decomposed form) then filter out combining marks (Mn)
+            nfd = unicodedata.normalize("NFD", text_value)
+            return "".join(c for c in nfd if unicodedata.category(c) != "Mn")
+        except Exception:
+            return text_value
+
+    def _normalize_installed_by(self, value):
+        """Return a canonical English principal for common local Windows accounts."""
+        actor = self._sanitize_text_value(value).upper()
+        if not actor:
+            return ""
+
+        if "WINDOWS UPDATE HISTORY" in actor:
+            return "Windows Update History"
+
+        if "SYSTEM" in actor or "SYST" in actor:
+            return "NT AUTHORITY\\SYSTEM"
+        if "LOCAL SERVICE" in actor or "SERVICE LOCAL" in actor:
+            return "NT AUTHORITY\\LOCAL SERVICE"
+        if "NETWORK SERVICE" in actor or "SERVICE RESEAU" in actor or "SERVICE R\u00c9SEAU" in actor:
+            return "NT AUTHORITY\\NETWORK SERVICE"
+
+        return self._sanitize_text_value(value)
+
+    def _normalize_windows_platform(self, platform_value):
+        """Return canonical English platform labels independent of OS locale."""
+        raw_platform = self._sanitize_text_value(platform_value)
+        lowered = raw_platform.lower()
+
+        if "windows 11" in lowered:
+            return "microsoft windows 11", "windows 11"
+        if "windows 10" in lowered:
+            return "microsoft windows 10", "windows 10"
+        if "windows server" in lowered or "serveur" in lowered:
+            return "microsoft windows server", "microsoft windows server"
+
+        return lowered, lowered
+
+    def _normalize_os_configuration(self, value):
+        """Return canonical English OS configuration labels."""
+        raw_value = self._sanitize_text_value(value)
+        lowered = raw_value.lower()
+
+        if "station de travail autonome" in lowered or "standalone workstation" in lowered:
+            return "Standalone Workstation"
+        if "member server" in lowered or "serveur membre" in lowered:
+            return "Member Server"
+        if "domain controller" in lowered or "controleur de domaine" in lowered:
+            return "Domain Controller"
+
+        return raw_value
+
+    def _normalize_system_locale(self, value):
+        """Return canonical locale code when possible (example: fr-FR)."""
+        raw_value = self._sanitize_text_value(value)
+
+        locale_match = re.search(r"\b[a-z]{2}-[A-Z]{2}\b", raw_value)
+        if locale_match:
+            return locale_match.group(0)
+
+        language_match = re.match(r"^([a-zA-Z]{2})\s*;", raw_value)
+        if language_match:
+            lang = language_match.group(1).lower()
+            fallback_regions = {
+                "fr": "FR",
+                "en": "US",
+                "de": "DE",
+                "es": "ES",
+                "it": "IT",
+                "pt": "PT",
+            }
+            return f"{lang}-{fallback_regions.get(lang, 'XX')}"
+
+        return raw_value
+
+    def _normalize_time_zone(self, value):
+        """Return canonical UTC offset when present (example: UTC+01:00)."""
+        raw_value = self._sanitize_text_value(value)
+        offset_match = re.search(r"UTC[+-]\d{2}:\d{2}", raw_value)
+        if offset_match:
+            return offset_match.group(0)
+        return raw_value
+
     def _normalize_hotfix_entries(self, raw_entries):
         if isinstance(raw_entries, dict):
             raw_entries = [raw_entries]
@@ -5273,9 +5519,11 @@ class offline_search_kb:
                 continue
             normalized.append(
                 {
-                    "description": str(kb.get("Description", "") or kb.get("description", "") or "").strip(),
+                    "description": self._sanitize_text_value(
+                        kb.get("Description", "") or kb.get("description", "") or ""
+                    ),
                     "HotFixID": hotfix_id,
-                    "InstalledBy": str(kb.get("InstalledBy", "") or "").strip(),
+                    "InstalledBy": self._normalize_installed_by(kb.get("InstalledBy", "") or ""),
                     "InstalledOn": str(kb.get("InstalledOn", "") or "").strip(),
                 }
             )
@@ -5287,6 +5535,7 @@ class offline_search_kb:
 
         ps_targets = ", ".join("'%s'" % kb for kb in hotfix_ids)
         ps_command = (
+            "$OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); "
             "$ErrorActionPreference = 'SilentlyContinue'; "
             "try { "
             f"$targets = @({ps_targets}); "
@@ -5297,7 +5546,7 @@ class offline_search_kb:
             "$results = foreach ($target in $targets) { "
             "$regex = [regex]::Escape($target); "
             "$hit = $history | Where-Object { $_.Title -match $regex } | Sort-Object Date -Descending | Select-Object -First 1; "
-            "if ($hit) { [pscustomobject]@{ HotFixID = $target; Description = if ([string]::IsNullOrWhiteSpace($hit.Description)) { 'Update' } else { $hit.Description }; InstalledBy = 'Windows Update History'; InstalledOn = $hit.Date.ToString('M/d/yyyy') } } "
+            "if ($hit) { [pscustomobject]@{ HotFixID = $target; Description = 'Update'; InstalledBy = 'Windows Update History'; InstalledOn = $hit.Date.ToString('M/d/yyyy') } } "
             "}; "
             "$results | ConvertTo-Json -Compress "
             "} catch { @() | ConvertTo-Json -Compress }"
@@ -5308,6 +5557,8 @@ class offline_search_kb:
                 ["powershell", "-NoProfile", "-Command", ps_command],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
             output = (result.stdout or "").strip()
             if not output:
@@ -5323,9 +5574,18 @@ class offline_search_kb:
 
         try:
             result = subprocess.run(
-                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_command],
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-Command",
+                    "$OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); "
+                    + ps_command,
+                ],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=timeout,
             )
             output = (result.stdout or "").strip()
@@ -5371,19 +5631,120 @@ class offline_search_kb:
             "$searcher = $session.CreateUpdateSearcher(); "
             "$total = $searcher.GetTotalHistoryCount(); "
             "$history = if ($total -gt 0) { $searcher.QueryHistory(0, [Math]::Min($total, 200)) } else { @() }; "
-            "$security = $history | Where-Object { $_.Title -match '2267602|Security Intelligence|Defender Antivirus' -or $_.Title -match 'sélection disjointe' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
-            "$platform = $history | Where-Object { $_.Title -match '5007651|Windows Security platform|Defender Antivirus platform' -or $_.Title -match 'plateforme anti-programme malveillant' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+            "$security = $history | Where-Object { $_.Title -match '2267602' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+            "$platform = $history | Where-Object { $_.Title -match '4052623|5007651' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
             "[pscustomobject]@{ latest_security_intelligence_update = $security; latest_platform_update = $platform } | ConvertTo-Json -Compress -Depth 4 "
             "} catch { [pscustomobject]@{ latest_security_intelligence_update = $null; latest_platform_update = $null } | ConvertTo-Json -Compress -Depth 4 }"
         )
         history_payload = self._run_powershell_json(history_command)
         if isinstance(history_payload, dict):
             if isinstance(history_payload.get("latest_security_intelligence_update"), dict):
-                defender_info["latest_security_intelligence_update"] = history_payload["latest_security_intelligence_update"]
+                security_update = history_payload["latest_security_intelligence_update"]
+                defender_info["latest_security_intelligence_update"] = {
+                    "KB": "2267602",
+                    "Date": security_update.get("Date"),
+                    "Title": "Security intelligence update (KB2267602)",
+                    "TitleRaw": self._normalize_to_ascii(security_update.get("Title", "")),
+                }
             if isinstance(history_payload.get("latest_platform_update"), dict):
-                defender_info["latest_platform_update"] = history_payload["latest_platform_update"]
+                platform_update = history_payload["latest_platform_update"]
+                defender_info["latest_platform_update"] = {
+                    "KB": "4052623/5007651",
+                    "Date": platform_update.get("Date"),
+                    "Title": "Defender platform update (KB4052623/KB5007651)",
+                    "TitleRaw": self._normalize_to_ascii(platform_update.get("Title", "")),
+                }
 
         return defender_info
+
+    def search_scep_info(self):
+        """Detecte la presence de SCEP/Endpoint Protection via SecurityCenter, registre, uninstall et KB2461484."""
+        scep_info = {
+            "detected": False,
+            "sources": [],
+            "antivirus_products": [],
+            "registry_keys": [],
+            "uninstall_entries": [],
+            "kb2461484_hotfix": False,
+            "kb2461484_wu_history": False,
+        }
+
+        if not sys.platform.startswith("win"):
+            return scep_info
+
+        detection_command = (
+            "$ErrorActionPreference = 'SilentlyContinue'; "
+            "try { "
+            "$result = [ordered]@{ "
+            "antivirus_products = @(); "
+            "scep_in_security_center = $false; "
+            "registry_keys = @(); "
+            "uninstall_entries = @(); "
+            "kb2461484_hotfix = $false; "
+            "kb2461484_wu_history = $false "
+            "}; "
+            "try { "
+            "$av = Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntivirusProduct; "
+            "if ($av) { "
+            "$result.antivirus_products = @($av | Select-Object -ExpandProperty displayName); "
+            "if ($result.antivirus_products | Where-Object { $_ -match 'System Center Endpoint Protection|Endpoint Protection|Microsoft Endpoint Protection' }) { "
+            "$result.scep_in_security_center = $true "
+            "} "
+            "} "
+            "} catch {} ; "
+            "$keys = @(" 
+            "'HKLM:\\SOFTWARE\\Microsoft\\System Center Endpoint Protection', "
+            "'HKLM:\\SOFTWARE\\Microsoft\\Microsoft Antimalware', "
+            "'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\System Center Endpoint Protection'" 
+            "); "
+            "foreach ($k in $keys) { if (Test-Path $k) { $result.registry_keys += $k } }; "
+            "$uninstall_paths = @(" 
+            "'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', "
+            "'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'" 
+            "); "
+            "foreach ($p in $uninstall_paths) { "
+            "try { "
+            "$apps = Get-ItemProperty $p | Where-Object { $_.DisplayName -match 'System Center Endpoint Protection|Microsoft Endpoint Protection' } | "
+            "Select-Object DisplayName, DisplayVersion, Publisher; "
+            "if ($apps) { $result.uninstall_entries += @($apps) } "
+            "} catch {} "
+            "}; "
+            "try { if (Get-HotFix -Id KB2461484) { $result.kb2461484_hotfix = $true } } catch {}; "
+            "try { "
+            "$session = New-Object -ComObject Microsoft.Update.Session; "
+            "$searcher = $session.CreateUpdateSearcher(); "
+            "$total = $searcher.GetTotalHistoryCount(); "
+            "$history = if ($total -gt 0) { $searcher.QueryHistory(0, [Math]::Min($total, 300)) } else { @() }; "
+            "$hit = $history | Where-Object { $_.Title -match 'KB2461484' } | Select-Object -First 1; "
+            "if ($hit) { $result.kb2461484_wu_history = $true } "
+            "} catch {}; "
+            "$result | ConvertTo-Json -Compress -Depth 6 "
+            "} catch { @{} | ConvertTo-Json -Compress }"
+        )
+
+        payload = self._run_powershell_json(detection_command, timeout=45)
+        if not isinstance(payload, dict):
+            return scep_info
+
+        scep_info["antivirus_products"] = payload.get("antivirus_products", []) or []
+        scep_info["registry_keys"] = payload.get("registry_keys", []) or []
+        scep_info["uninstall_entries"] = payload.get("uninstall_entries", []) or []
+        scep_info["kb2461484_hotfix"] = bool(payload.get("kb2461484_hotfix", False))
+        scep_info["kb2461484_wu_history"] = bool(payload.get("kb2461484_wu_history", False))
+
+        if bool(payload.get("scep_in_security_center", False)):
+            scep_info["sources"].append("security_center")
+        if scep_info["registry_keys"]:
+            scep_info["sources"].append("registry")
+        if scep_info["uninstall_entries"]:
+            scep_info["sources"].append("uninstall")
+        if scep_info["kb2461484_hotfix"]:
+            scep_info["sources"].append("hotfix")
+        if scep_info["kb2461484_wu_history"]:
+            scep_info["sources"].append("wu_history")
+
+        scep_info["detected"] = len(scep_info["sources"]) > 0
+        return scep_info
 
     def search_windows_disk_encryption_info(self):
         if not sys.platform.startswith("win"):
@@ -5457,10 +5818,10 @@ class offline_search_kb:
 
                 endresult.extend(self._normalize_hotfix_entries(kb_list))
 
-                # KB5007651 (Windows Security platform) n'apparait pas toujours dans Get-HotFix.
+                # Certaines KB Defender/SCEP n'apparaissent pas toujours dans Get-HotFix.
                 missing_hotfix_ids = [
                     hotfix_id
-                    for hotfix_id in ("KB5007651",)
+                    for hotfix_id in ("KB5007651", "KB4052623", "KB2267602", "KB2461484")
                     if hotfix_id not in {item["HotFixID"] for item in endresult}
                 ]
                 endresult.extend(self._search_hotfixes_in_update_history(missing_hotfix_ids))
@@ -5533,7 +5894,8 @@ class offline_search_kb:
                 )
                 if isinstance(history_payload, dict) and history_payload.get("Date"):
                     result_cmd["UpdateDate"] = str(history_payload.get("Date", ""))
-                    result_cmd["UpdateTitle"] = str(history_payload.get("Title", ""))
+                    result_cmd["UpdateTitle"] = "Windows Malicious Software Removal Tool (KB890830)"
+                    result_cmd["UpdateTitleRaw"] = self._normalize_to_ascii(history_payload.get("Title", ""))
                     result_cmd["UpdateDateSource"] = "Windows Update History"
                 else:
                     file_payload = self._run_powershell_json(
@@ -5736,6 +6098,22 @@ class offline_search_kb:
                         result_cmd[lcmd[0]] = keystring
             # major update
             result_cmd["major_version"] = self.get_windows_version_major()
+            product_name_raw = str(result_cmd.get("ProductName", "") or "").strip()
+            product_name_reel = product_name_raw
+            if result_cmd["major_version"] == "11" and product_name_raw:
+                product_name_reel = re.sub(
+                    r"^Windows\s+10\b",
+                    "Windows 11",
+                    product_name_raw,
+                    flags=re.IGNORECASE,
+                )
+                if product_name_reel != product_name_raw:
+                    logging.getLogger().debug(
+                        "Corrected ProductName from '%s' to '%s' for major_version=11",
+                        product_name_raw,
+                        product_name_reel,
+                    )
+            result_cmd["ProductNameReel"] = product_name_reel
             result_cmd["InstallLanguage"] = self.get_locale_id_iso()
             if result_cmd["InstallLanguage"] in datalang:
                 result_cmd["code_lang_iso"] = datalang[result_cmd["InstallLanguage"]][
@@ -5832,32 +6210,191 @@ class offline_search_kb:
             if int(result["code"]) == 0:
                 result["result"][0] = self.ascii_to_utf8(result["result"][0])
                 line = [x.strip('" ') for x in result["result"][0].split('","')]
+                os_configuration_raw = self._sanitize_text_value(line[4])
+                system_locale_raw = self._sanitize_text_value(line[19])
+                time_zone_raw = self._sanitize_text_value(line[21])
                 informationlist = {
                     "node": str(line[0]),
                     "platform": line[1].lower(),
                     "version": line[2],
-                    "OS Configuration": line[4],
+                    "OS Configuration": self._normalize_os_configuration(os_configuration_raw),
+                    "OS Configuration Raw": os_configuration_raw,
                     "Product ID": line[8],
                     "Original Install Date": line[9],
                     "System Model": line[12],
                     "System Type": line[13],
                     "BIOS Version": line[15],
-                    "System Locale": line[19],
-                    "Time Zone": line[21],
+                    "System Locale": self._normalize_system_locale(system_locale_raw),
+                    "System Locale Raw": system_locale_raw,
+                    "Time Zone": self._normalize_time_zone(time_zone_raw),
+                    "Time Zone Raw": time_zone_raw,
                     "processor": str(platform.processor()),
                     "machine": line[13],
                 }
                 if "x64" in informationlist["System Type"]:
                     informationlist["machine"] = "x64"
-                if "windows 10" in informationlist["platform"]:
-                    informationlist["type"] = "Windows 10"
-                else:
-                    informationlist["type"] = informationlist["platform"]
+
+                platform_en, type_en = self._normalize_windows_platform(line[1])
+                informationlist["platform_raw"] = self._sanitize_text_value(line[1])
+                informationlist["platform"] = platform_en
+                informationlist["type"] = type_en
 
                 return informationlist
             else:
                 logging.getLogger().error("systeminfo error")
         return res
+
+    def check_windows11_compatibility(self):
+        """
+        Verifie la conformite du materiel pour Windows 11.
+        Retourne un dictionnaire avec le resultat de chaque critere.
+        Fonctionne uniquement sur Windows.
+        """
+        result = {
+            "compatible": False,
+            "ram": None,
+            "disk": None,
+            "uefi": None,
+            "tpm": None,
+            "cpu": None,
+            "graphics": None,
+            "display": None,
+        }
+        if not sys.platform.startswith("win"):
+            return result
+
+        # RAM >= 4 Go
+        try:
+            ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+            result["ram"] = {"ok": ram_gb >= 4, "value_gb": round(ram_gb, 2)}
+        except Exception:
+            result["ram"] = {"ok": False, "value_gb": None}
+
+        # Disque C:\ >= 64 Go
+        try:
+            total, _, _ = shutil.disk_usage("C:\\")
+            disk_gb = total / (1024 ** 3)
+            result["disk"] = {"ok": disk_gb >= 64, "value_gb": round(disk_gb, 2)}
+        except Exception:
+            result["disk"] = {"ok": False, "value_gb": None}
+
+        # UEFI
+        try:
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+                 "Confirm-SecureBootUEFI"],
+                capture_output=True, text=False,
+            )
+            stdout = r.stdout.decode("utf-8", errors="replace").strip().lower()
+            stderr = r.stderr.decode("utf-8", errors="replace").strip().lower()
+            if "true" in stdout or "false" in stdout:
+                is_uefi = True
+            elif r.returncode != 0 or "cmdlet" in stderr:
+                is_uefi = False
+            else:
+                is_uefi = True
+            result["uefi"] = {"ok": is_uefi}
+        except Exception:
+            result["uefi"] = {"ok": False}
+
+        # TPM 2.0
+        try:
+            ps_tpm = (
+                "Get-CimInstance -Namespace Root\\CIMv2\\Security\\MicrosoftTpm "
+                "-Class Win32_Tpm | "
+                "Select-Object SpecVersion, IsEnabled_InitialValue, IsActivated_InitialValue | "
+                "ConvertTo-Json -Compress"
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_tpm],
+                capture_output=True, text=True,
+            )
+            tpm = json.loads(r.stdout.strip()) if r.stdout.strip() else {}
+            spec = tpm.get("SpecVersion", "") or ""
+            version_str = spec.split(",")[0].strip() if spec else ""
+            try:
+                version_num = float(version_str)
+            except (ValueError, TypeError):
+                version_num = 0.0
+            tpm_ok = (
+                version_num >= 2.0
+                and tpm.get("IsEnabled_InitialValue") is not False
+                and tpm.get("IsActivated_InitialValue") is not False
+            )
+            result["tpm"] = {"ok": tpm_ok, "spec_version": spec}
+        except Exception:
+            result["tpm"] = {"ok": False, "spec_version": ""}
+
+        # CPU
+        try:
+            cpu = platform.processor().lower()
+            cpu_ok = False
+            intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
+            if intel_match:
+                cpu_ok = int(intel_match.group(1)[:2]) >= 8
+            else:
+                amd_match = re.search(r'ryzen\s*(\d)', cpu)
+                if amd_match:
+                    cpu_ok = int(amd_match.group(1)) >= 2
+            result["cpu"] = {"ok": cpu_ok, "processor": cpu}
+        except Exception:
+            result["cpu"] = {"ok": False, "processor": ""}
+
+        # DirectX 12 + GPU
+        try:
+            ps_gpu = (
+                "$ErrorActionPreference='SilentlyContinue'; "
+                "Get-CimInstance Win32_VideoController | "
+                "Select-Object Name, DriverVersion | "
+                "ConvertTo-Json -Compress"
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_gpu],
+                capture_output=True, text=True,
+            )
+            gpu_data = json.loads(r.stdout.strip()) if r.stdout.strip() else []
+            if isinstance(gpu_data, dict):
+                gpu_data = [gpu_data]
+            result["graphics"] = {
+                "ok": True,
+                "devices": [
+                    {"name": g.get("Name", ""), "driver_version": g.get("DriverVersion", "")}
+                    for g in gpu_data
+                ],
+            }
+        except Exception:
+            result["graphics"] = {"ok": True, "devices": []}
+
+        # Affichage >= 1280x720
+        try:
+            ps_screen = (
+                "Add-Type -AssemblyName System.Windows.Forms; "
+                "[System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "
+                "[pscustomobject]@{ Width = $_.Bounds.Width; Height = $_.Bounds.Height } } | "
+                "ConvertTo-Json -Compress"
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_screen],
+                capture_output=True, text=True,
+            )
+            screens = json.loads(r.stdout.strip()) if r.stdout.strip() else []
+            if isinstance(screens, dict):
+                screens = [screens]
+            display_ok = any(
+                (s.get("Width") or 0) >= 1280 and (s.get("Height") or 0) >= 720
+                for s in screens
+            ) if screens else True
+            result["display"] = {"ok": display_ok, "screens": screens}
+        except Exception:
+            result["display"] = {"ok": True, "screens": []}
+
+        result["compatible"] = all(
+            result[k]["ok"]
+            for k in ("ram", "disk", "uefi", "tpm", "cpu", "graphics", "display")
+            if result[k] is not None
+        )
+        return result
 
 
 def get_extracted_driver_key():
@@ -7218,52 +7755,52 @@ def clean_update_directories():
 
 def eject_cdrom_drives():
     """
-    Cette fonction récupère tous les lecteurs logiques avec WMI, filtre ceux dont la description contient "CD-ROM",
-    et tente de les démonter/éjecter.
-
-    La fonction utilise WMI pour interagir avec les lecteurs logiques et Shell.Application pour démonter les lecteurs CD-ROM.
-    Elle initialise et finalise COM pour assurer une utilisation correcte des objets COM.
-
-    :return: None
+    Eject all CD-ROM drives on the system using modern PowerShell approach.
+    (WMI is obsolete on Windows 11, replaced with Get-WmiObject via PowerShell subprocess).
     """
-    # Initialisation de l'objet WMI
-    pythoncom.CoInitialize()
+    if not sys.platform.startswith("win"):
+        logger.warning("eject_cdrom_drives() is Windows-only")
+        return
+
     try:
-        c = wmi.WMI()
-
-        # Récupère tous les lecteurs logiques
-        logical_disks = c.query("SELECT * FROM Win32_LogicalDisk")
-
-        # Filtre les lecteurs où la description contient "CD-ROM"
-        cdrom_disks = [disk for disk in logical_disks if "CD-ROM" in disk.Description]
-
-        # Vérifie si des lecteurs correspondants ont été trouvés
-        if not cdrom_disks:
-            logger.debug(
-                "Aucun lecteur avec une description contenant 'CD-ROM' n'a été trouvé."
-            )
+        # Use PowerShell to query CD-ROM drives and eject them via Shell.Application
+        ps_command = (
+            "powershell -Command "
+            "try { "
+            "$cdrom_drives = Get-WmiObject Win32_CDROMDrive -ErrorAction Stop; "
+            "if ($cdrom_drives) { "
+            "$shell = New-Object -ComObject Shell.Application; "
+            "foreach ($drive in $cdrom_drives) { "
+            "try { "
+            "$shelf = $shell.Namespace(17); "
+            "foreach ($item in $shelf.Items()) { "
+            "$drive_letter = $item.GetLink; "
+            "if ($drive_letter -eq $drive.Drive) { "
+            "$item.InvokeVerb('Eject'); "
+            "'Ejected drive: ' + $drive.Drive; "
+            "} "
+            "} "
+            "} catch { "
+            "'Error ejecting ' + $drive.Drive + ': ' + $_.Exception.Message; "
+            "} "
+            "} "
+            "} else { "
+            "'No CD-ROM drives found'; "
+            "} "
+            "} catch { "
+            "'Error querying CD-ROM drives: ' + $_.Exception.Message; "
+            "}"
+        )
+        result = subprocess.run(
+            ps_command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode == 0:
+            logger.debug("CD-ROM drives ejection completed: %s", result.stdout.strip() or "done")
         else:
-            for disk in cdrom_disks:
-                logger.debug(
-                    f"Lecteur trouvé : {disk.DeviceID} - Description : {disk.Description}"
-                )
-
-                # Tente de démonter/éjecter le lecteur
-                try:
-                    shell_app = win32com.client.Dispatch("Shell.Application")
-                    cd_drive = shell_app.Namespace(17).ParseName(disk.DeviceID)
-                    if cd_drive:
-                        cd_drive.InvokeVerb("Eject")
-                        logger.debug(
-                            f"Le lecteur {disk.DeviceID} a été démonté avec succès."
-                        )
-                    else:
-                        logger.debug(
-                            f"Impossible de trouver le lecteur {disk.DeviceID} pour le démonter."
-                        )
-                except Exception as e:
-                    logger.debug(
-                        f"Erreur lors du démontage du lecteur {disk.DeviceID}. Message : {e}"
-                    )
-    finally:
-        pythoncom.CoUninitialize()
+            logger.warning("CD-ROM drives ejection issue: %s", result.stderr or result.stdout)
+    except Exception as e:
+        logger.error("eject_cdrom_drives error: %s", str(e))

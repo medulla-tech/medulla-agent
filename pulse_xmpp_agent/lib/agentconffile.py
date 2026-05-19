@@ -23,7 +23,7 @@ def medullaPath():
     elif sys.platform.startswith("win"):
         medullapath = os.path.join("c:\\", "progra~1", "Medulla")
     elif sys.platform.startswith("darwin"):
-        medullapath = os.path.join("/opt", "Medulla")
+        medullapath = os.path.join("/opt", "medulla")
     return medullapath if os.path.isdir(medullapath) else None
 
 
@@ -36,6 +36,8 @@ def directoryconffile():
     """
     if sys.platform.startswith("linux"):
         fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
+    elif sys.platform.startswith("darwin"):
+        fileconf = os.path.join("/", "etc", "medulla")
     else:
         fileconf = os.path.join(medullaPath(), "etc")
 

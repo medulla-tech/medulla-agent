@@ -11,14 +11,15 @@ var/lib/pulse2/clients/generate-agent-package
 var/lib/pulse2/clients/generate-pulse-agent.sh
 var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 var/lib/pulse2/clients/lin/install-pulse-agent-linux.sh.in
+var/lib/pulse2/clients/lin/uninstall-medulla-agent-linux.sh
 var/lib/pulse2/clients/mac/Info.plist.in
 var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
 var/lib/pulse2/clients/mac/net.siveo.pulse_xmpp_agent.plist
 var/lib/pulse2/clients/mac/postflight.in
 var/lib/pulse2/clients/mac/rbash
 var/lib/pulse2/clients/mac/runpulseagent
-var/lib/pulse2/clients/pulse-xmpp-agent-5.5.1.tar.gz
-var/lib/pulse2/clients/pulse-machine-plugins-5.5.1.tar.gz
+var/lib/pulse2/clients/pulse-xmpp-agent-5.5.2.tar.gz
+var/lib/pulse2/clients/pulse-machine-plugins-5.5.2.tar.gz
 var/lib/pulse2/clients/kiosk-interface-1.0.0.tar.gz
 var/lib/pulse2/clients/style.css
 var/lib/pulse2/clients/win/agent-installer.nsi.in
@@ -41,6 +42,7 @@ var/lib/pulse2/clients/win/networkevents.py
 var/lib/pulse2/clients/win/pulse-agent-task.xml
 var/lib/pulse2/clients/win/pulse-service.py
 var/lib/pulse2/clients/win/powershell-policy-remotesigned.pol
+var/lib/pulse2/clients/win/uninstall-medulla-agent-windows.ps1
 var/lib/pulse2/xmpp_baseremoteagent
 var/lib/pulse2/clients/win/pulse2_update_notification.py
 var/lib/pulse2/clients/lin/pulse2_update_notification.py

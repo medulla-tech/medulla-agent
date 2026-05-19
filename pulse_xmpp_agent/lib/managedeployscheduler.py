@@ -68,7 +68,7 @@ class manageschedulerdeploy:
         elif sys.platform.startswith("win"):
             return os.path.join(medullaPath(), "var", "tmp", "BDDeploy")
         elif sys.platform.startswith("darwin"):
-            return os.path.join("/opt", "Pulse", "BDDeploy")
+            return os.path.join("/opt", "medulla", "BDDeploy")
         else:
             return None
 
@@ -254,7 +254,7 @@ class ManageDbScheduler(ManageDb):
             )
 
         elif sys.platform.startswith("darwin"):
-            return os.path.join("/opt", "Pulse", "BDDeploy")
+            return os.path.join("/opt", "medulla", "BDDeploy")
 
         else:
             raise RuntimeError(f"Unsupported platform: {sys.platform}")

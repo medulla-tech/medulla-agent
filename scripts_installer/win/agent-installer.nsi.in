@@ -66,6 +66,7 @@ Unicode True
 !define NETWORK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETWORK_NAME}"
 !define OPENSSH_NAME "@@OPENSSH_NAME@@"
 !define OPENSSH_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${OPENSSH_NAME}"
+!define DISABLE_INVENTORY "@@DISABLE_INVENTORY@@"
 !define INVAGENT_NAME "@@INVAGENT_NAME@@"
 !define INVAGENT_FILENAME "@@INVAGENT_FILENAME@@"
 !define RDP_NAME "@@RDP_NAME@@"
@@ -80,6 +81,8 @@ Unicode True
 !define CACERTIFICATE "@@CACERTIFICATE@@"
 !define VIM_NAME "@@VIM_NAME@@"
 !define VIM_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${VIM_NAME}"
+!define MEDULLA_UPDATE_INFO_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info"
+!define MEDULLA_EXTRACT_DRIVERS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Extract Drivers"
 
 SetCompressor lzma
 
@@ -286,40 +289,41 @@ SectionEnd
 
 
 ; ####################### Inventory Agent installation #######################
-Section "Inventory Agent" sec_inv
-  SetOutPath "$INSTDIR\tmp"
-  ${LogString} ""
-  ${LogString} "Downloads all dependencies"
-  ${LogString} "------------------------------------------------------"
-  @@FULL_OR_DL_INVAGENT@@
-  ${LogString} "${INVAGENT_NAME} Installation...."
-  ${LogString} "------------------------------------------------------"
+!If "${DISABLE_INVENTORY}" != '1'
+  Section "Inventory Agent" sec_inv
+    SetOutPath "$INSTDIR\tmp"
+    ${LogString} ""
+    ${LogString} "Downloads all dependencies"
+    ${LogString} "------------------------------------------------------"
+    @@FULL_OR_DL_INVAGENT@@
+    ${LogString} "${INVAGENT_NAME} Installation...."
+    ${LogString} "------------------------------------------------------"
 
-  ; Install Inventory Agent
-  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${INVAGENT_FILENAME}" /quiet`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${Switch} $1
-    ${Case} "0"
-        StrCpy $0 `Return code : $1`
-        ${Break}
-    ${Case} "3010"
-        StrCpy $0 `Return code : 3010 OK`
-        ;3010 ERROR_SUCCESS_REBOOT_REQUIRED
-        ${Break}
-    ${Default}
-        StrCpy $0 `Return code : $1`
-        ${IfNot} ${Silent}
-            MessageBox MB_OK|MB_ICONSTOP "${INVAGENT_NAME} installation failed. $\n\
-            Please check the logs in $INSTDIR\tmp\install.log"
-        ${EndIf}
-        SetErrorLevel 140
-        Quit
-  ${EndSwitch}
-  ${LogString} $0
-SectionEnd
-
+    ; Install Inventory Agent
+    StrCpy $0 `msiexec /i "$INSTDIR\tmp\${INVAGENT_FILENAME}" /quiet`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${Switch} $1
+      ${Case} "0"
+          StrCpy $0 `Return code : $1`
+          ${Break}
+      ${Case} "3010"
+          StrCpy $0 `Return code : 3010 OK`
+          ;3010 ERROR_SUCCESS_REBOOT_REQUIRED
+          ${Break}
+      ${Default}
+          StrCpy $0 `Return code : $1`
+          ${IfNot} ${Silent}
+              MessageBox MB_OK|MB_ICONSTOP "${INVAGENT_NAME} installation failed. $\n\
+              Please check the logs in $INSTDIR\tmp\install.log"
+          ${EndIf}
+          SetErrorLevel 140
+          Quit
+    ${EndSwitch}
+    ${LogString} $0
+  SectionEnd
+!EndIf
 
 ; ####################### Installation of Medulla Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
@@ -650,6 +654,8 @@ Section "Uninstall"
   DeleteRegKey HKLM "${VIM_UNINST_KEY}"
   DeleteRegKey HKLM "${KIOSK_LAUNCHER_UNINST_KEY}"
   DeleteRegKey HKLM "${KIOSK_INTERFACE_UNINST_KEY}"
+  DeleteRegKey HKLM "${MEDULLA_UPDATE_INFO_UNINST_KEY}"
+  DeleteRegKey HKLM "${MEDULLA_EXTRACT_DRIVERS_UNINST_KEY}"
 
   ; Stop all Medulla services
   Call un.StopMedullaServices

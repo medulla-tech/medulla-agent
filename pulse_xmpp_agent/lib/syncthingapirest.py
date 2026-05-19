@@ -1440,12 +1440,12 @@ class syncthingprogram(Program):
             self.startprogram(cmd, "syncthing")
         elif sys.platform.startswith("darwin"):
             if self.home == "":
-                self.home = "/opt/Pulse/etc/syncthing/"
+                self.home = "/opt/medulla/etc/syncthing/"
             if self.logfile == "":
-                self.logfile = "/opt/Pulse/var/log/syncthing.log"
+                self.logfile = "/opt/medulla/var/log/syncthing.log"
 
             self.stop_syncthing()
-            cmd = f"""export STNODEFAULTFOLDER=1;nohup /opt/Pulse/bin/syncthing -home="{self.home}" -logfile="{self.logfile}" -no-browser &"""
+            cmd = f"""export STNODEFAULTFOLDER=1;nohup /opt/medulla/bin/syncthing -home="{self.home}" -logfile="{self.logfile}" -no-browser &"""
             self.startprogram(cmd, "syncthing")
 
         time.sleep(4)

@@ -42,7 +42,7 @@ class managepackage:
         elif sys.platform.startswith("win"):
             return os.path.join(medullaPath(), "var", "tmp", "packages")
         elif sys.platform.startswith("darwin"):
-            return os.path.join("/opt", "Pulse", "packages")
+            return os.path.join("/opt", "medulla", "packages")
         else:
             return None
 

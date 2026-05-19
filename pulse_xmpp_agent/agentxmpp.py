@@ -328,6 +328,10 @@ class MUCBot(ClientXMPP):
         self.mutex = threading.Lock()
         self.mutexslotquickactioncount = threading.Lock()
         self.eventkilltcp = eventkilltcp
+        # TODO_REMOVABLE: eventkillpipe is used only to signal the deprecated
+        # process_serverPipe (named pipe server) to stop. Once the pipe server
+        # is removed, this event can be removed.
+        # REMOVAL CRITERIA: Named pipe server (process_serverPipe) removed.
         self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp
         self.queueout = queueout
@@ -753,7 +757,7 @@ class MUCBot(ClientXMPP):
                 )
 
         if not hasattr(self.config, "geolocalisation"):
-            self.config.geolocalisation = True
+            self.config.geolocalisation = False
         if not hasattr(self.config, "request_type"):
             self.config.request_type = "public"
 
@@ -1240,6 +1244,10 @@ class MUCBot(ClientXMPP):
                 logger.debug(f"handle_disconnected TERMINATE")
                 if sys.platform.startswith("win"):
                     try:
+                        # TODO_REMOVABLE: Send terminate to legacy named pipe server.
+                        # This code unblocks the deprecated process_serverPipe on shutdown.
+                        # REMOVAL CRITERIA: Named pipe server (process_serverPipe) removed,
+                        # all network events routed through TCP plugin server.
                         # on debloque le pipe
                         fileHandle = win32file.CreateFile(
                             "\\\\.\\pipe\\interfacechang",
@@ -1384,6 +1392,10 @@ class MUCBot(ClientXMPP):
         time.sleep(1)
         if sys.platform.startswith("win"):
             try:
+                # TODO_REMOVABLE: Send terminate to legacy named pipe server.
+                # This code unblocks the deprecated process_serverPipe during shutdown.
+                # REMOVAL CRITERIA: Named pipe server (process_serverPipe) removed,
+                # all network events routed through TCP plugin server.
                 # on debloque le pipe
                 fileHandle = win32file.CreateFile(
                     "\\\\.\\pipe\\interfacechang",
@@ -4011,12 +4023,18 @@ AGENT %s ERROR TERMINATE""" % (
         if len(userlist) > 0:
             lastusersession = userlist[0]
         if lastusersession != "":
-            dataobj["adorgbyuser"] = base64.b64encode(
-                organizationbyuser(lastusersession).encode("utf-8")
-            ).decode("utf-8")
-            dataobj["adusergroups"] = base64.b64encode(
-                adusergroups(lastusersession).encode("utf-8")
-            ).decode("utf-8")
+            try:
+                dataobj["adorgbyuser"] = base64.b64encode(
+                    organizationbyuser(lastusersession).encode("utf-8")
+                ).decode("utf-8")
+            except Exception:
+                logging.warning("Unable to get organization by user for %s" % (lastusersession))
+            try:
+                dataobj["adusergroups"] = base64.b64encode(
+                    adusergroups(lastusersession).encode("utf-8")
+                ).decode("utf-8")
+            except Exception:
+                logging.warning("Unable to get user groups for %s" % (lastusersession))
 
         dataobj["lastusersession"] = lastusersession
         sys.path.append(self.config.pathplugins)
@@ -4822,9 +4840,14 @@ def terminateserver(xmpp):
     # termine server kiosk
     xmpp.eventkiosk.quit()
     xmpp.eventkilltcp.set()
+    # TODO_REMOVABLE: eventkillpipe is only needed for the deprecated
+    # Windows named pipe server (process_serverPipe).
+    # REMOVAL CRITERIA: Named pipe server removed and TCP-only path validated.
     xmpp.eventkillpipe.set()
     if sys.platform.startswith("win"):
         try:
+            # TODO_REMOVABLE: Legacy named pipe unblock during shutdown.
+            # REMOVAL CRITERIA: Named pipe server removed and TCP-only path validated.
             # on debloque le pipe
             fileHandle = win32file.CreateFile(
                 "\\\\.\\pipe\\interfacechang",
