@@ -31,11 +31,22 @@ logger = logging.getLogger()
 
 
 
-plugin = {"VERSION": "1.21", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.22", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 LATEST_WIN10 = "22H2"
 LATEST_WIN11 = "25H2"
 LATEST_SERVER_ISO = "2025_24H2"
+
+CPU_ARCHITECTURE = {
+    0: "x86",
+    1: "MIPS",
+    2: "Alpha",
+    3: "PowerPC",
+    5: "ARM",
+    6: "IA64",
+    9: "x64",
+    12: "ARM64",
+}
 
 class Windows11Compatibility:
 
@@ -139,6 +150,51 @@ class Windows11Compatibility:
         if not width_value or not height_value:
             return None
         return round((((width_value ** 2) + (height_value ** 2)) ** 0.5) / 2.54, 2)
+
+    def _cpu_architecture_label(self, code, fallback=None):
+        """Retourne un libelle d'architecture CPU."""
+        code_int = self._coerce_int(code)
+        if code_int in CPU_ARCHITECTURE:
+            return CPU_ARCHITECTURE[code_int]
+        if fallback:
+            return fallback
+        return platform.machine() or "Unknown"
+
+    def get_cpu_info(self):
+        """Retourne les informations detaillees du CPU."""
+        cpu_info = {
+            "model": platform.processor().strip(),
+            "architecture": platform.machine() or "Unknown",
+        }
+
+        if not sys.platform.startswith("win"):
+            return cpu_info
+
+        processor = self._run_powershell_json(
+            "Get-CimInstance -ClassName Win32_Processor | "
+            "Select-Object -First 1 Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors, "
+            "MaxClockSpeed, CurrentClockSpeed, Architecture, AddressWidth | ConvertTo-Json -Compress",
+            default={},
+            check=False,
+        ) or {}
+
+        cpu_info.update(
+            {
+                "model": processor.get("Name") or cpu_info["model"],
+                "vendor": processor.get("Manufacturer") or "",
+                "cores": self._coerce_int(processor.get("NumberOfCores")),
+                "threads": self._coerce_int(processor.get("NumberOfLogicalProcessors")),
+                "architecture": self._cpu_architecture_label(
+                    processor.get("Architecture"),
+                    fallback=platform.machine() or "Unknown",
+                ),
+                "address_width": self._coerce_int(processor.get("AddressWidth")),
+                "max_clock_mhz": self._coerce_int(processor.get("MaxClockSpeed")),
+                "current_clock_mhz": self._coerce_int(processor.get("CurrentClockSpeed")),
+            }
+        )
+
+        return cpu_info
 
     def _get_dxdiag_info(self):
         """Retourne les informations DXDiag utiles aux verifications video."""
@@ -299,10 +355,18 @@ class Windows11Compatibility:
 
     def check_cpu(self):
         try:
-            cpu = platform.processor().lower()
+            cpu_info = self.get_cpu_info()
+            cpu = str(cpu_info.get("model", "")).lower()
 
             if self.debug:
-                logger.debug(f"CPU detected: {cpu}")
+                logger.debug(
+                    "CPU detected: model=%s vendor=%s cores=%s threads=%s architecture=%s",
+                    cpu_info.get("model", ""),
+                    cpu_info.get("vendor", ""),
+                    cpu_info.get("cores"),
+                    cpu_info.get("threads"),
+                    cpu_info.get("architecture"),
+                )
 
             # Intel
             intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
