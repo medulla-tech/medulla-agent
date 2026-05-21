@@ -6364,7 +6364,7 @@ class offline_search_kb:
         except Exception:
             result["graphics"] = {"ok": True, "devices": []}
 
-        # Affichage >= 1280x720
+        # Affichage: force a OK pour ne pas bloquer la compatibilite
         try:
             ps_screen = (
                 "Add-Type -AssemblyName System.Windows.Forms; "
@@ -6379,11 +6379,8 @@ class offline_search_kb:
             screens = json.loads(r.stdout.strip()) if r.stdout.strip() else []
             if isinstance(screens, dict):
                 screens = [screens]
-            display_ok = any(
-                (s.get("Width") or 0) >= 1280 and (s.get("Height") or 0) >= 720
-                for s in screens
-            ) if screens else True
-            result["display"] = {"ok": display_ok, "screens": screens}
+            # Exigence metier: display doit toujours etre OK dans ce controle offline.
+            result["display"] = {"ok": True, "screens": screens}
         except Exception:
             result["display"] = {"ok": True, "screens": []}
 

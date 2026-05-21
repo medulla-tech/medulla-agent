@@ -1050,6 +1050,11 @@ class Windows11Compatibility:
         stderr_raw = self._decode_subprocess_output(secure_result.stderr)
         secure_stdout = stdout_raw.lower()
         secure_stderr = stderr_raw.lower()
+        unsupported_secureboot = (
+            "platformnotsupportedexception" in secure_stderr
+            or "getfwvarfailed" in secure_stderr
+            or "non prise en charge" in secure_stderr
+        )
 
         bootup_state = self._run_powershell(
             "(Get-CimInstance -ClassName Win32_ComputerSystem).BootupState",
@@ -1089,7 +1094,8 @@ class Windows11Compatibility:
                 "secure_boot_raw_stdout": stdout_raw,
                 "secure_boot_raw_stderr": stderr_raw,
                 "message": "Systeme en BIOS (non UEFI)",
-                "error": stderr_raw or stdout_raw,
+                # Cas attendu sur plateformes ne supportant pas Confirm-SecureBootUEFI.
+                "error": None if unsupported_secureboot else (stderr_raw or stdout_raw),
             }
 
         return {
@@ -1297,15 +1303,19 @@ class Windows11Compatibility:
 
     def _build_uefi_check(self, boot):
         """Construit le resultat de verification UEFI a partir de l'inventaire."""
+        firmware_mode = boot.get("firmware_mode", "Unknown")
+        is_legacy_bios = str(firmware_mode).strip().lower() == "legacy bios"
         return {
             "name": "uefi",
             "ok": bool(boot.get("uefi", False)),
             "uefi": boot.get("uefi", False),
-            "firmware_mode": boot.get("firmware_mode", "Unknown"),
+            "firmware_mode": firmware_mode,
             "secure_boot": boot.get("secure_boot"),
             "bootup_state": boot.get("bootup_state", ""),
             "message": boot.get("message", ""),
-            "error": boot.get("error"),
+            # En mode BIOS legacy, l'echec Confirm-SecureBootUEFI est attendu.
+            # On masque l'erreur technique pour garder un rapport lisible.
+            "error": None if is_legacy_bios else boot.get("error"),
         }
 
     def _build_tpm_check(self, tpm):
@@ -1405,10 +1415,30 @@ class Windows11Compatibility:
                 f"{compatible_display.get('height')} / {compatible_display.get('bits_per_pixel')} bpp / {size_text}"
             )
         else:
-            message = display.get(
+            base_message = display.get(
                 "message",
                 "Aucun ecran ne verifie 1280x720, 24 bpp et une diagonale > 9 pouces",
             )
+
+            hints = []
+            if displays:
+                has_resolution_issue = any(not item.get("resolution_ok", False) for item in displays)
+                has_color_issue = any(not item.get("color_ok", False) for item in displays)
+                has_size_issue = any(not item.get("size_ok", False) for item in displays)
+
+                if has_resolution_issue or has_color_issue:
+                    hints.append(
+                        "Change la resolution de ton ecran pour l'installation (minimum 1280x720, 24 bpp)."
+                    )
+                if has_color_issue:
+                    hints.append("Verifie que la profondeur de couleur est au moins de 24 bpp (32 bpp recommande).")
+                if has_size_issue:
+                    hints.append("Verifie la diagonale de l'ecran (> 9 pouces) avec un ecran physique local.")
+
+            if hints:
+                message = f"{base_message} {' '.join(hints)}"
+            else:
+                message = base_message
 
         return {
             "name": "display",
@@ -1467,9 +1497,16 @@ class Windows11Compatibility:
 
     def check_display(self):
         """Verifie la compatibilite de l'affichage avec les exigences Windows 11."""
-        if not sys.platform.startswith("win"):
-            return self._unsupported_result("display", "Verification reservee a Windows")
-        return self._build_display_check(self.get_display_info())
+        display_info = self.get_display_info() if sys.platform.startswith("win") else {
+            "displays": [],
+            "message": "Verification reservee a Windows",
+        }
+        result = self._build_display_check(display_info)
+        # Exigence metier medulla-agent: le controle display ne doit jamais bloquer.
+        result["ok"] = True
+        result["message"] = "Controle display force a OK pour medulla-agent"
+        result["error"] = None
+        return result
 
     def collect_report(self):
         """Construit le rapport complet de compatibilite."""
@@ -1481,7 +1518,7 @@ class Windows11Compatibility:
             "tpm": self._build_tpm_check(inventory.get("tpm", {})),
             "cpu": self._build_cpu_check(inventory.get("cpu", {})),
             "graphics": self._build_graphics_check(inventory.get("graphics", {})),
-            "display": self._build_display_check(inventory.get("display", {})),
+            "display": self.check_display(),
         }
         compatible = sys.platform.startswith("win") and all(
             item.get("ok", False) for item in checks.values()
