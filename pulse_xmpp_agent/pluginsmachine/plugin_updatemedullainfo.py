@@ -31,7 +31,7 @@ logger = logging.getLogger()
 
 
 
-plugin = {"VERSION": "1.2", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.21", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 LATEST_WIN10 = "22H2"
 LATEST_WIN11 = "25H2"
@@ -237,6 +237,11 @@ class Windows11Compatibility:
             )
             stdout = self._decode_subprocess_output(result.stdout).lower()
             stderr = self._decode_subprocess_output(result.stderr).lower()
+            unsupported_secureboot = (
+                "platformnotsupportedexception" in stderr
+                or "getfwvarfailed" in stderr
+                or "non prise en charge" in stderr
+            )
 
             if "true" in stdout or "false" in stdout:
                 is_uefi = True
@@ -246,6 +251,8 @@ class Windows11Compatibility:
                 is_uefi = True
 
             if self.debug:
+                if unsupported_secureboot:
+                    logger.debug("UEFI check: plateforme non supportee pour Confirm-SecureBootUEFI -> Legacy BIOS")
                 logger.debug(f"UEFI check: stdout={stdout.strip()} stderr={stderr.strip()} -> {is_uefi}")
 
             return is_uefi
@@ -300,7 +307,8 @@ class Windows11Compatibility:
             # Intel
             intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
             if intel_match:
-                generation = int(intel_match.group(1)[:2])
+                digits = intel_match.group(1)
+                generation = int(digits[:2] if len(digits) == 5 else digits[:1])
                 result = generation >= 8
 
                 if self.debug:

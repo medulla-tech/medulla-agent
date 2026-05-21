@@ -6281,11 +6281,17 @@ class offline_search_kb:
             r = subprocess.run(
                 ["powershell", "-NoProfile", "-Command",
                  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+                 "$OutputEncoding = [System.Text.Encoding]::UTF8; "
                  "Confirm-SecureBootUEFI"],
                 capture_output=True, text=False,
             )
             stdout = r.stdout.decode("utf-8", errors="replace").strip().lower()
             stderr = r.stderr.decode("utf-8", errors="replace").strip().lower()
+            unsupported_secureboot = (
+                "platformnotsupportedexception" in stderr
+                or "getfwvarfailed" in stderr
+                or "non prise en charge" in stderr
+            )
             if "true" in stdout or "false" in stdout:
                 is_uefi = True
             elif r.returncode != 0 or "cmdlet" in stderr:
@@ -6293,6 +6299,8 @@ class offline_search_kb:
             else:
                 is_uefi = True
             result["uefi"] = {"ok": is_uefi}
+            if unsupported_secureboot:
+                result["uefi"]["reason"] = "secureboot-platform-not-supported"
         except Exception:
             result["uefi"] = {"ok": False}
 
@@ -6330,7 +6338,9 @@ class offline_search_kb:
             cpu_ok = False
             intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
             if intel_match:
-                cpu_ok = int(intel_match.group(1)[:2]) >= 8
+                digits = intel_match.group(1)
+                generation = int(digits[:2] if len(digits) == 5 else digits[:1])
+                cpu_ok = generation >= 8
             else:
                 amd_match = re.search(r'ryzen\s*(\d)', cpu)
                 if amd_match:
