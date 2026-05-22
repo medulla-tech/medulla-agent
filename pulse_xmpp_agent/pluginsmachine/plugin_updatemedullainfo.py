@@ -36,7 +36,7 @@ logger = logging.getLogger()
 
 
 
-plugin = {"VERSION": "1.22", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.23", "NAME": "updatemedullainfo", "TYPE": "machine"}  # fmt: skip
 
 LATEST_WIN10 = "22H2"
 LATEST_WIN11 = "25H2"
