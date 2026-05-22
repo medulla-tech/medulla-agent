@@ -21,8 +21,13 @@ import re
 import json
 import tempfile
 import xml.etree.ElementTree as ET
+import time
 
 import traceback
+from lib.agentconffile import medullaPath
+from lib.medulla_windows11_compatibility import (
+    Windows11Compatibility as LibWindows11Compatibility,
+)
 # Importer winreg uniquement si le système d'exploitation est Windows
 if sys.platform.startswith("win"):
     import winreg
@@ -48,484 +53,6 @@ CPU_ARCHITECTURE = {
     12: "ARM64",
 }
 
-class Windows11Compatibility:
-
-    def __init__(self, debug=False):
-        self.debug = debug
-        self._dxdiag_cache = None
-
-    def _decode_subprocess_output(self, data):
-        """Decode une sortie subprocess de facon robuste sur Windows."""
-        if data is None:
-            return ""
-        if isinstance(data, str):
-            return data.strip()
-
-        if data.startswith(codecs.BOM_UTF16_LE) or data.startswith(codecs.BOM_UTF16_BE):
-            try:
-                return data.decode("utf-16").strip()
-            except UnicodeDecodeError:
-                pass
-
-        encodings = ["utf-8-sig", "utf-8"]
-        preferred_encoding = locale.getpreferredencoding(False)
-        if preferred_encoding and preferred_encoding.lower() not in {
-            encoding.lower() for encoding in encodings
-        }:
-            encodings.append(preferred_encoding)
-        encodings.extend(["cp850", "cp1252", "latin-1"])
-
-        for encoding in encodings:
-            try:
-                return data.decode(encoding).strip()
-            except UnicodeDecodeError:
-                continue
-
-        return data.decode("utf-8", errors="replace").strip()
-
-    def _run_powershell_json(self, command, default=None, check=True):
-        """Execute une commande PowerShell et retourne le JSON decode."""
-        wrapped_command = (
-            "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
-            "$OutputEncoding = [System.Text.Encoding]::UTF8; "
-            f"{command}"
-        )
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", wrapped_command],
-            capture_output=True,
-            text=False,
-        )
-        stdout = self._decode_subprocess_output(result.stdout)
-        stderr = self._decode_subprocess_output(result.stderr)
-
-        if self.debug:
-            logger.debug(
-                "PowerShell rc=%s cmd=%s stdout=%s stderr=%s",
-                result.returncode,
-                command,
-                stdout,
-                stderr,
-            )
-
-        if check and result.returncode != 0:
-            raise RuntimeError(stderr or stdout or f"PowerShell exit code {result.returncode}")
-        if not stdout:
-            return default
-        try:
-            return json.loads(stdout)
-        except json.JSONDecodeError:
-            if check:
-                raise
-            return default
-
-    def _coerce_float(self, value):
-        """Convertit une valeur en flottant si possible."""
-        try:
-            if value in (None, ""):
-                return None
-            return float(value)
-        except (TypeError, ValueError):
-            return None
-
-    def _coerce_int(self, value):
-        """Convertit une valeur en entier si possible."""
-        try:
-            if value in (None, ""):
-                return None
-            return int(value)
-        except (TypeError, ValueError):
-            return None
-
-    def _extract_numeric_version(self, value):
-        """Extrait une version numerique simple depuis une chaine."""
-        match = re.search(r"([0-9]+(?:\.[0-9]+)?)", str(value or ""))
-        if not match:
-            return None
-        return self._coerce_float(match.group(1))
-
-    def _screen_diagonal_inches(self, width_cm, height_cm):
-        """Calcule la diagonale d'un ecran a partir de ses dimensions actives."""
-        width_value = self._coerce_float(width_cm)
-        height_value = self._coerce_float(height_cm)
-        if not width_value or not height_value:
-            return None
-        return round((((width_value ** 2) + (height_value ** 2)) ** 0.5) / 2.54, 2)
-
-    def _cpu_architecture_label(self, code, fallback=None):
-        """Retourne un libelle d'architecture CPU."""
-        code_int = self._coerce_int(code)
-        if code_int in CPU_ARCHITECTURE:
-            return CPU_ARCHITECTURE[code_int]
-        if fallback:
-            return fallback
-        return platform.machine() or "Unknown"
-
-    def get_cpu_info(self):
-        """Retourne les informations detaillees du CPU."""
-        cpu_info = {
-            "model": platform.processor().strip(),
-            "architecture": platform.machine() or "Unknown",
-        }
-
-        if not sys.platform.startswith("win"):
-            return cpu_info
-
-        processor = self._run_powershell_json(
-            "Get-CimInstance -ClassName Win32_Processor | "
-            "Select-Object -First 1 Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors, "
-            "MaxClockSpeed, CurrentClockSpeed, Architecture, AddressWidth | ConvertTo-Json -Compress",
-            default={},
-            check=False,
-        ) or {}
-
-        cpu_info.update(
-            {
-                "model": processor.get("Name") or cpu_info["model"],
-                "vendor": processor.get("Manufacturer") or "",
-                "cores": self._coerce_int(processor.get("NumberOfCores")),
-                "threads": self._coerce_int(processor.get("NumberOfLogicalProcessors")),
-                "architecture": self._cpu_architecture_label(
-                    processor.get("Architecture"),
-                    fallback=platform.machine() or "Unknown",
-                ),
-                "address_width": self._coerce_int(processor.get("AddressWidth")),
-                "max_clock_mhz": self._coerce_int(processor.get("MaxClockSpeed")),
-                "current_clock_mhz": self._coerce_int(processor.get("CurrentClockSpeed")),
-            }
-        )
-
-        return cpu_info
-
-    def _get_dxdiag_info(self):
-        """Retourne les informations DXDiag utiles aux verifications video."""
-        if self._dxdiag_cache is not None:
-            return self._dxdiag_cache
-
-        result = {"system": {}, "display_devices": [], "error": ""}
-        dxdiag_path = shutil.which("dxdiag")
-        if not dxdiag_path:
-            result["error"] = "dxdiag-not-found"
-            self._dxdiag_cache = result
-            return result
-
-        xml_path = ""
-        try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".xml") as handle:
-                xml_path = handle.name
-
-            process = subprocess.run(
-                [dxdiag_path, "/whql:off", "/x", xml_path],
-                capture_output=True,
-                text=False,
-                timeout=90,
-            )
-            stdout = self._decode_subprocess_output(process.stdout)
-            stderr = self._decode_subprocess_output(process.stderr)
-            if process.returncode != 0:
-                result["error"] = stderr or stdout or f"dxdiag exit code {process.returncode}"
-            else:
-                root = ET.parse(xml_path).getroot()
-                system_node = root.find("./DxDiagSystemInfo")
-                if system_node is not None:
-                    result["system"] = {
-                        child.tag: (child.text or "").strip() for child in system_node
-                    }
-                result["display_devices"] = [
-                    {child.tag: (child.text or "").strip() for child in node}
-                    for node in root.findall("./DisplayDevices/DisplayDevice")
-                ]
-        except Exception as exc:
-            result["error"] = str(exc)
-            if self.debug:
-                logger.debug("DXDiag Error: %s", exc)
-        finally:
-            if xml_path:
-                try:
-                    os.unlink(xml_path)
-                except OSError:
-                    pass
-
-        self._dxdiag_cache = result
-        return result
-
-    def check_ram(self):
-        try:
-            ram_gb = psutil.virtual_memory().total / (1024 ** 3)
-            result = ram_gb >= 4
-
-            if self.debug:
-                logger.debug(f"RAM check: {ram_gb:.2f} GB -> {result}")
-
-            return result
-
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
-            return False
-
-    def check_disk(self):
-        try:
-            total, _, _ = shutil.disk_usage("C:\\")
-            disk_gb = total / (1024 ** 3)
-            result = disk_gb >= 64
-
-            if self.debug:
-                logger.debug(f"Disk check: {disk_gb:.2f} GB -> {result}")
-
-            return result
-
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
-            return False
-
-    def check_uefi(self):
-        try:
-            result = subprocess.run(
-                [
-                    "powershell",
-                    "-NoProfile",
-                    "-Command",
-                    "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
-                    "$OutputEncoding = [System.Text.Encoding]::UTF8; "
-                    "Confirm-SecureBootUEFI",
-                ],
-                capture_output=True,
-                text=False,
-            )
-            stdout = self._decode_subprocess_output(result.stdout).lower()
-            stderr = self._decode_subprocess_output(result.stderr).lower()
-            unsupported_secureboot = (
-                "platformnotsupportedexception" in stderr
-                or "getfwvarfailed" in stderr
-                or "non prise en charge" in stderr
-            )
-
-            if "true" in stdout or "false" in stdout:
-                is_uefi = True
-            elif result.returncode != 0 or "cmdlet" in stderr:
-                is_uefi = False
-            else:
-                is_uefi = True
-
-            if self.debug:
-                if unsupported_secureboot:
-                    logger.debug("UEFI check: plateforme non supportee pour Confirm-SecureBootUEFI -> Legacy BIOS")
-                logger.debug(f"UEFI check: stdout={stdout.strip()} stderr={stderr.strip()} -> {is_uefi}")
-
-            return is_uefi
-
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
-            return False
-
-    def check_tpm(self):
-        try:
-            tpm = self._run_powershell_json(
-                "Get-CimInstance -Namespace Root\\CIMv2\\Security\\MicrosoftTpm -Class Win32_Tpm | "
-                "Select-Object SpecVersion, IsEnabled_InitialValue, IsActivated_InitialValue | ConvertTo-Json -Compress",
-                default={},
-                check=False,
-            ) or {}
-
-            if not tpm:
-                return False
-            spec = tpm.get("SpecVersion", "")
-            version = spec.split(",")[0].strip() if spec else ""
-            version_number = self._coerce_float(version)
-            tpm_ok = bool(
-                version_number is not None
-                and version_number >= 2.0
-                and tpm.get("IsEnabled_InitialValue") is not False
-                and tpm.get("IsActivated_InitialValue") is not False
-            )
-
-            if self.debug:
-                logger.debug(
-                    "TPM check: spec=%s enabled=%s activated=%s -> %s",
-                    spec,
-                    tpm.get("IsEnabled_InitialValue"),
-                    tpm.get("IsActivated_InitialValue"),
-                    tpm_ok,
-                )
-
-            return tpm_ok
-
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
-            return False
-
-    def check_cpu(self):
-        try:
-            cpu_info = self.get_cpu_info()
-            cpu = str(cpu_info.get("model", "")).lower()
-
-            if self.debug:
-                logger.debug(
-                    "CPU detected: model=%s vendor=%s cores=%s threads=%s architecture=%s",
-                    cpu_info.get("model", ""),
-                    cpu_info.get("vendor", ""),
-                    cpu_info.get("cores"),
-                    cpu_info.get("threads"),
-                    cpu_info.get("architecture"),
-                )
-
-            # Intel
-            intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
-            if intel_match:
-                digits = intel_match.group(1)
-                generation = int(digits[:2] if len(digits) == 5 else digits[:1])
-                result = generation >= 8
-
-                if self.debug:
-                    logger.debug(f"Intel generation {generation} -> {result}")
-
-                return result
-
-            # AMD Ryzen
-            amd_match = re.search(r'ryzen\s*(\d)', cpu)
-            if amd_match:
-                generation = int(amd_match.group(1))
-                result = generation >= 2
-
-                if self.debug:
-                    logger.debug(f"AMD Ryzen generation {generation} -> {result}")
-
-                return result
-
-            return False
-
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
-            return False
-
-    def check_graphics(self):
-        """Verifie la compatibilite du GPU avec DirectX 12 et WDDM 2.0.
-
-        Si l'information manque ou n'est pas exploitable, la verification est consideree comme OK.
-        """
-        try:
-            dxdiag = self._get_dxdiag_info()
-            devices = dxdiag.get("display_devices", [])
-            directx_version = (dxdiag.get("system", {}).get("DirectXVersion") or "").lower()
-
-            if not devices:
-                if self.debug:
-                    logger.debug("Graphics check: OK par defaut (aucun resultat)")
-                return True
-
-            for device in devices:
-                feature_levels = [
-                    item.strip()
-                    for item in str(device.get("FeatureLevels") or "").split(",")
-                    if item.strip()
-                ]
-                ddi_version = self._extract_numeric_version(device.get("DDIVersion"))
-                wddm_version = self._extract_numeric_version(device.get("DriverModel"))
-
-                directx_ok = any(level.startswith("12") for level in feature_levels)
-                if not directx_ok and ddi_version is not None:
-                    directx_ok = ddi_version >= 12.0
-                if not directx_ok and directx_version:
-                    directx_ok = "directx 12" in directx_version
-
-                wddm_ok = wddm_version is None or wddm_version >= 2.0
-
-                if directx_ok and wddm_ok:
-                    if self.debug:
-                        logger.debug("Graphics check: True")
-                    return True
-
-            if self.debug:
-                logger.debug("Graphics check: False")
-            return False
-
-        except Exception:
-            if self.debug:
-                logger.debug("Graphics check error, OK par defaut")
-            return True
-
-    def check_display(self):
-        """Verifie la compatibilite de l'affichage pour Windows 11.
-
-        Si l'information manque ou n'est pas exploitable, la verification est consideree comme OK.
-        """
-        try:
-            screens = self._run_powershell_json(
-                "Add-Type -AssemblyName System.Windows.Forms; "
-                "[System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "
-                "[pscustomobject]@{ Width = $_.Bounds.Width; Height = $_.Bounds.Height; BitsPerPixel = $_.BitsPerPixel } } | "
-                "ConvertTo-Json -Depth 4 -Compress",
-                default=[],
-                check=False,
-            )
-            basic_params = self._run_powershell_json(
-                "Get-CimInstance -Namespace root\\wmi -Class WmiMonitorBasicDisplayParams | "
-                "Select-Object MaxHorizontalImageSize, MaxVerticalImageSize | ConvertTo-Json -Depth 4 -Compress",
-                default=[],
-                check=False,
-            )
-
-            if not isinstance(screens, list):
-                screens = [] if screens is None else [screens]
-            if not isinstance(basic_params, list):
-                basic_params = [] if basic_params is None else [basic_params]
-
-            if not screens:
-                if self.debug:
-                    logger.debug("Display check: OK par defaut (aucun resultat)")
-                return True
-
-            for index, screen in enumerate(screens):
-                width = self._coerce_int(screen.get("Width"))
-                height = self._coerce_int(screen.get("Height"))
-                bits_per_pixel = self._coerce_int(screen.get("BitsPerPixel"))
-                diagonal_inches = None
-                if index < len(basic_params):
-                    diagonal_inches = self._screen_diagonal_inches(
-                        basic_params[index].get("MaxHorizontalImageSize"),
-                        basic_params[index].get("MaxVerticalImageSize"),
-                    )
-
-                resolution_ok = width is None or height is None or (width >= 1280 and height >= 720)
-                color_ok = bits_per_pixel is None or bits_per_pixel >= 24
-                size_ok = diagonal_inches is None or diagonal_inches > 9.0
-
-                if resolution_ok and color_ok and size_ok:
-                    if self.debug:
-                        logger.debug("Display check: True")
-                    return True
-
-            if self.debug:
-                logger.debug("Display check: False")
-            return False
-
-        except Exception:
-            if self.debug:
-                logger.debug("Display check error, OK par defaut")
-            return True
-
-    def is_compatible(self):
-        try:
-
-            checks = [
-                self.check_ram(),
-                self.check_disk(),
-                self.check_uefi(),
-                self.check_tpm(),
-                self.check_cpu(),
-                self.check_graphics(),
-                self.check_display(),
-            ]
-
-            result = all(checks)
-
-            if self.debug:
-                logger.debug(f"Windows 11 compatibility result: {result}")
-
-            return result
-
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
-            return False
 # "0409": "EnglishInternational",
 # Tableau de correspondance entre les codes Windows et les langues
 # "0409": "EnglishInternational",
@@ -626,10 +153,63 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             logger.error("\n%s" % (traceback.format_exc()))
 
 
+def _generate_windows11_compatibility_report(json_output_file):
+    """Genere le rapport JSON de compatibilite via la lib centralisee."""
+    os.makedirs(os.path.dirname(json_output_file), exist_ok=True)
+    compat = LibWindows11Compatibility(
+        output_format="json",
+        output_file=json_output_file,
+    )
+    compat.run()
+
+
+def _load_or_generate_windows11_compatibility_flag():
+    """Retourne compatible (True/False) depuis le cache JSON de compatibilite."""
+    json_output_file = os.path.join(
+        medullaPath(), "var", "log", "windows11_compatibility_report.json"
+    )
+
+    cache_ttl_seconds = 24 * 60 * 60
+
+    if not os.path.exists(json_output_file):
+        _generate_windows11_compatibility_report(json_output_file)
+    else:
+        age_seconds = time.time() - os.path.getmtime(json_output_file)
+        if age_seconds > cache_ttl_seconds:
+            logger.debug(
+                "PL-MEDULLAINFO Rapport JSON de compatibilite expire (age=%ss), regeneration: %s",
+                int(age_seconds),
+                json_output_file,
+            )
+            _generate_windows11_compatibility_report(json_output_file)
+
+    try:
+        with open(json_output_file, "r", encoding="utf-8") as handle:
+            report = json.load(handle)
+    except Exception:
+        logger.warning(
+            "PL-MEDULLAINFO Rapport JSON de compatibilite illisible, regeneration: %s",
+            json_output_file,
+        )
+        _generate_windows11_compatibility_report(json_output_file)
+        with open(json_output_file, "r", encoding="utf-8") as handle:
+            report = json.load(handle)
+
+    # compatble_win11 peut etre force a True dans la lib pour un mode failsafe.
+    # On privilegie raw_compatible pour refleter la compatibilite reelle.
+    compatible_value = report.get("raw_compatible", report.get("compatble_win11", False))
+    if isinstance(compatible_value, bool):
+        return compatible_value
+    if isinstance(compatible_value, (int, float)):
+        return bool(compatible_value)
+    if isinstance(compatible_value, str):
+        return compatible_value.strip().lower() in {"1", "true", "yes", "on"}
+    return False
+
+
 def execute_medulla_info_update():
-    compat = Windows11Compatibility(debug=False)
-    compatible=compat.is_compatible()
-    # compatibleWin11 = int(compatible) #  1 ou 0
+    compatible = _load_or_generate_windows11_compatibility_flag()
+    # compatibleWin11 = bool(compatible) # True ou False
     update = ""
     iso_name = ""
 

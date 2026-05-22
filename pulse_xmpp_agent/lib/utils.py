@@ -5298,7 +5298,32 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
-            self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+            json_output_file = os.path.join(
+                medullaPath(),
+                "var",
+                "log",
+                "windows11_compatibility_report.json",
+            )
+            if os.path.isfile(json_output_file):
+                try:
+                    with open(json_output_file, "r", encoding="utf-8") as report_file:
+                        win11_payload = json.load(report_file)
+                    if isinstance(win11_payload, dict):
+                        self.info_package["win11_compatibility"] = win11_payload
+                    else:
+                        logger.warning(
+                            "windows11_compatibility_report.json invalide (type=%s), fallback check_windows11_compatibility",
+                            type(win11_payload).__name__,
+                        )
+                        self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+                except Exception as e:
+                    logger.warning(
+                        "Erreur de lecture windows11_compatibility_report.json (%s), fallback check_windows11_compatibility",
+                        e,
+                    )
+                    self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+            else:
+                self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
