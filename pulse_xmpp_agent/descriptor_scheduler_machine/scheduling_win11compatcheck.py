@@ -11,7 +11,7 @@ import os
 import sys
 import tempfile
 from contextlib import redirect_stdout
-from script import medulla_windows11_compatibility
+from lib import medulla_windows11_compatibility
 from lib.agentconffile import medullaPath
 
 
