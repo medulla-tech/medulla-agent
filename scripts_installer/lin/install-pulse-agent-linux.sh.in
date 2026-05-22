@@ -245,7 +245,7 @@ EOF
 configure_inventory_tag() {
     TAG="$1"
     echo "Configuring inventory tag: ${TAG}"
-    crudini --set /etc/pule-xmpp-agent/inventory.ini parameters inventoytag "${TAG}"
+    crudini --set /etc/pulse-xmpp-agent/inventory.ini parameters inventorytag "${TAG}"
 }
 
 start_agent() {
