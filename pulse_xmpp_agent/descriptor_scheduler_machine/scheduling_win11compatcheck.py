@@ -15,7 +15,7 @@ from lib import medulla_windows11_compatibility
 from lib.agentconffile import medullaPath
 
 
-plugin = {"VERSION": "1.0", "NAME": "scheduling_win11compatcheck", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "scheduling_win11compatcheck", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/15 * * * *", "nb": 2}
 
