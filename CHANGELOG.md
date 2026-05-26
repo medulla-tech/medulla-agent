@@ -1,5 +1,15 @@
 # Change Log
 
+## [5.6.0](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.0) (2026-05-26)
+- [FEATURE] Improve security of remote desktop by only allowing connections from localhost
+- [FEATURE] Replace named pipes by socket connections
+- [BUGFIX]  Fix compatibility checks for updating to latest windows 11 version
+- [BUGFIX]  Fix traceback on AD query when local user is connected
+- [BUGFIX]  Fix kiosk refresh
+- [BUGFIX]  Disable geolocalisation by default
+- [BUGFIX]  Improve mechanism for matching between machine and entity
+- [BUGFIX]  Blacklist a few VPN mac addresses that are present on several machines
+
 ## [5.5.2](https://github.com/medulla-tech/medulla-agent/releases/tag/5.5.2) (2026-04-25)
 - [FEATURE] Improve compatibility checks for updating to latest windows 11 version
 - [FEATURE] Improve uninstallation of Medulla agent

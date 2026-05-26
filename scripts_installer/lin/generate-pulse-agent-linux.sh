@@ -29,7 +29,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="5.5.2"
+AGENT_VERSION="5.6.0"
 BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
