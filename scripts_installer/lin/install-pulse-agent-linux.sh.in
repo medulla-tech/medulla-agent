@@ -212,6 +212,16 @@ setup_agent() {
     fi
     cp /tmp/medulla/*.ini ${CONFIG_DIR}
     cp /tmp/medulla/agentconf.ini.tpl ${CONFIG_DIR}
+
+    echo "Configuring inventory agent..."
+    case "$DISTRO" in
+        debian|ubuntu|zorin|linuxmint)
+            crudini --del /etc/pulse-xmpp-agent/inventory.ini parameters agent
+            ;;
+        almalinux)
+            crudini --set /etc/pulse-xmpp-agent/inventory.ini parameters agent glpiagent
+            ;;
+    esac
 }
 
 install_agent() {
