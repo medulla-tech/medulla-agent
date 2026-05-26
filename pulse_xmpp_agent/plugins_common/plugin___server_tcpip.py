@@ -52,14 +52,6 @@ def _is_network_event_payload(payload):
     return required_keys.issubset(payload.keys())
 
 
-def _is_network_event_payload(payload):
-    """Detecte un message de changement d'interface envoye par networkevent."""
-    if not isinstance(payload, dict):
-        return False
-    required_keys = {"interface", "additionalinterface", "removedinterface"}
-    return required_keys.issubset(payload.keys())
-
-
 @set_logging_level
 def action(xmppobject, action):
     try:
