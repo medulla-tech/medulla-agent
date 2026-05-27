@@ -224,6 +224,11 @@ class Compatibilite:
             )
             stdout = self._decode_subprocess_output(result.stdout).lower()
             stderr = self._decode_subprocess_output(result.stderr).lower()
+            unsupported_secureboot = (
+                "platformnotsupportedexception" in stderr
+                or "getfwvarfailed" in stderr
+                or "non prise en charge" in stderr
+            )
 
             if "true" in stdout or "false" in stdout:
                 uefi_detected = True
@@ -233,6 +238,8 @@ class Compatibilite:
                 uefi_detected = True
 
             if self.debug:
+                if unsupported_secureboot:
+                    print("UEFI Check: secureboot platform not supported -> Legacy BIOS")
                 print(f"UEFI Check: {uefi_detected}")
             return uefi_detected
         except Exception as e:

@@ -2522,7 +2522,7 @@ def isBase64(s):
             s = s.encode("utf-8")
         # Vérification si les caractères appartiennent au jeu de caractères Base64
         if not re.match(b"^[A-Za-z0-9+/]*={0,2}$", s):
-            logger.warning(
+            logger.debug(
                 "La chaîne contient des caractères non valides pour du base64."
             )
             return False
@@ -5300,7 +5300,32 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
-            self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+            json_output_file = os.path.join(
+                medullaPath(),
+                "var",
+                "log",
+                "windows11_compatibility_report.json",
+            )
+            if os.path.isfile(json_output_file):
+                try:
+                    with open(json_output_file, "r", encoding="utf-8") as report_file:
+                        win11_payload = json.load(report_file)
+                    if isinstance(win11_payload, dict):
+                        self.info_package["win11_compatibility"] = win11_payload
+                    else:
+                        logger.warning(
+                            "windows11_compatibility_report.json invalide (type=%s), fallback check_windows11_compatibility",
+                            type(win11_payload).__name__,
+                        )
+                        self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+                except Exception as e:
+                    logger.warning(
+                        "Erreur de lecture windows11_compatibility_report.json (%s), fallback check_windows11_compatibility",
+                        e,
+                    )
+                    self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+            else:
+                self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -6283,11 +6308,17 @@ class offline_search_kb:
             r = subprocess.run(
                 ["powershell", "-NoProfile", "-Command",
                  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+                 "$OutputEncoding = [System.Text.Encoding]::UTF8; "
                  "Confirm-SecureBootUEFI"],
                 capture_output=True, text=False,
             )
             stdout = r.stdout.decode("utf-8", errors="replace").strip().lower()
             stderr = r.stderr.decode("utf-8", errors="replace").strip().lower()
+            unsupported_secureboot = (
+                "platformnotsupportedexception" in stderr
+                or "getfwvarfailed" in stderr
+                or "non prise en charge" in stderr
+            )
             if "true" in stdout or "false" in stdout:
                 is_uefi = True
             elif r.returncode != 0 or "cmdlet" in stderr:
@@ -6295,6 +6326,8 @@ class offline_search_kb:
             else:
                 is_uefi = True
             result["uefi"] = {"ok": is_uefi}
+            if unsupported_secureboot:
+                result["uefi"]["reason"] = "secureboot-platform-not-supported"
         except Exception:
             result["uefi"] = {"ok": False}
 
@@ -6332,7 +6365,9 @@ class offline_search_kb:
             cpu_ok = False
             intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
             if intel_match:
-                cpu_ok = int(intel_match.group(1)[:2]) >= 8
+                digits = intel_match.group(1)
+                generation = int(digits[:2] if len(digits) == 5 else digits[:1])
+                cpu_ok = generation >= 8
             else:
                 amd_match = re.search(r'ryzen\s*(\d)', cpu)
                 if amd_match:
@@ -6366,7 +6401,7 @@ class offline_search_kb:
         except Exception:
             result["graphics"] = {"ok": True, "devices": []}
 
-        # Affichage >= 1280x720
+        # Affichage: force a OK pour ne pas bloquer la compatibilite
         try:
             ps_screen = (
                 "Add-Type -AssemblyName System.Windows.Forms; "
@@ -6381,11 +6416,8 @@ class offline_search_kb:
             screens = json.loads(r.stdout.strip()) if r.stdout.strip() else []
             if isinstance(screens, dict):
                 screens = [screens]
-            display_ok = any(
-                (s.get("Width") or 0) >= 1280 and (s.get("Height") or 0) >= 720
-                for s in screens
-            ) if screens else True
-            result["display"] = {"ok": display_ok, "screens": screens}
+            # Exigence metier: display doit toujours etre OK dans ce controle offline.
+            result["display"] = {"ok": True, "screens": screens}
         except Exception:
             result["display"] = {"ok": True, "screens": []}
 

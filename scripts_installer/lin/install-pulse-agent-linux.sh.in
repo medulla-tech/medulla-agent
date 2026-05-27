@@ -212,6 +212,16 @@ setup_agent() {
     fi
     cp /tmp/medulla/*.ini ${CONFIG_DIR}
     cp /tmp/medulla/agentconf.ini.tpl ${CONFIG_DIR}
+
+    echo "Configuring inventory agent..."
+    case "$DISTRO" in
+        debian|ubuntu|zorin|linuxmint)
+            crudini --del /etc/pulse-xmpp-agent/inventory.ini parameters agent
+            ;;
+        almalinux)
+            crudini --set /etc/pulse-xmpp-agent/inventory.ini parameters agent glpiagent
+            ;;
+    esac
 }
 
 install_agent() {
@@ -245,7 +255,7 @@ EOF
 configure_inventory_tag() {
     TAG="$1"
     echo "Configuring inventory tag: ${TAG}"
-    crudini --set /etc/pule-xmpp-agent/inventory.ini parameters inventoytag "${TAG}"
+    crudini --set /etc/pulse-xmpp-agent/inventory.ini parameters inventorytag "${TAG}"
 }
 
 start_agent() {

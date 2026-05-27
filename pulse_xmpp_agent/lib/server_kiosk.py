@@ -388,7 +388,7 @@ class manage_kiosk_message:
     def handle_client_connection(self, recv_msg_from_kiosk):
         substitute_recv = ""
         try:
-            self.logger.info(f"Received {recv_msg_from_kiosk}")
+            self.logger.debug(f"Received {recv_msg_from_kiosk}")
             datasend = {
                 "action": "resultkiosk",
                 "sessionid": getRandomName(6, "kioskGrub"),
@@ -406,7 +406,7 @@ class manage_kiosk_message:
             try:
                 _result = json.loads(minifyjsonstringrecv(msg))
                 result = self.runjson(_result)
-                self.logger.info(
+                self.logger.debug(
                     "__Event network or kiosk %s" % json.dumps(result, indent=4)
                 )
             except ValueError as e:
@@ -573,7 +573,7 @@ class manage_kiosk_message:
                     )
                     return
                 if substitute_recv:
-                    logging.getLogger().warning(f"send to {substitute_recv} ")
+                    logging.getLogger().debug(f"send to {substitute_recv} ")
                     self.objectxmpp.send_message(
                         mbody=json.dumps(datasend), mto=substitute_recv, mtype="chat"
                     )

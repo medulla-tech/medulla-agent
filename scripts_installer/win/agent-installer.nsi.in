@@ -413,6 +413,15 @@ Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\etc"
   File "../config/${PULSE_AGENT_CONFFILE}"
   File "../config/${PULSE_AGENT_CONFFILE_TPL}"
+  ; Set permissions as follows on the two files:
+  ; NT AUTHORITY\SYSTEM:(I)(F)
+  ; BUILTIN\Administrators:(I)(F)
+  StrCpy $0 `icacls "$INSTDIR\etc\${PULSE_AGENT_CONFFILE}" /inheritance:r /grant:r "NT AUTHORITY\SYSTEM:(F)" /grant:r "*S-1-5-32-544:(F)"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  StrCpy $0 `icacls "$INSTDIR\etc\${PULSE_AGENT_CONFFILE_TPL}" /inheritance:r /grant:r "NT AUTHORITY\SYSTEM:(F)" /grant:r "*S-1-5-32-544:(F)"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
   ; Copy of agent scheduler config file only if it does not already exist (using overwrite flag)
   SetOutPath "$INSTDIR\etc"
   SetOverwrite off
