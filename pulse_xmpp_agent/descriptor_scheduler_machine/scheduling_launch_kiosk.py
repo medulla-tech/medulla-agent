@@ -8,6 +8,7 @@ This plugin processes inventory from crontab descriptor time.
 
 import logging
 import os
+import platform
 import psutil
 import subprocess
 from pulse_xmpp_agent.lib.utils import file_put_contents, simplecommand
@@ -26,6 +27,11 @@ def schedule_main(objectxmpp):
     logger.debug("###################################################")
 
     cleanup_old_kiosk()
+
+    # This scheduler is Windows-specific (query user, paexec, pythonw).
+    if platform.system().lower() != "windows":
+        logger.debug("Skipping scheduling_launch_kiosk on non-Windows platform.")
+        return
 
     # Read the configuration on the first call
     num_compteur = getattr(objectxmpp, f'num_call_{plugin["NAME"]}')
@@ -96,9 +102,9 @@ def read_config_plugin_agent(objectxmpp):
         objectxmpp.enable_kiosk = Config.getboolean(
             "scheduling_launch_kiosk", "enable_kiosk"
         )
-    except (configparser.NoOptionError, ValueError):
+    except (configparser.NoOptionError, configparser.NoSectionError, ValueError):
         objectxmpp.enable_kiosk = (
-            True  # Default to False if the setting is missing or invalid
+            False  # Default to False if the setting is missing or invalid
         )
         logger.warning(
             "The 'enable_kiosk' option is missing or invalid. Defaulting to False."
