@@ -974,6 +974,29 @@ def loadModule(filename):
     return module
 
 
+def _get_plugin_action_or_log(pluginaction, plugin_path, caller_name):
+    """Retourne l'action du plugin ou journalise pourquoi il est ignoré."""
+    logger = logging.getLogger()
+    if pluginaction is None:
+        logger.error(
+            "%s unable to execute plugin because loadModule returned None: %s",
+            caller_name,
+            plugin_path,
+        )
+        return None
+
+    plugin_action = getattr(pluginaction, "action", None)
+    if not callable(plugin_action):
+        logger.error(
+            "%s unable to execute plugin because action is missing or not callable: %s",
+            caller_name,
+            plugin_path,
+        )
+        return None
+
+    return plugin_action
+
+
 def call_plugin_separate(name, *args, **kwargs):
     """
     Exécute un plugin spécifié de manière sécurisée et dans un thread séparé.
@@ -1015,7 +1038,12 @@ def call_plugin_separate(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
-                loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
+                plugin_action = _get_plugin_action_or_log(
+                    pluginaction, nameplugin, "call_plugin_separate"
+                )
+                if plugin_action is None:
+                    return
+                loop.call_soon_threadsafe(plugin_action, *args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
         else:
@@ -1123,7 +1151,12 @@ def call_mon_plugin(name, *args, **kwargs):
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
                 executor = ThreadPoolExecutor()
-                thread = FunctionThread(pluginaction.action, *args, **kwargs)
+                plugin_action = _get_plugin_action_or_log(
+                    pluginaction, nameplugin, "call_mon_plugin"
+                )
+                if plugin_action is None:
+                    return
+                thread = FunctionThread(plugin_action, *args, **kwargs)
                 result = loop.run_in_executor(executor, thread.start)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
@@ -1177,8 +1210,13 @@ def call_plugin(name, *args, **kwargs):
                 except AttributeError:
                     setattr(args[0], f"num_call{args[1]}", 0)
                 pluginaction = loadModule(nameplugin)
+                plugin_action = _get_plugin_action_or_log(
+                    pluginaction, nameplugin, "call_plugin"
+                )
+                if plugin_action is None:
+                    return
                 result = loop.run_in_executor(
-                    None, pluginaction.action, *args, **kwargs
+                    None, plugin_action, *args, **kwargs
                 )
                 return result
             else:
@@ -1230,7 +1268,12 @@ def call_plugin_sequentially(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
-                pluginaction.action(*args, **kwargs)
+                plugin_action = _get_plugin_action_or_log(
+                    pluginaction, nameplugin, "call_plugin_sequentially"
+                )
+                if plugin_action is None:
+                    return
+                plugin_action(*args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
         else:
