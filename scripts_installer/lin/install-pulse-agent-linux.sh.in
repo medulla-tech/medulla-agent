@@ -240,16 +240,34 @@ create_service () {
     cat <<EOF > /usr/lib/systemd/system/pulse-xmpp-agent-machine.service
 [Unit]
 Description=Medulla XMPP Agent ( Machine )
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=simple
 ExecStart=${PYTHON_EXE} ${PYTHON_DIR}/pulse_xmpp_agent/launcher.py -t machine
 Restart=always
-RestartSec=1
+RestartSec=5
+StartLimitIntervalSec=0
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+
+    if [ ! -d "/usr/lib/systemd/system-sleep/" ]; then
+        mkdir -p /usr/lib/systemd/system-sleep/
+    fi
+    cat <<EOF > /usr/lib/systemd/system-sleep/pulse-xmpp-agent-machine
+#!/bin/sh
+
+case "\$1" in
+  post)
+    systemctl restart pulse-xmpp-agent-machine.service
+    ;;
+esac
+EOF
+    chmod +x /usr/lib/systemd/system-sleep/pulse-xmpp-agent-machine
 }
 
 configure_inventory_tag() {
