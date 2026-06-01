@@ -30,6 +30,7 @@
 
 # To be defined
 AGENT_VERSION="5.6.0"
+KIOSK_VERSION="1.0.0"
 BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
@@ -180,6 +181,7 @@ update_installer_scripts() {
     sed -e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
 		-e "s/@@BASE_URL@@/$(sed_escape ${BASE_URL})/" \
 		-e "s/@@AGENT_VERSION@@/${AGENT_VERSION}/" \
+		-e "s/@@KIOSK_VERSION@@/${KIOSK_VERSION}/" \
 		-e "s/@@VNC_PASSWORD@@/${VNC_PASSWORD}/" \
 		-e "s/@@SSH_PORT@@/${SSH_PORT}/" \
 		install-pulse-agent-linux.sh.in \

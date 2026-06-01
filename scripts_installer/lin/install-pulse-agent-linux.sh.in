@@ -29,6 +29,10 @@ INVENTORY_TAG="@@INVENTORY_TAG@@"
 AGENT_VERSION="@@AGENT_VERSION@@"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-@@AGENT_VERSION@@.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-@@AGENT_VERSION@@.tar.gz"
+KIOSK_VERSION="@@KIOSK_VERSION@@"
+KIOSK_FILENAME="kiosk-interface-@@KIOSK_VERSION@@.tar.gz"
+# Version of PyQt6 installed in the agent venv for the kiosk (aligned with Windows)
+PYQT6_VERSION="6.6.1"
 VNC_PASSWORD="@@VNC_PASSWORD@@"
 SSH_PORT="@@SSH_PORT@@"
 GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
@@ -125,6 +129,7 @@ download_agent_files() {
     cd /tmp/medulla
     wget ${BASE_URL}/${PULSE_AGENT_FILENAME}
     wget ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
+    wget ${BASE_URL}/${KIOSK_FILENAME}
     wget ${BASE_URL}/medulla-ca-chain.cert.pem
     wget ${BASE_URL}/medulla-rootca.cert.pem
     wget ${BASE_URL}/config/agentconf.ini
@@ -230,6 +235,54 @@ install_agent() {
     /opt/medulla/bin/python3.11 -m pip install ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}
 }
 
+install_kiosk() {
+    echo "Installing Medulla Kiosk ..."
+
+    # Qt6/X11 system libraries needed by the PyQt6 'xcb' platform plugin
+    # (the PyQt6_Qt6 wheel does NOT bundle these). Without them Qt fails with
+    # "could not load the Qt platform plugin xcb".
+    case "$DISTRO" in
+        debian|ubuntu|zorin|linuxmint)
+            apt install -y libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 \
+                libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+                libxcb-shape0 libxcb-xinerama0 libegl1 libgl1 libfontconfig1 libdbus-1-3
+            ;;
+        almalinux)
+            dnf install -y xcb-util-cursor libxkbcommon-x11 xcb-util-image \
+                xcb-util-keysyms xcb-util-renderutil xcb-util-wm mesa-libGL \
+                mesa-libEGL fontconfig
+            ;;
+    esac
+
+    # Install PyQt6 + the kiosk into the agent venv, so the scheduler can run
+    # the kiosk with the agent's own interpreter (sys.executable) as the user.
+    # IMPORTANT: pin PyQt6-Qt6 to the SAME version as PyQt6 — `PyQt6==x` alone
+    # leaves PyQt6-Qt6 unpinned and pip pulls the latest Qt libs, causing an ABI
+    # mismatch ("undefined symbol ... version Qt_6") at import time.
+    /opt/medulla/bin/python3.11 -m pip install "PyQt6==${PYQT6_VERSION}" "PyQt6-Qt6==${PYQT6_VERSION}"
+    /opt/medulla/bin/python3.11 -m pip install /tmp/medulla/${KIOSK_FILENAME}
+
+    # Enable the kiosk launch by the agent scheduler (scheduling_launch_kiosk).
+    crudini --set /etc/pulse-xmpp-agent/scheduling_launch_kiosk.ini scheduling_launch_kiosk enable_kiosk True
+
+    # Application-menu launcher: GNOME has no system tray, so this entry lets the
+    # user (re)open the kiosk window. It asks the running instance to show itself
+    # via the local socket (--show), or starts it if none is running.
+    cat <<EOF > /usr/share/applications/medulla-kiosk.desktop
+[Desktop Entry]
+Type=Application
+Name=Medulla Kiosk
+Comment=Open the Medulla software kiosk
+Exec=/opt/medulla/bin/python3.11 -m kiosk_interface --show
+Icon=/opt/medulla/lib/python3.11/site-packages/kiosk_interface/datas/kiosk.png
+Terminal=false
+Categories=System;Utility;
+Keywords=medulla;kiosk;software;packages;
+StartupNotify=true
+StartupWMClass=medulla-kiosk
+EOF
+}
+
 create_service () {
     echo "Creating systemd service for Medulla XMPP agent ..."
     local PYTHON_EXE="/opt/medulla/bin/python3.11"
@@ -306,6 +359,7 @@ esac
 download_agent_files
 setup_agent
 install_agent
+install_kiosk
 if [[ ${INVENTORY_TAG} != "" ]]; then
     configure_inventory_tag ${INVENTORY_TAG}
 fi

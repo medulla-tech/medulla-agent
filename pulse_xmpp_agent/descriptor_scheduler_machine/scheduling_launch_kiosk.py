@@ -8,6 +8,7 @@ This plugin processes inventory from crontab descriptor time.
 
 import logging
 import os
+import sys
 import platform
 import psutil
 import subprocess
@@ -16,7 +17,7 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # fmt: skip
 
@@ -28,54 +29,297 @@ def schedule_main(objectxmpp):
 
     cleanup_old_kiosk()
 
-    # This scheduler is Windows-specific (query user, paexec, pythonw).
-    if platform.system().lower() != "windows":
-        logger.debug("Skipping scheduling_launch_kiosk on non-Windows platform.")
-        return
-
     # Read the configuration on the first call
     num_compteur = getattr(objectxmpp, f'num_call_{plugin["NAME"]}')
     if num_compteur == 0:
         read_config_plugin_agent(objectxmpp)
 
     # Check if enable_kiosk is set to True in the configuration
-    if getattr(objectxmpp, "enable_kiosk", False):
-        logger.debug("Kiosk is enabled in configuration.")
-        pid_file = "C:\\Program Files\\Medulla\\bin\\kiosk.pid"
-
-        # Verify if Kiosk is already running using the PID file
-        if os.path.exists(pid_file):
-            with open(pid_file, "r") as f:
-                pid = int(f.read().strip())
-            try:
-                # Check if the process is still active
-                p = psutil.Process(pid)
-                if p.is_running() and p.status() != psutil.STATUS_ZOMBIE:
-                    logger.debug("Kiosk is already running. PID: %d", pid)
-                    return
-            except psutil.NoSuchProcess:
-                logger.warning(
-                    f"Kiosk process with PID {pid} not found. Removing PID file."
-                )
-                os.remove(pid_file)
-
-        session_id = get_session_id()
-        if not session_id:
-            logger.error("Cannot retrieve session ID. Kiosk will not be started.")
-            return
-
-        # Command to launch Kiosk if the process is not active
-        command = f"""C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i {session_id} -d "C:\\Program Files\\Python3\\pythonw.exe" -m kiosk_interface"""
-
-        logger.debug(f"Starting Kiosk. Command: {command}")
-        process = subprocess.Popen(command, shell=True)
-
-        # Create the PID file with the PID of the new process
-        with open(pid_file, "w") as f:
-            f.write(str(process.pid))
-        logger.debug("Kiosk started successfully with PID: %d", process.pid)
-    else:
+    if not getattr(objectxmpp, "enable_kiosk", False):
         logger.debug("Kiosk is disabled in configuration.")
+        return
+
+    logger.debug("Kiosk is enabled in configuration.")
+
+    system = platform.system().lower()
+    if system == "windows":
+        launch_kiosk_windows()
+    elif system == "linux":
+        launch_kiosk_linux()
+    else:
+        logger.debug("scheduling_launch_kiosk: unsupported platform '%s'.", system)
+
+
+def launch_kiosk_windows():
+    """Start the Kiosk on Windows by injecting it into the interactive session."""
+    pid_file = "C:\\Program Files\\Medulla\\bin\\kiosk.pid"
+
+    # Verify if Kiosk is already running using the PID file
+    if os.path.exists(pid_file):
+        with open(pid_file, "r") as f:
+            pid = int(f.read().strip())
+        try:
+            # Check if the process is still active
+            p = psutil.Process(pid)
+            if p.is_running() and p.status() != psutil.STATUS_ZOMBIE:
+                logger.debug("Kiosk is already running. PID: %d", pid)
+                return
+        except psutil.NoSuchProcess:
+            logger.warning(
+                f"Kiosk process with PID {pid} not found. Removing PID file."
+            )
+            os.remove(pid_file)
+
+    session_id = get_session_id()
+    if not session_id:
+        logger.error("Cannot retrieve session ID. Kiosk will not be started.")
+        return
+
+    # Command to launch Kiosk if the process is not active
+    command = f"""C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i {session_id} -d "C:\\Program Files\\Python3\\pythonw.exe" -m kiosk_interface"""
+
+    logger.debug(f"Starting Kiosk. Command: {command}")
+    process = subprocess.Popen(command, shell=True)
+
+    # Create the PID file with the PID of the new process
+    with open(pid_file, "w") as f:
+        f.write(str(process.pid))
+    logger.debug("Kiosk started successfully with PID: %d", process.pid)
+
+
+def launch_kiosk_linux():
+    """Start the Kiosk on Linux inside the active graphical user session.
+
+    The agent runs as root (system service), but a Qt GUI must run inside the
+    user's graphical session (DISPLAY/Wayland, XDG_RUNTIME_DIR, session D-Bus).
+    This is the Linux equivalent of the Windows ``paexec -i <session>`` trick:
+    we detect the active graphical session and launch the kiosk as that user
+    with the relevant environment, using ``runuser`` (no password as root).
+    """
+    pid_file = "/tmp/kiosk.pid"
+
+    # The kiosk writes its own PID to /tmp/kiosk.pid at startup (see
+    # kiosk_interface/__main__.py), so we just rely on it here.
+    if is_kiosk_running(pid_file):
+        logger.debug("Kiosk is already running.")
+        return
+
+    session = get_linux_graphical_session()
+    if not session:
+        logger.warning("No active graphical session found. Kiosk will not be started.")
+        return
+
+    user = session["user"]
+    uid = session["uid"]
+    runtime_dir = "/run/user/%s" % uid
+
+    # The most reliable way to attach a GUI to the user's graphical session is
+    # to reuse the very environment its own processes run with (DISPLAY,
+    # XAUTHORITY, WAYLAND_DISPLAY...). XAUTHORITY in particular is mandatory:
+    # without it XWayland/X11 rejects the connection ("Authorization required").
+    # This works for both X11 and Wayland (where Qt falls back to XWayland when
+    # the native wayland plugin is absent).
+    genv = get_user_graphical_env(uid)
+
+    env_vars = {
+        "XDG_RUNTIME_DIR": genv.get("XDG_RUNTIME_DIR", runtime_dir),
+        "DBUS_SESSION_BUS_ADDRESS": genv.get(
+            "DBUS_SESSION_BUS_ADDRESS", "unix:path=%s/bus" % runtime_dir
+        ),
+    }
+    for key in ("DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE"):
+        if key in genv:
+            env_vars[key] = genv[key]
+
+    # Last-resort fallback if no display variable could be discovered.
+    if "DISPLAY" not in env_vars and "WAYLAND_DISPLAY" not in env_vars:
+        env_vars["DISPLAY"] = ":0"
+
+    # Use the agent's own Python interpreter (the venv where the kiosk is
+    # installed, e.g. /opt/medulla/bin/python3.11 on Linux), so the kiosk runs
+    # with the same interpreter/site-packages as the agent — no hard-coded path.
+    command = (
+        ["runuser", "-u", user, "--", "env"]
+        + ["%s=%s" % (k, v) for k, v in env_vars.items()]
+        + [sys.executable, "-m", "kiosk_interface"]
+    )
+
+    logger.debug(
+        "Starting Kiosk for user '%s' (uid=%s, env=%s).",
+        user,
+        uid,
+        env_vars,
+    )
+    try:
+        subprocess.Popen(
+            command,
+            close_fds=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        logger.debug("Kiosk launch command sent for user '%s'.", user)
+    except Exception as e:
+        logger.error("Failed to start Kiosk: %s", e)
+
+
+def is_kiosk_running(pid_file):
+    """Return True if a live kiosk process is referenced by ``pid_file``.
+
+    Stale PID files (process gone or zombie) are removed and treated as 'not
+    running'.
+    """
+    if not os.path.exists(pid_file):
+        return False
+    try:
+        with open(pid_file, "r") as f:
+            pid = int(f.read().strip())
+        p = psutil.Process(pid)
+        if p.is_running() and p.status() != psutil.STATUS_ZOMBIE:
+            return True
+    except (psutil.NoSuchProcess, ValueError, FileNotFoundError):
+        pass
+    # Stale PID file: clean it up.
+    try:
+        os.remove(pid_file)
+        logger.debug("Removed stale PID file: %s", pid_file)
+    except OSError:
+        pass
+    return False
+
+
+def get_linux_graphical_session():
+    """Detect the active graphical session on Linux.
+
+    Returns a dict ``{user, uid, display, type}`` for the first active x11 or
+    wayland session, or ``None`` if none is found. Tries ``loginctl`` first,
+    then falls back to parsing ``who``.
+    """
+    # Preferred path: loginctl (systemd-logind).
+    try:
+        res = simplecommand("loginctl list-sessions --no-legend")
+        for line in res.get("result", []):
+            parts = line.split()
+            if not parts:
+                continue
+            session_id = parts[0]
+            props = _loginctl_session_props(session_id)
+            if props.get("State") == "active" and props.get("Type") in (
+                "x11",
+                "wayland",
+            ):
+                user = props.get("Name")
+                uid = props.get("User")
+                if user and uid:
+                    return {
+                        "user": user,
+                        "uid": uid,
+                        "display": props.get("Display", ""),
+                        "type": props.get("Type", ""),
+                    }
+    except Exception as e:
+        logger.debug("loginctl session detection failed: %s", e)
+
+    # Fallback: parse `who` output, looking for an X display in parentheses.
+    try:
+        res = simplecommand("who")
+        for line in res.get("result", []):
+            if "(:" not in line:
+                continue
+            cols = line.split()
+            if not cols:
+                continue
+            user = cols[0]
+            display = line[line.find("(") + 1 : line.find(")")]
+            uid = _uid_of(user)
+            if uid:
+                return {
+                    "user": user,
+                    "uid": uid,
+                    "display": display,
+                    "type": "x11",
+                }
+    except Exception as e:
+        logger.debug("who session detection failed: %s", e)
+
+    return None
+
+
+def _loginctl_session_props(session_id):
+    """Return the loginctl properties of a session as a dict."""
+    props = {}
+    res = simplecommand(
+        "loginctl show-session %s -p Name -p User -p State -p Type -p Display"
+        % session_id
+    )
+    for line in res.get("result", []):
+        if "=" in line:
+            key, value = line.split("=", 1)
+            props[key.strip()] = value.strip()
+    return props
+
+
+def get_user_graphical_env(uid):
+    """Return the graphical environment of the user's session.
+
+    Scans the processes owned by ``uid`` and reads ``/proc/<pid>/environ`` to
+    pick up the graphical-session variables (DISPLAY, XAUTHORITY,
+    WAYLAND_DISPLAY, XDG_RUNTIME_DIR, DBUS_SESSION_BUS_ADDRESS...). Returns the
+    first candidate exposing both DISPLAY and XAUTHORITY (the usable X case),
+    otherwise the richest candidate found, or an empty dict.
+    """
+    wanted = (
+        "DISPLAY",
+        "XAUTHORITY",
+        "WAYLAND_DISPLAY",
+        "XDG_RUNTIME_DIR",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "XDG_SESSION_TYPE",
+    )
+    try:
+        uid = int(uid)
+    except (TypeError, ValueError):
+        return {}
+
+    best = {}
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        proc = "/proc/%s" % pid
+        try:
+            if os.stat(proc).st_uid != uid:
+                continue
+            with open(os.path.join(proc, "environ"), "rb") as f:
+                raw = f.read()
+        except (OSError, IOError):
+            continue
+
+        env = {}
+        for chunk in raw.split(b"\x00"):
+            if b"=" not in chunk:
+                continue
+            key, _, value = chunk.partition(b"=")
+            try:
+                env[key.decode()] = value.decode()
+            except UnicodeDecodeError:
+                continue
+
+        candidate = {k: env[k] for k in wanted if k in env}
+        # Best case: a process that has both a display and its X cookie.
+        if "DISPLAY" in candidate and "XAUTHORITY" in candidate:
+            return candidate
+        if len(candidate) > len(best):
+            best = candidate
+    return best
+
+
+def _uid_of(username):
+    """Return the uid (as str) of a username, or None if unknown."""
+    try:
+        import pwd
+
+        return str(pwd.getpwnam(username).pw_uid)
+    except Exception:
+        return None
 
 
 def read_config_plugin_agent(objectxmpp):
