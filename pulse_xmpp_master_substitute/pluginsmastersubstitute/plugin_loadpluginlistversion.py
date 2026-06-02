@@ -61,6 +61,18 @@ def _validate_plugin_candidate(pathfile):
     return metadata
 
 
+def _normalize_plugin_type(plugin_type):
+    if not isinstance(plugin_type, str):
+        return "machine"
+
+    normalized_type = plugin_type.strip().lower()
+    if normalized_type == "substitute":
+        return "relayserver"
+    if normalized_type in {"machine", "relayserver", "all"}:
+        return normalized_type
+    return "machine"
+
+
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg["from"]))
@@ -166,10 +178,9 @@ def loadPluginList(self):
         try:
             plugin_metadata = _validate_plugin_candidate(element_name)
             self.plugindata[plugin_metadata["NAME"]] = plugin_metadata["VERSION"]
-            try:
-                self.plugintype[plugin_metadata["NAME"]] = plugin_metadata["TYPE"]
-            except Exception:
-                self.plugintype[plugin_metadata["NAME"]] = "machine"
+            self.plugintype[plugin_metadata["NAME"]] = _normalize_plugin_type(
+                plugin_metadata.get("TYPE", "machine")
+            )
         except Exception:
             logger.error(
                 "Local plugin validation failed path=%s dirpluginlist=%s reason=scan-time validation; plugin ignored.\n%s",
@@ -282,6 +293,17 @@ def plugin_loadpluginlistversion(self, msg, data):
             'config remote agent [%s] is "not updating plugin"' % (msg["from"])
         )
         return
+    agent_type = str(data.get("agenttype", "")).strip().lower()
+    allowed_agent_types = {"all", "relayserver", "machine"}
+    if agent_type not in allowed_agent_types:
+        logger.error(
+            "Type d'agent inconnu pour le déploiement de plugins: agent=%s agenttype=%r types_autorises=%s. Aucun plugin ne sera déployé.",
+            msg["from"],
+            data.get("agenttype"),
+            sorted(allowed_agent_types),
+        )
+        return
+
     # The cooldown blocks immediate redeploy of the same plugin version after a
     # failed install acknowledgement from the agent.
     now = time.time()
@@ -294,10 +316,10 @@ def plugin_loadpluginlistversion(self, msg, data):
                 deploy = True
         except Exception:
             deploy = True
-        if data["agenttype"] != "all":
-            if data["agenttype"] == "relayserver" and self.plugintype[k] == "machine":
+        if agent_type != "all":
+            if agent_type == "relayserver" and self.plugintype[k] == "machine":
                 deploy = False
-            if data["agenttype"] == "machine" and self.plugintype[k] == "relayserver":
+            if agent_type == "machine" and self.plugintype[k] == "relayserver":
                 deploy = False
         if deploy:
             failure_key = (jid_from, k, str(v))
