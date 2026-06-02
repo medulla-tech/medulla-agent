@@ -36,7 +36,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.2", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.3", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -259,6 +259,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 dataerreur["data"]["msg"],
                 str(e),
             )
+            dataerreur["data"]["error_type"] = e.__class__.__name__
+            dataerreur["data"]["error_detail"] = str(e)
             logger.error("An error occured while calling the plugin:  %s" % str(e))
             logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
@@ -575,6 +577,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 dataerreur["data"]["msg"],
                 str(e),
             )
+            dataerreur["data"]["error_type"] = e.__class__.__name__
+            dataerreur["data"]["error_detail"] = str(e)
             logger.error("An error occured while calling the plugin:  %s" % str(e))
             logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
@@ -673,6 +677,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 dataerreur["data"]["msg"],
                 str(e),
             )
+            dataerreur["data"]["error_type"] = e.__class__.__name__
+            dataerreur["data"]["error_detail"] = str(e)
             logger.error("An error occured while calling the plugin:  %s" % str(e))
             logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)

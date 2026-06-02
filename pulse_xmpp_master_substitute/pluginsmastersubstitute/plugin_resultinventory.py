@@ -29,7 +29,7 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.13", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.14", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 
 
 class InventoryFix:
@@ -198,9 +198,22 @@ def send_content(
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     if "inventory" not in data:
-        error_msg = "inventory on machine %s " % msg["from"]
-        if "msg" in data:
-            error_msg = "%s : %s" % (error_msg, data["msg"])
+        payload_keys = sorted(data.keys()) if isinstance(data, dict) else []
+        error_detail = ""
+        if isinstance(data, dict):
+            error_detail = data.get("msg") or data.get("error_detail") or ""
+            if not error_detail and "error" in data:
+                try:
+                    error_detail = json.dumps(data.get("error"))
+                except Exception:
+                    error_detail = str(data.get("error"))
+
+        error_msg = "inventory on machine %s (missing key 'inventory') keys=%s" % (
+            msg["from"],
+            payload_keys,
+        )
+        if error_detail:
+            error_msg = "%s : %s" % (error_msg, error_detail)
         logger.error(error_msg)
         return
     try:
