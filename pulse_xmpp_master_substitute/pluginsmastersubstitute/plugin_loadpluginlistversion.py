@@ -312,6 +312,27 @@ def plugin_loadpluginlistversion(self, msg, data):
         )
         return
 
+    # Ensure runtime state exists even if this handler is invoked before the
+    # first successful scheduled loadPluginList() call.
+    if not hasattr(self, "plugindata") or not hasattr(self, "plugintype"):
+        logger.warning(
+            "Etat plugin non initialise (plugindata/plugintype). Rechargement local de la liste avant comparaison."
+        )
+        self.plugindata = {}
+        self.plugintype = {}
+        try:
+            self.loadPluginList()
+        except Exception:
+            logger.error(
+                "Impossible de charger la liste des plugins localement avant comparaison; aucun deploiement.",
+                exc_info=True,
+            )
+            return
+    if not hasattr(self, "plugin_install_failures"):
+        self.plugin_install_failures = {}
+    if not hasattr(self, "file_deploy_plugin"):
+        self.file_deploy_plugin = []
+
     # The cooldown blocks immediate redeploy of the same plugin version after a
     # failed install acknowledgement from the agent.
     now = time.time()
