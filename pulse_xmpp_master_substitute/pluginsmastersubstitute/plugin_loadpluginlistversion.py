@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import base64
-import importlib.util
+import ast
 import json
 import os
 import logging
@@ -29,22 +29,34 @@ def _validate_plugin_candidate(pathfile):
     # 1) Syntax check: refuse a plugin with invalid Python syntax.
     py_compile.compile(pathfile, doraise=True)
 
-    module_name = os.path.splitext(os.path.basename(pathfile))[0]
-    spec = importlib.util.spec_from_file_location(module_name, pathfile)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Unable to build import spec for {pathfile}")
+    # 2) Parse-only metadata extraction: avoid import-time side effects and
+    # runtime dependency coupling during scan-time validation.
+    with open(pathfile, "r", encoding="utf-8") as file_handle:
+        module_ast = ast.parse(file_handle.read(), filename=pathfile)
 
-    # 2) Real import: catches missing imports or import-time side effects.
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    metadata = None
+    for node in module_ast.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == "plugin":
+                metadata = ast.literal_eval(node.value)
+                break
+        if metadata is not None:
+            break
 
     # 3) Metadata check: the deployment logic needs at least NAME and VERSION
     # to compare local and remote plugin states.
-    metadata = getattr(module, "plugin", None)
     if not isinstance(metadata, dict):
         raise ValueError("Missing plugin metadata dictionary 'plugin'")
     if "NAME" not in metadata or "VERSION" not in metadata:
         raise ValueError("Plugin metadata must define NAME and VERSION")
+    if not isinstance(metadata["NAME"], str) or not isinstance(
+        metadata["VERSION"], str
+    ):
+        raise ValueError("Plugin metadata NAME and VERSION must be strings")
+    if "TYPE" in metadata and not isinstance(metadata["TYPE"], str):
+        metadata["TYPE"] = "machine"
 
     return metadata
 
