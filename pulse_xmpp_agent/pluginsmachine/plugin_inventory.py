@@ -15,6 +15,7 @@ import traceback
 import json
 import logging
 import subprocess
+import shutil
 import lxml.etree as ET
 from lib.agentconffile import (
     conffilename,
@@ -56,6 +57,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     if sys.platform.startswith("win"):
         try:
             send_plugin_update_windows(xmppobject)
+        except Exception as e:
+            logger.error("An error occured while calling the plugin:  %s" % str(e))
+            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+    elif sys.platform.startswith("linux"):
+        try:
+            send_plugin_update_linux(xmppobject)
         except Exception as e:
             logger.error("An error occured while calling the plugin:  %s" % str(e))
             logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
@@ -119,6 +126,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     dataerreur["sessionid"] = sessionid
     timeoutfusion = 120
     msg = []
+    executed_commands = []
 
     if not len(data):
         data = {"forced": "forced"}
@@ -154,9 +162,53 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
     if sys.platform.startswith("linux"):
         if agent == "glpiagent":
-            agent_bin = "glpi-agent"
+            agent_candidates = ["glpi-agent", "fusioninventory-agent"]
         else:
-            agent_bin = "fusioninventory-agent"
+            agent_candidates = ["fusioninventory-agent", "glpi-agent"]
+
+        # Resolve executable robustly for service environments where PATH can
+        # differ from interactive shells. If preferred binary is unavailable,
+        # fallback to the alternate inventory agent.
+        agent_cmd = None
+        agent_bin = None
+        for candidate_bin in agent_candidates:
+            candidate_cmd = shutil.which(candidate_bin)
+            if not candidate_cmd:
+                known_locations = [
+                    "/usr/bin/%s" % candidate_bin,
+                    "/usr/local/bin/%s" % candidate_bin,
+                    "/bin/%s" % candidate_bin,
+                    "/snap/bin/%s" % candidate_bin,
+                ]
+                for candidate_path in known_locations:
+                    if os.path.isfile(candidate_path) and os.access(candidate_path, os.X_OK):
+                        candidate_cmd = candidate_path
+                        break
+            if candidate_cmd:
+                agent_bin = candidate_bin
+                agent_cmd = candidate_cmd
+                break
+
+        if not agent_cmd:
+            raise Exception(
+                "Inventory agent binary not found: candidates=%s (PATH=%s)"
+                % (agent_candidates, os.environ.get("PATH", ""))
+            )
+
+        if agent_bin != agent_candidates[0]:
+            logger.warning(
+                "Preferred inventory agent '%s' unavailable, fallback to '%s'",
+                agent_candidates[0],
+                agent_bin,
+            )
+
+        logger.debug(
+            "Inventory agent executable resolved: candidates=%s selected=%s resolved=%s PATH=%s",
+            agent_candidates,
+            agent_bin,
+            agent_cmd,
+            os.environ.get("PATH", ""),
+        )
         try:
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s" % (nbcmd, timeoutfusion))
@@ -170,15 +222,15 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 if xmppobject.config.via_xmpp == "False":
                     location_option = '--server="%s"' % xmppobject.config.urlinventory
                 if namefilexml and os.path.exists(namefilexml):
-                    cmd = "%s %s %s --additional-content=%s" % (
-                        agent_bin,
+                    cmd = '"%s" %s %s --additional-content=%s' % (
+                        agent_cmd,
                         general_options,
                         location_option,
                         namefilexml,
                     )
                 else:
-                    cmd = "%s %s %s" % (
-                        agent_bin,
+                    cmd = '"%s" %s %s' % (
+                        agent_cmd,
                         general_options,
                         location_option,
                     )
@@ -186,6 +238,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 msg.append(cmd)
                 obj = utils.simplecommand(cmd)
                 msg.append("Result return code %s: %s" % (obj["code"], obj["result"]))
+                executed_commands.append(
+                    {
+                        "attempt": nbcmd,
+                        "timeout": timeoutfusion,
+                        "command": cmd,
+                        "return_code": obj["code"],
+                    }
+                )
                 if obj["code"] == 0:
                     break
                 timeoutfusion = timeoutfusion + 60
@@ -254,6 +314,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 logger.warning(
                     "But if it starts for a while please check that %s is correctly installed and working" % agent_bin
                 )
+                raise Exception(
+                    "Inventory file missing after command execution. "
+                    "agent_bin=%s agent_cmd=%s inventoryfile=%s commands=%s"
+                    % (agent_bin, agent_cmd, inventoryfile, executed_commands[-3:])
+                )
         except Exception as e:
             dataerreur["data"]["msg"] = "Plugin inventory error %s : %s" % (
                 dataerreur["data"]["msg"],
@@ -261,6 +326,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             )
             dataerreur["data"]["error_type"] = e.__class__.__name__
             dataerreur["data"]["error_detail"] = str(e)
+            dataerreur["data"]["command_trace"] = executed_commands[-3:]
             logger.error("An error occured while calling the plugin:  %s" % str(e))
             logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
@@ -702,6 +768,23 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
     if result["base64"] is True:
         result["data"] = base64.b64encode(json.dumps(result["data"]))
+
+    if "inventory" not in result["data"]:
+        dataerreur["data"]["msg"] = "Plugin inventory error %s : missing inventory payload" % (
+            dataerreur["data"]["msg"],
+        )
+        dataerreur["data"]["error_type"] = "MissingInventoryPayload"
+        dataerreur["data"]["error_detail"] = (
+            "No 'inventory' key in result data after collection workflow"
+        )
+        if executed_commands:
+            dataerreur["data"]["command_trace"] = executed_commands[-3:]
+        logger.error("Inventory payload is missing, sending structured error\n%s" % dataerreur)
+        xmppobject.send_message(
+            mto=xmppobject.sub_inventory, mbody=json.dumps(dataerreur), mtype="chat"
+        )
+        return
+
     if data["forced"] == "forced" or boolchange:
         logger.debug("inventory is injected to :  %s" % xmppobject.sub_inventory)
         xmppobject.send_message(
@@ -968,6 +1051,41 @@ def send_plugin_update_windows(xmppobject):
             "base64": False,
         }
 
+        xmppobject.send_message(
+            mto=xmppobject.sub_updates,
+            mbody=json.dumps(update_information),
+            mtype="chat",
+        )
+    except Exception as e:
+        logger.error("An error occured while calling the plugin:  %s" % str(e))
+        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+
+
+def send_plugin_update_linux(xmppobject):
+    sessioniddata = utils.getRandomName(6, "update_linux")
+    updater = UpdateLinux(
+        dry_run=False,            # exécution réelle
+        intranet_security=False   # dépôts normaux
+    )
+    logger.info(f"Distribution détectée : {updater.distro_name}\n")
+
+    # ============================
+    # 1. Fetch updates
+    # ============================
+    logger.info("[1] Recherche des mises à jour...")
+    infosys = updater.fetch_updates()
+    json_report = updater.to_json(return_dict=True)
+    # logger.info(f"[1] Recherche des mises à jour... {json_report}")
+
+    try:
+        update_information = {
+            "action": "update_linux",
+            "sessionid": sessioniddata,
+             "data": {"system_info": updater.to_json(base64_encode=True)},
+            "ret": 0,
+            "base64": False,
+        }
+        logger.info(f"send_message... {xmppobject.sub_updates}")
         xmppobject.send_message(
             mto=xmppobject.sub_updates,
             mbody=json.dumps(update_information),
