@@ -17,7 +17,7 @@ from lib.utils import convert
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.2", "NAME": "loadpluginlistversion", "TYPE": "substitute", "LOAD": "START"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "loadpluginlistversion", "TYPE": "substitute", "LOAD": "START"}  # fmt: skip
 
 
 def _validate_plugin_candidate(pathfile):
@@ -177,10 +177,18 @@ def loadPluginList(self):
         # This blocks bad plugins before they enter the deployment pipeline.
         try:
             plugin_metadata = _validate_plugin_candidate(element_name)
+            raw_plugin_type = plugin_metadata.get("TYPE", "machine")
+            normalized_plugin_type = _normalize_plugin_type(raw_plugin_type)
+            if str(raw_plugin_type).strip().lower() != normalized_plugin_type:
+                logger.warning(
+                    "Normalisation du type plugin: fichier=%s plugin=%s type_source=%r type_normalise=%s",
+                    element_name,
+                    plugin_metadata["NAME"],
+                    raw_plugin_type,
+                    normalized_plugin_type,
+                )
             self.plugindata[plugin_metadata["NAME"]] = plugin_metadata["VERSION"]
-            self.plugintype[plugin_metadata["NAME"]] = _normalize_plugin_type(
-                plugin_metadata.get("TYPE", "machine")
-            )
+            self.plugintype[plugin_metadata["NAME"]] = normalized_plugin_type
         except Exception:
             logger.error(
                 "Local plugin validation failed path=%s dirpluginlist=%s reason=scan-time validation; plugin ignored.\n%s",
@@ -319,8 +327,22 @@ def plugin_loadpluginlistversion(self, msg, data):
         if agent_type != "all":
             if agent_type == "relayserver" and self.plugintype[k] == "machine":
                 deploy = False
+                logger.debug(
+                    "Déploiement ignoré: agent=%s agenttype=%s plugin=%s plugintype=%s raison=plugin machine non applicable sur relayserver",
+                    msg["from"],
+                    agent_type,
+                    k,
+                    self.plugintype[k],
+                )
             if agent_type == "machine" and self.plugintype[k] == "relayserver":
                 deploy = False
+                logger.debug(
+                    "Déploiement ignoré: agent=%s agenttype=%s plugin=%s plugintype=%s raison=plugin relay/substitute non applicable sur machine",
+                    msg["from"],
+                    agent_type,
+                    k,
+                    self.plugintype[k],
+                )
         if deploy:
             failure_key = (jid_from, k, str(v))
             cooldown_until = self.plugin_install_failures.get(failure_key, 0)

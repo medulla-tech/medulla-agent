@@ -11,6 +11,8 @@ from sqlalchemy import (
     DateTime,
     Text,
     Enum,
+    Index,
+    text,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import TINYINT
@@ -1012,5 +1014,212 @@ class UpWindowsKbUninstall(Base):
         UniqueConstraint("updateid", "hostname", name="uniq_update_host"),
     )
 
-    
+    # =========== Update LINUX =========================
+# ============ Tables name =========================
+
+class UpMachineLinux(Base, XmppMasterDBObj):
+    __tablename__ = "up_machine_linux"
+
+    # Hérité : id = Column(Integer, primary_key=True)
+
+    entity_id = Column(Integer, nullable=False)
+    harduuid = Column(String(64), nullable=False, unique=True)
+
+    distributor_id = Column(String(64))
+    description = Column(String(128))
+    release_version = Column(String(32))
+    codename = Column(String(64))
+
+    kernel_version = Column(String(64), default="0")
+
+    security_count = Column(Integer, default=0)
+    security_require = Column(Boolean, default=False)
+    security_curent = Column(Boolean, default=False)
+    security_start = Column(DateTime)
+    security_stop = Column(DateTime)
+    security_login = Column(String(64), default="0")
+    security_interval = Column(String(64), default="0")
+
+    kernel_count = Column(Integer, default=0)
+    kernel_require = Column(Boolean, default=False)
+    kernel_current = Column(Boolean, default=False)
+    kernel_start = Column(DateTime)
+    kernel_stop = Column(DateTime)
+    kernel_login = Column(String(64), default="0")
+    kernel_interval = Column(String(64), default="0")
+
+    other_count = Column(Integer, default=0)
+    other_require = Column(Boolean, default=False)
+    other_current = Column(Boolean, default=False)
+    other_start = Column(DateTime)
+    other_stop = Column(DateTime)
+    other_login = Column(String(64), default="0")
+    other_interval = Column(String(64), default="0")
+
+    total_count = Column(Integer, default=0)
+
+    last_scan = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+
+    __table_args__ = (
+        Index("idx_last_scan", "last_scan"),
+        Index("idx_kernel_require", "kernel_require"),
+        Index("idx_distributor_id", "distributor_id"),
+        Index("idx_kernel_version", "kernel_version"),
+        Index("idx_security_require", "security_require"),
+        Index("idx_other_require", "other_require"),
+        Index("idx_security_start", "security_start"),
+        Index("idx_security_stop", "security_stop"),
+        Index("idx_kernel_start", "kernel_start"),
+        Index("idx_kernel_stop", "kernel_stop"),
+        Index("idx_other_start", "other_start"),
+        Index("idx_other_stop", "other_stop"),
+        Index("idx_security_login", "security_login"),
+        Index("idx_kernel_login", "kernel_login"),
+        Index("idx_other_login", "other_login"),
+    )
+
+
+class UpPackageLinux(Base, XmppMasterDBObj):
+    __tablename__ = "up_package_linux"  # Notez les doubles underscores pour __tablename__
+
+    name = Column(String(255), nullable=False)
+    version = Column(String(255))
+
+    # Contrainte d'unicité composite sur (name, version)
+    __table_args__ = (
+        UniqueConstraint('name', 'version', name='uq_package_name_version'),
+    )
+#
+# class UpPackageLinux(Base, XmppMasterDBObj):
+#     __tablename__ = "up_package_linux"
+#     name = Column(String(255), nullable=False, unique=True)
+#     version = Column(String(255), nullable=False, unique=True)
+
+class UpCveLinux(Base, XmppMasterDBObj):
+    __tablename__ = "up_cve_linux"
+    cve = Column(String(32), nullable=False, unique=True)
+    severity = Column(Integer)
+    description = Column(String(128))
+
+
+class UpPackageCveLinux(Base):
+    __tablename__ = "up_package_cve_linux"
+    package_id = Column(
+        Integer,
+        ForeignKey("up_package_linux.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    cve_id = Column(
+        Integer,
+        ForeignKey("up_cve_linux.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+
+    __table_args__ = (
+        Index("idx_up_package_cve_linux_cve_package", "cve_id", "package_id"),
+    )
+#
+# class UpMachineUpdateLinux(Base, XmppMasterDBObj):
+#     __tablename__ = "up_machine_update_linux"
+#     machine_harduuid = Column(
+#         String(64),
+#         ForeignKey("up_machine_linux.harduuid", ondelete="CASCADE"),
+#         nullable=False
+#     )
+#     package_id = Column(
+#         Integer,
+#         ForeignKey("up_package_linux.id", ondelete="CASCADE"),
+#         nullable=False
+#     )
+#     type = Column(String(10), nullable=False)
+#     __table_args__ = (
+#         UniqueConstraint("machine_harduuid", "package_id", name="uniq_machine_package"),
+#     )
+
+class UpMachineUpdateLinux(Base, XmppMasterDBObj):
+    __tablename__ = "up_machine_update_linux"
+
+    machine_id = Column(
+        Integer,
+        ForeignKey("up_machine_linux.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    package_id = Column(
+        Integer,
+        ForeignKey("up_package_linux.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    type = Column(
+        Enum("security", "kernel", "other", "normal"),
+        nullable=False
+    )
+
+    __table_args__ = (
+        Index("idx_up_machine_update_linux_machine_package", "machine_id", "package_id"),
+        Index("idx_up_machine_update_linux_package_machine", "package_id", "machine_id"),
+        Index("idx_up_machine_update_linux_machine_type", "machine_id", "type"),
+    )
+
+
+class UpRhelVersions(Base, XmppMasterDBObj):
+    __tablename__ = "up_rhel_versions"
+
+    version = Column(Integer, nullable=False)
+    name = Column(String(45))
+    is_managed = Column(Boolean, nullable=False, default=False)
+    is_current_stable = Column(Boolean, nullable=False, default=False)
+    is_latest_lts = Column(Boolean, nullable=False, default=False)
+    end_standard_support = Column(DateTime)
+    end_els_support = Column(DateTime)
+    description = Column(String(255))
+    package = Column(String(36))
+    packagename = Column(String(45))
+
+    __table_args__ = (
+        UniqueConstraint("version", name="uniq_version"),
+    )
+
+
+class UpDebianVersions(Base, XmppMasterDBObj):
+    __tablename__ = "up_debian_versions"
+
+    version = Column(Integer, nullable=False)
+    name = Column(String(45), nullable=False)
+    is_managed = Column(Boolean, nullable=False, default=False)
+    is_current_stable = Column(Boolean, nullable=False, default=False)
+    is_latest_lts = Column(Boolean, nullable=False, default=False)
+    end_standard_support = Column(DateTime)
+    end_lts_support = Column(DateTime)
+    end_elts_support = Column(DateTime)
+    description = Column(String(100))
+    package = Column(String(36))
+    packagename = Column(String(45))
+
+    __table_args__ = (
+        UniqueConstraint("version", name="uniq_version"),
+        UniqueConstraint("name", name="uniq_name"),
+    )
+
+
+class UpUbuntuVersions(Base, XmppMasterDBObj):
+    __tablename__ = "up_ubuntu_versions"
+
+    version = Column(String(10), nullable=False)
+    name = Column(String(45), nullable=False)
+    is_managed = Column(Boolean, nullable=False, default=False)
+    is_current_stable = Column(Boolean, nullable=False, default=False)
+    is_latest_lts = Column(Boolean, nullable=False, default=False)
+    end_standard_support = Column(DateTime)
+    end_lts_support = Column(DateTime)
+    end_esm_support = Column(DateTime)
+    description = Column(String(255))
+    package = Column(String(36))
+    packagename = Column(String(45))
+
+    __table_args__ = (
+        UniqueConstraint("version", name="uniq_version"),
+        UniqueConstraint("name", name="uniq_name"),
+    )
     

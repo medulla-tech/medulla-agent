@@ -97,7 +97,12 @@ from lib.plugins.xmpp.schema import (
     Users_adgroups,
     Up_auto_approve_rules,
     UpWindowsKbUninstall,
-    Up_machine_activated,
+    Up_machine_activated,   
+    UpMachineLinux,
+    UpPackageLinux,
+    UpCveLinux,
+    UpPackageCveLinux,
+    UpMachineUpdateLinux    
 )
 
 # Imported last
@@ -12448,3 +12453,439 @@ where d.jidmachine='%s' and c.package_id = '%s'
         
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [rowproxy._asdict() for rowproxy in resultproxy]
+
+
+
+    @DatabaseHelper._sessionm
+    def get_machines_to_update_major_debian_for_entity(
+        self,
+        session,
+        entity_id: int,
+        offset: Optional[int] = None,
+        limit: Optional[int] = None,
+    ) -> Dict[str, Union[int, Dict[str, List]]]:
+        # Requête pour le nombre total de machines à mettre à jour
+        query_to_update = text("""
+            SELECT COUNT(*)
+            FROM xmppmaster.up_machine_linux upl
+            WHERE upl.release_version < (SELECT MAX(version) FROM xmppmaster.up_debian_versions ve WHERE ve.is_managed = 1)
+            AND upl.entity_id = :entity_id
+        """)
+        nb_a_mettre_a_jour = session.execute(query_to_update, {"entity_id": entity_id}).scalar()
+
+        # Requête paginée
+        query = text("""
+            SELECT
+                ma.hostname,
+                ma.jid,
+                upl.description,
+                upl.entity_id,
+                upl.security_count,
+                upl.kernel_count as application,
+                upl.other_count,
+                upl.total_count
+            FROM
+                xmppmaster.machines ma
+                INNER JOIN xmppmaster.up_machine_linux upl ON upl.harduuid = ma.uuid_serial_machine
+            WHERE
+                upl.release_version < (SELECT MAX(version) FROM xmppmaster.up_debian_versions ve WHERE ve.is_managed = 1)
+                AND upl.entity_id = :entity_id
+        """)
+
+        if limit is not None:
+            query += text(" LIMIT :limit")
+        if offset is not None:
+            query += text(" OFFSET :offset")
+
+        result = session.execute(query, {"entity_id": entity_id, "limit": limit, "offset": offset}).fetchall()
+
+        # Construction du dictionnaire de sortie
+        output = {
+            "nb_a_mettre_a_jour": nb_a_mettre_a_jour,
+            "machines": {
+                "hostname": [row[0] for row in result],
+                "jid": [row[1] for row in result],
+                # ... (autres colonnes)
+            }
+        }
+        return output
+
+    @DatabaseHelper._sessionm
+    def get_distribution_version_compliance(
+        self,
+        session,
+        distributor_id: str,
+        entity_id: Optional[Union[int, List[int]]] = None,
+        start: Optional[int] = None,
+        limit: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Calcule les statistiques de conformité de version pour une distribution Linux donnée
+        (ex: debian, ubuntu, redhat).
+
+        La conformité est évaluée en comparant la version installée sur chaque machine
+        (`up_machine_linux.release_version`) avec la version maximale prise en charge
+        pour la distribution concernée.
+
+        Args:
+            session: session SQLAlchemy
+            distributor_id: nom de la distribution ("debian", "ubuntu", "redhat")
+            entity_id:
+                - None → toutes les entités
+                - int → une seule entité
+                - list[int] → plusieurs entités spécifiques
+            start: index de départ pour la pagination (OFFSET)
+            limit: nombre maximum de lignes à renvoyer (LIMIT)
+
+        Résultat :
+            - distribution (str) : Famille de distribution analysée
+            - version_distribution (str) : Nom complet de la version max supportée
+            - max_version (int) : Version max supportée (champ version)
+            - by_entity (list[dict]) : stats par entité (paginated)
+                * entity_id (int)
+                * total_machines (int)
+                * outdated_machines (int)
+                * up_to_date_machines (int)
+                * pending_support_update (int)
+                * compliance_rate (float)
+            - totals (dict) : Totaux uniquement pour les entités sélectionnées
+            - compliance_rate (float) : taux global
+        """
+        self.logger.info(f"=== Début get_distribution_version_compliance ({distributor_id}) ===")
+
+        # Mapping distribution → table versions
+        version_table_by_distribution = {
+            "debian": "xmppmaster.up_debian_versions",
+            "ubuntu": "xmppmaster.up_ubuntu_versions",
+            "redhat": "xmppmaster.up_redhat_versions",
+        }
+        version_table = version_table_by_distribution.get(distributor_id)
+        if not version_table:
+            raise ValueError(f"Distribution non supportée: {distributor_id}")
+
+        # Version max + nom
+        max_version_query = text(f"""
+            SELECT name, MAX(version) as version
+            FROM {version_table}
+            WHERE is_managed = 1 and is_current_stable=1;
+        """)
+        row = session.execute(max_version_query).first()
+
+
+        if not row:
+            return  {
+                "distribution": distributor_id,
+                "name_version": None,
+                "max_version": None
+                }
+        else:
+            max_version = int(row.version)
+            name_version = row.name
+            up_version = {
+                "distribution": distributor_id,
+                "name_version": name_version,
+                "max_version": max_version
+                }
+            # return {
+            #     "distribution": distributor_id,
+            #     "name_version": None,
+            #     "max_version": None,
+            #     "by_entity": [],
+            #     "totals": {},
+            #     "compliance_rate": 0.0,
+            # }
+
+        # Construction WHERE selon entity_id
+        where_clause = "upl.distributor_id = :distributor_id"
+        params = {"distributor_id": distributor_id, "max_version": max_version}
+
+        if entity_id:
+            if isinstance(entity_id, int):
+                where_clause += " AND upl.entity_id = :entity_id"
+                params["entity_id"] = entity_id
+            elif isinstance(entity_id, list) and entity_id:
+                where_clause += " AND upl.entity_id IN :entity_ids"
+                params["entity_ids"] = tuple(entity_id)  # tuple nécessaire pour IN
+            # else:
+            #     # liste vide → aucune machine
+            #     return {
+            #         "distribution": distributor_id,
+            #         "name_version": name_version,
+            #         "max_version": max_version,
+            #         "by_entity": [],
+            #         "totals": {
+            #             "total_machines": 0,
+            #             "outdated_machines": 0,
+            #             "up_to_date_machines": 0,
+            #             "pending_support_update": 0,
+            #         },
+            #         "compliance_rate": 0.0,
+            #     }
+
+        # Stats par entité
+        stats_query = f"""
+            SELECT
+                upl.entity_id,
+                COUNT(*) AS total_machines,
+                SUM(CASE WHEN upl.release_version < :max_version THEN 1 ELSE 0 END) AS outdated_machines,
+                SUM(CASE WHEN upl.release_version = :max_version THEN 1 ELSE 0 END) AS up_to_date_machines,
+                SUM(CASE WHEN upl.release_version > :max_version THEN 1 ELSE 0 END) AS pending_support_update
+            FROM
+                xmppmaster.up_machine_linux upl
+            WHERE
+                {where_clause}
+            GROUP BY
+                upl.entity_id
+        """
+        # Pagination
+        if isinstance(limit, int) and limit > 0:
+            stats_query += " LIMIT :limit"
+            params["limit"] = limit
+        if isinstance(start, int) and start >= 0:
+            stats_query += " OFFSET :start"
+            params["start"] = start
+#
+#         if limit is not None:
+#             stats_query += " LIMIT :limit"
+#             params["limit"] = limit
+#         if start is not None:
+#             stats_query += " OFFSET :start"
+#             params["start"] = start
+
+        stats_query = text(stats_query)
+        rows = session.execute(stats_query, params).fetchall()
+
+        by_entity = []
+        total_machines_all = 0
+        total_outdated_all = 0
+        total_up_to_date_all = 0
+        total_pending_all = 0
+
+        for row in rows:
+            total = int(row.total_machines)
+            outdated = int(row.outdated_machines or 0)
+            up_to_date = int(row.up_to_date_machines or 0)
+            pending = int(row.pending_support_update or 0)
+
+            by_entity.append({
+                "entity_id": int(row.entity_id),
+                "total_machines": total,
+                "outdated_machines": outdated,
+                "up_to_date_machines": up_to_date,
+                "pending_support_update": pending,
+                "compliance_rate": round((up_to_date / total * 100), 2) if total else 0.0,
+            })
+
+            total_machines_all += total
+            total_outdated_all += outdated
+            total_up_to_date_all += up_to_date
+            total_pending_all += pending
+
+        compliance_rate = round((total_up_to_date_all / total_machines_all * 100), 2) if total_machines_all else 0.0
+
+        result = {
+            "distribution": distributor_id,
+            "name_version": name_version,
+            "max_version": max_version,
+            "by_entity": by_entity,
+            # "totals": {
+            #     "total_machines": total_machines_all,
+            #     "outdated_machines": total_outdated_all,
+            #     "up_to_date_machines": total_up_to_date_all,
+            #     "pending_support_update": total_pending_all,
+            # },
+            # "compliance_rate": compliance_rate,
+        }
+
+        self.logger.info(f"=== Fin get_distribution_version_compliance ({distributor_id}) ===")
+        return result
+
+
+    @DatabaseHelper._sessionm
+    def update_machine_linux_from_scan(self, session, scan_data: dict):
+        self.logger.info("=== Début update_machine_linux_from_scan ===")
+
+        try:
+            harduuid = scan_data["serialuuid"]
+            generated_at = scan_data["generated_at"]
+            system = scan_data.get("system", {})
+            counts = scan_data.get("counts", {})
+
+            self.logger.info(f"Traitement machine {harduuid}")
+
+            # ==================================================
+            # 1️⃣ RÉCUPÉRATION DE L'ENTITY_ID GLPI (via jointure)
+            # ==================================================
+            entity_id = (
+                session.query(Glpi_entity.glpi_id)
+                .join(Machines, Machines.glpi_entity_id == Glpi_entity.id)
+                .filter(Machines.uuid_serial_machine == harduuid)
+                .scalar()
+            )
+
+            if entity_id is None:
+                self.logger.warning(f"Aucune entité GLPI trouvée pour {harduuid}")
+            else:
+                self.logger.info(f"Entity GLPI = {entity_id}")
+
+            # =========================
+            # 2️⃣ UPSERT MACHINE LINUX
+            # =========================
+            machine = (
+                session.query(UpMachineLinux)
+                .filter_by(harduuid=harduuid)
+                .first()
+            )
+
+            if not machine:
+                self.logger.info("Machine inexistante → création")
+                machine = UpMachineLinux(
+                    harduuid=harduuid,
+                    last_scan=generated_at
+                )
+                session.add(machine)
+
+            machine.entity_id = entity_id
+            machine.distributor_id = system.get("Distributor ID")
+            machine.description = system.get("Description")
+            machine.release_version = system.get("Release")
+            machine.codename = system.get("Codename")
+            machine.kernel_version = system.get("kernel_version")
+            machine.last_scan = generated_at
+
+            machine.security_count = counts.get("security", 0)
+            machine.kernel_count = counts.get("kernel", 0)
+            machine.other_count = counts.get("other", 0)
+            machine.total_count = counts.get("total", 0)
+
+            session.flush()
+            machine_id = machine.id
+
+            self.logger.info(f"UpMachineLinux ID={machine_id} mis à jour")
+
+            # =========================
+            # 3️⃣ RESET DES UPDATES
+            # =========================
+            deleted = (
+                session.query(UpMachineUpdateLinux)
+                .filter_by(machine_id=machine_id)
+                .delete()
+            )
+
+            self.logger.info(f"{deleted} updates supprimés")
+
+            # =========================
+            # 4️⃣ TRAITEMENT DES UPDATES
+            # =========================
+            def process_updates(update_list, update_type):
+                for item in update_list:
+                    package_name = item["package"]
+                    package_version = item.get("version")
+
+                    package = (
+                        session.query(UpPackageLinux)
+                        .filter_by(name=package_name, version=package_version)
+                        .first()
+                    )
+
+                    if not package:
+                        package = UpPackageLinux(
+                            name=package_name,
+                            version=package_version
+                        )
+                        session.add(package)
+                        session.flush()
+
+                    session.add(
+                        UpMachineUpdateLinux(
+                            machine_id=machine_id,
+                            package_id=package.id,
+                            type=update_type
+                        )
+                    )
+
+                    for cve_item in item.get("cve", []):
+                        if isinstance(cve_item, dict):
+                            cve_code = cve_item.get("id")
+                            severity = cve_item.get("severity")
+                            description = cve_item.get("description")
+                        else:
+                            cve_code = cve_item
+                            severity = None
+                            description = None
+
+                        cve = (
+                            session.query(UpCveLinux)
+                            .filter_by(cve=cve_code)
+                            .first()
+                        )
+
+                        if not cve:
+                            cve = UpCveLinux(
+                                cve=cve_code,
+                                severity=severity,
+                                description=description
+                            )
+                            session.add(cve)
+                            session.flush()
+
+                        exists = (
+                            session.query(UpPackageCveLinux)
+                            .filter_by(
+                                package_id=package.id,
+                                cve_id=cve.id
+                            )
+                            .first()
+                        )
+
+                        if not exists:
+                            session.add(
+                                UpPackageCveLinux(
+                                    package_id=package.id,
+                                    cve_id=cve.id
+                                )
+                            )
+
+            process_updates(scan_data.get("security_updates", []), "security")
+            process_updates(scan_data.get("kernel_updates", []), "kernel")
+            process_updates(scan_data.get("other_updates", []), "other")
+
+            session.commit()
+            self.logger.info(f"=== Fin update_machine_linux_from_scan OK ({harduuid}) ===")
+            return True
+
+        except Exception:
+            session.rollback()
+            self.logger.error("update_machine_linux_from_scan failed")
+            self.logger.error(traceback.format_exc())
+            return False
+
+    @DatabaseHelper._sessionm
+    def get_max_supported_debian_version(self, session) -> Optional[dict]:
+        """
+        Retourne la ligne complète correspondant à la version Debian
+        la plus élevée prise en charge.
+        """
+        query = text("""
+            SELECT *
+            FROM xmppmaster.up_debian_versions ve
+            WHERE ve.version = (
+                SELECT MAX(version)
+                FROM xmppmaster.up_debian_versions
+                WHERE is_managed = 1
+            )
+            AND ve.is_managed = 1
+            LIMIT 1
+        """)
+
+        row = session.execute(query).fetchone()
+        if not row:
+            return None
+
+        return dict(row)
+
+
+
+    # -------------------------------------------------------------------------------
+
+  
