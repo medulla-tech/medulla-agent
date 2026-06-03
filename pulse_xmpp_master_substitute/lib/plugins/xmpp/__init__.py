@@ -6,6 +6,9 @@
 xmppmaster database handler
 """
 
+# Python standard library
+from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Union
+
 # SqlAlchemy
 from sqlalchemy import (
     create_engine,
