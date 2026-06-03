@@ -17,7 +17,7 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.2", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # fmt: skip
 
@@ -36,7 +36,7 @@ def schedule_main(objectxmpp):
 
     # Check if enable_kiosk is set to True in the configuration
     if not getattr(objectxmpp, "enable_kiosk", False):
-        logger.debug("Kiosk is disabled in configuration.")
+        logger.debug("Kiosk is enabled in configuration.")
         return
 
     logger.debug("Kiosk is enabled in configuration.")
@@ -348,10 +348,10 @@ def read_config_plugin_agent(objectxmpp):
         )
     except (configparser.NoOptionError, configparser.NoSectionError, ValueError):
         objectxmpp.enable_kiosk = (
-            False  # Default to False if the setting is missing or invalid
+            True  # Default to True if the setting is missing or invalid
         )
         logger.warning(
-            "The 'enable_kiosk' option is missing or invalid. Defaulting to False."
+            "The 'enable_kiosk' option is missing or invalid. Defaulting to True."
         )
 
 
