@@ -26,6 +26,20 @@ from lib.agentconffile import (
     rotation_file,
 )
 
+_import_update_linux_error = None
+_import_update_linux_traceback = None
+try:
+    from lib.update_linux import UpdateLinux
+except Exception as exc_lib:
+    _import_update_linux_error = exc_lib
+    _import_update_linux_traceback = traceback.format_exc()
+    try:
+        from update_linux import UpdateLinux
+    except Exception as exc_local:
+        _import_update_linux_error = exc_local
+        _import_update_linux_traceback = traceback.format_exc()
+        UpdateLinux = None
+
 import hashlib
 
 logger = logging.getLogger()
@@ -1062,6 +1076,18 @@ def send_plugin_update_windows(xmppobject):
 
 
 def send_plugin_update_linux(xmppobject):
+    if UpdateLinux is None:
+        logger.warning(
+            "Module UpdateLinux indisponible: update_linux non envoye (inventaire principal maintenu). Cause import: %s",
+            repr(_import_update_linux_error),
+        )
+        if _import_update_linux_traceback:
+            logger.error(
+                "Traceback import UpdateLinux:\n%s",
+                _import_update_linux_traceback,
+            )
+        return
+
     sessioniddata = utils.getRandomName(6, "update_linux")
     updater = UpdateLinux(
         dry_run=False,            # exécution réelle
