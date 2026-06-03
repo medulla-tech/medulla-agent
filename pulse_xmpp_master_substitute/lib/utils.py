@@ -834,10 +834,7 @@ def call_plugin_separate(name, *args, **kwargs):
         count = 0
         setattr(args[0], "num_call%s" % args[1], count)
     pluginaction = loadModule(name)
-    plugin_action = _get_plugin_action_or_log(pluginaction, name, "call_plugin_separate")
-    if plugin_action is None:
-        return
-    loop.call_soon_threadsafe(plugin_action, *args, **kwargs)
+    loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
 
 
 def call_plugin(name, *args, **kwargs):
@@ -873,12 +870,9 @@ def call_plugin(name, *args, **kwargs):
         setattr(args[0], "num_call%s" % args[1], 0)
         count = getattr(args[0], "num_call%s" % args[1])
     pluginaction = loadModule(name)
-    plugin_action = _get_plugin_action_or_log(pluginaction, name, "call_plugin")
-    if plugin_action is None:
-        return
 
     try:
-        result = loop.run_in_executor(None, plugin_action, *args, **kwargs)
+        result = loop.run_in_executor(None, pluginaction.action, *args, **kwargs)
         return result
     except Exception:
         logging.getLogger().error("call_plugin %s" % traceback.format_exc())
@@ -901,12 +895,7 @@ def call_plugin_sequentially(name, *args, **kwargs):
         )
     try:
         pluginaction = loadModule(name)
-        plugin_action = _get_plugin_action_or_log(
-            pluginaction, name, "call_plugin_sequentially"
-        )
-        if plugin_action is None:
-            return
-        plugin_action(*args, **kwargs)
+        pluginaction.action(*args, **kwargs)
     except:
         logging.getLogger().error(
             "An error occured while calling the plugin:  %s" % args[1]
