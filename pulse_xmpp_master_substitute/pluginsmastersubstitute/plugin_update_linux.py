@@ -120,7 +120,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         XmppMasterDatabase().update_machine_linux_from_scan(scan_data=scan_payload)
 
         logger.info(
-            "scan linux enregistre harduuid=%s serialuuid=%s counts=%s",
+            "scan linux enregistre serialnumber=%s harduuid=%s serialuuid=%s counts=%s",
+            scan_payload.get("serialnumber"),
             scan_payload.get("harduuid"),
             scan_payload.get("serialuuid"),
             scan_payload.get("counts"),

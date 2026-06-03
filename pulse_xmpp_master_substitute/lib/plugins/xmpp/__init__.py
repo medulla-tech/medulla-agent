@@ -12709,8 +12709,21 @@ where d.jidmachine='%s' and c.package_id = '%s'
         self.logger.info("=== Début update_machine_linux_from_scan ===")
 
         try:
-            harduuid = scan_data["serialuuid"]
-            generated_at = scan_data["generated_at"]
+            harduuid = (
+                scan_data.get("serialnumber")
+                or
+                scan_data.get("serialuuid")
+                or scan_data.get("harduuid")
+                or scan_data.get("uuid_serial_machine")
+            )
+            if not harduuid:
+                self.logger.warning(
+                    "update_machine_linux_from_scan ignoré: identifiant machine absent (attendu: serialnumber/serialuuid/harduuid/uuid_serial_machine). clés reçues=%s",
+                    sorted(scan_data.keys()),
+                )
+                return False
+
+            generated_at = scan_data.get("generated_at") or datetime.utcnow()
             system = scan_data.get("system", {})
             counts = scan_data.get("counts", {})
 
@@ -12740,7 +12753,24 @@ where d.jidmachine='%s' and c.package_id = '%s'
                 .first()
             )
 
+            # entity_id est NOT NULL dans up_machine_linux:
+            # - si la machine existe deja, on conserve son entity_id courant
+            # - sinon, on ne peut pas creer la ligne sans mapping d'entite
+            if entity_id is None and machine and machine.entity_id is not None:
+                entity_id = machine.entity_id
+                self.logger.info(
+                    "Entity GLPI absente dans le scan, conservation entity_id existant=%s pour %s",
+                    entity_id,
+                    harduuid,
+                )
+
             if not machine:
+                if entity_id is None:
+                    self.logger.warning(
+                        "Creation UpMachineLinux ignoree: entity_id introuvable pour harduuid=%s",
+                        harduuid,
+                    )
+                    return False
                 self.logger.info("Machine inexistante → création")
                 machine = UpMachineLinux(
                     harduuid=harduuid,

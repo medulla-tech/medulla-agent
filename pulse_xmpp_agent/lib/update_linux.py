@@ -22,6 +22,7 @@ import distro  # pip install distro
 import socket
 import uuid
 from lib.uuid_deterministic import DeterministicUUID
+from lib.utils import serialnumbermachine
 logger = logging.getLogger(__name__)
 
 # ######################################################################
@@ -205,6 +206,7 @@ class LinuxSystemBase(ABC):
         data = {
             "generated_at": datetime.utcnow().isoformat() + "Z",
             "harduuid" : self.harduuid,
+            "serialnumber": serialnumbermachine(),
             "system": self.system_info,
             "counts": self.counts,
             "security_updates": self.security_updates,
