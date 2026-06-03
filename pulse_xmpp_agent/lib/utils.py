@@ -2353,7 +2353,7 @@ class protodef:
                             port = cux.laddr.port
                         if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
                             protport["ssh"] = port
-                elif process.name() == "xrdp":
+                elif process.name() == "xrdp" or process.name() == "gnome-remote-desktop-daemon":
                     process_handler = psutil.Process(process.pid)
                     for cux in process_handler.connections():
                         try:
