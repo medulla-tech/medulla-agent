@@ -77,7 +77,7 @@ install_agent_deps_ubuntu() {
     # Install required packages
     apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc xrdp sudo syncthing 
     # Remove deadsnakes repository
-    rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-noble.sources
+    rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-*.sources
     apt update
 	# Set Python 3.11 as default python3
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
