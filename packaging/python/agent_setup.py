@@ -69,6 +69,7 @@ setup(
             "xmltodict",
             "aiofiles",
             "websockets",
+            "distro",
         ]
     ),
 )

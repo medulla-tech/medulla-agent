@@ -149,6 +149,7 @@ Summary:        Pulse 2 common files
 Group:          System/Servers
 Requires:       python3.11-xmltodict
 Requires:       python3.11-croniter
+Requires:       python3.11-distro
 Requires:       jq
 BuildArch:      noarch
 
