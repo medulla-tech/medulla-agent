@@ -7,7 +7,7 @@ DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//'
 VERSION_XMPP_AGENT=5.6.0
 VERSION_KIOSK_INTERFACE=2.0.0
 FILETREE_VERSION=0.1
-BRANCH=master
+BRANCH=integration
 
 PYVER=3
 # Used during building to set the version
