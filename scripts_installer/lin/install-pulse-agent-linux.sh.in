@@ -217,6 +217,9 @@ setup_agent() {
     fi
     cp /tmp/medulla/*.ini ${CONFIG_DIR}
     cp /tmp/medulla/agentconf.ini.tpl ${CONFIG_DIR}
+    chmod 700 ${CONFIG_DIR}
+    chmod 600 ${CONFIG_DIR}/agentconf.*
+    chmod 600 ${CONFIG_DIR}/cluster.ini
 
     echo "Configuring inventory agent..."
     case "$DISTRO" in
