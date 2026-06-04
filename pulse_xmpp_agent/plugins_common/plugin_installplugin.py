@@ -13,7 +13,7 @@ import traceback
 import time
 from lib.utils import set_logging_level
 
-plugin = {"VERSION": "1.28", "NAME": "installplugin", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "installplugin", "TYPE": "all"}  # fmt: skip
 
 
 def _normalize_plugin_source(payload):
