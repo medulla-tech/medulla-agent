@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import importlib.util
+import importlib.machinery
 import io
 import os
 import py_compile
@@ -31,8 +32,9 @@ def _validate_plugin_file(pathfile):
     # mismatch between substitute and agent environments.
     py_compile.compile(pathfile, doraise=True)
 
-    module_name = os.path.splitext(os.path.basename(pathfile))[0]
-    spec = importlib.util.spec_from_file_location(module_name, pathfile)
+    module_name = os.path.splitext(os.path.basename(pathfile))[0].replace(".", "_")
+    loader = importlib.machinery.SourceFileLoader(module_name, pathfile)
+    spec = importlib.util.spec_from_loader(module_name, loader, origin=pathfile)
     if spec is None or spec.loader is None:
         raise ImportError(f"Unable to build import spec for {pathfile}")
 
