@@ -974,29 +974,6 @@ def loadModule(filename):
     return module
 
 
-def _get_plugin_action_or_log(pluginaction, plugin_path, caller_name):
-    """Retourne l'action du plugin ou journalise pourquoi il est ignoré."""
-    logger = logging.getLogger()
-    if pluginaction is None:
-        logger.error(
-            "%s unable to execute plugin because loadModule returned None: %s",
-            caller_name,
-            plugin_path,
-        )
-        return None
-
-    plugin_action = getattr(pluginaction, "action", None)
-    if not callable(plugin_action):
-        logger.error(
-            "%s unable to execute plugin because action is missing or not callable: %s",
-            caller_name,
-            plugin_path,
-        )
-        return None
-
-    return plugin_action
-
-
 def call_plugin_separate(name, *args, **kwargs):
     """
     Exécute un plugin spécifié de manière sécurisée et dans un thread séparé.
