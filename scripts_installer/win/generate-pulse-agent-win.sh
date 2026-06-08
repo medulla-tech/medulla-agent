@@ -41,7 +41,7 @@ cd "`dirname $0`"
 
 # To be defined
 AGENT_VERSION="5.6.0"
-KIOSK_VERSION="2.0.0"
+KIOSK_VERSION="2.1.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
 KIOSK_FILENAME="kiosk-interface-${KIOSK_VERSION}.tar.gz"
