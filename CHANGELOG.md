@@ -1,5 +1,14 @@
 # Change Log
 
+## [5.6.1](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.1) (2026-06-08)
+- [FEATURE] Support for Medulla kiosk version 2.1.0
+- [FEATURE] New plugin for installing python dependencies after full agent installs
+- [BUGFIX]  Fix for CVE daily scan
+- [BUGFIX]  Fix restart of linux agent after a system suspend
+- [BUGFIX]  Fix linux agent installer dependency on deadsnakes ppa repository
+- [BUGFIX]  Fix permissions on linux agent config file
+- [BUGFIX]  Improve CPU compatibility detection for Windows upgrades
+
 ## [5.6.0](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.0) (2026-05-26)
 - [FEATURE] Improve security of remote desktop by only allowing connections from localhost
 - [FEATURE] Replace named pipes by socket connections
