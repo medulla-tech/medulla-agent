@@ -2,7 +2,7 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
-# file pulse_xmpp_agent/lib/update_linux.py
+# file : pulse_xmpp_agent/lib/update_linux.py
 
 import subprocess
 import json
@@ -123,7 +123,7 @@ class LinuxSystemBase(ABC):
 
         # lire machine-id si disponible
         try:
-            machine_id = pathlib.Path("/etc/machine-id").read_text().strip()
+            machine_id = Path("/etc/machine-id").read_text().strip()
         except FileNotFoundError:
             machine_id = ""
 
@@ -312,8 +312,9 @@ class UpdateLinux:
         Raises:
             NotImplementedError: Si la distribution n'est pas supportée.
         """
-        # Debian / Ubuntu
-        if self.distro_name in ("debian", "ubuntu"):
+        # Debian / Ubuntu / Linux Mint
+        # Linux Mint repose sur la pile APT d'Ubuntu, on réutilise donc le backend DebianSystem.
+        if self.distro_name in ("debian", "ubuntu", "linuxmint"):
             return DebianSystem(**kwargs)
 
         # RedHat / CentOS / Rocky / AlmaLinux
@@ -330,7 +331,8 @@ class UpdateLinux:
 
         else:
             raise NotImplementedError(
-                f"Distribution non supportée : {self.distro_name}"
+                f"Distribution non supportée : {self.distro_name}. "
+                "Distributions supportées: debian, ubuntu, linuxmint, rhel, redhat, centos, rocky, almalinux, fedora, arch."
             )
 
     # ============================
@@ -356,6 +358,70 @@ class UpdateLinux:
             bool: True si la mise à jour a réussi, False sinon.
         """
         return self.system.update(policy=policy)
+
+    @staticmethod
+    def _normalize_human_actions(actions):
+        """Normalize high-level actions sent by master.
+
+        Supported human actions are intentionally distribution-agnostic:
+        security, kernel, other.
+        """
+        if actions is None:
+            return []
+
+        if isinstance(actions, str):
+            actions = [actions]
+
+        normalized = []
+        for action in actions:
+            if action is None:
+                continue
+            a = str(action).strip().lower()
+            if a == "secutity":
+                a = "security"
+            if a in ("security", "kernel", "other") and a not in normalized:
+                normalized.append(a)
+        return normalized
+
+    def update_from_human_actions(self, actions):
+        """Apply high-level Linux update actions with existing policy engine.
+
+        This keeps a uniform request contract at master level and delegates
+        distro-specific implementation to each system backend.
+        """
+        normalized = self._normalize_human_actions(actions)
+
+        if not normalized:
+            raise ValueError("Aucune action humaine valide fournie")
+
+        policy_by_action = {
+            "security": "security-only",
+            "kernel": "kernel-only",
+            "other": "applications-only",
+        }
+
+        applied = []
+        for action in normalized:
+            policy = policy_by_action[action]
+            self.system.update(policy=policy)
+            applied.append({"action": action, "policy": policy})
+
+        return {
+            "distribution": self.distro_name,
+            "actions": normalized,
+            "applied": applied,
+        }
+
+    def update_from_command_payload(self, payload):
+        """Apply updates from master JSON payload.
+
+        Expected key in payload: linux_actions (list or string)
+        """
+        if not isinstance(payload, dict):
+            raise ValueError("payload doit etre un dictionnaire")
+
+        actions = payload.get("linux_actions", [])
+        return self.update_from_human_actions(actions)
 
     def maintenance(self):
         """
