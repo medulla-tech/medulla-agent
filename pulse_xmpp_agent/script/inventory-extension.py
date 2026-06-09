@@ -235,8 +235,17 @@ def collect_chromium_extensions(
                 raw_desc: str = manifest.get("description", "")
                 ext_desc = "" if raw_desc.startswith("__MSG_") else raw_desc
 
-                # Auteur
-                ext_author = str(manifest.get("author", ""))
+                # Auteur — le manifest peut exposer une chaîne ou un objet
+                # {"email": ...} / {"name": ...} (MV3). On extrait du lisible.
+                raw_author = manifest.get("author", "")
+                if isinstance(raw_author, dict):
+                    ext_author = (
+                        raw_author.get("name")
+                        or raw_author.get("email")
+                        or ""
+                    )
+                else:
+                    ext_author = str(raw_author)
 
                 # État activé/désactivé
                 # Par défaut : si l'extension est présente sur disque avec un
@@ -375,7 +384,7 @@ def collect_gecko_extensions(
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-def collect_safari_extensions(context: dict[str, str]) -> list[ExtensionEntry]:
+def collect_safari_extensions(context: dict[str, str], home: Path | None = None) -> list[ExtensionEntry]:
     """Inventorie les extensions Safari (macOS uniquement)."""
     results: list[ExtensionEntry] = []
 
@@ -385,7 +394,7 @@ def collect_safari_extensions(context: dict[str, str]) -> list[ExtensionEntry]:
 
     logging.info("    [Safari] Lecture des extensions macOS")
 
-    home = Path.home()
+    home = home or Path.home()
     ext_paths = [
         home / "Library/Safari/Extensions",
         home / "Library/Containers/com.apple.Safari/Data/Library/Safari/AppExtensions",
@@ -625,13 +634,13 @@ def collect_office_addins_windows(context: dict[str, str]) -> list[ExtensionEntr
 _MACOS_WEF_RE = re.compile(r"[Ww]ef|[Aa]ddin|[Ee]xtension", re.IGNORECASE)
 
 
-def collect_office_addins_macos(context: dict[str, str]) -> list[ExtensionEntry]:
+def collect_office_addins_macos(context: dict[str, str], home: Path | None = None) -> list[ExtensionEntry]:
     """Inventorie les Web Add-ins de Microsoft Office sur macOS."""
     results: list[ExtensionEntry] = []
 
     logging.info("    [Office] Lecture des Web Add-ins (macOS)")
 
-    home = Path.home()
+    home = home or Path.home()
     group_container = home / "Library/Group Containers/UBF8T346G9.Office"
 
     if not group_container.is_dir():
@@ -712,6 +721,45 @@ def print_console(results: list[ExtensionEntry]) -> None:
             f"{r.version[:W['version']]:<{W['version']}} "
             f"{r.actif:<{W['actif']}}"
         )
+
+
+def export_additional_content(results: list[ExtensionEntry], path: Path) -> None:
+    """Génère un XML d'inventaire partiel pour fusioninventory/glpi-agent.
+
+    Chaque extension devient une section <SOFTWARES>. Le fichier est destiné
+    à être passé à l'agent via l'option `--additional-content=<fichier>` :
+    l'agent fusionne ces logiciels dans l'inventaire qu'il envoie à GLPI,
+    sur le même poste, dans le même flux (pas de token ni d'envoi séparé).
+
+    On construit l'arbre avec ElementTree pour que l'échappement XML des
+    caractères spéciaux (&, <, >, accents) soit géré automatiquement.
+    """
+    request = ET.Element("REQUEST")
+    content = ET.SubElement(request, "CONTENT")
+    for r in results:
+        soft = ET.SubElement(content, "SOFTWARES")
+        # Nom propre de l'extension (sans préfixe navigateur) pour ne pas
+        # casser le matching CPE/CVE. Le navigateur est mis dans les commentaires.
+        ET.SubElement(soft, "NAME").text = r.nom
+        ET.SubElement(soft, "VERSION").text = r.version or "N/A"
+        # Éditeur réel de l'extension uniquement (jamais le navigateur, qui
+        # fausserait le matching vendor côté CVE).
+        ET.SubElement(soft, "PUBLISHER").text = r.auteur
+        ET.SubElement(soft, "COMMENTS").text = (
+            f"Navigateur: {r.source} | "
+            f"ID: {r.extension_id} | "
+            f"Categorie: {r.categorie} | "
+            f"Actif: {r.actif} | "
+            f"Profil: {r.profil}"
+        )[:255]
+        ET.SubElement(soft, "FROM").text = "browser-ext"
+
+    xml_body = ET.tostring(request, encoding="unicode")
+    path.write_text(
+        f'<?xml version="1.0" encoding="UTF-8" ?>\n{xml_body}\n',
+        encoding="utf-8",
+    )
+    print(f"XML additional-content exporté : {path} ({len(results)} logiciels)")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -976,10 +1024,11 @@ def build_glpi_inventory_payload(
     softwares = []
     for entry in results:
         soft: dict[str, object] = {
-            "name":            f"[{entry.source}] {entry.nom}",
+            "name":            entry.nom,
             "version":         entry.version or "N/A",
-            "publisher":       entry.auteur or entry.source,
+            "publisher":       entry.auteur,
             "comments":        (
+                f"Navigateur: {entry.source} | "
                 f"ID: {entry.extension_id} | "
                 f"Categorie: {entry.categorie} | "
                 f"Actif: {entry.actif} | "
@@ -1186,7 +1235,7 @@ def push_to_glpi(
 def _build_chromium_paths(home: Path) -> dict[str, Path]:
     match sys.platform:
         case "win32":
-            base = Path(os.environ.get("LOCALAPPDATA", ""))
+            base = home / "AppData" / "Local"
             return {
                 "Google Chrome":  base / "Google/Chrome/User Data",
                 "Chromium":       base / "Chromium/User Data",
@@ -1213,7 +1262,7 @@ def _build_chromium_paths(home: Path) -> dict[str, Path]:
 def _build_firefox_path(home: Path) -> Path:
     match sys.platform:
         case "win32":
-            return Path(os.environ.get("APPDATA", "")) / "Mozilla/Firefox/Profiles"
+            return home / "AppData/Roaming/Mozilla/Firefox/Profiles"
         case "darwin":
             return home / "Library/Application Support/Firefox/Profiles"
         case _:
@@ -1223,11 +1272,60 @@ def _build_firefox_path(home: Path) -> Path:
 def _build_thunderbird_path(home: Path) -> Path:
     match sys.platform:
         case "win32":
-            return Path(os.environ.get("APPDATA", "")) / "Thunderbird/Profiles"
+            return home / "AppData/Roaming/Thunderbird/Profiles"
         case "darwin":
             return home / "Library/Thunderbird/Profiles"
         case _:
             return home / ".thunderbird"
+
+
+def _iter_user_profiles() -> list[tuple[str, Path]]:
+    """Énumère tous les profils utilisateurs de la machine à scanner.
+
+    L'agent d'inventaire tourne typiquement sous un compte de service
+    (NT AUTHORITY\\SYSTEM, root) qui n'a aucun profil navigateur. On scanne
+    donc tous les répertoires personnels de la machine, pas seulement celui
+    de l'utilisateur courant (Path.home()).
+
+    Returns:
+        Liste de tuples (nom_utilisateur, repertoire_home), dédoublonnée.
+    """
+    profiles: list[tuple[str, Path]] = []
+    seen: set[str] = set()
+
+    def _add(user: str, home: Path) -> None:
+        key = str(home).lower()
+        if key not in seen and home.is_dir():
+            seen.add(key)
+            profiles.append((user, home))
+
+    if sys.platform == "win32":
+        users_dir = Path(os.environ.get("SystemDrive", "C:") + "\\Users")
+        skip = {"public", "default", "default user", "all users",
+                "defaultapppool"}
+        if users_dir.is_dir():
+            for d in users_dir.iterdir():
+                if d.is_dir() and d.name.lower() not in skip:
+                    _add(d.name, d)
+    elif sys.platform == "darwin":
+        users_dir = Path("/Users")
+        if users_dir.is_dir():
+            for d in users_dir.iterdir():
+                if d.is_dir() and d.name.lower() not in {"shared", "guest"}:
+                    _add(d.name, d)
+    else:  # Linux
+        home_dir = Path("/home")
+        if home_dir.is_dir():
+            for d in home_dir.iterdir():
+                if d.is_dir():
+                    _add(d.name, d)
+        _add("root", Path("/root"))
+
+    # Filet de sécurité : si rien n'a été trouvé, au moins le home courant.
+    if not profiles:
+        _add(_current_user(), Path.home())
+
+    return profiles
 
 
 def main() -> None:
@@ -1258,9 +1356,13 @@ def main() -> None:
     )
     parser.add_argument(
         "--format", "-f",
-        choices=["csv", "json", "console", "all"],
+        choices=["csv", "json", "console", "all", "additional-content"],
         default="all",
-        help="Format d'export : csv | json | console | all (défaut : all)",
+        help=(
+            "Format d'export : csv | json | console | all | additional-content "
+            "(défaut : all). 'additional-content' génère un XML <SOFTWARES> "
+            "pour fusioninventory/glpi-agent (--additional-content)."
+        ),
     )
     parser.add_argument(
         "--include-internal",
@@ -1344,32 +1446,47 @@ def main() -> None:
 
     all_results: list[ExtensionEntry] = []
 
+    # Profils utilisateurs à scanner. L'agent tourne en compte de service
+    # (SYSTEM/root) sans profil navigateur : on parcourt donc TOUS les
+    # utilisateurs de la machine, pas seulement l'utilisateur courant.
+    profiles = _iter_user_profiles()
+    print(f"Profils scannés : {', '.join(u for u, _ in profiles) or '(aucun)'}")
+
+    def _ctx_for(profile_user: str) -> dict[str, str]:
+        return {**context, "user": profile_user}
+
     # ── 1. Navigateurs Chromium ───────────────────────────────────────────────
     print("[1/5] Navigateurs Chromium (Chrome, Chromium, Brave, Edge)...")
-    for name, path in _build_chromium_paths(home).items():
-        all_results.extend(
-            collect_chromium_extensions(name, path, context)
-        )
+    for prof_user, prof_home in profiles:
+        for name, path in _build_chromium_paths(prof_home).items():
+            all_results.extend(
+                collect_chromium_extensions(name, path, _ctx_for(prof_user))
+            )
 
     # ── 2. Firefox ────────────────────────────────────────────────────────────
     print("[2/5] Mozilla Firefox...")
-    all_results.extend(
-        collect_gecko_extensions(
-            "Firefox", _build_firefox_path(home), context, args.include_internal
+    for prof_user, prof_home in profiles:
+        all_results.extend(
+            collect_gecko_extensions(
+                "Firefox", _build_firefox_path(prof_home),
+                _ctx_for(prof_user), args.include_internal
+            )
         )
-    )
 
     # ── 3. Safari ─────────────────────────────────────────────────────────────
     print("[3/5] Apple Safari...")
-    all_results.extend(collect_safari_extensions(context))
+    for prof_user, prof_home in profiles:
+        all_results.extend(collect_safari_extensions(_ctx_for(prof_user), prof_home))
 
     # ── 4. Thunderbird ────────────────────────────────────────────────────────
     print("[4/5] Mozilla Thunderbird...")
-    all_results.extend(
-        collect_gecko_extensions(
-            "Thunderbird", _build_thunderbird_path(home), context, args.include_internal
+    for prof_user, prof_home in profiles:
+        all_results.extend(
+            collect_gecko_extensions(
+                "Thunderbird", _build_thunderbird_path(prof_home),
+                _ctx_for(prof_user), args.include_internal
+            )
         )
-    )
 
     # ── 5. Office ─────────────────────────────────────────────────────────────
     print("[5/5] Microsoft Office Add-ins...")
@@ -1377,7 +1494,10 @@ def main() -> None:
         case "win32":
             all_results.extend(collect_office_addins_windows(context))
         case "darwin":
-            all_results.extend(collect_office_addins_macos(context))
+            for prof_user, prof_home in profiles:
+                all_results.extend(
+                    collect_office_addins_macos(_ctx_for(prof_user), prof_home)
+                )
         case _:
             print("    [Office] Non disponible sur Linux (Office natif absent).")
 
@@ -1409,6 +1529,12 @@ def main() -> None:
 
         if fmt in ("console", "all"):
             print_console(all_results)
+
+        if fmt == "additional-content":
+            out = Path(args.output)
+            if out.suffix.lower() != ".xml":
+                out = out.with_suffix(".xml")
+            export_additional_content(all_results, out)
 
     print("\nInventaire terminé.")
 
