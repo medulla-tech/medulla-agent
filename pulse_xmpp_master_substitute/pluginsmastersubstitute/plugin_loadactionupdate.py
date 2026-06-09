@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadactionupdate.py
 
 """
 ce plugin install 1 fonction appeler cycliquement
@@ -8,6 +9,7 @@ cette fonction a pour charge d'executer les actions creation des packages d'upda
 """
 
 import os
+import json
 import logging
 import configparser
 import shutil
@@ -27,7 +29,7 @@ DEBUGPULSEPLUGIN = 25
 # this plugin calling to starting agent
 
 
-plugin = {"VERSION": "1.0", "NAME": "loadactionupdate", "TYPE": "substitute", "LOAD": "START"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "loadactionupdate", "TYPE": "substitute", "LOAD": "START"}  # fmt: skip
 
 GLOBALPARAM={"duration" : 30 , "debuglocal" : False}  # fmt: skip
 
@@ -46,6 +48,9 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
         objectxmpp.create_deploy_for_up_machine_windows = types.MethodType(
             create_deploy_for_up_machine_windows, objectxmpp
         )
+        objectxmpp.create_deploy_for_up_machine_linux = types.MethodType(
+            create_deploy_for_up_machine_linux, objectxmpp
+        )
         # schedule appel de cette fonction cette fonctions
         objectxmpp.schedule(
             "Action_update",
@@ -58,6 +63,12 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
             "Action_luncher_deploy",
             objectxmpp.time_scrutation,
             objectxmpp.create_deploy_for_up_machine_windows,
+            repeat=True,
+        )
+        objectxmpp.schedule(
+            "Action_luncher_deploy_linux",
+            objectxmpp.time_scrutation,
+            objectxmpp.create_deploy_for_up_machine_linux,
             repeat=True,
         )
 
@@ -201,6 +212,152 @@ def create_deploy_for_up_machine_windows(objectxmpp):
         except Exception as e:
             logger.error(e)
             index += 1
+
+
+def create_deploy_for_up_machine_linux(objectxmpp):
+    try:
+        updates_in_deploy_state = XmppMasterDatabase().get_linux_updates_in_deploy_state()
+    except Exception as e:
+        logger.error("Unable to get Linux updates in deploy state: %s", e)
+        return
+
+    count_updates_in_current_deploy = int(updates_in_deploy_state["current"]["total"])
+    updates_in_required_deploy = updates_in_deploy_state["required"]["datas"]
+
+    # Group actions by machine and exact scheduling window.
+    grouped_required = {}
+    for required in updates_in_required_deploy:
+        machine_id = required.get("idmachine")
+        jidmachine = required.get("jidmachine")
+        start_date = required.get("start_date")
+        end_date = required.get("end_date")
+        intervals = required.get("deployment_intervals") or ""
+        key = (machine_id, jidmachine, start_date, end_date, intervals)
+
+        if key not in grouped_required:
+            grouped_required[key] = dict(required)
+            grouped_required[key]["actions"] = []
+
+        action_name = (required.get("action") or "").lower()
+        if action_name == "secutity":
+            action_name = "security"
+        if action_name in ["security", "kernel", "other"]:
+            grouped_required[key]["actions"].append(action_name)
+
+    grouped_required_list = []
+    for grouped in grouped_required.values():
+        actions = sorted(list(set(grouped.get("actions", []))))
+        if actions:
+            grouped["actions"] = actions
+            grouped_required_list.append(grouped)
+
+    count_updates_in_required_deploy = len(grouped_required_list)
+    slots = objectxmpp.update_slots
+    available_slots = slots - count_updates_in_current_deploy
+
+    count_slots = 0
+    index = 0
+    logger.info(
+        "%i linux deploy slots available for %i required machine deployments",
+        available_slots,
+        count_updates_in_required_deploy,
+    )
+    added_to_pending = []
+
+    while count_slots < available_slots and index < count_updates_in_required_deploy:
+        required = grouped_required_list[index]
+        jidmachine = required.get("jidmachine")
+        actions = required.get("actions", [])
+        try:
+            if XmppMasterDatabase().deployment_is_running_on_machine(jidmachine) is True or (
+                jidmachine in added_to_pending
+            ):
+                logger.warning(
+                    "deployment running on %s, skip linux actions %s",
+                    jidmachine,
+                    ",".join(actions),
+                )
+                index += 1
+                continue
+
+            update = XmppMasterDatabase().pending_up_machine_linux(required)
+            added_to_pending.append(jidmachine)
+            count_slots += 1
+
+            if not update:
+                logger.error(
+                    "Unable to create Linux deployment phases for machine %s",
+                    jidmachine,
+                )
+                index += 1
+                continue
+
+            intervals = update["intervals"] if update["intervals"] is not None else ""
+
+
+
+
+
+
+            section_payload = {
+                "section": "update",
+                "linux_actions": update.get("actions", []),
+            }
+            section = json.dumps(section_payload)
+
+            command = MscDatabase().createcommanddirectxmpp(
+                update["update_id"],
+                "",
+                section,
+                update["files_str"],
+                "enable",
+                "disable",
+                update["start_date"],
+                update["end_date"],
+                "root",
+                "root",
+                update["title"],
+                0,
+                28,
+                0,
+                intervals,
+                None,
+                None,
+                None,
+                "none",
+                "active",
+                "1",
+                cmd_type=0,
+            )
+
+            target = MscDatabase().xmpp_create_Target(
+                update["uuidmachine"], update["hostname"]
+            )
+
+            com_on_host = MscDatabase().xmpp_create_CommandsOnHost(
+                command.id,
+                target["id"],
+                update["hostname"],
+                command.end_date,
+                command.start_date,
+            )
+
+            if com_on_host is not None or com_on_host is not False:
+                MscDatabase().xmpp_create_CommandsOnHostPhasedeploykiosk(com_on_host.id)
+                XmppMasterDatabase().addlogincommand(
+                    "root", command.id, "", "", "", "", section, 0, 0, 0, 0, {}
+                )
+
+            logger.info(
+                "linux pending for %s actions=%s package=%s",
+                jidmachine,
+                ",".join(update.get("actions", [])),
+                update["update_id"],
+            )
+        except Exception as e:
+            logger.error(e)
+
+        index += 1
 
 
 def read_conf_loadactionupdate(objectxmpp):

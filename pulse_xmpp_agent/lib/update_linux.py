@@ -7,6 +7,7 @@
 import subprocess
 import json
 import re
+import shlex
 import platform
 from datetime import datetime, timezone
 from pathlib import Path
@@ -401,16 +402,29 @@ class UpdateLinux:
         }
 
         applied = []
+        failed = []
         for action in normalized:
             policy = policy_by_action[action]
-            self.system.update(policy=policy)
-            applied.append({"action": action, "policy": policy})
+            try:
+                self.system.update(policy=policy)
+                applied.append({"action": action, "policy": policy})
+            except Exception as exc:
+                logger.warning(
+                    "Linux update action '%s' (policy=%s) failed, continuing: %s",
+                    action,
+                    policy,
+                    str(exc),
+                )
+                failed.append({"action": action, "policy": policy, "error": str(exc)})
 
-        return {
+        result = {
             "distribution": self.distro_name,
             "actions": normalized,
             "applied": applied,
         }
+        if failed:
+            result["failed"] = failed
+        return result
 
     def update_from_command_payload(self, payload):
         """Apply updates from master JSON payload.
@@ -481,9 +495,35 @@ class DebianSystem(LinuxSystemBase):
         return "--just-print" if self.dry_run else ""
 
     def _apt_security_opts(self) -> str:
-        """Génère les options pour forcer l'utilisation du dépôt de sécurité."""
-        release = self.system_info.get("Release", "")
-        return f"-o APT::Default-Release={release}-security" if release else ""
+        """Génère les options pour forcer l'utilisation du dépôt de sécurité UNIQUEMENT."""
+        # Essaie d'obtenir le codename (bookworm, bullseye, etc) au lieu du numéro de version
+        codename = self.system_info.get("VERSION_CODENAME", "")
+        if not codename:
+            try:
+                # Fallback: utilise lsb_release -cs
+                codename = self._run("lsb_release -cs").strip()
+            except Exception:
+                codename = ""
+        # Combine pinning (-t) avec restriction pour SEULEMENT upgrader (-o APT::Get::Only-Upgrade=true)
+        # Ça garantit qu'on n'install QUE les paquets du dépôt de sécurité, et seulement les upgrades
+        if codename:
+            return f"-t {codename}-security -o APT::Get::Only-Upgrade=true"
+        return ""
+
+    def _installed_kernel_packages(self) -> list:
+        """Return installed kernel package names eligible for --only-upgrade.
+
+        Debian derivatives may not provide ubuntu-specific package families
+        (e.g. linux-modules-extra*). Selecting only installed packages avoids
+        apt-get exit status 100 due to unresolved wildcard names.
+        """
+        output = self._run("dpkg-query -W -f='${binary:Package}\\n'")
+        pkgs = []
+        for line in output.splitlines():
+            name = line.strip()
+            if re.match(r"^linux-(image|headers|modules|modules-extra)", name):
+                pkgs.append(name)
+        return sorted(set(pkgs))
 
     def set_intranet_security(self, enabled: bool, sources_name: str | None = None):
         """Active ou désactive le mode intranet sécurisé."""
@@ -592,14 +632,43 @@ class DebianSystem(LinuxSystemBase):
         base = self._apt_base_opts()
         dry = self._apt_dry_run_opts()
         sec = self._apt_security_opts()
-        self._run(f"apt-get -qq update {base}")
+        try:
+            self._run(f"apt-get -qq update {base}")
+        except subprocess.CalledProcessError as e:
+            # Some repositories may fail (404/temporary issues) while others remain usable.
+            logger.warning(
+                "apt-get update returned non-zero exit status (continuing with available indexes): %s",
+                str(e),
+            )
 
         if policy == "security-only":
-            self._run(f"apt-get -qq upgrade -y {dry} {sec} {base}")
+            # Try with security release pinning, fallback to simple upgrade if unavailable.
+            try:
+                self._run(f"apt-get -qq upgrade -y {dry} {sec} {base}")
+            except subprocess.CalledProcessError as e:
+                if sec:
+                    logger.warning(
+                        "Security release pinning failed, retrying without it: %s",
+                        str(e),
+                    )
+                    self._run(f"apt-get -qq upgrade -y {dry} {base}")
+                else:
+                    raise
         elif policy == "kernel-only":
-            self._run(f"apt-get -qq install --only-upgrade linux-image-amd64 -y {dry} {base}")
+            # Upgrade only installed kernel-related packages to avoid wildcard mismatch errors.
+            kernel_pkgs = self._installed_kernel_packages()
+            if not kernel_pkgs:
+                logger.info("No installed kernel packages matched for kernel-only policy")
+                return
+
+            kernel_args = " ".join(shlex.quote(pkg) for pkg in kernel_pkgs)
+            self._run(
+                f"apt-get -qq install --only-upgrade {kernel_args} -y {dry} "
+                f"-o APT::Get::Only-Upgrade=true {base}"
+            )
         elif policy == "applications-only":
-            self._run(f"apt-get -qq upgrade -y {dry} {base}")
+            # Upgrade ONLY already-installed applications, no kernel, no security-specific (from all repos)
+            self._run(f"apt-get -qq upgrade -y {dry} -o APT::Get::Only-Upgrade=true {base}")
         elif policy == "all":
             self._run(f"apt-get -qq full-upgrade -y {dry} {base}")
         else:

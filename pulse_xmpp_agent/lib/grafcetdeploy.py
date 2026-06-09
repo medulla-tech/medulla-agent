@@ -2,12 +2,16 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_agent/lib/grafcetdeploy.py
 
 import sys
 import os
 import platform
 import os.path
 import json
+import datetime
+import getpass
+import socket
 from lib.utils import (
     getMacAdressList,
     getIPAdressList,
@@ -19,6 +23,7 @@ from lib.utils import (
     downloadfile,
     simplecommand,
     send_data_tcp,
+    call_plugin_sequentially,
 )
 from lib.configuration import setconfigfile
 import traceback
@@ -31,6 +36,7 @@ import zipfile
 import base64
 import time
 import copy
+import shlex
 from .agentconffile import pulseTempDir
 
 if sys.platform.startswith("win"):
@@ -51,6 +57,7 @@ class grafcet:
         self.datasend = datasend
         logging.getLogger().debug(json.dumps(self.datasend, indent=4))
         self.parameterdynamic = {}
+        self.advanced_param_deploy = {}
         self.descriptorsection = {"action_section_install": -1}
         self.objectxmpp = objectxmpp
         self.userconecter = None
@@ -62,11 +69,37 @@ class grafcet:
         self.__clean_protected()
         self.sequence = self.data["descriptor"]["sequence"]
         self.__initialise_user_connected__()
+        self.dynamic_param_deploy = {}
+
+        # Dynamic parameters sent from msc.commands.parameters (master side).
+        raw_command_parameters = self.data.get("command_parameters")
+
+        # Compatibility fallbacks for older/alternate payload shapes.
+        if raw_command_parameters in (None, "", {}):
+            raw_command_parameters = self.datasend.get("command_parameters")
+        if raw_command_parameters in (None, "", {}):
+            raw_command_parameters = self.data.get("parameters")
+        if raw_command_parameters in (None, "", {}):
+            raw_command_parameters = self.datasend.get("parameters")
+
+        if isinstance(raw_command_parameters, dict):
+            self.dynamic_param_deploy = copy.deepcopy(raw_command_parameters)
+        elif isinstance(raw_command_parameters, str) and raw_command_parameters.strip():
+            try:
+                parsed = json.loads(raw_command_parameters)
+                if isinstance(parsed, dict):
+                    self.dynamic_param_deploy = parsed
+                else:
+                    self.dynamic_param_deploy = {"payload": parsed}
+            except Exception:
+                self.dynamic_param_deploy = {"payload": raw_command_parameters}
+
         if (
             "advanced" in self.data
             and "paramdeploy" in self.data["advanced"]
             and isinstance(self.data["advanced"]["paramdeploy"], dict)
         ):
+            self.advanced_param_deploy = copy.deepcopy(self.data["advanced"]["paramdeploy"])
             # there are  dynamic parameters.
             for k, v in list(self.data["advanced"]["paramdeploy"].items()):
                 self.parameterdynamic[k] = v
@@ -323,6 +356,94 @@ class grafcet:
         # print  "replaceTEMPLATE in %s"% cmd
         # print "__________________________________"
 
+        dynamic_param_deploy_json = self.__dynamic_param_deploy_json()
+        advanced_param_deploy_json = self.__advanced_param_deploy_json()
+        merged_deploy_params_json = self.__merged_deploy_params_json()
+
+        if "@@@ADVANCED_PARAM_DEPLOY_JSON@@@" in cmd:
+            cmd = cmd.replace("@@@ADVANCED_PARAM_DEPLOY_JSON@@@", advanced_param_deploy_json)
+
+        if "@@@ADVANCED_PARAM_DEPLOY_B64@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@ADVANCED_PARAM_DEPLOY_B64@@@",
+                self.__json_to_b64(advanced_param_deploy_json),
+            )
+
+        if "@@@ADVANCED_PARAM_DEPLOY_SHELL@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@ADVANCED_PARAM_DEPLOY_SHELL@@@",
+                self.__json_to_shell(advanced_param_deploy_json),
+            )
+
+        if "@@@MERGED_DEPLOY_PARAMS_JSON@@@" in cmd:
+            cmd = cmd.replace("@@@MERGED_DEPLOY_PARAMS_JSON@@@", merged_deploy_params_json)
+
+        if "@@@MERGED_DEPLOY_PARAMS_B64@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@MERGED_DEPLOY_PARAMS_B64@@@",
+                self.__json_to_b64(merged_deploy_params_json),
+            )
+
+        if "@@@MERGED_DEPLOY_PARAMS_SHELL@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@MERGED_DEPLOY_PARAMS_SHELL@@@",
+                self.__json_to_shell(merged_deploy_params_json),
+            )
+
+        if "@@@DYNAMIC_PARAM_DEPLOY_JSON@@@" in cmd:
+            cmd = cmd.replace("@@@DYNAMIC_PARAM_DEPLOY_JSON@@@", dynamic_param_deploy_json)
+
+        if "@@@DYNAMIC_PARAM_DEPLOY_B64@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@DYNAMIC_PARAM_DEPLOY_B64@@@",
+                self.__json_to_b64(dynamic_param_deploy_json),
+            )
+
+        if "@@@DYNAMIC_PARAM_DEPLOY_SHELL@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@DYNAMIC_PARAM_DEPLOY_SHELL@@@", self.__json_to_shell(dynamic_param_deploy_json)
+            )
+
+        if "@@@DYNAMIC_PARAM_DEPLOY@@@" in cmd:
+            # Replace by raw JSON text so script/command keeps explicit descriptor intent.
+            cmd = cmd.replace(
+                "@@@DYNAMIC_PARAM_DEPLOY@@@",
+                dynamic_param_deploy_json,
+            )
+
+        now_epoch = str(int(time.time()))
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        now_iso8601 = now_utc.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        cmd = cmd.replace("@@@NOW_EPOCH@@@", now_epoch)
+        cmd = cmd.replace("@@@NOW_ISO8601@@@", now_iso8601)
+        cmd = cmd.replace("@@@DATE_YYYYMMDD@@@", now_utc.strftime("%Y%m%d"))
+        cmd = cmd.replace("@@@TIME_HHMMSS@@@", now_utc.strftime("%H%M%S"))
+        cmd = cmd.replace("@@@TIMEZONE@@@", str(datetime.datetime.now().astimezone().tzinfo))
+
+        cmd = cmd.replace("@@@EXEC_USER@@@", getpass.getuser())
+        cmd = cmd.replace("@@@HOME_DIR@@@", os.path.expanduser("~"))
+        cmd = cmd.replace("@@@WORKING_DIR@@@", os.getcwd())
+
+        cmd = cmd.replace("@@@FQDN@@@", socket.getfqdn())
+        cmd = cmd.replace("@@@OS_VERSION@@@", platform.version())
+        cmd = cmd.replace("@@@KERNEL_VERSION@@@", platform.release())
+
+        cmd = cmd.replace("@@@PATH_SEP@@@", os.sep)
+        cmd = cmd.replace("@@@LINE_SEP@@@", os.linesep)
+        cmd = cmd.replace("@@@NULL_DEVICE@@@", os.devnull)
+
+        # Preferred placeholder for Linux updates.
+        if "@@@UPDATE_LINUX@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@UPDATE_LINUX@@@", "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
+            )
+
+        # Backward-compatibility alias.
+        if "@@@DEPLOY@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@DEPLOY@@@", "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
+            )
+
         # remplace all dynamic parameters by values.
         # eg :  @@@DYNAMIC_PARAM@@@section@@@ is dynamique parameter "section"
         # Si le parameter dynamic section exist, it is replace by value.
@@ -447,6 +568,149 @@ class grafcet:
         # print "replace TEMPLATE ou %s"% cmd
         # print "__________________________________"
         return cmd
+
+    def __dynamic_param_deploy_json(self):
+        return json.dumps(
+            self.dynamic_param_deploy if self.dynamic_param_deploy else {},
+            separators=(",", ":"),
+        )
+
+    def __json_to_b64(self, raw_json):
+        return base64.b64encode(raw_json.encode("utf-8")).decode("ascii")
+
+    def __json_to_shell(self, raw_json):
+        return shlex.quote(raw_json)
+
+    def __advanced_param_deploy_json(self):
+        return json.dumps(
+            self.advanced_param_deploy if self.advanced_param_deploy else {},
+            separators=(",", ":"),
+        )
+
+    def __merged_deploy_params_json(self):
+        merged = {}
+        if isinstance(self.dynamic_param_deploy, dict):
+            merged.update(self.dynamic_param_deploy)
+        if isinstance(self.advanced_param_deploy, dict):
+            # User launch-time choice has final priority over MSC defaults.
+            merged.update(self.advanced_param_deploy)
+        return json.dumps(merged, separators=(",", ":"))
+
+    def __extract_marker_payload(self, text):
+        """Extract JSON payload from @@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@ marker.
+        
+        Returns dict extracted from JSON after marker, or empty dict if not found/invalid.
+        """
+        marker = "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
+        if marker not in text:
+            return {}
+        
+        try:
+            # Find marker position and extract content after it
+            idx = text.find(marker)
+            content = text[idx + len(marker):].strip()
+            
+            # Try to parse as JSON
+            if content.startswith("{"):
+                # Extract JSON object (handle potential trailing text)
+                brace_count = 0
+                json_end = 0
+                for i, char in enumerate(content):
+                    if char == "{":
+                        brace_count += 1
+                    elif char == "}":
+                        brace_count -= 1
+                        if brace_count == 0:
+                            json_end = i + 1
+                            break
+                
+                if json_end > 0:
+                    json_str = content[:json_end]
+                    return json.loads(json_str)
+        except Exception as exc:
+            logger.warning("Failed to extract marker payload: %s", str(exc))
+        
+        return {}
+
+    def __dispatch_update_linux_command(self, marker_payload=None):
+        """Dispatch Linux update execution through dedicated machine plugin.
+        
+        Args:
+            marker_payload: dict extracted from marker JSON (has highest priority)
+        """
+        if marker_payload is None:
+            marker_payload = {}
+        
+        msg = {
+            "from": self.objectxmpp.boundjid.bare,
+            "to": self.objectxmpp.boundjid.bare,
+            "type": "chat",
+        }
+        
+        # Merge payloads with priority: marker > advanced > dynamic
+        merged_dict = {}
+        merged_dict.update(self.dynamic_param_deploy or {})
+        merged_dict.update(self.advanced_param_deploy or {})
+        merged_dict.update(marker_payload or {})
+        
+        dynamic_param_deploy_json = self.__dynamic_param_deploy_json()
+        advanced_param_deploy_json = self.__advanced_param_deploy_json()
+        merged_deploy_params_json = json.dumps(merged_dict) if merged_dict else "{}"
+        
+        payload_data = {
+            "command_parameters": copy.deepcopy(self.dynamic_param_deploy),
+            "dynamic_param_deploy": copy.deepcopy(self.dynamic_param_deploy),
+            "advanced_param_deploy": copy.deepcopy(self.advanced_param_deploy),
+            "marker_payload": copy.deepcopy(marker_payload),
+            "payload": merged_deploy_params_json,
+            "deploy_step": self.workingstep.get("step", 0),
+            "source": "grafcetdeploy",
+        }
+        logger.info("DEBUG grafcetdeploy: payload_data being sent to plugin: %s", 
+                    json.dumps(payload_data, indent=4))
+        dataerror = {
+            "action": "resultupdate_linux_command",
+            "sessionid": self.sessionid,
+            "ret": 255,
+            "base64": False,
+            "data": {"msg": "ERROR : update_linux_command"},
+        }
+        call_plugin_sequentially(
+            "update_linux_command",
+            self.objectxmpp,
+            "update_linux_command",
+            self.sessionid,
+            payload_data,
+            msg,
+            dataerror,
+        )
+
+    def __handle_update_linux_marker(self):
+        """Handle Linux update marker by dispatching dedicated plugin and finalizing the step."""
+        # Extract payload from marker in command/script
+        marker_payload = self.__extract_marker_payload(
+            self.workingstep.get("command", "") or self.workingstep.get("script", "")
+        )
+        
+        # Dispatch with extracted marker payload (highest priority)
+        self.__dispatch_update_linux_command(marker_payload=marker_payload)
+        self.__action_completed__(self.workingstep)
+        self.workingstep["codereturn"] = 0
+        
+        # Log the payload used
+        logged_payload = marker_payload or (self.dynamic_param_deploy if self.dynamic_param_deploy else {})
+        self.__resultinfo__(
+            self.workingstep,
+            [
+                "update_linux_command plugin executed",
+                json.dumps(logged_payload),
+            ],
+        )
+        self.steplog()
+        if self.__Go_to_by_jump_succes_and_error__(0):
+            return True
+        self.__Etape_Next_in__()
+        return True
 
     def __search_Next_step_int__(self, val):
         """
@@ -1667,6 +1931,11 @@ class grafcet:
             self.workingstep["command"] = self.replaceTEMPLATE(
                 self.workingstep["command"]
             )
+
+            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["command"]:
+                if self.__handle_update_linux_marker():
+                    return
+
             if "timeout" not in self.workingstep:
                 try:
                     self.workingstep["timeout"] = int(
@@ -1752,6 +2021,25 @@ class grafcet:
                 self.workingstep["command"]
             )
 
+            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["command"]:
+                self.__dispatch_update_linux_command()
+                self.__action_completed__(self.workingstep)
+                self.workingstep["codereturn"] = 0
+                self.__resultinfo__(
+                    self.workingstep,
+                    [
+                        "update_linux_command plugin executed",
+                        json.dumps(
+                            self.dynamic_param_deploy if self.dynamic_param_deploy else {}
+                        ),
+                    ],
+                )
+                self.steplog()
+                if self.__Go_to_by_jump_succes_and_error__(0):
+                    return
+                self.__Etape_Next_in__()
+                return
+
             # self.objectxmpp.logtopulse("action_command_natif_shell")
             # todo si action deja faite return
             if "timeout" not in self.workingstep:
@@ -1801,6 +2089,10 @@ class grafcet:
                 fromuser=self.data["login"],
                 touser="",
             )
+
+    def action_command_natif(self):
+        """Backward-compatible alias for action_command_natif_shell."""
+        return self.action_command_natif_shell()
 
     def __clean_protected(self):
         dir_reprise_session = os.path.join(
@@ -1923,6 +2215,11 @@ class grafcet:
             self.workingstep["script"] = self.replaceTEMPLATE(
                 self.workingstep["script"]
             )
+
+            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["script"]:
+                if self.__handle_update_linux_marker():
+                    return
+
             if "timeout" not in self.workingstep:
                 self.workingstep["timeout"] = 900
                 logging.getLogger().warning("timeout missing : default value 900s")
@@ -1985,7 +2282,6 @@ class grafcet:
             # Create command
             if commandtype is not None:
                 command = commandtype + temp_path
-            self.__protected(self.workingstep["timeout"])
             # working Step recup from process et session
             if command != "":
                 code_return, output_lines = (
