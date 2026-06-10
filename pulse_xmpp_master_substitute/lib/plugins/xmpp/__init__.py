@@ -12015,9 +12015,35 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 "other": {"required": "other_require", "current": "other_current"},
             }
 
+            # Safety gate: never schedule a Linux action when its update count is 0.
+            action_count_map = {
+                "security": int(update.security_count or 0),
+                "kernel": int(update.kernel_count or 0),
+                "other": int(update.other_count or 0),
+            }
+
+            filtered_actions = []
             for action in actions:
                 if action not in action_map:
                     continue
+                if action_count_map.get(action, 0) <= 0:
+                    self.logger.info(
+                        "Skip linux action '%s' for machine %s: no pending updates",
+                        action,
+                        update.harduuid,
+                    )
+                    continue
+                filtered_actions.append(action)
+
+            actions = sorted(list(set(filtered_actions)))
+            if not actions:
+                self.logger.info(
+                    "Skip linux deployment for machine %s: no actionable updates",
+                    update.harduuid,
+                )
+                return False
+
+            for action in actions:
                 setattr(update, action_map[action]["required"], False)
                 setattr(update, action_map[action]["current"], True)
 
@@ -12842,7 +12868,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
         versions_debug_query = text("""
             SELECT id, distribution, version, name, is_managed, is_current_stable, is_recommended
-            FROM xmppmaster.up_os_versions
+            FROM xmppmaster.up_linux_os_versions
             WHERE distribution = :distribution
             ORDER BY
                 is_managed DESC,
@@ -12857,7 +12883,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
             {"distribution": normalized_distribution},
         ).fetchall()
         self.logger.info(
-            "up_os_versions candidates for %s: %s",
+            "up_linux_os_versions candidates for %s: %s",
             normalized_distribution,
             [
                 {
@@ -12875,7 +12901,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
         max_version_query = text("""
             SELECT name, version
-            FROM xmppmaster.up_os_versions
+            FROM xmppmaster.up_linux_os_versions
             WHERE distribution = :distribution
                         ORDER BY
                                 is_managed DESC,
@@ -12892,7 +12918,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
         if not row or row.version is None:
             self.logger.warning(
-                "Aucune version cible trouvée dans up_os_versions pour distribution=%s",
+                "Aucune version cible trouvée dans up_linux_os_versions pour distribution=%s",
                 normalized_distribution,
             )
             return  {

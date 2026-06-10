@@ -241,7 +241,8 @@ def create_deploy_for_up_machine_linux(objectxmpp):
         action_name = (required.get("action") or "").lower()
         if action_name == "secutity":
             action_name = "security"
-        if action_name in ["security", "kernel", "other"]:
+        action_count = int(required.get("count") or 0)
+        if action_name in ["security", "kernel", "other"] and action_count > 0:
             grouped_required[key]["actions"].append(action_name)
 
     grouped_required_list = []

@@ -1164,7 +1164,7 @@ class UpMachineUpdateLinux(Base, XmppMasterDBObj):
 
 
 class UpOsVersions(Base, XmppMasterDBObj):
-    __tablename__ = "up_os_versions"
+    __tablename__ = "up_linux_os_versions"
 
     distribution = Column(String(32), nullable=False)
     version = Column(String(20), nullable=False)
