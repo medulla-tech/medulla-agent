@@ -1015,6 +1015,11 @@ def call_plugin_separate(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
+                if pluginaction is None or not hasattr(pluginaction, "action"):
+                    logging.getLogger().error(
+                        f"call_plugin_separate Unable to load plugin action from {nameplugin}"
+                    )
+                    return
                 loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
@@ -1122,6 +1127,11 @@ def call_mon_plugin(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
+                if pluginaction is None or not hasattr(pluginaction, "action"):
+                    logging.getLogger().error(
+                        f"call_mon_plugin Unable to load plugin action from {nameplugin}"
+                    )
+                    return
                 executor = ThreadPoolExecutor()
                 thread = FunctionThread(pluginaction.action, *args, **kwargs)
                 result = loop.run_in_executor(executor, thread.start)
@@ -1177,6 +1187,11 @@ def call_plugin(name, *args, **kwargs):
                 except AttributeError:
                     setattr(args[0], f"num_call{args[1]}", 0)
                 pluginaction = loadModule(nameplugin)
+                if pluginaction is None or not hasattr(pluginaction, "action"):
+                    logging.getLogger().error(
+                        f"call_plugin Unable to load plugin action from {nameplugin}"
+                    )
+                    return
                 result = loop.run_in_executor(
                     None, pluginaction.action, *args, **kwargs
                 )
@@ -1230,6 +1245,11 @@ def call_plugin_sequentially(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
+                if pluginaction is None or not hasattr(pluginaction, "action"):
+                    logging.getLogger().error(
+                        f"call_plugin_sequentially Unable to load plugin action from {nameplugin}"
+                    )
+                    return
                 pluginaction.action(*args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")

@@ -28,17 +28,18 @@ from lib.agentconffile import (
 
 _import_update_linux_error = None
 _import_update_linux_traceback = None
-try:
-    from lib.update_linux import UpdateLinux
-except Exception as exc_lib:
-    _import_update_linux_error = exc_lib
-    _import_update_linux_traceback = traceback.format_exc()
+UpdateLinux = None
+if sys.platform.startswith("linux"):
     try:
-        from update_linux import UpdateLinux
-    except Exception as exc_local:
-        _import_update_linux_error = exc_local
+        from lib.update_linux import UpdateLinux
+    except Exception as exc_lib:
+        _import_update_linux_error = exc_lib
         _import_update_linux_traceback = traceback.format_exc()
-        UpdateLinux = None
+        try:
+            from update_linux import UpdateLinux
+        except Exception as exc_local:
+            _import_update_linux_error = exc_local
+            _import_update_linux_traceback = traceback.format_exc()
 
 import hashlib
 
@@ -1076,6 +1077,10 @@ def send_plugin_update_windows(xmppobject):
 
 
 def send_plugin_update_linux(xmppobject):
+    if not sys.platform.startswith("linux"):
+        logger.debug("send_plugin_update_linux ignored on non-linux platform")
+        return
+
     if UpdateLinux is None:
         logger.warning(
             "Module UpdateLinux indisponible: update_linux non envoye (inventaire principal maintenu). Cause import: %s",
