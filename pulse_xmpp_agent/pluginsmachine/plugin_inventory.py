@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.4", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.5", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -1095,18 +1095,18 @@ def send_plugin_update_linux(xmppobject):
 
     sessioniddata = utils.getRandomName(6, "update_linux")
     updater = UpdateLinux(
-        dry_run=False,            # exécution réelle
-        intranet_security=False   # dépôts normaux
+        dry_run=False,            # execution reelle
+        intranet_security=False   # depots normaux
     )
-    logger.info(f"Distribution détectée : {updater.distro_name}\n")
+    logger.info(f"Distribution detectee : {updater.distro_name}\n")
 
     # ============================
     # 1. Fetch updates
     # ============================
-    logger.info("[1] Recherche des mises à jour...")
+    logger.info("[1] Recherche des mises a jour...")
     infosys = updater.fetch_updates()
     json_report = updater.to_json(return_dict=True)
-    # logger.info(f"[1] Recherche des mises à jour... {json_report}")
+    # logger.info(f"[1] Recherche des mises a jour... {json_report}")
 
     try:
         update_information = {
