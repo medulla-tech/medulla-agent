@@ -168,6 +168,25 @@ _PROFILE_DIR_RE = re.compile(
 )
 
 
+def _safe_is_dir(path: Path) -> bool:
+    """is_dir() tolérant : renvoie False au lieu de lever sur accès refusé.
+    Depuis Python 3.11, Path.is_dir() propage PermissionError (WinError 5) sur un
+    profil verrouillé — sans ça, un seul profil illisible tue tout l'inventaire
+    (l'agent scanne les profils de tous les utilisateurs de la machine)."""
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
+
+
+def _safe_iterdir(path: Path) -> list[Path]:
+    """iterdir() tolérant : liste vide au lieu de lever sur accès refusé."""
+    try:
+        return list(path.iterdir())
+    except OSError:
+        return []
+
+
 def collect_chromium_extensions(
     browser_name: str,
     user_data_path: Path,
@@ -176,16 +195,16 @@ def collect_chromium_extensions(
     """Inventorie les extensions d'un navigateur basé sur Chromium."""
     results: list[ExtensionEntry] = []
 
-    if not user_data_path.is_dir():
-        logging.debug("[%s] Chemin introuvable : %s", browser_name, user_data_path)
+    if not _safe_is_dir(user_data_path):
+        logging.debug("[%s] Chemin introuvable/illisible : %s", browser_name, user_data_path)
         return results
 
     logging.info("    [%s] %s", browser_name, user_data_path)
 
     profile_dirs = [
         d
-        for d in user_data_path.iterdir()
-        if d.is_dir() and _PROFILE_DIR_RE.match(d.name)
+        for d in _safe_iterdir(user_data_path)
+        if _safe_is_dir(d) and _PROFILE_DIR_RE.match(d.name)
     ]
 
     for profile_dir in profile_dirs:
@@ -306,14 +325,14 @@ def collect_gecko_extensions(
     """Inventorie les extensions d'une application Gecko (Firefox, Thunderbird)."""
     results: list[ExtensionEntry] = []
 
-    if not profiles_base.is_dir():
-        logging.debug("[%s] Chemin introuvable : %s", app_name, profiles_base)
+    if not _safe_is_dir(profiles_base):
+        logging.debug("[%s] Chemin introuvable/illisible : %s", app_name, profiles_base)
         return results
 
     logging.info("    [%s] %s", app_name, profiles_base)
 
-    for profile_dir in profiles_base.iterdir():
-        if not profile_dir.is_dir():
+    for profile_dir in _safe_iterdir(profiles_base):
+        if not _safe_is_dir(profile_dir):
             continue
 
         ext_json = profile_dir / "extensions.json"
