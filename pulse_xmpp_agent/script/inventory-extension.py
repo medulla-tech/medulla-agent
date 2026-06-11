@@ -169,9 +169,9 @@ _PROFILE_DIR_RE = re.compile(
 
 
 def _safe_is_dir(path: Path) -> bool:
-    """is_dir() tolérant : renvoie False au lieu de lever sur accès refusé.
+    """is_dir() tolerant: renvoie False au lieu de lever sur acces refuse.
     Depuis Python 3.11, Path.is_dir() propage PermissionError (WinError 5) sur un
-    profil verrouillé — sans ça, un seul profil illisible tue tout l'inventaire
+    profil verrouille - sans cela, un seul profil illisible tue tout l'inventaire
     (l'agent scanne les profils de tous les utilisateurs de la machine)."""
     try:
         return path.is_dir()
@@ -180,7 +180,7 @@ def _safe_is_dir(path: Path) -> bool:
 
 
 def _safe_iterdir(path: Path) -> list[Path]:
-    """iterdir() tolérant : liste vide au lieu de lever sur accès refusé."""
+    """iterdir() tolerant: liste vide au lieu de lever sur acces refuse."""
     try:
         return list(path.iterdir())
     except OSError:

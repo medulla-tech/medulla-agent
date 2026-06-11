@@ -114,9 +114,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             utils.file_put_contents_w_a(namefilexml, strxml)
 
     # Enrichissement avec les extensions navigateurs et add-ins Office.
-    # Si activé (inventory_browser_extensions = True), produit un XML <SOFTWARES>
-    # fusionné avec l'enrichissement éventuel ci-dessus, injecté via
-    # --additional-content dans l'inventaire envoyé à GLPI.
+    # Si active (inventory_browser_extensions = True), produit un XML <SOFTWARES>
+    # fusionne avec l'enrichissement eventuel ci-dessus, injecte via
+    # --additional-content dans l'inventaire envoye a GLPI.
     namefilexml = collect_browser_extensions(xmppobject, namefilexml)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
@@ -927,11 +927,11 @@ def merge_additional_content(xml_files, output_file):
     On regroupe donc le contenu de tous les <CONTENT> dans un <REQUEST> unique.
 
     Args:
-        xml_files: liste de chemins de fichiers XML <REQUEST><CONTENT>…
-        output_file: chemin du fichier fusionné à écrire.
+        xml_files: liste de chemins de fichiers XML <REQUEST><CONTENT>...
+        output_file: chemin du fichier fusionne a ecrire.
 
     Returns:
-        Le chemin du fichier fusionné.
+        Le chemin du fichier fusionne.
     """
     request = ET.Element("REQUEST")
     content = ET.SubElement(request, "CONTENT")
@@ -946,8 +946,8 @@ def merge_additional_content(xml_files, output_file):
         src_content = root.find("CONTENT") if root.tag == "REQUEST" else root
         if src_content is None:
             continue
-        # list() : lxml déplace les noeuds lors de l'append, on fige donc
-        # la liste source avant d'itérer.
+        # list() : lxml deplace les noeuds lors de l'append, on fige donc
+        # la liste source avant d'iterer.
         for child in list(src_content):
             content.append(child)
     strxml = ET.tostring(request, encoding="utf-8", xml_declaration=True)
@@ -958,26 +958,26 @@ def merge_additional_content(xml_files, output_file):
 
 def collect_browser_extensions(xmppobject, existing_xml=""):
     """Collecte les extensions navigateurs et add-ins Office, et retourne le
-    chemin d'un XML <SOFTWARES> destiné à l'option `--additional-content`.
+    chemin d'un XML <SOFTWARES> destine a l'option `--additional-content`.
 
-    Pilotée par la clé `inventory_browser_extensions = True` de inventory.ini.
+    Pilotee par la cle `inventory_browser_extensions = True` de inventory.ini.
     S'appuie sur le script autonome script/inventory-extension.py (stdlib pure,
-    multi-OS) lancé avec `--format additional-content`.
+    multi-OS) lance avec `--format additional-content`.
 
-    Si un XML d'enrichissement est déjà présent (existing_xml, ex. périphériques
-    USB/imprimantes via json_file_extend_inventory), les deux sont fusionnés en
+    Si un XML d'enrichissement est deja present (existing_xml, ex. peripheriques
+    USB/imprimantes via json_file_extend_inventory), les deux sont fusionnes en
     un seul fichier puisque l'agent n'accepte qu'un seul --additional-content.
 
     Returns:
-        Le chemin du XML à injecter, ou existing_xml inchangé si la collecte
-        est désactivée ou échoue.
+        Le chemin du XML a injecter, ou existing_xml inchange si la collecte
+        est desactivee ou echoue.
     """
     enabled = getattr(xmppobject.config, "inventory_browser_extensions", "False")
     logger.debug(
         "[browserext] collect (inventory_browser_extensions=%r)", enabled
     )
     if str(enabled).strip().lower() != "true":
-        logger.debug("[browserext] désactivé — rien à faire")
+        logger.debug("[browserext] desactive - rien a faire")
         return existing_xml
 
     script_path = os.path.abspath(
@@ -992,9 +992,9 @@ def collect_browser_extensions(xmppobject, existing_xml=""):
         logger.error("[browserext] script introuvable: %s", script_path)
         return existing_xml
 
-    # Interpréteur Python : dans un service Windows, sys.executable vaut souvent
-    # medulla.exe / pythonservice.exe (et non un interpréteur capable de lancer
-    # un script). On bascule alors sur python.exe situé à côté.
+    # Interpreteur Python : dans un service Windows, sys.executable vaut souvent
+    # medulla.exe / pythonservice.exe (et non un interpreteur capable de lancer
+    # un script). On bascule alors sur python.exe situe a cote.
     python_exe = sys.executable
     if sys.platform == "win32" and not os.path.basename(
         python_exe
@@ -1022,16 +1022,16 @@ def collect_browser_extensions(xmppobject, existing_xml=""):
         obj = utils.simplecommand(cmd)
         logger.debug("[browserext] returncode=%s", obj.get("code"))
     except Exception as exc:
-        logger.error("[browserext] échec lancement du script: %s", exc)
+        logger.error("[browserext] echec lancement du script: %s", exc)
         return existing_xml
 
     if not os.path.exists(browserext_xml):
-        logger.warning("[browserext] aucun XML généré: %s", browserext_xml)
+        logger.warning("[browserext] aucun XML genere: %s", browserext_xml)
         return existing_xml
 
-    logger.debug("[browserext] XML généré: %s", browserext_xml)
+    logger.debug("[browserext] XML genere: %s", browserext_xml)
 
-    # Fusion avec un éventuel enrichissement déjà présent (USB/imprimantes…).
+    # Fusion avec un eventuel enrichissement deja present (USB/imprimantes...).
     if existing_xml and os.path.exists(existing_xml):
         merged_xml = os.path.join(pulseTempDir(), "additional_content.xml")
         return merge_additional_content(
