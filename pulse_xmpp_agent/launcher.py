@@ -667,7 +667,7 @@ class Update_Remote_Agent:
         for filename in [
             x
             for x in os.listdir(os.path.join(self.dir_agent_base, "script"))
-            if x[-4:] == ".ps1"
+            if x.endswith((".ps1", ".py"))
         ]:
             self.directory["script_agent"][filename] = hashlib.md5(
                 file_get_binarycontents(
