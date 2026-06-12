@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.5", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.6", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -113,10 +113,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
             utils.file_put_contents_w_a(namefilexml, strxml)
 
-    # Enrichissement avec les extensions navigateurs et add-ins Office.
-    # Si active (inventory_browser_extensions = True), produit un XML <SOFTWARES>
-    # fusionne avec l'enrichissement eventuel ci-dessus, injecte via
-    # --additional-content dans l'inventaire envoye a GLPI.
+    # Enrichissement avec les extensions navigateurs et add-ins Office : produit
+    # un XML <SOFTWARES> fusionne avec l'enrichissement eventuel ci-dessus, injecte
+    # via --additional-content dans l'inventaire envoye a GLPI.
     namefilexml = collect_browser_extensions(xmppobject, namefilexml)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
@@ -960,7 +959,6 @@ def collect_browser_extensions(xmppobject, existing_xml=""):
     """Collecte les extensions navigateurs et add-ins Office, et retourne le
     chemin d'un XML <SOFTWARES> destine a l'option `--additional-content`.
 
-    Pilotee par la cle `inventory_browser_extensions = True` de inventory.ini.
     S'appuie sur le script autonome script/inventory-extension.py (stdlib pure,
     multi-OS) lance avec `--format additional-content`.
 
@@ -969,17 +967,9 @@ def collect_browser_extensions(xmppobject, existing_xml=""):
     un seul fichier puisque l'agent n'accepte qu'un seul --additional-content.
 
     Returns:
-        Le chemin du XML a injecter, ou existing_xml inchange si la collecte
-        est desactivee ou echoue.
+        Le chemin du XML a injecter, ou existing_xml inchange si la collecte echoue.
     """
-    enabled = getattr(xmppobject.config, "inventory_browser_extensions", "False")
-    logger.debug(
-        "[browserext] collect (inventory_browser_extensions=%r)", enabled
-    )
-    if str(enabled).strip().lower() != "true":
-        logger.debug("[browserext] desactive - rien a faire")
-        return existing_xml
-
+    logger.debug("[browserext] collect")
     script_path = os.path.abspath(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
