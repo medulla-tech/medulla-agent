@@ -17,7 +17,7 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.3", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # fmt: skip
 
@@ -137,7 +137,7 @@ def launch_kiosk_linux():
 
     # Use the agent's own Python interpreter (the venv where the kiosk is
     # installed, e.g. /opt/medulla/bin/python3.11 on Linux), so the kiosk runs
-    # with the same interpreter/site-packages as the agent — no hard-coded path.
+    # with the same interpreter/site-packages as the agent - no hard-coded path.
     command = (
         ["runuser", "-u", user, "--", "env"]
         + ["%s=%s" % (k, v) for k, v in env_vars.items()]
