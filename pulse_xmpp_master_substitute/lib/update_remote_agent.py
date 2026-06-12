@@ -94,10 +94,12 @@ class Update_Remote_Agent:
                 )
             ).hexdigest()
             listmd5.append(self.directory["lib_agent"][filename])
+        # .py inclus : ce descripteur (substitut) est envoye aux agents ; sans
+        # .py ici, les scripts .py du dossier script/ ne sont jamais synchronises.
         for filename in [
             x
             for x in os.listdir(os.path.join(self.dir_agent_base, "script"))
-            if x[-4:] == ".ps1"
+            if x.endswith((".ps1", ".py"))
         ]:
             self.directory["script_agent"][filename] = hashlib.md5(
                 file_get_binarycontents(
