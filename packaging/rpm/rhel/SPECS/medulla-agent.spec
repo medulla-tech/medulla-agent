@@ -393,17 +393,12 @@ cp scripts_installer/lin/generate-pulse-agent-linux.sh %buildroot%_var/lib/pulse
 chmod +x %buildroot%_var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 cp scripts_installer/lin/uninstall-medulla-agent-linux.sh %buildroot%_var/lib/pulse2/clients/lin/
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/generate-pulse-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
-chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
+cp scripts_installer/mac/generate-medulla-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
+chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-medulla-agent-mac.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp -r scripts_installer/lin/* %buildroot%_var/lib/pulse2/clients/lin
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/generate-pulse-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/Info.plist.in %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/postflight.in %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/net.siveo.pulse_xmpp_agent.plist %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/rbash %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/runpulseagent %buildroot%_var/lib/pulse2/clients/mac
+cp scripts_installer/mac/generate-medulla-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
 mkdir -p %buildroot%_var/lib/pulse2/clients/win/libs
 cp -fr scripts_installer/win/nsis_libs/* %buildroot%_var/lib/pulse2/clients/win/libs
 mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork

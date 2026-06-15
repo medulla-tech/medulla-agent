@@ -17,18 +17,29 @@
 # The user just double-clicks the .pkg, enters admin password, and the agent is installed.
 #
 # Requirements on the server:
-#   - xar + mkbom (for building .pkg on Linux)
+#   - xar + mkbom shipped alongside this script in ./bin/ (packaged with pulse-agent-installers)
 #   - Python wheels in /var/lib/pulse2/clients/mac/downloads/python_modules/
 #   - Agent code in /usr/lib/python3/dist-packages/pulse_xmpp_agent/
 #   - Certificates in /var/lib/pulse2/clients/medulla-{rootca,ca-chain}.cert.pem
 #   - Config in /var/lib/pulse2/clients/config/agentconf.ini
 
+# ============================================================================
+# CONFIGURATION (versions à bumper quand on upgrade Python ou GLPI Agent)
+# - PYTHON_VERSION        : major.minor utilisé pour les chemins Homebrew/Frameworks côté Mac
+# - PYTHON_VERSION_FULL   : major.minor.patch utilisé pour télécharger le .pkg sur python.org
+# - GLPI_AGENT_VERSION    : tag de release github.com/glpi-project/glpi-agent
+# ============================================================================
 AGENT_VERSION="5.6.1"
 PYTHON_VERSION="3.11"
+PYTHON_VERSION_FULL="3.11.9"
 GLPI_AGENT_VERSION="1.17"
 
 # Go to own folder
 cd "$(dirname $0)"
+
+# Use the xar/mkbom shipped alongside this script (./bin/) in priority,
+# fallback on system PATH if absent.
+export PATH="$PWD/bin:$PATH"
 
 # Paths
 CLIENTS_DIR="/var/lib/pulse2/clients"
@@ -150,22 +161,30 @@ SETUPEOF
         exit 1
     fi
 
-    # -- 2b. Python 3.11 pkg (embedded, installed if missing) --
-    PYTHON_PKG="${MAC_DIR}/downloads/python-3.11.9-macos11.pkg"
+    # -- 2b. Python pkg (embedded, auto-downloaded once, cached in downloads/) --
+    PYTHON_PKG="${MAC_DIR}/downloads/python-${PYTHON_VERSION_FULL}-macos11.pkg"
+    if [ ! -f "$PYTHON_PKG" ]; then
+        colored_echo yellow "  Python ${PYTHON_VERSION_FULL} pkg not cached, downloading from python.org..."
+        curl -fsSLo "$PYTHON_PKG" "https://www.python.org/ftp/python/${PYTHON_VERSION_FULL}/python-${PYTHON_VERSION_FULL}-macos11.pkg" || rm -f "$PYTHON_PKG"
+    fi
     if [ -f "$PYTHON_PKG" ]; then
-        cp "$PYTHON_PKG" "${DMG_STAGING}/.python3.11.pkg"
-        colored_echo green "  Python 3.11: embedded"
+        cp "$PYTHON_PKG" "${DMG_STAGING}/.python${PYTHON_VERSION}.pkg"
+        colored_echo green "  Python ${PYTHON_VERSION_FULL}: embedded"
     else
-        colored_echo yellow "  WARN: Python pkg not found at ${PYTHON_PKG}"
+        colored_echo yellow "  WARN: Python pkg unavailable (download failed), Mac will fetch at install"
     fi
 
-    # -- 2c. GLPI Agent pkg (embedded, not downloaded at install) --
+    # -- 2c. GLPI Agent pkg (embedded, auto-downloaded once, cached in downloads/) --
     GLPI_PKG="${MAC_DIR}/downloads/GLPI-Agent-${GLPI_AGENT_VERSION}_arm64.pkg"
+    if [ ! -f "$GLPI_PKG" ]; then
+        colored_echo yellow "  GLPI Agent ${GLPI_AGENT_VERSION} pkg not cached, downloading from github..."
+        curl -fsSLo "$GLPI_PKG" "https://github.com/glpi-project/glpi-agent/releases/download/${GLPI_AGENT_VERSION}/GLPI-Agent-${GLPI_AGENT_VERSION}_arm64.pkg" || rm -f "$GLPI_PKG"
+    fi
     if [ -f "$GLPI_PKG" ]; then
         cp "$GLPI_PKG" "${DMG_STAGING}/.glpi-agent.pkg"
         colored_echo green "  GLPI Agent: embedded"
     else
-        colored_echo yellow "  WARN: GLPI Agent pkg not found at ${GLPI_PKG}"
+        colored_echo yellow "  WARN: GLPI Agent unavailable (download failed), Mac will fetch at install"
     fi
 
     # -- 3. Certificates (hidden) --
@@ -285,7 +304,8 @@ INSTALL_DIR="/opt/medulla"
 CONF_DIR="/etc/medulla"
 LOG_DIR="/var/log/medulla"
 PLIST_PATH="/Library/LaunchDaemons/io.medulla.agent.plist"
-PYTHON_VERSION="3.11"
+PYTHON_VERSION="@@PYTHON_VERSION@@"
+PYTHON_VERSION_FULL="@@PYTHON_VERSION_FULL@@"
 GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
 
 [ "$(id -u)" -ne 0 ] && echo "Lancez avec: sudo bash $0" && exit 1
@@ -345,13 +365,13 @@ fi
 
 # Install Python from embedded pkg or download from python.org
 if [ -z "$PYTHON_BIN" ]; then
-    if [ -f "${DIR}/.python3.11.pkg" ]; then
+    if [ -f "${DIR}/.python${PYTHON_VERSION}.pkg" ]; then
         log "Installation de Python ${PYTHON_VERSION} depuis le pkg embarque..."
-        installer -pkg "${DIR}/.python3.11.pkg" -target / 2>/dev/null
+        installer -pkg "${DIR}/.python${PYTHON_VERSION}.pkg" -target / 2>/dev/null
     else
         log "Telechargement de Python ${PYTHON_VERSION} depuis python.org..."
         PYTHON_DL="/tmp/python-${PYTHON_VERSION}.pkg"
-        curl -sLo "$PYTHON_DL" "https://www.python.org/ftp/python/3.11.9/python-3.11.9-macos11.pkg"
+        curl -sLo "$PYTHON_DL" "https://www.python.org/ftp/python/${PYTHON_VERSION_FULL}/python-${PYTHON_VERSION_FULL}-macos11.pkg"
         [ -f "$PYTHON_DL" ] && [ -s "$PYTHON_DL" ] && installer -pkg "$PYTHON_DL" -target / 2>/dev/null
         rm -f "$PYTHON_DL"
     fi
@@ -613,7 +633,11 @@ INSTALLEOF
     chmod +x "${DEST_DIR}/install-medulla-agent.sh"
 
     # Replace placeholders
-    sed -i'' "s/@@GLPI_AGENT_VERSION@@/${GLPI_AGENT_VERSION}/g" "${DEST_DIR}/install-medulla-agent.sh"
+    sed -i'' \
+        -e "s/@@PYTHON_VERSION@@/${PYTHON_VERSION}/g" \
+        -e "s/@@PYTHON_VERSION_FULL@@/${PYTHON_VERSION_FULL}/g" \
+        -e "s/@@GLPI_AGENT_VERSION@@/${GLPI_AGENT_VERSION}/g" \
+        "${DEST_DIR}/install-medulla-agent.sh"
 }
 
 # ============================================================
@@ -643,7 +667,7 @@ create_pkg() {
         [ -d "${DMG_STAGING}/${d}" ] && cp -R "${DMG_STAGING}/${d}" "${PAYLOAD_ROOT}/${d#.}"
     done
     # Python + GLPI Agent pkgs + setup.py
-    [ -f "${DMG_STAGING}/.python3.11.pkg" ] && cp "${DMG_STAGING}/.python3.11.pkg" "${PAYLOAD_ROOT}/.python3.11.pkg"
+    [ -f "${DMG_STAGING}/.python${PYTHON_VERSION}.pkg" ] && cp "${DMG_STAGING}/.python${PYTHON_VERSION}.pkg" "${PAYLOAD_ROOT}/.python${PYTHON_VERSION}.pkg"
     [ -f "${DMG_STAGING}/.glpi-agent.pkg" ] && cp "${DMG_STAGING}/.glpi-agent.pkg" "${PAYLOAD_ROOT}/.glpi-agent.pkg"
     [ -f "${DMG_STAGING}/.setup.py" ] && cp "${DMG_STAGING}/.setup.py" "${PAYLOAD_ROOT}/setup.py"
 
