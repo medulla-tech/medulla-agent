@@ -13,6 +13,7 @@ var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 var/lib/pulse2/clients/lin/install-pulse-agent-linux.sh.in
 var/lib/pulse2/clients/lin/uninstall-medulla-agent-linux.sh
 var/lib/pulse2/clients/mac/generate-medulla-agent-mac.sh
+var/lib/pulse2/clients/mac/medulla-uninstall.sh
 var/lib/pulse2/clients/pulse-xmpp-agent-5.6.1.tar.gz
 var/lib/pulse2/clients/pulse-machine-plugins-5.6.1.tar.gz
 var/lib/pulse2/clients/kiosk-interface-2.1.1.tar.gz
