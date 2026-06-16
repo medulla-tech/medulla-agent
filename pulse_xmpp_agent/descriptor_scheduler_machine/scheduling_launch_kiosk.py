@@ -17,7 +17,7 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.4", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # fmt: skip
 
@@ -203,7 +203,7 @@ def get_linux_graphical_session():
                 continue
             session_id = parts[0]
             props = _loginctl_session_props(session_id)
-            if props.get("State") == "active" and props.get("Type") in (
+            if props.get("State") == "active" and props.get("Display") != "" and props.get("Type") in (
                 "x11",
                 "wayland",
             ):
