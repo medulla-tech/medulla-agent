@@ -41,7 +41,7 @@ from lib.utils import (
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.3", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
 
 
 def _is_network_event_payload(payload):
@@ -535,13 +535,30 @@ async def run_server(xmppobject):
     """
 
     # Check if the server is already running on the specified port
-    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-        # Command to check running server on Linux/MacOS
+    if sys.platform.startswith("linux"):
+        # GNU net-tools (Linux) syntax: -l listening, -t tcp, -p show pid/program.
         linux_command = (
             f'netstat -lnt4p | grep python | grep ":{xmppobject.port_tcp_kiosk}"'
         )
         logger.warning(f"Linux command: {linux_command}")
         result = simplecommand(linux_command)
+
+        # If there's a result, it means the server is already running
+        if len(result["result"]) > 0:
+            logger.debug(
+                f"The TCP/IP kiosk server is already running locally on port {xmppobject.port_tcp_kiosk}"
+            )
+            return
+    elif sys.platform.startswith("darwin"):
+        # macOS ships BSD netstat: the Linux flags (-l/-t/-p) don't exist and
+        # make it error out, which the old shared branch misread as "already
+        # running" -> the server never bound. List listening TCP sockets and
+        # match the port in the BSD "ip.port" column (e.g. "127.0.0.1.8765 ").
+        macos_command = (
+            f'netstat -an -p tcp | grep LISTEN | grep "\\.{xmppobject.port_tcp_kiosk} "'
+        )
+        logger.warning(f"macOS command: {macos_command}")
+        result = simplecommand(macos_command)
 
         # If there's a result, it means the server is already running
         if len(result["result"]) > 0:
