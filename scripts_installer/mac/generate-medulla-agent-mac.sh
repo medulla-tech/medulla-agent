@@ -11,9 +11,10 @@
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
-# This script generates a .pkg installer for the Medulla XMPP agent on macOS.
-# Target: ARM64 (Apple Silicon: M1, M2, M3, M4)
-# It runs on the Medulla server (Linux) and produces a .pkg that can be deployed on Macs.
+# This script generates .pkg installers for the Medulla XMPP agent on macOS.
+# Target: macOS arm64 (Apple Silicon M1/M2/M3/M4) AND x86_64 (Intel Macs).
+# Produces 2 .pkg per run: Medulla-Agent-mac-arm64-X.Y.Z.pkg + Medulla-Agent-mac-x86_64-X.Y.Z.pkg.
+# It runs on the Medulla server (Linux) and produces the .pkg deployable on Macs.
 # The user just double-clicks the .pkg, enters admin password, and the agent is installed.
 #
 # Requirements on the server:
@@ -25,7 +26,7 @@
 
 # ============================================================================
 # CONFIGURATION (versions à bumper quand on upgrade Python ou GLPI Agent)
-# - PYTHON_VERSION        : major.minor utilisé pour les chemins Homebrew/Frameworks côté Mac
+# - PYTHON_VERSION        : major.minor utilisé pour les chemins Python.framework côté Mac
 # - PYTHON_VERSION_FULL   : major.minor.patch utilisé pour télécharger le .pkg sur python.org
 # - GLPI_AGENT_VERSION    : tag de release github.com/glpi-project/glpi-agent
 # ============================================================================
@@ -33,6 +34,10 @@ AGENT_VERSION="5.6.1"
 PYTHON_VERSION="3.11"
 PYTHON_VERSION_FULL="3.11.9"
 GLPI_AGENT_VERSION="1.17"
+KIOSK_VERSION="2.1.0"
+# PyQt6 pinné (PyQt6 ET PyQt6-Qt6 à la MÊME version, sinon ABI mismatch au
+# runtime), aligné sur les installeurs win/linux.
+PYQT6_VERSION="6.6.1"
 
 # Go to own folder
 cd "$(dirname $0)"
@@ -47,11 +52,10 @@ MAC_DIR="${CLIENTS_DIR}/mac"
 WHEELS_DIR="${MAC_DIR}/downloads/python_modules"
 CONFIG_DIR="${CLIENTS_DIR}/config"
 AGENT_SRC="/usr/lib/python3/dist-packages/pulse_xmpp_agent"
-BUILD_DIR="/tmp/medulla-mac-build"
-DMG_STAGING="${BUILD_DIR}/dmg"
-# ARM64 = Apple Silicon (M1, M2, M3, M4)
-# Pour Mac Intel, utiliser des wheels x86_64 et changer en Medulla-Agent-mac-x86_64
-PKG_NAME="Medulla-Agent-mac-ARM64"
+# Tarball du kiosk (même source que l'installeur linux : servi sous BASE_URL,
+# = racine de CLIENTS_DIR sur le serveur de build).
+KIOSK_TARBALL="${CLIENTS_DIR}/kiosk-interface-${KIOSK_VERSION}.tar.gz"
+# BUILD_DIR / DMG_STAGING / PKG_NAME / ARCH sont fixés par la boucle main (par archi).
 
 # ============================================================
 # Arguments (same interface as win/linux generate scripts)
@@ -174,17 +178,27 @@ SETUPEOF
         colored_echo yellow "  WARN: Python pkg unavailable (download failed), Mac will fetch at install"
     fi
 
-    # -- 2c. GLPI Agent pkg (embedded, auto-downloaded once, cached in downloads/) --
-    GLPI_PKG="${MAC_DIR}/downloads/GLPI-Agent-${GLPI_AGENT_VERSION}_arm64.pkg"
+    # -- 2c. GLPI Agent pkg (embedded, auto-downloaded once par archi, cached in downloads/) --
+    GLPI_PKG="${MAC_DIR}/downloads/GLPI-Agent-${GLPI_AGENT_VERSION}_${ARCH}.pkg"
     if [ ! -f "$GLPI_PKG" ]; then
-        colored_echo yellow "  GLPI Agent ${GLPI_AGENT_VERSION} pkg not cached, downloading from github..."
-        curl -fsSLo "$GLPI_PKG" "https://github.com/glpi-project/glpi-agent/releases/download/${GLPI_AGENT_VERSION}/GLPI-Agent-${GLPI_AGENT_VERSION}_arm64.pkg" || rm -f "$GLPI_PKG"
+        colored_echo yellow "  GLPI Agent ${GLPI_AGENT_VERSION} ${ARCH} pkg not cached, downloading from github..."
+        curl -fsSLo "$GLPI_PKG" "https://github.com/glpi-project/glpi-agent/releases/download/${GLPI_AGENT_VERSION}/GLPI-Agent-${GLPI_AGENT_VERSION}_${ARCH}.pkg" || rm -f "$GLPI_PKG"
     fi
     if [ -f "$GLPI_PKG" ]; then
         cp "$GLPI_PKG" "${DMG_STAGING}/.glpi-agent.pkg"
-        colored_echo green "  GLPI Agent: embedded"
+        colored_echo green "  GLPI Agent ${ARCH}: embedded"
     else
-        colored_echo yellow "  WARN: GLPI Agent unavailable (download failed), Mac will fetch at install"
+        colored_echo yellow "  WARN: GLPI Agent ${ARCH} unavailable (download failed), Mac will fetch at install"
+    fi
+
+    # -- 2d. Kiosk interface tarball (hidden) --
+    # Installé dans le venv de l'agent par le postinstall (PyQt6 + le kiosk),
+    # pour que le scheduler puisse lancer le kiosk avec sys.executable.
+    if [ -f "${KIOSK_TARBALL}" ]; then
+        cp "${KIOSK_TARBALL}" "${DMG_STAGING}/.kiosk-interface.tar.gz"
+        colored_echo green "  Kiosk ${KIOSK_VERSION}: embedded"
+    else
+        colored_echo yellow "  WARN: tarball kiosk introuvable (${KIOSK_TARBALL}), kiosk non embarque"
     fi
 
     # -- 3. Certificates (hidden) --
@@ -211,6 +225,15 @@ SETUPEOF
     # -- 5. Volume icon --
     if [ -f "${MAC_DIR}/downloads/VolumeIcon.icns" ]; then
         cp "${MAC_DIR}/downloads/VolumeIcon.icns" "${DMG_STAGING}/.VolumeIcon.icns"
+    fi
+
+    # -- 5b. Uninstall helper (sera deplacé en /usr/local/bin/medulla-uninstall par le postinstall) --
+    if [ -f "${MAC_DIR}/medulla-uninstall.sh" ]; then
+        cp "${MAC_DIR}/medulla-uninstall.sh" "${DMG_STAGING}/medulla-uninstall.sh"
+        chmod +x "${DMG_STAGING}/medulla-uninstall.sh"
+        colored_echo green "  Uninstall helper: OK"
+    else
+        colored_echo yellow "  WARN: ${MAC_DIR}/medulla-uninstall.sh introuvable, helper non embarque"
     fi
 
     # -- 6. Postinstall script --
@@ -297,16 +320,19 @@ generate_install_script() {
     local DEST_DIR="${1:-${DMG_STAGING}}"
     cat > "${DEST_DIR}/install-medulla-agent.sh" <<'INSTALLEOF'
 #!/bin/bash
-# Medulla Agent macOS ARM64 - Installer
+# Medulla Agent macOS - Installer (cible : @@ARCH@@)
 # Called by the .app launcher with the DMG path as $1
 
 INSTALL_DIR="/opt/medulla"
 CONF_DIR="/etc/medulla"
 LOG_DIR="/var/log/medulla"
 PLIST_PATH="/Library/LaunchDaemons/io.medulla.agent.plist"
+ARCH="@@ARCH@@"
 PYTHON_VERSION="@@PYTHON_VERSION@@"
 PYTHON_VERSION_FULL="@@PYTHON_VERSION_FULL@@"
 GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
+KIOSK_VERSION="@@KIOSK_VERSION@@"
+PYQT6_VERSION="@@PYQT6_VERSION@@"
 
 [ "$(id -u)" -ne 0 ] && echo "Lancez avec: sudo bash $0" && exit 1
 [ "$(uname)" != "Darwin" ] && echo "macOS uniquement" && exit 1
@@ -331,55 +357,26 @@ if ! xcode-select -p &>/dev/null; then
     rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
 fi
 
-# ---- Homebrew + Python 3.11 (native ARM64, required for ARM64 wheels) ----
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+# ---- Python ${PYTHON_VERSION_FULL} depuis le .pkg python.org embarque ----
+PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/bin/python${PYTHON_VERSION}"
 
-# Install Homebrew if missing
-if [ ! -x /opt/homebrew/bin/brew ] && [ ! -x /usr/local/bin/brew ]; then
-    log "Installation de Homebrew..."
-    # Homebrew cannot install as root, find the console user
-    CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null)
-    if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
-        sudo -u "$CONSOLE_USER" /bin/bash -c 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"' 2>&1 | tail -3
-    fi
-fi
-
-# Install Python 3.11 via Homebrew if missing
-PYTHON_BIN=""
-for p in /opt/homebrew/opt/python@${PYTHON_VERSION}/bin/python${PYTHON_VERSION} \
-         /opt/homebrew/bin/python${PYTHON_VERSION} \
-         /usr/local/opt/python@${PYTHON_VERSION}/bin/python${PYTHON_VERSION}; do
-    [ -x "$p" ] && PYTHON_BIN="$p" && break
-done
-if [ -z "$PYTHON_BIN" ]; then
-    log "Installation de Python ${PYTHON_VERSION} via Homebrew..."
-    CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null)
-    if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
-        sudo -u "$CONSOLE_USER" /opt/homebrew/bin/brew install python@${PYTHON_VERSION} 2>&1 | tail -3
-    fi
-    for p in /opt/homebrew/opt/python@${PYTHON_VERSION}/bin/python${PYTHON_VERSION} \
-             /opt/homebrew/bin/python${PYTHON_VERSION}; do
-        [ -x "$p" ] && PYTHON_BIN="$p" && break
-    done
-fi
-
-# Install Python from embedded pkg or download from python.org
-if [ -z "$PYTHON_BIN" ]; then
+if [ ! -x "$PYTHON_BIN" ]; then
     if [ -f "${DIR}/.python${PYTHON_VERSION}.pkg" ]; then
-        log "Installation de Python ${PYTHON_VERSION} depuis le pkg embarque..."
+        log "Installation de Python ${PYTHON_VERSION_FULL} depuis le pkg embarque..."
         installer -pkg "${DIR}/.python${PYTHON_VERSION}.pkg" -target / 2>/dev/null
     else
-        log "Telechargement de Python ${PYTHON_VERSION} depuis python.org..."
-        PYTHON_DL="/tmp/python-${PYTHON_VERSION}.pkg"
+        # Fallback : pas de pkg embarque (cas anormal, le payload du .pkg le contient
+        # toujours quand le serveur de build a du reseau). On telecharge depuis python.org.
+        log "Telechargement de Python ${PYTHON_VERSION_FULL} depuis python.org (fallback)..."
+        PYTHON_DL="/tmp/python-${PYTHON_VERSION_FULL}.pkg"
         curl -sLo "$PYTHON_DL" "https://www.python.org/ftp/python/${PYTHON_VERSION_FULL}/python-${PYTHON_VERSION_FULL}-macos11.pkg"
         [ -f "$PYTHON_DL" ] && [ -s "$PYTHON_DL" ] && installer -pkg "$PYTHON_DL" -target / 2>/dev/null
         rm -f "$PYTHON_DL"
     fi
-    PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/bin/python${PYTHON_VERSION}"
 fi
 
 if [ ! -x "$PYTHON_BIN" ]; then
-    log "ERREUR: Python ${PYTHON_VERSION} introuvable"
+    log "ERREUR: Python ${PYTHON_VERSION} introuvable malgre l'install depuis le pkg embarque"
     exit 1
 fi
 log "Python: $PYTHON_BIN"
@@ -428,15 +425,15 @@ cp "${DIR}"/certs/*.pem ${INSTALL_DIR}/certs/ 2>/dev/null
 # ---- Venv + dependencies ----
 log "Creation du venv Python..."
 rm -rf ${INSTALL_DIR}/venv 2>/dev/null
-# Force ARM64 architecture (pkg sandbox may run under Rosetta x86_64)
-arch -arm64 ${PYTHON_BIN} -m venv ${INSTALL_DIR}/venv
+# Force native ${ARCH} (pkg sandbox may run under Rosetta sur Apple Silicon)
+arch -${ARCH} ${PYTHON_BIN} -m venv ${INSTALL_DIR}/venv
 chmod -R 755 ${INSTALL_DIR}/venv
 PIP="${INSTALL_DIR}/venv/bin/pip"
-arch -arm64 ${PIP} install --upgrade pip setuptools wheel 2>/dev/null
+arch -${ARCH} ${PIP} install --upgrade pip setuptools wheel 2>/dev/null
 
 log "Installation des dependances..."
-# Force ARM64 for all pip operations (pkg sandbox may use Rosetta)
-APIP="arch -arm64 ${PIP}"
+# Force native ${ARCH} for all pip operations (pkg sandbox may use Rosetta)
+APIP="arch -${ARCH} ${PIP}"
 # Install wheels one by one with --no-deps to avoid dependency conflicts
 WHEEL_COUNT=0
 for whl in ${DIR}/wheels/*.whl; do
@@ -453,7 +450,7 @@ ${APIP} install certifi requests urllib3 charset-normalizer idna cherrypy 2>/dev
 # Verify and fallback from PyPI if needed
 MISSING=""
 for mod in psutil Crypto yaml lxml cherrypy croniter netaddr lmdb posix_ipc requests OpenSSL configparser distro netifaces slixmpp pycurl wakeonlan aiofiles websockets; do
-    arch -arm64 ${INSTALL_DIR}/venv/bin/python3 -c "import $mod" 2>/dev/null || MISSING="$MISSING $mod"
+    arch -${ARCH} ${INSTALL_DIR}/venv/bin/python3 -c "import $mod" 2>/dev/null || MISSING="$MISSING $mod"
 done
 if [ -n "$MISSING" ]; then
     log "Modules manquants:$MISSING - installation depuis PyPI..."
@@ -461,6 +458,15 @@ if [ -n "$MISSING" ]; then
         lmdb posix_ipc requests pyOpenSSL configparser distro netifaces-plus \
         slixmpp==1.8.5 pycurl wakeonlan aiofiles websockets 2>&1 | tail -5
 fi
+
+# pycurl sdist sur macOS compile par defaut sans backend SSL choisi ("none/other"),
+# ce qui casse l'import au runtime (libcurl expose secure-transport+openssl mais
+# pycurl ne sait pas lequel attaquer) et fait echouer le plugin
+# applicationdeploymentjson. On force la recompilation contre SecureTransport
+# (TLS Apple natif, deja disponible — pas de header openssl a installer).
+log "Force pycurl backend SecureTransport (macOS natif)..."
+PYCURL_SSL_LIBRARY=sectransp ${APIP} install --no-binary :all: --force-reinstall --no-deps pycurl 2>&1 | tail -3
+
 log "Dependances installees ($(${PIP} list 2>/dev/null | wc -l | tr -d ' ') packages)"
 
 # Register pulse_xmpp_agent as a Python package (same as deb does with setup.py install)
@@ -469,16 +475,36 @@ if [ -f "${INSTALL_DIR}/setup.py" ]; then
     log "Package pulse_xmpp_agent enregistre"
 fi
 
-# System Python: install deps if using Homebrew Python (subprocess uses sys.executable)
-SYSPIP=""
-for sp in /opt/homebrew/opt/python@${PYTHON_VERSION}/bin/pip${PYTHON_VERSION} \
-          /opt/homebrew/bin/pip${PYTHON_VERSION}; do
-    [ -x "$sp" ] && SYSPIP="$sp" && break
-done
-if [ -n "$SYSPIP" ]; then
-    log "Installation dependances systeme (Homebrew)..."
-    ${SYSPIP} install slixmpp==1.8.5 pycryptodome pyyaml lxml cherrypy \
-        croniter netaddr lmdb posix_ipc netifaces psutil requests pyOpenSSL 2>/dev/null || true
+# ---- Medulla Kiosk (PyQt6 + kiosk dans le venv de l'agent) ----
+# Le scheduler (scheduling_launch_kiosk) lance le kiosk avec l'interpreteur du
+# venv (sys.executable) via `launchctl asuser <uid> sudo -u <user>`. Sur macOS,
+# QSystemTrayIcon = barre des menus (demarrage discret, pas de fenetre auto,
+# donc pas de .desktop a creer comme sous Linux).
+KIOSK_SRC="${DIR}/.kiosk-interface.tar.gz"
+if [ -f "$KIOSK_SRC" ]; then
+    log "Installation du Medulla Kiosk ${KIOSK_VERSION}..."
+    # PyQt6 ET PyQt6-Qt6 epingles a la MEME version, sinon ABI mismatch
+    # ("undefined symbol ... version Qt_6") a l'import. PyQt6 = wheel universal2 ;
+    # PyQt6-Qt6 = wheels separes arm64/x86_64, d'ou le `arch -${ARCH}` (via APIP)
+    # qui force le bon interpreteur pour que pip prenne le wheel Qt6 de l'archi.
+    ${APIP} install "PyQt6==${PYQT6_VERSION}" "PyQt6-Qt6==${PYQT6_VERSION}" 2>&1 | tail -2
+    # Le tarball tire ses propres deps (setproctitle ; PyQt6 deja satisfait).
+    ${APIP} install "$KIOSK_SRC" 2>&1 | tail -3
+    if arch -${ARCH} ${INSTALL_DIR}/venv/bin/python3 -c "import kiosk_interface" 2>/dev/null; then
+        log "Kiosk installe (import OK)"
+    else
+        log "WARN: le kiosk ne s'importe pas, verifiez PyQt6"
+    fi
+    # Active le lancement du kiosk par le scheduler. Le descripteur defaut deja
+    # a True si l'option est absente, mais on l'ecrit explicitement.
+    cat > ${CONF_DIR}/scheduling_launch_kiosk.ini <<'KIOSKINI'
+[scheduling_launch_kiosk]
+# Enable execution of kiosk
+enable_kiosk = True
+KIOSKINI
+    ln -sf ${CONF_DIR}/scheduling_launch_kiosk.ini ${INSTALL_DIR}/etc/ 2>/dev/null
+else
+    log "WARN: tarball kiosk absent du payload, kiosk non installe"
 fi
 
 # ---- Certificates in trust store ----
@@ -500,7 +526,6 @@ fi
 for CA_FILE in \
     "$OPENSSL_CERT" \
     $(${INSTALL_DIR}/venv/bin/python3 -c "import certifi; print(certifi.where())" 2>/dev/null) \
-    /opt/homebrew/etc/openssl@3/cert.pem \
     /etc/ssl/cert.pem; do
     if [ -n "$CA_FILE" ] && [ -f "$CA_FILE" ] && ! grep -qi "medulla" "$CA_FILE" 2>/dev/null; then
         for cert in ${INSTALL_DIR}/certs/*.pem; do
@@ -526,7 +551,7 @@ if [ ! -f "/Applications/GLPI-Agent/bin/glpi-agent" ]; then
         GLPI_TMP=$(mktemp -d)
         cd "$GLPI_TMP"
         xar -xf "$GLPI_SRC" 2>/dev/null
-        # Find the component pkg (GLPI-Agent-*_arm64.pkg/Payload)
+        # Find the component pkg (GLPI-Agent-*_${ARCH}.pkg/Payload)
         COMPONENT=$(find . -name "Payload" -path "*/GLPI-Agent*" | head -1)
         if [ -n "$COMPONENT" ]; then
             mkdir -p payload_root && cd payload_root
@@ -546,10 +571,10 @@ if [ ! -f "/Applications/GLPI-Agent/bin/glpi-agent" ]; then
         fi
         rm -rf "$GLPI_TMP"
     else
-        # Fallback: download from GitHub
-        GLPI_PKG="/tmp/glpi-agent-arm64.pkg"
+        # Fallback: download from GitHub (archi du Mac courant)
+        GLPI_PKG="/tmp/glpi-agent-${ARCH}.pkg"
         curl -sLo "$GLPI_PKG" \
-            "https://github.com/glpi-project/glpi-agent/releases/download/${GLPI_AGENT_VERSION}/GLPI-Agent-${GLPI_AGENT_VERSION}_arm64.pkg"
+            "https://github.com/glpi-project/glpi-agent/releases/download/${GLPI_AGENT_VERSION}/GLPI-Agent-${GLPI_AGENT_VERSION}_${ARCH}.pkg"
         [ -f "$GLPI_PKG" ] && [ -s "$GLPI_PKG" ] && installer -pkg "$GLPI_PKG" -target / 2>/dev/null
         rm -f "$GLPI_PKG"
     fi
@@ -579,6 +604,13 @@ launchctl kickstart -kp system/io.medulla.agent
 RESTEOF
 chmod +x /usr/local/bin/medulla-restart
 
+# ---- Uninstall helper (script standalone embarqué dans le payload, source de vérité unique) ----
+if [ -f "${INSTALL_DIR}/medulla-uninstall.sh" ]; then
+    cp "${INSTALL_DIR}/medulla-uninstall.sh" /usr/local/bin/medulla-uninstall
+    chmod +x /usr/local/bin/medulla-uninstall
+    log "Uninstall helper installe a /usr/local/bin/medulla-uninstall"
+fi
+
 # ---- LaunchDaemon ----
 log "Creation du LaunchDaemon..."
 cat > ${PLIST_PATH} <<PLISTEOF
@@ -589,7 +621,7 @@ cat > ${PLIST_PATH} <<PLISTEOF
 	<key>EnvironmentVariables</key>
 	<dict>
 		<key>PATH</key>
-		<string>${INSTALL_DIR}/venv/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<string>${INSTALL_DIR}/venv/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
 		<key>PYTHONPATH</key>
 		<string>${INSTALL_DIR}</string>
 		<key>VIRTUAL_ENV</key>
@@ -634,9 +666,12 @@ INSTALLEOF
 
     # Replace placeholders
     sed -i'' \
+        -e "s/@@ARCH@@/${ARCH}/g" \
         -e "s/@@PYTHON_VERSION@@/${PYTHON_VERSION}/g" \
         -e "s/@@PYTHON_VERSION_FULL@@/${PYTHON_VERSION_FULL}/g" \
         -e "s/@@GLPI_AGENT_VERSION@@/${GLPI_AGENT_VERSION}/g" \
+        -e "s/@@KIOSK_VERSION@@/${KIOSK_VERSION}/g" \
+        -e "s/@@PYQT6_VERSION@@/${PYQT6_VERSION}/g" \
         "${DEST_DIR}/install-medulla-agent.sh"
 }
 
@@ -669,6 +704,7 @@ create_pkg() {
     # Python + GLPI Agent pkgs + setup.py
     [ -f "${DMG_STAGING}/.python${PYTHON_VERSION}.pkg" ] && cp "${DMG_STAGING}/.python${PYTHON_VERSION}.pkg" "${PAYLOAD_ROOT}/.python${PYTHON_VERSION}.pkg"
     [ -f "${DMG_STAGING}/.glpi-agent.pkg" ] && cp "${DMG_STAGING}/.glpi-agent.pkg" "${PAYLOAD_ROOT}/.glpi-agent.pkg"
+    [ -f "${DMG_STAGING}/.kiosk-interface.tar.gz" ] && cp "${DMG_STAGING}/.kiosk-interface.tar.gz" "${PAYLOAD_ROOT}/.kiosk-interface.tar.gz"
     [ -f "${DMG_STAGING}/.setup.py" ] && cp "${DMG_STAGING}/.setup.py" "${PAYLOAD_ROOT}/setup.py"
 
     # Payload cpio.gz
@@ -701,7 +737,7 @@ PKGEOF
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
     <title>Medulla Agent ${AGENT_VERSION}</title>
-    <options customize="never" require-scripts="false"/>
+    <options customize="never" require-scripts="false" hostArchitectures="${ARCH}"/>
     <domains enable_localSystem="true"/>
     <choices-outline>
         <line choice="default">
@@ -745,20 +781,27 @@ DISTEOF
 }
 
 # ============================================================
-# Main
+# Main : génère un .pkg par archi cible (arm64 + x86_64)
 # ============================================================
-colored_echo blue "============================================"
-colored_echo blue " Medulla Agent macOS ARM64 - Generator"
-colored_echo blue " Version: ${AGENT_VERSION}"
-colored_echo blue "============================================"
-
 check_arguments "$@"
-build_dmg_contents
-create_pkg
+
+for ARCH in arm64 x86_64; do
+    PKG_NAME="Medulla-Agent-mac-${ARCH}"
+    BUILD_DIR="/tmp/medulla-mac-build-${ARCH}"
+    DMG_STAGING="${BUILD_DIR}/dmg"
+
+    colored_echo blue "============================================"
+    colored_echo blue " Medulla Agent macOS ${ARCH} - Generator"
+    colored_echo blue " Version: ${AGENT_VERSION}"
+    colored_echo blue "============================================"
+
+    build_dmg_contents
+    create_pkg
+done
 
 echo ""
 echo "To install on a Mac:"
-echo "  1. Copy the .pkg to the Mac"
+echo "  1. Copy the matching .pkg (arm64 for Apple Silicon, x86_64 for Intel) to the Mac"
 echo "  2. Double-click on the .pkg"
 echo "  3. Follow the installer (enter admin password)"
 echo ""

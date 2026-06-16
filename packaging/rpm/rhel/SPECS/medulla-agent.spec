@@ -395,6 +395,8 @@ cp scripts_installer/lin/uninstall-medulla-agent-linux.sh %buildroot%_var/lib/pu
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
 cp scripts_installer/mac/generate-medulla-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
 chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-medulla-agent-mac.sh
+cp scripts_installer/mac/medulla-uninstall.sh %buildroot%_var/lib/pulse2/clients/mac
+chmod +x %buildroot%_var/lib/pulse2/clients/mac/medulla-uninstall.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp -r scripts_installer/lin/* %buildroot%_var/lib/pulse2/clients/lin
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
