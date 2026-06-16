@@ -30,7 +30,7 @@
 
 # To be defined
 AGENT_VERSION="5.6.1"
-KIOSK_VERSION="2.1.0"
+KIOSK_VERSION="2.1.1"
 BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
