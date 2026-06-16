@@ -207,10 +207,27 @@ class global_data_process:
         return False
 
     def signal_handler(self, signal_in, frame):
-        if signal_in in [signal.SIGINT, signal.SIGQUIT, signal.SIGQUIT]:
+        if signal_in in [signal.SIGINT, signal.SIGQUIT]:
             logger.debug(f"SIGNAL EVENT {signal_in}")
             self.terminate_process = True
             self.stop_process_agent()
+        elif signal_in == signal.SIGHUP:
+            # Check if dev mode is enabled via flag file
+            dev_mode_file = "/opt/medulla/SIGHUP_DEV_MODE"
+            if not os.path.exists(dev_mode_file):
+                logger.warning("SIGHUP received but SIGHUP_DEV_MODE flag not found - ignoring (production mode)")
+                return
+            # Forward SIGHUP to child processes for module reload (dev mode)
+            logger.info(f"LAUNCHER: Forwarding SIGHUP to child processes (DEV MODE)")
+            if self.ProcessObj and self.PIDagent != 0:
+                try:
+                    parent = psutil.Process(self.PIDagent)
+                    children = parent.children(recursive=True)
+                    for child in children:
+                        child.send_signal(signal.SIGHUP)
+                        logger.debug(f"Sent SIGHUP to child PID {child.pid}")
+                except Exception as e:
+                    logger.error(f"Error sending SIGHUP to children: {e}")
 
 
 class base_folder:
@@ -667,7 +684,7 @@ class Update_Remote_Agent:
         for filename in [
             x
             for x in os.listdir(os.path.join(self.dir_agent_base, "script"))
-            if x[-4:] == ".ps1"
+            if x.endswith((".ps1", ".py"))
         ]:
             self.directory["script_agent"][filename] = hashlib.md5(
                 file_get_binarycontents(
@@ -1322,6 +1339,7 @@ if __name__ == "__main__":
     elif sys.platform.startswith("linux"):
         signal.signal(signal.SIGINT, ProcessData.signal_handler)
         signal.signal(signal.SIGQUIT, ProcessData.signal_handler)
+        signal.signal(signal.SIGHUP, ProcessData.signal_handler)
 
     logger.debug("Starting the launcher")
 

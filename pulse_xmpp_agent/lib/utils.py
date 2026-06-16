@@ -1017,6 +1017,11 @@ def call_plugin_separate(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
+                if pluginaction is None or not hasattr(pluginaction, "action"):
+                    logging.getLogger().error(
+                        f"call_plugin_separate Unable to load plugin action from {nameplugin}"
+                    )
+                    return
                 loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
@@ -1124,6 +1129,11 @@ def call_mon_plugin(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
+                if pluginaction is None or not hasattr(pluginaction, "action"):
+                    logging.getLogger().error(
+                        f"call_mon_plugin Unable to load plugin action from {nameplugin}"
+                    )
+                    return
                 executor = ThreadPoolExecutor()
                 thread = FunctionThread(pluginaction.action, *args, **kwargs)
                 result = loop.run_in_executor(executor, thread.start)
@@ -1179,6 +1189,11 @@ def call_plugin(name, *args, **kwargs):
                 except AttributeError:
                     setattr(args[0], f"num_call{args[1]}", 0)
                 pluginaction = loadModule(nameplugin)
+                if pluginaction is None or not hasattr(pluginaction, "action"):
+                    logging.getLogger().error(
+                        f"call_plugin Unable to load plugin action from {nameplugin}"
+                    )
+                    return
                 result = loop.run_in_executor(
                     None, pluginaction.action, *args, **kwargs
                 )
@@ -1232,6 +1247,11 @@ def call_plugin_sequentially(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
+                if pluginaction is None or not hasattr(pluginaction, "action"):
+                    logging.getLogger().error(
+                        f"call_plugin_sequentially Unable to load plugin action from {nameplugin}"
+                    )
+                    return
                 pluginaction.action(*args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
@@ -2332,7 +2352,7 @@ class protodef:
                             port = cux.laddr.port
                         if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
                             protport["ssh"] = port
-                elif process.name() == "xrdp":
+                elif process.name() == "xrdp" or process.name() == "gnome-remote-desktop-daemon":
                     process_handler = psutil.Process(process.pid)
                     for cux in process_handler.connections():
                         try:
@@ -4633,16 +4653,145 @@ def minifyjsonstring(strjson):
 
 def serialnumbermachine() -> str:
     """
-    Récupère le UUID de la machine pour les systèmes Windows, Linux et macOS.
+    Détermine le serial/UUID machine avec la stratégie suivante (Windows/Linux/macOS):
 
-    Sous Windows, utilise PowerShell pour interroger la classe WMI Win32_ComputerSystemProduct.
-    Sous Linux, utilise la commande `dmidecode` pour récupérer le UUID du système.
-    Sous macOS, utilise `ioreg` pour extraire le UUID de la plateforme.
+    1. Cache local prioritaire:
+       - Lit `INFOSTMP/serialnumberserie.txt`.
+       - Si la valeur semble valide, elle est renvoyée immédiatement.
+
+    2. Inventaire XML agent:
+       - Si un inventaire XML est disponible (ex: `inventory.txt` ou `inventory.xml`),
+         la fonction tente d'extraire un identifiant depuis les balises usuelles
+         (`SSN`, `UUID`, `HARDUUID`, `SERIALNUMBER`, `SERIAL`).
+       - Si un identifiant valide est trouvé, il est écrit dans
+         `INFOSTMP/serialnumberserie.txt` puis renvoyé.
+
+    3. Fallback système (logique historique):
+       - Windows: WMI `Win32_ComputerSystemProduct.UUID`.
+       - Linux: `/sys/class/dmi/id/product_uuid`, puis `dmidecode -s system-uuid`,
+         puis `/etc/machine-id` en dernier recours.
+       - macOS: `ioreg` pour `IOPlatformUUID`.
+
+    4. Si une valeur valide est obtenue via fallback, elle est mise en cache dans
+       `INFOSTMP/serialnumberserie.txt`.
 
     Returns:
-        str: Le UUID de la machine sous forme de chaîne de caractères, ou une chaîne vide en cas d'échec.
+        str: Le serial/UUID machine, ou une chaîne vide si aucun identifiant fiable n'est trouvé.
     """
     serial_uuid_machine = ""
+    serial_cache_file = os.path.join(Setdirectorytempinfo(), "serialnumberserie.txt")
+
+    def _normalize(value):
+        return str(value or "").strip()
+
+    def _looks_uuid_like(value):
+        txt = _normalize(value)
+        if txt == "":
+            return False
+        return bool(
+            re.match(
+                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                txt,
+            )
+        )
+
+    def _looks_machine_id_like(value):
+        txt = _normalize(value)
+        return bool(re.match(r"^[0-9a-fA-F]{32}$", txt))
+
+    def _is_valid_serial(value):
+        txt = _normalize(value)
+        if txt == "":
+            return False
+        lowered = txt.lower()
+        if lowered in (
+            "none",
+            "unknown",
+            "not specified",
+            "to be filled by o.e.m.",
+            "00000000-0000-0000-0000-000000000000",
+        ):
+            return False
+        return _looks_uuid_like(txt) or _looks_machine_id_like(txt)
+
+    def _read_cached_serial():
+        if not os.path.isfile(serial_cache_file):
+            return ""
+        try:
+            value = file_get_contents(serial_cache_file).strip()
+            return value if _is_valid_serial(value) else ""
+        except Exception:
+            return ""
+
+    def _save_cached_serial(value):
+        if not _is_valid_serial(value):
+            return
+        try:
+            if not os.path.isdir(os.path.dirname(serial_cache_file)):
+                os.makedirs(os.path.dirname(serial_cache_file), 0o751)
+            file_put_contents(serial_cache_file, _normalize(value) + "\n")
+        except Exception:
+            logger.debug("Impossible d'ecrire le cache serialnumberserie.txt", exc_info=True)
+
+    def _read_serial_from_inventory_xml():
+        inventory_candidates = []
+        if sys.platform.startswith("linux"):
+            inventory_candidates.extend(
+                [
+                    os.path.join("/tmp", "inventory.txt"),
+                    os.path.join("/tmp", "inventory.xml"),
+                    os.path.join("/tmp", "inventory", "inventory.txt"),
+                    os.path.join("/tmp", "inventory", "inventory.xml"),
+                ]
+            )
+        elif sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+            inventory_candidates.extend(
+                [
+                    os.path.join(pulseTempDir(), "inventory.txt"),
+                    os.path.join(pulseTempDir(), "inventory.xml"),
+                ]
+            )
+
+        xml_tag_candidates = ["SSN", "UUID", "HARDUUID", "SERIALNUMBER", "SERIAL"]
+
+        for inventory_path in inventory_candidates:
+            if not os.path.isfile(inventory_path):
+                continue
+            try:
+                xml_data = file_get_contents(inventory_path)
+            except Exception:
+                continue
+
+            # Extraction simple par regex pour rester tolerant aux XML imparfaits.
+            for tag in xml_tag_candidates:
+                pattern = r"<%s>\s*([^<]+?)\s*</%s>" % (tag, tag)
+                matches = re.findall(pattern, xml_data, flags=re.IGNORECASE)
+                for candidate in matches:
+                    if _is_valid_serial(candidate):
+                        return _normalize(candidate)
+        return ""
+
+    cached_serial = _read_cached_serial()
+    if cached_serial:
+        return cached_serial
+
+    xml_serial = _read_serial_from_inventory_xml()
+    if xml_serial:
+        _save_cached_serial(xml_serial)
+        return xml_serial
+
+    def _is_invalid_uuid(value):
+        if not value:
+            return True
+        lowered = str(value).strip().lower()
+        return lowered in (
+            "",
+            "none",
+            "unknown",
+            "not specified",
+            "to be filled by o.e.m.",
+            "00000000-0000-0000-0000-000000000000",
+        )
     try:
         if sys.platform.startswith("win"):
             result = subprocess.check_output(
@@ -4650,27 +4799,52 @@ def serialnumbermachine() -> str:
                  "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"],
                 stderr=subprocess.DEVNULL
             ).decode("utf-8").strip()
-            serial_uuid_machine = result if result else ""
+            serial_uuid_machine = result if not _is_invalid_uuid(result) else ""
         elif sys.platform.startswith("linux"):
-            # Liste des chemins possibles pour dmidecode
-            dmidecode_paths = ["/usr/sbin/dmidecode", "/sbin/dmidecode"]
-            for path in dmidecode_paths:
+            # Source prioritaire sous Linux: lisible sans privilege root.
+            sysfs_uuid_path = "/sys/class/dmi/id/product_uuid"
+            if os.path.isfile(sysfs_uuid_path):
                 try:
-                    result = subprocess.run(
-                        [path, "-s", "system-uuid"],
-                        capture_output=True, text=True
-                    )
-                    if result.returncode == 0 and result.stdout:
-                        serial_uuid_machine = result.stdout.strip()
-                        break  # Si trouvé, on sort de la boucle
-                except FileNotFoundError:
-                    continue  # Passe au chemin suivant si le fichier n'existe pas
+                    with open(sysfs_uuid_path, "r", encoding="utf-8") as fh:
+                        value = fh.read().strip()
+                    if not _is_invalid_uuid(value):
+                        serial_uuid_machine = value
+                except Exception:
+                    pass
+
+            # Fallback historique via dmidecode.
+            if _is_invalid_uuid(serial_uuid_machine):
+                dmidecode_paths = ["/usr/sbin/dmidecode", "/sbin/dmidecode", "dmidecode"]
+                for path in dmidecode_paths:
+                    try:
+                        result = subprocess.run(
+                            [path, "-s", "system-uuid"],
+                            capture_output=True,
+                            text=True,
+                        )
+                        if result.returncode == 0 and not _is_invalid_uuid(result.stdout):
+                            serial_uuid_machine = result.stdout.strip()
+                            break
+                    except FileNotFoundError:
+                        continue
+
+            # Dernier recours pour ne pas renvoyer vide sur les environnements limites.
+            if _is_invalid_uuid(serial_uuid_machine):
+                machine_id_path = "/etc/machine-id"
+                if os.path.isfile(machine_id_path):
+                    try:
+                        with open(machine_id_path, "r", encoding="utf-8") as fh:
+                            value = fh.read().strip()
+                        if not _is_invalid_uuid(value):
+                            serial_uuid_machine = value
+                    except Exception:
+                        pass
         elif sys.platform.startswith("darwin"):
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
             result = subprocess.run(
                 cmd, shell=True, capture_output=True, text=True
             )
-            if result.returncode == 0 and result.stdout:
+            if result.returncode == 0 and result.stdout and not _is_invalid_uuid(result.stdout):
                 serial_uuid_machine = result.stdout.replace("UUID", "").strip()
         else:
             logger.warning(
@@ -4681,6 +4855,10 @@ def serialnumbermachine() -> str:
             "Une erreur est survenue lors de l'exécution de la fonction serialnumbermachine :\n%s",
             traceback.format_exc()
         )
+
+    if _is_valid_serial(serial_uuid_machine):
+        _save_cached_serial(serial_uuid_machine)
+
     return serial_uuid_machine
 
 

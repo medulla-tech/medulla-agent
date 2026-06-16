@@ -11,17 +11,17 @@ from lib.agentconffile import (
     medullaPath,
 )
 
-KIOSKINTERFACEVERSION = "1.0.0"
+KIOSKINTERFACEVERSION = "2.1.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.7", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.11", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
 def action(xmppobject, action, sessionid, data, message, dataerreur):
 
-    if not sys.platform.startswith("win"):
+    if not (sys.platform.startswith("win") or sys.platform.startswith("linux")):
         return
     logger.debug("PL-KIOSK ###################################################")
     logger.debug("PL-KIOSK call %s from %s" % (plugin, message["from"]))
@@ -55,6 +55,19 @@ def kioskinterfaceversion():
                 f'/v "DisplayIcon" /t REG_SZ /d "{os.path.join(medullaPath(), "bin", "install.ico")}" /f'
             )
             utils.simplecommand(cmd)
+    elif sys.platform.startswith("linux"):
+        # On Linux the kiosk is a pip package inside the Medulla venv. Ask pip
+        # for the installed version; if it is not installed, return a low
+        # version so the comparison in action() forces an install.
+        cmd = "%s -m pip show kiosk_interface" % sys.executable
+        result = utils.simplecommand(cmd)
+        installed = "0.1"
+        if result["code"] == 0:
+            for line in result["result"]:
+                if line.lower().startswith("version:"):
+                    installed = line.split(":", 1)[1].strip()
+                    break
+        return installed
     return KIOSKINTERFACEVERSION
 
 
@@ -129,6 +142,46 @@ def updatekioskinterface(xmppobject, installed_version):
                     % (filename, cmd_result["result"])
                 )
 
+        else:
+            # Download error
+            logger.error("PL-KIOSK %s" % txtmsg)
+    elif sys.platform.startswith("linux"):
+        # Same flow as Windows, but using the Medulla venv's pip (sys.executable).
+        install_tempdir = tempfile.mkdtemp()
+
+        filename = "kiosk-interface-%s.tar.gz" % KIOSKINTERFACEVERSION
+        dl_url = "%s/downloads/%s" % (xmppobject.config.update_server, filename)
+        logger.debug("PL-KIOSK Downloading %s" % dl_url)
+        result, txtmsg = utils.downloadfile(
+            dl_url, os.path.join(install_tempdir, filename)
+        ).downloadurl()
+        if result:
+            logger.debug("PL-KIOSK %s" % txtmsg)
+            cmd = (
+                '%s -m pip install --quiet --upgrade --no-index --find-links="%s" %s'
+                % (sys.executable, install_tempdir, filename)
+            )
+            os.chdir(install_tempdir)
+            logger.debug("PL-KIOSK Running %s" % cmd)
+            cmd_result = utils.simplecommand(cmd)
+            if cmd_result["code"] == 0:
+                logger.info(
+                    "PL-KIOSK %s installed successfully to version %s"
+                    % (filename, KIOSKINTERFACEVERSION)
+                )
+                # Restart the running kiosk so the new code is loaded. The
+                # scheduling_launch_kiosk descriptor relaunches it in the user's
+                # graphical session on its next run.
+                try:
+                    with open("/tmp/kiosk.pid") as pidfile:
+                        os.kill(int(pidfile.read().strip()), 15)
+                except Exception:
+                    pass
+            else:
+                logger.error(
+                    "PL-KIOSK Error installing %s: %s"
+                    % (filename, cmd_result["result"])
+                )
         else:
             # Download error
             logger.error("PL-KIOSK %s" % txtmsg)

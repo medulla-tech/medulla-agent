@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2007-2009 Mandriva, http://www.mandriva.com/
 # SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_master_substitute/lib/plugins/msc/__init__.py
 
 """
 Provides access to MSC database
@@ -389,7 +390,7 @@ class MscDatabase(DatabaseHelper):
         self,
         package_id,
         start_file,
-        parameters,
+        parameterscommand,
         files,
         start_script,
         clean_on_success,
@@ -415,7 +416,7 @@ class MscDatabase(DatabaseHelper):
             session,
             package_id,
             start_file,
-            parameters,
+            parameterscommand,
             files,
             start_script,
             clean_on_success,
@@ -443,7 +444,7 @@ class MscDatabase(DatabaseHelper):
         session,
         package_id,
         start_file,
-        parameters,
+        parameterscommand,
         files,
         start_script,
         clean_on_success,
@@ -474,7 +475,7 @@ class MscDatabase(DatabaseHelper):
         cmd.creation_date = time.strftime("%Y-%m-%d %H:%M:%S")
         cmd.package_id = package_id
         cmd.start_file = start_file
-        cmd.parameters = parameters
+        cmd.parameters = parameterscommand
         cmd.files = files
         cmd.start_script = start_script
         cmd.clean_on_success = clean_on_success
@@ -499,6 +500,22 @@ class MscDatabase(DatabaseHelper):
         session.add(cmd)
         session.flush()
         return cmd
+
+    @DatabaseHelper._sessionm
+    def get_command_parameters(self, session, cmd_id):
+        if cmd_id is None or cmd_id == "":
+            return ""
+
+        result = (
+            session.query(Commands.parameters)
+            .filter(Commands.id == cmd_id)
+            .first()
+        )
+
+        if result is None or result[0] is None:
+            return ""
+
+        return str(result[0])
 
     @DatabaseHelper._sessionm
     def _force_command_type(self, session, cmd_id, type):

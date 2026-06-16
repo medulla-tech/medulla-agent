@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2007-2009 Mandriva, http://www.mandriva.com/
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loaddeployment.py
 
 """ declare the substitute plugin for deployments"""
 import base64
@@ -1319,6 +1320,7 @@ def applicationdeploymentjson(
         )
         return False
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
+    command_parameters = MscDatabase().get_command_parameters(idcommand)
 
     if not objdeployadvanced:
         logger.warning(
@@ -1430,6 +1432,7 @@ def applicationdeploymentjson(
         "name": name,
         "login": login,
         "idcmd": idcommand,
+        "command_parameters": command_parameters,
         "title": title,
         "advanced": objdeployadvanced,
         "stardate": self.totimestamp(start_date),

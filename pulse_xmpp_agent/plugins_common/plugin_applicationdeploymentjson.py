@@ -380,6 +380,14 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     objectxmpp.back_to_deploy[sessionid] = {}
                     objectxmpp.back_to_deploy[sessionid]["Dependency"] = []
                     objectxmpp.back_to_deploy[sessionid]["packagelist"] = {}
+                    if "command_parameters" in data:
+                        objectxmpp.back_to_deploy[sessionid]["command_parameters"] = data[
+                            "command_parameters"
+                        ]
+                    elif "parameters" in data:
+                        objectxmpp.back_to_deploy[sessionid]["command_parameters"] = data[
+                            "parameters"
+                        ]
 
                 data["deploy"] = data["path"].split("/")[-1]
                 data["descriptor"]["info"]["Dependency"].reverse()
@@ -428,6 +436,16 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     if "advanced" in data:
                         objectxmpp.back_to_deploy[sessionid]["advanced"] = data[
                             "advanced"
+                        ]
+
+                if "command_parameters" not in objectxmpp.back_to_deploy[sessionid]:
+                    if "command_parameters" in data:
+                        objectxmpp.back_to_deploy[sessionid]["command_parameters"] = data[
+                            "command_parameters"
+                        ]
+                    elif "parameters" in data:
+                        objectxmpp.back_to_deploy[sessionid]["command_parameters"] = data[
+                            "parameters"
                         ]
             except Exception as e:
                 logger.error(str(e))
@@ -625,6 +643,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 ]
                 if "advanced" in objectxmpp.back_to_deploy[sessionid]:
                     data["advanced"] = objectxmpp.back_to_deploy[sessionid]["advanced"]
+            if "command_parameters" in objectxmpp.back_to_deploy[sessionid]:
+                data["command_parameters"] = objectxmpp.back_to_deploy[sessionid][
+                    "command_parameters"
+                ]
+                data["parameters"] = objectxmpp.back_to_deploy[sessionid][
+                    "command_parameters"
+                ]
             objectxmpp.session.sessionsetdata(sessionid, data)
 
         datasend = {

@@ -903,6 +903,7 @@ class MUCBot(ClientXMPP):
                 self.is_set = True
         elif sys.platform.startswith("linux"):
             signal.signal(signal.SIGINT, self.signal_handler)
+            signal.signal(signal.SIGHUP, self.signal_handler_hup)
         elif sys.platform.startswith("darwin"):
             signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -2447,6 +2448,80 @@ class MUCBot(ClientXMPP):
         self.send_message_subcripted_agent(msgevt)
         time.sleep(2)
         self.quit_application(wait=3)
+
+    def signal_handler_hup(self, sig, frame):
+        """Handle SIGHUP to reload development modules without restart (DEV MODE ONLY)."""
+        # Check if dev mode is enabled via flag file
+        dev_mode_file = "/opt/medulla/SIGHUP_DEV_MODE"
+        target_modules_file = "/opt/medulla/SIGHUP_DEV_TARGETS"
+        if not os.path.exists(dev_mode_file):
+            logger.warning("SIGHUP received but SIGHUP_DEV_MODE flag not found - ignoring (production mode)")
+            return
+
+        default_modules = [
+            "pulse_xmpp_agent.lib.update_linux",
+            "pulse_xmpp_agent.lib.grafcetdeploy",
+            "pulse_xmpp_agent.pluginsmachine.plugin_update_linux_command",
+        ]
+        allowed_modules = set(default_modules)
+        modules_to_reload = list(default_modules)
+
+        if os.path.exists(target_modules_file):
+            try:
+                with open(target_modules_file, "r", encoding="utf-8") as target_file:
+                    raw_targets = target_file.read()
+                tokens = [
+                    token.strip()
+                    for token in raw_targets.replace("\n", ",").split(",")
+                    if token.strip() and not token.strip().startswith("#")
+                ]
+                if tokens:
+                    selected = [module_name for module_name in tokens if module_name in allowed_modules]
+                    unknown = [module_name for module_name in tokens if module_name not in allowed_modules]
+                    if unknown:
+                        logger.warning(
+                            "SIGHUP: Ignored unknown targets from %s: %s",
+                            target_modules_file,
+                            ", ".join(unknown),
+                        )
+                    if selected:
+                        modules_to_reload = selected
+                    else:
+                        logger.warning(
+                            "SIGHUP: No valid targets found in %s - using default module set",
+                            target_modules_file,
+                        )
+                else:
+                    logger.debug(
+                        "SIGHUP: Target file %s is empty - using default module set",
+                        target_modules_file,
+                    )
+            except Exception:
+                logger.error(
+                    "SIGHUP: Failed to parse %s - using default module set",
+                    target_modules_file,
+                    exc_info=True,
+                )
+
+        logger.info(
+            "SIGHUP EVENT: Reloading development modules (DEV MODE ONLY): %s",
+            ", ".join(modules_to_reload),
+        )
+        reloaded_count = 0
+        for module_name in modules_to_reload:
+            try:
+                module_ref = importlib.import_module(module_name)
+                importlib.reload(module_ref)
+                logger.info("✓ Reloaded %s", module_name)
+                reloaded_count += 1
+            except Exception:
+                logger.error("SIGHUP: Error reloading %s", module_name, exc_info=True)
+
+        logger.info(
+            "SIGHUP: Module reload completed (%s/%s)",
+            reloaded_count,
+            len(modules_to_reload),
+        )
 
     def send_message_subcripted_agent(self, msg):
         self.send_message(mbody=json.dumps(msg), mto=self.sub_subscribe, mtype="chat")
