@@ -46,6 +46,8 @@ def schedule_main(objectxmpp):
         launch_kiosk_windows()
     elif system == "linux":
         launch_kiosk_linux()
+    elif system == "darwin":
+        launch_kiosk_macos()
     else:
         logger.debug("scheduling_launch_kiosk: unsupported platform '%s'.", system)
 
@@ -160,6 +162,77 @@ def launch_kiosk_linux():
         logger.debug("Kiosk launch command sent for user '%s'.", user)
     except Exception as e:
         logger.error("Failed to start Kiosk: %s", e)
+
+
+def launch_kiosk_macos():
+    """Start the Kiosk on macOS inside the logged-in user's Aqua session.
+
+    The agent runs as root (LaunchDaemon), but a Qt GUI must run inside the
+    console user's graphical (Aqua/WindowServer) session. The macOS equivalent
+    of the Windows ``paexec -i <session>`` / Linux ``runuser`` trick is
+    ``launchctl asuser <uid> sudo -u <user> ...``: it places the process in the
+    per-user GUI launchd domain (gui/<uid>), which is what grants access to
+    WindowServer. No DISPLAY/XAUTHORITY juggling is needed (that is X11/Linux).
+    """
+    pid_file = "/tmp/kiosk.pid"
+
+    # The kiosk writes its own PID to /tmp/kiosk.pid at startup (see
+    # kiosk_interface/__main__.py), so we just rely on it here.
+    if is_kiosk_running(pid_file):
+        logger.debug("Kiosk is already running.")
+        return
+
+    user = get_macos_console_user()
+    if not user:
+        logger.warning("No active console user found. Kiosk will not be started.")
+        return
+
+    uid = _uid_of(user)
+    if not uid:
+        logger.warning("Cannot resolve uid of console user '%s'.", user)
+        return
+
+    # Run the kiosk with the agent's own interpreter (the venv where the kiosk
+    # is installed, e.g. /opt/medulla/venv/bin/python3), so it shares the same
+    # interpreter/site-packages as the agent - no hard-coded path.
+    command = [
+        "launchctl", "asuser", uid,
+        "sudo", "-u", user,
+        sys.executable, "-m", "kiosk_interface",
+    ]
+
+    logger.debug("Starting Kiosk for user '%s' (uid=%s).", user, uid)
+    try:
+        subprocess.Popen(
+            command,
+            close_fds=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        logger.debug("Kiosk launch command sent for user '%s'.", user)
+    except Exception as e:
+        logger.error("Failed to start Kiosk: %s", e)
+
+
+def get_macos_console_user():
+    """Return the logged-in GUI (console) user on macOS, or None.
+
+    Uses ``stat -f %Su /dev/console`` (same method as the macOS installer).
+    Filters out root / loginwindow / setup users, which mean no real GUI user
+    is logged in (login screen, fast-user-switch transition...).
+    """
+    try:
+        res = simplecommand('stat -f "%Su" /dev/console')
+        result = res.get("result", [])
+        if not result:
+            return None
+        user = result[0].strip()
+        if not user or user in ("root", "loginwindow", "_mbsetupuser"):
+            return None
+        return user
+    except Exception as e:
+        logger.debug("macOS console user detection failed: %s", e)
+        return None
 
 
 def is_kiosk_running(pid_file):
