@@ -55,6 +55,7 @@ check_distro() {
     fi
     case "$DISTRO" in
         debian|ubuntu|zorin|linuxmint)
+            export DEBIAN_FRONTEND=noninteractive
             ;;
         almalinux)
             ;;
@@ -75,7 +76,7 @@ install_agent_deps_ubuntu() {
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
     # Install required packages
-    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc xrdp sudo syncthing 
+    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
     # Remove deadsnakes repository
     rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-*.sources
     apt update
@@ -94,7 +95,7 @@ install_agent_deps_debian12() {
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
     update-alternatives --set python3 /usr/bin/python3.11
     # Install required packages
-    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc xrdp sudo syncthing 
+    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
 }
 
 install_agent_deps_almalinux() {
@@ -111,7 +112,7 @@ install_agent_deps_almalinux() {
     alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
     alternatives --set python3 /usr/bin/python3.11
     # Install required packages
-    dnf install -y crudini wget net-tools openssh-server rsync x11vnc xrdp sudo syncthing
+    dnf install -y crudini wget net-tools openssh-server rsync x11vnc sudo syncthing
     # Install GLPI Agent from RPM
     echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
     wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
@@ -178,11 +179,6 @@ setup_agent() {
     echo "Setting up sudo for pulseuser ..."
     echo "pulseuser ALL=(ALL) NOPASSWD: /usr/bin/rsync" > /etc/sudoers.d/pulseuser
 
-    # Setup RDP server
-    echo "Setting up RDP server ..."
-    systemctl enable xrdp
-    systemctl start xrdp
-
     # Setup VNC server
     echo "Setting up VNC server ..."
     if ! [ -d "/home/pulseuser/.vnc" ]; then
@@ -230,6 +226,35 @@ setup_agent() {
             crudini --set /etc/pulse-xmpp-agent/inventory.ini parameters agent glpiagent
             ;;
     esac
+}
+
+install_rdp_server() {
+    echo "Installing RDP server ..."
+    case "$DISTRO" in
+        debian|ubuntu|zorin|linuxmint)
+            apt install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" xrdp xfce4 xfce4-goodies dbus-user-session dbus-x11
+            ;;
+        almalinux)
+            dnf install -y xrdp xfce4 xfce4-goodies dbus-user-session dbus-x11
+            ;;
+    esac
+
+    # Setup RDP server
+    echo "Setting up RDP server ..."
+    crudini --set /etc/xrdp/xrdp.ini Globals security_layer rdp
+
+    cat <<EOF > /etc/xrdp/startwm.sh
+#!/bin/sh
+
+unset DBUS_SESSION_BUS_ADDRESS
+unset XDG_RUNTIME_DIR
+
+exec dbus-run-session startxfce4
+EOF
+    chmod +x /etc/xrdp/startwm.sh
+
+    systemctl enable xrdp
+    systemctl start xrdp
 }
 
 install_agent() {
@@ -362,6 +387,7 @@ esac
 download_agent_files
 setup_agent
 install_agent
+install_rdp_server
 install_kiosk
 if [[ ${INVENTORY_TAG} != "" ]]; then
     configure_inventory_tag ${INVENTORY_TAG}
