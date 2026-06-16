@@ -270,7 +270,7 @@ def _convert_string(data):
             logger.error(f"Erreur lors de la deserialisation pickle : {e}")
             return None
 
-        # Tentative de decodage en chaîne UTF-8
+        # Tentative de decodage en chaine UTF-8
         try:
             data = data.decode("utf-8")
             logger.debug("Data decoded to UTF-8 string")

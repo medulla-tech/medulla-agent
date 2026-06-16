@@ -535,17 +535,17 @@ def parsexmppjsonfile(path):
 
 
 def str_to_date_str(date_str):
-    # Analyser la chaîne en tant que tuple
+    # Analyser la chaine en tant que tuple
     date_tuple = ast.literal_eval(date_str)
     # Convertir le tuple en objet datetime
     date_obj = datetime.datetime(*date_tuple)
-    # Formater la date en tant que chaîne de caractères
+    # Formater la date en tant que chaine de caractaeres
     date_str = date_obj.strftime("%Y-%m-%d %H:%M:%S")
     return date_str
 
 
 def str_to_datetime(date_str):
-    # Utiliser strptime pour convertir la chaîne en objet datetime
+    # Utiliser strptime pour convertir la chaine en objet datetime
     date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
     return date_obj
 
