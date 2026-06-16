@@ -4805,6 +4805,9 @@ class process_xmpp_agent:
         if sys.platform.startswith("win"):
             format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
             formatter = logging.Formatter(format)
+        elif sys.platform.startswith("lin") or sys.platform.startswith("darwin"):
+            format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
+            formatter = logging.Formatter(format)
 
         logger = logging.getLogger()  # either the given logger or the root logger
         logger.setLevel(tglevellog)
@@ -4826,6 +4829,20 @@ class process_xmpp_agent:
             file_handler.setLevel(tglevellog)
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
+        elif sys.platform.startswith("lin") or sys.platform.startswith("darwin"):
+            # StreamHandler avec formatter pour stdout/stderr — captures par launchd
+            # (StandardOutPath dans le LaunchDaemon plist) ou systemd (StandardOutput).
+            # Pas de FileHandler dedie : la redirection vers /var/log/medulla/... est
+            # gerée par le superviseur du systeme (launchd ou systemd), pas par Python.
+            if logger.handlers:
+                console = logger.handlers[
+                    0
+                ]  # we assume the first handler is the one we want to configure
+            else:
+                console = logging.StreamHandler()
+                logger.addHandler(console)
+            console.setFormatter(formatter)
+            console.setLevel(tglevellog)
 
         self.logger = logging.getLogger()
         # while self.process_restartbot:
