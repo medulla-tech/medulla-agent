@@ -15,7 +15,7 @@ KIOSKINTERFACEVERSION = "2.1.1"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.11", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.12", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -136,6 +136,21 @@ def updatekioskinterface(xmppobject, installed_version):
                     % (filename, KIOSKINTERFACEVERSION)
                 )
                 updatekioskinterfaceversion(installed_version)
+                # Kill the running kiosk so the new code loads (pip only upgrades
+                # the files; without this the update needs a reboot).
+                # scheduling_launch_kiosk relaunches it. Mirrors the Linux branch.
+                try:
+                    with open(
+                        "C:\\Program Files\\Medulla\\bin\\kiosk.pid"
+                    ) as pidfile:
+                        kpid = int(pidfile.read().strip())
+                    utils.simplecommand("taskkill /PID %s /F" % kpid)
+                    logger.info(
+                        "PL-KIOSK killed running kiosk (pid %s) so the new "
+                        "version is reloaded" % kpid
+                    )
+                except Exception:
+                    pass
             else:
                 logger.error(
                     "PL-KIOSK Error installing %s: %s"
