@@ -230,6 +230,29 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             os.environ.get("PATH", ""),
         )
         try:
+            # Build ordered list of (bin, cmd) to try at execution time.
+            # agent_cmd is the primary resolved binary. If it fails with code 127
+            # (shell reports "not found" despite resolution, e.g. broken snap wrapper),
+            # fall back to the alternate candidate.
+            exec_candidates = [(agent_bin, agent_cmd)]
+            for fallback_bin in agent_candidates:
+                if fallback_bin == agent_bin:
+                    continue
+                fallback_cmd = shutil.which(fallback_bin)
+                if not fallback_cmd:
+                    for candidate_path in [
+                        "/usr/bin/%s" % fallback_bin,
+                        "/usr/local/bin/%s" % fallback_bin,
+                        "/bin/%s" % fallback_bin,
+                        "/snap/bin/%s" % fallback_bin,
+                    ]:
+                        if os.path.isfile(candidate_path) and os.access(candidate_path, os.X_OK):
+                            fallback_cmd = candidate_path
+                            break
+                if fallback_cmd:
+                    exec_candidates.append((fallback_bin, fallback_cmd))
+
+            active_bin, active_cmd = exec_candidates[0]
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s" % (nbcmd, timeoutfusion))
                 general_options = "--backend-collect-timeout=%s" % timeoutfusion
@@ -243,14 +266,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     location_option = '--server="%s"' % xmppobject.config.urlinventory
                 if namefilexml and os.path.exists(namefilexml):
                     cmd = '"%s" %s %s --additional-content=%s' % (
-                        agent_cmd,
+                        active_cmd,
                         general_options,
                         location_option,
                         namefilexml,
                     )
                 else:
                     cmd = '"%s" %s %s' % (
-                        agent_cmd,
+                        active_cmd,
                         general_options,
                         location_option,
                     )
@@ -268,6 +291,18 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 )
                 if obj["code"] == 0:
                     break
+                # If binary is truly missing at runtime (code 127), switch to fallback immediately.
+                if obj["code"] == 127 and len(exec_candidates) > 1:
+                    _next = exec_candidates[1]
+                    logger.warning(
+                        "Inventory agent '%s' not found at runtime (code 127), switching to fallback '%s'",
+                        active_bin,
+                        _next[0],
+                    )
+                    active_bin, active_cmd = _next
+                    exec_candidates = exec_candidates[1:]
+                    timeoutfusion = 120
+                    continue
                 timeoutfusion = timeoutfusion + 60
             for mesg in msg:
                 logger.debug(mesg)

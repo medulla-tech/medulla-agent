@@ -293,7 +293,14 @@ class UpdateLinux:
                 Retourne le nom du système d'exploitation si la détection échoue.
         """
         try:
-            return distro.id().lower()
+            distro_name = distro.id().lower()
+            aliases = {
+                "zorinos": "zorin",
+                "linux-mint": "linuxmint",
+                "opensuse leap": "opensuse-leap",
+                "opensuse tumbleweed": "opensuse-tumbleweed",
+            }
+            return aliases.get(distro_name, distro_name)
         except Exception:
             return platform.system().lower()
 
@@ -313,9 +320,9 @@ class UpdateLinux:
         Raises:
             NotImplementedError: Si la distribution n'est pas supportée.
         """
-        # Debian / Ubuntu / Linux Mint
-        # Linux Mint repose sur la pile APT d'Ubuntu, on réutilise donc le backend DebianSystem.
-        if self.distro_name in ("debian", "ubuntu", "linuxmint"):
+        # Debian / Ubuntu / Linux Mint / Zorin
+        # Linux Mint et Zorin reposent sur la pile APT d'Ubuntu, on réutilise donc le backend DebianSystem.
+        if self.distro_name in ("debian", "ubuntu", "linuxmint", "mint", "zorin"):
             return DebianSystem(**kwargs)
 
         # RedHat / CentOS / Rocky / AlmaLinux
@@ -326,6 +333,21 @@ class UpdateLinux:
         elif self.distro_name == "fedora":
             return FedoraSystem(**kwargs)
 
+        # SUSE / openSUSE (zypper)
+        elif self.distro_name in (
+            "suse",
+            "opensuse",
+            "opensuse-leap",
+            "opensuse-tumbleweed",
+            "sles",
+            "sled",
+        ):
+            return SuseSystem(**kwargs)
+
+        # Alpine Linux
+        elif self.distro_name == "alpine":
+            return AlpineSystem(**kwargs)
+
         # Arch Linux
         elif self.distro_name == "arch":
             return ArchSystem(**kwargs)
@@ -333,7 +355,8 @@ class UpdateLinux:
         else:
             raise NotImplementedError(
                 f"Distribution non supportée : {self.distro_name}. "
-                "Distributions supportées: debian, ubuntu, linuxmint, rhel, redhat, centos, rocky, almalinux, fedora, arch."
+                "Distributions supportées: debian, ubuntu, linuxmint/mint, zorin, "
+                "rhel/redhat/centos/rocky/almalinux, fedora, suse/opensuse/sles, alpine, arch."
             )
 
     # ============================
