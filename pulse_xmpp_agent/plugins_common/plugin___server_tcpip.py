@@ -41,7 +41,7 @@ from lib.utils import (
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.4", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
+plugin = {"VERSION": "1.5", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code"}  # fmt: skip
 
 
 def _is_network_event_payload(payload):
@@ -250,22 +250,22 @@ def _convert_string(data):
                 If conversion fails, the original data is returned.
     """
 
-    # Verification et traitement des donnees de type bytes
+    # Decode tries base64 -> pickle -> utf-8 -> literal/json/yaml; most attempts
+    # fail normally (e.g. pickle on JSON), so we log only real errors, not each try.
     if isinstance(data, bytes):
         # Decodage Base64 si applicable
         if isBase64(data):
             try:
                 data = base64.b64decode(data)
-                logger.debug(f"Data decoded from Base64, type: {type(data)}")
             except Exception as e:
                 logger.error(f"Erreur lors du decodage Base64 : {e}")
                 return None
 
-        # Tentative de deserialisation avec pickle
+        # Tentative de deserialisation avec pickle (echoue normalement sur du JSON)
         try:
             return pickle.loads(data)
-        except pickle.UnpicklingError as e:
-            logger.debug(f"Data is not a pickle object: {e}")
+        except pickle.UnpicklingError:
+            pass
         except Exception as e:
             logger.error(f"Erreur lors de la deserialisation pickle : {e}")
             return None
@@ -273,7 +273,6 @@ def _convert_string(data):
         # Tentative de decodage en chaine UTF-8
         try:
             data = data.decode("utf-8")
-            logger.debug("Data decoded to UTF-8 string")
         except UnicodeDecodeError as e:
             logger.error(f"Erreur lors du decodage UTF-8 : {e}")
             return None
@@ -284,29 +283,23 @@ def _convert_string(data):
         try:
             requestdata = ast.literal_eval(data)
             if isinstance(requestdata, (list, dict, tuple, set)):
-                logger.debug("Data successfully evaluated to Python structure")
                 return requestdata
-        except (ValueError, SyntaxError) as e:
-            logger.debug(f"Data is not a Python literal structure: {e}")
+        except (ValueError, SyntaxError):
+            pass
 
         # Tentative de parsing JSON
         try:
-            requestdata = json.loads(data)
-            logger.debug("Data successfully parsed as JSON")
-            return requestdata
-        except json.JSONDecodeError as e:
-            logger.debug(f"Data is not a valid JSON string: {e}")
+            return json.loads(data)
+        except json.JSONDecodeError:
+            pass
 
         # Tentative de parsing YAML
         try:
-            requestdata = yaml.load(data, Loader=yaml.Loader)
-            logger.debug("Data successfully parsed as YAML")
-            return requestdata
-        except yaml.YAMLError as e:
-            logger.debug(f"Data is not a valid YAML string: {e}")
+            return yaml.load(data, Loader=yaml.Loader)
+        except yaml.YAMLError:
+            pass
 
     # Si aucune des tentatives n'a reussi, retourner les donnees d'origine
-    logger.debug("Data could not be converted, returning original")
     return data
 
 
@@ -330,7 +323,7 @@ async def handle_client(client, xmppobject):
 
     try:
         # Retrieve and log information about the connected client
-        infoclient = client_info(client, show_info=True)
+        infoclient = client_info(client, show_info=False)
 
         # Allow only local clients to connect
         if infoclient["adress_recept"] != "127.0.0.1":
@@ -413,7 +406,6 @@ async def handle_client(client, xmppobject):
                     codeerror, result = xmppobject.handle_client_connection(
                         json.dumps(requestobj)
                     )
-                    logger.debug(f"Received data: __{codeerror}__ __{result}__")
 
                     # Handle different types of results and send them back to the client
                     if not result or result == "":
