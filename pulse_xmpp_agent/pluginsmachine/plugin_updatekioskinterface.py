@@ -11,11 +11,11 @@ from lib.agentconffile import (
     medullaPath,
 )
 
-KIOSKINTERFACEVERSION = "2.1.1"
+KIOSKINTERFACEVERSION = "2.1.2"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.12", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.13", "NAME": "updatekioskinterface", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level

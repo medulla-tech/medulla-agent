@@ -11,7 +11,7 @@
 %define use_git         1
 %define branch master
 %define filetree_version 0.2
-%define kiosk_version 2.1.1
+%define kiosk_version 2.1.2
 
 %global __python %{__python3}
 
