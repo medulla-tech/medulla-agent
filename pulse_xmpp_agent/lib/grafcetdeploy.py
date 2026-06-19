@@ -444,6 +444,14 @@ class grafcet:
                 "@@@DEPLOY@@@", "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
             )
 
+        # Generic plugin call: @@@PLUGIN_CALL_<name>@@@ or @@@PLUGIN_CALL_"<name>"@@@
+        # Case-insensitive. The plugin name is normalized to lowercase.
+        # Example: @@@PLUGIN_CALL_update_linux_command@@@
+        #          @@@PLUGIN_CALL_"My_Plugin"@@@
+        for _m in re.finditer(r'@@@PLUGIN_CALL_"?([^@"]+?)"?@@@', cmd, re.IGNORECASE):
+            _raw_name = _m.group(1).strip().strip('"').strip().lower()
+            cmd = cmd.replace(_m.group(0), f"@@@DEPLOY_ACTION_PLUGIN_CALL_{_raw_name}@@@")
+
         # remplace all dynamic parameters by values.
         # eg :  @@@DYNAMIC_PARAM@@@section@@@ is dynamique parameter "section"
         # Si le parameter dynamic section exist, it is replace by value.
@@ -698,6 +706,84 @@ class grafcet:
         self.workingstep["codereturn"] = 0
         
         # Log the payload used
+        logged_payload = marker_payload or (self.dynamic_param_deploy if self.dynamic_param_deploy else {})
+        self.__resultinfo__(
+            self.workingstep,
+            [
+                "update_linux_command plugin executed",
+                json.dumps(logged_payload),
+            ],
+        )
+        self.steplog()
+        if self.__Go_to_by_jump_succes_and_error__(0):
+            return True
+        self.__Etape_Next_in__()
+        return True
+
+    def __handle_plugin_call_marker(self, plugin_name):
+        """Dispatch any plugin by name via @@@PLUGIN_CALL_<name>@@@ grafcet marker.
+
+        The plugin receives the same payload structure as update_linux_command:
+        marker_payload, command_parameters, dynamic_param_deploy, advanced_param_deploy.
+
+        Args:
+            plugin_name (str): Normalized (lowercase) plugin name to call.
+
+        Returns:
+            True after dispatching and finalizing the step.
+        """
+        marker_payload = self.__extract_marker_payload(
+            self.workingstep.get("command", "") or self.workingstep.get("script", "")
+        )
+
+        msg = {
+            "from": self.objectxmpp.boundjid.bare,
+            "to": self.objectxmpp.boundjid.bare,
+            "type": "chat",
+        }
+
+        payload_data = {
+            "command_parameters": copy.deepcopy(self.dynamic_param_deploy),
+            "dynamic_param_deploy": copy.deepcopy(self.dynamic_param_deploy),
+            "advanced_param_deploy": copy.deepcopy(self.advanced_param_deploy),
+            "marker_payload": copy.deepcopy(marker_payload),
+            "payload": self.__merged_deploy_params_json(),
+            "deploy_step": self.workingstep.get("step", 0),
+            "source": "grafcetdeploy",
+        }
+
+        logger.info("PLUGIN_CALL dispatch: plugin=%s payload=%s", plugin_name,
+                    json.dumps(payload_data, sort_keys=True))
+
+        dataerror = {
+            "action": f"result{plugin_name}",
+            "sessionid": self.sessionid,
+            "ret": 255,
+            "base64": False,
+            "data": {"msg": f"ERROR: {plugin_name}"},
+        }
+
+        call_plugin_sequentially(
+            plugin_name,
+            self.objectxmpp,
+            plugin_name,
+            self.sessionid,
+            payload_data,
+            msg,
+            dataerror,
+        )
+
+        self.__action_completed__(self.workingstep)
+        self.workingstep["codereturn"] = 0
+        self.__resultinfo__(
+            self.workingstep,
+            [f"PLUGIN_CALL {plugin_name} executed", json.dumps(marker_payload)],
+        )
+        self.steplog()
+        if self.__Go_to_by_jump_succes_and_error__(0):
+            return True
+        self.__Etape_Next_in__()
+        return True
         logged_payload = marker_payload or (self.dynamic_param_deploy if self.dynamic_param_deploy else {})
         self.__resultinfo__(
             self.workingstep,
@@ -1817,7 +1903,7 @@ class grafcet:
         {
                 "action": "action_no_operation",
                 "step": n,
-                "environ" : {"PLIP22" : "plop" ,"dede","kk" }
+                "environ" : {"PLIP22" : "plop" ,"kk" }
         }
         """
         try:
@@ -1936,6 +2022,13 @@ class grafcet:
                 if self.__handle_update_linux_marker():
                     return
 
+            # Generic PLUGIN_CALL dispatch
+            _pc_match = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                  self.workingstep["command"])
+            if _pc_match:
+                if self.__handle_plugin_call_marker(_pc_match.group(1).strip().lower()):
+                    return
+
             if "timeout" not in self.workingstep:
                 try:
                     self.workingstep["timeout"] = int(
@@ -2039,6 +2132,13 @@ class grafcet:
                     return
                 self.__Etape_Next_in__()
                 return
+
+            # Generic PLUGIN_CALL dispatch
+            _pc_match2 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                   self.workingstep["command"])
+            if _pc_match2:
+                if self.__handle_plugin_call_marker(_pc_match2.group(1).strip().lower()):
+                    return
 
             # self.objectxmpp.logtopulse("action_command_natif_shell")
             # todo si action deja faite return
@@ -2218,6 +2318,13 @@ class grafcet:
 
             if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["script"]:
                 if self.__handle_update_linux_marker():
+                    return
+
+            # Generic PLUGIN_CALL dispatch
+            _pc_match3 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                   self.workingstep["script"])
+            if _pc_match3:
+                if self.__handle_plugin_call_marker(_pc_match3.group(1).strip().lower()):
                     return
 
             if "timeout" not in self.workingstep:

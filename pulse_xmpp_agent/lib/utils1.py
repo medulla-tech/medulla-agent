@@ -5,28 +5,6 @@
 """
     This file contains shared functions use in pulse client/server agents.
 """
-from typing import (
-    Any,               # Type générique pour n'importe quel type
-    Callable,          # Type pour les fonctions et méthodes appelables
-    Dict,              # Type pour les dictionnaires (ex: Dict[str, int])
-    FrozenSet,         # Type pour les ensembles immuables (frozen sets)
-    Generic,           # Classe de base pour créer des classes génériques
-    Iterable,          # Type pour les objets itérables (ex: list, tuple)
-    Iterator,          # Type pour les itérateurs
-    List,              # Type pour les listes (ex: List[str])
-    Optional,          # Type pour les valeurs optionnelles (ex: Optional[str] = str | None)
-    Set,               # Type pour les ensembles (sets)
-    Tuple,             # Type pour les tuples (ex: Tuple[int, str])
-    Type,              # Type pour les classes et types (ex: Type[MyClass])
-    TypeVar,           # Variable de type pour les génériques
-    Union,             # Type pour les unions de types (ex: Union[int, str])
-    cast,              # Fonction pour forcer le type d'une valeur
-    no_type_check,     # Décorateur pour désactiver la vérification de type sur une fonction
-    overload,          # Décorateur pour surcharger les signatures de fonction
-)
-
-
-
 import shutil
 import sys
 import urllib.request as urllib2
@@ -55,19 +33,16 @@ from .agentconffile import (
     conffilenametmp,
     rotation_file,
 )
-from .uuid_deterministic import DeterministicUUID
+from .manageUser import ManageUser
+
 import socket
 import psutil
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import importlib.util
 import requests
 import asyncio
-import unicodedata
 
-import platform
-import ipaddress
-from xml.dom.minidom import parseString
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -85,11 +60,13 @@ except:
 import tarfile
 from functools import wraps
 import string
+import platform
 import urllib
 import yaml
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
 import gzip
+from xml.dom.minidom import parseString
 
 logger = logging.getLogger()
 
@@ -97,9 +74,9 @@ DEBUGPULSE = 25
 
 
 if sys.platform.startswith("win"):
+    import wmi
     import pythoncom
     import winreg as wr
-    import winreg
 
     import win32api
     import win32security
@@ -175,22 +152,18 @@ def set_logging_level(func):
 
 
 class Env(object):
-    agenttype = None  # global runtime context
+    agenttype = None  # Non specified by default
 
     @staticmethod
     def user_dir():
         """Get the user folder for linux OS."""
         if Env.agenttype is None:
             raise NotImplementedError(
-                "Env.agenttype must be initialized "
-                "(eg: Env.agenttype = 'machine' or 'relayserver')"
+                "The class attribute aggenttype need to be initialized\neg:  Env.agenttype = 'machine'"
             )
-
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
 
-        if sys.platform.startswith("darwin"):
-            return os.path.expanduser("~medullauser")
         return os.path.expanduser("~pulseuser")
 
 
@@ -297,39 +270,15 @@ def get_python_exec():
     """
     return sys.executable
 
-
+import sys
+import os
+import platform
+import subprocess
+import json
 
 def os_version(brelease_windows=1, bbuild_windows=0):
     """
-    Version Get-CimInstance (CIM).
-    Retourne le nom complet du système d'exploitation avec sa version détaillée.
-
-    La fonction détecte automatiquement le système d'exploitation et
-    construit une chaîne descriptive incluant, selon le système et les paramètres :
-      - Windows : nom complet, DisplayVersion (ex: 21H2), numéro de build
-      - Linux : PRETTY_NAME ou NAME depuis /etc/os-release
-      - macOS : nom et version via sw_vers et platform.mac_ver()
-      - Autres systèmes : fallback sur platform.platform()
-
-    Paramètres :
-        brelease_windows (int) : Inclut l'identifiant de version Windows (ex : 21H2).
-                                 1 = activé, 0 = désactivé.
-        bbuild_windows (int)   : Inclut le numéro de build Windows.
-                                 1 = activé, 0 = désactivé.
-
-    Retour :
-        str : Description complète et lisible du système d’exploitation.
-
-    Exemple :
-        >>> print(os_version())
-        Microsoft Windows 10 Pro (21H2 - build 19044)
-
-    Notes :
-        - Sous Windows, utilise PowerShell CIM (Get-CimInstance) et la base de registre
-          pour DisplayVersion.
-        - Sous Linux, lit les informations depuis /etc/os-release si disponible.
-        - Sous macOS, combine la sortie de `sw_vers` et platform.mac_ver().
-        - En cas d’échec ou pour systèmes non standard, fallback sur platform.platform().
+    Version réécrite utilisant Get-CimInstance (CIM).
     """
 
     try:
@@ -411,7 +360,6 @@ def os_version(brelease_windows=1, bbuild_windows=0):
 
     except Exception:
         return platform.platform()
-
 
 # debug decorator
 
@@ -683,8 +631,8 @@ def createfingerprintnetwork():
     md5network = ""
     command_mapping = {
         "win32": "ipconfig",
-        "linux": "LANG=C ip addr | egrep '.*(inet|HWaddr).*' | grep -v inet6",
-        "darwin": "LANG=C ifconfig | egrep '.*(inet|ether).*' | grep -v inet6",
+        "linux": "LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6",
+        "darwin": "ipconfig",
     }
 
     platform = sys.platform
@@ -1015,11 +963,6 @@ def call_plugin_separate(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
-                if pluginaction is None or not hasattr(pluginaction, "action"):
-                    logging.getLogger().error(
-                        f"call_plugin_separate Unable to load plugin action from {nameplugin}"
-                    )
-                    return
                 loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
@@ -1127,11 +1070,6 @@ def call_mon_plugin(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
-                if pluginaction is None or not hasattr(pluginaction, "action"):
-                    logging.getLogger().error(
-                        f"call_mon_plugin Unable to load plugin action from {nameplugin}"
-                    )
-                    return
                 executor = ThreadPoolExecutor()
                 thread = FunctionThread(pluginaction.action, *args, **kwargs)
                 result = loop.run_in_executor(executor, thread.start)
@@ -1187,11 +1125,6 @@ def call_plugin(name, *args, **kwargs):
                 except AttributeError:
                     setattr(args[0], f"num_call{args[1]}", 0)
                 pluginaction = loadModule(nameplugin)
-                if pluginaction is None or not hasattr(pluginaction, "action"):
-                    logging.getLogger().error(
-                        f"call_plugin Unable to load plugin action from {nameplugin}"
-                    )
-                    return
                 result = loop.run_in_executor(
                     None, pluginaction.action, *args, **kwargs
                 )
@@ -1245,11 +1178,6 @@ def call_plugin_sequentially(name, *args, **kwargs):
                     count = 0
                     setattr(args[0], f"num_call{args[1]}", count)
                 pluginaction = loadModule(nameplugin)
-                if pluginaction is None or not hasattr(pluginaction, "action"):
-                    logging.getLogger().error(
-                        f"call_plugin_sequentially Unable to load plugin action from {nameplugin}"
-                    )
-                    return
                 pluginaction.action(*args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
@@ -1556,6 +1484,16 @@ def powerschellscriptps1(namescript):
     )
 
 
+def powerschellscript1ps1(namescript):
+    namescript = windowspath(namescript)
+    obj = {"code": -1, "result": ""}
+    try:
+        obj = simplecommand(f"powershell -ExecutionPolicy Bypass -File {namescript}")
+    except Exception:
+        logger.error("\n%s" % (traceback.format_exc()))
+    return obj
+
+
 class shellcommandtimeout:
     """
     Classe pour exécuter une commande shell sur Linux, Windows ou macOS.
@@ -1609,13 +1547,14 @@ class shellcommandtimeout:
         """
         try:
             if sys.platform == "win32":
-                # Windows console uses CP850 encoding for command output
+                # Windows text=True indique texte doit être traité en tant que chaîne de caractères (UTF-8 par défaut).
+                # Cela permet d'interpréter correctement les caractères spéciaux.
                 self.process = subprocess.Popen(
                     self.cmd,
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    encoding="cp850",
+                    text=True,
                 )
             else:
                 # Linux ou macOS
@@ -1683,65 +1622,8 @@ def servicelinuxinit(name, action):
     obj["result"] = result
     return obj
 
-#
-# def service(name, action):
-#     """
-#     This function allow to send actions to the system init.
-#
-#     Windows, MacOS and linux are supported
-#
-#     Args:
-#         name: The name of the service
-#         action: The action we want to perform (stop, start, restart, reload)
-#
-#     Returns:
-#         The return code of the command
-#     """
-#
-#     obj = {}
-#     if sys.platform.startswith("linux"):
-#         system = ""
-#         p = subprocess.Popen(
-#             "cat /proc/1/comm",
-#             shell=True,
-#             stdout=subprocess.PIPE,
-#             stderr=subprocess.STDOUT,
-#         )
-#         result = p.stdout.readlines()
-#         system = result[0].rstrip("\n")
-#         if system == "init":
-#             p = subprocess.Popen(
-#                 f"/etc/init.d/{name} {action}",
-#                 shell=True,
-#                 stdout=subprocess.PIPE,
-#                 stderr=subprocess.STDOUT,
-#             )
-#             result = p.stdout.readlines()
-#             obj["code"] = p.wait()
-#             obj["result"] = result
-#         elif system == "systemd":
-#             p = subprocess.Popen(
-#                 f"systemctl {action} {name}",
-#                 shell=True,
-#                 stdout=subprocess.PIPE,
-#                 stderr=subprocess.STDOUT,
-#             )
-#             result = p.stdout.readlines()
-#             obj["code"] = p.wait()
-#             obj["result"] = result
-#     elif sys.platform.startswith("win"):
-#         pythoncom.CoInitialize()
-#         try:
-#             wmi_obj = wmi.WMI()
-#             wmi_sql = f"select * from Win32_Service Where Name ='{name}'"
-#             wmi_out = wmi_obj.query(wmi_sql)
-#         finally:
-#             pythoncom.CoUninitialize()
-#         for dev in wmi_out:
-#             print(dev.Caption)
-#     return obj
-#
-
+import sys
+import subprocess
 
 def service(name, action):
     """
@@ -1824,43 +1706,140 @@ def service(name, action):
 
 
 
-def listservice():
+def listservice(show=True, status=False):
     """
-    This function lists the available windows services using PowerShell
-    (WMI is obsolete on Windows 11, replaced with modern WMI via PowerShell).
-    """
-    if not sys.platform.startswith("win"):
-        logger.warning("listservice() is Windows-only")
-        return []
+    Lists system services (Windows, Linux, macOS).
 
-    try:
-        ps_command = (
-            "powershell -Command "
-            "Get-Service | Select-Object @{Name='Caption';Expression={$_.DisplayName}}, "
-            "@{Name='DisplayName';Expression={$_.Name}} | "
-            "ConvertTo-Json -Compress"
+    Args:
+        show (bool): print the list if True, otherwise return JSON
+        status (bool): include service status if True
+
+    Returns:
+        If show=False:
+            {
+                "status": 1,
+                "services": [
+                    {"name": "...", "status": "..."}  # if status=True
+                    {"name": "..."}                    # if status=False
+                ]
+            }
+    """
+
+    system = platform.system().lower()
+    services = []
+
+    # -----------------------------------------------------------
+    # WINDOWS
+    # -----------------------------------------------------------
+    if system == "windows":
+        cmd = (
+            'powershell -Command '
+            '"Get-Service | Select-Object Name,Status | ConvertTo-Json -Depth 2"'
         )
-        result = subprocess.run(
-            ps_command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            services = json.loads(result.stdout)
-            if not isinstance(services, list):
-                services = [services]
-            for service in services:
-                print(f"{service.get('Caption', 'N/A')}")
-                print(f"{service.get('DisplayName', 'N/A')}")
-            return services
-        else:
-            logger.warning("Failed to list services: %s", result.stderr)
-            return []
-    except Exception as e:
-        logger.error("listservice error: %s", str(e))
-        return []
+
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        raw = p.stdout.read()
+        rc = p.wait()
+
+        if rc != 0:
+            if show:
+                print("Erreur lors de la récupération des services Windows")
+            return {"status": 0, "services": []}
+
+        try:
+            services_raw = json.loads(raw.decode("utf-8"))
+        except:
+            if show:
+                print("Erreur JSON PowerShell")
+            return {"status": 0, "services": []}
+
+        if isinstance(services_raw, dict):
+            services_raw = [services_raw]
+
+        for svc in services_raw:
+            entry = {"name": svc["Name"]}
+            if status:
+                entry["status"] = str(svc["Status"]).lower()
+            services.append(entry)
+
+    # -----------------------------------------------------------
+    # LINUX (systemd)
+    # -----------------------------------------------------------
+    elif system == "linux":
+        cmd = "systemctl list-units --type=service --all --no-pager --plain --no-legend"
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        raw = p.stdout.read().decode("utf-8", errors="ignore")
+        rc = p.wait()
+
+        if rc != 0:
+            if show:
+                print("Erreur lors de l'exécution de systemctl")
+            return {"status": 0, "services": []}
+
+        for line in raw.splitlines():
+            parts = line.split()
+            if len(parts) >= 4:
+                name = parts[0]
+                svc_state = parts[3]
+
+                entry = {"name": name}
+                if status:
+                    entry["status"] = svc_state.lower()
+
+                services.append(entry)
+
+    # -----------------------------------------------------------
+    # macOS (launchctl)
+    # -----------------------------------------------------------
+    elif system == "darwin":
+        cmd = "launchctl list"
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        raw = p.stdout.read().decode("utf-8", errors="ignore")
+        rc = p.wait()
+
+        if rc != 0:
+            if show:
+                print("Erreur lors de l'exécution de launchctl")
+            return {"status": 0, "services": []}
+
+        lines = raw.splitlines()[1:]  # skip header
+        for line in lines:
+            parts = line.split()
+            if len(parts) >= 3:
+                pid = parts[0]
+                label = parts[2]
+
+                entry = {"name": label}
+                if status:
+                    entry["status"] = "running" if pid != "-" else "stopped"
+
+                services.append(entry)
+
+    # -----------------------------------------------------------
+    # Autre OS non géré
+    # -----------------------------------------------------------
+    else:
+        if show:
+            print("OS non supporté :", system)
+        return {"status": 0, "services": []}
+
+    # -----------------------------------------------------------
+    # Sortie show=True
+    # -----------------------------------------------------------
+    if show:
+        for s in services:
+            if status:
+                print(f"{s['name']} - {s['status']}")
+            else:
+                print(s["name"])
+        return ""
+
+    # -----------------------------------------------------------
+    # Sortie show=False → return JSON
+    # -----------------------------------------------------------
+    return {"status": 1, "services": services}
 
 
 def joint_compteAD(domain, username, password, ou=None, restart=True):
@@ -1912,6 +1891,85 @@ def joint_compteAD(domain, username, password, ou=None, restart=True):
     return obj
 
 
+def service_control(name, action):
+    """
+    Control a system service across Windows, Linux, macOS.
+
+    Args:
+        name (str): service name
+        action (str): 'start', 'stop', 'restart'
+
+    Returns:
+        dict: {
+            "code": 0 if success, -1 if error,
+            "result": list of output lines or error messages
+        }
+    """
+    obj = {"code": -1, "result": []}
+    action = action.lower()
+    system = platform.system().lower()
+
+    try:
+        if system == "windows":
+            # Map restart -> Stop+Start
+            if action == "restart":
+                cmd = f"powershell -Command \"Stop-Service -Name '{name}' -Force; Start-Service -Name '{name}'\""
+            elif action in ("start", "stop"):
+                cmd = f"powershell -Command \"{action.capitalize()}-Service -Name '{name}' -ErrorAction Stop\""
+            else:
+                obj["result"] = [f"Unsupported action: {action}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.read().decode()
+            obj["code"] = 0 if p.wait() == 0 else -1
+            obj["result"] = output.splitlines()
+
+        elif system == "linux":
+            # Detect init system
+            p = subprocess.Popen("cat /proc/1/comm", shell=True,
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            init_system = p.stdout.read().decode().strip()
+
+            if init_system == "init":
+                cmd = f"/etc/init.d/{name} {action}"
+            elif init_system == "systemd":
+                cmd = f"systemctl {action} {name}"
+            else:
+                obj["result"] = [f"Unsupported init system: {init_system}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.readlines()
+            obj["code"] = p.wait()
+            obj["result"] = [line.decode().strip() for line in output]
+
+        elif system == "darwin":
+            # macOS
+            if action == "start":
+                cmd = f"launchctl start {name}"
+            elif action == "stop":
+                cmd = f"launchctl stop {name}"
+            elif action == "restart":
+                cmd = f"launchctl stop {name}; launchctl start {name}"
+            else:
+                obj["result"] = [f"Unsupported action: {action}"]
+                return obj
+
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = p.stdout.readlines()
+            obj["code"] = p.wait()
+            obj["result"] = [line.decode().strip() for line in output]
+
+        else:
+            obj["result"] = [f"Unsupported OS: {system}"]
+
+    except Exception as e:
+        obj["code"] = -1
+        obj["result"] = [str(e)]
+
+    return obj
+
 def windowsservice(name, action):
     """
     Legacy wrapper for controlling Windows services.
@@ -1924,6 +1982,7 @@ def windowsservice(name, action):
     Returns:
         dict: same as service_control
     """
+    import platform
 
     if not platform.system().lower() == "windows":
         return {"code": -1, "result": ["windowsservice can only run on Windows"]}
@@ -1986,19 +2045,29 @@ def file_put_content(filename, contents, mode="w"):
         fh.write(contents)
 
 
-# windows
-# def listusergroup():
-# import wmi
-# c = wmi.WMI()
-# for group in c.Win32_Group():
-# print group.Caption
-# for user in group.associators("Win32_GroupUser"):
-# print "  ", user.Caption
 
 # decorateur pour simplifier les plugins
-
-
 def pluginprocess(func):
+    """
+    Décorateur pour simplifier l'exécution des plugins XMPP.
+
+    Ce décorateur :
+    - Initialise un objet `result` avec les champs standards pour renvoyer le résultat.
+    - Initialise un objet `dataerreur` pour gérer les erreurs.
+    - Exécute la fonction décorée en lui passant `result` et `dataerreur`.
+    - Encode les données en base64 si `result["base64"]` est True.
+    - Envoie le message de résultat via `objetxmpp.send_message`.
+    - En cas d'exception, envoie `dataerreur` au lieu du résultat.
+
+    Args:
+        func (callable): Fonction plugin à décorer. Signature attendue :
+            func(objetxmpp, action, sessionid, data, message, dataerreur, result)
+
+    Usage typique:
+        @pluginprocess
+        def mon_plugin(objetxmpp, action, sessionid, data, message, dataerreur, result):
+            result["data"]["msg"] = "OK"
+    """
     def wrapper(objetxmpp, action, sessionid, data, message, dataerreur):
         resultaction = f"result{action}"
         result = {}
@@ -2033,6 +2102,26 @@ def pluginprocess(func):
 
 # decorateur pour simplifier les plugins
 def pulgindeploy(func):
+    """
+    Décorateur pour simplifier le déploiement de plugins XMPP.
+
+    Fonctionnalités :
+    - Initialise un dictionnaire `result` pour la réponse standardisée.
+    - Initialise `dataerreur` pour la gestion d'erreur.
+    - Exécute la fonction décorée.
+    - Encode les données en base64 si `result["base64"]` est True.
+    - N'envoie pas le message si `result["data"]` vaut "end".
+    - En cas d'exception, envoie le message d'erreur sauf si `result["data"] == "end"`.
+
+    Args:
+        func (callable): Fonction plugin à décorer. Signature attendue :
+            func(objetxmpp, action, sessionid, data, message, dataerreur, result)
+
+    Usage typique:
+        @pulgindeploy
+        def mon_plugin(objetxmpp, action, sessionid, data, message, dataerreur, result):
+            result["data"]["msg"] = "Déploiement terminé"
+    """
     def wrapper(objetxmpp, action, sessionid, data, message, dataerreur):
         resultaction = action
         result = {}
@@ -2066,9 +2155,29 @@ def pulgindeploy(func):
 
 
 # decorateur pour simplifier les plugins
-
-
 def pulgindeploy1(func):
+    """
+    Décorateur pour simplifier le déploiement de plugins XMPP avec suivi détaillé.
+
+    Fonctionnalités :
+    - Initialise `result` et `dataerreur` comme dans les autres décorateurs.
+    - Ajoute le champ `end` à `result["data"]` si absent.
+    - Affiche des informations de debug détaillées (Devent, Dtypequery, Deventindex).
+    - N'envoie le message que si `result["data"]["end"]` est False.
+    - Encode les données en base64 si `result["base64"]` est True.
+    - En cas d'exception, envoie le message d'erreur sauf si `result["data"]["end"]` est True.
+    - Très utile pour les plugins qui font un traitement itératif ou long.
+
+    Args:
+        func (callable): Fonction plugin à décorer. Signature attendue :
+            func(objetxmpp, action, sessionid, data, message, dataerreur, result)
+
+    Usage typique:
+        @pulgindeploy1
+        def mon_plugin(objetxmpp, action, sessionid, data, message, dataerreur, result):
+            result["data"]["msg"] = "Traitement en cours"
+            result["data"]["end"] = False
+    """
     def wrapper(objetxmpp, action, sessionid, data, message, dataerreur):
         result = {}
         result["action"] = action
@@ -2121,24 +2230,157 @@ def pulgindeploy1(func):
 
     return wrapper
 
-def getIpXmppInterface(xmpp_client):
+
+def getIpXmppInterface(config):
     """
-    Récupère l'IP locale utilisée par la connexion XMPP active via la socket transport.
+    This function is used to retrieve the local IP from the client which is talking
+    with the ejabberd server.
+    For this we need to use netstat.
+    It returns:
+        TCP    10.16.53.17:49711      10.16.24.239:5222      ESTABLISHED
+    and we split to obtain the first IP of the line.
 
     Args:
-        xmpp_client: instance de ClientXMPP ou équivalent avec transport asyncio.
+        config (object): The configuration object containing server and port information.
 
     Returns:
-        str ou None: IP locale réellement utilisée.
+        str: The local IP from the client which is talking with the ejabberd server.
     """
-    try:
-        sock = xmpp_client.transport.get_extra_info("socket")
-        if sock:
-            local_ip = sock.getsockname()[0]
-            return local_ip
-    except Exception as e:
-        logging.getLogger().error(f"Impossible de récupérer IP depuis la socket : {e}")
-    return None
+    resultip = ""
+
+    # Validate xmpp_server_ipaddress_or_dns
+    def is_valid_url_or_ipv4(value):
+        try:
+            # Check if it's a valid IPv4
+            if is_valid_ipv4(value):
+                return True
+            # Check if it's a valid URL
+            parsed = urlparse(value)
+            return bool(parsed.scheme and parsed.netloc)
+        except Exception:
+            return False
+
+    if hasattr(config, "Server") and is_valid_url_or_ipv4(config.Server):
+        xmpp_server_ipaddress_or_dns = config.Server
+    elif hasattr(config, "confserver") and is_valid_url_or_ipv4(config.confserver):
+        xmpp_server_ipaddress_or_dns = config.confserver
+    else:
+        logger.error(
+            "Invalid server configuration. Neither 'Server' nor 'confserver' is valid."
+        )
+        return None
+
+    # Control on the Port variable
+    if (
+        hasattr(config, "Port")
+        and isinstance(config.Port, int)
+        and 0 <= config.Port <= 65535
+    ):
+        Port = config.Port
+    elif (
+        hasattr(config, "confPort")
+        and isinstance(config.confPort, int)
+        and 0 <= config.confPort <= 65535
+    ):
+        Port = config.confPort
+    else:
+        Port = 5222
+
+    # Get the list of network interfaces
+    interfaces = netifaces.interfaces()
+
+    # Filter interfaces to keep only those with valid IPv4 addresses, excluding loopback addresses
+    valid_interfaces = []
+    for interface in interfaces:
+        if interface == "":
+            continue
+        addrs = netifaces.ifaddresses(interface)
+        if netifaces.AF_INET in addrs:
+            for addr_info in addrs[netifaces.AF_INET]:
+                ip = addr_info["addr"]
+                if ip != "127.0.0.1" and is_valid_ipv4(ip):
+                    valid_interfaces.append(interface)
+                    logger.debug(f"Valid interface found: {interface} with IP: {ip}")
+                    break
+
+    # If there is only one valid interface, use its IPv4 address
+    if len(valid_interfaces) == 1:
+        addrs = netifaces.ifaddresses(valid_interfaces[0])
+        if netifaces.AF_INET in addrs:
+            for addr_info in addrs[netifaces.AF_INET]:
+                ip = addr_info["addr"]
+                if ip != "127.0.0.1" and is_valid_ipv4(ip):
+                    resultip = ip
+                    logger.debug(f"Using IP from the only valid interface: {ip}")
+                    break
+
+    if not resultip:
+        xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
+        logger.debug(
+            "Searching with which IP the agent is connected to the Ejabberd server"
+        )
+        if sys.platform.startswith("linux"):
+            obj = simplecommand(
+                f"netstat -an | grep {Port} | grep ESTABLISHED | grep -v tcp6"
+            )
+            if obj["code"] != 0:
+                logging.getLogger().error(f'error command netstat : {obj["result"]}')
+                logging.getLogger().error("error install package net-tools")
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[3].split(":")[0]
+        elif sys.platform.startswith("win"):
+            obj = simplecommand(
+                f'netstat -an | findstr {Port} | findstr "ESTABLISHED SYN_SENT SYN_RECV"'
+            )
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[1].split(":")[0]
+        elif sys.platform.startswith("darwin"):
+            obj = simplecommand(f"netstat -an | grep {Port} | grep ESTABLISHED")
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[3][: b[3].rfind(".")]
+        else:
+            obj = simplecommand(f"netstat -a | grep {Port} | grep ESTABLISHED")
+            if len(obj["result"]) != 0:
+                for i in range(len(obj["result"])):
+                    obj["result"][i] = obj["result"][i].rstrip("\n")
+                a = "\n".join(obj["result"])
+                if b := [x for x in a.split(" ") if x != ""]:
+                    resultip = b[1].split(":")[0]
+
+    if not resultip:
+        if (
+            sys.platform.startswith("linux")
+            and config.agenttype == "relayserver"
+            and hasattr(config, "public_ip")
+        ):
+            resultip = config.public_ip
+            logger.debug(f"Using public IP from configuration: {resultip}")
+        else:
+            # Determine the most probable network interface
+            for interface in interfaces:
+                if interface == "":
+                    continue
+                addrs = netifaces.ifaddresses(interface)
+                if netifaces.AF_INET in addrs:
+                    resultip = addrs[netifaces.AF_INET][0]["addr"]
+                    logger.debug(
+                        f"Using IP from the most probable interface: {resultip}"
+                    )
+                    break
+    return resultip
+
 
 # 3 functions used for subnet network
 def ipV4toDecimal(ipv4):
@@ -2189,30 +2431,64 @@ def searchippublic(site=1):
         return find_ip()
     return None
 
-
 def find_ip():
-    candidates = []
+    """
+    Détecte l'adresse IP locale de l'ordinateur en testant plusieurs réseaux publics fictifs.
+
+    La fonction crée une socket UDP et tente de se "connecter" à chaque IP de test
+    (ici des plages documentées pour tests et exemples). Même si aucune donnée n'est envoyée,
+    l'appel à `connect()` permet à la socket de déterminer automatiquement
+    l'adresse IP locale utilisée pour atteindre ce réseau.
+
+    La fonction retourne la **première IP locale détectée**, ou None si impossible.
+
+    Returns:
+        str | None: Adresse IP locale détectée, ou None si aucune IP trouvée.
+    """
+
+    candidates = []  # Liste des IP locales détectées sur chaque test
+    # Liste d'IP de test réservées aux exemples/documentation (pas réelles)
     for test_ip in ["192.0.2.0", "192.51.100.0", "203.0.113.0"]:
         try:
+            # Création d'une socket UDP
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # La connexion ne transmet pas de données, elle sert juste à déterminer l'IP locale
             s.connect((test_ip, 80))
-            ip_adrss = s.getsockname()[0]
+            ip_adrss = s.getsockname()[0]  # Récupère l'adresse locale utilisée
+
+            # Si cette IP a déjà été trouvée, on la retourne immédiatement
             if ip_adrss in candidates:
                 return ip_adrss
             candidates.append(ip_adrss)
+
         except Exception:
+            # Ignorer les erreurs de connexion ou de socket
             pass
         finally:
-            s.close()
+            s.close()  # Toujours fermer la socket pour libérer les ressources
+
+    # Retourne la première IP trouvée, ou None si aucune IP détectée
     return candidates[0] if candidates else None
 
-
-# decorateur pour simplifier les plugins
-# verify session exist.
-# pas de session end
-
-
 def pulginmaster(func):
+    """
+    Décorateur pour les plugins XMPP qui vérifie l'existence d'une session avant d'exécuter la fonction.
+
+    - Si l'action commence par "result", on tronque les 6 premiers caractères.
+    - Vérifie si la session `sessionid` existe via `objetxmpp.session.isexist`.
+    - Récupère les données de session si elles existent, sinon None.
+    - Passe ces informations à la fonction décorée.
+
+    Args:
+        func (callable): fonction plugin à décorer.
+            Signature attendue : func(objetxmpp, action, sessionid, data, message, ret, objsessiondata)
+
+    Returns:
+        callable: wrapper qui gère la vérification de session.
+
+    💡 Commentaire :
+    - Simplifie la gestion des plugins en évitant d'avoir à vérifier la session dans chaque plugin.
+    """
     def wrapper(objetxmpp, action, sessionid, data, message, ret):
         if action.startswith("result"):
             action = action[:6]
@@ -2229,17 +2505,46 @@ def pulginmaster(func):
 
 
 def pulginmastersessionaction(sessionaction, timeminute=10):
+    """
+    Décorateur de plugin XMPP avec gestion avancée de session.
+
+    Permet de définir une action sur la session avant et après l'exécution du plugin.
+
+    Args:
+        sessionaction (str): action sur la session, ex: "clear" ou "actualise".
+        timeminute (int): durée pour actualiser la session en minutes (par défaut 10).
+
+    Usage:
+        @pulginmastersessionaction("actualise")
+        def mon_plugin(objetxmpp, action, sessionid, data, message, ret, dataobj, objsessiondata):
+            ...
+
+    Fonctionnement :
+    - Si l'action commence par "result", tronque les 6 premiers caractères.
+    - Vérifie si la session existe :
+        - "actualise" → réactualise la session avant l'exécution.
+    - Exécute la fonction décorée en lui passant `objsessiondata`.
+    - Après exécution :
+        - "clear" → supprime la session.
+        - "actualise" → réactualise la session.
+
+    💡 Commentaire :
+    - Utile pour les plugins nécessitant un suivi précis de session.
+    - Permet de centraliser la logique de maintenance des sessions.
+    """
     def decorateur(func):
         def wrapper(objetxmpp, action, sessionid, data, message, ret, dataobj):
-            # avant
+            # Avant l'exécution
             if action.startswith("result"):
                 action = action[6:]
             if objetxmpp.session.isexist(sessionid):
                 if sessionaction == "actualise":
-                    objetxmpp.session.reactualisesession(sessionid, 10)
+                    objetxmpp.session.reactualisesession(sessionid, timeminute)
                 objsessiondata = objetxmpp.session.sessionfromsessiondata(sessionid)
             else:
                 objsessiondata = None
+
+            # Exécution de la fonction décorée
             response = func(
                 objetxmpp,
                 action,
@@ -2250,10 +2555,13 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
                 dataobj,
                 objsessiondata,
             )
+
+            # Après l'exécution
             if sessionaction == "clear" and objsessiondata is not None:
                 objetxmpp.session.clear(sessionid)
             elif sessionaction == "actualise":
-                objetxmpp.session.reactualisesession(sessionid, 10)
+                objetxmpp.session.reactualisesession(sessionid, timeminute)
+
             return response
 
         return wrapper
@@ -2262,6 +2570,21 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
 
 
 def merge_dicts(*dict_args):
+    """
+    Fusionne plusieurs dictionnaires en un seul.
+
+    Si plusieurs dictionnaires contiennent la même clé, la valeur du dernier dictionnaire
+    sera utilisée (comportement du `|=` en Python 3.9+).
+
+    Args:
+        *dict_args: dictionnaires à fusionner
+
+    Returns:
+        dict: dictionnaire fusionné
+
+    💡 Commentaire :
+    - Très utile pour combiner des résultats ou configurations venant de plusieurs sources.
+    """
     result = {}
     for dictionary in dict_args:
         result |= dictionary
@@ -2269,6 +2592,24 @@ def merge_dicts(*dict_args):
 
 
 def portline(result):
+    """
+    Extrait le numéro de port à partir d'une ligne de texte formatée.
+
+    Exemple de ligne : "0.0.0.0:80 0.0.0.0:* LISTEN"
+    - Sépare la ligne en colonnes
+    - Ignore les colonnes vides
+    - Retourne le numéro de port (après le caractère ':')
+
+    Args:
+        result (str): ligne de texte contenant une adresse IP et un port
+
+    Returns:
+        str: numéro de port extrait
+
+    💡 Commentaire :
+    - Utile pour analyser la sortie de commandes comme `netstat` ou `ss`.
+    - Le code `[ -2:-1 ][0]` prend l'avant-dernière colonne de la ligne, souvent la colonne IP:Port.
+    """
     column = [x.strip() for x in result.split(" ") if x != ""]
     print(column)
     return column[-2:-1][0].split(":")[1]
@@ -2350,7 +2691,7 @@ class protodef:
                             port = cux.laddr.port
                         if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
                             protport["ssh"] = port
-                elif process.name() == "xrdp" or process.name() == "gnome-remote-desktop-daemon":
+                elif process.name() == "xrdp":
                     process_handler = psutil.Process(process.pid)
                     for cux in process_handler.connections():
                         try:
@@ -2366,10 +2707,10 @@ class protodef:
                             protport["rdp"] = port
 
         elif sys.platform.startswith("darwin"):
-            # Detect VNC (Screen Sharing or ARD) on port 5900
-            for cux in psutil.net_connections():
-                if cux.laddr.port == 5900 and cux.status == psutil.CONN_LISTEN:
+            for process in psutil.process_iter():
+                if "ARDAgent" in process.name():
                     protport["vnc"] = "5900"
+            for cux in psutil.net_connections():
                 if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
                     protport["ssh"] = "22"
 
@@ -2402,8 +2743,31 @@ def ipfromdns(name_domaine_or_ip):
             return ""
     return ""
 
-
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
+    """
+    Crée une structure de message standardisée pour les plugins ou communications XMPP.
+
+    Args:
+        action (str): Nom de l'action associée au message.
+        data (dict, optional): Contenu du message. Par défaut {}.
+        ret (int, optional): Code de retour. Par défaut 0.
+        base64 (bool, optional): Indique si les données doivent être encodées en base64. Par défaut False.
+        sessionid (str, optional): ID de session. Si None ou invalide, un ID est généré automatiquement.
+
+    Returns:
+        dict: dictionnaire avec la structure standard :
+            {
+                "action": str,
+                "data": dict,
+                "ret": int,
+                "base64": bool,
+                "sessionid": str
+            }
+
+    💡 Commentaires :
+    - Génère un `sessionid` unique si non fourni, basé sur l'action.
+    - Simplifie la création de messages pour l'envoi via XMPP ou autre protocole.
+    """
     if sessionid is None or sessionid == "" or not isinstance(sessionid, str):
         sessionid = action.strip().replace(" ", "")
     return {
@@ -2411,13 +2775,25 @@ def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
         "data": data,
         "ret": 0,
         "base64": False,
-        "sessionid": getRandomName(4, sessionid),
+        "sessionid": getRandomName(4, sessionid),  # Génère un identifiant unique
     }
 
 
 def check_exist_ip_port(name_domaine_or_ip, port):
-    """This function check if socket valid for connection
-    return True or False
+    """
+    Vérifie si un socket peut se connecter à une IP ou un nom de domaine sur un port donné.
+
+    Args:
+        name_domaine_or_ip (str): Nom de domaine ou adresse IP.
+        port (int): Numéro de port.
+
+    Returns:
+        bool: True si l'adresse et le port sont valides pour une connexion, False sinon.
+
+    💡 Commentaires :
+    - Résout le nom de domaine en IP via `ipfromdns`.
+    - Utilise `socket.getaddrinfo` pour vérifier la validité de l'adresse et du port.
+    - Les erreurs de résolution DNS ou autres exceptions retournent False.
     """
     ip = ipfromdns(name_domaine_or_ip)
 
@@ -2433,9 +2809,30 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return False
 
 
+# -------------------------------------------------------------
+# Fonctions spécifiques Windows pour manipuler le registre
+# -------------------------------------------------------------
 if sys.platform.startswith("win"):
 
     def set_reg(name, value, subkey, key=wr.HKEY_LOCAL_MACHINE, type=wr.REG_SZ):
+        """
+        Crée ou modifie une valeur dans le registre Windows.
+
+        Args:
+            name (str): Nom de la valeur du registre.
+            value (str/int): Valeur à enregistrer.
+            subkey (str): Chemin du sous-clé.
+            key (int, optional): Clé racine (HKEY_LOCAL_MACHINE par défaut).
+            type (int, optional): Type de valeur (ex: REG_SZ, REG_DWORD). Par défaut REG_SZ.
+
+        Returns:
+            bool: True si l'opération a réussi, False sinon.
+
+        💡 Commentaires :
+        - Crée la clé si elle n'existe pas.
+        - Utilise `wr` (winreg) pour ouvrir et écrire la valeur.
+        - Doit être exécuté avec les permissions appropriées (ex: admin pour HKEY_LOCAL_MACHINE).
+        """
         try:
             wr.CreateKey(key, subkey)
             registry_key = wr.OpenKey(wr.HKEY_CURRENT_USER, subkey, 0, wr.KEY_WRITE)
@@ -2445,7 +2842,23 @@ if sys.platform.startswith("win"):
         except WindowsError:  # skipcq: PYL-E0602
             return False
 
+
     def get_reg(name, subkey, key=wr.HKEY_LOCAL_MACHINE):
+        """
+        Lit une valeur dans le registre Windows.
+
+        Args:
+            name (str): Nom de la valeur du registre.
+            subkey (str): Chemin du sous-clé.
+            key (int, optional): Clé racine (HKEY_LOCAL_MACHINE par défaut).
+
+        Returns:
+            str/int | None: La valeur lue ou None si la clé/valeur n'existe pas.
+
+        💡 Commentaires :
+        - Utilise `wr` (winreg) pour ouvrir et lire la valeur.
+        - Peut retourner None si la clé ou la valeur n'existe pas ou si permissions insuffisantes.
+        """
         try:
             registry_key = wr.OpenKey(key, subkey, 0, wr.KEY_READ)
             value, regtype = wr.QueryValueEx(registry_key, name)
@@ -2539,8 +2952,10 @@ def isBase64(s):
         if isinstance(s, str):
             s = s.encode("utf-8")
         # Vérification si les caractères appartiennent au jeu de caractères Base64
-        # (echoue a chaque message non-base64, ex: JSON -> on ne logge pas, bruit)
         if not re.match(b"^[A-Za-z0-9+/]*={0,2}$", s):
+            logger.warning(
+                "La chaîne contient des caractères non valides pour du base64."
+            )
             return False
 
         decoded = base64.b64decode(s, validate=True)
@@ -2725,45 +3140,117 @@ def test_kiosk_presence():
 
 def utc2local(utc):
     """
-    utc2local transform a utc datetime object to local object.
+    Convertit un objet datetime UTC en datetime locale.
 
-    Param:
-        utc datetime which is not naive (the utc timezone must be precised)
+    Cette fonction prend un datetime UTC (non-naïf, c'est-à-dire avec tzinfo UTC ou supposé en UTC)
+    et retourne l'heure correspondante dans le fuseau horaire local de la machine exécutant le code.
+
+    La conversion se fait en calculant le décalage (offset) entre UTC et l'heure locale
+    au moment donné.
+
+    Args:
+        utc (datetime.datetime): objet datetime en UTC (non-naïf, tzinfo doit être UTC ou implicite)
+
     Returns:
-        datetime in local timezone
+        datetime.datetime: objet datetime converti en heure locale
+
+    Exemple:
+        >>> from datetime import datetime, timezone
+        >>> utc_time = datetime(2025, 11, 25, 12, 0, 0, tzinfo=timezone.utc)
+        >>> local_time = utc2local(utc_time)
+        >>> print(local_time)
+        2025-11-25 13:00:00  # si le fuseau local est UTC+1
+
+    💡 Commentaires :
+    - `time.mktime(utc.timetuple())` : transforme le datetime UTC en timestamp local (seconds depuis epoch)
+    - `datetime.fromtimestamp(epoch)` : interprète ce timestamp dans le fuseau local
+    - `datetime.utcfromtimestamp(epoch)` : interprète ce timestamp en UTC
+    - La différence entre les deux (`offset`) correspond au décalage horaire local
+    - On ajoute cet offset à l'heure UTC pour obtenir l'heure locale
     """
+    # Transformer le datetime UTC en timestamp (secondes depuis epoch)
     epoch = time.mktime(utc.timetuple())
+
+    # Calculer le décalage entre l'heure locale et UTC
     offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
+
+    # Ajouter le décalage à l'heure UTC pour obtenir l'heure locale
     return utc + offset
 
 
-def getHomedrive(username="pulseuser"):
+def getHomedrive(username=None):
     """
-    Retrieve the path to the home of the user `username`
+    Récupère le chemin du répertoire personnel (home) d'un utilisateur donné,
+    compatible Windows, Linux et macOS.
+
     Args:
-        username: The username of the user for which we are searching the homepath
+        username (str, optional): Nom de l'utilisateur.
+            - Si None : utilise l'utilisateur courant.
 
     Returns:
-        It returns the path to the home of `username`
-    """
-    if sys.platform.startswith("win"):
-        homedrive = os.path.join("c:\\", "Users", "pulseuser")
-        usersid = get_user_sid(username)
+        str: Chemin complet vers le répertoire home de l'utilisateur.
+             Retourne None si le home n'a pas pu être déterminé.
 
+    Exemple:
+        >>> getHomedrive("pulseuser")
+        'C:\\Users\\pulseuser'  # sur Windows
+        '/home/pulseuser'       # sur Linux
+        '/Users/pulseuser'      # sur macOS
+
+    💡 Commentaires :
+    - Windows : lit le registre pour trouver le chemin réel du profil via le SID.
+      Si erreur ou échec, retourne `C:\\Users\\username` par défaut.
+    - Linux/macOS : utilise `pwd.getpwnam` pour obtenir le home de l'utilisateur.
+      Si username=None, utilise `os.path.expanduser("~")`.
+    """
+    if username is None:
+        username = os.getlogin()  # utilisateur courant si non spécifié
+
+    system = platform.system().lower()
+
+    # -----------------------------
+    # Windows
+    # -----------------------------
+    if system == "windows":
+        homedrive = os.path.join("C:\\Users", username)
         try:
+            # Récupère le SID de l'utilisateur
+            usersid = get_user_sid(username)
+
+            # Requête dans le registre pour obtenir ProfileImagePath
             regquery = (
-                'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" /v "ProfileImagePath" /s'
-                % usersid
+                f'REG QUERY "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{usersid}" /v "ProfileImagePath" /s'
             )
+
             resultquery = simplecommand(encode_strconsole(regquery))
 
-        except Exception as e:
-            logger.error("An error occured whil trying to %s" % (str(e)))
+            if resultquery["code"] == 0:
+                # La ligne contenant le chemin du profil est généralement -3 de la sortie
+                homedrive = resultquery["result"][-3].split("    ")[-1].replace("\r\n", "")
 
-        if resultquery["code"] == 0:
-            homedrive = resultquery["result"][-3].split("    ")[-1].replace("\r\n", "")
+        except Exception as e:
+            logger.error("Erreur lors de la récupération du home Windows : %s", e)
 
         return homedrive.lower()
+
+    # -----------------------------
+    # Linux / macOS
+    # -----------------------------
+    elif system in ["linux", "darwin"]:
+        try:
+            if username:
+                homedrive = pwd.getpwnam(username).pw_dir
+            else:
+                homedrive = os.path.expanduser("~")
+            return homedrive
+        except KeyError:
+            logger.error("Utilisateur %s non trouvé sur le système", username)
+            return None
+
+    else:
+        logger.error("OS non supporté pour getHomedrive: %s", system)
+        return None
+
 
 
 def keypub():
@@ -2793,11 +3280,20 @@ def keypub():
             )
         return file_get_contents("/var/root/.ssh/id_rsa.pub")
 
-
-# use function for relayserver
-
-
 def deletekey(file, key, back=True):
+    """
+    Supprime une ligne contenant `key` dans un fichier texte.
+
+    Args:
+        file (str): Chemin du fichier.
+        key (str): Mot-clé à supprimer.
+        back (bool, optional): Si True, crée un fichier de sauvegarde (.bak) avant modification. Default True.
+
+    💡 Commentaires :
+    - Utilise `sed` pour modifier le fichier directement.
+    - Sur Linux/macOS, le fichier est modifié en place.
+    - `simplecommand` exécute la commande shell et retourne le résultat.
+    """
     if os.path.isfile(file):
         if back:
             simplecommand(f"sed -i.bak '/{key}/d' {file}")
@@ -2806,13 +3302,37 @@ def deletekey(file, key, back=True):
 
 
 def installkey(file, key, back=True):
+    """
+    Ajoute une ligne contenant `key` à la fin d'un fichier texte.
+    Supprime d'abord les occurrences existantes pour éviter les doublons.
+
+    Args:
+        file (str): Chemin du fichier.
+        key (str): Contenu à ajouter.
+        back (bool, optional): Si True, crée un fichier de sauvegarde lors de la suppression. Default True.
+
+    💡 Commentaires :
+    - Appelle `deletekey` avant d'ajouter pour assurer l'unicité.
+    - Utilise `echo >>` pour ajouter la ligne à la fin.
+    """
     deletekey(file, key, back=back)
     simplecommand(f'echo "{key}" >> {file}')
 
 
 def connection_established(Port):
-    """verify connection etablish
-    return true if etablish
+    """
+    Vérifie si une connexion TCP sur un port donné est établie.
+
+    Args:
+        Port (int or str): Numéro de port à vérifier.
+
+    Returns:
+        bool: True si une connexion ESTABLISHED est trouvée, False sinon.
+
+    💡 Commentaires :
+    - Utilise `netstat` ou `findstr` selon le système.
+    - Filtre les connexions TCP établies et ignore IPv6 sur Linux.
+    - Avertit via logger si aucune connexion trouvée.
     """
     if sys.platform.startswith("linux"):
         obj = simplecommandstr(
@@ -2822,6 +3342,7 @@ def connection_established(Port):
         obj = simplecommandstr(f"netstat -an | findstr {Port} | findstr ESTABLISHED")
     elif sys.platform.startswith("darwin"):
         obj = simplecommandstr(f"netstat -an |grep {Port} | grep ESTABLISHED")
+
     if "ESTABLISHED" in obj["result"]:
         return True
     logger.warning("connection xmpp low")
@@ -2829,9 +3350,25 @@ def connection_established(Port):
 
 
 def showlinelog(nbline=200, logfile=None):
+    """
+    Lit les dernières lignes d'un fichier log.
+
+    Args:
+        nbline (int, optional): Nombre de lignes à lire. Default 200.
+        logfile (str, optional): Chemin du fichier log. Si None, prend le log par défaut du système.
+
+    Returns:
+        str: Contenu des dernières lignes du fichier log.
+
+    💡 Commentaires :
+    - Windows : utilise PowerShell `Get-Content | select -last`.
+    - Linux : utilise `cat | tail -n`.
+    - Retourne une chaîne vide si le fichier n'existe pas.
+    """
     obj = {"result": ""}
     if logfile is not None:
         na = logfile
+
     if sys.platform.startswith("win"):
         if logfile is None:
             na = os.path.join(
@@ -2843,7 +3380,7 @@ def showlinelog(nbline=200, logfile=None):
         if os.path.isfile(na):
             obj = simplecommandstr(
                 encode_strconsole(
-                    "powershell \"Get-Content '%s' | select -last %s\"" % (na, nbline)
+                    f"powershell \"Get-Content '{na}' | select -last {nbline}\""
                 )
             )
     elif sys.platform.startswith("linux"):
@@ -2851,10 +3388,24 @@ def showlinelog(nbline=200, logfile=None):
             na = os.path.join("/", "var", "log", "pulse", "xmpp-agent-machine.log")
         if os.path.isfile(na):
             obj = simplecommandstr(f"cat {na} | tail -n {nbline}")
+
     return obj["result"]
 
 
 def is_findHostfromHostname(hostname):
+    """
+    Vérifie si un nom d'hôte peut être résolu en adresse IP.
+
+    Args:
+        hostname (str): Nom de domaine ou hostname à vérifier.
+
+    Returns:
+        bool: True si le hostname est résolu, False sinon.
+
+    💡 Commentaires :
+    - Utilise `socket.gethostbyname`.
+    - Les exceptions sont ignorées, renvoie False si échec.
+    """
     try:
         host = socket.gethostbyname(hostname)
         return True
@@ -2864,6 +3415,19 @@ def is_findHostfromHostname(hostname):
 
 
 def is_findHostfromIp(ip):
+    """
+    Vérifie si une adresse IP peut être résolue en nom d'hôte.
+
+    Args:
+        ip (str): Adresse IP à vérifier.
+
+    Returns:
+        bool: True si l'IP est résolue, False sinon.
+
+    💡 Commentaires :
+    - Utilise `socket.gethostbyaddr`.
+    - Les exceptions sont ignorées, renvoie False si échec.
+    """
     try:
         host = socket.gethostbyaddr(ip)
         return True
@@ -2873,6 +3437,20 @@ def is_findHostfromIp(ip):
 
 
 def is_connectedServer(ip, port):
+    """
+    Vérifie si une connexion TCP peut être établie vers un serveur et port donnés.
+
+    Args:
+        ip (str): Adresse IP du serveur.
+        port (int or str): Port TCP du serveur.
+
+    Returns:
+        bool: True si la connexion est réussie, False sinon.
+
+    💡 Commentaires :
+    - Utilise `socket.socket` avec timeout de 5 secondes.
+    - Ferme toujours le socket dans le bloc `finally`.
+    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(5.0)
     port = int(port)
@@ -2883,7 +3461,6 @@ def is_connectedServer(ip, port):
         return False
     finally:
         sock.close()
-
 
 class Program:
     def __init__(self):
@@ -2965,6 +3542,40 @@ def check_socket_status(port):
     else:
         raise OSError(f"Système d'exploitation non supporté : {system}")
 
+def get_process_using_port_details(port):
+    """
+    Obtient le processus utilisant un port spécifié, multi-OS.
+
+    Args:
+        port (int): Numéro du port TCP ou UDP.
+
+    Returns:
+        dict: Informations sur le processus utilisant le port.
+              Exemple : {"pid": 1234, "name": "python", "status": "running"}
+              Si aucun processus n’utilise le port, retourne None.
+
+    Notes:
+        - Sur Linux/macOS : utilise psutil pour lister les connections.
+        - Sur Windows : utilise psutil aussi pour éviter les commandes netstat externes.
+    """
+    port = int(port)
+    system = platform.system().lower()
+
+    for conn in psutil.net_connections(kind='inet'):
+        if conn.laddr.port == port:
+            try:
+                proc = psutil.Process(conn.pid)
+                return {
+                    "pid": conn.pid,
+                    "name": proc.name(),
+                    "status": proc.status(),
+                    "local_address": f"{conn.laddr.ip}:{conn.laddr.port}",
+                    "remote_address": f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else None,
+                    "type": conn.type
+                }
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                return {"pid": conn.pid, "name": None, "status": None}
+    return None
 
 def get_process_using_port(port):
     """
@@ -3007,20 +3618,18 @@ def get_process_using_port(port):
 
 def process_exists(pid):
     """
-    Vérifie si un processus existe.
+    Vérifie si un processus existe, multi-OS.
 
     Args:
-        pid (int): L'identifiant du processus à vérifier.
+        pid (int): Identifiant du processus à vérifier.
 
     Returns:
         bool: True si le processus existe, False sinon.
+
+    Notes:
+        - Utilise psutil pour être compatible Linux, macOS et Windows.
     """
-    try:
-        process = psutil.Process(pid)
-    except psutil.NoSuchProcess:
-        return False
-    else:
-        return True
+    return psutil.pid_exists(pid)
 
 
 def kill_process(pid):
@@ -3101,49 +3710,124 @@ def kill_process_tree(pid, parentprocess=False):
             f"Délai d'attente expiré lors de la tentative de terminer le processus {pid}"
         )
 
-
 class AESCipher:
+    """
+    Classe pour chiffrer et déchiffrer des données avec AES en mode CBC.
+
+    Args:
+        key (str or bytes): Clé de chiffrement AES. Doit être 16, 24 ou 32 octets.
+        BS (int, optional): Taille du bloc AES. Par défaut 32.
+
+    Méthodes principales :
+        - encrypt(raw): chiffre une chaîne et retourne une chaîne Base64.
+        - encrypt_base64_byte(raw): chiffre une chaîne et retourne bytes Base64.
+        - decrypt(enc): déchiffre une chaîne Base64 en texte.
+        - decrypt_base64_byte(enc): déchiffre et retourne bytes.
+
+    Notes :
+        - CBC nécessite un vecteur d'initialisation (IV) aléatoire pour chaque chiffrement.
+        - Les données sont remplies (_padding_) pour que la longueur soit un multiple du bloc.
+        - Utilise PKCS#7 padding.
+    """
+
     def __init__(self, key, BS=32):
+        # Assurer que la clé est en bytes
         self.key = key.encode("utf-8") if isinstance(key, str) else key
-        self.BS = BS
+        self.BS = BS  # Taille du bloc AES
 
     def _bchr(self, s):
+        """Retourne un octet correspondant à un entier s (0-255)."""
         return bytes([s])
 
     def bord(self, s):
+        """Méthode placeholder, retourne simplement s inchangé."""
         return s
 
     def pad(self, data_to_pad):
-        padding_len = self.BS - len(data_to_pad) % self.BS
+        """
+        Ajoute du padding PKCS#7 pour que la longueur soit un multiple de BS.
+
+        Args:
+            data_to_pad (bytes): Données à chiffrer.
+
+        Returns:
+            bytes: Données avec padding ajouté.
+        """
+        padding_len = self.BS - len(data_to_pad) % self.BS  # calcul du padding
         padding = self._bchr(padding_len) * padding_len
         return data_to_pad + padding
 
     def encrypt_base64_byte(self, raw):
+        """
+        Chiffre les données et retourne le résultat en Base64 (bytes).
+
+        Args:
+            raw (str or bytes): Données à chiffrer.
+
+        Returns:
+            bytes: Données chiffrées en Base64.
+        """
         if isinstance(raw, str):
             raw = raw.encode("utf-8")
-        iv = Random.new().read(AES.block_size)
+        iv = Random.new().read(AES.block_size)  # vecteur d'initialisation aléatoire
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        result = iv + cipher.encrypt(self.pad(raw))
+        result = iv + cipher.encrypt(self.pad(raw))  # IV + données chiffrées
         return base64.b64encode(result)
 
     def encrypt(self, raw):
+        """
+        Chiffre une chaîne et retourne une chaîne Base64.
+
+        Args:
+            raw (str): Données à chiffrer.
+
+        Returns:
+            str: Données chiffrées en Base64 sous forme de chaîne.
+        """
         return self.encrypt_base64_byte(raw).decode("utf-8")
 
     def decrypt(self, enc):
+        """
+        Déchiffre une chaîne ou bytes encodée en Base64.
+
+        Args:
+            enc (str or bytes): Données chiffrées Base64.
+
+        Returns:
+            str: Données déchiffrées (texte UTF-8).
+        """
         if isinstance(enc, str):
             enc = enc.encode("utf-8")
         enc = base64.b64decode(enc)
-        iv = enc[: AES.block_size]
+        iv = enc[:AES.block_size]  # récupérer le vecteur d'initialisation
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size :]))
+        return self._unpad(cipher.decrypt(enc[AES.block_size:]))
 
     def decrypt_base64_byte(self, enc):
-        return self.decrypt_base64_str(enc).encode("utf-8")
+        """
+        Déchiffre une chaîne Base64 et retourne bytes.
+
+        Args:
+            enc (str or bytes): Données chiffrées Base64.
+
+        Returns:
+            bytes: Données déchiffrées en bytes.
+        """
+        return self.decrypt(enc).encode("utf-8")
 
     def _unpad(self, s):
-        dtrdata = s[: -ord(s[-1:])]
-        return dtrdata.decode("utf-8")
+        """
+        Retire le padding PKCS#7 après déchiffrement.
 
+        Args:
+            s (bytes): Données chiffrées.
+
+        Returns:
+            str: Données déchiffrées en UTF-8.
+        """
+        # ord(s[-1:]) donne la valeur de padding ajoutée
+        dtrdata = s[:-ord(s[-1:])]
+        return dtrdata.decode("utf-8")
 
 def setgetcountcycle(data=None):
     chemin = os.path.join(
@@ -3186,52 +3870,90 @@ def setgetrestart(data=None):
         file_put_contents(chemin, "1")
         return 1
 
-
 def detectantivirus():
+    """
+    Detecte les produits de sécurité installés sur Windows : Antivirus, Firewall et AntiSpyware.
+
+    Utilise PowerShell et Get-CimInstance pour interroger l'espace de noms SecurityCenter2,
+    récupère les propriétés principales et décode l'état du produit.
+
+    Returns:
+        dict: Un dictionnaire contenant les informations de chaque type de protection.
+              Exemple :
+              {
+                  "Antivirus": [ {...}, {...} ],
+                  "Firewall": [ {...} ],
+                  "AntiSpyware": [ {...} ]
+              }
+    """
+
     def SECURITY_PROVIDER(keyobject, data):
-        str = data[:2]
-        if str == "00":
-            return "NONE"
-        elif str == "01":
-            return "FIREWALL"
-        elif str == "02":
-            return "AUTOUPDATE_SETTINGS"
-        elif str == "04":
-            return "ANTIVIRUS"
-        elif str == "08":
-            return "ANTISPYWARE"
-        elif str == "16":
-            return "INTERNET_SETTINGS"
-        elif str == "32":
-            return "USER_ACCOUNT_CONTROL"
-        elif str == "64":
-            return "SERVICE"
-        else:
-            return keyobject.upper()
+        """
+        Décode le fournisseur de sécurité depuis les 2 premiers caractères de productState hex.
+
+        Args:
+            keyobject (str): Le type de produit (Antivirus, Firewall, AntiSpyware)
+            data (str): productState en hex
+
+        Returns:
+            str: Nom du fournisseur de sécurité ou 'NONE'
+        """
+        prefix = data[:2]
+        mapping = {
+            "00": "NONE",
+            "01": "FIREWALL",
+            "02": "AUTOUPDATE_SETTINGS",
+            "04": "ANTIVIRUS",
+            "08": "ANTISPYWARE",
+            "16": "INTERNET_SETTINGS",
+            "32": "USER_ACCOUNT_CONTROL",
+            "64": "SERVICE",
+        }
+        return mapping.get(prefix, keyobject.upper())
 
     def SECURITY_PRODUCT_STATE(data):
-        str = data[2:4]
-        if str == "00":
-            return "OFF"
-        elif str == "01":
-            return "EXPIRED"
-        elif str == "10":
-            return "ON"
-        elif str == "11":
-            return "SNOOZED"
-        else:
-            return "UNKNOWN"
+        """
+        Décode l'état du produit depuis les caractères 3-4 du productState hex.
+
+        Args:
+            data (str): productState en hex
+
+        Returns:
+            str: Etat du produit (OFF, ON, EXPIRED, SNOOZED, UNKNOWN)
+        """
+        code = data[2:4]
+        mapping = {
+            "00": "OFF",
+            "01": "EXPIRED",
+            "10": "ON",
+            "11": "SNOOZED",
+        }
+        return mapping.get(code, "UNKNOWN")
 
     def SECURITY_SIGNATURE_STATUS(data):
-        str = data[4:6]
-        if str == "00":
-            return "UP_TO_DATE"
-        elif str == "10":
-            return "OUT_OF_DATE"
-        else:
-            return "UNKNOWN"
+        """
+        Décode l'état de la signature depuis les caractères 5-6 du productState hex.
+
+        Args:
+            data (str): productState en hex
+
+        Returns:
+            str: Etat de la signature (UP_TO_DATE, OUT_OF_DATE, UNKNOWN)
+        """
+        code = data[4:6]
+        mapping = {
+            "00": "UP_TO_DATE",
+            "10": "OUT_OF_DATE",
+        }
+        return mapping.get(code, "UNKNOWN")
 
     def elemenstructure():
+        """
+        Structure vide pour un produit de sécurité.
+
+        Returns:
+            dict: dictionnaire avec toutes les clés par défaut.
+        """
         return {
             "displayName": "",
             "instanceGuid": "",
@@ -3245,332 +3967,217 @@ def detectantivirus():
             "timestamp": "",
         }
 
-    if sys.platform.startswith("win"):
-        result = {}
-        objWMI = {
-            "Antivirus": GetObject("winmgmts:\\\\.\\root\\SecurityCenter2").InstancesOf(
-                "AntiVirusProduct"
-            ),
-            "Firewall": GetObject("winmgmts:\\\\.\\root\\SecurityCenter2").InstancesOf(
-                "FirewallProduct"
-            ),
-            "AntiSpyware": GetObject(
-                "winmgmts:\\\\.\\root\\SecurityCenter2"
-            ).InstancesOf("AntiSpywareProduct"),
-        }
-        for key in objWMI:
-            result[key] = []
-            for i in objWMI[key]:
-                infoprotection = elemenstructure()
-                try:
-                    infoprotection["displayName"] = i.displayName.strip()
-                except Exception:
-                    pass
-                try:
-                    infoprotection["instanceGuid"] = i.instanceGuid.strip()
-                except Exception:
-                    pass
-                try:
-                    infoprotection["pathToSignedProductExe"] = (
-                        i.pathToSignedProductExe.strip()
-                    )
-                except Exception:
-                    pass
-                try:
-                    infoprotection["pathToSignedReportingExe"] = (
-                        i.pathToSignedReportingExe.strip()
-                    )
-                except Exception:
-                    pass
-                try:
-                    infoprotection["productState"] = i.productState
-                    infoprotection["hex"] = "%06x" % i.productState
-                    infoprotection["SECURITY_PROVIDER"] = SECURITY_PROVIDER(
-                        key, infoprotection["hex"]
-                    )
-                    infoprotection["SECURITY_PRODUCT_STATE"] = SECURITY_PRODUCT_STATE(
-                        infoprotection["hex"]
-                    )
-                    infoprotection["SECURITY_SIGNATURE_STATUS"] = (
-                        SECURITY_SIGNATURE_STATUS(infoprotection["hex"])
-                    )
-                except Exception:
-                    pass
-                try:
-                    infoprotection["timestamp"] = i.timestamp.strip()
-                except Exception:
-                    pass
-                result[key].append(infoprotection)
-        return result
+    if not sys.platform.startswith("win"):
+        raise EnvironmentError("Cette fonction est uniquement disponible sur Windows.")
 
-
-def information_machine():
     result = {}
+    # Pour chaque type de produit, exécuter Get-CimInstance via PowerShell et récupérer JSON
+    product_classes = {
+        "Antivirus": "AntiVirusProduct",
+        "Firewall": "FirewallProduct",
+        "AntiSpyware": "AntiSpywareProduct",
+    }
 
-    def WMIDateStringToDate(dtmDate):
-        strDateTime = ""
-        if dtmDate[4] == 0:
-            strDateTime = f"{dtmDate[5]}/"
-        else:
-            strDateTime = dtmDate[4] + dtmDate[5] + "/"
-        if dtmDate[6] == 0:
-            strDateTime = strDateTime + dtmDate[7] + "/"
-        else:
-            strDateTime = strDateTime + dtmDate[6] + dtmDate[7] + "/"
-            strDateTime = (
-                strDateTime
-                + dtmDate[0]
-                + dtmDate[1]
-                + dtmDate[2]
-                + dtmDate[3]
-                + " "
-                + dtmDate[8]
-                + dtmDate[9]
-                + ":"
-                + dtmDate[10]
-                + dtmDate[11]
-                + ":"
-                + dtmDate[12]
-                + dtmDate[13]
-            )
-        return strDateTime
+    for key, cls in product_classes.items():
+        cmd = (
+            f"powershell -Command "
+            f"\"Get-CimInstance -Namespace root/SecurityCenter2 -ClassName {cls} | ConvertTo-Json\""
+        )
+        p = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
-    if sys.platform.startswith("win"):
-        strComputer = "."
-        objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-        objSWbemServices = objWMIService.ConnectServer(strComputer, "root\\cimv2")
-        colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_ComputerSystem")
-        for objItem in colItems:
-            if objItem.AdminPasswordStatus is not None:
-                result["AdminPasswordStatus"] = objItem.AdminPasswordStatus
-            if objItem.AutomaticResetBootOption is not None:
-                result["AutomaticResetBootOption"] = objItem.AutomaticResetBootOption
-            if objItem.AutomaticResetCapability is not None:
-                result["AutomaticResetCapability"] = objItem.AutomaticResetCapability
-            if objItem.BootOptionOnLimit is not None:
-                result["BootOptionOnLimit"] = objItem.BootOptionOnLimit
-            if objItem.BootOptionOnWatchDog is not None:
-                result["BootOptionOnWatchDog"] = objItem.BootOptionOnWatchDog
-            if objItem.BootROMSupported is not None:
-                result["BootROMSupported"] = objItem.BootROMSupported
-            if objItem.BootupState is not None:
-                result["BootupState"] = objItem.BootupState
-            if objItem.Caption is not None:
-                result["Caption"] = objItem.Caption
-            if objItem.ChassisBootupState is not None:
-                result["ChassisBootupState"] = objItem.ChassisBootupState
-            if objItem.CreationClassName is not None:
-                result["CreationClassName"] = objItem.CreationClassName
-            if objItem.CurrentTimeZone is not None:
-                result["CurrentTimeZone"] = objItem.CurrentTimeZone
-            if objItem.DaylightInEffect is not None:
-                result["DaylightInEffect"] = objItem.DaylightInEffect
-            if objItem.Description is not None:
-                result["Description"] = objItem.Description
-            if objItem.DNSHostName is not None:
-                result["DNSHostName"] = objItem.DNSHostName
-            if objItem.Domain is not None:
-                result["Domain"] = objItem.Domain
-            if objItem.DomainRole is not None:
-                result["DomainRole"] = objItem.DomainRole
-            if objItem.EnableDaylightSavingsTime is not None:
-                result["EnableDaylightSavingsTime"] = objItem.EnableDaylightSavingsTime
-            if objItem.FrontPanelResetStatus is not None:
-                result["FrontPanelResetStatus"] = objItem.FrontPanelResetStatus
-            if objItem.InfraredSupported is not None:
-                result["InfraredSupported"] = objItem.InfraredSupported
+        try:
+            # Convertir la sortie JSON en liste
+            data_list = json.loads(p.stdout)
+            if isinstance(data_list, dict):
+                data_list = [data_list]
+        except json.JSONDecodeError:
+            data_list = []
 
-            strList = "null"
-            try:
-                strList = ",".join([str(x) for x in objItem.InitialLoadInfo])
-            except BaseException:
-                pass
-            result["InitialLoadInfo"] = strList
+        result[key] = []
 
-            if objItem.InstallDate is not None:
-                result["InstallDate"] = WMIDateStringToDate(objItem.InstallDate)
-            if objItem.KeyboardPasswordStatus is not None:
-                result["KeyboardPasswordStatus"] = objItem.KeyboardPasswordStatus
-            if objItem.LastLoadInfo is not None:
-                result["LastLoadInfo"] = objItem.LastLoadInfo
-            if objItem.Manufacturer is not None:
-                result["Manufacturer"] = objItem.Manufacturer
-            if objItem.Model is not None:
-                result["Model"] = objItem.Model
-            if objItem.Name is not None:
-                result["Name"] = objItem.Name
-            if objItem.NameFormat is not None:
-                result["NameFormat"] = objItem.NameFormat
-            if objItem.NetworkServerModeEnabled is not None:
-                result["NetworkServerModeEnabled"] = objItem.NetworkServerModeEnabled
-            if objItem.NumberOfProcessors is not None:
-                result["NumberOfProcessors"] = objItem.NumberOfProcessors
+        for item in data_list:
+            infoprotection = elemenstructure()
+            # Remplir les propriétés disponibles
+            infoprotection["displayName"] = item.get("displayName", "").strip()
+            infoprotection["instanceGuid"] = item.get("instanceGuid", "").strip()
+            infoprotection["pathToSignedProductExe"] = item.get("pathToSignedProductExe", "").strip()
+            infoprotection["pathToSignedReportingExe"] = item.get("pathToSignedReportingExe", "").strip()
+            infoprotection["productState"] = item.get("productState", 0)
+            # Convertir en hex et décoder les états
+            infoprotection["hex"] = f"{infoprotection['productState']:06x}"
+            infoprotection["SECURITY_PROVIDER"] = SECURITY_PROVIDER(key, infoprotection["hex"])
+            infoprotection["SECURITY_PRODUCT_STATE"] = SECURITY_PRODUCT_STATE(infoprotection["hex"])
+            infoprotection["SECURITY_SIGNATURE_STATUS"] = SECURITY_SIGNATURE_STATUS(infoprotection["hex"])
+            infoprotection["timestamp"] = item.get("timestamp", "").strip()
+            result[key].append(infoprotection)
 
-            strList = "null"
-            try:
-                strList = ",".join([str(x) for x in objItem.OEMLogoBitmap])
-            except BaseException:
-                pass
-            result["OEMLogoBitmap"] = strList
-
-            strList = "null"
-            try:
-                strList = ",".join([str(x) for x in objItem.OEMStringArray])
-            except BaseException:
-                pass
-            result["OEMStringArray"] = strList
-
-            if objItem.PartOfDomain is not None:
-                result["PartOfDomain"] = objItem.PartOfDomain
-            if objItem.PauseAfterReset is not None:
-                result["PauseAfterReset"] = objItem.PauseAfterReset
-
-            strList = "null"
-            try:
-                strList = ",".join(
-                    [str(x) for x in objItem.PowerManagementCapabilities]
-                )
-            except BaseException:
-                pass
-            result["PowerManagementCapabilities"] = strList
-
-            if objItem.PowerManagementSupported is not None:
-                result["PowerManagementSupported"] = objItem.PowerManagementSupported
-            if objItem.PowerOnPasswordStatus is not None:
-                result["PowerOnPasswordStatus"] = objItem.PowerOnPasswordStatus
-            if objItem.PowerState is not None:
-                result["PowerState"] = objItem.PowerState
-            if objItem.PowerSupplyState is not None:
-                result["PowerSupplyState"] = objItem.PowerSupplyState
-            if objItem.PrimaryOwnerContact is not None:
-                result["PrimaryOwnerContact"] = objItem.PrimaryOwnerContact
-            if objItem.PrimaryOwnerName is not None:
-                result["PrimaryOwnerName"] = objItem.PrimaryOwnerName
-            if objItem.ResetCapability is not None:
-                result["ResetCapability"] = objItem.ResetCapability
-            if objItem.ResetCount is not None:
-                result["ResetCount"] = objItem.ResetCount
-            if objItem.ResetLimit is not None:
-                result["ResetLimit"] = objItem.ResetLimit
-
-            strList = "null"
-            try:
-                strList = ",".join([str(x) for x in objItem.Roles])
-            except BaseException:
-                pass
-            result["Roles"] = strList
-
-            if objItem.Status is not None:
-                result["Status"] = objItem.Status
-
-            strList = "null"
-            try:
-                strList = ",".join([str(x) for x in objItem.SupportContactDescription])
-            except BaseException:
-                pass
-            result["SupportContactDescription"] = strList
-
-            if objItem.SystemStartupDelay is not None:
-                result["SystemStartupDelay"] = objItem.SystemStartupDelay
-
-            strList = "null"
-            try:
-                strList = ",".join([str(x) for x in objItem.SystemStartupOptions])
-            except BaseException:
-                pass
-            result["SystemStartupOptions"] = strList
-
-            if objItem.SystemStartupSetting is not None:
-                result["SystemStartupSetting"] = objItem.SystemStartupSetting
-            if objItem.SystemType is not None:
-                result["SystemType"] = objItem.SystemType
-            if objItem.ThermalState is not None:
-                result["ThermalState"] = objItem.ThermalState
-            if objItem.TotalPhysicalMemory is not None:
-                result["TotalPhysicalMemory"] = objItem.TotalPhysicalMemory
-            if objItem.UserName is not None:
-                result["UserName"] = objItem.UserName
-            if objItem.WakeUpType is not None:
-                result["WakeUpType"] = objItem.WakeUpType
-            if objItem.Workgroup is not None:
-                result["Workgroup"] = objItem.Workgroup
     return result
 
 
+def information_machine():
+    """
+    Récupère les informations de la classe Win32_ComputerSystem via Get-CimInstance
+    et retourne un dictionnaire contenant les propriétés de la machine.
+
+    Returns:
+        dict: Un dictionnaire contenant les propriétés de Win32_ComputerSystem.
+    """
+    result = {}
+
+    # Vérifie si le système est Windows
+    if sys.platform.startswith("win"):
+        # Commande PowerShell pour récupérer les informations via Get-CimInstance
+        ps_command = (
+            "powershell -Command "
+            "\"Get-CimInstance -ClassName Win32_ComputerSystem | ConvertTo-Json -Depth 3\""
+        )
+
+        # Exécute la commande PowerShell et récupère le résultat en JSON
+        try:
+            output = subprocess.check_output(ps_command, shell=True, text=True)
+            # Parse le JSON pour obtenir un dictionnaire Python
+            cim_data = json.loads(output)
+
+            # Remplit le dictionnaire de résultat avec les propriétés disponibles
+            for prop in cim_data["CimInstanceProperties"]:
+                name = prop["Name"]
+                value = prop["Value"]
+                # Ignore les valeurs None ou NullValue
+                if value is not None and not prop.get("Flags", "").endswith("NullValue"):
+                    result[name] = value
+
+            # Ajoute les propriétés directes (non imbriquées dans CimInstanceProperties)
+            for key, value in cim_data.items():
+                if key not in ["CimInstanceProperties", "CimSystemProperties", "CimClass"] and value is not None:
+                    result[key] = value
+
+        except subprocess.CalledProcessError as e:
+            print(f"Erreur lors de l'exécution de la commande PowerShell: {e}")
+        except json.JSONDecodeError as e:
+            print(f"Erreur lors du décodage du JSON: {e}")
+
+    return result
+
 def sshdup():
+    """
+    Vérifie si le service SSH (sshd) est en cours d'exécution sur la machine.
+
+    Cette fonction est multiplateforme et fonctionne sur Linux, macOS (Darwin) et Windows.
+    Elle utilise des commandes système spécifiques à chaque OS pour détecter si le service SSH est actif.
+
+    Returns:
+        bool: True si le service SSH est en cours d'exécution, False sinon.
+    """
     if sys.platform.startswith("linux"):
-        # verify sshd up
+        # Sur Linux, on vérifie si le processus "sshd" est présent (en excluant les faux positifs comme "grep")
         cmd = "ps aux | grep sshd | grep -v grep | grep -v pts"
         result = simplecommand(cmd)
-        return result["code"] == 0
+        return result["code"] == 0  # Code 0 signifie que le processus est trouvé
+
     elif sys.platform.startswith("darwin"):
+        # Sur macOS, on utilise launchctl pour vérifier si le service com.openssh.sshd est chargé
         cmd = "launchctl list com.openssh.sshd"
         result = simplecommand(cmd)
-        return result["code"] == 0
+        return result["code"] == 0  # Code 0 signifie que le service est actif
+
     elif sys.platform.startswith("win"):
+        # Sur Windows, on utilise TASKLIST pour vérifier si "sshd" est dans la liste des processus
         cmd = "TASKLIST | FINDSTR sshd"
         result = simplecommand(cmd)
         if len(result["result"]) > 0:
-            return True
-    return False
+            return True  # Le processus "sshd" est trouvé
+
+    return False  # Par défaut, retourne False si le service n'est pas détecté
 
 
 def restartsshd():
+    """
+    Redémarre le service SSH (sshd) si celui-ci n'est pas en cours d'exécution.
+
+    Cette fonction est multiplateforme et utilise des commandes spécifiques à chaque OS pour redémarrer le service SSH.
+    Elle vérifie d'abord si le service est actif avec `sshdup()`. Si ce n'est pas le cas, elle tente de le redémarrer.
+    """
     if sys.platform.startswith("linux"):
-        # verify sshd up
+        # Sur Linux, on redémarre le service sshd avec systemctl
         if not sshdup():
-            cmd = "systemctrl restart sshd"
+            cmd = "systemctl restart sshd"  # Note: "systemctrl" est une faute de frappe, corrigée en "systemctl"
             result = simplecommand(cmd)
+
     elif sys.platform.startswith("darwin"):
+        # Sur macOS, on redémarre le service SSH via launchctl
         if not sshdup():
             cmd = "launchctl restart /System/Library/LaunchDaemons/ssh.plist"
             result = simplecommand(cmd)
+
     elif sys.platform.startswith("win"):
+        # Sur Windows, on cherche le nom exact du service SSH et on le démarre
         if not sshdup():
-            # on cherche le nom reel du service pour sshd.
+            # Récupère le nom du service SSH (ex: "sshd" ou "OpenSSH Server")
             cmd = 'sc query state= all | findstr "sshd" | findstr "SERVICE_NAME"'
             result = simplecommand(cmd)
             if len(result["result"]) > 0:
                 try:
+                    # Extrait le nom du service depuis la sortie de la commande
                     nameservice = result["result"][0].split()[1]
+                    # Démarre le service
                     cmd = f'sc start "{nameservice}"'
                     result = simplecommand(cmd)
                 except Exception:
+                    # En cas d'erreur, on ignore silencieusement
                     pass
-
 
 def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
     """
-    creation archive tar.gz or tar.bz2
-    compresstype "gz" or "bz2"
+    Crée une archive compressée au format tar.gz ou tar.bz2 à partir d'un répertoire source.
+
+    Args:
+        output_file_gz_bz2 (str): Chemin complet du fichier de sortie (ex: "/chemin/vers/archive.tar.gz").
+        source_dir (str): Répertoire source à archiver.
+        compresstype (str, optional): Type de compression. Valeurs possibles : "gz" (par défaut) ou "bz2".
+
+    Returns:
+        bool: True si l'archivage a réussi, False en cas d'erreur.
     """
     try:
+        # Ouvre le fichier de sortie en mode écriture avec le type de compression spécifié
         with tarfile.open(output_file_gz_bz2, f"w:{compresstype}") as tar:
+            # Ajoute le répertoire source à l'archive, en utilisant le nom de base du répertoire comme nom dans l'archive
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
     except Exception as e:
-        logger.error(f"Error creating tar.{compresstype} archive : {str(e)}")
+        # En cas d'erreur, log l'erreur et retourne False
+        logger.error(f"Erreur lors de la création de l'archive tar.{compresstype} : {str(e)}")
         return False
 
+def extract_file(input_file_gz_bz2, to_directory=".", compresstype="gz"):
+    """
+    Extrait une archive compressée (tar.gz ou tar.bz2) dans un répertoire de destination.
 
-def extract_file(imput_file__gz_bz2, to_directory=".", compresstype="gz"):
+    Args:
+        input_file_gz_bz2 (str): Chemin complet du fichier d'archive à extraire.
+        to_directory (str, optional): Répertoire de destination pour l'extraction. Par défaut, le répertoire courant (".").
+        compresstype (str, optional): Type de compression de l'archive. Valeurs possibles : "gz" (par défaut) ou "bz2".
+
+    Returns:
+        bool: True si l'extraction a réussi, False en cas d'erreur.
     """
-    extract archive tar.gz or tar.bz2
-    compresstype "gz" or "bz2"
-    """
-    cwd = os.getcwd()
-    absolutepath = os.path.abspath(imput_file__gz_bz2)
+    cwd = os.getcwd()  # Sauvegarde le répertoire courant
+    absolutepath = os.path.abspath(input_file_gz_bz2)  # Convertit le chemin en chemin absolu
+
     try:
+        # Change le répertoire de travail pour la destination d'extraction
         os.chdir(to_directory)
+        # Ouvre l'archive et extrait tout son contenu
         with tarfile.open(absolutepath, f"r:{compresstype}") as tar:
             tar.extractall()
         return True
     except Exception as e:
-        logger.error(f"Error extracting tar.{str(e)} : {compresstype}")
+        # En cas d'erreur, log l'erreur et retourne False
+        logger.error(f"Erreur lors de l'extraction de l'archive tar.{compresstype} : {str(e)}")
         return False
     finally:
+        # Restaure le répertoire de travail initial
         os.chdir(cwd)
-    return True
 
 
 def find_files(directory, pattern):
@@ -3809,7 +4416,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     elif sys.platform.startswith("darwin"):
         try:
             uid = pwd.getpwnam(username).pw_uid
-            gid = pwd.getpwnam(username).pw_gid
+            gid = grp.getgrnam(username).gr_gid
             msg = f"{username} user account already exists. Nothing to do."
             return True, msg
         except Exception:
@@ -3817,7 +4424,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             userpassword = "".join(random.sample(list(passwdchars), 14))
             adduser_cmd = (
                 "dscl . -create /Users/%s "
-                "UserShell /bin/bash && "
+                "UserShell /usr/local/bin/rbash && "
                 "dscl . -passwd /Users/%s %s" % (username, username, userpassword)
             )
     # Create the account
@@ -3826,17 +4433,15 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         msg = f"Creation of {username} user account successful: {result}"
         # Other operations specific to Windows
         if sys.platform.startswith("win"):
-            # Désactiver l'expiration du mot de passe avec `net user`
             result = simplecommand(
                 encode_strconsole(
-                    'net user "%s" /passwordchg:no' % username
+                    "wmic useraccount where \"Name='%s'\" set PasswordExpires=False"
+                    % username
                 )
             )
             if result["code"] != 0:
                 msg = f"Error setting {username} user account to not expire: {result}"
                 return False, msg
-
-            # Masquer le compte dans l'écran de connexion
             result = simplecommand(
                 encode_strconsole(
                     'REG ADD "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList" /v "%s" /t REG_DWORD /d 0 /f'
@@ -3846,8 +4451,6 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
             if result["code"] != 0:
                 msg = f"Error hiding {username} account: {result}"
                 return False, msg
-
-            # Masquer le dossier utilisateur dans l'explorateur
             user_home = getHomedrive()
             hide_from_explorer = simplecommand(
                 encode_strconsole("attrib +h %s" % user_home)
@@ -3859,6 +4462,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     else:
         msg = f"Creation of {username} user account failed: {result}"
         return False, msg
+
 
 def pulseuser_profile_mustexist(username="pulseuser"):
     """
@@ -3872,50 +4476,130 @@ def pulseuser_profile_mustexist(username="pulseuser"):
     """
     if sys.platform.startswith("win"):
         # We define the sid
-        usersid = get_user_sid(username)
+        mu = ManageUser()
+        if mu.user_exists(username):
+            directorysearch=[]
+            infos = mu.get_user_info(username)
+            logging.getLogger().info("infos")
+            logging.getLogger().info(infos)
+            if not infos :
+                directorysearch = mu.get_dir("c:\\users")
+                mu.display_dir(directorysearch)
+                logging.getLogger().info("**** suppression compte username")
+                mu.delete_user(username)
+                logging.getLogger().info("**** creation user")
+                passwdchars = f"{string.hexdigits}-$#,_"
+                userpassword = "".join(random.sample(list(passwdchars), 14))
+                logging.getLogger().info(f"userpassword {userpassword}")
+                mu.create_user(username, password=userpassword)
+                logging.getLogger().info("eeeeeeeeeeeeeeeeeee11111111111")
+                profile=mu.create_profile(username,password=userpassword)
+                logging.getLogger().info("eeeeeeeeeeeeeeeeeee222222")
+                logging.getLogger().info(f"{profile}")
+                logging.getLogger().info("eeeeeeeeeeeeeeeeeee33333333")
+                directorysearch = mu.get_dir("c:\\users")
+                logging.getLogger().info("eeeeeeeeeeeeeeeeeee4444444")
+                mu.display_dir(directorysearch)
+                logging.getLogger().info("eeeeeeeeeeeeeeeeeee55555555")
 
-        regquery = (
-            'REG QUERY "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\%s.bak" /v "ProfileImagePath" /s'
-            % usersid
-        )
-        resultquery = simplecommand(encode_strconsole(regquery))
-        if resultquery["code"] == 0:
-            # There a .bak entry, we need to remove the it
-            regdel = (
-                'REG DELETE "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\%s.bak" /f'
-                % usersid
-            )
-            resultdel = simplecommand(encode_strconsole(regdel))
-            if resultdel["code"] == 0:
-                logging.getLogger().info("We correctly removed the backup profile")
-            else:
-                logging.getLogger().error("Error while deleting the backup profile")
-        else:
-            logging.getLogger().debug("There is not .bak entry, we have nothing to do")
+                return True,"llllllllllll"
+            return True,"zzzzzzzzzzzz"
+            logging.getLogger().info("Utilisateur Existant.")
+            logging.getLogger().info(infos)
+            # le directory c:\users
+            dirctory_profiles = os.path.dirname(infos['ProfilePath'])
+            # le nom du directory du profil de user
+            profilnamedir = os.path.basename(infos['ProfilePath'])
+            # if profilnamedir != username:
+            logging.getLogger().info(f"le profil {username} est corrompu {profilnamedir}")
+            # on supprime le profils
+            logging.getLogger().info(f"on supprime le profils {username}")
+            logging.getLogger().info("aaaaaaaaaaaaaaaaa")
+            directorysearch = mu.get_dir(dirctory_profiles)
 
-        userenvdll = ctypes.WinDLL("userenv.dll")
-        # Define profile path that is needed
-        defined_profilepath = getHomedrive()
-        # Get user profile as created on the machine
-        profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
-        if not profile_location or profile_location != defined_profilepath:
-            delete_profile(username)
-            ptr_profilepath = ctypes.create_unicode_buffer(260)
-            userenvdll.CreateProfile(
-                LPCWSTR(usersid), LPCWSTR(username), ptr_profilepath, 240
-            )
-            if (
-                os.path.normpath(ptr_profilepath.value).strip().lower()
-                == defined_profilepath
-            ):
-                msg = f"{username} profile created successfully at {ptr_profilepath.value}"
-                return True, msg
-            else:
-                msg = f"Error creating {username} profile at {ptr_profilepath.value}"
-                return False, msg
+            logging.getLogger().info("222222222222")
+            mu.display_dir(directorysearch)
+
+            logging.getLogger().info("333333333333333")
+
+
+
+            mu.delete_profile(username)
+
+            logging.getLogger().info("4444444444444444444")
+            # les repertoires on les nettoy
+            directorysearch = mu.get_dir(dirctory_profiles)
+
+            logging.getLogger().info("555555555555555555555")
+            mu.display_dir(directorysearch)
+
+            logging.getLogger().info("666666666666666666")
+            mu.cleanup_corrupted_profiles(username, directory_search, base_pathdirctory_profiles )
+
+            logging.getLogger().info("7777777777777777777777")
+            # on recre le profil
+            logging.getLogger().info(f"on recree le profils {username}")
+            profile=mu.create_profile(username)
+            logging.getLogger().info("8888888888888888888888888888888")
+            return True,"llllllllllll"
         else:
-            msg = f"{username} profile already exists at {profile_location}. Nothing to do."
-            return True, msg
+            logging.getLogger().info("Utilisateur inexistant.")
+
+        # delete_profile(username)
+
+        # usersid = get_user_sid(username)
+        # logging.getLogger().debug("usersid : {usersid}")
+        # regquery = (
+            # 'REG QUERY "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\%s.bak" /v "ProfileImagePath" /s'
+            # % usersid
+        # )
+        # resultquery = simplecommand(encode_strconsole(regquery))
+        # if resultquery["code"] == 0:
+            # # There a .bak entry, we need to remove the it
+            # regdel = (
+                # 'REG DELETE "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\%s.bak" /f'
+                # % usersid
+            # )
+            # resultdel = simplecommand(encode_strconsole(regdel))
+            # if resultdel["code"] == 0:
+                # logging.getLogger().info("We correctly removed the backup profile")
+            # else:
+                # logging.getLogger().error("Error while deleting the backup profile")
+        # else:
+            # logging.getLogger().debug("There is not .bak entry, we have nothing to do")
+
+
+
+
+
+        # userenvdll = ctypes.WinDLL("userenv.dll")
+        # # Define profile path that is needed
+        # defined_profilepath = getHomedrive()
+        # # Get user profile as created on the machine
+        # profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
+        # if not profile_location or profile_location != defined_profilepath:
+            # delete_profile(username)
+            # ptr_profilepath = ctypes.create_unicode_buffer(260)
+            # logging.debug(f"user sid {usersid}")
+            # logging.debug(f"username {username}")
+            # userenvdll.CreateProfile(
+                # LPCWSTR(usersid), LPCWSTR(username), ptr_profilepath, 240
+            # )
+            # if not ptr_profilepath.value:
+                # logging.error("CreateProfile did not return a profile path — creation failed.")
+                # return False, f"Error creating {username} profile (CreateProfile returned empty path)"
+            # if (
+                # os.path.normpath(ptr_profilepath.value).strip().lower()
+                # == defined_profilepath
+            # ):
+                # msg = f"{username} profile created successfully at {ptr_profilepath.value}"
+                # return True, msg
+            # else:
+                # msg = f"Error creating {username} profile at {ptr_profilepath.value}"
+                # return False, msg
+        # else:
+            # msg = f"{username} profile already exists at {profile_location}. Nothing to do."
+            # return True, msg
     elif sys.platform.startswith("linux"):
         try:
             uid = pwd.getpwnam(username).pw_uid
@@ -3939,7 +4623,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
     elif sys.platform.startswith("darwin"):
         try:
             uid = pwd.getpwnam(username).pw_uid
-            gid = pwd.getpwnam(username).pw_gid
+            gid = grp.getgrnam(username).gr_gid
             homedir = os.path.expanduser(f"~{username}")
         except Exception as e:
             msg = f"Error getting information for creating home folder for user {username}"
@@ -3951,7 +4635,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
         packagedir = os.path.join(homedir, "packages")
         if not os.path.isdir(packagedir):
             os.makedirs(packagedir, 0o764)
-        gidroot = grp.getgrnam("wheel").gr_gid
+        gidroot = grp.getgrnam("root").gr_gid
         os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
         msg = f"{username} profile created successfully at {homedir}"
@@ -3981,130 +4665,42 @@ def get_user_sid(username="pulseuser"):
         return False
 
 
-def get_profile_path_from_registry(sid):
-    """
-    Retourne le chemin réel du profil utilisateur depuis le registre Windows.
-
-    Cas gérés :
-      - Profil standard (SID)
-      - Profil temporaire (SID.bak)
-      - Absence de profil (retourne None)
-      - Expansion des variables (%SystemDrive%)
-
-    :param sid: SID de l'utilisateur
-    :return: Chemin absolu du profil (str) ou None
-    """
-    if not sid:
-        return None
-
-    # La "source de vérité" pour les profils Windows
-    profilelist_key = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList"
-
-    # On teste d'abord le SID standard, puis le SID.bak
-    for sid_key in (sid, sid + ".bak"):
-        try:
-            with winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                f"{profilelist_key}\\{sid_key}",
-            ) as key:
-
-                path, _ = winreg.QueryValueEx(key, "ProfileImagePath")
-                if not path:
-                    continue
-
-                # Expansion de variables d'environnement (%SystemDrive%, etc.)
-                path = os.path.expandvars(path)
-
-                return path
-
-        except FileNotFoundError:
-            continue
-        except OSError:
-            continue
-
-    # Aucun profil trouvé
-    return None
-
-
 def delete_profile(username="pulseuser"):
-    """
-    Supprime complètement un profil Windows quel que soit son emplacement
-    (C:\\Users, D:\\Users, etc.).
-
-    - Utilise ProfileImagePath comme source de vérité
-    - Supprime profils indexés (.DOMAIN, .000, etc.)
-    - Supprime profils temporaires (.bak)
-    - Nettoie registre + disque
-    """
-
-    if not sys.platform.startswith("win"):
-        return True
-
-    usersid = get_user_sid(username)
-    profile_paths = set()
-
-    # ------------------------------------------------------------
-    # 1) Récupération du chemin réel du profil (registre)
-    # ------------------------------------------------------------
-    if usersid:
-        path = get_profile_path_from_registry(usersid)
-        if path:
-            profile_paths.add(path)
-
-    # ------------------------------------------------------------
-    # 2) Détection profils indexés au même emplacement
-    #    Ex: D:\Users\user.DOMAIN
-    # ------------------------------------------------------------
-    for base_path in list(profile_paths):
-        parent = os.path.dirname(base_path)
-        base = os.path.basename(base_path).lower()
-
-        if not os.path.isdir(parent):
-            continue
-
-        for folder in os.listdir(parent):
-            if folder.lower().startswith(base + "."):
-                profile_paths.add(os.path.join(parent, folder))
-
-    # ------------------------------------------------------------
-    # 3) Fallback si aucun profil trouvé (ancien code)
-    # ------------------------------------------------------------
-    if not profile_paths:
-        fallback = getHomedrive(username)
-        if fallback:
-            profile_paths.add(fallback)
-
-    # ------------------------------------------------------------
-    # 4) Suppression des dossiers profils
-    # ------------------------------------------------------------
-    for path in profile_paths:
+    if sys.platform.startswith("win"):
+        # Delete profile folder in C:\Users if any
         try:
-            delete_folder_cmd = f'rd /s /q "{path}"'
+            delete_folder_cmd = 'rd /s /q "%s" ' % getHomedrive()
             result = simplecommand(encode_strconsole(delete_folder_cmd))
-
             if result["code"] == 0:
-                logger.debug(f"Deleted profile folder: {path}")
+                logger.debug("Deleted %s folder" % getHomedrive())
             else:
-                logger.error(f"Error deleting folder: {path}")
+                logger.error("Error deleting %s folder" % getHomedrive())
         except Exception as e:
-            logger.error(f"Exception deleting {path}: {e}")
-
-    # ------------------------------------------------------------
-    # 5) Suppression via l'API Windows (registre + cache)
-    # ------------------------------------------------------------
-    try:
-        if usersid:
-            userenvdll = ctypes.WinDLL("userenv.dll")
-            res = userenvdll.DeleteProfileA(LPCSTR(usersid), None, None)
-
-            if res == 1:
-                logger.debug(f"{username} profile deleted via DeleteProfile API.")
-            else:
-                logger.error(f"DeleteProfile API failed for {username}: {res}")
-    except Exception as e:
-        logger.error(f"DeleteProfile API exception for {username}: {e}")
-
+            pass
+        # Delete profile
+        userenvdll = ctypes.WinDLL("userenv.dll")
+        usersid = get_user_sid(username)
+        delete_profile_result = userenvdll.DeleteProfileA(LPCSTR(usersid))
+        if delete_profile_result == 0:
+            logger.debug("%s profile deleted." % username)
+        else:
+            logger.error(
+                "Error deleting %s profile: %s" % (username, delete_profile_result)
+            )
     return True
+
+
+def delete_profile(name_user_profile="pulseuser"):
+    result={}
+    try:
+        manager = ManageUser()
+        # Activer le contrôle de dureté du mot de passe
+        # manager.controle_durete_mot_de_passe = True
+        result = manager.delete_profile(name_user_profile)
+        logging.getLogger().debug(f"delete profile utilisateur {name_user_profile} : {result}")
+    except Exception as e:
+        logging.getLogger().error(f"Une erreur inattendue s'est produite : {str(e)}")
+    print("delete_profile utilisateur :", result)
 
 def create_idrsa_on_client(username="pulseuser", key=""):
     """
@@ -4112,27 +4708,18 @@ def create_idrsa_on_client(username="pulseuser", key=""):
     """
     if sys.platform.startswith("win"):
         id_rsa_path = os.path.join(getHomedrive(), ".ssh", "id_rsa")
-        delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
-        simplecommand(encode_strconsole(delete_keyfile_cmd))
     else:
-        if sys.platform.startswith("darwin"):
-            username = "medullauser"
         id_rsa_path = os.path.join(os.path.expanduser(f"~{username}"), ".ssh", "id_rsa")
-        if os.path.isfile(id_rsa_path):
-            os.remove(id_rsa_path)
-    logger.info(f"Creating id_rsa file in {id_rsa_path}")
+    delete_keyfile_cmd = f'del /f /q "{id_rsa_path}" '
+    result = simplecommand(encode_strconsole(delete_keyfile_cmd))
+    logger.debug(f"Creating id_rsa file in {id_rsa_path}")
     if not os.path.isdir(os.path.dirname(id_rsa_path)):
         os.makedirs(os.path.dirname(id_rsa_path), 0o700)
     file_put_contents(id_rsa_path, key)
-    if not os.path.isfile(id_rsa_path):
-        msg = f"Error: file_put_contents failed to create {id_rsa_path}"
-        logger.error(msg)
-        return False, msg
     result, logs = apply_perms_sshkey(id_rsa_path, True)
     if result is False:
         return False, logs
     msg = f"Key {id_rsa_path} successfully created"
-    logger.info(msg)
     return True, msg
 
 
@@ -4173,13 +4760,10 @@ def apply_perms_sshkey(path, private=True):
             msg = f"Error setting permissions on {path} for user {user}: {str(e)}"
             return False, msg
     else:
-        # The owner must be pulseuser (medullauser on macOS)
-        username = "medullauser" if sys.platform.startswith("darwin") else "pulseuser"
+        # The owner must be pulseuser
+        username = "pulseuser"
         uid = pwd.getpwnam(username).pw_uid
-        if sys.platform.startswith("darwin"):
-            gid = pwd.getpwnam(username).pw_gid
-        else:
-            gid = grp.getgrnam(username).gr_gid
+        gid = grp.getgrnam(username).gr_gid
 
         try:
             os.chown(os.path.dirname(path), uid, gid)
@@ -4337,7 +4921,7 @@ class geolocalisation_agent:
     def __init__(
         self,
         typeuser="public",
-        geolocalisation=False,
+        geolocalisation=True,
         ip_public=None,
         strlistgeoserveur="",
     ):
@@ -4610,8 +5194,7 @@ class downloadfile:
         except (
             BaseException
         ):  # handle other exceptions such as attribute errors skipcq: FLK-E722
-            # return False, "Unexpected error: %s", sys.exc_info()[0]
-            return False, f"Unexpected error: {sys.exc_info()[0]}"
+            return False, "Unexpected error: %s", sys.exc_info()[0]
 
 
 def minifyjsonstring(strjson):
@@ -4647,214 +5230,35 @@ def minifyjsonstring(strjson):
     return newjson
 
 
-def serialnumbermachine() -> str:
-    """
-    Détermine le serial/UUID machine avec la stratégie suivante (Windows/Linux/macOS):
-
-    1. Cache local prioritaire:
-       - Lit `INFOSTMP/serialnumberserie.txt`.
-       - Si la valeur semble valide, elle est renvoyée immédiatement.
-
-    2. Inventaire XML agent:
-       - Si un inventaire XML est disponible (ex: `inventory.txt` ou `inventory.xml`),
-         la fonction tente d'extraire un identifiant depuis les balises usuelles
-         (`SSN`, `UUID`, `HARDUUID`, `SERIALNUMBER`, `SERIAL`).
-       - Si un identifiant valide est trouvé, il est écrit dans
-         `INFOSTMP/serialnumberserie.txt` puis renvoyé.
-
-    3. Fallback système (logique historique):
-       - Windows: WMI `Win32_ComputerSystemProduct.UUID`.
-       - Linux: `/sys/class/dmi/id/product_uuid`, puis `dmidecode -s system-uuid`,
-         puis `/etc/machine-id` en dernier recours.
-       - macOS: `ioreg` pour `IOPlatformUUID`.
-
-    4. Si une valeur valide est obtenue via fallback, elle est mise en cache dans
-       `INFOSTMP/serialnumberserie.txt`.
-
-    Returns:
-        str: Le serial/UUID machine, ou une chaîne vide si aucun identifiant fiable n'est trouvé.
-    """
+def serialnumbermachine():
     serial_uuid_machine = ""
-    serial_cache_file = os.path.join(Setdirectorytempinfo(), "serialnumberserie.txt")
-
-    def _normalize(value):
-        return str(value or "").strip()
-
-    def _looks_uuid_like(value):
-        txt = _normalize(value)
-        if txt == "":
-            return False
-        return bool(
-            re.match(
-                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-                txt,
-            )
-        )
-
-    def _looks_machine_id_like(value):
-        txt = _normalize(value)
-        return bool(re.match(r"^[0-9a-fA-F]{32}$", txt))
-
-    def _is_valid_serial(value):
-        txt = _normalize(value)
-        if txt == "":
-            return False
-        lowered = txt.lower()
-        if lowered in (
-            "none",
-            "unknown",
-            "not specified",
-            "to be filled by o.e.m.",
-            "00000000-0000-0000-0000-000000000000",
-        ):
-            return False
-        return _looks_uuid_like(txt) or _looks_machine_id_like(txt)
-
-    def _read_cached_serial():
-        if not os.path.isfile(serial_cache_file):
-            return ""
-        try:
-            value = file_get_contents(serial_cache_file).strip()
-            return value if _is_valid_serial(value) else ""
-        except Exception:
-            return ""
-
-    def _save_cached_serial(value):
-        if not _is_valid_serial(value):
-            return
-        try:
-            if not os.path.isdir(os.path.dirname(serial_cache_file)):
-                os.makedirs(os.path.dirname(serial_cache_file), 0o751)
-            file_put_contents(serial_cache_file, _normalize(value) + "\n")
-        except Exception:
-            logger.debug("Impossible d'ecrire le cache serialnumberserie.txt", exc_info=True)
-
-    def _read_serial_from_inventory_xml():
-        inventory_candidates = []
-        if sys.platform.startswith("linux"):
-            inventory_candidates.extend(
-                [
-                    os.path.join("/tmp", "inventory.txt"),
-                    os.path.join("/tmp", "inventory.xml"),
-                    os.path.join("/tmp", "inventory", "inventory.txt"),
-                    os.path.join("/tmp", "inventory", "inventory.xml"),
-                ]
-            )
-        elif sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            inventory_candidates.extend(
-                [
-                    os.path.join(pulseTempDir(), "inventory.txt"),
-                    os.path.join(pulseTempDir(), "inventory.xml"),
-                ]
-            )
-
-        xml_tag_candidates = ["SSN", "UUID", "HARDUUID", "SERIALNUMBER", "SERIAL"]
-
-        for inventory_path in inventory_candidates:
-            if not os.path.isfile(inventory_path):
-                continue
-            try:
-                xml_data = file_get_contents(inventory_path)
-            except Exception:
-                continue
-
-            # Extraction simple par regex pour rester tolerant aux XML imparfaits.
-            for tag in xml_tag_candidates:
-                pattern = r"<%s>\s*([^<]+?)\s*</%s>" % (tag, tag)
-                matches = re.findall(pattern, xml_data, flags=re.IGNORECASE)
-                for candidate in matches:
-                    if _is_valid_serial(candidate):
-                        return _normalize(candidate)
-        return ""
-
-    cached_serial = _read_cached_serial()
-    if cached_serial:
-        return cached_serial
-
-    xml_serial = _read_serial_from_inventory_xml()
-    if xml_serial:
-        _save_cached_serial(xml_serial)
-        return xml_serial
-
-    def _is_invalid_uuid(value):
-        if not value:
-            return True
-        lowered = str(value).strip().lower()
-        return lowered in (
-            "",
-            "none",
-            "unknown",
-            "not specified",
-            "to be filled by o.e.m.",
-            "00000000-0000-0000-0000-000000000000",
-        )
     try:
         if sys.platform.startswith("win"):
-            result = subprocess.check_output(
-                ["powershell", "-Command",
-                 "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"],
-                stderr=subprocess.DEVNULL
-            ).decode("utf-8").strip()
-            serial_uuid_machine = result if not _is_invalid_uuid(result) else ""
+            result = simplecommand("wmic csproduct get uuid")
+            if result["code"] == 0 and result["result"]:
+                serial_uuid_machine = (
+                    "".join(result["result"]).replace("UUID", "").strip()
+                )
         elif sys.platform.startswith("linux"):
-            # Source prioritaire sous Linux: lisible sans privilege root.
-            sysfs_uuid_path = "/sys/class/dmi/id/product_uuid"
-            if os.path.isfile(sysfs_uuid_path):
-                try:
-                    with open(sysfs_uuid_path, "r", encoding="utf-8") as fh:
-                        value = fh.read().strip()
-                    if not _is_invalid_uuid(value):
-                        serial_uuid_machine = value
-                except Exception:
-                    pass
-
-            # Fallback historique via dmidecode.
-            if _is_invalid_uuid(serial_uuid_machine):
-                dmidecode_paths = ["/usr/sbin/dmidecode", "/sbin/dmidecode", "dmidecode"]
-                for path in dmidecode_paths:
-                    try:
-                        result = subprocess.run(
-                            [path, "-s", "system-uuid"],
-                            capture_output=True,
-                            text=True,
-                        )
-                        if result.returncode == 0 and not _is_invalid_uuid(result.stdout):
-                            serial_uuid_machine = result.stdout.strip()
-                            break
-                    except FileNotFoundError:
-                        continue
-
-            # Dernier recours pour ne pas renvoyer vide sur les environnements limites.
-            if _is_invalid_uuid(serial_uuid_machine):
-                machine_id_path = "/etc/machine-id"
-                if os.path.isfile(machine_id_path):
-                    try:
-                        with open(machine_id_path, "r", encoding="utf-8") as fh:
-                            value = fh.read().strip()
-                        if not _is_invalid_uuid(value):
-                            serial_uuid_machine = value
-                    except Exception:
-                        pass
+            result = simplecommand("dmidecode -s system-uuid")
+            if result["code"] == 0 and result["result"]:
+                serial_uuid_machine = "".join(result["result"]).strip()
         elif sys.platform.startswith("darwin"):
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
-            result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True
-            )
-            if result.returncode == 0 and result.stdout and not _is_invalid_uuid(result.stdout):
-                serial_uuid_machine = result.stdout.replace("UUID", "").strip()
+            result = simplecommand(cmd)
+            if result["code"] == 0 and result["result"]:
+                serial_uuid_machine = (
+                    "".join(result["result"]).replace("UUID", "").strip()
+                )
         else:
             logger.warning(
-                f"La fonction serialnumbermachine n'est pas implémentée pour votre OS : {sys.platform}"
+                f"the serialnumbermachine function is not implemented for your os: {sys.platform}"
             )
     except Exception:
         logger.error(
-            "Une erreur est survenue lors de l'exécution de la fonction serialnumbermachine :\n%s",
-            traceback.format_exc()
+            "An error occured while using the serialnumbermachine function \n we got the error below \n%s"
+            % (traceback.format_exc())
         )
-
-    if _is_valid_serial(serial_uuid_machine):
-        _save_cached_serial(serial_uuid_machine)
-
     return serial_uuid_machine
 
 
@@ -5327,79 +5731,13 @@ def powerschellscript1ps1(namescript):
     return obj
 
 
-
-    def get_system_locale_linux():
-        """
-        Renvoie la locale actuelle du système, quelque soit la distribution Linux.
-
-        Returns:
-            str: Code de la locale actuelle (ex: 'fr_FR.UTF-8').
-                Retourne 'C' ou 'POSIX' si aucune locale n'est définie.
-        """
-        if sys.platform.startswith("linux"):
-            # 1. Vérifier la variable d'environnement LANG
-            lang = os.environ.get('LANG')
-            if lang:
-                return lang
-
-            # 2. Vérifier la variable d'environnement LC_ALL
-            lc_all = os.environ.get('LC_ALL')
-            if lc_all:
-                return lc_all
-
-            # 3. Vérifier les fichiers de configuration des locales
-            locale_files = [
-                '/etc/default/locale',      # Debian/Ubuntu
-                '/etc/locale.conf',          # Arch Linux, CentOS, Fedora, openSUSE
-                '/etc/sysconfig/language',   # openSUSE (ancienne méthode)
-                '/etc/environment',          # Certaines distributions
-            ]
-
-            for file_path in locale_files:
-                if os.path.exists(file_path):
-                    try:
-                        with open(file_path, 'r') as file:
-                            for line in file:
-                                line = line.strip()
-                                if line.startswith(('LANG=', 'LC_ALL=')):
-                                    locale = line.split('=', 1)[1].strip().strip('"')
-                                    return locale
-                    except Exception:
-                        continue
-
-            # 4. Utiliser la commande `locale` pour obtenir la locale
-            try:
-                result = subprocess.run(['locale', 'LANG'], capture_output=True, text=True, check=True)
-                lang = result.stdout.strip().split('=')[1].strip('"')
-                if lang:
-                    return lang
-            except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
-                pass
-
-            # 5. Utiliser `localectl` si disponible
-            try:
-                result = subprocess.run(['localectl', 'status'], capture_output=True, text=True, check=True)
-                for line in result.stdout.splitlines():
-                    if 'System Locale:' in line:
-                        lang = line.split(':')[1].strip()
-                        if lang != 'n/a':
-                            return lang
-            except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
-                pass
-
-            # Si aucune locale n'est trouvée, retourner 'C' (locale par défaut)
-            return 'C'
-
 class offline_search_kb:
     def __init__(self):
         self.info_package = {
             "history_package_uuid": [],
             "version_net": {},
             "kb_installed": [],
-            "kb_list_history": "()",
-            "kb_list_history_windows_update": "()",
             "defender": {},
-            "system_center_endpoint_protection": {},
             "windows_disk_encryption": [],
             "version_edge": "",
             "infobuild": {},
@@ -5449,24 +5787,13 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
-            self.info_package["system_center_endpoint_protection"] = self.search_scep_info()
-        except Exception:
-            logger.error("\n%s" % (traceback.format_exc()))
-        try:
             self.info_package["windows_disk_encryption"] = self.search_windows_disk_encryption_info()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
             searchkb = self.searchpackage()
-            searchkb = self._merge_defender_kb_into_installed(searchkb, self.info_package.get("defender", {}))
             self.info_package["kb_installed"] = searchkb
             self.info_package["kb_list"] = self.compact_kb(searchkb)
-            self.info_package["kb_list_history"] = self.compact_kb_with_dates(searchkb)
-            history_kb = [
-                item for item in searchkb
-                if str(item.get("InstalledBy", "") or "").strip() == "Windows Update History"
-            ]
-            self.info_package["kb_list_history_windows_update"] = self.compact_kb_with_dates(history_kb)
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
@@ -5474,32 +5801,7 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
-            json_output_file = os.path.join(
-                medullaPath(),
-                "var",
-                "log",
-                "windows11_compatibility_report.json",
-            )
-            if os.path.isfile(json_output_file):
-                try:
-                    with open(json_output_file, "r", encoding="utf-8") as report_file:
-                        win11_payload = json.load(report_file)
-                    if isinstance(win11_payload, dict):
-                        self.info_package["win11_compatibility"] = win11_payload
-                    else:
-                        logger.warning(
-                            "windows11_compatibility_report.json invalide (type=%s), fallback check_windows11_compatibility",
-                            type(win11_payload).__name__,
-                        )
-                        self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
-                except Exception as e:
-                    logger.warning(
-                        "Erreur de lecture windows11_compatibility_report.json (%s), fallback check_windows11_compatibility",
-                        e,
-                    )
-                    self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
-            else:
-                self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+            self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -5542,196 +5844,6 @@ class offline_search_kb:
             compactlist.append(t["HotFixID"][2:])
         return "(" + ",".join(compactlist) + ")"
 
-    def compact_kb_with_dates(self, listkb):
-        compactlist = []
-        for t in listkb:
-            hotfix = str(t.get("HotFixID", "") or "").strip()
-            if hotfix.startswith("KB"):
-                hotfix = hotfix[2:]
-            installed_on = str(t.get("InstalledOn", "") or "").strip()
-            if hotfix:
-                compactlist.append(f"[{hotfix},{installed_on}]")
-        return "(" + ",".join(compactlist) + ")"
-
-    def _convert_ms_json_date_to_mdy(self, value):
-        """Convertit /Date(1776367799000)/ en M/D/YYYY pour rester coherent avec kb_installed."""
-        raw = str(value or "").strip()
-        if not raw:
-            return ""
-
-        match = re.search(r"/Date\((\d+)\)/", raw)
-        if not match:
-            return raw
-
-        try:
-            epoch_ms = int(match.group(1))
-            dt_obj = datetime.fromtimestamp(epoch_ms / 1000)
-            return f"{dt_obj.month}/{dt_obj.day}/{dt_obj.year}"
-        except Exception:
-            return raw
-
-    def _merge_defender_kb_into_installed(self, installed_kb, defender_info):
-        """Ajoute les KB presentes dans le bloc Defender au format kb_installed si absentes."""
-        merged = list(installed_kb or [])
-        existing_hotfixes = {
-            str(item.get("HotFixID", "") or "").strip().upper()
-            for item in merged
-            if str(item.get("HotFixID", "") or "").strip()
-        }
-
-        for key in ("latest_security_intelligence_update", "latest_platform_update"):
-            update_info = defender_info.get(key, {}) if isinstance(defender_info, dict) else {}
-            if not isinstance(update_info, dict):
-                continue
-
-            kb_field = str(update_info.get("KB", "") or "")
-            if not kb_field:
-                continue
-
-            installed_on = self._convert_ms_json_date_to_mdy(update_info.get("Date", ""))
-            kb_numbers = re.findall(r"\d+", kb_field)
-            for kb_number in kb_numbers:
-                hotfix_id = f"KB{kb_number}"
-                hotfix_key = hotfix_id.upper()
-                if hotfix_key in existing_hotfixes:
-                    continue
-
-                merged.append(
-                    {
-                        "description": "Update",
-                        "HotFixID": hotfix_id,
-                        "InstalledBy": "Windows Update History",
-                        "InstalledOn": installed_on,
-                    }
-                )
-                existing_hotfixes.add(hotfix_key)
-
-        return merged
-
-    def _sanitize_text_value(self, value):
-        """Normalize text payloads and repair common UTF-8/Latin-1 mojibake."""
-        text_value = str(value or "").strip()
-        if not text_value:
-            return ""
-
-        if "Ã" in text_value or "â" in text_value:
-            try:
-                repaired = text_value.encode("latin-1").decode("utf-8")
-                if repaired:
-                    return repaired
-            except Exception:
-                pass
-
-        return text_value
-
-    def _normalize_to_ascii(self, value):
-        """
-        Remove accents, diacritics and common typographic characters from text.
-        - Accented letters: é è ê à ç ü -> e e e a c u
-        - En dash / em dash (U+2013, U+2014) -> hyphen -
-        - Non-breaking space (U+00A0) -> regular space
-        - Thin space, narrow no-break space (U+202F, U+2009) -> regular space
-        """
-        text_value = self._sanitize_text_value(value)
-        if not text_value:
-            return ""
-
-        try:
-            # Replace typographic characters before NFD decomposition
-            replacements = {
-                "\u2013": "-",   # en dash -> hyphen
-                "\u2014": "-",   # em dash -> hyphen
-                "\u00a0": " ",   # non-breaking space -> space
-                "\u202f": " ",   # narrow no-break space -> space
-                "\u2009": " ",   # thin space -> space
-                "\u2026": "...", # ellipsis -> three dots
-            }
-            for char, replacement in replacements.items():
-                text_value = text_value.replace(char, replacement)
-
-            # Normalize to NFD (decomposed form) then filter out combining marks (Mn)
-            nfd = unicodedata.normalize("NFD", text_value)
-            return "".join(c for c in nfd if unicodedata.category(c) != "Mn")
-        except Exception:
-            return text_value
-
-    def _normalize_installed_by(self, value):
-        """Return a canonical English principal for common local Windows accounts."""
-        actor = self._sanitize_text_value(value).upper()
-        if not actor:
-            return ""
-
-        if "WINDOWS UPDATE HISTORY" in actor:
-            return "Windows Update History"
-
-        if "SYSTEM" in actor or "SYST" in actor:
-            return "NT AUTHORITY\\SYSTEM"
-        if "LOCAL SERVICE" in actor or "SERVICE LOCAL" in actor:
-            return "NT AUTHORITY\\LOCAL SERVICE"
-        if "NETWORK SERVICE" in actor or "SERVICE RESEAU" in actor or "SERVICE R\u00c9SEAU" in actor:
-            return "NT AUTHORITY\\NETWORK SERVICE"
-
-        return self._sanitize_text_value(value)
-
-    def _normalize_windows_platform(self, platform_value):
-        """Return canonical English platform labels independent of OS locale."""
-        raw_platform = self._sanitize_text_value(platform_value)
-        lowered = raw_platform.lower()
-
-        if "windows 11" in lowered:
-            return "microsoft windows 11", "windows 11"
-        if "windows 10" in lowered:
-            return "microsoft windows 10", "windows 10"
-        if "windows server" in lowered or "serveur" in lowered:
-            return "microsoft windows server", "microsoft windows server"
-
-        return lowered, lowered
-
-    def _normalize_os_configuration(self, value):
-        """Return canonical English OS configuration labels."""
-        raw_value = self._sanitize_text_value(value)
-        lowered = raw_value.lower()
-
-        if "station de travail autonome" in lowered or "standalone workstation" in lowered:
-            return "Standalone Workstation"
-        if "member server" in lowered or "serveur membre" in lowered:
-            return "Member Server"
-        if "domain controller" in lowered or "controleur de domaine" in lowered:
-            return "Domain Controller"
-
-        return raw_value
-
-    def _normalize_system_locale(self, value):
-        """Return canonical locale code when possible (example: fr-FR)."""
-        raw_value = self._sanitize_text_value(value)
-
-        locale_match = re.search(r"\b[a-z]{2}-[A-Z]{2}\b", raw_value)
-        if locale_match:
-            return locale_match.group(0)
-
-        language_match = re.match(r"^([a-zA-Z]{2})\s*;", raw_value)
-        if language_match:
-            lang = language_match.group(1).lower()
-            fallback_regions = {
-                "fr": "FR",
-                "en": "US",
-                "de": "DE",
-                "es": "ES",
-                "it": "IT",
-                "pt": "PT",
-            }
-            return f"{lang}-{fallback_regions.get(lang, 'XX')}"
-
-        return raw_value
-
-    def _normalize_time_zone(self, value):
-        """Return canonical UTC offset when present (example: UTC+01:00)."""
-        raw_value = self._sanitize_text_value(value)
-        offset_match = re.search(r"UTC[+-]\d{2}:\d{2}", raw_value)
-        if offset_match:
-            return offset_match.group(0)
-        return raw_value
-
     def _normalize_hotfix_entries(self, raw_entries):
         if isinstance(raw_entries, dict):
             raw_entries = [raw_entries]
@@ -5745,11 +5857,9 @@ class offline_search_kb:
                 continue
             normalized.append(
                 {
-                    "description": self._sanitize_text_value(
-                        kb.get("Description", "") or kb.get("description", "") or ""
-                    ),
+                    "description": str(kb.get("Description", "") or kb.get("description", "") or "").strip(),
                     "HotFixID": hotfix_id,
-                    "InstalledBy": self._normalize_installed_by(kb.get("InstalledBy", "") or ""),
+                    "InstalledBy": str(kb.get("InstalledBy", "") or "").strip(),
                     "InstalledOn": str(kb.get("InstalledOn", "") or "").strip(),
                 }
             )
@@ -5761,7 +5871,6 @@ class offline_search_kb:
 
         ps_targets = ", ".join("'%s'" % kb for kb in hotfix_ids)
         ps_command = (
-            "$OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); "
             "$ErrorActionPreference = 'SilentlyContinue'; "
             "try { "
             f"$targets = @({ps_targets}); "
@@ -5772,7 +5881,7 @@ class offline_search_kb:
             "$results = foreach ($target in $targets) { "
             "$regex = [regex]::Escape($target); "
             "$hit = $history | Where-Object { $_.Title -match $regex } | Sort-Object Date -Descending | Select-Object -First 1; "
-            "if ($hit) { [pscustomobject]@{ HotFixID = $target; Description = 'Update'; InstalledBy = 'Windows Update History'; InstalledOn = $hit.Date.ToString('M/d/yyyy') } } "
+            "if ($hit) { [pscustomobject]@{ HotFixID = $target; Description = if ([string]::IsNullOrWhiteSpace($hit.Description)) { 'Update' } else { $hit.Description }; InstalledBy = 'Windows Update History'; InstalledOn = $hit.Date.ToString('M/d/yyyy') } } "
             "}; "
             "$results | ConvertTo-Json -Compress "
             "} catch { @() | ConvertTo-Json -Compress }"
@@ -5783,8 +5892,6 @@ class offline_search_kb:
                 ["powershell", "-NoProfile", "-Command", ps_command],
                 capture_output=True,
                 text=True,
-                encoding="utf-8",
-                errors="replace",
             )
             output = (result.stdout or "").strip()
             if not output:
@@ -5800,18 +5907,9 @@ class offline_search_kb:
 
         try:
             result = subprocess.run(
-                [
-                    "powershell",
-                    "-NoProfile",
-                    "-NonInteractive",
-                    "-Command",
-                    "$OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); "
-                    + ps_command,
-                ],
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_command],
                 capture_output=True,
                 text=True,
-                encoding="utf-8",
-                errors="replace",
                 timeout=timeout,
             )
             output = (result.stdout or "").strip()
@@ -5857,120 +5955,19 @@ class offline_search_kb:
             "$searcher = $session.CreateUpdateSearcher(); "
             "$total = $searcher.GetTotalHistoryCount(); "
             "$history = if ($total -gt 0) { $searcher.QueryHistory(0, [Math]::Min($total, 200)) } else { @() }; "
-            "$security = $history | Where-Object { $_.Title -match '2267602' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
-            "$platform = $history | Where-Object { $_.Title -match '4052623|5007651' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+            "$security = $history | Where-Object { $_.Title -match '2267602|Security Intelligence|Defender Antivirus' -or $_.Title -match 'sélection disjointe' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
+            "$platform = $history | Where-Object { $_.Title -match '5007651|Windows Security platform|Defender Antivirus platform' -or $_.Title -match 'plateforme anti-programme malveillant' } | Sort-Object Date -Descending | Select-Object -First 1 Date, Title; "
             "[pscustomobject]@{ latest_security_intelligence_update = $security; latest_platform_update = $platform } | ConvertTo-Json -Compress -Depth 4 "
             "} catch { [pscustomobject]@{ latest_security_intelligence_update = $null; latest_platform_update = $null } | ConvertTo-Json -Compress -Depth 4 }"
         )
         history_payload = self._run_powershell_json(history_command)
         if isinstance(history_payload, dict):
             if isinstance(history_payload.get("latest_security_intelligence_update"), dict):
-                security_update = history_payload["latest_security_intelligence_update"]
-                defender_info["latest_security_intelligence_update"] = {
-                    "KB": "2267602",
-                    "Date": security_update.get("Date"),
-                    "Title": "Security intelligence update (KB2267602)",
-                    "TitleRaw": self._normalize_to_ascii(security_update.get("Title", "")),
-                }
+                defender_info["latest_security_intelligence_update"] = history_payload["latest_security_intelligence_update"]
             if isinstance(history_payload.get("latest_platform_update"), dict):
-                platform_update = history_payload["latest_platform_update"]
-                defender_info["latest_platform_update"] = {
-                    "KB": "4052623/5007651",
-                    "Date": platform_update.get("Date"),
-                    "Title": "Defender platform update (KB4052623/KB5007651)",
-                    "TitleRaw": self._normalize_to_ascii(platform_update.get("Title", "")),
-                }
+                defender_info["latest_platform_update"] = history_payload["latest_platform_update"]
 
         return defender_info
-
-    def search_scep_info(self):
-        """Detecte la presence de SCEP/Endpoint Protection via SecurityCenter, registre, uninstall et KB2461484."""
-        scep_info = {
-            "detected": False,
-            "sources": [],
-            "antivirus_products": [],
-            "registry_keys": [],
-            "uninstall_entries": [],
-            "kb2461484_hotfix": False,
-            "kb2461484_wu_history": False,
-        }
-
-        if not sys.platform.startswith("win"):
-            return scep_info
-
-        detection_command = (
-            "$ErrorActionPreference = 'SilentlyContinue'; "
-            "try { "
-            "$result = [ordered]@{ "
-            "antivirus_products = @(); "
-            "scep_in_security_center = $false; "
-            "registry_keys = @(); "
-            "uninstall_entries = @(); "
-            "kb2461484_hotfix = $false; "
-            "kb2461484_wu_history = $false "
-            "}; "
-            "try { "
-            "$av = Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntivirusProduct; "
-            "if ($av) { "
-            "$result.antivirus_products = @($av | Select-Object -ExpandProperty displayName); "
-            "if ($result.antivirus_products | Where-Object { $_ -match 'System Center Endpoint Protection|Endpoint Protection|Microsoft Endpoint Protection' }) { "
-            "$result.scep_in_security_center = $true "
-            "} "
-            "} "
-            "} catch {} ; "
-            "$keys = @(" 
-            "'HKLM:\\SOFTWARE\\Microsoft\\System Center Endpoint Protection', "
-            "'HKLM:\\SOFTWARE\\Microsoft\\Microsoft Antimalware', "
-            "'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\System Center Endpoint Protection'" 
-            "); "
-            "foreach ($k in $keys) { if (Test-Path $k) { $result.registry_keys += $k } }; "
-            "$uninstall_paths = @(" 
-            "'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', "
-            "'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'" 
-            "); "
-            "foreach ($p in $uninstall_paths) { "
-            "try { "
-            "$apps = Get-ItemProperty $p | Where-Object { $_.DisplayName -match 'System Center Endpoint Protection|Microsoft Endpoint Protection' } | "
-            "Select-Object DisplayName, DisplayVersion, Publisher; "
-            "if ($apps) { $result.uninstall_entries += @($apps) } "
-            "} catch {} "
-            "}; "
-            "try { if (Get-HotFix -Id KB2461484) { $result.kb2461484_hotfix = $true } } catch {}; "
-            "try { "
-            "$session = New-Object -ComObject Microsoft.Update.Session; "
-            "$searcher = $session.CreateUpdateSearcher(); "
-            "$total = $searcher.GetTotalHistoryCount(); "
-            "$history = if ($total -gt 0) { $searcher.QueryHistory(0, [Math]::Min($total, 300)) } else { @() }; "
-            "$hit = $history | Where-Object { $_.Title -match 'KB2461484' } | Select-Object -First 1; "
-            "if ($hit) { $result.kb2461484_wu_history = $true } "
-            "} catch {}; "
-            "$result | ConvertTo-Json -Compress -Depth 6 "
-            "} catch { @{} | ConvertTo-Json -Compress }"
-        )
-
-        payload = self._run_powershell_json(detection_command, timeout=45)
-        if not isinstance(payload, dict):
-            return scep_info
-
-        scep_info["antivirus_products"] = payload.get("antivirus_products", []) or []
-        scep_info["registry_keys"] = payload.get("registry_keys", []) or []
-        scep_info["uninstall_entries"] = payload.get("uninstall_entries", []) or []
-        scep_info["kb2461484_hotfix"] = bool(payload.get("kb2461484_hotfix", False))
-        scep_info["kb2461484_wu_history"] = bool(payload.get("kb2461484_wu_history", False))
-
-        if bool(payload.get("scep_in_security_center", False)):
-            scep_info["sources"].append("security_center")
-        if scep_info["registry_keys"]:
-            scep_info["sources"].append("registry")
-        if scep_info["uninstall_entries"]:
-            scep_info["sources"].append("uninstall")
-        if scep_info["kb2461484_hotfix"]:
-            scep_info["sources"].append("hotfix")
-        if scep_info["kb2461484_wu_history"]:
-            scep_info["sources"].append("wu_history")
-
-        scep_info["detected"] = len(scep_info["sources"]) > 0
-        return scep_info
 
     def search_windows_disk_encryption_info(self):
         if not sys.platform.startswith("win"):
@@ -6008,35 +6005,21 @@ class offline_search_kb:
         return []
 
     def searchpackage(self):
-        """
-        Récupère la liste des KB installés sur Windows
-        Retour : liste de dictionnaires avec
-            - description
-            - HotFixID
-            - InstalledBy
-            - InstalledOn (M/d/yyyy)
-        """
         endresult = []
-
         if sys.platform.startswith("win"):
             try:
-                # Commande PowerShell avec date universelle M/d/yyyy
                 ps_command = (
                     'Get-HotFix | '
                     'Select-Object HotFixID, Description, InstalledBy, '
                     '@{Name="InstalledOn";Expression={$_.InstalledOn.ToString("M/d/yyyy")}} | '
                     'ConvertTo-Json'
                 )
-
                 result = subprocess.run(
-                    ["powershell", "-Command", ps_command],
+                    ["powershell", "-NoProfile", "-Command", ps_command],
                     capture_output=True,
-                    text=True
+                    text=True,
                 )
-
                 output = result.stdout
-
-                # Conversion JSON en liste de dict
                 try:
                     kb_list = json.loads(output)
                 except json.JSONDecodeError:
@@ -6044,18 +6027,15 @@ class offline_search_kb:
 
                 endresult.extend(self._normalize_hotfix_entries(kb_list))
 
-                # Certaines KB Defender/SCEP n'apparaissent pas toujours dans Get-HotFix.
                 missing_hotfix_ids = [
                     hotfix_id
-                    for hotfix_id in ("KB5007651", "KB4052623", "KB2267602", "KB2461484")
+                    for hotfix_id in ("KB5007651",)
                     if hotfix_id not in {item["HotFixID"] for item in endresult}
                 ]
                 endresult.extend(self._search_hotfixes_in_update_history(missing_hotfix_ids))
-
             except Exception as e:
                 logger.error("searchpackage : %s" % e)
                 logger.error(traceback.format_exc())
-
         return endresult
 
     def search_malicious_software_removal_tool(self):
@@ -6120,8 +6100,7 @@ class offline_search_kb:
                 )
                 if isinstance(history_payload, dict) and history_payload.get("Date"):
                     result_cmd["UpdateDate"] = str(history_payload.get("Date", ""))
-                    result_cmd["UpdateTitle"] = "Windows Malicious Software Removal Tool (KB890830)"
-                    result_cmd["UpdateTitleRaw"] = self._normalize_to_ascii(history_payload.get("Title", ""))
+                    result_cmd["UpdateTitle"] = str(history_payload.get("Title", ""))
                     result_cmd["UpdateDateSource"] = "Windows Update History"
                 else:
                     file_payload = self._run_powershell_json(
@@ -6246,10 +6225,10 @@ class offline_search_kb:
             if line:
                 for sline in line:
                     lcmd = [x for x in sline.split(" ") if x != ""]
+                    logging.getLogger().error(lcmd)
                     if len(lcmd) == 3:
                         return lcmd[2]
         return ""
-
 
     def search_system_info_reg(self):
         result_cmd = {}
@@ -6324,22 +6303,6 @@ class offline_search_kb:
                         result_cmd[lcmd[0]] = keystring
             # major update
             result_cmd["major_version"] = self.get_windows_version_major()
-            product_name_raw = str(result_cmd.get("ProductName", "") or "").strip()
-            product_name_reel = product_name_raw
-            if result_cmd["major_version"] == "11" and product_name_raw:
-                product_name_reel = re.sub(
-                    r"^Windows\s+10\b",
-                    "Windows 11",
-                    product_name_raw,
-                    flags=re.IGNORECASE,
-                )
-                if product_name_reel != product_name_raw:
-                    logging.getLogger().debug(
-                        "Corrected ProductName from '%s' to '%s' for major_version=11",
-                        product_name_raw,
-                        product_name_reel,
-                    )
-            result_cmd["ProductNameReel"] = product_name_reel
             result_cmd["InstallLanguage"] = self.get_locale_id_iso()
             if result_cmd["InstallLanguage"] in datalang:
                 result_cmd["code_lang_iso"] = datalang[result_cmd["InstallLanguage"]][
@@ -6436,39 +6399,33 @@ class offline_search_kb:
             if int(result["code"]) == 0:
                 result["result"][0] = self.ascii_to_utf8(result["result"][0])
                 line = [x.strip('" ') for x in result["result"][0].split('","')]
-                os_configuration_raw = self._sanitize_text_value(line[4])
-                system_locale_raw = self._sanitize_text_value(line[19])
-                time_zone_raw = self._sanitize_text_value(line[21])
                 informationlist = {
                     "node": str(line[0]),
                     "platform": line[1].lower(),
                     "version": line[2],
-                    "OS Configuration": self._normalize_os_configuration(os_configuration_raw),
-                    "OS Configuration Raw": os_configuration_raw,
+                    "OS Configuration": line[4],
                     "Product ID": line[8],
                     "Original Install Date": line[9],
                     "System Model": line[12],
                     "System Type": line[13],
                     "BIOS Version": line[15],
-                    "System Locale": self._normalize_system_locale(system_locale_raw),
-                    "System Locale Raw": system_locale_raw,
-                    "Time Zone": self._normalize_time_zone(time_zone_raw),
-                    "Time Zone Raw": time_zone_raw,
+                    "System Locale": line[19],
+                    "Time Zone": line[21],
                     "processor": str(platform.processor()),
                     "machine": line[13],
                 }
                 if "x64" in informationlist["System Type"]:
                     informationlist["machine"] = "x64"
-
-                platform_en, type_en = self._normalize_windows_platform(line[1])
-                informationlist["platform_raw"] = self._sanitize_text_value(line[1])
-                informationlist["platform"] = platform_en
-                informationlist["type"] = type_en
+                if "windows 10" in informationlist["platform"]:
+                    informationlist["type"] = "Windows 10"
+                else:
+                    informationlist["type"] = informationlist["platform"]
 
                 return informationlist
             else:
                 logging.getLogger().error("systeminfo error")
         return res
+
 
     def check_windows11_compatibility(self):
         """
@@ -6509,17 +6466,11 @@ class offline_search_kb:
             r = subprocess.run(
                 ["powershell", "-NoProfile", "-Command",
                  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
-                 "$OutputEncoding = [System.Text.Encoding]::UTF8; "
                  "Confirm-SecureBootUEFI"],
                 capture_output=True, text=False,
             )
             stdout = r.stdout.decode("utf-8", errors="replace").strip().lower()
             stderr = r.stderr.decode("utf-8", errors="replace").strip().lower()
-            unsupported_secureboot = (
-                "platformnotsupportedexception" in stderr
-                or "getfwvarfailed" in stderr
-                or "non prise en charge" in stderr
-            )
             if "true" in stdout or "false" in stdout:
                 is_uefi = True
             elif r.returncode != 0 or "cmdlet" in stderr:
@@ -6527,8 +6478,6 @@ class offline_search_kb:
             else:
                 is_uefi = True
             result["uefi"] = {"ok": is_uefi}
-            if unsupported_secureboot:
-                result["uefi"]["reason"] = "secureboot-platform-not-supported"
         except Exception:
             result["uefi"] = {"ok": False}
 
@@ -6566,9 +6515,7 @@ class offline_search_kb:
             cpu_ok = False
             intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
             if intel_match:
-                digits = intel_match.group(1)
-                generation = int(digits[:2] if len(digits) == 5 else digits[:1])
-                cpu_ok = generation >= 8
+                cpu_ok = int(intel_match.group(1)[:2]) >= 8
             else:
                 amd_match = re.search(r'ryzen\s*(\d)', cpu)
                 if amd_match:
@@ -6577,12 +6524,12 @@ class offline_search_kb:
         except Exception:
             result["cpu"] = {"ok": False, "processor": ""}
 
-        # DirectX 12 + GPU
+        # DirectX 12 + WDDM 2.0
         try:
             ps_gpu = (
                 "$ErrorActionPreference='SilentlyContinue'; "
                 "Get-CimInstance Win32_VideoController | "
-                "Select-Object Name, DriverVersion | "
+                "Select-Object Name, DriverVersion, VideoModeDescription | "
                 "ConvertTo-Json -Compress"
             )
             r = subprocess.run(
@@ -6602,7 +6549,7 @@ class offline_search_kb:
         except Exception:
             result["graphics"] = {"ok": True, "devices": []}
 
-        # Affichage: force a OK pour ne pas bloquer la compatibilite
+        # Affichage >= 1280x720
         try:
             ps_screen = (
                 "Add-Type -AssemblyName System.Windows.Forms; "
@@ -6617,8 +6564,11 @@ class offline_search_kb:
             screens = json.loads(r.stdout.strip()) if r.stdout.strip() else []
             if isinstance(screens, dict):
                 screens = [screens]
-            # Exigence metier: display doit toujours etre OK dans ce controle offline.
-            result["display"] = {"ok": True, "screens": screens}
+            display_ok = any(
+                (s.get("Width") or 0) >= 1280 and (s.get("Height") or 0) >= 720
+                for s in screens
+            ) if screens else True
+            result["display"] = {"ok": display_ok, "screens": screens}
         except Exception:
             result["display"] = {"ok": True, "screens": []}
 
@@ -7622,313 +7572,100 @@ class convert:
         return formatted_xml
 
 
-
 class NetworkInfoxmpp:
-    """
-    Classe pour récupérer les informations réseau d'une machine, notamment l'adresse IP, les détails de l'interface,
-    la passerelle, et l'adresse MAC.
-
-    Cette classe peut être initialisée avec un port ou une socket pour récupérer les informations réseau associées.
-
-    Attributes:
-        port (int | None): Le port utilisé pour la connexion réseau.
-        socket (socket.socket | None): La socket utilisée pour la connexion réseau.
-        ip_address (str | None): L'adresse IP locale obtenue.
-        details (dict | None): Les détails de l'interface réseau (adresse IP, masque, passerelle, etc.).
-    """
-    def __init__(self, port: int | None = None, sock: socket.socket | None = None):
-        """
-        Initialise une instance de NetworkInfoxmpp avec un port ou une socket.
-
-        Args:
-            port (int | None): Le port réseau à utiliser pour récupérer les informations.
-            sock (socket.socket | None): La socket réseau à utiliser pour récupérer les informations.
-
-        Raises:
-            ValueError: Si ni le port ni la socket ne sont fournis.
-        """
-        logger.debug(f"Initialisation de NetworkInfoxmpp avec port={port}, sock={sock}")
-        if not port and not sock:
-            logger.error("Ni port ni socket fournis !")
-            raise ValueError("You must provide either a port or a socket")
-
-        self.port = int(port) if port else None
-        self.socket = sock
-        logger.debug(f"Port défini à {self.port}, socket définie à {self.socket}")
-
-        # Priorité à la socket
-        if self.socket:
-            logger.debug("Utilisation de la socket pour obtenir l'adresse IP.")
-            self.ip_address = self._get_ipv4_from_socket()
-            # Log des infos de la socket
-            self.log_socket_info(self.socket)
+    def __init__(self, port: int):
+        self.port = int(port)
+        self.ip_address = self._get_established_ipv4_connection_on_port()
+        if self.ip_address:
+            self.details = self._get_interface_details()
         else:
-            logger.debug(f"Utilisation du port {self.port} pour obtenir l'adresse IP.")
-            self.ip_address = self._get_established_ipv4_connection_on_port()
+            self.details = None
 
-        logger.debug(f"Adresse IP obtenue : {self.ip_address}")
-        self.details = self._get_interface_details() if self.ip_address else None
-        logger.debug(f"Détails de l'interface : {self.details}")
-
-    # ---------------------------------------------------
-    # Récupération IP
-    # ---------------------------------------------------
-
-    def _get_ipv4_from_socket(self) -> str | None:
-        """
-        Récupère l'adresse IP locale à partir d'une socket.
-
-        Returns:
-            str | None: L'adresse IP locale si elle est trouvée, sinon None.
-        """
-        try:
-            local_addr = self.socket.getsockname()
-            logger.debug(f"Adresse locale de la socket : {local_addr}")
-            if isinstance(local_addr, tuple):
-                return local_addr[0]
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération de l'IP depuis la socket : {e}")
-            return None
-        return None
-
-    def _get_established_ipv4_connection_on_port(self) -> str | None:
-        """
-        Récupère l'adresse IP locale à partir d'une connexion établie sur un port spécifique.
-
-        Cette méthode parcourt les connexions réseau établies pour trouver une connexion
-        correspondant au port spécifié.
-
-        Returns:
-            str | None: L'adresse IP locale si une connexion établie est trouvée, sinon None.
-        """
-        for conn in psutil.net_connections(kind="inet"):
-            logger.debug(f"Connexion inspectée : {conn}")
+    def _get_established_ipv4_connection_on_port(self) -> str:
+        connections = psutil.net_connections(kind="inet")
+        for conn in connections:
             if (
                 conn.family == socket.AF_INET
                 and conn.status == psutil.CONN_ESTABLISHED
                 and conn.raddr
                 and conn.raddr.port == self.port
             ):
-                logger.debug(f"Connexion établie trouvée : {conn.laddr.ip}")
                 return conn.laddr.ip
-        logger.debug("Aucune connexion établie trouvée sur le port spécifié.")
         return None
 
-    # ---------------------------------------------------
-    # Détails interface
-    # ---------------------------------------------------
-
     def _get_interface_details(self):
-        """
-        Récupère les détails de l'interface réseau associée à l'adresse IP locale.
-
-        Les détails incluent l'adresse IP, le masque de sous-réseau, l'adresse de diffusion,
-        la passerelle, et l'adresse MAC.
-
-        Returns:
-            dict | None: Un dictionnaire contenant les détails de l'interface réseau si elle est trouvée,
-                        sinon None.
-        """
         details = {}
         interface_name = None
 
+        # Find the interface for the given IPv4 address
         for interface, addrs in psutil.net_if_addrs().items():
             for addr in addrs:
                 if addr.family == socket.AF_INET and addr.address == self.ip_address:
                     interface_name = interface
-                    details["ip_address"] = addr.address
+                    details["ip_address"] = self.ip_address
                     details["netmask"] = addr.netmask
                     details["broadcast"] = addr.broadcast
-                    logger.debug(f"Interface trouvée : {interface_name}, détails : {details}")
                     break
             if interface_name:
                 break
 
         if not interface_name:
-            logger.error("Aucune interface réseau correspondante trouvée.")
             return None
 
-        try:
-            network = ipaddress.IPv4Network(
-                f"{details['ip_address']}/{details['netmask']}",
-                strict=False
-            )
-            details["network"] = str(network.network_address)
-        except Exception as e:
-            logger.error(f"Erreur lors de la création du réseau IPv4 : {e}")
+        # Calculate network address
+        if "ip_address" in details and "netmask" in details:
+            ip = int.from_bytes(socket.inet_aton(details["ip_address"]), "big")
+            netmask = int.from_bytes(socket.inet_aton(details["netmask"]), "big")
+            network = socket.inet_ntoa((ip & netmask).to_bytes(4, "big"))
+            details["network"] = network
 
-        details["gateway"] = self._get_gateway()
-        details["dhcp_server"] = None
-        details["dhcp_client"] = None
+        # Get the gateway
+        gateway = self._get_gateway()
+        details["gateway"] = gateway
 
+        # Get the DHCP server and client addresses
+        details["dhcp_server"] = None  # Update this for your environment
+        details["dhcp_client"] = None  # Update this for your environment
+        # Get the MAC address
         details["macnotshortened"] = self._get_mac_address(interface_name)
-        details["macaddress"] = (
-            self.reduction_mac(details["macnotshortened"])
-            if details["macnotshortened"]
-            else None
-        )
-
+        details["macaddress"] = self.reduction_mac(details["macnotshortened"])
         return details
 
-    # ---------------------------------------------------
-    # Gateway
-    # ---------------------------------------------------
     def _get_gateway(self):
-        """
-        Récupère l'adresse IP de la passerelle par défaut du système.
-
-        Cette méthode utilise des approches spécifiques à chaque système d'exploitation :
-        - Sous Linux, elle lit le fichier `/proc/net/route`.
-        - Sous Windows, elle utilise la commande `netsh interface ipv4 show route`.
-        - Sous macOS, elle utilise la commande `netstat -rn`.
-
-        Returns:
-            str | None: L'adresse IP de la passerelle si elle est trouvée, sinon None.
-        """
-        try:
-            if platform.system() == "Linux":
-                with open("/proc/net/route") as f:
-                    for line in f.readlines()[1:]:
-                        fields = line.strip().split()
-                        if fields[1] == "00000000":
-                            return socket.inet_ntoa(bytes.fromhex(fields[2])[::-1])
-            elif platform.system() == "Windows":
-                import subprocess
-                result = subprocess.run(["netsh", "interface", "ipv4", "show", "route"], capture_output=True, text=True)
-                for line in result.stdout.splitlines():
-                    if "0.0.0.0" in line and "Interface" in line:
-                        gateway = line.split()[3]
-                        return gateway
-            elif platform.system() == "Darwin":  # macOS
-                import subprocess
-                result = subprocess.run(["netstat", "-rn"], capture_output=True, text=True)
-                for line in result.stdout.splitlines():
-                    if "default" in line:
-                        gateway = line.split()[1]
-                        return gateway
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération de la passerelle : {e}")
-        return None
-
-    # ---------------------------------------------------
-    # MAC
-    # ---------------------------------------------------
+        system = platform.system()
+        if system == "Windows":
+            gateway = (
+                os.popen('ipconfig | findstr /C:"Default Gateway"')
+                .read()
+                .strip()
+                .split(":")[-1]
+                .strip()
+            )
+        elif system == "Linux":
+            gateway = (
+                os.popen("ip route | grep default | awk '{print $3}'").read().strip()
+            )
+        elif system == "Darwin":  # macOS
+            gateway = (
+                os.popen("netstat -nr | grep default | awk '{print $2}'").read().strip()
+            )
+        else:
+            gateway = None
+        return gateway
 
     def _get_mac_address(self, interface):
-        """
-        Récupère l'adresse MAC d'une interface réseau donnée.
-
-        Args:
-            interface (str): Le nom de l'interface réseau (par exemple, 'eth0', 'wlan0').
-
-        Returns:
-            str | None: L'adresse MAC de l'interface si elle est trouvée, sinon None.
-        """
-        for addr in psutil.net_if_addrs().get(interface, []):
-            if addr.family == psutil.AF_LINK:
-                logger.debug(f"Adresse MAC trouvée pour {interface} : {addr.address}")
-                return addr.address
-        logger.error(f"Aucune adresse MAC trouvée pour l'interface {interface}.")
-        return None
+        try:
+            mac_address = psutil.net_if_addrs()[interface][0].address
+            return mac_address
+        except KeyError:
+            return None
 
     def reduction_mac(self, mac):
-        """
-        Réduit une adresse MAC en supprimant les séparateurs et en la mettant en minuscules.
-
-        Cette méthode prend une adresse MAC sous n'importe quel format (par exemple, '00:1A:2B:3C:4D:5E',
-        '00-1A-2B-3C-4D-5E', '001A2B3C4D5E') et retourne une version normalisée sans séparateurs et en minuscules.
-
-        Args:
-            mac (str): L'adresse MAC à réduire.
-
-        Returns:
-            str: L'adresse MAC réduite, sans séparateurs et en minuscules.
-        """
-        reduced = (
-            mac.lower()
-            .replace(":", "")
-            .replace("-", "")
-            .replace(" ", "")
-        )
-        logger.debug(f"Adresse MAC réduite : {reduced}")
-        return reduced
-
-    # ---------------------------------------------------
-    # Log des informations de la socket
-    # ---------------------------------------------------
-    def log_socket_info(self, sock):
-        """
-        Affiche les informations détaillées d'une socket réseau.
-
-        Cette méthode parse et affiche les informations d'une socket, telles que :
-        - Le type de socket.
-        - Le descripteur de fichier (fd).
-        - La famille d'adresses (IPv4/IPv6).
-        - Le type et le protocole de la socket.
-        - Les adresses locales et distantes (IP et port).
-        - Une analyse de la connexion (locale ou distante).
-        - Des informations supplémentaires sur les ports utilisés.
-
-        Args:
-            sock: La socket à analyser (par exemple, une instance de `asyncio.TransportSocket`).
-        """
-        sock_info = str(sock)
-        logger.info(f"Informations de la socket : {sock_info}")
-
-        # Parsing des informations
-        parts = sock_info.split(", ")
-        info_dict = {}
-        for part in parts:
-            if "=" in part:
-                key, value = part.split("=", 1)
-                info_dict[key.strip()] = value.strip()
-
-        # Extraction des adresses locales et distantes
-        laddr_str = info_dict.get("laddr", "").strip("()")
-        raddr_str = info_dict.get("raddr", "").strip("()")
-
-        # Gestion des cas où laddr_str ou raddr_str ne sont pas bien formatés
-        try:
-            laddr_ip, laddr_port = laddr_str.split(",") if "," in laddr_str else (laddr_str, "N/A")
-            laddr_ip = laddr_ip.strip("' ")
-            laddr_port = laddr_port.strip(") ")
-        except Exception as e:
-            logger.error(f"Erreur lors du parsing de l'adresse locale : {e}")
-            laddr_ip, laddr_port = "N/A", "N/A"
-
-        try:
-            raddr_ip, raddr_port = raddr_str.split(",") if "," in raddr_str else (raddr_str, "N/A")
-            raddr_ip = raddr_ip.strip("' ")
-            raddr_port = raddr_port.strip(") ")
-        except Exception as e:
-            logger.error(f"Erreur lors du parsing de l'adresse distante : {e}")
-            raddr_ip, raddr_port = "N/A", "N/A"
-
-        # Affichage des informations
-        logger.info("\n--- Détails de la connexion ---")
-        logger.info(f"Type de socket : {sock.__class__.__name__}")
-        logger.info(f"Descripteur de fichier (fd) : {info_dict.get('fd', 'N/A')}")
-        logger.info(f"Famille d'adresses : {'IPv4' if info_dict.get('family') == '2' else 'Inconnu'}")
-        logger.info(f"Type de socket : {'TCP (SOCK_STREAM)' if info_dict.get('type') == '1' else 'Inconnu'}")
-        logger.info(f"Protocole : {'TCP' if info_dict.get('proto') == '6' else 'Inconnu'}")
-        logger.info(f"Adresse locale (IP:Port) : ({laddr_ip}:{laddr_port})")
-        logger.info(f"Adresse distante (IP:Port) : ({raddr_ip}:{raddr_port})")
-
-        # Précision sur la connexion locale
-        if laddr_ip != "N/A" and raddr_ip != "N/A" and laddr_ip == raddr_ip:
-            logger.info("\n--- Analyse ---")
-            logger.info(f"L'agent et le serveur sont sur la même machine (IP : {laddr_ip}).")
-            logger.info(f"Port local utilisé : {laddr_port}")
-            logger.info(f"Port distant (service) : {raddr_port} (port standard pour XMPP).")
-            logger.info(" boucle locale (loopback)")
-        elif laddr_ip != "N/A" and raddr_ip != "N/A":
-            logger.info("\n--- Analyse ---")
-            logger.info("L'agent et le serveur sont sur des machines différentes.")
-
-        # Autres informations intéressantes
-        logger.info("\n--- Informations supplémentaires ---")
-        logger.info(f"Le port {raddr_port} est utilisé pour le protocole XMPP (Jabber).")
-        logger.info(f"Le port local {laddr_port} est attribué dynamiquement par le système pour cette connexion.")
+        mac = mac.lower()
+        mac = mac.replace(":", "")
+        mac = mac.replace("-", "")
+        mac = mac.replace(" ", "")
+        return mac
 
 
 def clean_update_directories():
@@ -7985,55 +7722,67 @@ def clean_update_directories():
             "Le fichier BOOL_CLEAN_UPDATE n'a pas été trouvé. Aucune action n'est requise."
         )
 
-
 def eject_cdrom_drives():
     """
-    Eject all CD-ROM drives on the system using modern PowerShell approach.
-    (WMI is obsolete on Windows 11, replaced with Get-WmiObject via PowerShell subprocess).
+    Récupère la liste des lecteurs CD/DVD via CIM en utilisant :
+        Get-CimInstance -ClassName Win32_CDROMDrive
+    Puis tente de les éjecter via l'API Shell.Application.
     """
-    if not sys.platform.startswith("win"):
-        logger.warning("eject_cdrom_drives() is Windows-only")
-        return
+
+    # Exécute Get-CimInstance et récupère les données en JSON
+    ps_command = [
+        "powershell",
+        "-NoProfile",
+        "-Command",
+        "Get-CimInstance -ClassName Win32_CDROMDrive | "
+        "Select-Object Drive, Name | "
+        "ConvertTo-Json"
+    ]
 
     try:
-        # Use PowerShell to query CD-ROM drives and eject them via Shell.Application
-        ps_command = (
-            "powershell -Command "
-            "try { "
-            "$cdrom_drives = Get-WmiObject Win32_CDROMDrive -ErrorAction Stop; "
-            "if ($cdrom_drives) { "
-            "$shell = New-Object -ComObject Shell.Application; "
-            "foreach ($drive in $cdrom_drives) { "
-            "try { "
-            "$shelf = $shell.Namespace(17); "
-            "foreach ($item in $shelf.Items()) { "
-            "$drive_letter = $item.GetLink; "
-            "if ($drive_letter -eq $drive.Drive) { "
-            "$item.InvokeVerb('Eject'); "
-            "'Ejected drive: ' + $drive.Drive; "
-            "} "
-            "} "
-            "} catch { "
-            "'Error ejecting ' + $drive.Drive + ': ' + $_.Exception.Message; "
-            "} "
-            "} "
-            "} else { "
-            "'No CD-ROM drives found'; "
-            "} "
-            "} catch { "
-            "'Error querying CD-ROM drives: ' + $_.Exception.Message; "
-            "}"
-        )
-        result = subprocess.run(
-            ps_command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if result.returncode == 0:
-            logger.debug("CD-ROM drives ejection completed: %s", result.stdout.strip() or "done")
-        else:
-            logger.warning("CD-ROM drives ejection issue: %s", result.stderr or result.stdout)
-    except Exception as e:
-        logger.error("eject_cdrom_drives error: %s", str(e))
+        result = subprocess.check_output(ps_command, text=True, encoding="utf-8")
+    except subprocess.CalledProcessError as e:
+        logger.debug(f"Erreur PowerShell : {e}")
+        return
+
+    # Parse le JSON PowerShell (peut être un dict ou une liste)
+    try:
+        cdrom_list = json.loads(result)
+    except json.JSONDecodeError:
+        logger.debug("Aucun lecteur CD/DVD détecté par Get-CimInstance.")
+        return
+
+    # Normalise pour toujours avoir une liste
+    if isinstance(cdrom_list, dict):
+        cdrom_list = [cdrom_list]
+
+    if not cdrom_list:
+        logger.debug("Aucun lecteur CD/DVD trouvé via CIM.")
+        return
+
+    pythoncom.CoInitialize()
+    try:
+        for drive in cdrom_list:
+            device_id = drive.get("Drive")
+            name = drive.get("Name")
+
+            logger.debug(f"Lecteur trouvé : {device_id} - {name}")
+
+            if not device_id:
+                continue
+
+            try:
+                shell = win32com.client.Dispatch("Shell.Application")
+                cd_drive = shell.Namespace(17).ParseName(device_id)
+
+                if cd_drive:
+                    cd_drive.InvokeVerb("Eject")
+                    logger.debug(f"Le lecteur {device_id} a été éjecté avec succès.")
+                else:
+                    logger.debug(f"Impossible de localiser {device_id} via Shell.Application.")
+
+            except Exception as e:
+                logger.debug(f"Erreur lors de l'éjection de {device_id} : {e}")
+
+    finally:
+        pythoncom.CoUninitialize()

@@ -82,14 +82,17 @@ class LinuxSystemBase(ABC):
     Définit l'interface commune et les méthodes partagées par toutes les distributions.
     """
 
-    def __init__(self, dry_run: bool = False):
+    def __init__(self, dry_run: bool = False, log_callback=None):
         """
         Initialise les attributs communs à toutes les distributions.
 
         Args:
             dry_run (bool): Si True, les commandes sont simulées (mode "sec").
+            log_callback (callable|None): Fonction optionnelle appelée pour chaque
+                commande système et sa sortie. Signature: log_callback(message: str).
         """
         self.dry_run = dry_run
+        self._log_callback = log_callback  # fn(str) -> None | None
         self.system_info = {}
         self.counts = {
             "security": 0,
@@ -102,10 +105,9 @@ class LinuxSystemBase(ABC):
         self.kernel_updates = []
         self.other_updates = []
 
-    @staticmethod
-    def _run(cmd: str) -> str:
+    def _run(self, cmd: str) -> str:
         """
-        Exécute une commande shell et retourne sa sortie.
+        Exécute une commande shell, notifie le callback si présent, et retourne la sortie.
 
         Args:
             cmd (str): Commande à exécuter.
@@ -117,7 +119,40 @@ class LinuxSystemBase(ABC):
             subprocess.CalledProcessError: Si la commande échoue.
         """
         logger.debug(cmd)
-        return subprocess.check_output(cmd, shell=True, text=True).strip()
+        callback = getattr(self, "_log_callback", None)
+        if callback:
+            callback(f"[CMD] {cmd}")
+        try:
+            output = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.STDOUT).strip()
+        except subprocess.CalledProcessError as e:
+            self._log_command_failure(cmd, e, callback=callback)
+            raise
+
+        if callback and output:
+            preview = (output[:400] + "...") if len(output) > 400 else output
+            callback(f"[OUT] {preview}")
+        return output
+
+    @staticmethod
+    def _log_command_failure(cmd: str, exc: subprocess.CalledProcessError, callback=None):
+        """Journalise une erreur de commande avec un extrait de sortie utile."""
+        raw_output = getattr(exc, "output", "") or ""
+        output = str(raw_output).strip()
+        tail_lines = output.splitlines()[-12:] if output else []
+        tail = "\n".join(tail_lines)
+
+        logger.warning(
+            "Command failed rc=%s cmd=%s%s",
+            getattr(exc, "returncode", "?"),
+            cmd,
+            f"\nOutput (tail):\n{tail}" if tail else "",
+        )
+
+        if callback:
+            callback(f"[ERR] rc={getattr(exc, 'returncode', '?')} cmd={cmd}")
+            if tail:
+                preview = (tail[:700] + "...") if len(tail) > 700 else tail
+                callback(f"[ERR_OUT] {preview}")
 
     def get_deterministic_uuid():
         hostname = socket.gethostname()
@@ -487,7 +522,7 @@ class DebianSystem(LinuxSystemBase):
     Classe spécialisée pour la gestion des mises à jour et de la maintenance des systèmes Debian/Ubuntu.
     """
 
-    def __init__(self, intranet_security: bool = False, sources_name: str | None = None, dry_run: bool = False):
+    def __init__(self, intranet_security: bool = False, sources_name: str | None = None, dry_run: bool = False, log_callback=None):
         """
         Initialise une instance de DebianSystem.
 
@@ -495,8 +530,9 @@ class DebianSystem(LinuxSystemBase):
             intranet_security (bool): Active le mode intranet sécurisé si True.
             sources_name (str|None): Nom du fichier de sources APT pour le mode intranet.
             dry_run (bool): Si True, les commandes sont simulées (mode "sec").
+            log_callback (callable|None): Fonction appelée pour chaque commande/sortie APT.
         """
-        super().__init__(dry_run)
+        super().__init__(dry_run=dry_run, log_callback=log_callback)
         self.intranet_security = intranet_security
         self.sources_name = sources_name
         self.set_intranet_security(intranet_security, sources_name)
@@ -585,14 +621,15 @@ class DebianSystem(LinuxSystemBase):
         # -----------------------------
         # 1️⃣ Mettre à jour les dépôts APT
         # -----------------------------
+        update_cmd = f"apt-get -qq update {self._apt_base_opts()}"
         try:
-            self._run(f"apt-get -qq update {self._apt_base_opts()}")
+            self._run(update_cmd)
         except subprocess.CalledProcessError as e:
             # Certains dépôts peuvent échouer (code 100) sans compromettre les autres.
-            # On log un warning et on continue pour exploiter les index partiellement rafraîchis.
+            # On log un warning détaillé et on continue pour exploiter les index partiellement rafraîchis.
+            self._log_command_failure(update_cmd, e, callback=getattr(self, "_log_callback", None))
             logger.warning(
-                "apt-get update returned non-zero exit status (some repositories may be unavailable): %s",
-                str(e),
+                "apt-get update returned non-zero exit status (some repositories may be unavailable), continuing",
             )
 
         # -----------------------------
@@ -655,13 +692,14 @@ class DebianSystem(LinuxSystemBase):
         base = self._apt_base_opts()
         dry = self._apt_dry_run_opts()
         sec = self._apt_security_opts()
+        update_cmd = f"apt-get -qq update {base}"
         try:
-            self._run(f"apt-get -qq update {base}")
+            self._run(update_cmd)
         except subprocess.CalledProcessError as e:
             # Some repositories may fail (404/temporary issues) while others remain usable.
+            self._log_command_failure(update_cmd, e, callback=getattr(self, "_log_callback", None))
             logger.warning(
-                "apt-get update returned non-zero exit status (continuing with available indexes): %s",
-                str(e),
+                "apt-get update returned non-zero exit status (continuing with available indexes)",
             )
 
         if policy == "security-only":
@@ -799,7 +837,7 @@ class RedHatSystem(LinuxSystemBase):
             parts = line.split()
             if len(parts) < 2:
                 continue
-            logger.error("JFKJFK %s \n" % parts)
+            logger.error("parse error on line: %s \n" % parts)
             pkg = parts[0]
             entry = {"package": pkg, "cve": []}
 
