@@ -276,9 +276,8 @@ def get_plugins_manifest(objectxmpp, davos_manifest):
                     plugin = json.loads(plugin_str)
                 except:
                     pass
-                finally:
-                    # No need to go further
-                    break
+                # No need to go further
+                break
 
         # For file, the plugin meta are empty : next file
         if plugin == {}:
