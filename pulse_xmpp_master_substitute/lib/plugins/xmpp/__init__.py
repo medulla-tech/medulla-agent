@@ -12867,14 +12867,18 @@ where d.jidmachine='%s' and c.package_id = '%s'
             raise ValueError(f"Distribution non supportée: {distributor_id}")
 
         versions_debug_query = text("""
-            SELECT id, distribution, version, name, is_managed, is_current_stable, is_recommended
+            SELECT id, distributor_id, release_version, target_version, name, is_managed, is_current_stable, is_recommended
             FROM xmppmaster.up_linux_os_versions
-            WHERE distribution = :distribution
+            WHERE distributor_id = :distribution
             ORDER BY
                 is_managed DESC,
                 is_current_stable DESC,
                 is_recommended DESC,
-                CAST(version AS DECIMAL(10, 4)) DESC,
+                CAST(COALESCE(
+                    NULLIF(TRIM(target_version), ''),
+                    NULLIF(JSON_UNQUOTE(JSON_EXTRACT(parameters, '$.target_version')), ''),
+                    NULLIF(TRIM(release_version), '')
+                ) AS DECIMAL(10, 4)) DESC,
                 id DESC
             LIMIT 10;
         """)
@@ -12888,8 +12892,9 @@ where d.jidmachine='%s' and c.package_id = '%s'
             [
                 {
                     "id": r.id,
-                    "distribution": r.distribution,
-                    "version": r.version,
+                    "distribution": r.distributor_id,
+                    "version": r.release_version,
+                    "target_version": r.target_version,
                     "name": r.name,
                     "is_managed": r.is_managed,
                     "is_current_stable": r.is_current_stable,
@@ -12900,15 +12905,26 @@ where d.jidmachine='%s' and c.package_id = '%s'
         )
 
         max_version_query = text("""
-            SELECT name, version
+            SELECT
+                name,
+                release_version,
+                COALESCE(
+                    NULLIF(TRIM(target_version), ''),
+                    NULLIF(JSON_UNQUOTE(JSON_EXTRACT(parameters, '$.target_version')), ''),
+                    NULLIF(TRIM(release_version), '')
+                ) AS effective_target
             FROM xmppmaster.up_linux_os_versions
-            WHERE distribution = :distribution
-                        ORDER BY
-                                is_managed DESC,
-                                is_current_stable DESC,
-                                is_recommended DESC,
-                                CAST(version AS DECIMAL(10, 4)) DESC,
-                                id DESC
+            WHERE distributor_id = :distribution
+            ORDER BY
+                is_managed DESC,
+                is_current_stable DESC,
+                is_recommended DESC,
+                CAST(COALESCE(
+                    NULLIF(TRIM(target_version), ''),
+                    NULLIF(JSON_UNQUOTE(JSON_EXTRACT(parameters, '$.target_version')), ''),
+                    NULLIF(TRIM(release_version), '')
+                ) AS DECIMAL(10, 4)) DESC,
+                id DESC
             LIMIT 1;
         """)
         row = session.execute(
@@ -12916,7 +12932,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
             {"distribution": normalized_distribution},
         ).first()
 
-        if not row or row.version is None:
+        if not row or row.effective_target is None:
             self.logger.warning(
                 "Aucune version cible trouvée dans up_linux_os_versions pour distribution=%s",
                 normalized_distribution,
@@ -12924,10 +12940,12 @@ where d.jidmachine='%s' and c.package_id = '%s'
             return  {
                 "distribution": normalized_distribution,
                 "name_version": None,
-                "max_version": None
+                "max_version": None,
+                "target_version": None,
+                "by_entity": [],
                 }
         else:
-            max_version = row.version
+            max_version = str(row.effective_target)
             name_version = row.name
             self.logger.info(
                 "Version cible retenue pour %s: version=%r name=%r",
@@ -13059,6 +13077,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
             "distribution": normalized_distribution,
             "name_version": name_version,
             "max_version": max_version,
+            "target_version": max_version,
             "by_entity": by_entity,
             # "totals": {
             #     "total_machines": total_machines_all,
