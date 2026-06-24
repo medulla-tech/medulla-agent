@@ -4702,7 +4702,7 @@ def doTask(
         if proc.is_alive():
             proc.terminate()
             proc.join()
-    logger.debug("The Pulse Xmpp Agent Relay is now stopped")
+    logger.debug("The Pulse Xmpp Agent is now stopped")
 
 
 class process_xmpp_agent:
