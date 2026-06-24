@@ -148,11 +148,72 @@ class LinuxSystemBase(ABC):
             f"\nOutput (tail):\n{tail}" if tail else "",
         )
 
+        apt_hint = LinuxSystemBase._apt_update_hint(cmd, output)
+        if apt_hint:
+            logger.warning(apt_hint)
+
         if callback:
             callback(f"[ERR] rc={getattr(exc, 'returncode', '?')} cmd={cmd}")
             if tail:
                 preview = (tail[:700] + "...") if len(tail) > 700 else tail
                 callback(f"[ERR_OUT] {preview}")
+            if apt_hint:
+                callback(f"[WARN] {apt_hint}")
+
+    @staticmethod
+    def _apt_update_hint(cmd: str, output: str) -> str:
+        """Retourne une explication courte pour certains echecs APT connus.
+
+        Contexte important:
+        - L'agent Medulla peut tourner dans un environnement virtuel Python
+          independant, par exemple en Python 3.11.
+        - Les commandes APT (`apt-get`, `dpkg`, hooks APT) appartiennent au
+          systeme Linux, pas a l'environnement virtuel de l'agent.
+        - Certains hooks lances par `apt-get update` sont des scripts Python
+          systeme avec un shebang vers `/usr/bin/python3`.
+        - Le module `apt_pkg` est fourni par le paquet systeme `python3-apt` et
+          il est compile pour la version Python attendue par la distribution.
+
+        Exemple reel:
+        Sur Ubuntu 24.04, `python3-apt` fournit typiquement un module compile
+        pour Python 3.12. Si `/usr/bin/python3` a ete force vers Python 3.11
+        pour correspondre au venv agent, le hook APT ne trouve plus `apt_pkg`.
+
+        On ne bloque pas ici l'agent: le code appelant continue avec les index
+        APT disponibles. Cette fonction ajoute seulement un feedback lisible
+        pour expliquer quoi verifier sur la machine.
+        """
+        if "apt-get" not in cmd:
+            return ""
+
+        # On cherche le symptome generique plutot qu'un hook precis.
+        # Le cas observe passe par `/usr/lib/cnf-update-db` (paquet
+        # command-not-found), mais d'autres hooks/scripts APT peuvent echouer
+        # de la meme facon si le Python systeme et `python3-apt` ne sont pas
+        # compatibles. La presence de `apt_pkg` plus une erreur d'import suffit
+        # a produire un diagnostic utile et non bloquant.
+        apt_pkg_missing = (
+            "apt_pkg" in output
+            and (
+                "ModuleNotFoundError" in output
+                or "No module named" in output
+                or "ImportError" in output
+            )
+        )
+        if apt_pkg_missing:
+            # Message volontairement general:
+            # - ne suppose pas une distribution precise;
+            # - ne demande pas de changer le Python de l'agent;
+            # - rappelle que le venv agent doit rester isole du Python systeme;
+            # - explique que l'operation continue avec les index existants.
+            return (
+                "apt-get a echoue dans un hook/script Python systeme APT: apt_pkg est introuvable. "
+                "Verifier que /usr/bin/python3 correspond au Python systeme attendu par la distribution "
+                "et que le paquet python3-apt est installe pour cette meme version. Si l'agent utilise "
+                "un environnement virtuel, il doit rester isole et ne doit pas remplacer le Python systeme. "
+                "Les mises a jour continuent avec les index APT disponibles."
+            )
+        return ""
 
     def get_deterministic_uuid():
         hostname = socket.gethostname()
