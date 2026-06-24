@@ -23,7 +23,7 @@
 #   - Certificates in /var/lib/pulse2/clients/medulla-{rootca,ca-chain}.cert.pem
 #   - Config in /var/lib/pulse2/clients/config/agentconf.ini
 
-AGENT_VERSION="5.6.1"
+AGENT_VERSION="5.6.2"
 PYTHON_VERSION="3.11"
 GLPI_AGENT_VERSION="1.17"
 

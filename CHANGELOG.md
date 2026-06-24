@@ -1,5 +1,12 @@
 # Change Log
 
+## [5.6.2](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.2) (2026-06-24)
+- [FEATURE] Add browser extensions and Office add-ins in inventory
+- [FEATURE] Add Installed status on kiosk when no uninstall section is present in the package
+- [FEATURE] Kiosk support for MacOS clients
+- [FEATURE] Support for Medulla kiosk version 2.1.2
+- [BUGFIX]  Fix RDP server on Linux clients
+
 ## [5.6.1](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.1) (2026-06-08)
 - [FEATURE] Support for Medulla kiosk version 2.1.0
 - [FEATURE] New plugin for installing python dependencies after full agent installs

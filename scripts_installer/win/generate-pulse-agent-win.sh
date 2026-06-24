@@ -40,7 +40,7 @@ BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="5.6.1"
+AGENT_VERSION="5.6.2"
 KIOSK_VERSION="2.1.2"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
