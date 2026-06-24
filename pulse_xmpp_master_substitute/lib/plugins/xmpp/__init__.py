@@ -13092,6 +13092,46 @@ where d.jidmachine='%s' and c.package_id = '%s'
         return result
 
 
+    def _apply_linux_auto_update_policy_scope(self, session, entity_id, distributor_id):
+        """Apply Linux auto-update policy for one entity/distribution scope."""
+        normalized_distributor = (distributor_id or "").strip().lower()
+        if entity_id is None or normalized_distributor == "":
+            return
+
+        session.execute(text("""
+            UPDATE xmppmaster.up_machine_linux uml
+            LEFT JOIN xmppmaster.up_entity_linux_auto_update_policy p_exact
+                ON  p_exact.entity_id = uml.entity_id
+                AND p_exact.distributor_id = LOWER(TRIM(uml.distributor_id))
+                AND p_exact.release_version = COALESCE(TRIM(uml.release_version), '')
+            LEFT JOIN xmppmaster.up_entity_linux_auto_update_policy p_generic
+                ON  p_generic.entity_id = uml.entity_id
+                AND p_generic.distributor_id = LOWER(TRIM(uml.distributor_id))
+                AND p_generic.release_version = ''
+            SET
+                uml.kernel_require = CASE
+                    WHEN COALESCE(p_exact.auto_update_kernel, p_generic.auto_update_kernel, 0) = 1
+                         AND uml.kernel_count > 0 THEN 1
+                    ELSE 0
+                END,
+                uml.security_require = CASE
+                    WHEN COALESCE(p_exact.auto_update_security, p_generic.auto_update_security, 0) = 1
+                         AND uml.security_count > 0 THEN 1
+                    ELSE 0
+                END,
+                uml.other_require = CASE
+                    WHEN COALESCE(p_exact.auto_update_other, p_generic.auto_update_other, 0) = 1
+                         AND uml.other_count > 0 THEN 1
+                    ELSE 0
+                END
+            WHERE uml.entity_id = :entity_id
+              AND LOWER(TRIM(uml.distributor_id)) = :distributor_id
+        """), {
+            "entity_id": int(entity_id),
+            "distributor_id": normalized_distributor,
+        })
+
+
     @DatabaseHelper._sessionm
     def update_machine_linux_from_scan(self, session, scan_data: dict):
         self.logger.info("=== Début update_machine_linux_from_scan ===")
@@ -13270,6 +13310,12 @@ where d.jidmachine='%s' and c.package_id = '%s'
             process_updates(scan_data.get("security_updates", []), "security")
             process_updates(scan_data.get("kernel_updates", []), "kernel")
             process_updates(scan_data.get("other_updates", []), "other")
+
+            self._apply_linux_auto_update_policy_scope(
+                session,
+                machine.entity_id,
+                machine.distributor_id,
+            )
 
             session.commit()
             self.logger.info(f"=== Fin update_machine_linux_from_scan OK ({harduuid}) ===")
