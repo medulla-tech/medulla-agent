@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2020-2024 Siveo <support@siveo.net>
 # SPDX-FileCopyrightText: 2025-2026 NATSU <support@medulla-tech.io>
 # SPDX-License-Identifier: GPL-3.0-or-later

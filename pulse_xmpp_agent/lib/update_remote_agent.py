@@ -5,6 +5,7 @@
 import hashlib
 import os
 import logging
+import shlex
 from .utils import file_get_contents, simplecommand, file_get_binarycontents
 import json
 
@@ -161,7 +162,11 @@ def agentinfoversion(xmppobject):
     pythonModulesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
     if sys.platform.startswith("linux"):
-        cmd = f"/usr/bin/python3 {pythonModulesPath}/../replicator.py -i -v"
+        cmd = (
+            f"{shlex.quote(sys.executable)} "
+            f"{shlex.quote(os.path.join(pythonModulesPath, '..', 'replicator.py'))} "
+            "-i -v"
+        )
     elif sys.platform.startswith("win"):
         cmd = f'"C:\\Program Files\\python3\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
     elif sys.platform.startswith("darwin"):
