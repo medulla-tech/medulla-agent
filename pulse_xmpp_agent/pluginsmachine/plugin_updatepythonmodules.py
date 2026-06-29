@@ -9,7 +9,7 @@ import logging
 import tempfile
 from lib import utils
 
-BEFOREAGENTVERSION = "5.6.1"
+BEFOREAGENTVERSION = "5.6.2"
 # BEFOREAGENTVERSION variable is used to set the version from which the python modules will not be updated. 
 # All agent versions before that version will have the python modules updated.
 
