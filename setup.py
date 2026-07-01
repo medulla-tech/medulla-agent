@@ -14,11 +14,12 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.13",
     ],
     keywords="pulse-xmpp-agent",
     name="pulse_xmpp_agent",
-    version='5.6.2', # fmt: skip
-    debian_distro='stretch',  # fmt: skip
+    version='5.4.6', # fmt: skip
+    debian_distro='trixie',  # fmt: skip
     description="pulse-xmpp-agent",
     url="https://www.siveo.net/",
     packages=["pulse_xmpp_agent"],

@@ -1190,7 +1190,7 @@ def start_agent(pathagent, agent="connection", console=False, typeagent="machine
     if agent != "connection":
         agentfunction = os.path.join(pathagent, "agentxmpp.py")
     agentfunction = programfilepath(agentfunction)
-    modeagent = " -c " if console else ""
+    modeagent = "-c" if console else ""
     if agent == "connection":
         logger.debug("Starting configuration agent")
 

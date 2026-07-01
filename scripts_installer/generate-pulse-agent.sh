@@ -58,6 +58,7 @@ display_usage() {
     echo -e "\t [--enable-geoloc (Enable geolocalisation)]"
     echo -e "\t [--linux-distros (Used linux distros)]"
     echo -e "\t [--updateserver (Download url for the agent updates)]"
+    echo -e "\t [--python-version (Specify python version like python3.11 or python3.13)]"
 }
 
 check_arguments() {
@@ -140,7 +141,13 @@ check_arguments() {
                 UPDATESERVER="${i#*=}"
                 shift
                 ;;
+            --python-version*)
+                # Expect a string like "python3.11" or "python3.13"
+                PYTHON_VERSION="${i#*=}"
+                shift
+                ;;
             *)
+            
                 # unknown option
                 display_usage
                 exit 0
@@ -264,6 +271,12 @@ compute_settings() {
         colored_echo green " - Update server: ${UPDATESERVER}"
         UPDATESERVER_OPTIONS="--updateserver=${UPDATESERVER}"
     fi
+    if [ -z ${PYTHON_VERSION}]; then
+        colored_echo green " - No python version defined (default to python3.11)"
+        PYTHON_VERSION="python3.11"
+    else
+        colored_echo green " - Python version defined: ${PYTHON_VERSION}"
+    fi
 
 }
 
@@ -305,7 +318,7 @@ update_config_file() {
 
 update_generation_options_file() {
     # Save arguments to file for future use
-    echo "--conf-xmppserver=${PUBLIC_XMPP_SERVER_ADDRESS} --conf-xmppport=${PUBLIC_XMPP_SERVER_PORT} --conf-xmpppasswd=${PUBLIC_XMPP_SERVER_PASSWORD} --aes-key=${AES_KEY} --xmpp-passwd=${XMPP_SERVER_PASSWORD} --chat-domain=${CHAT_DOMAIN} ${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${ENABLE_GEOLOC} ${UPDATESERVER_OPTIONS}" > .generation_options
+    echo "--conf-xmppserver=${PUBLIC_XMPP_SERVER_ADDRESS} --conf-xmppport=${PUBLIC_XMPP_SERVER_PORT} --conf-xmpppasswd=${PUBLIC_XMPP_SERVER_PASSWORD} --aes-key=${AES_KEY} --xmpp-passwd=${XMPP_SERVER_PASSWORD} --chat-domain=${CHAT_DOMAIN} ${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${VNC_PASSWORD_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${ENABLE_GEOLOC} ${UPDATESERVER_OPTIONS} --python-version=${PYTHON_VERSION}" > .generation_options
     # Update generation_options var
     if [ -e .generation_options ]; then
        colored_echo blue "Extracting parameters from previous options file (.generation_options)."

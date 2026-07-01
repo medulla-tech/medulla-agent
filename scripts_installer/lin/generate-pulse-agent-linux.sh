@@ -29,8 +29,9 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="5.6.2"
+AGENT_VERSION="5.4.6"
 KIOSK_VERSION="2.1.2"
+PYTHON_VERSION="python3.11" # Overridden if --python-version is defined
 BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined
 
 # Go to own folder
@@ -113,6 +114,11 @@ check_arguments() {
             --chat-domain*)
                 shift
                 ;;
+            --python-version*)
+                # Expect a string like "python3.11" or "python3.13"
+                PYTHON_VERSION="${i#*=}"
+                shift
+                ;;
             --updateserver*)
                 shift
                 ;;
@@ -184,6 +190,7 @@ update_installer_scripts() {
 		-e "s/@@KIOSK_VERSION@@/${KIOSK_VERSION}/" \
 		-e "s/@@VNC_PASSWORD@@/${VNC_PASSWORD}/" \
 		-e "s/@@SSH_PORT@@/${SSH_PORT}/" \
+        -e "s/@@PYTHON_VERSION@@/${PYTHON_VERSION}/" \
 		install-pulse-agent-linux.sh.in \
 		> ${GENERATED_FILE}
     chmod a+r /var/lib/pulse2/clients/lin/Medulla-Agent-linux-*.sh
