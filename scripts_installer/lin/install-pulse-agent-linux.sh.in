@@ -19,6 +19,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with MMC; If not, see <http://www.gnu.org/licenses/>.
+# file : scripts_installer/lin/install-pulse-agent-linux.sh.in
 
 # """
 # This script is designed to generate Medulla XMPP agent for Linux
@@ -80,9 +81,6 @@ install_agent_deps_ubuntu() {
     # Remove deadsnakes repository
     rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-*.sources
     apt update
-	# Set Python 3.11 as default python3
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-    update-alternatives --set python3 /usr/bin/python3.11
 }
 
 install_agent_deps_debian12() {
@@ -91,9 +89,6 @@ install_agent_deps_debian12() {
     apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
-    # Set Python 3.11 as default python3
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-    update-alternatives --set python3 /usr/bin/python3.11
     # Install required packages
     apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
 }
@@ -108,9 +103,6 @@ install_agent_deps_almalinux() {
     dnf install -y python3.11 python3.11-devel
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
-    # Set Python 3.11 as default python3
-    alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-    alternatives --set python3 /usr/bin/python3.11
     # Install required packages
     dnf install -y crudini wget net-tools openssh-server rsync x11vnc sudo syncthing
     # Install GLPI Agent from RPM
@@ -326,6 +318,8 @@ After=network-online.target
 
 [Service]
 Type=simple
+Environment="VIRTUAL_ENV=/opt/medulla"
+Environment="PATH=/opt/medulla/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=${PYTHON_EXE} ${PYTHON_DIR}/pulse_xmpp_agent/launcher.py -t machine
 Restart=always
 RestartSec=5

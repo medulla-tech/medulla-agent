@@ -1,5 +1,9 @@
 # Change Log
 
+## [5.6.3](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.3) (2026-07-02)
+- [FEATURE] Improve agent for Linux OS by using #!/usr/bin/env python3 shebangs
+- [BUGFIX]  Fix inventory substitute for Ubuntu distribution
+
 ## [5.6.2](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.2) (2026-06-24)
 - [FEATURE] Add browser extensions and Office add-ins in inventory
 - [FEATURE] Add Installed status on kiosk when no uninstall section is present in the package
