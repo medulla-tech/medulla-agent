@@ -17,7 +17,7 @@ from lib.agentconffile import (
     rotation_file,
 )
 
-NOTIFICATIONVERSION = "5.6.1"
+NOTIFICATIONVERSION = "5.6.3"
 
 logger = logging.getLogger()
 

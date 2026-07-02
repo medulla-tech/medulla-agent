@@ -30,7 +30,7 @@
 # - PYTHON_VERSION_FULL   : major.minor.patch utilisé pour télécharger le .pkg sur python.org
 # - GLPI_AGENT_VERSION    : tag de release github.com/glpi-project/glpi-agent
 # ============================================================================
-AGENT_VERSION="5.6.1"
+AGENT_VERSION="5.6.3"
 PYTHON_VERSION="3.11"
 PYTHON_VERSION_FULL="3.11.9"
 GLPI_AGENT_VERSION="1.17"
