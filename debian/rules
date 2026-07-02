@@ -158,17 +158,12 @@ override_dh_auto_install:
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 	cp scripts_installer/lin/uninstall-medulla-agent-linux.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
-	cp scripts_installer/mac/generate-pulse-agent-mac.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
-	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
+	cp scripts_installer/mac/generate-medulla-agent-mac.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
+	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/generate-medulla-agent-mac.sh
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
 	cp -r scripts_installer/lin/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
-	cp scripts_installer/mac/generate-pulse-agent-mac.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
-	cp scripts_installer/mac/Info.plist.in $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
-	cp scripts_installer/mac/postflight.in $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
-	cp scripts_installer/mac/net.siveo.pulse_xmpp_agent.plist $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
-	cp scripts_installer/mac/rbash $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
-	cp scripts_installer/mac/runpulseagent $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
+	cp scripts_installer/mac/generate-medulla-agent-mac.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/libs
 	cp -fr scripts_installer/win/nsis_libs/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/libs
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/artwork
