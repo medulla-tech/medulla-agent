@@ -370,4 +370,4 @@ update_generation_options_file
 
 generate_agent_win
 generate_agent_lin
-#generate_agent_mac
+generate_agent_mac
