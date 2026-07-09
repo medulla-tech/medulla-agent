@@ -407,6 +407,12 @@ class confParameter:
                 "glpi", "enable_forward"
             )
 
+        self.inventory_injection_mode = "forward"
+        if confiobject.has_option("glpi", "inventory_injection_mode"):
+            self.inventory_injection_mode = confiobject.get(
+                "glpi", "inventory_injection_mode"
+            )
+
         self.inventory_enable_forward_ocsserver = False
         if confiobject.has_option("glpi", "enable_forward_ocsserver"):
             self.inventory_enable_forward_ocsserver = confiobject.getboolean(
