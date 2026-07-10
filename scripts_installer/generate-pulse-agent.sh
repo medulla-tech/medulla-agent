@@ -141,6 +141,7 @@ check_arguments() {
                 shift
                 ;;
             *)
+            
                 # unknown option
                 display_usage
                 exit 0

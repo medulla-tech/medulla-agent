@@ -196,9 +196,11 @@ def create_config_file_atomically(file_path, config_data):
         # Renommer le fichier temporaire pour remplacer le fichier cible
         os.replace(temp_file_path, file_path)
     except Exception as e:
+        # On logge l'erreur mais on ne la raise pas car elle interrompt le flux du programme
+        logger.error("Error could not replace file: %s. Erreur: %s" % (temp_file_path, file_path))
         # En cas d'erreur, supprimer le fichier temporaire
         os.remove(temp_file_path)
-        raise e
+        #raise e
 
 
 class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):

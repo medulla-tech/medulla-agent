@@ -39,6 +39,7 @@ SSH_PORT="@@SSH_PORT@@"
 GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
 GLPI_AGENT_FILENAME="glpi-agent-@@GLPI_AGENT_VERSION@@-1.noarch.rpm"
 GLPI_AGENT_BASE_URL="@@GLPI_AGENT_BASE_URL@@"
+PYTHON_VERSION="python3.11" # install_agent_deps_<distrib> overrides this variable
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -68,6 +69,7 @@ check_distro() {
 }
 
 install_agent_deps_ubuntu() {
+    PYTHON_VERSION="python3.11"
     # Install Python 3.11
     apt update
     apt install -y software-properties-common
@@ -77,23 +79,38 @@ install_agent_deps_ubuntu() {
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
     # Install required packages
-    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
+    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing wget 
     # Remove deadsnakes repository
     rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-*.sources
     apt update
 }
 
 install_agent_deps_debian12() {
+    PYTHON_VERSION="python3.11"
     # Install Python 3.11
     apt update
     apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
     # Install required packages
-    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
+    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing wget 
+}
+
+install_agent_deps_debian13() {
+    PYTHON_VERSION="python3.13"
+    # Install Python 3.13
+    apt update
+    apt install -y python3.13 python3.13-venv python3.13-dev python3-setuptools
+    # Pip is installed in python3.13-venv -- depends --> python3-pip-whl
+    # Set Python 3.13 as default python3
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1
+    update-alternatives --set python3 /usr/bin/python3.13
+    # Install required packages
+    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc xrdp sudo syncthing wget 
 }
 
 install_agent_deps_almalinux() {
+    PYTHON_VERSION="python3.11"
     # Enable EPEL repository (required for crudini, x11vnc, xrdp, fusioninventory-agent)
     dnf install -y epel-release
     # Enable CRB (crb sur AlmaLinux 9, powertools sur AlmaLinux 8) pour les paquets -devel
@@ -104,7 +121,7 @@ install_agent_deps_almalinux() {
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
     # Install required packages
-    dnf install -y crudini wget net-tools openssh-server rsync x11vnc sudo syncthing
+    dnf install -y crudini wget net-tools openssh-server rsync x11vnc sudo syncthing wget
     # Install GLPI Agent from RPM
     echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
     wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
@@ -251,8 +268,25 @@ EOF
 
 install_agent() {
     echo "Installing Medulla XMPP agent ..."
-    python3.11 -m venv /opt/medulla
-    /opt/medulla/bin/python3.11 -m pip install ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}
+    cd /tmp/medulla
+    "$PYTHON_VERSION" -m venv /opt/medulla
+    "/opt/medulla/bin/$PYTHON_VERSION" -m pip install ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}
+
+    # Quickfix python3.13 to mimick previous python version ssl behavior
+    if [ "$PYTHON_VERSION" == "python3.13" ]; then
+        local PYTHON_DIR="/opt/medulla/lib/$PYTHON_VERSION/site-packages"
+        echo 'import ssl as _ssl
+if hasattr(_ssl, "VERIFY_X509_STRICT"):
+    _orig = _ssl.create_default_context
+    def _patched(*a, **kw):
+        ctx = _orig(*a, **kw)
+        ctx.verify_flags &= ~_ssl.VERIFY_X509_STRICT
+        return ctx
+    _ssl.create_default_context = _patched' | tee "$PYTHON_DIR/usercustomize.py"
+
+        # Modify pyenv to apply usercustomize.py
+        sed -i 's/include-system-site-packages = false/include-system-site-packages = true/' /opt/medulla/pyvenv.cfg
+    fi
 }
 
 install_kiosk() {
@@ -274,13 +308,16 @@ install_kiosk() {
             ;;
     esac
 
+    local PYTHON_EXE="/opt/medulla/bin/$PYTHON_VERSION"
+    local PYTHON_DIR="/opt/medulla/lib/$PYTHON_VERSION/site-packages"
+
     # Install PyQt6 + the kiosk into the agent venv, so the scheduler can run
     # the kiosk with the agent's own interpreter (sys.executable) as the user.
     # IMPORTANT: pin PyQt6-Qt6 to the SAME version as PyQt6 — `PyQt6==x` alone
     # leaves PyQt6-Qt6 unpinned and pip pulls the latest Qt libs, causing an ABI
     # mismatch ("undefined symbol ... version Qt_6") at import time.
-    /opt/medulla/bin/python3.11 -m pip install "PyQt6==${PYQT6_VERSION}" "PyQt6-Qt6==${PYQT6_VERSION}"
-    /opt/medulla/bin/python3.11 -m pip install /tmp/medulla/${KIOSK_FILENAME}
+    "$PYTHON_EXE" -m pip install "PyQt6==${PYQT6_VERSION}" "PyQt6-Qt6==${PYQT6_VERSION}"
+    "$PYTHON_EXE" -m pip install /tmp/medulla/${KIOSK_FILENAME}
 
     # Enable the kiosk launch by the agent scheduler (scheduling_launch_kiosk).
     crudini --set /etc/pulse-xmpp-agent/scheduling_launch_kiosk.ini scheduling_launch_kiosk enable_kiosk True
@@ -293,8 +330,8 @@ install_kiosk() {
 Type=Application
 Name=Medulla Kiosk
 Comment=Open the Medulla software kiosk
-Exec=/opt/medulla/bin/python3.11 -m kiosk_interface --show
-Icon=/opt/medulla/lib/python3.11/site-packages/kiosk_interface/datas/kiosk.png
+Exec=${$PYTHON_EXE} -m kiosk_interface --show
+Icon=${PYTHON_DIR}/kiosk_interface/datas/kiosk.png
 Terminal=false
 Categories=System;Utility;
 Keywords=medulla;kiosk;software;packages;
@@ -305,8 +342,8 @@ EOF
 
 create_service () {
     echo "Creating systemd service for Medulla XMPP agent ..."
-    local PYTHON_EXE="/opt/medulla/bin/python3.11"
-    local PYTHON_DIR="/opt/medulla/lib/python3.11/site-packages"
+    local PYTHON_EXE="/opt/medulla/bin/$PYTHON_VERSION"
+    local PYTHON_DIR="/opt/medulla/lib/$PYTHON_VERSION/site-packages"
     if [ ! -d "/usr/lib/systemd/system/" ]; then
         mkdir -p /usr/lib/systemd/system/
     fi
@@ -353,7 +390,7 @@ configure_inventory_tag() {
 
 start_agent() {
     echo "Starting Medulla XMPP agent ..."
-    chmod +x /opt/medulla/lib/python3.11/site-packages/pulse_xmpp_agent/launcher.py
+    chmod +x /opt/medulla/lib/$PYTHON_VERSION/site-packages/pulse_xmpp_agent/launcher.py
     [ ! -d "/var/log/pulse" ] && mkdir /var/log/pulse
 
     # Enable and start the service
@@ -372,6 +409,8 @@ case "$DISTRO" in
     debian)
         if [ "$VERSION" == "12" ]; then
             install_agent_deps_debian12
+        elif  [ "$VERSION" == "13" ]; then
+            install_agent_deps_debian13
         fi
         ;;
     almalinux)
