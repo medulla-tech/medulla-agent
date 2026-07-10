@@ -266,6 +266,7 @@ def last_inventory(data, message, xmppobject):
         str: The last inventory date for the machine, or None if not found."""
 
     machine = XmppMasterDatabase().getMachinefromjid(message["from"])
+    logger.debug("Inventory date requested by %s" % message["from"])
 
     # Force inventory update
     callinventory(xmppobject, message["from"])
@@ -273,14 +274,25 @@ def last_inventory(data, message, xmppobject):
     time.sleep(5)
     if machine and "uuid_inventorymachine" in machine:
         machine_uuid = machine["uuid_inventorymachine"]
+        logger.debug("Machine found, uuid_inventorymachine=%s" % machine_uuid)
 
-        last_inv = Glpi().getLastMachineInventoryPart(
-            machine_uuid,
-            "Summary",
-            0,
-            -1,
-            "",
-            {"hide_win_updates": True, "history_delta": ""},
+        try:
+            last_inv = Glpi().getLastMachineInventoryPart(
+                machine_uuid,
+                "Summary",
+                0,
+                -1,
+                "",
+                {"hide_win_updates": True, "history_delta": ""},
+            )
+        except Exception:
+            logger.error(
+                "getLastMachineInventoryPart(Summary) raised:\n%s"
+                % traceback.format_exc()
+            )
+            return None
+        logger.debug(
+            "getLastMachineInventoryPart(Summary) returned: %s" % last_inv
         )
 
         last_inventory_date = None
@@ -303,16 +315,26 @@ def last_inventory(data, message, xmppobject):
                 sessionid=getRandomName(6, "inventory"),
             )
 
+            logger.debug(
+                "Sending inventory date '%s' to %s"
+                % (last_inventory_date, message["from"])
+            )
             xmppobject.send_message(
                 mto=message["from"], mbody=json.dumps(message_to_machine), mtype="chat"
             )
 
             return last_inventory_date
         else:
-            logger.debug(f"No inventory date found for the machine {machine_uuid}")
+            logger.debug(
+                "No 'Last Inventory Date' in Summary for machine %s "
+                "-> nothing sent to the kiosk (stays N/A)" % machine_uuid
+            )
             return None
     else:
-        logger.debug(f"Machine or UUID not found for JID: {message['from']}")
+        logger.debug(
+            "Machine or uuid_inventorymachine not found for JID: %s "
+            "-> nothing sent to the kiosk (stays N/A)" % message["from"]
+        )
         return None
 
 
