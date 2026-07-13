@@ -3612,7 +3612,7 @@ class MUCBot(ClientXMPP):
             if "msg" in dataobj["data"] and dataobj["data"]["msg"] != "":
                 msg = '"' + dataobj["data"]["msg"] + '"'
 
-            shutdown_command(time, msg)
+            shutdown_command()
             return
 
         if dataobj["action"] == "vncchangepermsfrommaster":
