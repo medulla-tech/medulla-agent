@@ -918,7 +918,7 @@ def get_agent_tag_from_file():
     
     Emplacements selon la plateforme:
     - Linux:   /etc/medulla-agent/agent_inventory_tag.txt
-    - Windows: C:\\Program Files (x86)\\Medulla\\etc\\agent_inventory_tag.txt
+    - Windows: C:\\Program Files\\Medulla\\etc\\agent_inventory_tag.txt
     - macOS:   /etc/medulla-agent/agent_inventory_tag.txt
     
     Returns:
@@ -927,12 +927,14 @@ def get_agent_tag_from_file():
     tag_file = None
     
     if sys.platform.startswith("win"):
-        # Windows: C:\Program Files (x86)\Medulla\etc\agent_inventory_tag.txt
+        # Windows: C:\Program Files\Medulla\etc\agent_inventory_tag.txt
+        medulla_base = medullaPath()
+        logger.debug(f"Windows: medullaPath()={medulla_base}")
         tag_file = os.path.join(
-            medullaPath(),
+            medulla_base,
             "etc",
             "agent_inventory_tag.txt"
-        )
+        ) if medulla_base else None
     elif sys.platform.startswith("darwin"):
         # macOS: /etc/medulla-agent/agent_inventory_tag.txt
         tag_file = "/etc/medulla-agent/agent_inventory_tag.txt"
@@ -940,20 +942,21 @@ def get_agent_tag_from_file():
         # Linux: /etc/medulla-agent/agent_inventory_tag.txt
         tag_file = "/etc/medulla-agent/agent_inventory_tag.txt"
 
-    logger.debug(f"TAG file path: {tag_file} (exists={os.path.exists(tag_file) if tag_file else False})")
+    exists = os.path.exists(tag_file) if tag_file else False
+    logger.info(f"TAG file path: {tag_file} (exists={exists})")
     
-    if tag_file and os.path.exists(tag_file):
+    if tag_file and exists:
         try:
             tag = utils.file_get_contents(tag_file).strip()
             if tag:
                 logger.info(f"TAG agent lu depuis fichier: {tag}")
                 return tag
             else:
-                logger.debug(f"TAG file {tag_file} is empty")
+                logger.warning(f"TAG file {tag_file} is empty")
         except Exception as e:
-            logger.warning(f"Erreur lecture TAG depuis {tag_file}: {e}")
+            logger.error(f"Erreur lecture TAG depuis {tag_file}: {e}", exc_info=True)
     else:
-        logger.debug(f"TAG file not found: {tag_file}")
+        logger.info(f"TAG file not found or path is None: {tag_file}")
     return None
 
 
