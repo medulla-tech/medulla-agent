@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "5.0", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "5.2", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -71,6 +71,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_updates = jid.JID("master_upd@pulse")
     if sys.platform.startswith("win"):
         try:
+            
+            
             send_plugin_update_windows(xmppobject)
         except Exception as e:
             logger.error("An error occured while calling the plugin:  %s" % str(e))
@@ -539,6 +541,20 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if xmppobject.config.via_xmpp == "True":
                 if os.path.exists(inventoryfile):
                     try:
+                        # Ajouter le TAG au XML s'il n'existe pas (Windows)
+                        logger.info("[INVENTORY-WINDOWS] Starting TAG injection")
+                        agent_tag = get_agent_tag_from_file()
+                        if agent_tag:
+                            logger.info(f"[INVENTORY-WINDOWS] TAG found, injecting: {agent_tag}")
+                            add_tag_to_inventory_xml(inventoryfile, agent_tag)
+                        else:
+                            logger.info("[INVENTORY-WINDOWS] No TAG found")
+                        
+                        # Ajouter les métadonnées au bloc META
+                        agent_metadata = get_agent_metadata_from_file()
+                        if agent_metadata:
+                            add_metadata_to_inventory_xml(inventoryfile, agent_metadata)
+                        
                         # read max_key_index parameter to find out the number of keys
                         # Registry keys that need to be pushed in an inventory
                         graine = ""
