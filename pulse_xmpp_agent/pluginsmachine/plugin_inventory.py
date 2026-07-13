@@ -990,6 +990,7 @@ def get_agent_tag_from_file():
 def add_tag_to_inventory_xml(xmlfile, tag_value):
     """
     Ajoute le TAG au XML d'inventaire s'il n'existe pas.
+    Supporte les deux structures : FusionInventory (/REQUEST/CONTENT) et GLPI-Agent (/REQUEST).
     
     Param: xmlfile - chemin du fichier XML
     Param: tag_value - valeur du TAG à ajouter
@@ -1003,12 +1004,19 @@ def add_tag_to_inventory_xml(xmlfile, tag_value):
     try:
         parser = ET.XMLParser(remove_blank_text=False)
         xmlTree = ET.parse(xmlfile, parser=parser)
+        root = xmlTree.getroot()
         
-        # Chercher si TAG existe déjà
-        content = xmlTree.find("./REQUEST/CONTENT")
+        # Déterminer la structure XML
+        content = root.find("./REQUEST/CONTENT")
         if content is None:
-            logger.warning("Élément REQUEST/CONTENT non trouvé dans l'inventaire XML")
-            return False
+            # Essayer la structure GLPI-Agent directe (/REQUEST)
+            content = root.find("./REQUEST")
+            if content is None:
+                # Structure inconnue - essayer la racine directe
+                content = root
+            logger.debug(f"Using direct REQUEST structure (no CONTENT)")
+        else:
+            logger.debug(f"Using FusionInventory structure (REQUEST/CONTENT)")
 
         existing_tag = content.find("./TAG")
         
@@ -1102,6 +1110,7 @@ def get_agent_metadata_from_file():
 def add_metadata_to_inventory_xml(xmlfile, metadata_dict):
     """
     Ajoute les métadonnées au bloc META du XML d'inventaire.
+    Supporte les deux structures : FusionInventory (/REQUEST/CONTENT) et GLPI-Agent (/REQUEST).
     Les métadonnées existantes ne sont pas écrasées.
     
     Param: xmlfile - chemin du fichier XML
@@ -1116,12 +1125,19 @@ def add_metadata_to_inventory_xml(xmlfile, metadata_dict):
     try:
         parser = ET.XMLParser(remove_blank_text=False)
         xmlTree = ET.parse(xmlfile, parser=parser)
+        root = xmlTree.getroot()
         
         # Chercher ou créer le bloc META
-        content = xmlTree.find("./REQUEST/CONTENT")
+        content = root.find("./REQUEST/CONTENT")
         if content is None:
-            logger.warning("Élément REQUEST/CONTENT non trouvé dans l'inventaire XML")
-            return False
+            # Essayer la structure GLPI-Agent directe (/REQUEST)
+            content = root.find("./REQUEST")
+            if content is None:
+                # Structure inconnue - essayer la racine directe
+                content = root
+            logger.debug(f"Using direct REQUEST structure for metadata (no CONTENT)")
+        else:
+            logger.debug(f"Using FusionInventory structure for metadata (REQUEST/CONTENT)")
 
         meta = content.find("./META")
         if meta is None:
