@@ -77,6 +77,7 @@ if sys.platform.startswith("linux"):
     import pwd
     import grp
     import fcntl
+    import distro
 if sys.platform.startswith("darwin"):
     import pwd
     import grp
@@ -1699,40 +1700,26 @@ if sys.platform.startswith("win"):
             return None
 
 
-def shutdown_command(time=0, msg=""):
+def shutdown_command():
     """
-    This  function allow to shutdown a machine, and if needed
-    to display a message
-
-    Args:
-        time: the delay before the shutdown
-        msg:  the message that will be displayed
-
+    This function allows to shutdown a machine
     """
-    if msg != "":
-        msg = msg.strip('" ')
-        msg = '"%s"' % msg
     if sys.platform.startswith("linux"):
-        if int(time) == 0 or msg == "":
-            cmd = "shutdown now"
+        if distro.id().lower() in [
+            "ubuntu",
+            "zorin",
+            "linuxmint",
+            "debian",
+        ]:
+            cmd = 'systemctl poweroff -i'
         else:
-            cmd = "shutdown -P -f -t %s %s" % (time, msg)
-        logging.debug(cmd)
-        os.system(cmd)
+            cmd = 'shutdown -P now'
     elif sys.platform.startswith("win"):
-        if int(time) == 0 or msg == "":
-            cmd = "shutdown /p"
-        else:
-            cmd = "shutdown /s /t %s /c %s" % (time, msg)
-        logging.debug(cmd)
-        os.system(cmd)
+        cmd = 'shutdown /p'
     elif sys.platform.startswith("darwin"):
-        if int(time) == 0 or msg == "":
-            cmd = "shutdown -h now"
-        else:
-            cmd = 'shutdown -h +%s "%s"' % (time, msg)
-        logging.debug(cmd)
-        os.system(cmd)
+        cmd = 'shutdown -h now'
+    logging.debug(cmd)
+    os.system(cmd)
     return
 
 
@@ -1763,7 +1750,15 @@ def reboot_command():
     This function allow to reboot a machine.
     """
     if sys.platform.startswith("linux"):
-        os.system("shutdown -r now")
+        if distro.id().lower() in [
+            "ubuntu",
+            "zorin",
+            "linuxmint",
+            "debian",
+        ]:
+            os.system("systemctl reboot -i")
+        else:
+            os.system("shutdown -r now")
     elif sys.platform.startswith("win"):
         os.system("shutdown /r")
     elif sys.platform.startswith("darwin"):
