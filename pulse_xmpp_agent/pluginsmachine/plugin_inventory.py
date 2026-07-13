@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.9", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "5.0", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -320,9 +320,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if os.path.exists(inventoryfile):
                 try:
                     # Ajouter le TAG au XML s'il n'existe pas
+                    logger.info("[INVENTORY-LINUX] Starting TAG injection")
                     agent_tag = get_agent_tag_from_file()
                     if agent_tag:
+                        logger.info(f"[INVENTORY-LINUX] TAG found, injecting: {agent_tag}")
                         add_tag_to_inventory_xml(inventoryfile, agent_tag)
+                    else:
+                        logger.info("[INVENTORY-LINUX] No TAG found")
                     
                     # Ajouter les métadonnées au bloc META
                     agent_metadata = get_agent_metadata_from_file()
@@ -760,9 +764,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if os.path.exists(inventoryfile):
                 try:
                     # Ajouter le TAG au XML s'il n'existe pas
+                    logger.info("[INVENTORY-MACOS] Starting TAG injection")
                     agent_tag = get_agent_tag_from_file()
                     if agent_tag:
+                        logger.info(f"[INVENTORY-MACOS] TAG found, injecting: {agent_tag}")
                         add_tag_to_inventory_xml(inventoryfile, agent_tag)
+                    else:
+                        logger.info("[INVENTORY-MACOS] No TAG found")
                     
                     # Ajouter les métadonnées au bloc META
                     agent_metadata = get_agent_metadata_from_file()
@@ -929,12 +937,15 @@ def get_agent_tag_from_file():
     if sys.platform.startswith("win"):
         # Windows: C:\Program Files\Medulla\etc\agent_inventory_tag.txt
         medulla_base = medullaPath()
-        logger.debug(f"Windows: medullaPath()={medulla_base}")
+        logger.info(f"[TAG] Windows: medullaPath()={medulla_base}")
+        if not medulla_base:
+            logger.warning("[TAG] medullaPath() returned None on Windows, cannot determine TAG file path")
+            return None
         tag_file = os.path.join(
             medulla_base,
             "etc",
             "agent_inventory_tag.txt"
-        ) if medulla_base else None
+        )
     elif sys.platform.startswith("darwin"):
         # macOS: /etc/medulla-agent/agent_inventory_tag.txt
         tag_file = "/etc/medulla-agent/agent_inventory_tag.txt"
@@ -943,20 +954,20 @@ def get_agent_tag_from_file():
         tag_file = "/etc/medulla-agent/agent_inventory_tag.txt"
 
     exists = os.path.exists(tag_file) if tag_file else False
-    logger.info(f"TAG file path: {tag_file} (exists={exists})")
+    logger.info(f"[TAG] file path: {tag_file} (exists={exists})")
     
     if tag_file and exists:
         try:
             tag = utils.file_get_contents(tag_file).strip()
             if tag:
-                logger.info(f"TAG agent lu depuis fichier: {tag}")
+                logger.info(f"[TAG] Successfully read: {tag}")
                 return tag
             else:
-                logger.warning(f"TAG file {tag_file} is empty")
+                logger.warning(f"[TAG] file {tag_file} is empty")
         except Exception as e:
-            logger.error(f"Erreur lecture TAG depuis {tag_file}: {e}", exc_info=True)
+            logger.error(f"[TAG] Error reading {tag_file}: {e}", exc_info=True)
     else:
-        logger.info(f"TAG file not found or path is None: {tag_file}")
+        logger.warning(f"[TAG] file not found or path is None: {tag_file}")
     return None
 
 
