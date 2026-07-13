@@ -186,9 +186,11 @@ class MUCBot(ClientXMPP):
         self.add_event_handler("stream_error", self.on_stream_error)
         self.add_event_handler("failed_auth", self.on_failed_auth)
         self.add_event_handler("stream_error", self.stream_error1)
+        self.syncthing = None
+        self.deviceid = ""
         try:
             self.config.syncthing_on
-        except NameError:
+        except (NameError, AttributeError):
             self.config.syncthing_on = False
 
         # Planification d'un événement pour gérer le dépassement du délai
@@ -201,7 +203,6 @@ class MUCBot(ClientXMPP):
 
         if self.config.syncthing_on:
             logger.debug("We will configure syncthing")
-            self.deviceid = ""
             if logger.level <= 10:
                 console = False
                 browser = True
@@ -647,106 +648,124 @@ class MUCBot(ClientXMPP):
                                 logger.error(f"{e}")
 
                         if self.config.syncthing_on:
-                            try:
-                                if "syncthing" in data:
-                                    self.syncthing.config["options"][
-                                        "globalAnnounceServers"
-                                    ] = [data["syncthing"]]
-                                    self.syncthing.config["options"][
-                                        "relaysEnabled"
-                                    ] = False
-                                    self.syncthing.config["options"][
-                                        "localAnnounceEnabled"
-                                    ] = False
-                                    self.syncthing.del_folder("default")
-                                    if sys.platform.startswith("win"):
-                                        defaultFolderPath = os.path.join(
-                                            medullaPath(), "var", "syncthing"
-                                        )
-                                    elif sys.platform.startswith("linux"):
-                                        defaultFolderPath = os.path.join(
-                                            os.path.expanduser("~pulseuser"),
-                                            "syncthing",
-                                        )
-                                    elif sys.platform.startswith("darwin"):
-                                        defaultFolderPath = os.path.join(
-                                            "/",
-                                            "Library",
-                                            "Application Support",
-                                            "Pulse",
-                                            "var",
-                                            "syncthing",
-                                        )
-                                    if not os.path.exists(defaultFolderPath):
-                                        os.mkdir(defaultFolderPath)
-                                        os.chmod(defaultFolderPath, 0o777)
-                                    self.syncthing.config["options"][
-                                        "defaultFolderPath"
-                                    ] = defaultFolderPath
-
-                                if self.deviceid != "":
-                                    if len(data["data"][0]) >= 7:
-                                        for x in data["data"]:
-                                            if self.is_format_key_device(str(x[5])):
-                                                self.adddevicesyncthing(
-                                                    str(x[5]),
-                                                    str(x[2]),
-                                                    address=[f"tcp4://{x[0]}:{x[6]}"],
-                                                )
-                                    logger.debug(
-                                        f"synchro config {self.syncthing.is_config_sync()}"
-                                    )
-                                    self.syncthing.validate_chang_config()
-                                    time.sleep(2)
-                                    filesyncthing = os.path.join(
-                                        os.path.dirname(os.path.realpath(__file__)),
-                                        "baseconfigsyncthing.xml",
-                                    )
-                                    logger.debug("copy configuration syncthing")
-                                    shutil.copyfile(
-                                        self.fichierconfsyncthing, filesyncthing
-                                    )
-                                    logger.debug(
-                                        "%s"
-                                        % json.dumps(self.syncthing.config, indent=4)
-                                    )
-                                    # if logging.getLogger().level == logging.DEBUG:
-                                    # dataconf = json.dumps(
-                                    # self.syncthing.config, indent=4
-                                    # )
-                                    # else:
-                                    dataconf = "re-setup syncthing ok"
-
-                                    confsyncthing = {
-                                        "action": "resultconfsyncthing",
-                                        "sessionid": getRandomName(6, "confsyncthing"),
-                                        "ret": 0,
-                                        "base64": False,
-                                        "data": {
-                                            "syncthingconf": "re-setup syncthing ok\n%s"
-                                            % dataconf
-                                        },
-                                    }
-
-                                    self.send_message(
-                                        mto=msg["from"],
-                                        mbody=json.dumps(confsyncthing),
-                                        mtype="chat",
-                                    )
-                            except Exception:
+                            if self.syncthing is None:
+                                informationerror = (
+                                    "Syncthing enabled but not initialized on agent. "
+                                    "Check syncthing startup and config.xml generation."
+                                )
+                                logger.warning(informationerror)
                                 confsyncthing = {
                                     "action": "resultconfsyncthing",
                                     "sessionid": getRandomName(6, "confsyncthing"),
                                     "ret": 255,
-                                    "data": {
-                                        "errorsyncthingconf": f"{traceback.format_exc()}"
-                                    },
+                                    "data": {"errorsyncthingconf": informationerror},
                                 }
                                 self.send_message(
                                     mto=msg["from"],
                                     mbody=json.dumps(confsyncthing),
                                     mtype="chat",
                                 )
+                            else:
+                                try:
+                                    if "syncthing" in data:
+                                        self.syncthing.config["options"][
+                                            "globalAnnounceServers"
+                                        ] = [data["syncthing"]]
+                                        self.syncthing.config["options"][
+                                            "relaysEnabled"
+                                        ] = False
+                                        self.syncthing.config["options"][
+                                            "localAnnounceEnabled"
+                                        ] = False
+                                        self.syncthing.del_folder("default")
+                                        if sys.platform.startswith("win"):
+                                            defaultFolderPath = os.path.join(
+                                                medullaPath(), "var", "syncthing"
+                                            )
+                                        elif sys.platform.startswith("linux"):
+                                            defaultFolderPath = os.path.join(
+                                                os.path.expanduser("~pulseuser"),
+                                                "syncthing",
+                                            )
+                                        elif sys.platform.startswith("darwin"):
+                                            defaultFolderPath = os.path.join(
+                                                "/",
+                                                "Library",
+                                                "Application Support",
+                                                "Pulse",
+                                                "var",
+                                                "syncthing",
+                                            )
+                                        if not os.path.exists(defaultFolderPath):
+                                            os.mkdir(defaultFolderPath)
+                                            os.chmod(defaultFolderPath, 0o777)
+                                        self.syncthing.config["options"][
+                                            "defaultFolderPath"
+                                        ] = defaultFolderPath
+
+                                    if self.deviceid != "":
+                                        if len(data["data"][0]) >= 7:
+                                            for x in data["data"]:
+                                                if self.is_format_key_device(str(x[5])):
+                                                    self.adddevicesyncthing(
+                                                        str(x[5]),
+                                                        str(x[2]),
+                                                        address=[f"tcp4://{x[0]}:{x[6]}"],
+                                                    )
+                                        logger.debug(
+                                            f"synchro config {self.syncthing.is_config_sync()}"
+                                        )
+                                        self.syncthing.validate_chang_config()
+                                        time.sleep(2)
+                                        filesyncthing = os.path.join(
+                                            os.path.dirname(os.path.realpath(__file__)),
+                                            "baseconfigsyncthing.xml",
+                                        )
+                                        logger.debug("copy configuration syncthing")
+                                        shutil.copyfile(
+                                            self.fichierconfsyncthing, filesyncthing
+                                        )
+                                        logger.debug(
+                                            "%s"
+                                            % json.dumps(self.syncthing.config, indent=4)
+                                        )
+                                        # if logging.getLogger().level == logging.DEBUG:
+                                        # dataconf = json.dumps(
+                                        # self.syncthing.config, indent=4
+                                        # )
+                                        # else:
+                                        dataconf = "re-setup syncthing ok"
+
+                                        confsyncthing = {
+                                            "action": "resultconfsyncthing",
+                                            "sessionid": getRandomName(6, "confsyncthing"),
+                                            "ret": 0,
+                                            "base64": False,
+                                            "data": {
+                                                "syncthingconf": "re-setup syncthing ok\n%s"
+                                                % dataconf
+                                            },
+                                        }
+
+                                        self.send_message(
+                                            mto=msg["from"],
+                                            mbody=json.dumps(confsyncthing),
+                                            mtype="chat",
+                                        )
+                                except Exception:
+                                    confsyncthing = {
+                                        "action": "resultconfsyncthing",
+                                        "sessionid": getRandomName(6, "confsyncthing"),
+                                        "ret": 255,
+                                        "data": {
+                                            "errorsyncthingconf": f"{traceback.format_exc()}"
+                                        },
+                                    }
+                                    self.send_message(
+                                        mto=msg["from"],
+                                        mbody=json.dumps(confsyncthing),
+                                        mtype="chat",
+                                    )
                         try:
                             if "substitute" in data:
                                 logger.debug("substitute information")

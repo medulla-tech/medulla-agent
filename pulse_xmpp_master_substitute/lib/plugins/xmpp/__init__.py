@@ -1,14 +1,10 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
-# file : pulse_xmpp_master_substitute/lib/plugins/xmpp/__init__.py
 
 """
 xmppmaster database handler
 """
-
-# Python standard library
-from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Union
 
 # SqlAlchemy
 from sqlalchemy import (
@@ -24,8 +20,7 @@ from sqlalchemy import (
     not_,
     delete,
     text,
-    Boolean,
-    bindparam,
+    Boolean
 )
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
@@ -102,15 +97,7 @@ from lib.plugins.xmpp.schema import (
     Users_adgroups,
     Up_auto_approve_rules,
     UpWindowsKbUninstall,
-    Up_machine_activated,   
-    UpMachineLinux,
-    UpPackageLinux,
-    UpCveLinux,
-    UpPackageCveLinux,
-    UpMachineUpdateLinux,
-    UpRhelVersions,
-    UpDebianVersions,
-    UpUbuntuVersions,
+    Up_machine_activated,
 )
 
 # Imported last
@@ -153,11 +140,6 @@ if sys.version_info >= (3, 0, 0):
 
 
 logger = logging.getLogger()
-
-# Official generic Linux deployment package.
-# This package UUID must exist in /var/lib/pulse2/packages/<uuid> on relays.
-LINUX_GENERIC_PACKAGE_UUID = "dfd3b8dc-linuxupdategenericcommand_p"
-LINUX_GENERIC_PACKAGE_NAME = "linux-update-generic-command"
 
 # sql debug mode
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
@@ -11560,6 +11542,30 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     @DatabaseHelper._sessionm
     def pending_up_machine_windows_white(self, session):
+        """
+        Prépare les déploiements en attente pour les mises à jour présentes en white list.
+
+        Cette fonction :
+        - sélectionne les couples (machine, update) non encore planifiés,
+        - ajoute une entrée d'historique `Up_history` pour le suivi,
+        - positionne les marqueurs de déploiement dans `Up_machine_windows`,
+        - construit la liste des fichiers du package à transférer.
+        La mise à jour des champs de `Up_machine_windows` permet à une tâche planifiée de déclencher les déploiements
+        si les critères de plage horaire sont respectés et qu'aucun déploiement n'est déjà en cours (`curent_deploy`)
+        ou requis (`required_deploy`).
+
+        Critères de sélection :
+        - `curent_deploy` est NULL ou 0,
+        - `required_deploy` est NULL ou 0,
+        - l'update est présente dans `up_white_list`.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+
+        Returns:
+            list[dict]: Liste des déploiements prêts à être envoyés à l'orchestrateur.
+        """
+        # Sélection des updates autorisées (white list) qui ne sont pas déjà en cours/planifiées.
         query = (
             session.query(Up_machine_windows, Up_white_list, Machines)
             .filter(
@@ -11580,13 +11586,15 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         )
 
         result = []
+        # Fenêtre de déploiement par défaut : immédiat + expiration à J+7.
         start_date = datetime.now()
         end_date = start_date + timedelta(days=7)
 
+        # Fichiers techniques à ignorer dans le package.
         exclude_name_package = ["sharing", ".stfolder", ".stignore"]
 
         for element, white, machine in query:
-            # Add entry to history
+            # Historiser le passage en file de déploiement depuis la white list.
 
             deployName = "%s -@upd@- %s" % (white.title, start_date)
 
@@ -11604,6 +11612,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             element.start_date = datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S")
             element.end_date = datetime.strftime(end_date, "%Y-%m-%d %H:%M:%S")
 
+            # Scanner le dossier package pour construire le manifeste de transfert.
             folderpackage = os.path.join(
                 "/", "var", "lib", "pulse2", "packages", element.update_id
             )
@@ -11611,6 +11620,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
             if os.path.isdir(folderpackage):
                 for root, dir, file in os.walk(folderpackage):
+                    # On ne prend que le premier niveau du dossier package.
                     if root != folderpackage:
                         continue
                     for _file in file:
@@ -11628,6 +11638,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             else:
                 files = []
 
+            # Format historique attendu par le pipeline de déploiement.
             files_str = "\n".join(
                 [
                     file["id"] + "##" + file["path"] + "/" + file["name"]
@@ -11660,7 +11671,27 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     @DatabaseHelper._sessionm
     def pending_up_machine_windows(self, session, to_deploy):
+        """
+        Prépare un déploiement effectif pour une mise à jour ciblée sur une machine donnée.
+
+        Cette fonction :
+        - récupère le triplet (update machine, métadonnées update, machine) à partir de
+          `to_deploy["updateid"]` et `to_deploy["idmachine"]`,
+        - bascule l'état de l'entrée dans `Up_machine_windows` en mode déploiement en cours,
+        - met à jour l'entrée `Up_history` associée (date courante et titre de déploiement),
+        - construit le manifeste des fichiers du package à transmettre.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            to_deploy (dict): Cible de déploiement avec au minimum les clés
+                `updateid` et `idmachine`.
+
+        Returns:
+            dict | False: Dictionnaire décrivant le déploiement préparé,
+            ou `False` en cas d'erreur.
+        """
         try:
+            # Sélection ciblée : une update précise pour une machine précise.
             query = (
                 session.query(Up_machine_windows, Update_data, Machines)
                 .filter(
@@ -11677,13 +11708,18 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             exclude_name_package = ["sharing", ".stfolder", ".stignore"]
             result = {}
 
+            # Fenêtre de déploiement par défaut : immédiat + expiration à J+7.
             start_date = datetime.now()
             end_date = start_date + timedelta(days=7)
 
             for element, updata, machine in query:
                 deployName = "%s -@upd@- %s" % (updata.title, start_date)
+
+                # Bascule de l'update en état "en cours de déploiement".
                 element.required_deploy = 0
                 element.curent_deploy = 1
+
+                # Mise à jour de l'historique existant pour refléter le lancement courant.
                 try:
                     history = (
                         session.query(Up_history)
@@ -11701,6 +11737,8 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     history.deploy_title = deployName
                 except Exception as e:
                     self.logger.error(e)
+
+                # Scanner le dossier package pour construire le manifeste de transfert.
                 folderpackage = os.path.join(
                     "/", "var", "lib", "pulse2", "packages", element.update_id
                 )
@@ -11708,6 +11746,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
                 if os.path.isdir(folderpackage):
                     for root, dir, file in os.walk(folderpackage):
+                        # On ne conserve que le premier niveau du dossier package.
                         if root != folderpackage:
                             continue
                         for _file in file:
@@ -11725,12 +11764,15 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 else:
                     files = []
 
+                # Format attendu par le pipeline de déploiement (id##path/name par ligne).
                 files_str = "\n".join(
                     [
                         file["id"] + "##" + file["path"] + "/" + file["name"]
                         for file in files
                     ]
                 )
+
+                # Données renvoyées au moteur de déploiement.
                 result = {
                     "id_machine": element.id_machine,
                     "update_id": element.update_id,
@@ -11757,12 +11799,26 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     @DatabaseHelper._sessionm
     def get_updates_in_required_deploy_state(self, session):
+        """
+        Retourne les mises à jour marquées comme "à déployer".
+
+        Une entrée est considérée "required" lorsque `required_deploy = 1`.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+
+        Returns:
+            dict: Structure `{"total": int, "datas": list}` contenant le volume
+            et les objets `Up_machine_windows` correspondants.
+        """
+        # Sélection des updates en attente explicite de déploiement.
         query = (
             session.query(Up_machine_windows)
             .join(Machines, Machines.id == Up_machine_windows.id_machine)
             .filter(Up_machine_windows.required_deploy == 1)
         )
 
+        # Comptage + chargement de la liste complète.
         count = query.count()
         query = query.all()
 
@@ -11771,12 +11827,26 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     @DatabaseHelper._sessionm
     def get_updates_in_curent_deploy_state(self, session):
+        """
+        Retourne les mises à jour actuellement en cours de déploiement.
+
+        Une entrée est considérée "current" lorsque `curent_deploy = 1`.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+
+        Returns:
+            dict: Structure `{"total": int, "datas": list}` contenant le volume
+            et les objets `Up_machine_windows` en cours.
+        """
+        # Sélection des updates marquées comme déploiement actif.
         query = (
             session.query(Up_machine_windows)
             .join(Machines, Machines.id == Up_machine_windows.id_machine)
             .filter(Up_machine_windows.curent_deploy == 1)
         )
 
+        # Comptage + chargement de la liste complète.
         count = query.count()
         query = query.all()
 
@@ -11785,8 +11855,23 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     @DatabaseHelper._sessionm
     def get_updates_in_deploy_state(self, session):
+        """
+        Retourne la vue consolidée des mises à jour dans la fenêtre active de déploiement.
+
+        Sont incluses les entrées `required_deploy = 1` ou `curent_deploy = 1`
+        dont la fenêtre temporelle est valide (`start_date < now < end_date`).
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+
+        Returns:
+            dict: Résultat agrégé avec total global et ventilation par état :
+            `current` et `required`.
+        """
+        # Date de référence pour évaluer la fenêtre de déploiement.
         date_now = datetime.now()
         try:
+            # Jointure machine + metadata update, filtrée sur les états de déploiement actifs.
             query = (
                 session.query(Up_machine_windows, Machines)
                 .add_column(Update_data.kb.label("kb"))
@@ -11804,6 +11889,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 )
             )
 
+            # Lecture complète pour construire l'agrégat de sortie.
             count = query.count()
             query = query.all()
 
@@ -11814,6 +11900,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             }
 
             for update, machine, kb in query:
+                # Projection normalisée d'une entrée pour l'API appelante.
                 tmp = {
                     "idmachine": machine.id,
                     "jidmachine": machine.jid,
@@ -11830,6 +11917,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     "end_date": update.end_date,
                 }
 
+                # Répartition dans la bonne section selon l'état courant.
                 switch_list = "current" if update.curent_deploy == 1 else "required"
                 result[switch_list]["total"] += 1
                 result[switch_list]["datas"].append(tmp)
@@ -11839,279 +11927,25 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             self.logger.error(e)
 
     @DatabaseHelper._sessionm
-    def get_linux_updates_in_deploy_state(self, session):
-        date_now = datetime.now()
-        try:
-            query = (
-                session.query(UpMachineLinux, Machines)
-                .join(Machines, Machines.uuid_serial_machine == UpMachineLinux.harduuid)
-                .filter(Machines.agenttype == "machine")
-            )
-
-            query = query.all()
-
-            result = {
-                "total": 0,
-                "current": {"total": 0, "datas": []},
-                "required": {"total": 0, "datas": []},
-            }
-
-            action_map = {
-                "security": {
-                    "required": "security_require",
-                    "current": "security_curent",
-                    "start": "security_start",
-                    "stop": "security_stop",
-                    "interval": "security_interval",
-                    "count": "security_count",
-                },
-                "kernel": {
-                    "required": "kernel_require",
-                    "current": "kernel_current",
-                    "start": "kernel_start",
-                    "stop": "kernel_stop",
-                    "interval": "kernel_interval",
-                    "count": "kernel_count",
-                },
-                "other": {
-                    "required": "other_require",
-                    "current": "other_current",
-                    "start": "other_start",
-                    "stop": "other_stop",
-                    "interval": "other_interval",
-                    "count": "other_count",
-                },
-            }
-
-            for update, machine in query:
-                for action, fields in action_map.items():
-                    is_required = bool(getattr(update, fields["required"]))
-                    is_current = bool(getattr(update, fields["current"]))
-
-                    if not (is_required or is_current):
-                        continue
-
-                    start_date = getattr(update, fields["start"])
-                    end_date = getattr(update, fields["stop"])
-
-                    # Keep backward compatibility when dates are not set.
-                    if start_date is not None and end_date is not None:
-                        if not (start_date < date_now and end_date > date_now):
-                            continue
-
-                    tmp = {
-                        "idmachine": machine.id,
-                        "jidmachine": machine.jid,
-                        "uuid_inventorymachine": (
-                            machine.uuid_inventorymachine
-                            if machine.uuid_inventorymachine is not None
-                            else ""
-                        ),
-                        "groupdeploy": machine.groupdeploy,
-                        "harduuid": update.harduuid,
-                        "distributor_id": update.distributor_id,
-                        "action": action,
-                        "count": int(getattr(update, fields["count"]) or 0),
-                        "deployment_intervals": getattr(update, fields["interval"]),
-                        "start_date": start_date,
-                        "end_date": end_date,
-                    }
-
-                    switch_list = "current" if is_current else "required"
-                    result[switch_list]["total"] += 1
-                    result[switch_list]["datas"].append(tmp)
-                    result["total"] += 1
-
-            return result
-        except Exception as e:
-            self.logger.error(e)
-            return {"total": 0, "current": {"total": 0, "datas": []}, "required": {"total": 0, "datas": []}}
-
-    @DatabaseHelper._sessionm
-    def get_linux_generic_package(self, session, distributor_id):
-        try:
-            dist = (distributor_id or "").lower()
-            model = None
-            if "debian" in dist:
-                model = UpDebianVersions
-            elif "ubuntu" in dist:
-                model = UpUbuntuVersions
-            elif any(x in dist for x in ["redhat", "rhel", "centos", "alma", "rocky"]):
-                model = UpRhelVersions
-
-            if model is None:
-                self.logger.warning(
-                    "Unknown Linux distributor '%s', fallback to official generic package",
-                    distributor_id,
-                )
-                return {
-                    "package_id": LINUX_GENERIC_PACKAGE_UUID,
-                    "package_name": LINUX_GENERIC_PACKAGE_NAME,
-                }
-
-            query = (
-                session.query(model)
-                .filter(
-                    and_(
-                        model.is_managed == 1,
-                        model.package != None,
-                        model.package != "",
-                    )
-                )
-                .order_by(desc(model.is_current_stable), desc(model.is_latest_lts), desc(model.version))
-                .first()
-            )
-
-            if query is None:
-                self.logger.warning(
-                    "No managed Linux generic package found in version table for '%s', fallback to official package",
-                    distributor_id,
-                )
-                return {
-                    "package_id": LINUX_GENERIC_PACKAGE_UUID,
-                    "package_name": LINUX_GENERIC_PACKAGE_NAME,
-                }
-
-            return {
-                "package_id": query.package,
-                "package_name": query.packagename if query.packagename is not None else "linux_updates_generic",
-            }
-        except Exception as e:
-            self.logger.error(e)
-            return None
-
-    @DatabaseHelper._sessionm
-    def pending_up_machine_linux(self, session, to_deploy):
-        try:
-            actions = to_deploy.get("actions") if isinstance(to_deploy, dict) else None
-            if not actions:
-                return False
-
-            query = (
-                session.query(UpMachineLinux, Machines)
-                .join(Machines, Machines.uuid_serial_machine == UpMachineLinux.harduuid)
-                .filter(Machines.id == to_deploy["idmachine"])
-                .first()
-            )
-
-            if query is None:
-                return False
-
-            update, machine = query
-
-            package_meta = self.get_linux_generic_package(update.distributor_id)
-            if not package_meta or not package_meta.get("package_id"):
-                self.logger.error(
-                    "No generic Linux package configured for distributor %s",
-                    update.distributor_id,
-                )
-                return False
-
-            package_id = package_meta["package_id"]
-
-            action_map = {
-                "security": {"required": "security_require", "current": "security_curent"},
-                "kernel": {"required": "kernel_require", "current": "kernel_current"},
-                "other": {"required": "other_require", "current": "other_current"},
-            }
-
-            # Safety gate: never schedule a Linux action when its update count is 0.
-            action_count_map = {
-                "security": int(update.security_count or 0),
-                "kernel": int(update.kernel_count or 0),
-                "other": int(update.other_count or 0),
-            }
-
-            filtered_actions = []
-            for action in actions:
-                if action not in action_map:
-                    continue
-                if action_count_map.get(action, 0) <= 0:
-                    self.logger.info(
-                        "Skip linux action '%s' for machine %s: no pending updates",
-                        action,
-                        update.harduuid,
-                    )
-                    continue
-                filtered_actions.append(action)
-
-            actions = sorted(list(set(filtered_actions)))
-            if not actions:
-                self.logger.info(
-                    "Skip linux deployment for machine %s: no actionable updates",
-                    update.harduuid,
-                )
-                return False
-
-            for action in actions:
-                setattr(update, action_map[action]["required"], False)
-                setattr(update, action_map[action]["current"], True)
-
-            exclude_name_package = ["sharing", ".stfolder", ".stignore"]
-            folderpackage = os.path.join("/", "var", "lib", "pulse2", "packages", package_id)
-            files = []
-            if os.path.isdir(folderpackage):
-                for root, dir, file in os.walk(folderpackage):
-                    if root != folderpackage:
-                        continue
-                    for _file in file:
-                        if _file not in exclude_name_package:
-                            files.append(
-                                {
-                                    "path": os.path.basename(os.path.dirname(root)),
-                                    "name": _file,
-                                    "id": str(uuid.uuid4()),
-                                    "size": str(os.path.getsize(os.path.join(root, _file))),
-                                }
-                            )
-
-            files_str = "\n".join(
-                [file["id"] + "##" + file["path"] + "/" + file["name"] for file in files]
-            )
-
-            start_date = to_deploy.get("start_date")
-            if start_date is None:
-                start_date = datetime.now()
-            end_date = to_deploy.get("end_date")
-            if end_date is None:
-                end_date = start_date + timedelta(days=7)
-
-            action_list = sorted(list(set(actions)))
-            title_name = LINUX_GENERIC_PACKAGE_NAME
-            deploy_title = "%s -@upd@- %s" % (
-                title_name,
-                start_date,
-            )
-
-            session.commit()
-            session.flush()
-
-            return {
-                "id_machine": machine.id,
-                "update_id": package_id,
-                "curent_deploy": True,
-                "required_deploy": False,
-                "start_date": start_date,
-                "end_date": end_date,
-                "intervals": to_deploy.get("deployment_intervals") or "",
-                "title": deploy_title,
-                "jidmachine": machine.jid,
-                "groupdeploy": machine.groupdeploy,
-                "uuidmachine": machine.uuid_inventorymachine,
-                "hostname": machine.hostname,
-                "files_str": files_str,
-                "actions": action_list,
-                "distributor_id": update.distributor_id,
-                "package_name": package_meta.get("package_name"),
-            }
-        except Exception as e:
-            self.logger.error(e)
-            return False
-
-    @DatabaseHelper._sessionm
     def deployment_is_running_on_machine(self, session, jid):
+        """
+        Indique si un déploiement est actuellement en cours sur une machine.
+
+        Un déploiement est considéré actif si :
+        - il cible `jid`,
+        - l'instant courant est dans la fenêtre `[startcmd, endcmd]`,
+        - l'état n'est ni SUCCESS, ni ABORT, ni ERROR.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            jid (str): JID de la machine cible.
+
+        Returns:
+            bool: `True` si au moins un déploiement actif est trouvé, sinon `False`.
+        """
         date_now = datetime.now()
 
+        # Recherche des déploiements actifs pour la machine.
         query = session.query(Deploy).filter(
             and_(
                 Deploy.jidmachine == jid,
@@ -12121,20 +11955,34 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             )
         )
 
+        # Un simple count suffit pour obtenir un booléen d'activité.
         query = query.count()
 
         return bool(query is not None and query != 0)
 
     @DatabaseHelper._sessionm
     def specific_deployment_is_running_on_machine(self, session, package_uuid:str, jid:str)->bool:
-        """Check if the specific package is not running on a specific machine
-        - params:
-            - self : XmppMasterDatabase object - Reference to the current object
-            - session : sqlalchemy session - added by the decorator @DatabaseHelper._sessionm
-            - package_uuid : str - the package's uuid to check
-            - jid : str - The machine's jid to check
-        - return bool - True if the deployement of the package is running on the machine
-        - return bool - False if the package is not currently deployed on the machine"""
+        """
+        Vérifie si un déploiement précis est en cours d'exécution sur une machine donnée.
+
+        Un déploiement est considéré actif si :
+        - il concerne la machine `jid`,
+        - il est rattaché au package `package_uuid`,
+        - son état n'est ni `SUCCESS`, ni `ABORT`, ni `ERROR`.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            package_uuid (str): Identifiant du package à contrôler.
+            jid (str): JID de la machine cible.
+
+        Returns:
+            bool: `True` si au moins un déploiement actif correspond,
+            sinon `False`.
+
+        Notes:
+            La vérification repose sur la table `deploy` jointe à `msc.commands`
+            pour filtrer sur `package_id`.
+        """
 
         sql = """select
     count(d.id)
@@ -12151,9 +11999,26 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
     @DatabaseHelper._sessionm
     def delete_all_done_updates(self, session):
+        """
+        Nettoie les updates en cours (`curent_deploy = 1`) lorsqu'un déploiement terminal est détecté.
+
+        La fonction :
+        - charge les couples (machine, update, historique) marqués en cours,
+        - recherche les déploiements associés dans `deploy`,
+        - considère une update terminée si au moins un état est `SUCCESS`, `ABORT` ou `ERROR`,
+        - renseigne `delete_date` dans `Up_history`,
+        - supprime l'entrée correspondante dans `Up_machine_windows`.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+
+        Returns:
+            bool: `True` si le traitement s'exécute jusqu'au bout, `False` sinon.
+        """
         date_now = datetime.now()
 
         try:
+            # Cible uniquement les updates explicitement marquées "en cours".
             query = (
                 session.query(Up_machine_windows, Machines, Update_data, Up_history)
                 .join(Machines, Up_machine_windows.id_machine == Machines.id)
@@ -12181,6 +12046,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
         result = []
         for update, machine, data, history in query:
+            # Trace de travail utile pour debug/observabilité du lot traité.
             result.append(
                 {
                     "update_id": update.update_id,
@@ -12195,6 +12061,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
             try:
                 deploy_done = []
                 deploy_not_done = []
+                # On restreint aux déploiements liés à ce run (machine + titre + commande + fenêtre).
                 query2 = session.query(Deploy).filter(
                     and_(
                         Deploy.jidmachine == machine.jid,
@@ -12206,6 +12073,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
                 )
                 query2 = query2.all()
                 for deploy in query2:
+                    # Mémorise le premier id_deploy observé pour historiser le lien technique.
                     if history.id_deploy is None:
                         history.id_deploy = deploy.id
                         history.deploy_date = deploy.start
@@ -12227,6 +12095,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
                     "Removing update %s for machine %s : done"
                     % (update.update_id, machine.hostname)
                 )
+                # Marque la date de fin métier dans l'historique avant purge de la file active.
                 history.delete_date = datetime.strftime(date_now, "%Y-%m-%d %H:%M:%S")
                 query_del = (
                     session.query(Up_machine_windows)
@@ -12244,6 +12113,19 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
     @DatabaseHelper._sessionm
     def insert_command_into_up_history(self, session, updateid, jidmachine, commandid):
+        """
+        Associe un identifiant de commande au dernier historique d'une update pour une machine.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            updateid (str): Identifiant de la mise à jour.
+            jidmachine (str): JID de la machine ciblée.
+            commandid (int | str): Identifiant de la commande de déploiement.
+
+        Returns:
+            None
+        """
+        # Récupère l'entrée d'historique la plus récente pour ce couple update/machine.
         query = (
             session.query(Up_history)
             .filter(
@@ -12254,6 +12136,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
         )
 
         try:
+            # Lien entre historique métier et commande technique msc.commands.
             query.command = commandid
             session.commit()
             session.flush()
@@ -12262,6 +12145,17 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
     @DatabaseHelper._sessionm
     def getmachineentityfromjid(self, session, jid):
+        """
+        Retourne l'entité GLPI associée à une machine identifiée par son JID.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            jid (str): JID exact de la machine.
+
+        Returns:
+            Glpi_entity | None: Entité trouvée, sinon `None`.
+        """
+        # Jointure via le mapping Local_glpi_filters pour faire le lien UUID machine -> entité GLPI.
         query = session.query(Glpi_entity)\
             .join(self.Local_glpi_filters, self.Local_glpi_filters.entities_id == Glpi_entity.glpi_id)\
             .join(Machines, "UUID%s"%self.Local_glpi_filters.id == Machines.uuid_inventorymachine)\
@@ -12271,15 +12165,43 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
     @DatabaseHelper._sessionm
     def get_ad_group_for_lastuser(self, session, login):
+        """
+        Retourne la liste des groupes AD d'un utilisateur (lastuser).
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            login (str): Login utilisateur stocké dans `Users_adgroups.lastuser`.
+
+        Returns:
+            list[str]: Groupes AD associés, liste vide si aucun résultat.
+        """
         query = (
             session.query(Users_adgroups).filter(Users_adgroups.lastuser == login).all()
         )
 
+        # Projection minimale attendue par les appelants : uniquement le nom de groupe.
         result = [element.adname for element in query] if query != None else []
         return result
 
     @DatabaseHelper._sessionm
     def get_all_ad_groups(self, session, start, limit, filter):
+        """
+        Retourne l'ensemble des noms de groupes AD distincts connus en base.
+
+        Notes:
+            Les paramètres `start`, `limit` et `filter` sont conservés pour compatibilité
+            de signature mais ne sont pas exploités dans l'implémentation actuelle.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            start (int): Paramètre de pagination non utilisé.
+            limit (int): Paramètre de pagination non utilisé.
+            filter (str): Filtre textuel non utilisé.
+
+        Returns:
+            list[str]: Noms de groupes AD uniques.
+        """
+        # Group by pour dédupliquer les groupes malgré plusieurs utilisateurs.
         query = session.query(Users_adgroups).group_by(Users_adgroups.adname).all()
 
         result = [element.adname for element in query] if query != None else []
@@ -12287,6 +12209,16 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
     @DatabaseHelper._sessionm
     def get_all_ad_groups_team(self, session, logins):
+        """
+        Retourne les groupes AD distincts pour un ensemble de logins.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            logins (list[str]): Liste des utilisateurs ciblés.
+
+        Returns:
+            list[str]: Groupes AD uniques partagés par l'équipe demandée.
+        """
         query = (
             session.query(Users_adgroups)
             .filter(Users_adgroups.lastuser.in_(logins))
@@ -12294,11 +12226,28 @@ where d.jidmachine='%s' and c.package_id = '%s'
             .all()
         )
 
+        # Format simple liste de noms, conforme aux usages API/UI.
         result = [element.adname for element in query] if query != None else []
         return result
 
     @DatabaseHelper._sessionm
     def addadusergroups(self, session, lastuser, ous):
+        """
+        Remplace la liste des groupes AD d'un utilisateur par une nouvelle liste.
+
+        Stratégie :
+        - suppression des groupes existants pour `lastuser`,
+        - insertion des nouveaux groupes transmis dans `ous`.
+
+        Args:
+            session: Session SQLAlchemy injectée par le décorateur.
+            lastuser (str): Login utilisateur ciblé.
+            ous (list[str]): Liste complète des groupes AD à conserver.
+
+        Returns:
+            None
+        """
+        # Remise à zéro des appartenances avant réinjection de l'état courant AD.
         query = (
             session.query(Users_adgroups)
             .filter(Users_adgroups.lastuser == lastuser)
@@ -12307,6 +12256,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
         session.commit()
         if ous != []:
             for ou in ous:
+                # Réinsertion ligne à ligne pour conserver le modèle existant.
                 toAdd = Users_adgroups()
                 toAdd.lastuser = lastuser
                 toAdd.adname = ou
@@ -12735,624 +12685,79 @@ where d.jidmachine='%s' and c.package_id = '%s'
             return 0
         
     def _return_dict_from_dataset_mysql(self, resultproxy):
+        """
+        Convertit un jeu de résultats SQLAlchemy en liste de dictionnaires Python.
+
+        Cette méthode est un utilitaire de normalisation utilisé après un
+        `session.execute(...)` pour transformer chaque ligne de résultat en
+        structure clé/valeur exploitable par le reste du code (API, sérialisation,
+        logs, traitements métiers).
+
+        Entrée attendue:
+            resultproxy: itérable de lignes SQLAlchemy (Row/RowProxy) exposant
+            la méthode `_asdict()`.
+
+        Sortie:
+            list[dict]: une liste de dictionnaires, un dictionnaire par ligne,
+            avec des clés correspondant aux alias/noms de colonnes SQL.
+
+        Exemple:
+            sql = "SELECT id, jid FROM xmppmaster.machines LIMIT 2"
+            req = session.execute(sql)
+            rows = self._return_dict_from_dataset_mysql(req)
+
+            # Résultat typique:
+            # [
+            #   {"id": 1, "jid": "pc001@pulse"},
+            #   {"id": 2, "jid": "pc002@pulse"}
+            # ]
+
+        Notes:
+            - Si `resultproxy` est vide, la méthode retourne `[]`.
+            - Si les colonnes SQL sont aliasées (ex: `SELECT id AS machine_id`),
+              les clés du dictionnaire suivent ces alias.
+        """
         return [rowproxy._asdict() for rowproxy in resultproxy]
 
-
-
-    @DatabaseHelper._sessionm
-    def get_machines_to_update_major_debian_for_entity(
-        self,
-        session,
-        entity_id: int,
-        offset: Optional[int] = None,
-        limit: Optional[int] = None,
-    ) -> Dict[str, Union[int, Dict[str, List]]]:
-        # Requête pour le nombre total de machines à mettre à jour
-        query_to_update = text("""
-            SELECT COUNT(*)
-            FROM xmppmaster.up_machine_linux upl
-            WHERE upl.release_version < (SELECT MAX(version) FROM xmppmaster.up_debian_versions ve WHERE ve.is_managed = 1)
-            AND upl.entity_id = :entity_id
-        """)
-        nb_a_mettre_a_jour = session.execute(query_to_update, {"entity_id": entity_id}).scalar()
-
-        # Requête paginée
-        query = text("""
-            SELECT
-                ma.hostname,
-                ma.jid,
-                upl.description,
-                upl.entity_id,
-                upl.security_count,
-                upl.kernel_count as application,
-                upl.other_count,
-                upl.total_count
-            FROM
-                xmppmaster.machines ma
-                INNER JOIN xmppmaster.up_machine_linux upl ON upl.harduuid = ma.uuid_serial_machine
-            WHERE
-                upl.release_version < (SELECT MAX(version) FROM xmppmaster.up_debian_versions ve WHERE ve.is_managed = 1)
-                AND upl.entity_id = :entity_id
-        """)
-
-        if limit is not None:
-            query += text(" LIMIT :limit")
-        if offset is not None:
-            query += text(" OFFSET :offset")
-
-        result = session.execute(query, {"entity_id": entity_id, "limit": limit, "offset": offset}).fetchall()
-
-        # Construction du dictionnaire de sortie
-        output = {
-            "nb_a_mettre_a_jour": nb_a_mettre_a_jour,
-            "machines": {
-                "hostname": [row[0] for row in result],
-                "jid": [row[1] for row in result],
-                # ... (autres colonnes)
-            }
-        }
-        return output
-
-    @DatabaseHelper._sessionm
-    def get_distribution_version_compliance(
-        self,
-        session,
-        distributor_id: str,
-        entity_id: Optional[Union[int, List[int]]] = None,
-        start: Optional[int] = None,
-        limit: Optional[int] = None,
-    ) -> Dict[str, Any]:
+    def _return_column_dict_from_dataset_mysql(self, resultproxy):
         """
-        Calcule les statistiques de conformité de version pour une distribution Linux donnée
-        (ex: debian, ubuntu, redhat).
+        Convertit un jeu de resultats SQLAlchemy en dictionnaire de listes par colonne.
 
-        La conformité est évaluée en comparant la version installée sur chaque machine
-        (`up_machine_linux.release_version`) avec la version maximale prise en charge
-        pour la distribution concernée.
+        Chaque cle du dictionnaire correspond a une colonne SQL, et la valeur
+        associee est la liste ordonnee des valeurs de cette colonne pour toutes
+        les lignes du dataset.
 
-        Args:
-            session: session SQLAlchemy
-            distributor_id: nom de la distribution ("debian", "ubuntu", "redhat")
-            entity_id:
-                - None → toutes les entités
-                - int → une seule entité
-                - list[int] → plusieurs entités spécifiques
-            start: index de départ pour la pagination (OFFSET)
-            limit: nombre maximum de lignes à renvoyer (LIMIT)
+        Entree attendue:
+            resultproxy: iterable de lignes SQLAlchemy (Row/RowProxy) exposant
+            la methode `_asdict()`.
 
-        Résultat :
-            - distribution (str) : Famille de distribution analysée
-            - version_distribution (str) : Nom complet de la version max supportée
-            - max_version (int) : Version max supportée (champ version)
-            - by_entity (list[dict]) : stats par entité (paginated)
-                * entity_id (int)
-                * total_machines (int)
-                * outdated_machines (int)
-                * up_to_date_machines (int)
-                * pending_support_update (int)
-                * compliance_rate (float)
-            - totals (dict) : Totaux uniquement pour les entités sélectionnées
-            - compliance_rate (float) : taux global
-        """
-        self.logger.info(f"=== Début get_distribution_version_compliance ({distributor_id}) ===")
-        self.logger.info(
-            "get_distribution_version_compliance params: distributor_id=%r entity_id=%r start=%r limit=%r",
-            distributor_id,
-            entity_id,
-            start,
-            limit,
-        )
+        Sortie:
+            dict: structure de type colonne -> liste des valeurs.
 
-        normalized_distribution = (distributor_id or "").strip().lower()
-        distribution_aliases = {
-            "redhat": "rhel",
-        }
-        normalized_distribution = distribution_aliases.get(
-            normalized_distribution,
-            normalized_distribution,
-        )
+        Exemple:
+            sql = "SELECT id, jid FROM xmppmaster.machines ORDER BY id LIMIT 3"
+            req = session.execute(sql)
+            cols = self._return_column_dict_from_dataset_mysql(req)
 
-        allowed_distributions = {
-            "debian",
-            "ubuntu",
-            "mint",
-            "rhel",
-            "almalinux",
-            "rocky",
-            "suse",
-            "opensuse",
-            "fedora",
-        }
-        if normalized_distribution not in allowed_distributions:
-            raise ValueError(f"Distribution non supportée: {distributor_id}")
-
-        versions_debug_query = text("""
-            SELECT id, distributor_id, release_version, target_version, name, is_managed, is_current_stable, is_recommended
-            FROM xmppmaster.up_linux_os_versions
-            WHERE distributor_id = :distribution
-            ORDER BY
-                is_managed DESC,
-                is_current_stable DESC,
-                is_recommended DESC,
-                CAST(COALESCE(
-                    NULLIF(TRIM(target_version), ''),
-                    NULLIF(JSON_UNQUOTE(JSON_EXTRACT(parameters, '$.target_version')), ''),
-                    NULLIF(TRIM(release_version), '')
-                ) AS DECIMAL(10, 4)) DESC,
-                id DESC
-            LIMIT 10;
-        """)
-        version_candidates = session.execute(
-            versions_debug_query,
-            {"distribution": normalized_distribution},
-        ).fetchall()
-        self.logger.info(
-            "up_linux_os_versions candidates for %s: %s",
-            normalized_distribution,
-            [
-                {
-                    "id": r.id,
-                    "distribution": r.distributor_id,
-                    "version": r.release_version,
-                    "target_version": r.target_version,
-                    "name": r.name,
-                    "is_managed": r.is_managed,
-                    "is_current_stable": r.is_current_stable,
-                    "is_recommended": r.is_recommended,
-                }
-                for r in version_candidates
-            ],
-        )
-
-        max_version_query = text("""
-            SELECT
-                name,
-                release_version,
-                COALESCE(
-                    NULLIF(TRIM(target_version), ''),
-                    NULLIF(JSON_UNQUOTE(JSON_EXTRACT(parameters, '$.target_version')), ''),
-                    NULLIF(TRIM(release_version), '')
-                ) AS effective_target
-            FROM xmppmaster.up_linux_os_versions
-            WHERE distributor_id = :distribution
-            ORDER BY
-                is_managed DESC,
-                is_current_stable DESC,
-                is_recommended DESC,
-                CAST(COALESCE(
-                    NULLIF(TRIM(target_version), ''),
-                    NULLIF(JSON_UNQUOTE(JSON_EXTRACT(parameters, '$.target_version')), ''),
-                    NULLIF(TRIM(release_version), '')
-                ) AS DECIMAL(10, 4)) DESC,
-                id DESC
-            LIMIT 1;
-        """)
-        row = session.execute(
-            max_version_query,
-            {"distribution": normalized_distribution},
-        ).first()
-
-        if not row or row.effective_target is None:
-            self.logger.warning(
-                "Aucune version cible trouvée dans up_linux_os_versions pour distribution=%s",
-                normalized_distribution,
-            )
-            return  {
-                "distribution": normalized_distribution,
-                "name_version": None,
-                "max_version": None,
-                "target_version": None,
-                "by_entity": [],
-                }
-        else:
-            max_version = str(row.effective_target)
-            name_version = row.name
-            self.logger.info(
-                "Version cible retenue pour %s: version=%r name=%r",
-                normalized_distribution,
-                max_version,
-                name_version,
-            )
-            # return {
-            #     "distribution": distributor_id,
-            #     "name_version": None,
-            #     "max_version": None,
-            #     "by_entity": [],
-            #     "totals": {},
-            #     "compliance_rate": 0.0,
+            # Resultat typique:
+            # {
+            #   "id": [1, 2, 3],
+            #   "jid": ["pc001@pulse", "pc002@pulse", "pc003@pulse"]
             # }
 
-        # Construction WHERE selon entity_id
-        where_clause = "LOWER(upl.distributor_id) = :distributor_id"
-        params = {"distributor_id": normalized_distribution, "max_version": str(max_version)}
-
-        if entity_id:
-            if isinstance(entity_id, int):
-                where_clause += " AND upl.entity_id = :entity_id"
-                params["entity_id"] = entity_id
-            elif isinstance(entity_id, list) and entity_id:
-                where_clause += " AND upl.entity_id IN :entity_ids"
-                params["entity_ids"] = tuple(entity_id)  # tuple nécessaire pour IN
-            # else:
-            #     # liste vide → aucune machine
-            #     return {
-            #         "distribution": distributor_id,
-            #         "name_version": name_version,
-            #         "max_version": max_version,
-            #         "by_entity": [],
-            #         "totals": {
-            #             "total_machines": 0,
-            #             "outdated_machines": 0,
-            #             "up_to_date_machines": 0,
-            #             "pending_support_update": 0,
-            #         },
-            #         "compliance_rate": 0.0,
-            #     }
-
-        # Stats par entité
-        stats_query = f"""
-            SELECT
-                upl.entity_id,
-                COUNT(*) AS total_machines,
-                SUM(CASE WHEN CAST(NULLIF(upl.release_version, '') AS DECIMAL(10, 4)) < CAST(:max_version AS DECIMAL(10, 4)) THEN 1 ELSE 0 END) AS outdated_machines,
-                SUM(CASE WHEN CAST(NULLIF(upl.release_version, '') AS DECIMAL(10, 4)) = CAST(:max_version AS DECIMAL(10, 4)) THEN 1 ELSE 0 END) AS up_to_date_machines,
-                SUM(CASE WHEN CAST(NULLIF(upl.release_version, '') AS DECIMAL(10, 4)) > CAST(:max_version AS DECIMAL(10, 4)) THEN 1 ELSE 0 END) AS pending_support_update
-            FROM
-                xmppmaster.up_machine_linux upl
-            WHERE
-                {where_clause}
-            GROUP BY
-                upl.entity_id
+        Notes:
+            - Retourne {} si le dataset est vide.
+            - Les alias SQL sont conserves comme noms de cles.
         """
-        # Pagination
-        if isinstance(limit, int) and limit > 0:
-            stats_query += " LIMIT :limit"
-            params["limit"] = limit
-        if isinstance(start, int) and start >= 0:
-            stats_query += " OFFSET :start"
-            params["start"] = start
+        result = {}
 
-        self.logger.info(
-            "Stats query filters: where=%s params=%s",
-            where_clause,
-            params,
-        )
-#
-#         if limit is not None:
-#             stats_query += " LIMIT :limit"
-#             params["limit"] = limit
-#         if start is not None:
-#             stats_query += " OFFSET :start"
-#             params["start"] = start
+        for rowproxy in resultproxy:
+            row_dict = rowproxy._asdict()
 
-        stats_query_text = text(stats_query)
-        if "entity_ids" in params:
-            stats_query_text = stats_query_text.bindparams(
-                bindparam("entity_ids", expanding=True)
-            )
-        rows = session.execute(stats_query_text, params).fetchall()
-        self.logger.info(
-            "Nombre de lignes statistiques retournées: %d",
-            len(rows),
-        )
+            # Construit dynamiquement les colonnes puis ajoute la valeur de la ligne.
+            for key, value in row_dict.items():
+                if key not in result:
+                    result[key] = []
+                result[key].append(value)
 
-        by_entity = []
-        total_machines_all = 0
-        total_outdated_all = 0
-        total_up_to_date_all = 0
-        total_pending_all = 0
-
-        for row in rows:
-            total = int(row.total_machines)
-            outdated = int(row.outdated_machines or 0)
-            up_to_date = int(row.up_to_date_machines or 0)
-            pending = int(row.pending_support_update or 0)
-
-            by_entity.append({
-                "entity_id": int(row.entity_id),
-                "total_machines": total,
-                "outdated_machines": outdated,
-                "up_to_date_machines": up_to_date,
-                "pending_support_update": pending,
-                "compliance_rate": round((up_to_date / total * 100), 2) if total else 0.0,
-            })
-
-            total_machines_all += total
-            total_outdated_all += outdated
-            total_up_to_date_all += up_to_date
-            total_pending_all += pending
-
-        if not by_entity:
-            self.logger.warning(
-                "Aucune statistique calculée pour distribution=%s avec entity_id=%r",
-                normalized_distribution,
-                entity_id,
-            )
-        else:
-            self.logger.info("Stats by_entity: %s", by_entity)
-
-        compliance_rate = round((total_up_to_date_all / total_machines_all * 100), 2) if total_machines_all else 0.0
-
-        result = {
-            "distribution": normalized_distribution,
-            "name_version": name_version,
-            "max_version": max_version,
-            "target_version": max_version,
-            "by_entity": by_entity,
-            # "totals": {
-            #     "total_machines": total_machines_all,
-            #     "outdated_machines": total_outdated_all,
-            #     "up_to_date_machines": total_up_to_date_all,
-            #     "pending_support_update": total_pending_all,
-            # },
-            # "compliance_rate": compliance_rate,
-        }
-
-        self.logger.info(f"=== Fin get_distribution_version_compliance ({distributor_id}) ===")
         return result
-
-
-    def _apply_linux_auto_update_policy_scope(self, session, entity_id, distributor_id):
-        """Apply Linux auto-update policy for one entity/distribution scope."""
-        normalized_distributor = (distributor_id or "").strip().lower()
-        if entity_id is None or normalized_distributor == "":
-            return
-
-        session.execute(text("""
-            UPDATE xmppmaster.up_machine_linux uml
-            LEFT JOIN xmppmaster.up_entity_linux_auto_update_policy p_exact
-                ON  p_exact.entity_id = uml.entity_id
-                AND p_exact.distributor_id = LOWER(TRIM(uml.distributor_id))
-                AND p_exact.release_version = COALESCE(TRIM(uml.release_version), '')
-            LEFT JOIN xmppmaster.up_entity_linux_auto_update_policy p_generic
-                ON  p_generic.entity_id = uml.entity_id
-                AND p_generic.distributor_id = LOWER(TRIM(uml.distributor_id))
-                AND p_generic.release_version = ''
-            SET
-                uml.kernel_require = CASE
-                    WHEN COALESCE(p_exact.auto_update_kernel, p_generic.auto_update_kernel, 0) = 1
-                         AND uml.kernel_count > 0 THEN 1
-                    ELSE 0
-                END,
-                uml.security_require = CASE
-                    WHEN COALESCE(p_exact.auto_update_security, p_generic.auto_update_security, 0) = 1
-                         AND uml.security_count > 0 THEN 1
-                    ELSE 0
-                END,
-                uml.other_require = CASE
-                    WHEN COALESCE(p_exact.auto_update_other, p_generic.auto_update_other, 0) = 1
-                         AND uml.other_count > 0 THEN 1
-                    ELSE 0
-                END
-            WHERE uml.entity_id = :entity_id
-              AND LOWER(TRIM(uml.distributor_id)) = :distributor_id
-        """), {
-            "entity_id": int(entity_id),
-            "distributor_id": normalized_distributor,
-        })
-
-
-    @DatabaseHelper._sessionm
-    def update_machine_linux_from_scan(self, session, scan_data: dict):
-        self.logger.info("=== Début update_machine_linux_from_scan ===")
-
-        try:
-            harduuid = (
-                scan_data.get("serialnumber")
-                or
-                scan_data.get("serialuuid")
-                or scan_data.get("harduuid")
-                or scan_data.get("uuid_serial_machine")
-            )
-            if not harduuid:
-                self.logger.warning(
-                    "update_machine_linux_from_scan ignoré: identifiant machine absent (attendu: serialnumber/serialuuid/harduuid/uuid_serial_machine). clés reçues=%s",
-                    sorted(scan_data.keys()),
-                )
-                return False
-
-            generated_at = scan_data.get("generated_at") or datetime.utcnow()
-            system = scan_data.get("system", {})
-            counts = scan_data.get("counts", {})
-
-            self.logger.info(f"Traitement machine {harduuid}")
-
-            # ==================================================
-            # 1️⃣ RÉCUPÉRATION DE L'ENTITY_ID GLPI (via jointure)
-            # ==================================================
-            entity_id = (
-                session.query(Glpi_entity.glpi_id)
-                .join(Machines, Machines.glpi_entity_id == Glpi_entity.id)
-                .filter(Machines.uuid_serial_machine == harduuid)
-                .scalar()
-            )
-
-            if entity_id is None:
-                self.logger.warning(f"Aucune entité GLPI trouvée pour {harduuid}")
-            else:
-                self.logger.info(f"Entity GLPI = {entity_id}")
-
-            # =========================
-            # 2️⃣ UPSERT MACHINE LINUX
-            # =========================
-            machine = (
-                session.query(UpMachineLinux)
-                .filter_by(harduuid=harduuid)
-                .first()
-            )
-
-            # entity_id est NOT NULL dans up_machine_linux:
-            # - si la machine existe deja, on conserve son entity_id courant
-            # - sinon, on ne peut pas creer la ligne sans mapping d'entite
-            if entity_id is None and machine and machine.entity_id is not None:
-                entity_id = machine.entity_id
-                self.logger.info(
-                    "Entity GLPI absente dans le scan, conservation entity_id existant=%s pour %s",
-                    entity_id,
-                    harduuid,
-                )
-
-            if not machine:
-                if entity_id is None:
-                    self.logger.warning(
-                        "Creation UpMachineLinux ignoree: entity_id introuvable pour harduuid=%s",
-                        harduuid,
-                    )
-                    return False
-                self.logger.info("Machine inexistante → création")
-                machine = UpMachineLinux(
-                    harduuid=harduuid,
-                    last_scan=generated_at
-                )
-                session.add(machine)
-
-            machine.entity_id = entity_id
-            machine.distributor_id = system.get("Distributor ID")
-            machine.description = system.get("Description")
-            machine.release_version = system.get("Release")
-            machine.codename = system.get("Codename")
-            machine.kernel_version = system.get("kernel_version")
-            machine.last_scan = generated_at
-
-            machine.security_count = counts.get("security", 0)
-            machine.kernel_count = counts.get("kernel", 0)
-            machine.other_count = counts.get("other", 0)
-            machine.total_count = counts.get("total", 0)
-
-            session.flush()
-            machine_id = machine.id
-
-            self.logger.info(f"UpMachineLinux ID={machine_id} mis à jour")
-
-            # =========================
-            # 3️⃣ RESET DES UPDATES
-            # =========================
-            deleted = (
-                session.query(UpMachineUpdateLinux)
-                .filter_by(machine_id=machine_id)
-                .delete()
-            )
-
-            self.logger.info(f"{deleted} updates supprimés")
-
-            # =========================
-            # 4️⃣ TRAITEMENT DES UPDATES
-            # =========================
-            def process_updates(update_list, update_type):
-                for item in update_list:
-                    package_name = item["package"]
-                    package_version = item.get("version")
-
-                    package = (
-                        session.query(UpPackageLinux)
-                        .filter_by(name=package_name, version=package_version)
-                        .first()
-                    )
-
-                    if not package:
-                        package = UpPackageLinux(
-                            name=package_name,
-                            version=package_version
-                        )
-                        session.add(package)
-                        session.flush()
-
-                    session.add(
-                        UpMachineUpdateLinux(
-                            machine_id=machine_id,
-                            package_id=package.id,
-                            type=update_type
-                        )
-                    )
-
-                    for cve_item in item.get("cve", []):
-                        if isinstance(cve_item, dict):
-                            cve_code = cve_item.get("id")
-                            severity = cve_item.get("severity")
-                            description = cve_item.get("description")
-                        else:
-                            cve_code = cve_item
-                            severity = None
-                            description = None
-
-                        cve = (
-                            session.query(UpCveLinux)
-                            .filter_by(cve=cve_code)
-                            .first()
-                        )
-
-                        if not cve:
-                            cve = UpCveLinux(
-                                cve=cve_code,
-                                severity=severity,
-                                description=description
-                            )
-                            session.add(cve)
-                            session.flush()
-
-                        exists = (
-                            session.query(UpPackageCveLinux)
-                            .filter_by(
-                                package_id=package.id,
-                                cve_id=cve.id
-                            )
-                            .first()
-                        )
-
-                        if not exists:
-                            session.add(
-                                UpPackageCveLinux(
-                                    package_id=package.id,
-                                    cve_id=cve.id
-                                )
-                            )
-
-            process_updates(scan_data.get("security_updates", []), "security")
-            process_updates(scan_data.get("kernel_updates", []), "kernel")
-            process_updates(scan_data.get("other_updates", []), "other")
-
-            self._apply_linux_auto_update_policy_scope(
-                session,
-                machine.entity_id,
-                machine.distributor_id,
-            )
-
-            session.commit()
-            self.logger.info(f"=== Fin update_machine_linux_from_scan OK ({harduuid}) ===")
-            return True
-
-        except Exception:
-            session.rollback()
-            self.logger.error("update_machine_linux_from_scan failed")
-            self.logger.error(traceback.format_exc())
-            return False
-
-    @DatabaseHelper._sessionm
-    def get_max_supported_debian_version(self, session) -> Optional[dict]:
-        """
-        Retourne la ligne complète correspondant à la version Debian
-        la plus élevée prise en charge.
-        """
-        query = text("""
-            SELECT *
-            FROM xmppmaster.up_debian_versions ve
-            WHERE ve.version = (
-                SELECT MAX(version)
-                FROM xmppmaster.up_debian_versions
-                WHERE is_managed = 1
-            )
-            AND ve.is_managed = 1
-            LIMIT 1
-        """)
-
-        row = session.execute(query).fetchone()
-        if not row:
-            return None
-
-        return dict(row)
-
-
-
-    # -------------------------------------------------------------------------------
-
-  
