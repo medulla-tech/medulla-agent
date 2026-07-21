@@ -863,12 +863,103 @@ class grafcet:
             self.data["stepcurrent"] = self.data["stepcurrent"] + 1
             return 5
 
+    def __kiosk_uninstall_has_content__(self):
+        """True if the uninstall section holds a real command or script.
+
+        A declared but empty section would give a Delete button that runs
+        nothing. Same rule as get_packages_for_machine on the substitute.
+        """
+        in_uninstall_section = False
+        for step in self.data.get("descriptor", {}).get("sequence", []):
+            step_action = step.get("action", "")
+            if step_action == "action_section_uninstall":
+                in_uninstall_section = True
+                continue
+            if step_action in ("actionsuccescompletedend", "actionerrorcompletedend"):
+                in_uninstall_section = False
+                continue
+            if in_uninstall_section and (
+                str(step.get("command", "")).strip()
+                or str(step.get("script", "")).strip()
+            ):
+                return True
+        return False
+
+    def __kiosk_actions_installed__(self):
+        """Kiosk buttons for a package that just got installed: (actions, launcher).
+
+        Everything is local in the descriptor. Mirrors the installed branch of
+        get_packages_for_machine on the substitute; the launcher is read from
+        the same place, base64 as the kiosk expects.
+        """
+        actions = []
+        launcher = self.data.get("descriptor", {}).get("info", {}).get("launcher", "")
+        if launcher:
+            actions.append("Launch")
+
+        if self.__kiosk_uninstall_has_content__():
+            actions.append("Delete")
+        else:
+            # No uninstall: non actionable "Installed" badge instead of a button.
+            actions.append("Installed")
+        return actions, launcher
+
+    def __notify_kiosk_deployment_end__(self, ret):
+        """Tell the local kiosk the deployment it asked for is over (ret 0 = ok).
+
+        Unblocks the button right away with the final buttons, without waiting
+        for the next inventory. The substitute stays the source of truth and
+        resends the list then.
+        """
+        try:
+            path = self.datasend["data"].get("path", "")
+            uuid = os.path.basename(path) if path else ""
+            if not uuid:
+                logger.info(
+                    "Kiosk not notified for session %s: no package path"
+                    % self.sessionid
+                )
+                return
+
+            actions, launcher = (
+                self.__kiosk_actions_installed__() if ret == 0 else ([], "")
+            )
+            msgkiosk = {
+                "action": "deploymentEnd",
+                "sessionid": self.sessionid,
+                "data": {
+                    "uuid": uuid,
+                    "success": ret == 0,
+                    "action": actions,
+                    "launcher": launcher,
+                },
+                "ret": 0,
+                "base64": False,
+            }
+            logger.info(
+                "Notifying kiosk: deployment of %s ended (ret=%s) actions=%s"
+                % (uuid, ret, actions)
+            )
+            send_data_tcp(
+                json.dumps(msgkiosk), port=self.objectxmpp.config.kiosk_local_port
+            )
+        except Exception:
+            # A missing kiosk must never take the deployment down with it.
+            logger.error(
+                "Kiosk notification failed for session %s\n%s"
+                % (self.sessionid, traceback.format_exc())
+            )
+
     def terminate(self, ret, clear=True, msgstate=""):
         """
         use for terminate deploy
         send msg to log sequence
         Clean client disk packages (ie clear)
         """
+        # Kiosk deployments get a "commandkiosk" sessionid (plugin_resultkiosk).
+        # Done before "path" is deleted below, as it holds the package uuid.
+        if str(self.sessionid).startswith("commandkiosk"):
+            self.__notify_kiosk_deployment_end__(ret)
         login = self.data["login"]
         self.__clean_protected()
         restarmachine = False
