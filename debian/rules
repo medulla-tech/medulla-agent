@@ -164,6 +164,7 @@ override_dh_auto_install:
 	cp -r scripts_installer/lin/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
 	cp scripts_installer/mac/generate-medulla-agent-mac.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
+	cp scripts_installer/mac/uninstall-medulla-agent-mac.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/libs
 	cp -fr scripts_installer/win/nsis_libs/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/libs
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/artwork

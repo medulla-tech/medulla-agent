@@ -402,6 +402,7 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp -r scripts_installer/lin/* %buildroot%_var/lib/pulse2/clients/lin
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
 cp scripts_installer/mac/generate-medulla-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
+cp scripts_installer/mac/uninstall-medulla-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
 mkdir -p %buildroot%_var/lib/pulse2/clients/win/libs
 cp -fr scripts_installer/win/nsis_libs/* %buildroot%_var/lib/pulse2/clients/win/libs
 mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork
