@@ -8,6 +8,7 @@ import os
 import base64
 import zlib
 import time
+import shutil
 
 from lib.utils import simplecommand
 
@@ -176,6 +177,25 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             }
             # transfert the action to the master diskmastering to save the result status in database.
             objectxmpp.send_message(mto="master_dma@pulse", mbody=json.dumps(datasend, indent=4), mtype="chat")
+
+        if data["subaction"] == "delete_master":
+            """Recv
+            - action    : resultdiskmastering / delete_master
+            - desc      : The server requests to delete the master image.
+            - data:
+                - uuid          : the machine UUID
+                - path          : the master path on the davos client"""
+
+            uuid = data["uuid"]
+            path = data["path"]
+            logger.info("Deleting master image %s on %s"%(uuid, path))
+            if os.path.exists(path):
+                try:
+                    shutil.rmtree(path)
+                    logger.info("Master image %s deleted"%path)
+                except Exception as e:
+                    logger.error("Error deleting master image %s : %s"%(path, e))
+            return
 
 def ask_workflow(objectxmpp, sessionid, client_jid, uuid, mac, action_id):
     """Send a workflow request to the substitute diskmastering.
