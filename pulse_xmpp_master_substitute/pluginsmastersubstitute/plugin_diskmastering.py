@@ -5,7 +5,10 @@
 import json
 import logging
 import base64
+from configparser import ConfigParser
+import os
 
+# from lib.plugins.glpi import Glpi
 from lib.plugins.diskmastering import DiskMasteringDatabase
 
 # from datetime import datetime
@@ -18,7 +21,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug(plugin)
     logger.debug("=====================================================")
-
 
     if "subaction" in data:
 
@@ -36,41 +38,62 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
             return
 
         if data["subaction"] == "askworkflow":
-            datasend = {
-                "action":"getworkflow",
-                "from":xmppobject.boundjid.bare,
-                "to": data["client_jid"],
-                "sessionid": data["sessionid"],
-                "result": {},
-            }
-
             if "action_id" in data:
+                # Can only get non consumed action and non expired action.
                 try:
-                    result = DiskMasteringDatabase().get_action_details(data["action_id"])
+                    action = DiskMasteringDatabase().get_action_details(data["action_id"], data["uuid"])
                 except Exception as e:
                     logger.error(e)
 
                 # Setup the new status WORKING for the selected action
                 DiskMasteringDatabase().set_action_status(data["sessionid"], data["action_id"], data["uuid"], "WORKING")
-
-                result["date_creation"] = result["date_creation"].strftime("%Y-%m-%d %H:%M:%S")
-                result["date_start"] = result["date_start"].strftime("%Y-%m-%d %H:%M:%S")
-                result["date_end"] = result["date_end"].strftime("%Y-%m-%d %H:%M:%S")
-
+                result = {}
+                result["date_creation"] = action["date_creation"].strftime("%Y-%m-%d %H:%M:%S")
+                result["date_start"] = action["date_start"].strftime("%Y-%m-%d %H:%M:%S")
+                result["date_end"] = action["date_end"].strftime("%Y-%m-%d %H:%M:%S")
+                result["workflow"] = {}
+                result["id"]= action["id"]
+                result["entity_id"]= action["entity_id"]
                 # result["content"] contains the workflow
-                workflow = json.loads(result["content"])
-
+                workflow = json.loads(action["content"])
                 # Modify the json
                 for step in workflow:
                     if step["type"] == "script":
-                        if "id" in step:
-                            script = get_mastering_script(xmppobject, step["id"])
-                            step["data"] = base64.b64encode(script.encode("utf-8")).decode("utf-8")
-                        else:
-                            step["data"] = ""
+                        # setup the step to be hydrated
+                        step["data"] = {"type":"bash", "content": "", "payload": ""}
 
-                del(result["content"])
+                        # Incorporate the content into the workflow json
+                        if "name" in step:
+                            # Here "name" corresponds to the script id
+                            try:
+                                script = DiskMasteringDatabase().get_mastering_script(step["name"])
+                            except Exception as e:
+                                logger.error("Impossible to get the script %s"%step["name"])
+
+                            step["data"]["type"] = script["type"]
+                            step["data"]["content"] = script["content"]
+                            step["data"]["payload"] = script["payload"]
+
                 result["workflow"] = workflow
+
+                # TODO: Need to improve this section
+                # Get the AES key from the config file
+                keyAES32 = ""
+                xmppconf = ConfigParser()
+                conffilename = "/etc/mmc/plugins/xmppmaster.ini"
+                localconffilename = "/etc/mmc/plugins/xmppmaster.ini.local"
+                logger.warning(os.path.isfile(conffilename))
+                if os.path.isfile(conffilename):
+                    xmppconf.read(conffilename)
+                    if os.path.isfile(localconffilename):
+                        xmppconf.read(localconffilename)
+
+                else:
+                    logger.warning(f"Config file {conffilename} not found. Please create it and add the keyAES32 parameter in the [defaultconnection] section.")
+
+                if xmppconf.has_option("defaultconnection", "keyAES32"):
+                    keyAES32 = xmppconf.get("defaultconnection", "keyAES32")
+
 
                 datasend = {
                     "action":"resultaskworkflow",
@@ -80,14 +103,12 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                     "data": {
                         "result": result,
                         "subaction": "getworkflow",
+                        "keyAES32": keyAES32
                     },
                 }
 
                 xmppobject.send_message(mto=data["client_jid"], mbody=json.dumps(datasend, indent=4), mtype="chat")
 
-
-def get_mastering_script(xmppobject, step):
-    pass
 
 
 def push_log(xmppobject, data):

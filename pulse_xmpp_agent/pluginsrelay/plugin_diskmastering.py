@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# SPDX-FileCopyrightText: 2022-2023 Siveo <support@siveo.net>
+# SPDX-FileCopyrightText: 2025-2026 Medulla <medulla-tech.io>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging

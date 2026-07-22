@@ -10,6 +10,10 @@ from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import DBAPIError
 import json
+import base64
+import zlib
+import re
+import os
 # PULSE2 modules
 # from mmc.database.database_helper import DatabaseHelper
 # from mmc.plugins.pkgs import get_xmpp_package, xmpp_packages_list, package_exists
@@ -179,9 +183,18 @@ class DiskMasteringDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
-    def get_action_details(self, session, action_id):
-        sql = """SELECT * from actions where id = %s"""%action_id
-        query = session.execute(sql).all()
+    def get_action_details(self, session, action_id, uuid):
+        # Safely select action based on status, and expiration date. We can only allow to get non consumed action, non expired action.
+        sql = """SELECT
+    *
+from actions where id = :action_id
+"""
+        binds = {"action_id": action_id}
+        try:
+            query = session.execute(sql, binds).all()
+        except Exception as e:
+            logger.error(e)
+            return {}
 
         if query == None:
             return {}
@@ -189,6 +202,7 @@ class DiskMasteringDatabase(DatabaseHelper):
         result = {}
         for e in query:
             result["id"] = e.id
+            result["entity_id"] = e.entity_id
             result["server_id"] = e.server_id
             result["gid"] = e.gid
             result["uuid"] = e.uuid
@@ -263,8 +277,6 @@ class DiskMasteringDatabase(DatabaseHelper):
         if "description" in action_config["mastering"]:
             master_description = action_config["mastering"]["description"]
 
-        # Get master size and path are given by the relay.
-
         # Insert new master in database
         sql = """INSERT INTO masters (name, description, uuid, path, size) VALUES(:name, :description, :uuid, :path, :size)"""
         binds = {"name": master_name, "description": master_description, "uuid": master_uuid, "path": master_path, "size": master_size}
@@ -309,6 +321,7 @@ class DiskMasteringDatabase(DatabaseHelper):
         sql = """SELECT count(id) from actionStatus where action_id = :action_id and uuid =:uuid"""
         binds = {"action_id": action_id, "uuid": uuid}
         query = session.execute(sql, binds).scalar()
+        logger.error(query)
         mode = "update"
         if query is None or query == 0:
             # No status, create it
@@ -330,3 +343,230 @@ class DiskMasteringDatabase(DatabaseHelper):
 
         session.commit()
         session.flush()
+
+    @DatabaseHelper._sessionm
+    def get_mastering_script(self, session, script_id):
+        sql = """SELECT type, content, payload from scripts where id = :script_id"""
+        binds = {"script_id": script_id}
+
+        result = {
+            "type":"bash",
+            "content":"",
+            "payload":""
+        }
+
+        query = session.execute(sql, binds).all()
+
+        if query == None:
+            return result
+
+        _type = "bash"
+        payload = None
+
+        templates = {}
+        logger.warning(1)
+        # Retrieve the template needed to recreate the full payload script
+        for e in query:
+            logger.warning(2)
+            result["type"] = e[0] if e[0] is not None else _type
+            result["content"] = e[1] if e[1] is not None else ""
+
+            # For now payload is a compressed base64 json
+            _payload = e.payload if e.payload is not None else ""
+            _payload = zlib.decompress(base64.b64decode(_payload)).decode("utf-8")
+
+            try:
+                payload = json.loads(_payload)
+            except Exception as e:
+                payload = _payload
+
+
+            # We successed to load the payload as json
+            if isinstance(payload,dict):
+                if "script" in payload:
+                    # Read once the templates if needed
+
+                    if payload["script"] not in templates:
+                        with open(os.path.join(os.path.dirname(__file__), "templates","%s.txt"%payload["script"])) as fb:
+                            templates[payload["script"]] = fb.read()
+                            fb.close()
+
+
+                _template = templates[payload["script"]]
+
+                for key in payload:
+                    if key == "bloats":
+                        substitutions = self.get_bloat_replacements(payload["bloats"])
+                        for bloat in substitutions:
+                            _template = _template.replace("@@%s@@"%bloat, substitutions[bloat])
+                    else:
+                        _template = _template.replace("@@%s@@"%key, payload[key])
+
+            unmatched = re.findall("(@@[\\w]@@)", _template)
+
+            # Replace remainings variables by empty or # if the variable starts with Check
+            for unmatch in unmatched:
+                if unmatch.startswith("@@Check"):
+                    _template = _template.replace(unmatch, "#")
+                else:
+                    _template = _template.replace(unmatch, "")
+
+
+
+            try:
+                result["payload"] = zlib.compress(_template.encode("utf-8"))
+            except Exception as e:
+                logger.error("Impossible to compress payload")
+            try:
+                result["payload"] = base64.b64encode(result["payload"]).decode("utf-8")
+            except Exception as e:
+                logger.error("Impossible to encode payload in base64")
+
+        return result
+
+    @DatabaseHelper._sessionm
+    def get_aes_key(self, session):
+        sql = """SELECT valeur from admin.xmpp_conf where section = :section and nom = :name"""
+        binds = {"section": "defaultconnection", "name": "keyAES32"}
+
+        result = ""
+
+        query = session.execute(sql, binds).all()
+
+        if query == None:
+            return result
+
+        for e in query:
+            result = e.valeur if e.valeur is not None else ""
+
+        return result
+
+
+    def get_bloat_replacements(self, bloat_list):
+        bloat_remove_packages = {
+            "3D Viewer" : ["'Microsoft.Microsoft3DViewer'"],
+            "Bing Search" : ["'Microsoft.BingSearch'"],
+            "Calculator": ["'Microsoft.WindowsCalculator'"],
+            "Camera": ["'Microsoft.WindowsCamera'"],
+            "Clipchamp":["'Clipchamp.Clipchamp'"],
+            "Clock":["'Microsoft.WindowsAlarms'"],
+            "Cortana" : ["'Microsoft.549981C3F5F10'"],
+            "Dev Home": ["'Microsoft.Windows.DevHome'"],
+            "Family": ["'MicrosoftCorporationII.MicrosoftFamily'"],
+            "Feedback Hub" : ["'Microsoft.WindowsFeedbackHub'"],
+            "Get Help": ["'Microsoft.GetHelp'"],
+            "Handwriting (all languages)": ["'Language.Handwriting'"],
+            "Internet Explorer": ["'Browser.InternetExplorer'"],
+            "Mail and Calendar": ["'microsoft.windowscommunicationsapps'"],
+            "Maps" : ["'Microsoft.WindowsMaps'"],
+            "Math Input Panel": ["'MathRecognizer'"],
+            "Media Features": ["'MediaPlayback'"],
+            "Mixed Reality": ["'Microsoft.MixedReality.Portal'"],
+            "Movies & TV" : ["'Microsoft.ZuneVideo'"],
+            "News" : ["'Microsoft.BingNews'"],
+            "Notepad (modern)" : ["'Microsoft.WindowsNotepad'"],
+            "Office 365" : ["'Microsoft.MicrosoftOfficeHub'"],
+            "OneNote" : ["'Microsoft.Office.OneNote'"],
+            "Outlook for Windows": ["'Microsoft.OutlookForWindows'"],
+            "Paint":["'Microsoft.Paint'", "'Microsoft.MSPaint'"],
+            "Paint 3D":["'Microsoft.MSPaint'"],
+            "People":["'Microsoft.People'"],
+            "Photos":["'Microsoft.Windows.Photos'"],
+            "powerautomate":["'Microsoft.PowerAutomateDesktop'"],
+            "Skype":["'Microsoft.SkypeApp'"],
+            "Snipping Tool":["'Microsoft.ScreenSketch'"],"solitairecollection": ["'Microsoft.MicrosoftSolitaireCollection'"],
+            "Solitaire Collection": ["'Microsoft.MicrosoftSolitaireCollection'"],
+            "Sticky Notes" : ["'Microsoft.MicrosoftStickyNotes'"],
+            "Teams" :["'MicrosoftTeams'", "'MSTeams'"],
+            "To Do" : ["'Microsoft.Todos'"],
+            "Voice Recorder":["'Microsoft.WindowsSoundRecorder'"],
+            "Wallet":["'Microsoft.Wallet'"],
+            "Weather":["'Microsoft.BingWeather'"],
+            "Windows Media Player (modern)" : ["'Microsoft.ZuneMusic'"],
+            "Windows Terminal" : ["'Microsoft.WindowsTerminal'"],
+            "Xbox Apps" : ["'Microsoft.Xbox.TCUI'", "'Microsoft.XboxApp'", "Microsoft.XboxGameOverlay", "Microsoft.XboxGamingOverlay", "Microsoft.XboxIdentityProvider", "Microsoft.XboxSpeechToTextOverlay", "Microsoft.GamingApp"],
+            "Your Phone/Phone Link" : ["'Microsoft.YourPhone'"],
+        }
+
+        bloat_user_onces = {
+            "Copilot": ["""{
+            Get-AppxPackage -Name 'Microsoft.Windows.Ai.Copilot.Provider' | Remove-AppxPackage;
+        }"""],
+        }
+
+        bloat_default_users = {
+            "Copilot":["""{
+            reg.exe add "HKU\\DefaultUser\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot" /v TurnOffWindowsCopilot /t REG_DWORD /d 1 /f;
+        }"""],
+            "Notepad (modern)": ["""{
+            reg.exe add "HKU\\DefaultUser\\Software\\Microsoft\\Notepad" /v ShowStoreBanner /t REG_DWORD /d 0 /f;
+        }"""],
+            "OneDrive":["Remove-ItemProperty -LiteralPath 'Registry::HKU\\DefaultUser\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'OneDriveSetup' -Force -ErrorAction 'Continue'"],
+            "Xbox Apps" : ['reg.exe add "HKU\\DefaultUser\\Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR" /v AppCaptureEnabled /t REG_DWORD /d 0 /f;'],
+        }
+
+        bloat_specializes = {
+            "Dev Home" : ["""{
+                Remove-Item -LiteralPath 'Registry::HKLM\\Software\\Microsoft\\WindowsUpdate\\Orchestrator\\UScheduler_Oobe\\DevHomeUpdate' -Force -ErrorAction 'SilentlyContinue';
+                }"""],
+            "OneDrive":["Remove-Item -LiteralPath 'C:\\Users\\Default\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\OneDrive.lnk', 'C:\\Windows\\System32\\OneDriveSetup.exe', 'C:\\Windows\\SysWOW64\\OneDriveSetup.exe' -ErrorAction 'Continue'"],
+            "Outlook for Windows":["Remove-Item -LiteralPath 'Registry::HKLM\\Software\\Microsoft\\WindowsUpdate\\Orchestrator\\UScheduler_Oobe\\OutlookUpdate' -Force -ErrorAction "],
+            "Teams" :['reg.exe add "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Communications" /v ConfigureChatAutoInstall /t REG_DWORD'],
+            "Tips" : ["Get-Content -LiteralPath 'C:\\Windows\\Setup\\Scripts\\RemovePackages.ps1' -Raw | Invoke-Expression"],
+            "Windows Fax and Scan":["Get-Content -LiteralPath 'C:\\Windows\\Setup\\Scripts\\RemoveCapabilities.ps1' -Raw | Invoke-Expression;"],
+        }
+
+        bloat_remove_capabilities = {
+            "OnSync":["'OneCoreUAP.OneSync'"],
+            "OpenSsh":["'OpenSSH.Client'"],
+            "Paint":["'Microsoft.MSPaint'"],
+            "PowerShell ISE":["'Microsoft.Windows.PowerShell.ISE'"],
+            "Quick Assist":["'App.Support.QuickAssist'"],
+            "Snipping Tool":["'Microsoft.Windows.SnippingTool'"],
+            "speech" : ["'Language.Speech'"],
+            "Speech (all languages)":["'Language.TextToSpeech'"],
+            "Steps Recorder" : ["'App.StepsRecorder'"],
+            "Windows Fax and Scan":["'Print.Fax.Scan'"],
+            "Windows Hello":["'Hello.Face.18967'","'Hello.Face.Migration.18967'","Hello.Face.20134"],
+            "Windows Media Player (classic)" : ["'Media.WindowsMediaPlayer'"],
+            "WordPad" : ["'Microsoft.Windows.WordPad'"],
+        }
+
+        bloat_remove_features = {
+            "PowerShell 2.0":["'MicrosoftWindowsPowerShellV2Root'"],
+            "Recall":["'Recall'"],
+            "Remote Desktop Client":["'Microsoft-RemoteDesktopConnection'"],
+            "Snipping Tool":["'Microsoft-SnippingTool'"],
+        }
+
+        result = {
+            "BloatsRemovePackages":[],
+            "BloatsRemoveCapabilities":[],
+            "BloatsRemoveFeatures":[],
+            "BloatsSpecialize":[],
+            "BloatsUserOnce":[],
+            "BloatsDefaultUser":[],
+        }
+
+        for bloat in bloat_list:
+            if bloat in bloat_remove_packages:
+                result["BloatsRemovePackages"] += bloat_remove_packages[bloat]
+            if bloat in bloat_remove_capabilities:
+                result["BloatsRemoveCapabilities"] += bloat_remove_capabilities[bloat]
+            if bloat in bloat_remove_features:
+                result["BloatsRemoveFeatures"] += bloat_remove_features[bloat]
+            if bloat in bloat_specializes:
+                result["BloatsSpecialize"] += bloat_specializes[bloat]
+            if bloat in bloat_user_onces:
+                result["BloatsUserOnce"] += bloat_user_onces[bloat]
+            if bloat in bloat_default_users:
+                result["BloatsDefaultUser"] += bloat_default_users[bloat]
+
+        result["BloatsRemovePackages"] = ";\r\n".join(result["BloatsRemovePackages"]) if len(result["BloatsRemovePackages"]) > 0 else ""
+        result["BloatsRemoveCapabilities"] = ";\r\n".join(result["BloatsRemoveCapabilities"]) if len(result["BloatsRemoveCapabilities"]) > 0 else ""
+        result["BloatsRemoveFeatures"] = ";\r\n".join(result["BloatsRemoveFeatures"]) if len(result["BloatsRemoveFeatures"]) > 0 else ""
+        result["BloatsSpecialize"] = ";\r\n".join(result["BloatsSpecialize"]) if len(result["BloatsSpecialize"]) > 0 else ""
+        result["BloatsUserOnce"] = ";\r\n".join(result["BloatsUserOnce"]) if len(result["BloatsUserOnce"]) > 0 else ""
+        result["BloatsDefaultUser"] = ";\r\n".join(result["BloatsDefaultUser"]) if len(result["BloatsDefaultUser"]) > 0 else ""
+
+        return result
