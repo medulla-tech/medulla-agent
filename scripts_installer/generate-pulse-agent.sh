@@ -356,7 +356,7 @@ generate_agent_lin() {
 generate_agent_mac() {
     # Generate Medulla Agent for MacOS
     colored_echo blue "Generating Medulla Agent for MacOS..."
-    COMMAND="./mac/generate-pulse-agent-mac.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
+    COMMAND="./mac/generate-medulla-agent-mac.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
     echo "Running "${COMMAND}
     ${COMMAND}
 }
@@ -370,4 +370,4 @@ update_generation_options_file
 
 generate_agent_win
 generate_agent_lin
-#generate_agent_mac
+generate_agent_mac

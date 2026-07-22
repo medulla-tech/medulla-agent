@@ -21,6 +21,7 @@
 #   --remove-python    : also uninstall Python 3.11 package (default: no)
 #   --remove-glpi      : also uninstall GLPI Agent (default: no)
 #   --help             : show this help
+# file : scripts_installer/lin/uninstall-medulla-agent-linux.sh
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -108,23 +109,18 @@ detect_pkg_manager() {
 }
 
 # ---------------------------------------------------------------------------
-# Step 0 - Restore python3 update-alternatives BEFORE any package operation
+# Step 0 - Restore legacy python3 update-alternatives before package operations
 #
-# The install script runs:
-#   update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-#   update-alternatives --set python3 /usr/bin/python3.11
+# Older Medulla installers set python3.11 as the system-wide /usr/bin/python3
+# through update-alternatives. Current installers keep the distribution python3
+# untouched and run the agent through /opt/medulla instead.
 #
-# This makes python3.11 the system-wide /usr/bin/python3. Tools like apt,
-# unattended-upgrades and apt hooks rely on /usr/bin/python3 pointing to the
-# distribution's own Python. If python3.11 is removed (or its venv wiped)
-# while still set as the alternative, those tools break with
-# "required file not found".
-#
-# This step ALWAYS removes the Medulla-added alternative and restores
-# automatic mode, regardless of the --remove-python flag.
+# This compatibility step removes the legacy Medulla-added alternative and
+# restores automatic mode before any package operation, regardless of the
+# --remove-python flag.
 # ---------------------------------------------------------------------------
 restore_python_alternatives() {
-    log "--- Step 0: Restore python3 update-alternatives ---"
+    log "--- Step 0: Restore legacy python3 update-alternatives ---"
 
     local UA_CMD=""
     if command -v update-alternatives >/dev/null 2>&1; then

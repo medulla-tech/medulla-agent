@@ -17,7 +17,7 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.5", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.6", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # fmt: skip
 
@@ -46,6 +46,8 @@ def schedule_main(objectxmpp):
         launch_kiosk_windows()
     elif system == "linux":
         launch_kiosk_linux()
+    elif system == "darwin":
+        launch_kiosk_macos()
     else:
         logger.debug("scheduling_launch_kiosk: unsupported platform '%s'.", system)
 
@@ -162,6 +164,77 @@ def launch_kiosk_linux():
         logger.error("Failed to start Kiosk: %s", e)
 
 
+def launch_kiosk_macos():
+    """Start the Kiosk on macOS inside the logged-in user's Aqua session.
+
+    The agent runs as root (LaunchDaemon), but a Qt GUI must run inside the
+    console user's graphical (Aqua/WindowServer) session. The macOS equivalent
+    of the Windows ``paexec -i <session>`` / Linux ``runuser`` trick is
+    ``launchctl asuser <uid> sudo -u <user> ...``: it places the process in the
+    per-user GUI launchd domain (gui/<uid>), which is what grants access to
+    WindowServer. No DISPLAY/XAUTHORITY juggling is needed (that is X11/Linux).
+    """
+    pid_file = "/tmp/kiosk.pid"
+
+    # The kiosk writes its own PID to /tmp/kiosk.pid at startup (see
+    # kiosk_interface/__main__.py), so we just rely on it here.
+    if is_kiosk_running(pid_file):
+        logger.debug("Kiosk is already running.")
+        return
+
+    user = get_macos_console_user()
+    if not user:
+        logger.warning("No active console user found. Kiosk will not be started.")
+        return
+
+    uid = _uid_of(user)
+    if not uid:
+        logger.warning("Cannot resolve uid of console user '%s'.", user)
+        return
+
+    # Run the kiosk with the agent's own interpreter (the venv where the kiosk
+    # is installed, e.g. /opt/medulla/venv/bin/python3), so it shares the same
+    # interpreter/site-packages as the agent - no hard-coded path.
+    command = [
+        "launchctl", "asuser", uid,
+        "sudo", "-u", user,
+        sys.executable, "-m", "kiosk_interface",
+    ]
+
+    logger.debug("Starting Kiosk for user '%s' (uid=%s).", user, uid)
+    try:
+        subprocess.Popen(
+            command,
+            close_fds=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        logger.debug("Kiosk launch command sent for user '%s'.", user)
+    except Exception as e:
+        logger.error("Failed to start Kiosk: %s", e)
+
+
+def get_macos_console_user():
+    """Return the logged-in GUI (console) user on macOS, or None.
+
+    Uses ``stat -f %Su /dev/console`` (same method as the macOS installer).
+    Filters out root / loginwindow / setup users, which mean no real GUI user
+    is logged in (login screen, fast-user-switch transition...).
+    """
+    try:
+        res = simplecommand('stat -f "%Su" /dev/console')
+        result = res.get("result", [])
+        if not result:
+            return None
+        user = result[0].strip()
+        if not user or user in ("root", "loginwindow", "_mbsetupuser"):
+            return None
+        return user
+    except Exception as e:
+        logger.debug("macOS console user detection failed: %s", e)
+        return None
+
+
 def is_kiosk_running(pid_file):
     """Return True if a live kiosk process is referenced by ``pid_file``.
 
@@ -203,7 +276,7 @@ def get_linux_graphical_session():
                 continue
             session_id = parts[0]
             props = _loginctl_session_props(session_id)
-            if props.get("State") == "active" and props.get("Display") != "" and props.get("Type") in (
+            if props.get("State") == "active" and props.get("Class") == "user" and props.get("Type") in (
                 "x11",
                 "wayland",
             ):
@@ -248,7 +321,7 @@ def _loginctl_session_props(session_id):
     """Return the loginctl properties of a session as a dict."""
     props = {}
     res = simplecommand(
-        "loginctl show-session %s -p Name -p User -p State -p Type -p Display"
+        "loginctl show-session %s -p Name -p User -p State -p Type -p Display -p Class"
         % session_id
     )
     for line in res.get("result", []):

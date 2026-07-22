@@ -11,13 +11,13 @@
 %define use_git         1
 %define branch master
 %define filetree_version 0.2
-%define kiosk_version 2.1.1
+%define kiosk_version 2.1.2
 
 %global __python %{__python3}
 
 Summary:	Pulse XMPP Agent
 Name:		medulla-agent
-Version:	5.6.1
+Version:	5.6.3
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -78,6 +78,7 @@ Requires:       python3.11-tempora
 Requires:       python3.11-posix-ipc
 Requires:       python3.11-aiofiles
 Requires:       python3.11-websockets
+Requires:       python3.11-setuptools
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
 
@@ -393,17 +394,14 @@ cp scripts_installer/lin/generate-pulse-agent-linux.sh %buildroot%_var/lib/pulse
 chmod +x %buildroot%_var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 cp scripts_installer/lin/uninstall-medulla-agent-linux.sh %buildroot%_var/lib/pulse2/clients/lin/
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/generate-pulse-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
-chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
+cp scripts_installer/mac/generate-medulla-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
+chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-medulla-agent-mac.sh
+cp scripts_installer/mac/medulla-uninstall.sh %buildroot%_var/lib/pulse2/clients/mac
+chmod +x %buildroot%_var/lib/pulse2/clients/mac/medulla-uninstall.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp -r scripts_installer/lin/* %buildroot%_var/lib/pulse2/clients/lin
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/generate-pulse-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/Info.plist.in %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/postflight.in %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/net.siveo.pulse_xmpp_agent.plist %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/rbash %buildroot%_var/lib/pulse2/clients/mac
-cp scripts_installer/mac/runpulseagent %buildroot%_var/lib/pulse2/clients/mac
+cp scripts_installer/mac/generate-medulla-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
 mkdir -p %buildroot%_var/lib/pulse2/clients/win/libs
 cp -fr scripts_installer/win/nsis_libs/* %buildroot%_var/lib/pulse2/clients/win/libs
 mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork

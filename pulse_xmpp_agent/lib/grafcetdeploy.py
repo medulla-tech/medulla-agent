@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -444,6 +444,14 @@ class grafcet:
                 "@@@DEPLOY@@@", "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
             )
 
+        # Generic plugin call: @@@PLUGIN_CALL_<name>@@@ or @@@PLUGIN_CALL_"<name>"@@@
+        # Case-insensitive. The plugin name is normalized to lowercase.
+        # Example: @@@PLUGIN_CALL_update_linux_command@@@
+        #          @@@PLUGIN_CALL_"My_Plugin"@@@
+        for _m in re.finditer(r'@@@PLUGIN_CALL_"?([^@"]+?)"?@@@', cmd, re.IGNORECASE):
+            _raw_name = _m.group(1).strip().strip('"').strip().lower()
+            cmd = cmd.replace(_m.group(0), f"@@@DEPLOY_ACTION_PLUGIN_CALL_{_raw_name}@@@")
+
         # remplace all dynamic parameters by values.
         # eg :  @@@DYNAMIC_PARAM@@@section@@@ is dynamique parameter "section"
         # Si le parameter dynamic section exist, it is replace by value.
@@ -712,6 +720,84 @@ class grafcet:
         self.__Etape_Next_in__()
         return True
 
+    def __handle_plugin_call_marker(self, plugin_name):
+        """Dispatch any plugin by name via @@@PLUGIN_CALL_<name>@@@ grafcet marker.
+
+        The plugin receives the same payload structure as update_linux_command:
+        marker_payload, command_parameters, dynamic_param_deploy, advanced_param_deploy.
+
+        Args:
+            plugin_name (str): Normalized (lowercase) plugin name to call.
+
+        Returns:
+            True after dispatching and finalizing the step.
+        """
+        marker_payload = self.__extract_marker_payload(
+            self.workingstep.get("command", "") or self.workingstep.get("script", "")
+        )
+
+        msg = {
+            "from": self.objectxmpp.boundjid.bare,
+            "to": self.objectxmpp.boundjid.bare,
+            "type": "chat",
+        }
+
+        payload_data = {
+            "command_parameters": copy.deepcopy(self.dynamic_param_deploy),
+            "dynamic_param_deploy": copy.deepcopy(self.dynamic_param_deploy),
+            "advanced_param_deploy": copy.deepcopy(self.advanced_param_deploy),
+            "marker_payload": copy.deepcopy(marker_payload),
+            "payload": self.__merged_deploy_params_json(),
+            "deploy_step": self.workingstep.get("step", 0),
+            "source": "grafcetdeploy",
+        }
+
+        logger.info("PLUGIN_CALL dispatch: plugin=%s payload=%s", plugin_name,
+                    json.dumps(payload_data, sort_keys=True))
+
+        dataerror = {
+            "action": f"result{plugin_name}",
+            "sessionid": self.sessionid,
+            "ret": 255,
+            "base64": False,
+            "data": {"msg": f"ERROR: {plugin_name}"},
+        }
+
+        call_plugin_sequentially(
+            plugin_name,
+            self.objectxmpp,
+            plugin_name,
+            self.sessionid,
+            payload_data,
+            msg,
+            dataerror,
+        )
+
+        self.__action_completed__(self.workingstep)
+        self.workingstep["codereturn"] = 0
+        self.__resultinfo__(
+            self.workingstep,
+            [f"PLUGIN_CALL {plugin_name} executed", json.dumps(marker_payload)],
+        )
+        self.steplog()
+        if self.__Go_to_by_jump_succes_and_error__(0):
+            return True
+        self.__Etape_Next_in__()
+        return True
+        logged_payload = marker_payload or (self.dynamic_param_deploy if self.dynamic_param_deploy else {})
+        self.__resultinfo__(
+            self.workingstep,
+            [
+                "update_linux_command plugin executed",
+                json.dumps(logged_payload),
+            ],
+        )
+        self.steplog()
+        if self.__Go_to_by_jump_succes_and_error__(0):
+            return True
+        self.__Etape_Next_in__()
+        return True
+
     def __search_Next_step_int__(self, val):
         """
         goto to val
@@ -777,12 +863,103 @@ class grafcet:
             self.data["stepcurrent"] = self.data["stepcurrent"] + 1
             return 5
 
+    def __kiosk_uninstall_has_content__(self):
+        """True if the uninstall section holds a real command or script.
+
+        A declared but empty section would give a Delete button that runs
+        nothing. Same rule as get_packages_for_machine on the substitute.
+        """
+        in_uninstall_section = False
+        for step in self.data.get("descriptor", {}).get("sequence", []):
+            step_action = step.get("action", "")
+            if step_action == "action_section_uninstall":
+                in_uninstall_section = True
+                continue
+            if step_action in ("actionsuccescompletedend", "actionerrorcompletedend"):
+                in_uninstall_section = False
+                continue
+            if in_uninstall_section and (
+                str(step.get("command", "")).strip()
+                or str(step.get("script", "")).strip()
+            ):
+                return True
+        return False
+
+    def __kiosk_actions_installed__(self):
+        """Kiosk buttons for a package that just got installed: (actions, launcher).
+
+        Everything is local in the descriptor. Mirrors the installed branch of
+        get_packages_for_machine on the substitute; the launcher is read from
+        the same place, base64 as the kiosk expects.
+        """
+        actions = []
+        launcher = self.data.get("descriptor", {}).get("info", {}).get("launcher", "")
+        if launcher:
+            actions.append("Launch")
+
+        if self.__kiosk_uninstall_has_content__():
+            actions.append("Delete")
+        else:
+            # No uninstall: non actionable "Installed" badge instead of a button.
+            actions.append("Installed")
+        return actions, launcher
+
+    def __notify_kiosk_deployment_end__(self, ret):
+        """Tell the local kiosk the deployment it asked for is over (ret 0 = ok).
+
+        Unblocks the button right away with the final buttons, without waiting
+        for the next inventory. The substitute stays the source of truth and
+        resends the list then.
+        """
+        try:
+            path = self.datasend["data"].get("path", "")
+            uuid = os.path.basename(path) if path else ""
+            if not uuid:
+                logger.info(
+                    "Kiosk not notified for session %s: no package path"
+                    % self.sessionid
+                )
+                return
+
+            actions, launcher = (
+                self.__kiosk_actions_installed__() if ret == 0 else ([], "")
+            )
+            msgkiosk = {
+                "action": "deploymentEnd",
+                "sessionid": self.sessionid,
+                "data": {
+                    "uuid": uuid,
+                    "success": ret == 0,
+                    "action": actions,
+                    "launcher": launcher,
+                },
+                "ret": 0,
+                "base64": False,
+            }
+            logger.info(
+                "Notifying kiosk: deployment of %s ended (ret=%s) actions=%s"
+                % (uuid, ret, actions)
+            )
+            send_data_tcp(
+                json.dumps(msgkiosk), port=self.objectxmpp.config.kiosk_local_port
+            )
+        except Exception:
+            # A missing kiosk must never take the deployment down with it.
+            logger.error(
+                "Kiosk notification failed for session %s\n%s"
+                % (self.sessionid, traceback.format_exc())
+            )
+
     def terminate(self, ret, clear=True, msgstate=""):
         """
         use for terminate deploy
         send msg to log sequence
         Clean client disk packages (ie clear)
         """
+        # Kiosk deployments get a "commandkiosk" sessionid (plugin_resultkiosk).
+        # Done before "path" is deleted below, as it holds the package uuid.
+        if str(self.sessionid).startswith("commandkiosk"):
+            self.__notify_kiosk_deployment_end__(ret)
         login = self.data["login"]
         self.__clean_protected()
         restarmachine = False
@@ -1817,7 +1994,7 @@ class grafcet:
         {
                 "action": "action_no_operation",
                 "step": n,
-                "environ" : {"PLIP22" : "plop" ,"dede","kk" }
+                "environ" : {"PLIP22" : "plop" ,"kk" }
         }
         """
         try:
@@ -1936,6 +2113,13 @@ class grafcet:
                 if self.__handle_update_linux_marker():
                     return
 
+            # Generic PLUGIN_CALL dispatch
+            _pc_match = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                  self.workingstep["command"])
+            if _pc_match:
+                if self.__handle_plugin_call_marker(_pc_match.group(1).strip().lower()):
+                    return
+
             if "timeout" not in self.workingstep:
                 try:
                     self.workingstep["timeout"] = int(
@@ -2039,6 +2223,13 @@ class grafcet:
                     return
                 self.__Etape_Next_in__()
                 return
+
+            # Generic PLUGIN_CALL dispatch
+            _pc_match2 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                   self.workingstep["command"])
+            if _pc_match2:
+                if self.__handle_plugin_call_marker(_pc_match2.group(1).strip().lower()):
+                    return
 
             # self.objectxmpp.logtopulse("action_command_natif_shell")
             # todo si action deja faite return
@@ -2218,6 +2409,13 @@ class grafcet:
 
             if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["script"]:
                 if self.__handle_update_linux_marker():
+                    return
+
+            # Generic PLUGIN_CALL dispatch
+            _pc_match3 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                   self.workingstep["script"])
+            if _pc_match3:
+                if self.__handle_plugin_call_marker(_pc_match3.group(1).strip().lower()):
                     return
 
             if "timeout" not in self.workingstep:

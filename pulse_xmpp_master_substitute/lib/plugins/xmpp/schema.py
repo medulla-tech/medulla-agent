@@ -1166,9 +1166,10 @@ class UpMachineUpdateLinux(Base, XmppMasterDBObj):
 class UpOsVersions(Base, XmppMasterDBObj):
     __tablename__ = "up_linux_os_versions"
 
-    distribution = Column(String(32), nullable=False)
-    version = Column(String(20), nullable=False)
-    name = Column(String(64))
+    distributor_id = Column(String(64), nullable=False)
+    release_version = Column(String(20), nullable=False)
+    target_version = Column(String(20))
+    name = Column(String(255))
 
     is_managed = Column(Boolean, nullable=False, default=False)
     is_current_stable = Column(Boolean, nullable=False, default=False)
@@ -1180,13 +1181,14 @@ class UpOsVersions(Base, XmppMasterDBObj):
     description = Column(String(255))
     package = Column(String(36))
     packagename = Column(String(45))
+    parameters = Column(Text)
 
     __table_args__ = (
-        UniqueConstraint("distribution", "version", name="uniq_distribution_version"),
-        Index("idx_distribution", "distribution"),
-        Index("idx_distribution_stable", "distribution", "is_current_stable"),
-        Index("idx_distribution_recommended", "distribution", "is_recommended"),
-        Index("idx_managed", "is_managed"),
+        UniqueConstraint("distributor_id", "release_version", name="uniq_distributor_release_version"),
+        Index("idx_distributor_id", "distributor_id"),
+        Index("idx_distribution_stable", "distributor_id", "is_current_stable"),
+        Index("idx_distribution_recommended", "distributor_id", "is_recommended"),
+        Index("idx_is_managed", "is_managed"),
         Index("idx_vendor_support", "end_vendor_support"),
         Index("idx_extended_support", "end_extended_support"),
     )

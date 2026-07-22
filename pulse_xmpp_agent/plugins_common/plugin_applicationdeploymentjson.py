@@ -16,7 +16,17 @@ import urllib.parse
 import urllib.error
 import shutil
 from lib.utils import file_get_contents
-from distutils.util import strtobool
+
+
+# Python 3.12+ removed distutils; keep legacy truth parsing behavior.
+def strtobool(val):
+    val = str(val).strip().lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return 1
+    if val in ("n", "no", "f", "false", "off", "0"):
+        return 0
+    raise ValueError("invalid truth value %r" % (val,))
+
 from urllib.parse import quote, urlparse
 from lib import utils, managepackage, grafcetdeploy
 from lib.agentconffile import (
@@ -43,7 +53,7 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 elif sys.platform.startswith("win"):
     import win32net
 
-plugin = {"VERSION": "6.4", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "6.5", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 Globaldata = {"port_local": 22}
 logger = logging.getLogger()
