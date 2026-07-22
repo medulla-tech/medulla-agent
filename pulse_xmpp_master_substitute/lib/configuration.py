@@ -153,6 +153,9 @@ class confParameter:
         if "admin" in self.plugins_list:
             self.readConfadmin(Config)
 
+        if "diskmastering" in self.plugins_list:
+            self.readConfdiskMastering(Config)
+
     def _levellogdata(self, levelstring):
         strlevel = levelstring.upper()
         if strlevel in ["CRITICAL", "FATAL"]:
@@ -171,6 +174,43 @@ class confParameter:
             return 25
         else:
             return 20
+
+    def readConfdiskMastering(self, confiobject):
+        self.diskmastering_dbpooltimeout = 30
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbpooltimeout"):
+            self.diskmastering_dbpooltimeout = confiobject.getint("masteringdatabase", "diskmastering_dbpooltimeout")
+
+        self.diskmastering_dbhost = "localhost"
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbhost"):
+            self.diskmastering_dbhost = confiobject.get("masteringdatabase", "diskmastering_dbhost")
+
+        self.diskmastering_dbport = 3306
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbport"):
+            self.diskmastering_dbport = confiobject.getint("masteringdatabase", "diskmastering_dbport")
+
+        self.diskmastering_dbname = "mastering"
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbname"):
+            self.diskmastering_dbname = confiobject.get("masteringdatabase", "diskmastering_dbname")
+
+        self.diskmastering_dbuser = "mmc"
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbuser"):
+            self.diskmastering_dbuser = confiobject.get("masteringdatabase", "diskmastering_dbuser")
+
+        self.diskmastering_dbpasswd = "mmc"
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbpasswd"):
+            self.diskmastering_dbpasswd = confiobject.get("masteringdatabase", "diskmastering_dbpasswd")
+
+        self.diskmastering_dbpoolrecycle = 3600
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbpoolrecycle"):
+            self.diskmastering_dbpoolrecycle = confiobject.getint("masteringdatabase", "diskmastering_dbpoolrecycle")
+
+        self.diskmastering_dbpoolsize = 60
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbpoolsize"):
+            self.diskmastering_dbpoolsize = confiobject.getint("masteringdatabase", "diskmastering_dbpoolsize")
+
+        self.diskmastering_dbechoquery = False
+        if confiobject.has_option("masteringdatabase", "diskmastering_dbechoquery"):
+            self.diskmastering_dbechoquery = confiobject.getboolean("masteringdatabase", "diskmastering_dbechoquery")
 
     def readConfadmin(self, confiobject):
         self.admin_dbpooltimeout = 30
