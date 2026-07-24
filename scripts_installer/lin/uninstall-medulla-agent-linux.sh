@@ -109,6 +109,24 @@ detect_pkg_manager() {
 }
 
 # ---------------------------------------------------------------------------
+# Remove legacy Medulla APT source when present
+# ---------------------------------------------------------------------------
+remove_pulseagent_apt_source() {
+    local PULSEAGENT_APT_SOURCE="/etc/apt/sources.list.d/pulseagent.list"
+
+    if [ ! -f "${PULSEAGENT_APT_SOURCE}" ]; then
+        return
+    fi
+
+    rm -f "${PULSEAGENT_APT_SOURCE}"
+    log_ok "Removed ${PULSEAGENT_APT_SOURCE}"
+
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get update 2>/dev/null || log_warn "apt-get update failed after removing ${PULSEAGENT_APT_SOURCE}"
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # Step 0 - Restore legacy python3 update-alternatives before package operations
 #
 # Older Medulla installers set python3.11 as the system-wide /usr/bin/python3
@@ -461,6 +479,7 @@ log ""
 
 # Step 0 MUST run first: restores /usr/bin/python3 BEFORE any apt/dnf call
 restore_python_alternatives
+remove_pulseagent_apt_source
 stop_service
 remove_agent
 remove_certificates
