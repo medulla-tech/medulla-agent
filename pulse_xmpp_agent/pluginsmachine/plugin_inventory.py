@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "5.2", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.6", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -71,8 +71,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_updates = jid.JID("master_upd@pulse")
     if sys.platform.startswith("win"):
         try:
-            
-            
             send_plugin_update_windows(xmppobject)
         except Exception as e:
             logger.error("An error occured while calling the plugin:  %s" % str(e))
@@ -321,20 +319,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msg = []
             if os.path.exists(inventoryfile):
                 try:
-                    # Ajouter le TAG au XML s'il n'existe pas
-                    logger.info("[INVENTORY-LINUX] Starting TAG injection")
-                    agent_tag = get_agent_tag_from_file()
-                    if agent_tag:
-                        logger.info(f"[INVENTORY-LINUX] TAG found, injecting: {agent_tag}")
-                        add_tag_to_inventory_xml(inventoryfile, agent_tag)
-                    else:
-                        logger.info("[INVENTORY-LINUX] No TAG found")
-                    
-                    # Ajouter les métadonnées au bloc META
-                    agent_metadata = get_agent_metadata_from_file()
-                    if agent_metadata:
-                        add_metadata_to_inventory_xml(inventoryfile, agent_metadata)
-                    
                     result["data"]["inventory"], boolchange = compact_xml(inventoryfile)
                     result["data"]["inventory"] = convert.compress_and_encode(
                         result["data"]["inventory"]
@@ -541,20 +525,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if xmppobject.config.via_xmpp == "True":
                 if os.path.exists(inventoryfile):
                     try:
-                        # Ajouter le TAG au XML s'il n'existe pas (Windows)
-                        logger.info("[INVENTORY-WINDOWS] Starting TAG injection")
-                        agent_tag = get_agent_tag_from_file()
-                        if agent_tag:
-                            logger.info(f"[INVENTORY-WINDOWS] TAG found, injecting: {agent_tag}")
-                            add_tag_to_inventory_xml(inventoryfile, agent_tag)
-                        else:
-                            logger.info("[INVENTORY-WINDOWS] No TAG found")
-                        
-                        # Ajouter les métadonnées au bloc META
-                        agent_metadata = get_agent_metadata_from_file()
-                        if agent_metadata:
-                            add_metadata_to_inventory_xml(inventoryfile, agent_metadata)
-                        
                         # read max_key_index parameter to find out the number of keys
                         # Registry keys that need to be pushed in an inventory
                         graine = ""
@@ -779,20 +749,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msg = []
             if os.path.exists(inventoryfile):
                 try:
-                    # Ajouter le TAG au XML s'il n'existe pas
-                    logger.info("[INVENTORY-MACOS] Starting TAG injection")
-                    agent_tag = get_agent_tag_from_file()
-                    if agent_tag:
-                        logger.info(f"[INVENTORY-MACOS] TAG found, injecting: {agent_tag}")
-                        add_tag_to_inventory_xml(inventoryfile, agent_tag)
-                    else:
-                        logger.info("[INVENTORY-MACOS] No TAG found")
-                    
-                    # Ajouter les métadonnées au bloc META
-                    agent_metadata = get_agent_metadata_from_file()
-                    if agent_metadata:
-                        add_metadata_to_inventory_xml(inventoryfile, agent_metadata)
-                    
                     result["data"]["inventory"], boolchange = compact_xml(inventoryfile)
                     result["data"]["inventory"] = convert.compress_and_encode(
                         result["data"]["inventory"]
@@ -934,246 +890,6 @@ def Setdirectorytempinfo():
     if not os.path.exists(dirtempinfo):
         os.makedirs(dirtempinfo, mode=0o007)
     return dirtempinfo
-
-
-def get_agent_tag_from_file():
-    """
-    Lire le TAG depuis le fichier de config agent
-    
-    Emplacements selon la plateforme:
-    - Linux:   /etc/medulla-agent/agent_inventory_tag.txt
-    - Windows: C:\\Program Files\\Medulla\\etc\\agent_inventory_tag.txt
-    - macOS:   /etc/medulla-agent/agent_inventory_tag.txt
-    
-    Returns:
-    TAG string ou None si fichier n'existe pas
-    """
-    tag_file = None
-    
-    if sys.platform.startswith("win"):
-        # Windows: C:\Program Files\Medulla\etc\agent_inventory_tag.txt
-        medulla_base = medullaPath()
-        logger.info(f"[TAG] Windows: medullaPath()={medulla_base}")
-        if not medulla_base:
-            logger.warning("[TAG] medullaPath() returned None on Windows, cannot determine TAG file path")
-            return None
-        tag_file = os.path.join(
-            medulla_base,
-            "etc",
-            "agent_inventory_tag.txt"
-        )
-    elif sys.platform.startswith("darwin"):
-        # macOS: /etc/medulla-agent/agent_inventory_tag.txt
-        tag_file = "/etc/medulla-agent/agent_inventory_tag.txt"
-    else:
-        # Linux: /etc/medulla-agent/agent_inventory_tag.txt
-        tag_file = "/etc/medulla-agent/agent_inventory_tag.txt"
-
-    exists = os.path.exists(tag_file) if tag_file else False
-    logger.info(f"[TAG] file path: {tag_file} (exists={exists})")
-    
-    if tag_file and exists:
-        try:
-            tag = utils.file_get_contents(tag_file).strip()
-            if tag:
-                logger.info(f"[TAG] Successfully read: {tag}")
-                return tag
-            else:
-                logger.warning(f"[TAG] file {tag_file} is empty")
-        except Exception as e:
-            logger.error(f"[TAG] Error reading {tag_file}: {e}", exc_info=True)
-    else:
-        logger.warning(f"[TAG] file not found or path is None: {tag_file}")
-    return None
-
-
-def add_tag_to_inventory_xml(xmlfile, tag_value):
-    """
-    Ajoute le TAG au XML d'inventaire s'il n'existe pas.
-    Supporte les deux structures : FusionInventory (/REQUEST/CONTENT) et GLPI-Agent (/REQUEST).
-    
-    Param: xmlfile - chemin du fichier XML
-    Param: tag_value - valeur du TAG à ajouter
-    
-    Returns:
-    True si TAG ajouté, False sinon
-    """
-    if not tag_value:
-        return False
-
-    try:
-        parser = ET.XMLParser(remove_blank_text=False)
-        xmlTree = ET.parse(xmlfile, parser=parser)
-        root = xmlTree.getroot()
-        
-        # Déterminer la structure XML
-        content = root.find("./REQUEST/CONTENT")
-        if content is None:
-            # Essayer la structure GLPI-Agent directe (/REQUEST)
-            content = root.find("./REQUEST")
-            if content is None:
-                # Structure inconnue - essayer la racine directe
-                content = root
-            logger.debug(f"Using direct REQUEST structure (no CONTENT)")
-        else:
-            logger.debug(f"Using FusionInventory structure (REQUEST/CONTENT)")
-
-        existing_tag = content.find("./TAG")
-        
-        if existing_tag is None:
-            # Créer le TAG
-            tag_elem = ET.SubElement(content, "TAG")
-            tag_elem.text = str(tag_value)
-            # Écrire le fichier mis à jour
-            xmlTree.write(
-                xmlfile,
-                encoding="UTF-8",
-                xml_declaration=True,
-                pretty_print=True
-            )
-            logger.info(f"TAG ajouté à l'inventaire XML: {tag_value}")
-            return True
-        else:
-            logger.debug(f"TAG déjà présent dans l'inventaire: {existing_tag.text}")
-            return False
-    except Exception as e:
-        logger.error(f"Erreur lors de l'ajout du TAG au XML: {e}")
-        return False
-
-
-def get_agent_metadata_from_file():
-    """
-    Lire les métadonnées depuis le fichier de config agent
-    Format: key=value (une paire par ligne)
-    
-    Emplacements selon la plateforme:
-    - Linux:   /etc/medulla-agent/agent_inventory_metadata.txt
-    - Windows: C:\\Program Files (x86)\\Medulla\\etc\\agent_inventory_metadata.txt
-    - macOS:   /etc/medulla-agent/agent_inventory_metadata.txt
-    
-    Returns:
-    Dict {key: value, ...} ou {} si fichier absent/erreur
-    """
-    metadata_file = None
-    
-    if sys.platform.startswith("win"):
-        # Windows: C:\Program Files (x86)\Medulla\etc\agent_inventory_metadata.txt
-        metadata_file = os.path.join(
-            medullaPath(),
-            "etc",
-            "agent_inventory_metadata.txt"
-        )
-    elif sys.platform.startswith("darwin"):
-        # macOS: /etc/medulla-agent/agent_inventory_metadata.txt
-        metadata_file = "/etc/medulla-agent/agent_inventory_metadata.txt"
-    else:
-        # Linux: /etc/medulla-agent/agent_inventory_metadata.txt
-        metadata_file = "/etc/medulla-agent/agent_inventory_metadata.txt"
-
-    logger.debug(f"Metadata file path: {metadata_file} (exists={os.path.exists(metadata_file) if metadata_file else False})")
-    
-    if not metadata_file or not os.path.exists(metadata_file):
-        logger.debug(f"Metadata file not found: {metadata_file}")
-        return {}
-
-    metadata = {}
-    try:
-        content = utils.file_get_contents(metadata_file).strip()
-        if not content:
-            logger.debug(f"Metadata file {metadata_file} is empty")
-            return {}
-        
-        for line in content.split('\n'):
-            line = line.strip()
-            if not line or line.startswith('#'):  # Ignorer lignes vides et commentaires
-                continue
-            
-            if '=' in line:
-                key, value = line.split('=', 1)
-                key = key.strip().upper()
-                value = value.strip()
-                if key and value:
-                    metadata[key] = value
-                    logger.debug(f"Métadonnée agent lue: {key}={value}")
-        
-        if metadata:
-            logger.info(f"Métadonnées agent lues depuis fichier: {len(metadata)} clés")
-        else:
-            logger.debug(f"No metadata parsed from {metadata_file}")
-        
-        return metadata
-    except Exception as e:
-        logger.warning(f"Erreur lecture métadonnées depuis {metadata_file}: {e}")
-        return {}
-
-
-def add_metadata_to_inventory_xml(xmlfile, metadata_dict):
-    """
-    Ajoute les métadonnées au bloc META du XML d'inventaire.
-    Supporte les deux structures : FusionInventory (/REQUEST/CONTENT) et GLPI-Agent (/REQUEST).
-    Les métadonnées existantes ne sont pas écrasées.
-    
-    Param: xmlfile - chemin du fichier XML
-    Param: metadata_dict - dictionnaire {key: value, ...}
-    
-    Returns:
-    True si métadonnées ajoutées, False sinon
-    """
-    if not metadata_dict:
-        return False
-
-    try:
-        parser = ET.XMLParser(remove_blank_text=False)
-        xmlTree = ET.parse(xmlfile, parser=parser)
-        root = xmlTree.getroot()
-        
-        # Chercher ou créer le bloc META
-        content = root.find("./REQUEST/CONTENT")
-        if content is None:
-            # Essayer la structure GLPI-Agent directe (/REQUEST)
-            content = root.find("./REQUEST")
-            if content is None:
-                # Structure inconnue - essayer la racine directe
-                content = root
-            logger.debug(f"Using direct REQUEST structure for metadata (no CONTENT)")
-        else:
-            logger.debug(f"Using FusionInventory structure for metadata (REQUEST/CONTENT)")
-
-        meta = content.find("./META")
-        if meta is None:
-            # Créer le bloc META
-            meta = ET.SubElement(content, "META")
-            logger.debug("Bloc META créé")
-        
-        # Ajouter les métadonnées
-        added_count = 0
-        for key, value in metadata_dict.items():
-            existing_elem = meta.find(f"./{key}")
-            if existing_elem is None:
-                # Créer l'élément
-                meta_elem = ET.SubElement(meta, key)
-                meta_elem.text = str(value)
-                added_count += 1
-                logger.debug(f"Métadonnée ajoutée au META: {key}={value}")
-            else:
-                # L'élément existe déjà, ne pas écraser
-                logger.debug(f"Métadonnée {key} existe déjà, non écrasée")
-        
-        if added_count > 0:
-            # Écrire le fichier mis à jour
-            xmlTree.write(
-                xmlfile,
-                encoding="UTF-8",
-                xml_declaration=True,
-                pretty_print=True
-            )
-            logger.info(f"{added_count} métadonnée(s) ajoutée(s) au bloc META")
-            return True
-        
-        return False
-    except Exception as e:
-        logger.error(f"Erreur lors de l'ajout des métadonnées au XML: {e}")
-        return False
 
 
 def compact_xml(inputfile, graine=""):
