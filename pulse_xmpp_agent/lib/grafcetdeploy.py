@@ -2105,6 +2105,11 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.workingstep["command"] = isBase64tostring(self.workingstep["command"])
+            # HTML form textareas post scripts with CRLF; normalize to LF so
+            # unix shells don't choke on the \r (Windows tolerates LF just fine).
+            self.workingstep["command"] = self.workingstep["command"].replace(
+                "\r\n", "\n"
+            )
             self.workingstep["command"] = self.replaceTEMPLATE(
                 self.workingstep["command"]
             )
@@ -2403,6 +2408,11 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.workingstep["script"] = isBase64tostring(self.workingstep["script"])
+            # HTML form textareas post scripts with CRLF; normalize to LF so
+            # unix shells don't choke on the \r (Windows tolerates LF just fine).
+            self.workingstep["script"] = self.workingstep["script"].replace(
+                "\r\n", "\n"
+            )
             self.workingstep["script"] = self.replaceTEMPLATE(
                 self.workingstep["script"]
             )
