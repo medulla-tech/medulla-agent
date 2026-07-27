@@ -192,9 +192,10 @@ def launch_kiosk_macos():
         logger.warning("Cannot resolve uid of console user '%s'.", user)
         return
 
-    # Run the kiosk with the agent's own interpreter (the venv where the kiosk
-    # is installed, e.g. /opt/medulla/venv/bin/python3), so it shares the same
-    # interpreter/site-packages as the agent - no hard-coded path.
+    # Lance python -m kiosk_interface directement (evite Gatekeeper qui refuse
+    # le bundle .app non signe). Le bundle /Applications/Medulla Kiosk.app est
+    # conserve pour son icone visible dans /Applications, mais le scheduler ne
+    # passe pas par `open` pour eviter la validation LaunchServices/Gatekeeper.
     command = [
         "launchctl", "asuser", uid,
         "sudo", "-u", user,
