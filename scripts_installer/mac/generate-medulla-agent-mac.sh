@@ -34,7 +34,7 @@ AGENT_VERSION="5.6.3"
 PYTHON_VERSION="3.11"
 PYTHON_VERSION_FULL="3.11.9"
 GLPI_AGENT_VERSION="1.17"
-KIOSK_VERSION="2.1.0"
+KIOSK_VERSION="2.1.2"
 # PyQt6 pinné (PyQt6 ET PyQt6-Qt6 à la MÊME version, sinon ABI mismatch au
 # runtime), aligné sur les installeurs win/linux.
 PYQT6_VERSION="6.6.1"
@@ -146,6 +146,20 @@ build_dmg_contents() {
     # -- 2. Agent code (hidden) --
     if [ -d "${AGENT_SRC}" ]; then
         cp -r "${AGENT_SRC}" "${DMG_STAGING}/.pulse_xmpp_agent"
+        # Aligne sur debian/rules : purge des caches runtime + des plugins/schedulers
+        # (distribues par le master apres inscription, pas embarques dans le pkg).
+        rm -rf "${DMG_STAGING}/.pulse_xmpp_agent/INFOSTMP" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/lib/INFOSTMP" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/sessionsmachine" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/sessionsrelayserver" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/fifodeploy" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/config" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/plugins_common" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/descriptor_scheduler_common" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/descriptor_scheduler_relay" \
+               "${DMG_STAGING}/.pulse_xmpp_agent/pluginsrelay" 2>/dev/null || true
+        rm -f "${DMG_STAGING}/.pulse_xmpp_agent/pluginsmachine/plugin_"*.py \
+              "${DMG_STAGING}/.pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_"*.py 2>/dev/null || true
         # Create setup.py so pip install -e works (registers pulse_xmpp_agent as a package)
         cat > "${DMG_STAGING}/.setup.py" <<'SETUPEOF'
 from setuptools import setup
@@ -227,13 +241,13 @@ SETUPEOF
         cp "${MAC_DIR}/downloads/VolumeIcon.icns" "${DMG_STAGING}/.VolumeIcon.icns"
     fi
 
-    # -- 5b. Uninstall helper (sera deplacé en /usr/local/bin/medulla-uninstall par le postinstall) --
-    if [ -f "${MAC_DIR}/medulla-uninstall.sh" ]; then
-        cp "${MAC_DIR}/medulla-uninstall.sh" "${DMG_STAGING}/medulla-uninstall.sh"
-        chmod +x "${DMG_STAGING}/medulla-uninstall.sh"
+    # -- 5b. Uninstall helper (embarque dans /opt/medulla/, lance par l'admin depuis la) --
+    if [ -f "${MAC_DIR}/uninstall-medulla-agent-mac.sh" ]; then
+        cp "${MAC_DIR}/uninstall-medulla-agent-mac.sh" "${DMG_STAGING}/uninstall-medulla-agent-mac.sh"
+        chmod +x "${DMG_STAGING}/uninstall-medulla-agent-mac.sh"
         colored_echo green "  Uninstall helper: OK"
     else
-        colored_echo yellow "  WARN: ${MAC_DIR}/medulla-uninstall.sh introuvable, helper non embarque"
+        colored_echo yellow "  WARN: ${MAC_DIR}/uninstall-medulla-agent-mac.sh introuvable, helper non embarque"
     fi
 
     # -- 6. Postinstall script --
@@ -381,6 +395,12 @@ if [ ! -x "$PYTHON_BIN" ]; then
 fi
 log "Python: $PYTHON_BIN"
 
+# Retire le binaire Python Intel-only livre par python.org (bin/pythonX.Y-intel64).
+# On ne l'utilise jamais (universal2 = arm64 natif sur Apple Silicon), et sa
+# presence declenche le warning macOS 26 "Fin de la prise en charge des apps
+# basees sur Intel" au premier lancement du bundle .app.
+rm -f "/Library/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/bin/python${PYTHON_VERSION}-intel64" 2>/dev/null || true
+
 # ---- Create medullauser (same as Linux) ----
 if ! id -u medullauser >/dev/null 2>&1; then
     log "Creation de l'utilisateur medullauser..."
@@ -409,6 +429,10 @@ mkdir -p ${INSTALL_DIR}/pulse_xmpp_agent/lib/INFOSTMP
 chmod 777 ${INSTALL_DIR}/pulse_xmpp_agent/lib/INFOSTMP
 chown medullauser:staff ${INSTALL_DIR}/packages
 mkdir -p ${CONF_DIR} ${LOG_DIR}
+# Le kiosk tourne en session utilisateur : le groupe staff (tous les users macOS) a droit
+# d'ecriture dans ${LOG_DIR} pour y deposer kiosk-interface.log.
+chgrp staff ${LOG_DIR}
+chmod 775 ${LOG_DIR}
 # INSTALL_DIR is already /opt/medulla, no symlink needed
 
 # ---- Copy config (from pkg payload to /etc) ----
@@ -503,6 +527,62 @@ if [ -f "$KIOSK_SRC" ]; then
 enable_kiosk = True
 KIOSKINI
     ln -sf ${CONF_DIR}/scheduling_launch_kiosk.ini ${INSTALL_DIR}/etc/ 2>/dev/null
+
+    # Bundle "Medulla Kiosk.app" dans /Applications/ (LSUIElement=true, pas de dock,
+    # icone menu bar seule, macOS reconnait l'app -> shutdown propre).
+    KIOSK_APP="/Applications/Medulla Kiosk.app"
+    KIOSK_TMP=$(mktemp -d)
+    tar -xzf "$KIOSK_SRC" -C "$KIOSK_TMP" 2>/dev/null
+    KIOSK_MACOS_DIR=$(find "$KIOSK_TMP" -type d -name "macos" | head -1)
+    if [ -n "$KIOSK_MACOS_DIR" ] && [ -f "$KIOSK_MACOS_DIR/Info.plist" ]; then
+        rm -rf "$KIOSK_APP"
+        mkdir -p "$KIOSK_APP/Contents/MacOS" "$KIOSK_APP/Contents/Resources"
+        sed "s/__KIOSK_VER__/${KIOSK_VERSION}/g" "$KIOSK_MACOS_DIR/Info.plist" > "$KIOSK_APP/Contents/Info.plist"
+        cp "$KIOSK_MACOS_DIR/medulla-kiosk" "$KIOSK_APP/Contents/MacOS/medulla-kiosk"
+        chmod +x "$KIOSK_APP/Contents/MacOS/medulla-kiosk"
+
+        # Genere AppIcon.icns depuis le PNG du kiosk (via sips + iconutil natifs macOS).
+        # Le PNG source est en RGBA (fond transparent) : on l'aplatit sur fond blanc
+        # via PNG -> JPEG (sips aplatit sur blanc) -> PNG pour un rendu propre au
+        # Launchpad, quel que soit le theme systeme.
+        KIOSK_PNG=$(find "${INSTALL_DIR}/venv/lib" -name kiosk.png -path "*/kiosk_interface/datas/*" 2>/dev/null | head -1)
+        if [ -n "$KIOSK_PNG" ] && command -v sips >/dev/null && command -v iconutil >/dev/null; then
+            TMP_ICON=$(mktemp -d)
+            FLAT_PNG="$TMP_ICON/kiosk-flat.png"
+            # 1) Aplatit le PNG RGBA sur fond blanc (via detour JPEG).
+            sips -s format jpeg "$KIOSK_PNG" --out "$TMP_ICON/kiosk.jpg" >/dev/null 2>&1
+            sips -s format png "$TMP_ICON/kiosk.jpg" --out "$TMP_ICON/kiosk-white.png" >/dev/null 2>&1
+            # 2) Reduit le logo a 824 max (canonique macOS = ~80% de 1024).
+            sips -Z 824 "$TMP_ICON/kiosk-white.png" --out "$TMP_ICON/kiosk-small.png" >/dev/null 2>&1
+            # 3) Pad a 1024x1024 avec fond blanc pour respecter le canevas macOS
+            # ("-c" = canvas resize avec padding ; "--padToHeightWidth" ne pad pas
+            # si l'image est plus petite que la cible).
+            sips -c 1024 1024 --padColor FFFFFF "$TMP_ICON/kiosk-small.png" --out "$FLAT_PNG" >/dev/null 2>&1
+            [ ! -f "$FLAT_PNG" ] && FLAT_PNG="$KIOSK_PNG"
+
+            ICONSET="$TMP_ICON/AppIcon.iconset"
+            mkdir -p "$ICONSET"
+            for size in 16 32 128 256 512; do
+                sips -z "$size" "$size" "$FLAT_PNG" --out "$ICONSET/icon_${size}x${size}.png" >/dev/null 2>&1
+                dbl=$((size * 2))
+                sips -z "$dbl" "$dbl" "$FLAT_PNG" --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null 2>&1
+            done
+            iconutil -c icns "$ICONSET" -o "$KIOSK_APP/Contents/Resources/AppIcon.icns" 2>/dev/null
+            rm -rf "$TMP_ICON"
+        fi
+        # Essaie de convaincre Gatekeeper d'accepter le bundle au double-clic
+        # (ad-hoc sign + nettoyage xattr + whitelist spctl). Sans signature
+        # Developer ID + notarisation, Gatekeeper peut quand meme refuser sur
+        # macOS moderne ; ces etapes maximisent les chances de succes sans etre
+        # bloquantes.
+        codesign --sign - --force --deep "$KIOSK_APP" 2>/dev/null || true
+        xattr -cr "$KIOSK_APP" 2>/dev/null || true
+        spctl --add --label "MedullaKiosk" "$KIOSK_APP" 2>/dev/null || true
+        log "Bundle Medulla Kiosk.app cree dans /Applications/"
+    else
+        log "WARN: templates macos/ absents du tarball kiosk, bundle .app non cree"
+    fi
+    rm -rf "$KIOSK_TMP"
 else
     log "WARN: tarball kiosk absent du payload, kiosk non installe"
 fi
@@ -537,10 +617,11 @@ for CA_FILE in \
     fi
 done
 
-# 3. Try macOS keychain
-for cert in ${INSTALL_DIR}/certs/*.pem; do
-    security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$cert" 2>/dev/null || true
-done
+# NB: on n'ajoute pas les CAs Medulla au System keychain (`security add-trusted-cert`)
+# car chaque appel force un prompt mot de passe utilisateur, meme en root.
+# L'agent Python utilise ses propres bundles (venv certifi + cert.pem Python.framework
+# + /etc/ssl/cert.pem) mis a jour dans les etapes 1 et 2 ci-dessus. Safari, curl
+# systeme, etc. n'ont pas besoin de faire confiance a nos CAs.
 
 # ---- GLPI Agent ----
 log "Installation de GLPI Agent ${GLPI_AGENT_VERSION}..."
@@ -579,8 +660,9 @@ if [ ! -f "/Applications/GLPI-Agent/bin/glpi-agent" ]; then
         rm -f "$GLPI_PKG"
     fi
 fi
-mkdir -p /opt/fusioninventory-agent/bin
-ln -sf /Applications/GLPI-Agent/bin/glpi-inventory /opt/fusioninventory-agent/bin/fusioninventory-inventory
+# NB: le code Medulla appelle directement /Applications/GLPI-Agent/bin/glpi-inventory
+# depuis pluginsmachine/plugin_inventory.py + compplugin_inventory.py. Aucun symlink
+# legacy /opt/fusioninventory-agent a creer.
 
 # ---- Screen Sharing (VNC) ----
 # macOS Tahoe+ : le partage d'ecran doit etre active manuellement
@@ -596,20 +678,17 @@ WRAPEOF
 chmod +x ${INSTALL_DIR}/bin/medulla-agent.sh
 
 # ---- Restart helper ----
-cat > /usr/local/bin/medulla-restart <<'RESTEOF'
+cat > /usr/local/bin/restart-medulla-agent <<'RESTEOF'
 #!/bin/bash
 killall -9 Python 2>/dev/null
 sleep 1
 launchctl kickstart -kp system/io.medulla.agent
 RESTEOF
-chmod +x /usr/local/bin/medulla-restart
+chmod +x /usr/local/bin/restart-medulla-agent
 
-# ---- Uninstall helper (script standalone embarqué dans le payload, source de vérité unique) ----
-if [ -f "${INSTALL_DIR}/medulla-uninstall.sh" ]; then
-    cp "${INSTALL_DIR}/medulla-uninstall.sh" /usr/local/bin/medulla-uninstall
-    chmod +x /usr/local/bin/medulla-uninstall
-    log "Uninstall helper installe a /usr/local/bin/medulla-uninstall"
-fi
+# NB: uninstall-medulla-agent-mac.sh est deja depose dans ${INSTALL_DIR} par le payload du pkg.
+# Aucun symlink ni cp vers /usr/local/bin/ (zero renommage, une seule copie du fichier).
+# L'admin lance directement : sudo /opt/medulla/uninstall-medulla-agent-mac.sh [--purge | --keep-data]
 
 # ---- LaunchDaemon ----
 log "Creation du LaunchDaemon..."
@@ -638,9 +717,9 @@ cat > ${PLIST_PATH} <<PLISTEOF
 	<key>RunAtLoad</key>
 	<true/>
 	<key>StandardErrorPath</key>
-	<string>/var/log/medulla/medulla-agent.log</string>
+	<string>/dev/null</string>
 	<key>StandardOutPath</key>
-	<string>/var/log/medulla/medulla-agent.log</string>
+	<string>/dev/null</string>
 	<key>ThrottleInterval</key>
 	<integer>30</integer>
 	<key>WorkingDirectory</key>
@@ -706,6 +785,7 @@ create_pkg() {
     [ -f "${DMG_STAGING}/.glpi-agent.pkg" ] && cp "${DMG_STAGING}/.glpi-agent.pkg" "${PAYLOAD_ROOT}/.glpi-agent.pkg"
     [ -f "${DMG_STAGING}/.kiosk-interface.tar.gz" ] && cp "${DMG_STAGING}/.kiosk-interface.tar.gz" "${PAYLOAD_ROOT}/.kiosk-interface.tar.gz"
     [ -f "${DMG_STAGING}/.setup.py" ] && cp "${DMG_STAGING}/.setup.py" "${PAYLOAD_ROOT}/setup.py"
+    [ -f "${DMG_STAGING}/uninstall-medulla-agent-mac.sh" ] && cp "${DMG_STAGING}/uninstall-medulla-agent-mac.sh" "${PAYLOAD_ROOT}/uninstall-medulla-agent-mac.sh"
 
     # Payload cpio.gz
     (cd "${PAYLOAD_ROOT}" && find . | cpio -o --format odc 2>/dev/null | gzip -c > "${TMPDIR}/Payload")

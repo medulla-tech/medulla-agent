@@ -4830,19 +4830,19 @@ class process_xmpp_agent:
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
         elif sys.platform.startswith("lin") or sys.platform.startswith("darwin"):
-            # StreamHandler avec formatter pour stdout/stderr — captures par launchd
-            # (StandardOutPath dans le LaunchDaemon plist) ou systemd (StandardOutput).
-            # Pas de FileHandler dedie : la redirection vers /var/log/medulla/... est
-            # gerée par le superviseur du systeme (launchd ou systemd), pas par Python.
             if logger.handlers:
-                console = logger.handlers[
-                    0
-                ]  # we assume the first handler is the one we want to configure
+                console = logger.handlers[0]
             else:
                 console = logging.StreamHandler()
                 logger.addHandler(console)
             console.setFormatter(formatter)
             console.setLevel(tglevellog)
+            # Darwin : FileHandler explicite (launchd redirige stdout/stderr vers /dev/null).
+            if sys.platform.startswith("darwin"):
+                file_handler = logging.FileHandler(tglogfile)
+                file_handler.setLevel(tglevellog)
+                file_handler.setFormatter(formatter)
+                logger.addHandler(file_handler)
 
         self.logger = logging.getLogger()
         # while self.process_restartbot:

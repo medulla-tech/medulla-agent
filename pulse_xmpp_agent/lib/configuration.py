@@ -11,6 +11,7 @@ import json
 import platform
 import os
 import logging
+import subprocess
 from . import utils
 import random
 from .agentconffile import (
@@ -826,6 +827,10 @@ class confParameter:
                 self.logfile = os.path.join(
                     "/", "var", "log", "pulse", defaultnamelogfile
                 )
+            elif sys.platform.startswith("darwin"):
+                self.logfile = os.path.join(
+                    "/", "var", "log", "medulla", defaultnamelogfile
+                )
             else:
                 self.logfile = os.path.join(
                     medullaPath(), "var", "log", defaultnamelogfile
@@ -1087,8 +1092,20 @@ class confParameter:
         self.information["os"] = self.OperatingSystem
         self.UnameSystem = platform.uname()
         self.information["uname"] = [x for x in self.UnameSystem]
+        # HostNameSystem reste sur le hostname unix pour rester valide comme JID XMPP.
         self.HostNameSystem = platform.node().split(".")[0]
-        self.information["hostname"] = self.HostNameSystem
+        # macOS : on stocke le "Computer Name" Apple pour s'aligner sur GLPI Agent.
+        if sys.platform.startswith("darwin"):
+            try:
+                computer_name = subprocess.check_output(
+                    ["/usr/sbin/scutil", "--get", "ComputerName"],
+                    timeout=5,
+                ).decode().strip()
+                self.information["hostname"] = computer_name or self.HostNameSystem
+            except Exception:
+                self.information["hostname"] = self.HostNameSystem
+        else:
+            self.information["hostname"] = self.HostNameSystem
         self.OsReleaseNumber = platform.release()
         self.information["osrelease"] = self.OsReleaseNumber
         self.DetailedVersion = platform.version()

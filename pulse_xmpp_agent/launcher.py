@@ -1309,6 +1309,8 @@ if __name__ == "__main__":
 
     if sys.platform.startswith("lin"):
         logfile = os.path.join("/", "var", "log", "pulse", defaultnamelogfile)
+    elif sys.platform.startswith("darwin"):
+        logfile = os.path.join("/", "var", "log", "medulla", defaultnamelogfile)
     else:
         logfile = os.path.join(medullaPath(), "var", "log", defaultnamelogfile)
 

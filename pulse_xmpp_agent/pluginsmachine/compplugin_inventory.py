@@ -685,7 +685,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             for nbcmd in range(3):
                 # Warning: this command has been tested on only 1 Mac
                 cmd = (
-                    "/opt/fusioninventory-agent/bin/fusioninventory-inventory "
+                    "/Applications/GLPI-Agent/bin/glpi-inventory "
                     "--backend-collect-timeout=%s > %s" % (timeoutfusion, inventoryfile)
                 )
                 msg.append(cmd)
