@@ -422,6 +422,18 @@ chmod 700 /var/lib/medulla/.ssh
 chmod 600 /var/lib/medulla/.ssh/authorized_keys
 chown -R medullauser:staff /var/lib/medulla/.ssh 2>/dev/null
 
+# Guacamole utilise libssh2 qui signe encore les auth pubkey RSA en ssh-rsa
+# (SHA-1). sshd macOS moderne refuse ssh-rsa par defaut, ce qui bloque le
+# SSH via Guacamole ("Username/PublicKey combination invalid"). On re-autorise
+# ssh-rsa pour la compat libssh2 tant que guacd upstream ne signe pas en
+# rsa-sha2. Uniquement les algos d'auth clef sont touches.
+mkdir -p /etc/ssh/sshd_config.d
+cat > /etc/ssh/sshd_config.d/medulla.conf <<'SSHD_CONF'
+PubkeyAcceptedAlgorithms +ssh-rsa
+HostkeyAlgorithms +ssh-rsa
+SSHD_CONF
+launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
+
 # ---- Directories ----
 log "Creation de l'arborescence..."
 mkdir -p ${INSTALL_DIR}/{var/log,tmp,etc,certs,packages}
