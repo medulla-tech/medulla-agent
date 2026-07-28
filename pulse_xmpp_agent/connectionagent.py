@@ -1335,7 +1335,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
                     fichier.close()
                     # xmpp.loop.close()
                     logger.debug("bye bye connecteur")
-                    try_host_unknown = 10  # Quitte le programme avec un code
+                    break  # Quitte la boucle sans executer le while/else d'erreur relay.
     else:
         logger.debug(
             "Warning: A relay server holds a Static "
