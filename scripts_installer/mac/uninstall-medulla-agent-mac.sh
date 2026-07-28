@@ -59,5 +59,7 @@ rm -rf /var/lib/medulla
 echo "[Medulla] === Etape 8 : suppression des repertoires d'installation ==="
 rm -rf /opt/medulla /etc/medulla /var/log/medulla
 rm -f /usr/local/bin/restart-medulla-agent
+rm -f /etc/ssh/sshd_config.d/medulla.conf
+launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
 
 echo "[Medulla] Desinstallation de l'agent Medulla terminee."
