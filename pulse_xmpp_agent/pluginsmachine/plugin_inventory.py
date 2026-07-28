@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.6", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.7", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -317,7 +317,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     date=None,
                 )
             msg = []
-            if os.path.exists(inventoryfile):
+            if os.path.exists(inventoryfile) and os.path.getsize(inventoryfile) > 0:
                 try:
                     result["data"]["inventory"], boolchange = compact_xml(inventoryfile)
                     result["data"]["inventory"] = convert.compress_and_encode(
@@ -362,7 +362,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     )
                     raise Exception(str(e))
             else:
-                logger.warning("The inventory file %s does not exits" % inventoryfile)
+                logger.warning("The inventory file %s is missing or empty" % inventoryfile)
                 logger.warning(
                     "If the Medulla agent just started, this error is normal"
                 )
@@ -523,7 +523,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 )
             msg = []
             if xmppobject.config.via_xmpp == "True":
-                if os.path.exists(inventoryfile):
+                if os.path.exists(inventoryfile) and os.path.getsize(inventoryfile) > 0:
                     try:
                         # read max_key_index parameter to find out the number of keys
                         # Registry keys that need to be pushed in an inventory
@@ -747,52 +747,52 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     date=None,
                 )
             msg = []
-            if os.path.exists(inventoryfile):
-                try:
-                    result["data"]["inventory"], boolchange = compact_xml(inventoryfile)
-                    result["data"]["inventory"] = convert.compress_and_encode(
-                        result["data"]["inventory"]
-                    )
-                    if boolchange is False:
-                        xmppobject.xmpplog(
-                            "no significant change in inventory.",
-                            type="deploy",
-                            sessionname=sessionid,
-                            priority=-1,
-                            action="xmpplog",
-                            who=strjidagent,
-                            module="Notify | Inventory",
-                            date=None,
-                        )
-                    else:
-                        xmppobject.xmpplog(
-                            "inventory changed",
-                            type="deploy",
-                            sessionname=sessionid,
-                            priority=-1,
-                            action="xmpplog",
-                            who=strjidagent,
-                            module="Notify | Inventory",
-                            date=None,
-                        )
-                except Exception as e:
-                    logger.error(
-                        "An error occured while calling the plugin:  %s" % str(e)
-                    )
-                    logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+            if not os.path.exists(inventoryfile) or os.path.getsize(inventoryfile) == 0:
+                logger.warning("Inventory file missing or empty: skipping this cycle (%s)" % inventoryfile)
+                return
+            try:
+                result["data"]["inventory"], boolchange = compact_xml(inventoryfile)
+                result["data"]["inventory"] = convert.compress_and_encode(
+                    result["data"]["inventory"]
+                )
+                if boolchange is False:
                     xmppobject.xmpplog(
-                        "Inventory error %s " % str(e),
+                        "no significant change in inventory.",
                         type="deploy",
                         sessionname=sessionid,
                         priority=-1,
                         action="xmpplog",
                         who=strjidagent,
-                        module="Notify | Inventory | Error",
+                        module="Notify | Inventory",
                         date=None,
                     )
-                    raise Exception(str(e))
-            else:
-                raise Exception("The inventory file does not exists")
+                else:
+                    xmppobject.xmpplog(
+                        "inventory changed",
+                        type="deploy",
+                        sessionname=sessionid,
+                        priority=-1,
+                        action="xmpplog",
+                        who=strjidagent,
+                        module="Notify | Inventory",
+                        date=None,
+                    )
+            except Exception as e:
+                logger.error(
+                    "An error occured while calling the plugin:  %s" % str(e)
+                )
+                logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+                xmppobject.xmpplog(
+                    "Inventory error %s " % str(e),
+                    type="deploy",
+                    sessionname=sessionid,
+                    priority=-1,
+                    action="xmpplog",
+                    who=strjidagent,
+                    module="Notify | Inventory | Error",
+                    date=None,
+                )
+                raise Exception(str(e))
         except Exception as e:
             dataerreur["data"]["msg"] = "Plugin inventory error %s : %s" % (
                 dataerreur["data"]["msg"],
