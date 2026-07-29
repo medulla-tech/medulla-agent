@@ -638,7 +638,7 @@ class Update_Remote_Agent:
             .strip()
         )
         self.directory["version_agent"] = hashlib.md5(
-            self.directory["version"]
+            (self.directory["version"]).encode("utf-8")
         ).hexdigest()
         listmd5 = [self.directory["version_agent"]]
         list_script_python_for_update = [
@@ -664,6 +664,8 @@ class Update_Remote_Agent:
                 )
             ).hexdigest()
             listmd5.append(self.directory["lib_agent"][filename])
+        # IMPORTANT: Les fichiers .py DOIVENT être inclus car ce descripteur est envoyé aux agents.
+        # Sans cette inclusion, les scripts Python du dossier script/ ne seraient jamais synchronisés.
         for filename in [
             x
             for x in os.listdir(os.path.join(self.dir_agent_base, "script"))

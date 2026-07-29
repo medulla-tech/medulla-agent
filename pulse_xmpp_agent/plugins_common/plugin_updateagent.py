@@ -302,18 +302,29 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
         try:
             with open(file_name, "wb") as filescript:
                 filescript.write(content)
+            
+            logger.info("✓ Fichier écrit : %s (taille: %d octets)" % (file_name, len(content)))
 
             # Update the remote agent
             newobjdescriptorimage = update_remote_agent.Update_Remote_Agent(
                 objectxmpp.img_agent
             )
-            if (
-                newobjdescriptorimage.get_fingerprint_agent_base()
-                == objectxmpp.descriptor_master["fingerprint"]
-            ):
+            img_fingerprint = newobjdescriptorimage.get_fingerprint_agent_base()
+            master_fingerprint = objectxmpp.descriptor_master["fingerprint"]
+            
+            logger.info("Comparaison des empreintes:")
+            logger.info("  - img_agent:      %s" % img_fingerprint)
+            logger.info("  - substitut_master_REG: %s" % master_fingerprint)
+            logger.info("  - descriptor_img: %s" % json.dumps(newobjdescriptorimage.get_md5_descriptor_agent(), indent=2))
+            
+            if img_fingerprint == master_fingerprint:
+                logger.info("✓✓✓ EMPREINTES IDENTIQUES - Déclenchement de reinstall_agent()")
                 objectxmpp.reinstall_agent()
+            else:
+                logger.warning("✗ Les empreintes ne correspondent pas encore")
         except Exception as e:
-            logger.error("Failed to write file %s: %s" % (file_name, str(e)))
+            logger.error("Impossible d'écrire le fichier %s: %s" % (file_name, str(e)))
+            logger.error(traceback.format_exc())
     else:
         logger.error("Invalid file type: %s" % typescript)
 
