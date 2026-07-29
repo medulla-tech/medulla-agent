@@ -13357,7 +13357,57 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
         return dict(row)
 
+    # =========================================================================
+    # reset_machine : file d'attente de reinitialisation forcee base agent
+    # =========================================================================
 
+    @DatabaseHelper._sessionm
+    def reset_machine_add(self, session, jid, reason=""):
+        """Ajoute ou met a jour une machine dans la file de reset.
+
+        Si le JID existe deja, met a jour la raison et remet nb_attempt a 0.
+        """
+        from lib.plugins.xmpp.schema import Reset_machine
+        existing = session.query(Reset_machine).filter(
+            Reset_machine.jid == jid
+        ).first()
+        if existing:
+            existing.reason = reason
+            existing.nb_attempt = 0
+        else:
+            session.add(Reset_machine(jid=jid, reason=reason))
+        session.commit()
+
+    @DatabaseHelper._sessionm
+    def reset_machine_get_all(self, session):
+        """Retourne toutes les machines en attente de reset.
+
+        Returns:
+            list of dict {"jid": str, "reason": str, "nb_attempt": int}
+        """
+        from lib.plugins.xmpp.schema import Reset_machine
+        rows = session.query(Reset_machine).all()
+        return [{"jid": r.jid, "reason": r.reason, "nb_attempt": r.nb_attempt} for r in rows]
+
+    @DatabaseHelper._sessionm
+    def reset_machine_delete(self, session, jid):
+        """Supprime une machine de la file de reset apres traitement reussi."""
+        from lib.plugins.xmpp.schema import Reset_machine
+        session.query(Reset_machine).filter(
+            Reset_machine.jid == jid
+        ).delete(synchronize_session=False)
+        session.commit()
+
+    @DatabaseHelper._sessionm
+    def reset_machine_increment_attempt(self, session, jid):
+        """Incremente le compteur de tentatives pour une machine."""
+        from lib.plugins.xmpp.schema import Reset_machine
+        row = session.query(Reset_machine).filter(
+            Reset_machine.jid == jid
+        ).first()
+        if row:
+            row.nb_attempt += 1
+            session.commit()
 
     # -------------------------------------------------------------------------------
 
