@@ -53,7 +53,9 @@ class Update_Remote_Agent:
         return self.directory["fingerprint"]
 
     def load_list_md5_agentbase(self):
-        listmd5 = []
+        """
+        This function fill the directory structure with the values
+        """
         self.directory = {
             "program_agent": {},
             "version": "",
@@ -71,7 +73,7 @@ class Update_Remote_Agent:
         self.directory["version_agent"] = hashlib.md5(
             (self.directory["version"]).encode("utf-8")
         ).hexdigest()
-        listmd5.append(self.directory["version_agent"])
+        listmd5 = [self.directory["version_agent"]]
         list_script_python_for_update = [
             "agentxmpp.py",
             "launcher.py",
@@ -94,8 +96,8 @@ class Update_Remote_Agent:
                 )
             ).hexdigest()
             listmd5.append(self.directory["lib_agent"][filename])
-        # .py inclus : ce descripteur (substitut) est envoye aux agents ; sans
-        # .py ici, les scripts .py du dossier script/ ne sont jamais synchronises.
+        # IMPORTANT: Les fichiers .py DOIVENT être inclus car ce descripteur est envoyé aux agents.
+        # Sans cette inclusion, les scripts Python du dossier script/ ne seraient jamais synchronisés.
         for filename in [
             x
             for x in os.listdir(os.path.join(self.dir_agent_base, "script"))
