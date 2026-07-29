@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.8", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.9", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -1080,12 +1080,7 @@ def collect_browser_extensions(xmppobject, existing_xml=""):
         return existing_xml
 
     if not os.path.exists(browserext_xml):
-        # simplecommand fusionne stderr dans stdout : on remonte les derniers
-        # lignes pour comprendre pourquoi le script n'a pas produit de XML
-        # (typiquement un refus TCC sur ~user/Library en contexte LaunchDaemon).
-        tail = "".join((obj.get("result") or [])[-15:])[-1500:]
-        logger.warning("[browserext] aucun XML genere: %s (rc=%s)\n---script output---\n%s",
-                       browserext_xml, obj.get("code"), tail)
+        logger.warning("[browserext] aucun XML genere: %s", browserext_xml)
         return existing_xml
 
     logger.debug("[browserext] XML genere: %s", browserext_xml)
