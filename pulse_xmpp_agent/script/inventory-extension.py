@@ -122,7 +122,7 @@ def _computer_name() -> str:
 def _resolve_chromium_locale(ver_dir: Path, msg_key: str) -> str | None:
     """Resout un nom localise __MSG_key__ depuis les fichiers _locales."""
     locales_dir = ver_dir / "_locales"
-    if not locales_dir.is_dir():
+    if not _safe_is_dir(locales_dir):
         return None
     for locale in ("en", "en_US", "fr", "de"):
         msg_file = locales_dir / locale / "messages.json"
@@ -209,13 +209,13 @@ def collect_chromium_extensions(
 
     for profile_dir in profile_dirs:
         ext_dir = profile_dir / "Extensions"
-        if not ext_dir.is_dir():
+        if not _safe_is_dir(ext_dir):
             continue
 
         states = _chromium_extension_states(profile_dir)
 
-        for ext_folder in ext_dir.iterdir():
-            if not ext_folder.is_dir():
+        for ext_folder in _safe_iterdir(ext_dir):
+            if not _safe_is_dir(ext_folder):
                 continue
 
             ext_id = ext_folder.name
@@ -224,7 +224,7 @@ def collect_chromium_extensions(
 
             # Trier les dossiers de version, traiter uniquement le plus recent
             ver_dirs = sorted(
-                (d for d in ext_folder.iterdir() if d.is_dir()),
+                (d for d in _safe_iterdir(ext_folder) if _safe_is_dir(d)),
                 reverse=True,
             )
 
@@ -423,9 +423,9 @@ def collect_safari_extensions(context: dict[str, str], home: Path | None = None)
     seen_ids: set[str] = set()
 
     for ext_path in ext_paths:
-        if not ext_path.is_dir():
+        if not _safe_is_dir(ext_path):
             continue
-        for item in ext_path.iterdir():
+        for item in _safe_iterdir(ext_path):
             if item.suffix in (".db", ".plist", ".json"):
                 continue
             if item.name in seen_ids:
@@ -636,7 +636,7 @@ def collect_office_addins_windows(context: dict[str, str]) -> list[ExtensionEntr
         local_app / "Microsoft/Office/root/Wef",
     ]
     for wef_path in wef_paths:
-        if not wef_path.is_dir():
+        if not _safe_is_dir(wef_path):
             continue
         for xml_file in wef_path.rglob("*.xml"):
             entry = _parse_office_xml_manifest(xml_file, "Office Web Add-in", context)
@@ -662,7 +662,7 @@ def collect_office_addins_macos(context: dict[str, str], home: Path | None = Non
     home = home or Path.home()
     group_container = home / "Library/Group Containers/UBF8T346G9.Office"
 
-    if not group_container.is_dir():
+    if not _safe_is_dir(group_container):
         logging.debug("[Office macOS] Conteneur de groupe introuvable : %s", group_container)
         return results
 
@@ -677,9 +677,9 @@ def collect_office_addins_macos(context: dict[str, str], home: Path | None = Non
     for app_id in ("com.microsoft.Word", "com.microsoft.Excel",
                    "com.microsoft.Powerpoint", "com.microsoft.Outlook"):
         scripts_dir = home / f"Library/Application Scripts/{app_id}"
-        if not scripts_dir.is_dir():
+        if not _safe_is_dir(scripts_dir):
             continue
-        for item in scripts_dir.iterdir():
+        for item in _safe_iterdir(scripts_dir):
             results.append(
                 ExtensionEntry(
                     date_inventaire=context["now"],

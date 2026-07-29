@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.7", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.8", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -722,11 +722,17 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             return
     elif sys.platform.startswith("darwin"):
         try:
+            # Passe le XML d'enrichissement (extensions navigateurs / Office
+            # add-ins, USB, etc.) a glpi-inventory pour que GLPI recoive ces
+            # donnees en plus de l'inventaire standard.
+            additional = ""
+            if namefilexml and os.path.exists(namefilexml):
+                additional = ' --additional-content="%s"' % namefilexml
             for nbcmd in range(3):
-                # Warning: this command has been tested on only 1 Mac
                 cmd = (
                     "/Applications/GLPI-Agent/bin/glpi-inventory "
-                    "--backend-collect-timeout=%s > %s" % (timeoutfusion, inventoryfile)
+                    "--backend-collect-timeout=%s%s > %s"
+                    % (timeoutfusion, additional, inventoryfile)
                 )
                 msg.append(cmd)
                 logger.debug(cmd)
@@ -1042,6 +1048,29 @@ def collect_browser_extensions(xmppobject, existing_xml=""):
         script_path,
         browserext_xml,
     )
+
+    # macOS : l'agent tourne en LaunchDaemon root sans permission TCC pour
+    # lire ~user/Library. Sans le domaine gui/<uid> du console user, le script
+    # trouve zero extension (acces silencieusement refuses par _safe_iterdir).
+    # `launchctl asuser <uid>` place le process dans gui/<uid> et lui donne
+    # les permissions TCC/GUI du user ; l'EUID reste root donc pas besoin de
+    # `sudo -u` derriere (qui bloquait sur un prompt password sans TTY).
+    if sys.platform.startswith("darwin"):
+        try:
+            r = utils.simplecommand('stat -f "%Su" /dev/console')
+            console_user = (r.get("result") or [""])[0].strip()
+        except Exception:
+            console_user = ""
+        if console_user and console_user not in ("root", "loginwindow", "_mbsetupuser"):
+            try:
+                import pwd
+                uid = pwd.getpwnam(console_user).pw_uid
+                cmd = 'launchctl asuser %d "%s" "%s" --format additional-content -o "%s"' % (
+                    uid, python_exe, script_path, browserext_xml,
+                )
+            except Exception as exc:
+                logger.warning("[browserext] fallback root (asuser resolve failed): %s", exc)
+
     logger.debug("[browserext] cmd=%s", cmd)
     try:
         obj = utils.simplecommand(cmd)
@@ -1051,7 +1080,12 @@ def collect_browser_extensions(xmppobject, existing_xml=""):
         return existing_xml
 
     if not os.path.exists(browserext_xml):
-        logger.warning("[browserext] aucun XML genere: %s", browserext_xml)
+        # simplecommand fusionne stderr dans stdout : on remonte les derniers
+        # lignes pour comprendre pourquoi le script n'a pas produit de XML
+        # (typiquement un refus TCC sur ~user/Library en contexte LaunchDaemon).
+        tail = "".join((obj.get("result") or [])[-15:])[-1500:]
+        logger.warning("[browserext] aucun XML genere: %s (rc=%s)\n---script output---\n%s",
+                       browserext_xml, obj.get("code"), tail)
         return existing_xml
 
     logger.debug("[browserext] XML genere: %s", browserext_xml)
