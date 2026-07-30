@@ -118,8 +118,15 @@ class Update_Remote_Agent:
         ]
 
         for filename in list_script_python_for_update:
+            filepath = os.path.join(self.dir_agent_base, filename)
+            if not os.path.isfile(filepath):
+                logger.info(
+                    "update_remote_agent: fichier programme absent de l'image, ignore pour le descripteur : %s"
+                    % filepath
+                )
+                continue
             self.directory["program_agent"][filename] = hashlib.md5(
-                file_get_binarycontents(os.path.join(self.dir_agent_base, filename))
+                file_get_binarycontents(filepath)
             ).hexdigest()
             listmd5.append(self.directory["program_agent"][filename])
         for filename in [

@@ -2926,23 +2926,33 @@ class MUCBot(ClientXMPP):
         )
 
     def call_plugin_differed(self, time_differed=5):
-        try:
-            for pluginname in self.paramsdict:
+        for pluginname in self.paramsdict:
+            schedulename = "%s_%s" % (
+                pluginname["descriptor"]["action"],
+                pluginname["descriptor"]["sessionid"],
+            )
+            try:
                 self.schedule(
-                    pluginname["descriptor"]["action"],
+                    schedulename,
                     time_differed,
                     self.call_plugin_deffered_mode,
                     repeat=False,
                     kwargs={},
                     args=(),
                 )
-        except Exception:
-            logger.error(
-                "An error occured while calling the function call_plugin_differed."
-            )
-            logger.error(
-                "We encountered the backtrace: \n%s" % (traceback.format_exc())
-            )
+            except ValueError:
+                logger.warning(
+                    "A deferred event is already scheduled for %s, skipping duplicate"
+                    % pluginname["descriptor"]["action"]
+                )
+            except Exception:
+                logger.error(
+                    "An error occured while calling the function call_plugin_differed for %s."
+                    % pluginname["descriptor"]["action"]
+                )
+                logger.error(
+                    "We encountered the backtrace: \n%s" % (traceback.format_exc())
+                )
 
     def call_plugin_deffered_mode(self, *args, **kwargs):
         try:
@@ -3536,6 +3546,18 @@ class MUCBot(ClientXMPP):
         )
         logger.info("[REPLICATOR] ==============================================")
         logger.info("[REPLICATOR] Demarrage de la mise a jour de l'agent")
+        logger.info(
+            "[REPLICATOR] %s installe l'agent depuis l'image %s"
+            % (self.boundjid.bare, self.img_agent)
+        )
+        logger.info("[REPLICATOR] Contenu de img_agent avant installation :")
+        for root, dirs, files in os.walk(self.img_agent):
+            relroot = os.path.relpath(root, self.img_agent)
+            logger.info("[REPLICATOR]   [%s]" % ("." if relroot == "." else relroot))
+            for dirname in sorted(dirs):
+                logger.info("[REPLICATOR]     dir  %s" % dirname)
+            for filename in sorted(files):
+                logger.info("[REPLICATOR]     file %s" % filename)
         logger.info("[REPLICATOR]   version actuelle : %s" % version_courante)
         logger.info("[REPLICATOR]   version image    : %s" % versiondata)
         logger.info("[REPLICATOR]   img_agent        : %s" % self.img_agent)

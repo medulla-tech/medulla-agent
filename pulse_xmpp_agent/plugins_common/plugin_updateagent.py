@@ -67,13 +67,22 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 utils.file_put_contents(
                     os.path.join(objectxmpp.pathagent, "agentversion"), vers
                 )
+                logger.info(
+                    "[UPDATEAGENT] agentversion ecrit dans %s et %s"
+                    % (
+                        os.path.join(objectxmpp.img_agent, "agentversion"),
+                        os.path.join(objectxmpp.pathagent, "agentversion"),
+                    )
+                )
             # on genere descriptor actuel de l image
+            logger.info("[UPDATEAGENT] Generation du descripteur courant de img_agent: %s" % objectxmpp.img_agent)
             objdescriptorimage = update_remote_agent.Update_Remote_Agent(
                 objectxmpp.img_agent
             )
             descriptorimage = objdescriptorimage.get_md5_descriptor_agent()
             # on recoit le nouveau descripteur depuis base de l'agent.
             objectxmpp.descriptor_master = data["descriptoragent"]
+            logger.info("[UPDATEAGENT] Comparaison du descripteur master avec img_agent en cours")
 
             # il faut supprimer les fichier dans l'image qui ont ete supprimer dans la base.
             # on recherche les differences entre base de l'agent et l'image de
@@ -96,6 +105,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 supp2 = [os.path.join(objectxmpp.img_agent, dirname, x) for x in supp]
                 difference[directory_agent] = diff
                 supprimefileimage.extend(supp2)
+                logger.info(
+                    "[UPDATEAGENT] Diff %s: %d fichier(s) a copier, %d fichier(s) a supprimer"
+                    % (directory_agent, len(diff), len(supp))
+                )
                 for delfile in supp2:
                     try:
                         os.remove(delfile)
@@ -227,6 +240,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 logger.error("update agent install lib name missing")
                 return
             else:
+                logger.info(
+                    "[UPDATEAGENT] Sous-action install_lib_agent recue pour %s depuis %s"
+                    % (data["namescript"], message["from"])
+                )
                 content = zlib.decompress(base64.b64decode(data["content"]))
                 dump_file_in_img(objectxmpp, data["namescript"], content, "lib_agent")
         elif data["subaction"] == "install_program_agent":
@@ -234,6 +251,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 logger.error("update agent install program name missing")
                 return
             else:
+                logger.info(
+                    "[UPDATEAGENT] Sous-action install_program_agent recue pour %s depuis %s"
+                    % (data["namescript"], message["from"])
+                )
                 content = zlib.decompress(base64.b64decode(data["content"]))
                 dump_file_in_img(
                     objectxmpp, data["namescript"], content, "program_agent"
@@ -243,6 +264,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 logger.error("updateagent install script name missing")
                 return
             else:
+                logger.info(
+                    "[UPDATEAGENT] Sous-action install_script_agent recue pour %s depuis %s"
+                    % (data["namescript"], message["from"])
+                )
                 content = zlib.decompress(base64.b64decode(data["content"]))
                 dump_file_in_img(
                     objectxmpp, data["namescript"], content, "script_agent"
@@ -329,6 +354,10 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
     if typescript in valid_types:
         file_name = os.path.join(valid_types[typescript], namescript)
         logger.debug("dump file %s to %s" % (namescript, file_name))
+        logger.info(
+            "[UPDATEAGENT] Ecriture dans img_agent: %s -> %s"
+            % (namescript, file_name)
+        )
 
         # Write the content to the file
         try:

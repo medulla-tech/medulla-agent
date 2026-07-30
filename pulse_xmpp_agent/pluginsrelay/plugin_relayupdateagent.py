@@ -22,6 +22,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("#################################################")
     if "subaction" in data:
         if data["subaction"] == "update_me":
+            logger.info(
+                "[RELAYUPDATEAGENT] Requete update_me recue de %s pour %s"
+                % (message["from"], message.get("to", "<vide>"))
+            )
             # load version agent agentversion
             version = (
                 utils.file_get_contents(
@@ -32,6 +36,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 .strip()
             )
             if "descriptoragent" in data:
+                program_count = len(data["descriptoragent"].get("program_agent", {}))
+                lib_count = len(data["descriptoragent"].get("lib_agent", {}))
+                script_count = len(data["descriptoragent"].get("script_agent", {}))
+                logger.info(
+                    "[RELAYUPDATEAGENT] Descripteur recu: %d programme(s), %d lib(s), %d script(s)"
+                    % (program_count, lib_count, script_count)
+                )
                 if (
                     "program_agent" in data["descriptoragent"]
                     and data["descriptoragent"]["program_agent"]
@@ -102,6 +113,10 @@ def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
     else:
         logger.error("Incorrect script type for adding to update remote agent")
         return
+    logger.info(
+        "[RELAYUPDATEAGENT] Preparation transfert %s -> %s (%s)"
+        % (filename, jid, type)
+    )
     if os.path.isfile(namescriptfile):
         logger.debug("File script found %s" % namescriptfile)
     else:
@@ -125,6 +140,10 @@ def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
     msg_script_file_to_remote_agent["data"]["namescript"] = filename
     # only seul content of data is base 64
     msg_script_file_to_remote_agent["base64"] = False
+    logger.info(
+        "[RELAYUPDATEAGENT] Envoi du fichier %s vers %s"
+        % (filename, jid)
+    )
     try:
         xmppobject.send_message(
             mto=jid, mbody=json.dumps(msg_script_file_to_remote_agent), mtype="chat"

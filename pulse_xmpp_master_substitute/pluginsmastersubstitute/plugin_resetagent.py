@@ -30,8 +30,17 @@ DEBUGPULSEPLUGIN = 25
 plugin = {"VERSION": "1.2", "NAME": "resetagent", "TYPE": "substitute"}  # fmt: skip
 
 
+def _log_banner(message):
+    logger.info("*******************************************************")
+    logger.info("*******************************************************")
+    logger.info("[RESETAGENT-SUB] %s" % message)
+    logger.info("*******************************************************")
+    logger.info("*******************************************************")
+
+
 def _send_reset(xmppobject, jid, reason=""):
     """Envoie l'ordre de reset a la machine ciblee."""
+    _log_banner("Preparation envoi reset vers %s" % jid)
     msg = {
         "action": "resetagent",
         "sessionid": getRandomName(5, "resetagent"),
@@ -56,9 +65,18 @@ def _parse_payload(data):
         jid_target = str(data[0]).strip()
         reason = str(data[2][0]) if len(data) >= 3 and isinstance(data[2], list) else ""
     elif isinstance(data, dict):
-        mode = str(data.get("mode", "")).strip().lower()
-        jid_target = str(data.get("jid", "")).strip()
-        reason = str(data.get("reason", "")).strip()
+        if isinstance(data.get("data"), list) and len(data["data"]) >= 1:
+            payload_list = data["data"]
+            jid_target = str(payload_list[0]).strip()
+            reason = (
+                str(payload_list[2][0])
+                if len(payload_list) >= 3 and isinstance(payload_list[2], list)
+                else ""
+            )
+        else:
+            mode = str(data.get("mode", "")).strip().lower()
+            jid_target = str(data.get("jid", "")).strip()
+            reason = str(data.get("reason", "")).strip()
 
     return mode, jid_target, reason
 
@@ -116,9 +134,18 @@ def _queue_process(xmppobject):
 
 def action(xmppobject, action, sessionid, data, message, ret=None, dataobj=None):
     """Traite une demande de reinitialisation d'agent."""
+    _log_banner("Reception demande resetagent depuis %s" % message["from"])
     logger.debug("[RESETAGENT-SUB] Appel depuis %s" % message["from"])
+    try:
+        logger.info("[RESETAGENT-SUB] Payload brut JSON:\n%s" % json.dumps(data, indent=2, default=str))
+    except Exception:
+        logger.info("[RESETAGENT-SUB] Payload brut type=%s data=%s" % (type(data).__name__, data))
 
     mode, jid_target, reason = _parse_payload(data)
+    logger.info(
+        "[RESETAGENT-SUB] Payload resolu mode=%s jid=%s reason=%s"
+        % (mode or "<vide>", jid_target or "<vide>", reason or "<vide>")
+    )
 
     # Compatibilite historique: si un jid est fourni sans mode, le comportement
     # reste direct + fallback queue si la machine est hors ligne.

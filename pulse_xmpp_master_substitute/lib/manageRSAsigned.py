@@ -64,7 +64,9 @@ class MsgsignedRSA:
             self.fileallkeyexists = True
         else:
             self.fileallkeyexists = False
-            logger.warning(f"complete key PEN  {self.fileallkey} no exits")
+            logger.debug(
+                "optional RSA PEM bundle key %s is not present", self.fileallkey
+            )
 
         if os.path.exists(self.filekeyprivate):
             self.filekeyprivateexists = True
