@@ -9,7 +9,7 @@ import importlib.util
 from importlib.machinery import SourceFileLoader
 from lib.utils import set_logging_level
 
-plugin = {"VERSION": "1.28", "NAME": "installplugin", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.29", "NAME": "installplugin", "TYPE": "all"}  # fmt: skip
 
 
 def _validate_plugin_file(pathfile):
@@ -60,8 +60,17 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             expected_version,
         )
         try:
-            with open(tempfile, "w", encoding="utf-8") as fileplugin:
-                fileplugin.write(str(data.get("datafile", "")))
+            raw = data.get("datafile", "")
+            # New senders encode content as base64 (content_b64 flag).
+            # Older senders send raw text - handled transparently.
+            if data.get("content_b64"):
+                import base64 as _b64
+                file_bytes = _b64.b64decode(raw)
+                with open(tempfile, "wb") as fileplugin:
+                    fileplugin.write(file_bytes)
+            else:
+                with open(tempfile, "w", encoding="utf-8") as fileplugin:
+                    fileplugin.write(str(raw))
 
             metadata = _validate_plugin_file(tempfile)
             os.replace(tempfile, namefile)
