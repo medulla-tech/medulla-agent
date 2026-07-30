@@ -16,20 +16,35 @@ import hashlib
 import shutil
 import importlib
 import urllib
+import subprocess
 
 from pathlib import Path
 
-from optparse import OptionParser
+from optparse import OptionParser, SUPPRESS_HELP
 
 if sys.platform.startswith("win"):
     import winreg
 
+sys.dont_write_bytecode = True
+os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
-def copytree2(src, dst, symlinks=False):
+
+IGNORE_AGENT_IMAGE_ENTRIES = [
+    "descriptor_scheduler_relay",
+    "fifodeploy",
+    "img_agent",
+    "INFOSTMP",
+    "pluginsmachine",
+    "pluginsrelay",
+    "sessionsrelayserver",
+]
+
+
+def copytree2(src, dst, symlinks=False, force=False):
     BOOL_DISABLE_IMG = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "BOOL_DISABLE_IMG"
     )
-    if os.path.exists(BOOL_DISABLE_IMG):
+    if os.path.exists(BOOL_DISABLE_IMG) and not force:
         return
     names = os.listdir(src)
     try:
@@ -37,18 +52,9 @@ def copytree2(src, dst, symlinks=False):
     except BaseException:
         pass
     errors = []
-    ignore1 = [
-        "descriptor_scheduler_relay",
-        "fifodeploy",
-        "img_agent",
-        "INFOSTMP",
-        "pluginsmachine",
-        "pluginsrelay",
-        "sessionsrelayserver",
-    ]
 
     for name in names:
-        if name in ignore1:
+        if name in IGNORE_AGENT_IMAGE_ENTRIES:
             continue
         srcname = os.path.join(src, name)
         dstname = os.path.join(dst, name)
@@ -57,7 +63,7 @@ def copytree2(src, dst, symlinks=False):
                 linkto = os.readlink(srcname)
                 os.symlink(linkto, dstname)
             elif os.path.isdir(srcname):
-                copytree2(srcname, dstname, symlinks)
+                copytree2(srcname, dstname, symlinks, force=force)
             elif not srcname.endswith(".pyc"):
                 shutil.copy2(srcname, dstname)
                 # XXX What about devices, sockets etc.?
@@ -73,6 +79,30 @@ def copytree2(src, dst, symlinks=False):
     except OSError as why:
         errors.extend((src, dst, str(why)))
     return not errors
+
+
+def iter_supported_image_files(src, dst):
+    for name in sorted(os.listdir(src)):
+        if name in IGNORE_AGENT_IMAGE_ENTRIES:
+            continue
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        if os.path.isdir(srcname):
+            yield from iter_supported_image_files(srcname, dstname)
+        elif not srcname.endswith(".pyc"):
+            yield srcname, dstname
+
+
+def print_dry_run_copy_plan(agent_image, agent_folder):
+    if not os.path.isdir(agent_image):
+        print(f"DRY-RUN: image folder missing: {agent_image}")
+        return False
+    count = 0
+    for srcname, dstname in iter_supported_image_files(agent_image, agent_folder):
+        count += 1
+        print(f"COPY {srcname} -> {dstname}")
+    print(f"DRY-RUN: {count} file(s) would be copied from image")
+    return True
 
 
 def search_action_on_agent_cp_and_del(fromimg, frommachine):
@@ -266,8 +296,43 @@ def restorationfolder(rollback_pulse_xmpp_agent, agent_folder):
     shutil.rmtree(rollback_pulse_xmpp_agent)
 
 
-def install_direct(agent_image, agent_folder):
-    return copytree2(agent_image, agent_folder)
+def install_direct(agent_image, agent_folder, force=False):
+    return copytree2(agent_image, agent_folder, force=force)
+
+
+def resolve_agent_paths():
+    script_folder = os.path.dirname(os.path.realpath(__file__))
+    if os.path.basename(script_folder) == "img_agent":
+        return os.path.dirname(script_folder), script_folder
+    return script_folder, os.path.join(script_folder, "img_agent")
+
+
+def launch_detached_force_run(verbose=False):
+    replicator = os.path.realpath(__file__)
+    command = [sys.executable, replicator, "--force-run"]
+    if verbose:
+        command.append("--verbose")
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    creationflags = 0
+    start_new_session = False
+    if sys.platform.startswith("win"):
+        creationflags |= subprocess.DETACHED_PROCESS
+        creationflags |= subprocess.CREATE_NEW_PROCESS_GROUP
+        creationflags |= getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0)
+    else:
+        start_new_session = True
+    subprocess.Popen(
+        command,
+        cwd=os.path.dirname(replicator),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        close_fds=True,
+        creationflags=creationflags,
+        start_new_session=start_new_session,
+        env=env,
+    )
 
 
 def prepare_folder_rollback(rollback_pulse_xmpp_agent, agent_folder):
@@ -283,21 +348,12 @@ def prepare_folder_rollback(rollback_pulse_xmpp_agent, agent_folder):
 
 def module_needed(agent_image, verbose=False):
     original_sys_path = sys.path.copy()
-    # sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__))))
-    # create file __init.py si non exist
-    boolfichier = False
     error = False
-    initfile = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "img_agent", "__init__.py"
-    )
 
-    img_agent_path = Path(__file__).parent / "img_agent"
+    img_agent_path = Path(agent_image)
     sys.path = [p for p in sys.path if "pulse_xmpp_agent" not in p]
     sys.path.insert(0, str(img_agent_path))
 
-    if not os.path.isfile(initfile):
-        boolfichier = True
-        open(initfile, "w").close()
     list_script_python_for_update = [
         "agentxmpp.py",
         "launcher.py",
@@ -313,11 +369,6 @@ def module_needed(agent_image, verbose=False):
                     f'Some python modules needed for running "{filename}" are missing. We will not switch to new agent'
                 )
             error = True
-    if boolfichier:
-        try:
-            os.remove(initfile)
-        except BaseException:
-            print("Error while deleting file __init__.py")
     if error:
         sys.path = original_sys_path
         return False
@@ -369,13 +420,54 @@ if __name__ == "__main__":
         default=False,
         help="print information to stdout ('not replicator')",
     )
+    parser.add_option(
+        "-f",
+        "--force",
+        action="store_true",
+        dest="force",
+        default=False,
+        help="force copy supported image files to agent without checks",
+    )
+    parser.add_option(
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        default=False,
+        help="print file actions without changing agent files",
+    )
+    parser.add_option(
+        "--force-run",
+        action="store_true",
+        dest="force_run",
+        default=False,
+        help=SUPPRESS_HELP,
+    )
 
     (options, args) = parser.parse_args()
-    pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-    img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
+    pathagent, img_agent = resolve_agent_paths()
+
+    if options.force and not options.force_run and not options.dry_run:
+        if options.verbose:
+            print("\nFORCE: start detached one-shot force copy\n")
+        launch_detached_force_run(verbose=options.verbose)
+        sys.exit(0)
+
+    if options.force or options.force_run:
+        if options.dry_run:
+            print("\nDRY-RUN FORCE: supported image files that would be copied\n")
+            if not print_dry_run_copy_plan(img_agent, pathagent):
+                sys.exit(120)
+            sys.exit(0)
+        if options.verbose:
+            print("\nFORCE: copy supported image files to agent without checks\n")
+        if not install_direct(img_agent, pathagent, force=True):
+            sys.exit(120)
+        sys.exit(1)
 
     # First check if machine has all necessary python modules to load image
-    if not module_needed(img_agent, verbose=(options.verbose or options.info)):
+    if options.dry_run:
+        print("\nDRY-RUN: module import check skipped, no file will be changed\n")
+    elif not module_needed(img_agent, verbose=(options.verbose or options.info)):
         if options.verbose or options.info:
             print("\nKO: missing python modules in image\n")
         else:
@@ -386,20 +478,21 @@ if __name__ == "__main__":
     # folder for save file supp
     rollback_pulse_xmpp_agent = os.path.abspath(
         os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
+            pathagent,
             "..",
             "rollback_pulse_xmpp_agent",
         )
     )
 
-    prepare_folder_rollback(rollback_pulse_xmpp_agent, pathagent)
+    if not options.dry_run:
+        prepare_folder_rollback(rollback_pulse_xmpp_agent, pathagent)
 
     objdescriptoragent = Update_Remote_Agent(pathagent, True)
     objdescriptorimage = Update_Remote_Agent(img_agent)
 
     descriptoragent = objdescriptoragent.get_md5_descriptor_agent()
     descriptorimage = objdescriptorimage.get_md5_descriptor_agent()
-    if options.verbose or options.info:
+    if options.verbose or options.info or options.dry_run:
         print("--------------------------------------------")
         if descriptoragent["fingerprint"] != descriptorimage["fingerprint"]:
             print("\nThe fingerprints are different between the agent and the image")
@@ -419,7 +512,7 @@ if __name__ == "__main__":
         print("--------------------------------------------")
     boolinstalldirect = True
     if descriptorimage["fingerprint"] == descriptoragent["fingerprint"]:
-        if options.verbose or options.info:
+        if options.verbose or options.info or options.dry_run:
             print("\nNo UPDATING, no diff between agent and agentimage")
             print("Agent up to date")
         sys.exit(0)
@@ -440,7 +533,7 @@ if __name__ == "__main__":
                     dirname = "script"
                 diff2 = [os.path.join(pathagent, dirname, x) for x in diff]
                 supp2 = [os.path.join(pathagent, dirname, x) for x in supp]
-                if options.verbose or options.info:
+                if options.verbose or options.info or options.dry_run:
                     if supp2 or diff2:
                         print(
                             "_______________________________________________________________________________________________"
@@ -452,12 +545,20 @@ if __name__ == "__main__":
                     if supp2:
                         print("Unused agent file")
                         print(json.dumps(supp2, indent=4, sort_keys=True))
-                if not options.info:
+                if options.dry_run:
+                    for delfile in supp2:
+                        print(f"DELETE {delfile}")
+                elif not options.info:
                     for delfile in supp2:
                         os.remove(delfile)
             if options.info:
                 # info information sans replicator
                 sys.exit(5)
+            if options.dry_run:
+                print("\nDRY-RUN INSTALL: supported image files that would be copied\n")
+                if not print_dry_run_copy_plan(img_agent, pathagent):
+                    sys.exit(120)
+                sys.exit(0)
         except BaseException:
             boolinstalldirect = False
         if not options.info:
