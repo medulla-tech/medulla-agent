@@ -1266,7 +1266,26 @@ class Reset_machine(Base, XmppMasterDBObj):
 
     __tablename__ = "reset_machine"
 
-    jid = Column(String(255), nullable=False, unique=True)
-    reason = Column(String(255), nullable=False, default="")
-    date_request = Column(DateTime, default=datetime.datetime.now)
-    nb_attempt = Column(Integer, nullable=False, default=0)
+    jid = Column(
+        String(255),
+        nullable=False,
+        unique=True,
+        comment="JID complet de la machine cible a reinitialiser.",
+    )
+    reason = Column(
+        String(255),
+        nullable=False,
+        default="",
+        comment="Motif operateur du reset force.",
+    )
+    date_request = Column(
+        DateTime,
+        default=datetime.datetime.now,
+        comment="Date et heure de creation de la demande.",
+    )
+    nb_attempt = Column(
+        Integer,
+        nullable=False,
+        default=0,
+        comment="Nombre de tentatives deja effectuees.",
+    )
