@@ -65,7 +65,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
         Config.write(configfile)
 
 
-def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole):
+def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole, websocket_url=None):
     """
     Modify default configuration parameters.
 
@@ -91,6 +91,8 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
     Config.set("chat", "domain", domain)
     Config.set("connection", "port", str(port))
     Config.set("connection", "server", ipfromdns(str(ipserver)))
+    effective_ws_url = str(websocket_url) if websocket_url else "wss://%s:5443/ws" % ipfromdns(str(ipserver))
+    Config.set("connection", "websocket_url", effective_ws_url)
     Config.set("global", "relayserver_agent", str(jidrelayserver))
     Config.set("type", "guacamole_baseurl", str(baseurlguacamole))
     with open(conffile, "w") as configfile:
@@ -461,6 +463,9 @@ class confParameter:
         self.Port = Config.get("connection", "port")
         self.Server = ipfromdns(Config.get("connection", "server"))
         self.passwordconnection = Config.get("connection", "password")
+        self.enable_websocket = Config.getboolean("connection", "enable_websocket") if Config.has_option("connection", "enable_websocket") else False
+        _ws_url_cfg = Config.get("connection", "websocket_url") if Config.has_option("connection", "websocket_url") else ""
+        self.websocket_url = _ws_url_cfg if _ws_url_cfg else ("wss://%s:5443/ws" % self.Server)
         self.nameplugindir = os.path.dirname(namefileconfig)
         self.namefileconfig = namefileconfig
         # parameters AM and kiosk tcp server

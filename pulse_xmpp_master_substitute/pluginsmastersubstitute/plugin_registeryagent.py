@@ -691,6 +691,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         moderelayserver=moderelayserver,
                         keysyncthing=data["keysyncthing"],
                         syncthing_port=data["syncthing_port"],
+                        websocket_url=data.get("websocket_url", ""),
                     )
                     # Recover list of cluster ARS
                     listrelayserver = (

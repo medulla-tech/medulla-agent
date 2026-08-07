@@ -121,7 +121,7 @@ import zipfile
 import tempfile
 
 from slixmpp import ClientXMPP
-from slixmpp import jid
+from slixmpp import WebSocketXMPP
 from slixmpp.xmlstream import handler, matcher
 from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp.xmlstream.stanzabase import ET
@@ -344,7 +344,8 @@ class MUCBot(ClientXMPP):
         )
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs(self.dirsyncthing, 0o755)
-        ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
+        ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection) if not getattr(conf, 'enable_websocket', False) else WebSocketXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection, getattr(conf, 'websocket_url', ''))
+        self._ws_url = getattr(conf, 'websocket_url', '')
         laps_time_update_plugin = 3600
         laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
@@ -4000,6 +4001,7 @@ AGENT %s ERROR TERMINATE""" % (
                 dataobj["syncthing_port"] = self.config.syncthing_port
             except Exception:
                 pass
+            dataobj["websocket_url"] = getattr(self.config, 'websocket_url', '')
         if self.geodata is not None:
             dataobj["geolocalisation"] = self.geodata.localisation
         else:
@@ -4765,6 +4767,8 @@ class process_xmpp_agent:
         while True:
             tg = tgconf(optstypemachine)
             self.logger.debug(f"{tg.Server}{ int(tg.Port)}")
+            if getattr(tg, 'enable_websocket', False):
+                MUCBot.__bases__ = (WebSocketXMPP,)
             xmpp = MUCBot(
                 tg,
                 queue_recv_tcp_to_xmpp,
@@ -4799,7 +4803,11 @@ class process_xmpp_agent:
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
             self.logger.debug("\---------------------------------/")
             try:
-                xmpp.connect(address=xmpp.server_address)
+                if getattr(xmpp, '_ws_url', ''):
+                    self.logger.debug(f"WebSocket connection to {xmpp._ws_url}")
+                    xmpp.connect(url=xmpp._ws_url)
+                else:
+                    xmpp.connect(address=xmpp.server_address)
             except Exception as e:
                 self.logger.error("Connection failed: %s. Retrying..." % e)
             try:

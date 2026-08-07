@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from slixmpp import ClientXMPP
+from slixmpp import WebSocketXMPP
 from slixmpp import jid
 from slixmpp.xmlstream import handler, matcher
 from slixmpp.exceptions import IqError, IqTimeout
@@ -104,7 +105,7 @@ logger = logging.getLogger()
 
 class MUCBot(ClientXMPP):
     """
-    MUCBot class inherits from ClientXMPP and handles XMPP connections and messages.
+    MUCBot class inherits from ClientXMPP (or WebSocketXMPP when enable_websocket=True) and handles XMPP connections and messages.
     """
 
     def __init__(self, conf):
@@ -131,7 +132,8 @@ class MUCBot(ClientXMPP):
         self.assessor_response_timeout = 120
         self.timedebut = time.time()  # Start time
 
-        ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
+        ClientXMPP.__init__(self, conf.jidagent, conf.confpassword) if not getattr(conf, 'enable_websocket', False) else WebSocketXMPP.__init__(self, conf.jidagent, conf.confpassword, getattr(conf, 'websocket_url', ''))
+        self._ws_url = getattr(conf, 'websocket_url', '')
         self.config = conf
 
         # Create tmp config file
@@ -765,6 +767,7 @@ class MUCBot(ClientXMPP):
                             data["data"][0][0],
                             data["data"][0][2],
                             data["data"][0][3],
+                            data["data"][0][7] if len(data["data"][0]) > 7 else None,
                         )
                         try:
                             # write alternative configuration
@@ -1292,6 +1295,8 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         if tg.agenttype != "relayserver":
             logger.debug(f"host_unknown et host_unknown compteur connect {host_unknown} {try_host_unknown}")
             logger.debug(f"connect {ip_server} {tg.confport}")
+            if getattr(tg, 'enable_websocket', False):
+                MUCBot.__bases__ = (WebSocketXMPP,)
             xmpp = MUCBot(tg)
             xmpp.register_plugin("xep_0030")  # Service Discovery
             xmpp.register_plugin("xep_0045")  # Multi-User Chat
@@ -1315,9 +1320,16 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             logger.debug("---------------------------------------------------------------------")
             logger.debug("----- CONNECTION XMPP CONFIGURATEUR {ip_server}:{tg.confport}   -----")
             logger.debug("---------------------------------------------------------------------")
+            if getattr(tg, 'enable_websocket', False):
+                MUCBot.__bases__ = (WebSocketXMPP,)
+            xmpp = MUCBot(tg)
             try:
                 logger.debug("connect TO ")
-                xmpp.connect(address=xmpp.address, force_starttls=None)
+                if getattr(xmpp, '_ws_url', ''):
+                    logger.debug(f"WebSocket connection to {xmpp._ws_url}")
+                    xmpp.connect(url=xmpp._ws_url)
+                else:
+                    xmpp.connect(address=xmpp.address, force_starttls=None)
             except Exception as e:
                 logging.error("Connection failed: %s. Retrying..." % e)
                 logging.error("Connection to: IP %s, Port %s." % (ip_server, tg.confport))
