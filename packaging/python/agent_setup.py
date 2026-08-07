@@ -31,44 +31,43 @@ setup(
         "pulse_xmpp_agent.lib.ressources.filebrowser.js",
     ],
     classifiers=[
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
         "Operating System :: OS Independent",
     ],
+    # Common packages
     install_requires=[
-        "wheel",
-        "pycurl >= 7.45.1",
-        "lxml >= 4.9.1",
-        "croniter >= 1.3.5",
-        "psutil >= 5.9.1",
+        "aiofiles",
         "cherrypy >= 18.8.0",
-        "requests >= 2.28.1",
+        "croniter >= 1.3.5",
         "lmdb",
-        "PyYAML",
+        "lxml >= 4.9.1",
         "netaddr",
+        "netifaces_plus",
         "packaging",
+        "posix_ipc >= 1.0.5",
+        "psutil >= 5.9.1",
         "pillow",
-    ]
-    + (
+        "pycurl >= 7.45.1",
+        "PyYAML",
+        "pycryptodome >= 3.15.0",
+        "requests >= 2.28.1",
+        "slixmpp == 1.8.5",
+        "websockets",
+        "wheel",
+        "xmltodict",
+    ] +
+    # Windows only packages
+    (
         [
-            "slixmpp >= 1.8.2",
+            "comtypes >= 1.1.14",
             "pathlib >= 1.0.1",
             "pypiwin32 >= 223",
-            "comtypes >= 1.1.14",
             "wmi >= 1.5.1",
-            "netifaces_plus",
-            "pycryptodome >= 3.15.0",
         ]
         if "win" in sys.platform
+    # Linux and Mac only packages
         else [
-            "slixmpp == 1.8.5",
-            "posix_ipc >= 1.0.5",
-            "lmdb",
-            "netifaces_plus",
-            "pycryptodomex >= 3.15.0",
-            "xmltodict",
-            "aiofiles",
-            "websockets",
             "distro",
         ]
     ),

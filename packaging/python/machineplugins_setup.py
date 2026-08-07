@@ -26,7 +26,7 @@ setup(
         "pulse_xmpp_agent.descriptor_scheduler_machine",
     ],
     classifiers=[
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
         "Operating System :: OS Independent",
     ],

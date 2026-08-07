@@ -1,0 +1,175 @@
+#!/bin/bash
+#
+# (c) 2016-2023 Siveo, http://www.siveo.net
+# (c) 2024-2025 Medulla, http://www.medulla-tech.io
+#
+# $Id$
+#
+# This file is part of MMC, http://www.medulla-tech.io
+#
+# MMC is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# any later version.
+#
+# MMC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with MMC; If not, see <http://www.gnu.org/licenses/>.
+# file : scripts_installer/lin/install-pulse-agent-linux.sh.in
+
+# """
+# This script is designed to generate Medulla XMPP agent for Linux
+# """
+
+
+AGENT_VERSION="@@AGENT_VERSION@@"
+PULSE_AGENT_FILENAME="pulse-xmpp-agent-@@AGENT_VERSION@@.tar.gz"
+PULSE_SUB_FILENAME="pulse-xmpp-master-substitute-@@AGENT_VERSION@@.tar.gz"
+PYTHON_VERSION="python3.13" # install_agent_deps_<distrib> overrides this variable
+
+check_root() {
+    if [ "$(id -u)" != "0" ]; then
+        echo "This script must be run as root" 1>&2
+        exit 1
+    fi
+}
+
+install_agent_deps() {
+    PYTHON_VERSION="python3.13"
+    # Install Python 3.13
+    apt update
+    apt install -y python3.13 python3.13-venv python3.13-dev python3-setuptools
+    # Pip is installed in python3.13-venv -- depends --> python3-pip-whl
+    # Install required packages
+    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync sudo syncthing wget libgeoip-dev
+}
+
+prepare_agent_service_conf() {
+    TMP_MEDULLA="/tmp/medulla/relay-sub-agent"
+    # Delete any existing temp directory
+    rm -rf "$TMP_MEDULLA"
+    # Create temp directory and download files
+    mkdir -p "$TMP_MEDULLA"
+    cp -rf "./" "$TMP_MEDULLA"
+
+    cp -f "$TMP_MEDULLA"/systemd/*.service  "/usr/lib/systemd/system/"
+	cp -f "$TMP_MEDULLA"/conf/*.ini /etc/pulse-xmpp-agent-substitute/
+    cp -f "${PULSE_AGENT_FILENAME}" "$TMP_MEDULLA/${PULSE_AGENT_FILENAME}"
+    cp -f "${PULSE_SUB_FILENAME}" "$TMP_MEDULLA/${PULSE_SUB_FILENAME}"
+}   
+
+setup_agent() {
+    # Create pulseuser if not exists
+    if ! id -u pulseuser >/dev/null 2>&1; then
+        echo "Creating pulseuser ..."
+        adduser --system --group --home /home/pulseuser --shell /bin/rbash --disabled-password pulseuser
+    fi
+    if ! [ -d "/home/pulseuser/.ssh" ]; then
+        echo "Creating missing SSH profile ..."
+        mkdir -p /home/pulseuser/.ssh
+    fi
+    touch /home/pulseuser/.ssh/authorized_keys
+    chown -R pulseuser: /home/pulseuser
+    chmod -R 700 /home/pulseuser
+    chmod 600 /home/pulseuser/.ssh/authorized_keys
+
+    # Setting up SSH daemon
+    echo "Setting up SSH daemon ..."
+    sed -i "s/^#?Port .*$/Port ${SSH_PORT}/" /etc/ssh/sshd_config
+    echo -e "PubkeyAcceptedAlgorithms +ssh-rsa\nHostKeyAlgorithms +ssh-rsa" > /etc/ssh/sshd_config.d/medulla.conf
+    systemctl restart ssh
+
+    # Setup sudo for pulseuser
+    echo "Setting up sudo for pulseuser ..."
+    echo "pulseuser ALL=(ALL) NOPASSWD: /usr/bin/rsync" > /etc/sudoers.d/pulseuser
+
+    # Install CA certificates
+    echo "Installing CA certificates ..."
+    CERT_DIR="/usr/local/share/ca-certificates/"
+    cp /tmp/medulla/medulla-ca-chain.cert.pem ${CERT_DIR}
+    cp /tmp/medulla/medulla-rootca.cert.pem ${CERT_DIR}
+    openssl x509 -in ${CERT_DIR}medulla-ca-chain.cert.pem -inform PEM -out ${CERT_DIR}medulla-ca-chain.crt
+    openssl x509 -in ${CERT_DIR}medulla-rootca.cert.pem -inform PEM -out ${CERT_DIR}medulla-rootca.crt
+    update-ca-certificates
+
+    # Copy agent configuration files
+    echo "Copying agent configuration files ..."
+    CONFIG_DIR="/etc/pulse-xmpp-agent/"
+    if [ ! -d "${CONFIG_DIR}" ]; then
+        mkdir -p ${CONFIG_DIR}
+    fi
+    cp /tmp/medulla/*.ini ${CONFIG_DIR}
+    cp /tmp/medulla/agentconf.ini.tpl ${CONFIG_DIR}
+    chmod 700 ${CONFIG_DIR}
+    chmod 600 ${CONFIG_DIR}agentconf.*
+    chmod 600 ${CONFIG_DIR}cluster.ini
+}
+
+install_agent() {
+    TMP_MEDULLA="/tmp/medulla/relay-sub-agent"
+    echo "Installing Medulla XMPP relay agent ..."
+    cd "$TMP_MEDULLA"
+    "$PYTHON_VERSION" -m venv /opt/medulla
+    "/opt/medulla/bin/$PYTHON_VERSION" -m pip install ${PULSE_AGENT_FILENAME} ${PULSE_SUB_FILENAME}
+
+    # Quickfix python3.13 to mimick previous python version ssl behavior
+    if [ "$PYTHON_VERSION" == "python3.13" ]; then
+        local PYTHON_DIR="/opt/medulla/lib/$PYTHON_VERSION/site-packages"
+        echo 'import ssl as _ssl
+if hasattr(_ssl, "VERIFY_X509_STRICT"):
+    _orig = _ssl.create_default_context
+    def _patched(*a, **kw):
+        ctx = _orig(*a, **kw)
+        ctx.verify_flags &= ~_ssl.VERIFY_X509_STRICT
+        return ctx
+    _ssl.create_default_context = _patched' | tee "$PYTHON_DIR/usercustomize.py"
+
+        # Modify pyenv to apply usercustomize.py
+        sed -i 's/include-system-site-packages = false/include-system-site-packages = true/' /opt/medulla/pyvenv.cfg
+    fi
+}
+
+start_agent() {
+    echo "Starting Medulla XMPP relay agent ..."
+
+    # Enable and start the services
+    systemctl daemon-reload
+
+
+    systemctl enable pulse-xmpp-agent-relay.service
+    systemctl enable pulse-xmpp-master-substitute-assessor.service
+    systemctl enable pulse-xmpp-master-substitute-deployment.service
+    systemctl enable pulse-xmpp-master-substitute-inventory.service
+    systemctl enable pulse-xmpp-master-substitute-logger.service
+    systemctl enable pulse-xmpp-master-substitute-master.service
+    systemctl enable pulse-xmpp-master-substitute-monitoring.service
+    systemctl enable pulse-xmpp-master-substitute-reconfigurator.service
+    systemctl enable pulse-xmpp-master-substitute-registration.service
+    systemctl enable pulse-xmpp-master-substitute-subscription.service
+    systemctl enable pulse-xmpp-master-substitute-updates.service
+
+	systemctl start pulse-xmpp-agent-relay.service
+    systemctl start pulse-xmpp-master-substitute-deployment.service
+    systemctl start pulse-xmpp-master-substitute-inventory.service
+    systemctl start pulse-xmpp-master-substitute-logger.service
+    systemctl start pulse-xmpp-master-substitute-master.service
+    systemctl start pulse-xmpp-master-substitute-monitoring.service
+    systemctl start pulse-xmpp-master-substitute-reconfigurator.service
+    systemctl start pulse-xmpp-master-substitute-registration.service
+    systemctl start pulse-xmpp-master-substitute-subscription.service
+    systemctl start pulse-xmpp-master-substitute-updates.service
+}
+
+
+check_root
+install_agent_deps
+prepare_agent_service_conf
+setup_agent
+install_agent
+start_agent
+
+
