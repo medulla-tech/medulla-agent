@@ -6,7 +6,7 @@
 import os
 import logging
 
-from lib.utils import simplecommand
+from pulse_xmpp_agent.lib.utils import simplecommand
 
 logger = logging.getLogger()
 

@@ -6,16 +6,16 @@ import base64
 import json
 import os
 import logging
-from lib.utils import ipfromdns, AESCipher, subnetnetwork
+from pulse_xmpp_master_substitute.lib.utils import ipfromdns, AESCipher, subnetnetwork
 
 try:
-    from lib.localisation import Point
+    from pulse_xmpp_master_substitute.lib.localisation import Point
 
     errorlocalisation = False
 except ModuleNotFoundError:
     errorlocalisation = True
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.admin import AdminMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.admin import AdminMasterDatabase
 from random import randint
 import operator
 import traceback
@@ -23,7 +23,7 @@ import configparser
 import netaddr
 
 try:
-    from lib.stat import statcallplugin
+    from pulse_xmpp_master_substitute.lib.stat import statcallplugin
 
     statfuncton = True
 except BaseException:

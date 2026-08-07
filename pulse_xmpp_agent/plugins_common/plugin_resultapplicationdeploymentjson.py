@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-from lib.utils import set_logging_level
+from pulse_xmpp_agent.lib.utils import set_logging_level
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

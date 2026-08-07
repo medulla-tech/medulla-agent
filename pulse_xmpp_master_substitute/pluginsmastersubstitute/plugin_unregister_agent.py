@@ -6,7 +6,7 @@ import logging
 import traceback
 import json
 
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.0", "NAME": "unregister_agent", "TYPE": "substitute", "FEATURE": "subscribe"}  # fmt: skip

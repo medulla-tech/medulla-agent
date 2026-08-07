@@ -8,7 +8,7 @@ import os
 import platform
 import os.path
 import json
-from lib.utils import (
+from pulse_xmpp_agent.lib.utils import (
     getMacAdressList,
     getIPAdressList,
     shellcommandtimeout,
@@ -20,7 +20,7 @@ from lib.utils import (
     simplecommand,
     send_data_tcp,
 )
-from lib.configuration import setconfigfile
+from pulse_xmpp_agent.lib.configuration import setconfigfile
 import traceback
 import logging
 import netifaces
@@ -34,7 +34,7 @@ import copy
 from .agentconffile import pulseTempDir
 
 if sys.platform.startswith("win"):
-    from lib.registerwindows import constantregisterwindows
+    from pulse_xmpp_agent.lib.registerwindows import constantregisterwindows
 
 logger = logging.getLogger()
 

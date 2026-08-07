@@ -16,7 +16,7 @@ import sys
 import ipaddress
 import re
 
-from lib.utils import simplecommand, powerschellscript1ps1
+from pulse_xmpp_agent.lib.utils import simplecommand, powerschellscript1ps1
 from . import utils
 
 import traceback
@@ -317,7 +317,7 @@ class networkagentinfo:
     @staticmethod
     def get_mac_address_with_netifaces(ip):
         """
-        Retrieve the MAC address associated with the given IP address using netifaces library.
+        Retrieve the MAC address associated with the given IP address using netifacespulse_xmpp_agent.lib.ary.
 
         Args:
             ip (str): The IP address for which the MAC address is to be retrieved.

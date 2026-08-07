@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import time
 
 import os

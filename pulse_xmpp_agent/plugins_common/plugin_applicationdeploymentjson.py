@@ -15,11 +15,11 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import shutil
-from lib.utils import file_get_contents
+from pulse_xmpp_agent.lib.utils import file_get_contents
 from distutils.util import strtobool
 from urllib.parse import quote, urlparse
-from lib import utils, managepackage, grafcetdeploy
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib import utils, managepackage, grafcetdeploy
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,
@@ -3355,7 +3355,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
             except Exception as e:
                 logger.error("\n%s" % (traceback.format_exc()))
                 logger.error(
-                    "Traceback from downloading package via libcurl: %s" % str(e)
+                    "Traceback from downloading package viapulse_xmpp_agent.lib.url: %s" % str(e)
                 )
                 objectxmpp.xmpplog(
                     '<span class="log_err">Transfer error : curl download [%s] package file: %s</span>'

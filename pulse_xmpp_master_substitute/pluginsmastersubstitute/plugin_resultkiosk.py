@@ -12,12 +12,12 @@ import logging
 import os
 import re
 import types
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.kiosk import KioskDatabase
-from lib.plugins.msc import MscDatabase
-from lib.plugins.glpi import Glpi
-from lib.managepackage import managepackage
-from lib.utils import (
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.kiosk import KioskDatabase
+from pulse_xmpp_master_substitute.lib.plugins.msc import MscDatabase
+from pulse_xmpp_master_substitute.lib.plugins.glpi import Glpi
+from pulse_xmpp_master_substitute.lib.managepackage import managepackage
+from pulse_xmpp_master_substitute.lib.utils import (
     name_random,
     file_get_contents,
     file_put_contents,
@@ -32,7 +32,7 @@ import ast
 import random
 from slixmpp import jid
 import threading
-from lib.managesession import session, clean_session
+from pulse_xmpp_master_substitute.lib.managesession import session, clean_session
 from distutils.version import LooseVersion, StrictVersion
 
 if sys.version_info >= (3, 0, 0):

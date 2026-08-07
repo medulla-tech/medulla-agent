@@ -6,7 +6,7 @@
 import sys
 import os
 import logging
-from lib.agentconffile import (
+from pulse_xmpp_master_substitute.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,
@@ -19,7 +19,7 @@ if sys.platform.startswith("darwin"):
     import plyvel
 else:
     import bsddb3 as bsddb
-from lib.utils import Env
+from pulse_xmpp_master_substitute.lib.utils import Env
 
 
 logger = logging.getLogger()

@@ -15,7 +15,7 @@ Usage basique
 -------------
 ::
 
-    from lib.create_deploy_builder import InstantDeployBuilder
+    from pulse_xmpp_master_substitute.lib.create_deploy_builder import InstantDeployBuilder
 
     sessionid = (
         InstantDeployBuilder(xmppobject, msg, data, "install")
@@ -41,7 +41,7 @@ Imports nécessaires dans le plugin appelant
 -------------------------------------------
 ::
 
-    from lib.create_deploy_builder import InstantDeployBuilder
+    from pulse_xmpp_master_substitute.lib.create_deploy_builder import InstantDeployBuilder
 """
 
 import datetime
@@ -51,9 +51,9 @@ import time
 import traceback
 
 # --- dépendances internes ---
-from lib.managepackage import managepackage
-from lib.plugins.msc import MscDatabase
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.managepackage import managepackage
+from pulse_xmpp_master_substitute.lib.plugins.msc import MscDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 
 logger = logging.getLogger()

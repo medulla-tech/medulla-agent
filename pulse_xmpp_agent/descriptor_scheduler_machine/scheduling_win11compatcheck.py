@@ -11,8 +11,8 @@ import os
 import sys
 import tempfile
 from contextlib import redirect_stdout
-from lib import medulla_windows11_compatibility
-from lib.agentconffile import medullaPath
+from pulse_xmpp_agent.lib import medulla_windows11_compatibility
+from pulse_xmpp_agent.lib.agentconffile import medullaPath
 
 
 plugin = {"VERSION": "1.1", "NAME": "scheduling_win11compatcheck", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip

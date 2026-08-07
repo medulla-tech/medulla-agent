@@ -9,7 +9,7 @@ import logging
 
 from datetime import datetime
 import traceback
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)

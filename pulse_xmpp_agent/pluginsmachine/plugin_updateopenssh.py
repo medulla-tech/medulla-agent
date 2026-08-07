@@ -12,8 +12,8 @@ import tempfile
 import time
 import shutil
 import psutil
-from lib import utils
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib import utils
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,

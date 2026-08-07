@@ -5,10 +5,10 @@
 import os
 import sys
 import logging
-from lib.utils import file_get_content, simplecommand, decode_strconsole
+from pulse_xmpp_master_substitute.lib.utils import file_get_content, simplecommand, decode_strconsole
 import math
 import traceback
-from lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
+from pulse_xmpp_master_substitute.lib.agentconffile import conffilename, medullaPath, directoryconffile, pulseTempDir, conffilenametmp, rotation_file
 
 logger = logging.getLogger()
 

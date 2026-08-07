@@ -8,10 +8,10 @@ from subprocess import Popen
 import shlex
 import json
 import subprocess
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import logging
 import time
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,

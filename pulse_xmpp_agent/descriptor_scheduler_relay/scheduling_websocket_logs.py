@@ -10,7 +10,7 @@ import platform
 import datetime
 import subprocess
 import configparser
-from lib.agentconffile import directoryconffile
+from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.4", "NAME": "scheduling_websocket_logs", "TYPE": "relayserver", "SCHEDULED": True}

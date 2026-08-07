@@ -12,19 +12,19 @@ import os
 import sys
 import json
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.msc import MscDatabase
-from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
-from lib.manageRSAsigned import MsgsignedRSA
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.msc import MscDatabase
+from pulse_xmpp_master_substitute.lib.plugins.glpi import Glpi
+from pulse_xmpp_master_substitute.lib.plugins.kiosk import KioskDatabase
+from pulse_xmpp_master_substitute.lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
-from lib.utils import getRandomName, call_plugin, name_random
+from pulse_xmpp_master_substitute.lib.utils import getRandomName, call_plugin, name_random
 import re
 from distutils.version import LooseVersion
 import configparser
 import netaddr
 import datetime
-from lib.managepackage import managepackage
+from pulse_xmpp_master_substitute.lib.managepackage import managepackage
 
 import time
 

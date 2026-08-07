@@ -9,7 +9,7 @@ import os
 import os.path
 import json
 import logging
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,

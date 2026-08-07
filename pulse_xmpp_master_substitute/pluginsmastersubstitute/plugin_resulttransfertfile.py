@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from lib.utils import pluginmastersessionaction, md5
+from pulse_xmpp_master_substitute.lib.utils import pluginmastersessionaction, md5
 import base64
 import json
 import zlib

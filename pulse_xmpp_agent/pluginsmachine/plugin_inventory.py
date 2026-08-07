@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from xml.etree import ElementTree
-from lib import utils
-from lib.utils import convert
+from pulse_xmpp_agent.lib import utils
+from pulse_xmpp_agent.lib.utils import convert
 import os
 import sys
 import platform
@@ -17,7 +17,7 @@ import logging
 import subprocess
 import shutil
 import lxml.etree as ET
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,
@@ -31,7 +31,7 @@ _import_update_linux_traceback = None
 UpdateLinux = None
 if sys.platform.startswith("linux"):
     try:
-        from lib.update_linux import UpdateLinux
+        from pulse_xmpp_agent.lib.update_linux import UpdateLinux
     except Exception as exc_lib:
         _import_update_linux_error = exc_lib
         _import_update_linux_traceback = traceback.format_exc()
@@ -45,7 +45,7 @@ import hashlib
 
 logger = logging.getLogger()
 if sys.platform.startswith("win"):
-    from lib import registerwindows
+    from pulse_xmpp_agent.lib import registerwindows
     import winreg
 from slixmpp import jid
 

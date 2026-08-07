@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.utils import name_randomplus
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.utils import name_randomplus
 from slixmpp import jid
 import logging
 import random

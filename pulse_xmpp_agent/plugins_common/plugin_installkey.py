@@ -5,7 +5,7 @@
 import os
 import sys
 import logging
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

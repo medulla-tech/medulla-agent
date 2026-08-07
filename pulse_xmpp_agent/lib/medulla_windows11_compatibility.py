@@ -391,7 +391,7 @@ class Windows11Compatibility:
             return str(value)
 
     def _memory_type_label(self, smbios_value, memory_value):
-        """Retourne un libelle de type memoire a partir des codes WMI."""
+        """Retourne unpulse_xmpp_agent.lib.lle de type memoire a partir des codes WMI."""
         smbios_int = self._coerce_int(smbios_value)
         if smbios_int in MEMORY_TYPE:
             return MEMORY_TYPE[smbios_int]
@@ -401,7 +401,7 @@ class Windows11Compatibility:
         return "Unknown"
 
     def _cpu_architecture_label(self, code, fallback=None):
-        """Retourne un libelle d'architecture CPU."""
+        """Retourne unpulse_xmpp_agent.lib.lle d'architecture CPU."""
         code_int = self._coerce_int(code)
         if code_int in CPU_ARCHITECTURE:
             return CPU_ARCHITECTURE[code_int]
@@ -410,7 +410,7 @@ class Windows11Compatibility:
         return platform.machine() or "Unknown"
 
     def _battery_status_label(self, status):
-        """Retourne le libelle associe au statut de batterie WMI."""
+        """Retourne lepulse_xmpp_agent.lib.lle associe au statut de batterie WMI."""
         status_int = self._coerce_int(status)
         if status_int in BATTERY_STATUS:
             return BATTERY_STATUS[status_int]

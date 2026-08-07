@@ -9,21 +9,21 @@
 import sys
 import os
 import logging
-from lib.configuration import confParameter
-from lib.utils import ipfromdns
-from lib.logcolor import add_coloring_to_emit_ansi
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.utils import ipfromdns
+from pulse_xmpp_master_substitute.lib.logcolor import add_coloring_to_emit_ansi
 import time
 import traceback
 from optparse import OptionParser
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
-from lib.plugins.msc import MscDatabase
-from lib.plugins.pkgs import PkgsDatabase
-from bin.agent import MUCBot
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.glpi import Glpi
+from pulse_xmpp_master_substitute.lib.plugins.kiosk import KioskDatabase
+from pulse_xmpp_master_substitute.lib.plugins.msc import MscDatabase
+from pulse_xmpp_master_substitute.lib.plugins.pkgs import PkgsDatabase
+from pulse_xmpp_master_substitute.bin.agent import MUCBot
 
 # import signal
-from lib import manageRSAsigned
+from pulse_xmpp_master_substitute.lib import manageRSAsigned
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "bin"))
@@ -135,9 +135,9 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
     total_length = (
         (2 + 5) * 2 + len("CONNECTION SUBSTITUT") + len(str(xmpp.boundjid.bare))
     )
-    logger.info("/" + "-" * 4 + "-" * total_length + "\\")
+    logger.info("|" + "-" * 4 + "-" * total_length + "|")
     logger.info("|----- CONNECTION XMPP SUBSTITUT %s -----|" % str(xmpp.boundjid.bare))
-    logger.info("\\" + "-" * 4 + "-" * total_length + "/")
+    logger.info("|" + "-" * 4 + "-" * total_length + "|")
 
     xmpp.config = confParameter(optfileconf)
     xmpp.address = (ipfromdns(xmpp.config.Server), int(xmpp.config.Port))

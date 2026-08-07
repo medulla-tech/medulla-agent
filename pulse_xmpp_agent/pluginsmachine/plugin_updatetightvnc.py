@@ -9,7 +9,7 @@ import platform
 import tempfile
 import os
 import traceback
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import time
 
 

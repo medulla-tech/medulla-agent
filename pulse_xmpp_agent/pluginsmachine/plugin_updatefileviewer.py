@@ -6,7 +6,7 @@ import sys
 import os
 from distutils.version import StrictVersion
 import logging
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 
 BOOTSTRAP = "5.2.3"
 JQUERY = "3.6.4"

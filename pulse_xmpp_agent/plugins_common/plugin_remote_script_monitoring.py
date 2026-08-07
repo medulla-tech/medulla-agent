@@ -15,7 +15,7 @@ import zlib
 import os
 import sys
 import base64
-from lib.utils import (
+from pulse_xmpp_agent.lib.utils import (
     decode_strconsole,
     encode_strconsole,
     powerschellscriptps1,

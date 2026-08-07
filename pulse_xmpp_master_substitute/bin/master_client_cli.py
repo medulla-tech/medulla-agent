@@ -25,8 +25,8 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.abspath(os.path.join(currentdir, "..", "lib"))
 sys.path.insert(0, parentdir)
 import argparse
-import utils
-from utils import convert
+import pulse_xmpp_master_substitute.lib.utils
+from pulse_xmpp_master_substitute.lib.utils import convert
 
 sys.path.pop(0)
 

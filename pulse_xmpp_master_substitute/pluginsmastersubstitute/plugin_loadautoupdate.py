@@ -5,11 +5,11 @@
 import json
 import os
 import logging
-from lib.utils import getRandomName
-from lib.update_remote_agent import Update_Remote_Agent
+from pulse_xmpp_master_substitute.lib.utils import getRandomName
+from pulse_xmpp_master_substitute.lib.update_remote_agent import Update_Remote_Agent
 import types
 import configparser
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 from slixmpp import jid
 import traceback
 

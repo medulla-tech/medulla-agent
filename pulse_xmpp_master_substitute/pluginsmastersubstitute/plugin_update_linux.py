@@ -15,13 +15,13 @@ import traceback
 import os
 import json
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
-from lib.manageRSAsigned import MsgsignedRSA
-from lib.plugins.pkgs import PkgsDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.glpi import Glpi
+from pulse_xmpp_master_substitute.lib.plugins.kiosk import KioskDatabase
+from pulse_xmpp_master_substitute.lib.manageRSAsigned import MsgsignedRSA
+from pulse_xmpp_master_substitute.lib.plugins.pkgs import PkgsDatabase
 from slixmpp import jid
-from lib.utils import getRandomName
+from pulse_xmpp_master_substitute.lib.utils import getRandomName
 import re
 from distutils.version import LooseVersion
 import configparser

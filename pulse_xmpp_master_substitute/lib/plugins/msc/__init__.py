@@ -30,7 +30,7 @@ from sqlalchemy import (
     not_,
     distinct,
 )
-from sqlalchemy.orm import create_session, mapper, relation
+from sqlalchemy.orm import create_session, mapper, relationship
 from sqlalchemy.exc import NoSuchTableError, TimeoutError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
@@ -39,17 +39,17 @@ from sqlalchemy.ext.automap import automap_base
 import datetime
 
 # ORM mappings
-from lib.plugins.msc.orm.commands import Commands
-from lib.plugins.msc.orm.commands_on_host import CommandsOnHost
-from lib.plugins.msc.orm.commands_on_host_phase import CommandsOnHostPhase
-from lib.plugins.msc.orm.commands_history import CommandsHistory
-from lib.plugins.msc.orm.target import Target
-from lib.plugins.msc.orm.pull_targets import PullTargets
-from lib.plugins.msc.orm.bundle import Bundle
-from lib.configuration import confParameter
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.msc.orm.commands import Commands
+from pulse_xmpp_master_substitute.lib.plugins.msc.orm.commands_on_host import CommandsOnHost
+from pulse_xmpp_master_substitute.lib.plugins.msc.orm.commands_on_host_phase import CommandsOnHostPhase
+from pulse_xmpp_master_substitute.lib.plugins.msc.orm.commands_history import CommandsHistory
+from pulse_xmpp_master_substitute.lib.plugins.msc.orm.target import Target
+from pulse_xmpp_master_substitute.lib.plugins.msc.orm.pull_targets import PullTargets
+from pulse_xmpp_master_substitute.lib.plugins.msc.orm.bundle import Bundle
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
-from lib.utils import Locker
+from pulse_xmpp_master_substitute.lib.utils import Locker
 
 # Imported last
 import logging

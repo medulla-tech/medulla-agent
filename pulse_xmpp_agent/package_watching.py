@@ -22,7 +22,7 @@ import configparser
 import logging
 import getopt
 import base64
-from lib.utils import simplecommandstr, decode_strconsole
+from pulse_xmpp_agent.lib.utils import simplecommandstr, decode_strconsole
 
 conf = {}
 

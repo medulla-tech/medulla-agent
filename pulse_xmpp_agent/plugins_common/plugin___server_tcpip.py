@@ -29,8 +29,8 @@ import ast
 import json
 import pickle
 
-from lib.agentconffile import directoryconffile
-from lib.utils import (
+from pulse_xmpp_agent.lib.agentconffile import directoryconffile
+from pulse_xmpp_agent.lib.utils import (
     DateTimebytesEncoderjson,
     simplecommand,
     AESCipher,

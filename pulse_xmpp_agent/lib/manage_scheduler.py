@@ -16,7 +16,7 @@ import json
 from random import randint
 
 
-# from lib.utils import
+# from pulse_xmpp_agent.lib.utils import
 
 logger = logging.getLogger()
 

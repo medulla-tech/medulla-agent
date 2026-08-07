@@ -6,7 +6,7 @@ import base64
 import json
 import sys
 import os
-from lib import managepackage, grafcetdeploy, utils
+from pulse_xmpp_agent.lib import managepackage, grafcetdeploy, utils
 import logging
 import traceback
 
@@ -31,7 +31,7 @@ Plugin for deploying a package
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     strjidagent = str(objectxmpp.boundjid.bare)
     if objectxmpp.config.agenttype in ["machine"]:
-        # transfert terminer libere slot
+        # transfert terminerpulse_xmpp_agent.lib.re slot
         restitution_slot_QD = {
             "action": "slot_quickdeploy_count",
             "data": {"subaction": "restitution", "sessionid": sessionid},

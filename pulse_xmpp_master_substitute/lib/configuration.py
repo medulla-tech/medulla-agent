@@ -9,7 +9,7 @@ import logging
 import configparser
 from configparser import NoOptionError
 import random
-from lib.utils import ipfromdns
+from pulse_xmpp_master_substitute.lib.utils import ipfromdns
 
 # Singleton/SingletonDecorator.py
 

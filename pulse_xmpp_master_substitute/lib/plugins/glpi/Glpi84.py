@@ -57,13 +57,13 @@ from sqlalchemy.ext.automap import automap_base
 
 # TODO rename location into entity (and locations in location)
 
-from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
+from pulse_xmpp_master_substitute.lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
-from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
+from pulse_xmpp_master_substitute.lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
 
 from distutils.version import LooseVersion
-from lib.configuration import confParameter
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)

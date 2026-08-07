@@ -25,7 +25,7 @@ from .utils import (
     powerschellscriptps1
 )
 
-from lib.agentconffile import (
+from pulse_xmpp_master_substitute.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,
@@ -38,8 +38,8 @@ import re
 import base64
 import traceback
 import subprocess
-from lib.managepackage import managepackage
-from lib.update_remote_agent import Update_Remote_Agent
+from pulse_xmpp_master_substitute.lib.managepackage import managepackage
+from pulse_xmpp_master_substitute.lib.update_remote_agent import Update_Remote_Agent
 from .utils_psutil import (
     sensors_battery,
     winservices,
@@ -52,7 +52,7 @@ from .utils_psutil import (
     netstat,
 )
 import socket
-from lib.update_remote_agent import agentinfoversion
+from pulse_xmpp_master_substitute.lib.update_remote_agent import agentinfoversion
 
 if sys.platform.startswith("win"):
     import win32net

@@ -9,7 +9,7 @@ import os
 import lib.utils
 import pprint
 import logging
-from lib.plugins.pkgs import PkgsDatabase
+from pulse_xmpp_master_substitute.lib.plugins.pkgs import PkgsDatabase
 
 logger = logging.getLogger()
 

@@ -29,16 +29,16 @@ try:
 except ImportError:
     from sqlalchemy.sql.operators import ColumnOperators
 from sqlalchemy.exc import OperationalError
-from lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
 
-from lib.plugins.glpi.Glpi84 import Glpi84
-from lib.plugins.glpi.Glpi92 import Glpi92
-from lib.plugins.glpi.Glpi93 import Glpi93
-from lib.plugins.glpi.Glpi94 import Glpi94
-from lib.plugins.glpi.Glpi95 import Glpi95
-from lib.plugins.glpi.Glpi100 import Glpi100
-from lib.plugins.glpi.Glpi110 import Glpi110
-from lib.plugins.glpi.Itsmng21 import Itsmng21
+from pulse_xmpp_master_substitute.lib.plugins.glpi.Glpi84 import Glpi84
+from pulse_xmpp_master_substitute.lib.plugins.glpi.Glpi92 import Glpi92
+from pulse_xmpp_master_substitute.lib.plugins.glpi.Glpi93 import Glpi93
+from pulse_xmpp_master_substitute.lib.plugins.glpi.Glpi94 import Glpi94
+from pulse_xmpp_master_substitute.lib.plugins.glpi.Glpi95 import Glpi95
+from pulse_xmpp_master_substitute.lib.plugins.glpi.Glpi100 import Glpi100
+from pulse_xmpp_master_substitute.lib.plugins.glpi.Glpi110 import Glpi110
+from pulse_xmpp_master_substitute.lib.plugins.glpi.Itsmng21 import Itsmng21
 
 
 class Glpi:

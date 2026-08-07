@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2018-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from lib.utils import decode_strconsole, encode_strconsole
+from pulse_xmpp_master_substitute.lib.utils import decode_strconsole, encode_strconsole
 import sys
 import os
 import json

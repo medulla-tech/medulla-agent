@@ -8,7 +8,7 @@ import os
 import logging
 import zlib
 from time import sleep
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import traceback
 
 logger = logging.getLogger()
@@ -56,10 +56,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     and data["descriptoragent"]["lib_agent"]
                 ):
                     logger.debug(
-                        "Update lib script in remote agent [%s]" % message["from"]
+                        "Updatepulse_xmpp_agent.lib.script in remote agent [%s]" % message["from"]
                     )
                     for script_lib_file in data["descriptoragent"]["lib_agent"]:
-                        logger.debug("\t- Update lib script [%s]" % (script_lib_file))
+                        logger.debug("\t- Updatepulse_xmpp_agent.lib.script [%s]" % (script_lib_file))
                         sleep(2)
                         load_and_send_remote_agent_file(
                             xmppobject,

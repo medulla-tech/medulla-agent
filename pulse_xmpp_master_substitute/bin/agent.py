@@ -35,8 +35,8 @@ import json
 import time
 import posix_ipc
 
-from lib.configuration import confParameter
-from lib.utils import (
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.utils import (
     getRandomName,
     call_plugin,
     ipfromdns,
@@ -44,11 +44,11 @@ from lib.utils import (
 )
 import traceback
 import signal
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.manage_scheduler import manage_scheduler
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.glpi import Glpi
+from pulse_xmpp_master_substitute.lib.manage_scheduler import manage_scheduler
 import random
-from lib import manageRSAsigned
+from pulse_xmpp_master_substitute.lib import manageRSAsigned
 
 logger = logging.getLogger()
 

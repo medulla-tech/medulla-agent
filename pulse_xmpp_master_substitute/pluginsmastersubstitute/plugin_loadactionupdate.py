@@ -12,12 +12,12 @@ import logging
 import configparser
 import shutil
 import types
-from lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
 from datetime import datetime, timedelta
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.msc import MscDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.msc import MscDatabase
 import traceback
-from lib.utils import file_put_contents, simplecommandstr, simplecommand
+from pulse_xmpp_master_substitute.lib.utils import file_put_contents, simplecommandstr, simplecommand
 
 logger = logging.getLogger()
 

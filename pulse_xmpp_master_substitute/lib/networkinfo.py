@@ -14,7 +14,7 @@ import psutil
 import os
 from ipaddress import ip_address
 from distutils.util import strtobool
-from lib.utils import simplecommand, powerschellscriptps1
+from pulse_xmpp_master_substitute.lib.utils import simplecommand, powerschellscriptps1
 from . import utils
 
 if sys.platform.startswith("win"):

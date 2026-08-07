@@ -4,7 +4,7 @@
 
 import json
 import logging
-from lib.utils import getRandomName, call_plugin, data_struct_message
+from pulse_xmpp_master_substitute.lib.utils import getRandomName, call_plugin, data_struct_message
 import traceback
 
 logger = logging.getLogger()

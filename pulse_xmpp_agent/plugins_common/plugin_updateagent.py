@@ -9,7 +9,7 @@ import json
 import zlib
 import base64
 import traceback
-from lib import utils, update_remote_agent
+from pulse_xmpp_agent.lib import utils, update_remote_agent
 
 plugin = {"VERSION": "2.3", "VERSIONAGENT": "2.0", "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}  # fmt: skip
 
@@ -192,7 +192,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 logger.error("\n%s" % (traceback.format_exc()))
         elif data["subaction"] == "install_lib_agent":
             if not ("namescript" in data and data["namescript"] != ""):
-                logger.error("update agent install lib name missing")
+                logger.error("update agent installpulse_xmpp_agent.lib.name missing")
                 return
             else:
                 content = zlib.decompress(base64.b64decode(data["content"]))

@@ -49,7 +49,7 @@ import pprint
 
 
 # PULSE2 modules
-from lib.plugins.xmpp.schema import (
+from pulse_xmpp_master_substitute.lib.plugins.xmpp.schema import (
     Network,
     Machines,
     RelayServer,
@@ -128,8 +128,8 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 # without this iqsendpulse can't work.
 
-from lib.configuration import confParameter
-from lib.utils import (
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.utils import (
     getRandomName,
     simplecommandstr,
 )

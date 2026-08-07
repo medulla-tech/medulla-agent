@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from lib.agentconffile import directoryconffile
+from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import os
 import shutil
 import logging
@@ -11,7 +11,7 @@ import zipfile
 import bz2
 import gzip
 import configparser
-from lib.utils import file_put_contents
+from pulse_xmpp_agent.lib.utils import file_put_contents
 
 logger = logging.getLogger()
 plugin = {"VERSION": "2.3", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True}  # fmt: skip

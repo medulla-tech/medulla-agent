@@ -7,8 +7,8 @@ import sys
 import os
 import json
 import logging
-from lib.utils import Env
-from lib.agentconffile import (
+from pulse_xmpp_master_substitute.lib.utils import Env
+from pulse_xmpp_master_substitute.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,

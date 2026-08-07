@@ -6,8 +6,8 @@ import traceback
 import os
 import json
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.utils import file_put_contents, call_plugin
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.utils import file_put_contents, call_plugin
 import re
 import configparser
 

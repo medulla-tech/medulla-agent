@@ -4,7 +4,7 @@
 
 import os
 import logging
-from lib.utils import file_put_contents, set_logging_level
+from pulse_xmpp_agent.lib.utils import file_put_contents, set_logging_level
 
 plugin = {"VERSION": "1.1", "VERSIONAGENT": "2.1", "NAME": "notify_information", "TYPE": "all"}  # fmt: skip
 

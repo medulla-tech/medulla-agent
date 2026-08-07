@@ -13,7 +13,7 @@ import platform
 import psutil
 import subprocess
 from pulse_xmpp_agent.lib.utils import file_put_contents, simplecommand
-from lib.agentconffile import directoryconffile
+from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()

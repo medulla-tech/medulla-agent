@@ -62,7 +62,7 @@ class Update_Remote_Agent:
         Returns:
             It returns the whole directory
             (program_agent, version, version_agent,
-              lib_agent, script_agent and fingerprint)
+             pulse_xmpp_agent.lib.agent, script_agent and fingerprint)
         """
         return self.directory
 
@@ -73,7 +73,7 @@ class Update_Remote_Agent:
         Returns:
             It returns the whole directory
             ( program_agent, version, version_agent,
-              lib_agent, script_agent and fingerprint )
+             pulse_xmpp_agent.lib.agent, script_agent and fingerprint )
         """
 
         return json.dumps(self.get_md5_descriptor_agent(), indent=4)

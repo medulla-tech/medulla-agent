@@ -8,7 +8,7 @@ import os
 import logging
 import zlib
 from time import sleep
-from lib.utils import getRandomName, file_get_contents
+from pulse_xmpp_master_substitute.lib.utils import getRandomName, file_get_contents
 import traceback
 
 

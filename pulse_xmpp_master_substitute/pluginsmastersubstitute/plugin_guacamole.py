@@ -5,8 +5,8 @@
 import json
 import traceback
 import logging
-from lib.utils import name_random
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.utils import name_random
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 

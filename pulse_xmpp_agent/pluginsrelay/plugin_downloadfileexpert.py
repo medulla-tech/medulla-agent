@@ -4,7 +4,7 @@
 
 import logging
 
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import os
 import json
 import time

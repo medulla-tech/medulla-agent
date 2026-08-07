@@ -13,7 +13,7 @@ import json
 import os
 import logging
 import time
-from lib.iq_custom import iq_value
+from pulse_xmpp_agent.lib.iq_custom import iq_value
 import traceback
 import threading
 import types

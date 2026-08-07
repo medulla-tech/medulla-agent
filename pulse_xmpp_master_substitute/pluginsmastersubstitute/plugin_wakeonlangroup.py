@@ -6,9 +6,9 @@
 # file : pluginsmastersubstitute/plugin_wakeonlangroup.py
 
 import json
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 import traceback
-from lib.utils import name_random
+from pulse_xmpp_master_substitute.lib.utils import name_random
 import logging
 import os
 

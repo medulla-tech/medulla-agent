@@ -5,7 +5,7 @@
 import json
 import os
 import logging
-from lib.utils import getRandomName
+from pulse_xmpp_master_substitute.lib.utils import getRandomName
 
 
 logger = logging.getLogger()

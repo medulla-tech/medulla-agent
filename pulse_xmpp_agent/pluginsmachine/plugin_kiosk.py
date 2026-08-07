@@ -7,8 +7,8 @@ import json
 import traceback
 import sys
 import socket
-from lib.managedbkiosk import manageskioskdb
-from lib.utils import set_logging_level
+from pulse_xmpp_agent.lib.managedbkiosk import manageskioskdb
+from pulse_xmpp_agent.lib.utils import set_logging_level
 
 
 logger = logging.getLogger()

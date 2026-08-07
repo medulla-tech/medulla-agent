@@ -11,7 +11,7 @@ import sys
 import traceback
 import json
 import logging
-from lib.utils import name_random
+from pulse_xmpp_master_substitute.lib.utils import name_random
 import asyncio
 
 if sys.platform == "win32":

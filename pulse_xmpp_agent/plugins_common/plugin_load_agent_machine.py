@@ -28,8 +28,8 @@ import traceback
 import os
 import json
 import logging
-from lib import utils
-from lib.networkinfo import organizationbymachine, organizationbyuser, adusergroups
+from pulse_xmpp_agent.lib import utils
+from pulse_xmpp_agent.lib.networkinfo import organizationbymachine, organizationbyuser, adusergroups
 
 import psutil
 import zlib

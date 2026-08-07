@@ -5,9 +5,9 @@ import sys
 import os
 from distutils.version import StrictVersion
 import logging
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import tempfile
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.agentconffile import (
     medullaPath,
 )
 

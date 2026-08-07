@@ -21,7 +21,7 @@ import sys
 import traceback
 import json
 import logging
-from lib.utils import (
+from pulse_xmpp_master_substitute.lib.utils import (
     name_random,
     getRandomName,
     call_plugin,
@@ -30,7 +30,7 @@ from lib.utils import (
     convert,
     MotDePasse,
 )
-from lib.iq_custom import iq_custom_xep
+from pulse_xmpp_master_substitute.lib.iq_custom import iq_custom_xep
 import datetime
 import time
 

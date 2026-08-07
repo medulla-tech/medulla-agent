@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-from lib.configuration import setconfigfile
-from lib.utils import set_logging_level
+from pulse_xmpp_agent.lib.configuration import setconfigfile
+from pulse_xmpp_agent.lib.utils import set_logging_level
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.5", "NAME": "updatesettings", "TYPE": "machine"}  # fmt: skip

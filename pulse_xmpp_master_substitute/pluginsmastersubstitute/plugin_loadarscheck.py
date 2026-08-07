@@ -10,8 +10,8 @@
 import traceback
 import os
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.utils import name_random
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.utils import name_random
 import configparser
 import types
 import time

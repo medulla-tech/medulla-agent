@@ -30,13 +30,13 @@ import traceback
 import base64
 import socket
 
-from lib.networkinfo import (
+from pulse_xmpp_agent.lib.networkinfo import (
     networkagentinfo,
     organizationbymachine,
     organizationbyuser,
     powershellgetlastuser,
 )
-from lib.configuration import (
+from pulse_xmpp_agent.lib.configuration import (
     confParameter,
     changeconnection,
     alternativeclusterconnection,
@@ -46,7 +46,7 @@ from lib.configuration import (
     update_domain_config
 
 )
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,
@@ -54,7 +54,7 @@ from lib.agentconffile import (
     conffilenametmp,
     rotation_file,
 )
-from lib.utils import (
+from pulse_xmpp_agent.lib.utils import (
     DEBUGPULSE,
     getIpXmppInterface,
     subnetnetwork,
@@ -78,10 +78,10 @@ from lib.utils import (
 from optparse import OptionParser
 
 from threading import Timer
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
-from lib.syncthingapirest import syncthing, syncthingprogram, iddevice
+from pulse_xmpp_agent.lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from pulse_xmpp_agent.lib.syncthingapirest import syncthing, syncthingprogram, iddevice
 
-# Additionnal path for library and plugins
+# Additionnal path forpulse_xmpp_agent.lib.ary and plugins
 pathbase = os.path.abspath(os.curdir)
 pathplugins = os.path.join(pathbase, "pluginsmachine")
 pathplugins_relay = os.path.join(pathbase, "pluginsrelay")

@@ -7,7 +7,7 @@ This plugin needs to call back the plugin that made the request to return the re
 """
 
 import json
-from lib import managepackage, utils
+from pulse_xmpp_agent.lib import managepackage, utils
 import logging
 import platform
 import sys

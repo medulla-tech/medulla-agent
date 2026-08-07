@@ -10,7 +10,7 @@ Utilisable de deux facons:
 
 1) Comme module, depuis un plugin ou n'importe quel code Python:
 
-    from lib.check_plugins import check_plugins
+    from pulse_xmpp_agent.lib.check_plugins import check_plugins
     report = check_plugins()
     if not report["ok"]:
         for d in report["details"]:
@@ -20,11 +20,11 @@ Utilisable de deux facons:
 2) Comme programme autonome:
 
     # Linux
-    python3 -m lib.check_plugins
-    python3 -m lib.check_plugins --errors-only
+    python3 -mpulse_xmpp_agent.lib.check_plugins
+    python3 -mpulse_xmpp_agent.lib.check_plugins --errors-only
 
     # Windows
-    "c:\\Program Files\\Python3\\python.exe" -m lib.check_plugins
+    "c:\\Program Files\\Python3\\python.exe" -mpulse_xmpp_agent.lib.check_plugins
 """
 
 import argparse
@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 # Racine du package pulse_xmpp_agent = deux niveaux au-dessus de ce fichier
-# pulse_xmpp_agent/lib/check_plugins.py -> parent -> lib -> parent -> pulse_xmpp_agent
+# pulse_xmpp_agent/lib/check_plugins.py -> parent ->pulse_xmpp_agent.lib.-> parent -> pulse_xmpp_agent
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 
 _CLI_DESCRIPTION = (
@@ -51,22 +51,22 @@ Utilisation rapide
     - --details: affiche les metadonnees des plugins OK (NAME, VERSION, TYPE)
 
 Exemples CMD (Windows)
-    C:\\Program Files\\Python3\\python.exe -m lib.check_plugins
-    C:\\Program Files\\Python3\\python.exe -m lib.check_plugins --errors-only
-    C:\\Program Files\\Python3\\python.exe -m lib.check_plugins --details
-    C:\\Program Files\\Python3\\python.exe -m lib.check_plugins --dir "C:\\Program Files\\Python3\\Lib\\site-packages\\pulse_xmpp_agent\\agentrescue\\pluginsmachine"
+    C:\\Program Files\\Python3\\python.exe -mpulse_xmpp_agent.lib.check_plugins
+    C:\\Program Files\\Python3\\python.exe -mpulse_xmpp_agent.lib.check_plugins --errors-only
+    C:\\Program Files\\Python3\\python.exe -mpulse_xmpp_agent.lib.check_plugins --details
+    C:\\Program Files\\Python3\\python.exe -mpulse_xmpp_agent.lib.check_plugins --dir "C:\\Program Files\\Python3\\Lib\\site-packages\\pulse_xmpp_agent\\agentrescue\\pluginsmachine"
 
 Exemples PowerShell (Windows)
-    & "C:\\Program Files\\Python3\\python.exe" -m lib.check_plugins
-    & "C:\\Program Files\\Python3\\python.exe" -m lib.check_plugins --errors-only
-    & "C:\\Program Files\\Python3\\python.exe" -m lib.check_plugins --details
-    & "C:\\Program Files\\Python3\\python.exe" -m lib.check_plugins --dir "C:\\Program Files\\Python3\\Lib\\site-packages\\pulse_xmpp_agent\\agentrescue\\pluginsmachine"
+    & "C:\\Program Files\\Python3\\python.exe" -mpulse_xmpp_agent.lib.check_plugins
+    & "C:\\Program Files\\Python3\\python.exe" -mpulse_xmpp_agent.lib.check_plugins --errors-only
+    & "C:\\Program Files\\Python3\\python.exe" -mpulse_xmpp_agent.lib.check_plugins --details
+    & "C:\\Program Files\\Python3\\python.exe" -mpulse_xmpp_agent.lib.check_plugins --dir "C:\\Program Files\\Python3\\Lib\\site-packages\\pulse_xmpp_agent\\agentrescue\\pluginsmachine"
 
 Exemple Linux
-    python3 -m lib.check_plugins --errors-only
+    python3 -mpulse_xmpp_agent.lib.check_plugins --errors-only
 
 Mode module Python
-    from lib.check_plugins import check_plugins
+    from pulse_xmpp_agent.lib.check_plugins import check_plugins
     report = check_plugins()
 """
 
@@ -99,7 +99,7 @@ def check_plugins(plugin_dir=None, package_root=None):
             Dossier des plugins a verifier.
             Par defaut: <package_root>/pluginsmachine
         package_root (str|Path|None):
-            Racine du package pour resoudre les imports "from lib.xxx".
+            Racine du package pour resoudre les imports "from pulse_xmpp_agent.lib.xxx".
             Par defaut: dossier pulse_xmpp_agent/ detecte automatiquement.
 
     Returns:
@@ -127,7 +127,7 @@ def check_plugins(plugin_dir=None, package_root=None):
 
     plugin_dirs = _resolve_plugin_dirs(plugin_dir, package_root)
 
-    # Injecte la racine dans sys.path pour que "from lib.xxx import" fonctionne
+    # Injecte la racine dans sys.path pour que "from pulse_xmpp_agent.lib.xxx import" fonctionne
     package_root_str = str(package_root)
     if package_root_str not in sys.path:
         sys.path.insert(0, package_root_str)
@@ -237,7 +237,7 @@ def check_plugins(plugin_dir=None, package_root=None):
 
 def _main():
     parser = argparse.ArgumentParser(
-        prog="python -m lib.check_plugins",
+        prog="python -mpulse_xmpp_agent.lib.check_plugins",
         description=_CLI_DESCRIPTION,
         epilog=_CLI_EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -25,9 +25,9 @@ import os
 from distutils.version import StrictVersion
 import logging
 import shutil
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import hashlib
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,

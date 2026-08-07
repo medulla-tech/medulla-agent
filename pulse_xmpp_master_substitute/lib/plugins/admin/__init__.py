@@ -22,7 +22,7 @@ from sqlalchemy.orm import sessionmaker, Query, scoped_session, mapper
 from sqlalchemy.ext.automap import automap_base
 import functools
 
-from lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
 
 import traceback
 

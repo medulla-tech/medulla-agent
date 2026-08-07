@@ -7,7 +7,7 @@ This plugin check regularly if packages have been modified
 """
 import json
 import logging
-from lib.utils import getRandomName, simplecommand, file_put_contents, file_get_contents
+from pulse_xmpp_agent.lib.utils import getRandomName, simplecommand, file_put_contents, file_get_contents
 
 import hashlib
 import os

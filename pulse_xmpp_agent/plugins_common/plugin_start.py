@@ -4,8 +4,8 @@
 
 import os
 import logging
-from lib import utils
-from lib.agentconffile import directoryconffile
+from pulse_xmpp_agent.lib import utils
+from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import configparser
 import re
 

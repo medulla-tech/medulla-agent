@@ -5,10 +5,10 @@ import json
 import os
 import logging
 import time
-from lib.utils import ipfromdns, AESCipher, subnetnetwork, call_plugin
-from lib.localisation import Point
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.manageADorganization import manage_fqdn_window_activedirectory
+from pulse_xmpp_master_substitute.lib.utils import ipfromdns, AESCipher, subnetnetwork, call_plugin
+from pulse_xmpp_master_substitute.lib.localisation import Point
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.manageADorganization import manage_fqdn_window_activedirectory
 
 from random import randint
 import operator
@@ -18,7 +18,7 @@ import netaddr
 from math import cos, sin, atan2, sqrt
 
 try:
-    from lib.stat import statcallplugin
+    from pulse_xmpp_master_substitute.lib.stat import statcallplugin
 
     statfuncton = True
 except:

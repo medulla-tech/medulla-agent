@@ -7,7 +7,7 @@ import os
 import logging
 import json
 import traceback
-from lib import utils, managepackage
+from pulse_xmpp_agent.lib import utils, managepackage
 from slixmpp import jid
 
 plugin = {"VERSION": "2.02", "VERSIONAGENT": "2.1", "NAME": "deploysyncthing", "TYPE": "all"}  # fmt: skip

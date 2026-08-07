@@ -8,7 +8,7 @@ import traceback
 import sys
 import os
 import json
-from lib.utils import file_put_content
+from pulse_xmpp_master_substitute.lib.utils import file_put_content
 
 logger = logging.getLogger()
 

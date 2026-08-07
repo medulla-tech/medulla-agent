@@ -4,8 +4,8 @@
 
 import json
 import os
-from lib import managepackage
-from lib.utils import file_get_contents
+from pulse_xmpp_agent.lib import managepackage
+from pulse_xmpp_agent.lib.utils import file_get_contents
 import logging
 
 logger = logging.getLogger()

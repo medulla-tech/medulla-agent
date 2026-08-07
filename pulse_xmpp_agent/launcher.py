@@ -22,7 +22,7 @@ import signal
 import configparser
 import urllib
 
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from pulse_xmpp_agent.lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
 if sys.platform.startswith("win"):
     import win32con
@@ -306,7 +306,7 @@ class base_folder:
         It cleans/removes folders from the agent installation.
         The folders to be removed are:
                   - cycle
-                  - lib\INFOSTMP
+                  -pulse_xmpp_agent.lib.INFOSTMP
                   - sessionsmachine
                   - INFOSTMP
         If the folders does not exist, we create them.
@@ -590,7 +590,7 @@ class Update_Remote_Agent:
         Returns:
             It returns the whole directory
             (program_agent, version, version_agent,
-              lib_agent, script_agent and fingerprint)
+             pulse_xmpp_agent.lib.agent, script_agent and fingerprint)
         """
         return self.directory
 
@@ -601,7 +601,7 @@ class Update_Remote_Agent:
         Returns:
             It returns the whole directory
             ( program_agent, version, version_agent,
-              lib_agent, script_agent and fingerprint )
+             pulse_xmpp_agent.lib.agent, script_agent and fingerprint )
         """
 
         return json.dumps(self.get_md5_descriptor_agent(), indent=4)

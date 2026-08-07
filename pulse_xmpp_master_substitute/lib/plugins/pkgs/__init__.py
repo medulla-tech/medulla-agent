@@ -27,20 +27,20 @@ from sqlalchemy.orm import scoped_session
 from sqlalchemy.ext.automap import automap_base
 
 # ORM mappings
-from lib.plugins.pkgs.orm.dependencies import Dependencies
-from lib.plugins.pkgs.orm.extensions import Extensions
-from lib.plugins.pkgs.orm.package_pending_exclusions import Package_pending_exclusions
-from lib.plugins.pkgs.orm.packages import Packages
-from lib.plugins.pkgs.orm.syncthingsync import Syncthingsync
-from lib.plugins.pkgs.orm.pkgs_rules_algos import Pkgs_rules_algos
-from lib.plugins.pkgs.orm.pkgs_rules_global import Pkgs_rules_global
-from lib.plugins.pkgs.orm.pkgs_rules_local import Pkgs_rules_local
-from lib.plugins.pkgs.orm.pkgs_shares_ars import Pkgs_shares_ars
-from lib.plugins.pkgs.orm.pkgs_shares_ars_web import Pkgs_shares_ars_web
-from lib.plugins.pkgs.orm.pkgs_shares import Pkgs_shares
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.dependencies import Dependencies
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.extensions import Extensions
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.package_pending_exclusions import Package_pending_exclusions
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.packages import Packages
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.syncthingsync import Syncthingsync
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.pkgs_rules_algos import Pkgs_rules_algos
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.pkgs_rules_global import Pkgs_rules_global
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.pkgs_rules_local import Pkgs_rules_local
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.pkgs_shares_ars import Pkgs_shares_ars
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.pkgs_shares_ars_web import Pkgs_shares_ars_web
+from pulse_xmpp_master_substitute.lib.plugins.pkgs.orm.pkgs_shares import Pkgs_shares
 
-from lib.configuration import confParameter
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 # Imported last
 import logging

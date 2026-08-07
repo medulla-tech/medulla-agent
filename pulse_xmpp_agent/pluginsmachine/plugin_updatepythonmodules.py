@@ -7,7 +7,7 @@ import os
 from distutils.version import StrictVersion
 import logging
 import tempfile
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 
 BEFOREAGENTVERSION = "5.6.3"
 # BEFOREAGENTVERSION variable is used to set the version from which the python modules will not be updated. 

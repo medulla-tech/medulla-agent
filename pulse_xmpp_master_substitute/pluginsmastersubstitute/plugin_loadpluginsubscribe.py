@@ -4,16 +4,16 @@
 
 import json
 import logging
-from lib.utils import name_random
+from pulse_xmpp_master_substitute.lib.utils import name_random
 import traceback
 import slixmpp
 from slixmpp import jid
 import types
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 import os
 import sys
 import time
-from lib.utils import file_put_contents, simplecommandstr
+from pulse_xmpp_master_substitute.lib.utils import file_put_contents, simplecommandstr
 import configparser
 import asyncio
 
@@ -21,7 +21,7 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 try:
-    from lib.stat import statcallplugin
+    from pulse_xmpp_master_substitute.lib.stat import statcallplugin
 
     statfuncton = True
 except:

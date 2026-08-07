@@ -13,7 +13,7 @@ Variables:
     - FUSIONVERSION (str): The target version of FusionInventory.
     - logger (Logger): Logger object for logging messages.
     - plugin (dict): Plugin information dictionary containing version, name, and type.
-    - utils: Utility functions from the lib module.
+    - utils: Utility functions from thepulse_xmpp_agent.lib.module.
 
 Functions:
     - action(xmppobject, action, sessionid, data, message, dataerreur): Main function for the plugin.
@@ -26,7 +26,7 @@ Note: This plugin assumes the availability of certain commands and paths on Wind
 """
 
 import sys
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 from distutils.version import StrictVersion
 import logging
 import platform

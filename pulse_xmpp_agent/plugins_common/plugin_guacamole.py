@@ -8,7 +8,7 @@ import sys
 import time
 import logging
 import os
-from lib.utils import set_logging_level
+from pulse_xmpp_agent.lib.utils import set_logging_level
 
 plugin = {"VERSION": "1.21", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
 
@@ -94,7 +94,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     else:
         # Machine plugin
 
-        from lib.utils import simplecommand
+        from pulse_xmpp_agent.lib.utils import simplecommand
 
         returnmessage = dataerreur
         returnmessage["data"] = data

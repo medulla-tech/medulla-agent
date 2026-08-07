@@ -5,7 +5,7 @@
 import json
 from multiprocessing import TimeoutError
 import threading
-from lib.utils import getRandomName, call_plugin
+from pulse_xmpp_master_substitute.lib.utils import getRandomName, call_plugin
 from slixmpp import jid
 import logging
 

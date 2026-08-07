@@ -8,7 +8,7 @@ import json
 import logging
 import traceback
 import time
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 
 logger = logging.getLogger()
 plugin = {"VERSION": "2.0", "NAME": "slot_quickdeploy_count", "TYPE": "relayserver"}  # fmt: skip
@@ -171,7 +171,7 @@ def timeoutslot(objectxmpp):
             # rend le slot si time est supérieur a 60
             supp.append(slot)
             logger.debug("Session id %s exists since 60 seconds" % slot)
-    # on libere les slots superieur a 60
+    # onpulse_xmpp_agent.lib.re les slots superieur a 60
 
     for delkey in supp:
         logger.debug("Freeing resource %s" % delkey)

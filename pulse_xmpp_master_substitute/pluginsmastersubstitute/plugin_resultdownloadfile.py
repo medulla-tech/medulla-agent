@@ -9,7 +9,7 @@ import os
 import zlib
 import hashlib
 import logging
-from lib.utils import pluginmastersessionaction, md5
+from pulse_xmpp_master_substitute.lib.utils import pluginmastersessionaction, md5
 
 logger = logging.getLogger()
 

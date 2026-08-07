@@ -5,7 +5,7 @@
 """
  This plugin restartBot restart agent
 """
-from lib.utils import set_logging_level
+from pulse_xmpp_agent.lib.utils import set_logging_level
 import json
 import logging
 

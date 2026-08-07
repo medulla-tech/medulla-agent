@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import sys
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 from distutils.version import StrictVersion
 import logging
 import tempfile

@@ -13,7 +13,7 @@ import zipfile
 import bz2
 import gzip
 import configparser
-from lib.utils import file_put_contents
+from pulse_xmpp_master_substitute.lib.utils import file_put_contents
 import traceback
 
 logger = logging.getLogger()

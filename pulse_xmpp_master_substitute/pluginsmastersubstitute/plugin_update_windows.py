@@ -10,15 +10,15 @@ import traceback
 import os
 import json
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
-from lib.plugins.msc import MscDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.glpi import Glpi
+from pulse_xmpp_master_substitute.lib.plugins.kiosk import KioskDatabase
+from pulse_xmpp_master_substitute.lib.plugins.msc import MscDatabase
 
-from lib.manageRSAsigned import MsgsignedRSA
-from lib.plugins.pkgs import PkgsDatabase
+from pulse_xmpp_master_substitute.lib.manageRSAsigned import MsgsignedRSA
+from pulse_xmpp_master_substitute.lib.plugins.pkgs import PkgsDatabase
 from slixmpp import jid
-from lib.utils import getRandomName, name_randomplus
+from pulse_xmpp_master_substitute.lib.utils import getRandomName, name_randomplus
 import re
 from distutils.version import LooseVersion
 import configparser
@@ -28,10 +28,10 @@ import datetime
 import time
 import pytz
 import types
-from lib.managepackage import managepackage
-from lib.create_deploy_builder import InstantDeployBuilder
+from pulse_xmpp_master_substitute.lib.managepackage import managepackage
+from pulse_xmpp_master_substitute.lib.create_deploy_builder import InstantDeployBuilder
 
-from lib.utils import (
+from pulse_xmpp_master_substitute.lib.utils import (
     name_random,
     file_put_contents,
     file_get_contents,

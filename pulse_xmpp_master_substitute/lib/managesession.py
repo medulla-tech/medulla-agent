@@ -6,7 +6,7 @@ import glob
 import os
 import json
 import logging
-from lib.utils import loadjsonfile
+from pulse_xmpp_master_substitute.lib.utils import loadjsonfile
 from os import listdir
 import time
 import traceback

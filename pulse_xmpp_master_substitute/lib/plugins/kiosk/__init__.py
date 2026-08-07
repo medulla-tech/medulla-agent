@@ -13,7 +13,7 @@ from sqlalchemy.exc import DBAPIError
 # PULSE2 modules
 # from mmc.database.database_helper import DatabaseHelper
 # from mmc.plugins.pkgs import get_xmpp_package, xmpp_packages_list, package_exists
-from lib.plugins.kiosk.schema import (
+from pulse_xmpp_master_substitute.lib.plugins.kiosk.schema import (
     Profiles,
     Packages,
     Profile_has_package,
@@ -24,7 +24,7 @@ from lib.plugins.kiosk.schema import (
 # Imported last
 import logging
 import time
-from lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
 import functools
 from datetime import datetime
 import json

@@ -13,11 +13,11 @@ import sys
 import json
 import logging
 import hashlib
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.msc import MscDatabase
-from lib.managepackage import managepackage
-from lib.managesession import session, clean_session
-from lib.utils import (
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.msc import MscDatabase
+from pulse_xmpp_master_substitute.lib.managepackage import managepackage
+from pulse_xmpp_master_substitute.lib.managesession import session, clean_session
+from pulse_xmpp_master_substitute.lib.utils import (
     getRandomName,
     call_plugin,
     name_random,

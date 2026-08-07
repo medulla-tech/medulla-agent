@@ -8,7 +8,7 @@ if deploy is pause, run, abandonned
 
 """
 import json
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 import traceback
 import logging
 

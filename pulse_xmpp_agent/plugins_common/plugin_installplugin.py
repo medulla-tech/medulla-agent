@@ -5,7 +5,7 @@
 import os
 import logging
 import json
-from lib.utils import set_logging_level
+from pulse_xmpp_agent.lib.utils import set_logging_level
 
 plugin = {"VERSION": "1.27", "NAME": "installplugin", "TYPE": "all"}  # fmt: skip
 

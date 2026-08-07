@@ -7,8 +7,8 @@
 import sys
 import os
 import logging
-from lib.utils import Env
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.utils import Env
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,
@@ -17,7 +17,7 @@ from lib.agentconffile import (
     rotation_file,
 )
 import lmdb
-from lib.manageDb import ManageDb
+from pulse_xmpp_agent.lib.manageDb import ManageDb
 
 logger = logging.getLogger()
 

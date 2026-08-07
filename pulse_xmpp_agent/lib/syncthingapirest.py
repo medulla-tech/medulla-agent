@@ -25,7 +25,7 @@ from lxml import etree
 import urllib.parse
 import socket
 from threading import Lock
-from lib.utils import (
+from pulse_xmpp_agent.lib.utils import (
     Program,
     getRandomName,
     simplecommand,
@@ -37,7 +37,7 @@ import traceback
 import time
 import os
 import sys
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     medullaPath,
     directoryconffile,

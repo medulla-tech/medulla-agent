@@ -17,7 +17,7 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy import Column, String, Integer, DateTime, Text
 from optparse import OptionParser
-from lib.utils import StreamToLogger
+from pulse_xmpp_agent.lib.utils import StreamToLogger
 
 import copy
 
@@ -25,7 +25,7 @@ import traceback
 from sqlalchemy.orm import sessionmaker
 import re
 from sqlalchemy.ext.declarative import declarative_base
-from lib.logcolor import add_coloring_to_emit_ansi
+from pulse_xmpp_agent.lib.logcolor import add_coloring_to_emit_ansi
 import imp
 
 logger = logging.getLogger()
@@ -616,21 +616,21 @@ def doTask(opts, conf):
         {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
     )
     xmpp.register_plugin("xep_0077")  # In-band Registration
-    xmpp["xep_0077"].force_registration = True
+    #xmpp["xep_0077"].force_registration = True
 
     # Connect to the XMPP server and start processing XMPP
     # stanzas.address=(args.host, args.port)
-    if xmpp.connect(address=(conf.Server, conf.Port)):
-        # If you do not have the dnspython library installed, you will need
+    xmpp.connect(address=(conf.Server,conf.Port))
+        # If you do not have the dnspythonpulse_xmpp_agent.lib.ary installed, you will need
         # to manually specify the name of the server if it does not match
         # the one in the JID. For example, to use Google Talk you would
         # need to use:
         #
         # if xmpp.connect(('talk.google.com', 5222)):
-        xmpp.process(block=True)
-        print("Done")
-    else:
-        print("Unable to connect.")
+    xmpp.process(forever=True)
+    print("Done")
+    #else:
+        #print("Unable to connect.")
 
 
 if __name__ == "__main__":

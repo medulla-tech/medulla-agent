@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import json
 import traceback
 import sys

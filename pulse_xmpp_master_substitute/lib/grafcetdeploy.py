@@ -8,7 +8,7 @@ import os
 import platform
 import os.path
 import json
-from lib.utils import (
+from pulse_xmpp_master_substitute.lib.utils import (
     getMacAdressList,
     getIPAdressList,
     MacAdressToIp,
@@ -30,7 +30,7 @@ import time
 from .agentconffile import pulseTempDir
 
 if sys.platform.startswith("win"):
-    from lib.registerwindows import constantregisterwindows
+    from pulse_xmpp_master_substitute.lib.registerwindows import constantregisterwindows
 
 logger = logging.getLogger()
 

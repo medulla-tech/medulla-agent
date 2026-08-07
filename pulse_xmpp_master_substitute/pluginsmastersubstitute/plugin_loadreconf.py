@@ -5,10 +5,10 @@
 import json
 import os
 import logging
-from lib.utils import getRandomName
+from pulse_xmpp_master_substitute.lib.utils import getRandomName
 import types
 import configparser
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 import time
 
 logger = logging.getLogger()

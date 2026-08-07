@@ -21,40 +21,40 @@ import psutil
 import random
 import hashlib
 import configparser
-from lib.manageresourceplugin import resource_plugin
+from pulse_xmpp_agent.lib.manageresourceplugin import resource_plugin
 import zlib
 import importlib
 import cherrypy
-from lib.reverseport import reverse_port_ssh
-from lib.agentconffile import (
+from pulse_xmpp_agent.lib.reverseport import reverse_port_ssh
+from pulse_xmpp_agent.lib.agentconffile import (
     conffilename,
     conffilenametmp,
     medullaPath,
     directoryconffile,
     pulseTempDir,
 )
-from lib.update_remote_agent import Update_Remote_Agent
-from lib.xmppiq import dispach_iq_command
-from lib.networkinfo import (
+from pulse_xmpp_agent.lib.update_remote_agent import Update_Remote_Agent
+from pulse_xmpp_agent.lib.xmppiq import dispach_iq_command
+from pulse_xmpp_agent.lib.networkinfo import (
     networkagentinfo,
     organizationbymachine,
     organizationbyuser,
     adusergroups,
 )
-from lib.configuration import (
+from pulse_xmpp_agent.lib.configuration import (
     confParameter,
     nextalternativeclusterconnection,
     changeconnection,
     nextalternativeclusterconnectioninformation,
     alternativeclusterconnection,
 )
-from lib.managesession import session
-from lib.managefifo import fifodeploy
-from lib.managedeployscheduler import ManageDbScheduler
-from lib.managedbkiosk import manageskioskdb
+from pulse_xmpp_agent.lib.managesession import session
+from pulse_xmpp_agent.lib.managefifo import fifodeploy
+from pulse_xmpp_agent.lib.managedeployscheduler import ManageDbScheduler
+from pulse_xmpp_agent.lib.managedbkiosk import manageskioskdb
 
-from lib.iq_custom import iq_custom_xep, iq_value, Myiq
-from lib.utils import (
+from pulse_xmpp_agent.lib.iq_custom import iq_custom_xep, iq_value, Myiq
+from pulse_xmpp_agent.lib.utils import (
     DEBUGPULSE,
     NetworkInfoxmpp,
     refreshfingerprint,
@@ -99,16 +99,16 @@ from lib.utils import (
     clean_update_directories,
     get_extracted_driver_key,
 )
-from lib.manage_xmppbrowsing import xmppbrowsing
-from lib.manage_event import manage_event
-from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
-from lib.syncthingapirest import syncthing, syncthingprogram, iddevice, conf_ars_deploy
-from lib.manage_scheduler import manage_scheduler
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows, XmppLogHandler
-from lib.manageRSAsigned import MsgsignedRSA, installpublickey
-from lib.managepackage import managepackage
-from lib.httpserver import Controller
-from lib.grafcetdeploy import grafcet
+from pulse_xmpp_agent.lib.manage_xmppbrowsing import xmppbrowsing
+from pulse_xmpp_agent.lib.manage_event import manage_event
+from pulse_xmpp_agent.lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
+from pulse_xmpp_agent.lib.syncthingapirest import syncthing, syncthingprogram, iddevice, conf_ars_deploy
+from pulse_xmpp_agent.lib.manage_scheduler import manage_scheduler
+from pulse_xmpp_agent.lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows, XmppLogHandler
+from pulse_xmpp_agent.lib.manageRSAsigned import MsgsignedRSA, installpublickey
+from pulse_xmpp_agent.lib.managepackage import managepackage
+from pulse_xmpp_agent.lib.httpserver import Controller
+from pulse_xmpp_agent.lib.grafcetdeploy import grafcet
 from zipfile import *
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event, Value
@@ -150,7 +150,7 @@ else:
     import posix_ipc
 
 
-from lib.server_kiosk import (
+from pulse_xmpp_agent.lib.server_kiosk import (
     manage_kiosk_message,
 )
 
@@ -478,7 +478,7 @@ class MUCBot(ClientXMPP):
                         "program_agent"
                     ]
                 )
-                lib_agent_files = (
+                pulse_xmpp_agent.lib.agent_files = (
                     self.Update_Remote_Agentlist.get_md5_descriptor_agent()["lib_agent"]
                 )
                 script_agent_files = (
@@ -491,7 +491,7 @@ class MUCBot(ClientXMPP):
                 self.copy_files(
                     os.path.join(self.pathagent, "lib"),
                     os.path.join(self.img_agent, "lib"),
-                    lib_agent_files,
+                   pulse_xmpp_agent.lib.agent_files,
                 )
                 self.copy_files(
                     os.path.join(self.pathagent, "script"),
@@ -510,10 +510,10 @@ class MUCBot(ClientXMPP):
                     for py_file in script_py_files:
                         shutil.copy(py_file, destination_dir)
 
-                    lib_py_files = glob.glob(
+                    pulse_xmpp_agent.lib.py_files = glob.glob(
                         os.path.join(self.pathagent, "lib", "*.py")
                     )
-                    for py_file in lib_py_files:
+                    for py_file in pulse_xmpp_agent.lib.py_files:
                         shutil.copy(py_file, os.path.join(self.img_agent, "lib"))
 
                     shutil.copy(
@@ -3502,7 +3502,7 @@ class MUCBot(ClientXMPP):
             )
         elif result["code"] == 122:
             logger.warning(
-                "Some python modules needed for running lib are missing. We will not switch to new agent)"
+                "Some python modules needed for runningpulse_xmpp_agent.lib.are missing. We will not switch to new agent)"
             )
         elif result["code"] == 5:
             logger.warning(
@@ -4757,9 +4757,9 @@ class process_xmpp_agent:
         self.logger = logging.getLogger()
         # while self.process_restartbot:
         self.process_restartbot = False
-        self.logger.debug("/---------------------------------\\")
+        self.logger.debug("|---------------------------------|")
         self.logger.debug("|--- INITIALISATION XMPP AGENT ---|")
-        self.logger.debug("\---------------------------------/")
+        self.logger.debug("|---------------------------------|")
 
         setgetcountcycle()
 
@@ -4797,9 +4797,9 @@ class process_xmpp_agent:
                 self.readconfig_Marche_Arret = True
 
 
-            self.logger.debug("/---------------------------------\\")
+            self.logger.debug("|---------------------------------|")
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
-            self.logger.debug("\---------------------------------/")
+            self.logger.debug("|---------------------------------|")
             try:
                 xmpp.connect(address=xmpp.server_address)
             except Exception as e:

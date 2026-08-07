@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-from lib.utils import getRandomName
+from pulse_xmpp_master_substitute.lib.utils import getRandomName
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import threading
-from lib.utils import getRandomName
+from pulse_xmpp_master_substitute.lib.utils import getRandomName
 import logging
 
 logger = logging.getLogger()

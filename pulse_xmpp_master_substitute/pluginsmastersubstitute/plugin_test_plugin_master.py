@@ -6,7 +6,7 @@
 # on log le demarrage de MMC
 import logging
 import json
-from lib.utils import name_random
+from pulse_xmpp_master_substitute.lib.utils import name_random
 import traceback
 
 logger = logging.getLogger()

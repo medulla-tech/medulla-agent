@@ -10,7 +10,7 @@ this plugin can be called from quick action
 import json
 import logging
 
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 

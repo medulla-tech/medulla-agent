@@ -7,7 +7,7 @@ This plugin processes inventory based on crontab descriptor time.
 """
 
 import logging
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 
 plugin = {"VERSION": "2.0", "NAME": "scheduling_inv", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 

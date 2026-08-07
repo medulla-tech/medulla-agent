@@ -9,7 +9,7 @@ import logging
 import traceback
 import types
 import configparser
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

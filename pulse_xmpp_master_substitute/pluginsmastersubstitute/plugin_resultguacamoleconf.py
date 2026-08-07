@@ -5,7 +5,7 @@
 
 import traceback
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.11", "NAME": "resultguacamoleconf", "TYPE": "substitute"}  # fmt: skip

@@ -330,7 +330,7 @@ def module_needed(agent_image, verbose=False):
         except ImportError:
             if verbose:
                 print(
-                    f"Some python modules needed for running lib/{filename} are missing. We will not switch to new agent"
+                    f"Some python modules needed for runningpulse_xmpp_agent.lib.{filename} are missing. We will not switch to new agent"
                 )
             sys.path = original_sys_path
             return False

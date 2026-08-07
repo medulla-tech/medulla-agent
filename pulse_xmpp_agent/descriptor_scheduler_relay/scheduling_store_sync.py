@@ -88,7 +88,7 @@ def read_config_plugin(objectxmpp):
     """
     # Find config directory
     try:
-        from lib.agentconffile import directoryconffile
+        from pulse_xmpp_agent.lib.agentconffile import directoryconffile
         confdir = directoryconffile()
     except:
         confdir = "/etc/pulse-xmpp-agent"

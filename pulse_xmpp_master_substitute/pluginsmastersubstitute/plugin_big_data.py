@@ -31,7 +31,7 @@ import os
 import json
 import logging
 from slixmpp import jid
-from lib.utils import call_plugin
+from pulse_xmpp_master_substitute.lib.utils import call_plugin
 import time
 
 

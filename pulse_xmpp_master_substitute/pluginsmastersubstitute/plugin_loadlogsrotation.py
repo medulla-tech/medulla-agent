@@ -7,7 +7,7 @@ import logging
 import configparser
 import shutil
 import types
-from lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
 from datetime import datetime, timedelta
 
 logger = logging.getLogger()

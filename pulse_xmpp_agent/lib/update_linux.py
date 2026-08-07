@@ -14,7 +14,7 @@ import gzip
 import base64
 import sys
 import zlib
-from  lib.uuid_deterministic import DeterministicUUID
+from pulse_xmpp_agent.lib.uuid_deterministic import DeterministicUUID
 import logging
 from abc import ABC, abstractmethod
 import platform
@@ -23,8 +23,8 @@ if sys.platform.startswith("linux"):
     import distro  # pip install distro
 import socket
 import uuid
-from lib.uuid_deterministic import DeterministicUUID
-from lib.utils import serialnumbermachine
+from pulse_xmpp_agent.lib.uuid_deterministic import DeterministicUUID
+from pulse_xmpp_agent.lib.utils import serialnumbermachine
 logger = logging.getLogger(__name__)
 
 # ######################################################################

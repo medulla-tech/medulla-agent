@@ -6,7 +6,7 @@
 import os
 import sys
 import json
-from lib.utils import (
+from pulse_xmpp_master_substitute.lib.utils import (
     name_random,
     getRandomName,
     call_plugin,

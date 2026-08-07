@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
-from lib.utils import set_logging_level
+from pulse_xmpp_agent.lib.utils import set_logging_level
 
 import logging
 

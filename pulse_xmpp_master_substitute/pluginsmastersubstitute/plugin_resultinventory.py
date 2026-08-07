@@ -13,9 +13,9 @@ import urllib.request
 import urllib.error
 import time
 import json
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.utils import convert
+from pulse_xmpp_master_substitute.lib.plugins.xmpp import XmppMasterDatabase
+from pulse_xmpp_master_substitute.lib.plugins.glpi import Glpi
+from pulse_xmpp_master_substitute.lib.utils import convert
 import re
 import inspect
 import requests

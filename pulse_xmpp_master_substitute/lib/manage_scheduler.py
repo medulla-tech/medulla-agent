@@ -14,7 +14,7 @@ import croniter
 from random import randint
 
 
-# from lib.utils import
+# from pulse_xmpp_master_substitute.lib.utils import
 
 logger = logging.getLogger()
 

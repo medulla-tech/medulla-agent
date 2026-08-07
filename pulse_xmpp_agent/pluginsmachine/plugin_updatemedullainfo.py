@@ -7,7 +7,7 @@ import os
 import codecs
 import locale
 import logging
-from lib import utils
+from pulse_xmpp_agent.lib import utils
 import platform
 import random
 import string
@@ -24,9 +24,9 @@ import xml.etree.ElementTree as ET
 import time
 
 import traceback
-from lib.agentconffile import medullaPath
-from lib.medulla_windows11_compatibility import (
-    Windows11Compatibility as LibWindows11Compatibility,
+from pulse_xmpp_agent.lib.agentconffile import medullaPath
+from pulse_xmpp_agent.lib.medulla_windows11_compatibility import (
+    Windows11Compatibility aspulse_xmpp_agent.lib.indows11Compatibility,
 )
 # Importer winreg uniquement si le système d'exploitation est Windows
 if sys.platform.startswith("win"):
@@ -154,9 +154,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 
 def _generate_windows11_compatibility_report(json_output_file):
-    """Genere le rapport JSON de compatibilite via la lib centralisee."""
+    """Genere le rapport JSON de compatibilite via lapulse_xmpp_agent.lib.centralisee."""
     os.makedirs(os.path.dirname(json_output_file), exist_ok=True)
-    compat = LibWindows11Compatibility(
+    compat =pulse_xmpp_agent.lib.indows11Compatibility(
         output_format="json",
         output_file=json_output_file,
     )
@@ -195,7 +195,7 @@ def _load_or_generate_windows11_compatibility_flag():
         with open(json_output_file, "r", encoding="utf-8") as handle:
             report = json.load(handle)
 
-    # compatble_win11 peut etre force a True dans la lib pour un mode failsafe.
+    # compatble_win11 peut etre force a True dans lapulse_xmpp_agent.lib.pour un mode failsafe.
     # On privilegie raw_compatible pour refleter la compatibilite reelle.
     compatible_value = report.get("raw_compatible", report.get("compatble_win11", False))
     if isinstance(compatible_value, bool):
