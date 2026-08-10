@@ -173,6 +173,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-master.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-diskmastering.service
 %_var/lib/pulse2/script_monitoring/
 %_var/lib/pulse2/xml_fix
 
@@ -445,6 +446,7 @@ sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/puls
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
+sed -i 's,PATH,%python3_sitelib,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-diskmastering.service
 
 mkdir -p %buildroot%_var/lib/pulse2/xml_fix
 cp -frv contrib/inventory/xml-fix/* %buildroot%_var/lib/pulse2/xml_fix

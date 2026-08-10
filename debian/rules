@@ -88,6 +88,7 @@ override_dh_auto_install:
 	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
+	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-diskmastering.service
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
 	# We create the installer part now
 	mkdir pulse-xmpp-agent-${VERSION_XMPP_AGENT}
