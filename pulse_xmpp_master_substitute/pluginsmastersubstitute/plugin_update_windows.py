@@ -20,7 +20,7 @@ from lib.plugins.pkgs import PkgsDatabase
 from slixmpp import jid
 from lib.utils import getRandomName, name_randomplus
 import re
-from distutils.version import LooseVersion
+from packaging.version import LegacyVersion as LooseVersion
 import configparser
 import netaddr
 

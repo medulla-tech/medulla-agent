@@ -4,7 +4,7 @@
 
 import sys
 import os
-from distutils.version import StrictVersion
+from packaging.version import Version
 import logging
 from lib import utils
 from lib.agentconffile import (
@@ -33,7 +33,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checkfiletreegeneratorversion()
-        if StrictVersion(installed_version) < StrictVersion(FILETREEVERSION):
+        if Version(installed_version) < Version(FILETREEVERSION):
             updatefiletreegenerator(xmppobject, installed_version)
     except Exception:
         pass

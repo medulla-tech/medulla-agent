@@ -35,7 +35,7 @@ from slixmpp import jid
 from lib.utils import getRandomName, call_plugin, call_plugin_separate, simplecommand
 
 import re
-from distutils.version import LooseVersion
+from packaging.version import LegacyVersion as LooseVersion
 import configparser
 import netaddr
 

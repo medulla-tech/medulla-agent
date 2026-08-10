@@ -3,7 +3,7 @@
 
 import sys
 import os
-from distutils.version import StrictVersion
+from packaging.version import Version
 import logging
 from lib import utils
 import tempfile
@@ -29,7 +29,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = kioskinterfaceversion()
-        if StrictVersion(installed_version) < StrictVersion(KIOSKINTERFACEVERSION):
+        if Version(installed_version) < Version(KIOSKINTERFACEVERSION):
             updatekioskinterface(xmppobject, installed_version)
     except Exception:
         pass

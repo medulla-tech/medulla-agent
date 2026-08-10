@@ -4,7 +4,7 @@
 
 import sys
 import os
-from distutils.version import StrictVersion
+from packaging.version import Version
 import logging
 import tempfile
 from lib import utils
@@ -28,7 +28,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checkagentversion()
-        if StrictVersion(BEFOREAGENTVERSION) < StrictVersion(installed_version) :
+        if Version(BEFOREAGENTVERSION) < Version(installed_version) :
             updatepythonmodules(xmppobject, installed_version)
     except Exception:
         pass

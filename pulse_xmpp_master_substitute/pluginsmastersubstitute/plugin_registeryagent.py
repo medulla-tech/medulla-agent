@@ -20,7 +20,7 @@ from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
 from lib.utils import getRandomName, call_plugin, name_random
 import re
-from distutils.version import LooseVersion
+from packaging.version import LegacyVersion as LooseVersion
 import configparser
 import netaddr
 import datetime
