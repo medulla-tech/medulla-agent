@@ -20,7 +20,7 @@ from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
 from lib.utils import getRandomName, call_plugin, name_random
 import re
-from packaging.version import LegacyVersion as LooseVersion
+from packaging.version import Version
 import configparser
 import netaddr
 import datetime
@@ -1653,7 +1653,7 @@ def get_packages_for_machine(machine, showinfobool=True):
             if pkg_statuses[uuid]["uninstall"] is True:
                 pkg_statuses[uuid]["action"].append("Delete")
             if pkg_statuses[uuid]["update"] is True:
-                if LooseVersion(found[0][2]) < LooseVersion(pkg["version"]):
+                if Version(found[0][2]) < Version(pkg["version"]):
                     pkg_statuses[uuid]["action"].append("Update")
 
     structuredatakiosk = []
