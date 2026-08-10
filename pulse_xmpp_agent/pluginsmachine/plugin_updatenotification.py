@@ -4,7 +4,7 @@
 
 import sys
 import os
-from distutils.version import StrictVersion
+from packaging.version import Version
 import logging
 import shutil
 from lib import utils
@@ -36,7 +36,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         check_if_binary_ok()
         # Update if version is lower
         installed_version = notificationversion()
-        if StrictVersion(installed_version) < StrictVersion(NOTIFICATIONVERSION):
+        if Version(installed_version) < Version(NOTIFICATIONVERSION):
             updatenotification(xmppobject)
             updatenotificationversion(installed_version)
     except Exception as error_loading:

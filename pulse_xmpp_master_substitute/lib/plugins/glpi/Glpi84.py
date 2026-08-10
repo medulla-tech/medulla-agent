@@ -61,7 +61,7 @@ from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
 
-from distutils.version import LooseVersion
+from packaging.version import LegacyVersion as LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 

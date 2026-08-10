@@ -4,7 +4,7 @@
 
 import sys
 import os
-from distutils.version import StrictVersion
+from packaging.version import Version
 import logging
 from lib import utils
 import platform
@@ -28,7 +28,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checkcacertversion()
-        if StrictVersion(installed_version) < StrictVersion(CACERTVERSION):
+        if Version(installed_version) < Version(CACERTVERSION):
             updatecacert(xmppobject, installed_version)
     except Exception:
         pass

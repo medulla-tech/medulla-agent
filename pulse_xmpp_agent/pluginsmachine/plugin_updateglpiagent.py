@@ -4,7 +4,7 @@
 
 import sys
 from lib import utils
-from distutils.version import StrictVersion
+from packaging.version import Version
 import logging
 import platform
 import tempfile
@@ -30,7 +30,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             # Update if version is lower
             check_if_binary_ok()
             installed_version = checkGlpiAgentVersion()
-            if StrictVersion(installed_version) < StrictVersion(GLPIAGENTVERSION):
+            if Version(installed_version) < Version(GLPIAGENTVERSION):
                 updateGlpiAgent(xmppobject)
     except Exception as error:
         logger.debug(str(error))
