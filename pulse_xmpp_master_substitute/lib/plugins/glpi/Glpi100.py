@@ -61,7 +61,7 @@ from sqlalchemy.ext.automap import automap_base
 from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
-from packaging.version import LegacyVersion as LooseVersion
+from packaging.version import Version
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
@@ -243,9 +243,9 @@ class Glpi100(DatabaseHelper):
                 .values()
             )[0].replace(" ", "")
 
-        if LooseVersion(self._glpi_version) >= LooseVersion("10.0") and LooseVersion(
+        if Version(self._glpi_version) >= Version("10.0") and Version(
             self._glpi_version
-        ) <= LooseVersion("10.0.20"):
+        ) <= Version("10.0.20"):
             logging.getLogger().debug("GLPI version %s found !" % self._glpi_version)
         else:
             logging.getLogger().debug("GLPI higher than version 10.0 was not detected")
