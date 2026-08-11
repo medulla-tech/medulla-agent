@@ -343,7 +343,7 @@ remove_packages_apt() {
     if [ "${REMOVE_PYTHON}" -eq 1 ]; then
         log "Removing Python 3.11 package (--remove-python)..."
         apt-get remove -y --purge \
-            python3.11 python3.11-venv python3.11-dev python3.11-setuptools 2>/dev/null || true
+            python3.11 python3.11-venv python3.11-dev python3.11-distutils 2>/dev/null || true
         apt-get autoremove -y 2>/dev/null || true
         # Remove deadsnakes PPA if it was added (Ubuntu)
         rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-noble.sources 2>/dev/null || true

@@ -4,7 +4,7 @@
 
 import sys
 import os
-from packaging.version import Version
+from distutils.version import StrictVersion
 import logging
 from lib import utils
 
@@ -30,23 +30,23 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         main_installed_version = checkversion("main")
-        if Version(main_installed_version) < Version(MAIN):
+        if StrictVersion(main_installed_version) < StrictVersion(MAIN):
             updatemain(xmppobject)
 
         bootstrap_installed_version = checkversion("bootstrap")
-        if Version(bootstrap_installed_version) < Version(BOOTSTRAP):
+        if StrictVersion(bootstrap_installed_version) < StrictVersion(BOOTSTRAP):
             updatebootstrap(xmppobject)
 
         jquery_installed_version = checkversion("jquery")
-        if Version(jquery_installed_version) < Version(JQUERY):
+        if StrictVersion(jquery_installed_version) < StrictVersion(JQUERY):
             updatejquery(xmppobject)
 
         jqueryui_installed_version = checkversion("jqueryui")
-        if Version(jqueryui_installed_version) < Version(JQUERYUI):
+        if StrictVersion(jqueryui_installed_version) < StrictVersion(JQUERYUI):
             updatejqueryui(xmppobject)
 
         datatable_installed_version = checkversion("datatables")
-        if Version(datatable_installed_version) < Version(DATATABLES):
+        if StrictVersion(datatable_installed_version) < StrictVersion(DATATABLES):
             updatedatatables(xmppobject)
 
     except Exception:

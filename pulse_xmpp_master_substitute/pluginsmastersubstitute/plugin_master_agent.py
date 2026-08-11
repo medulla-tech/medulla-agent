@@ -36,7 +36,7 @@ from lib.utils import getRandomName, call_plugin, call_plugin_separate
 
 # , call_pluginseparatedthred
 import re
-from packaging.version import LegacyVersion as LooseVersion
+from distutils.version import LooseVersion
 import configparser
 import netaddr
 

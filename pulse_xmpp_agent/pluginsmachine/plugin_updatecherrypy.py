@@ -4,7 +4,7 @@
 
 import sys
 import os
-from packaging.version import Version
+from distutils.version import StrictVersion
 import logging
 import tempfile
 from lib import utils
@@ -29,7 +29,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checkcherrypyversion()
-        if Version(installed_version) < Version(CHERRYPYVERSION):
+        if StrictVersion(installed_version) < StrictVersion(CHERRYPYVERSION):
             updatecherrypy(xmppobject, installed_version)
     except Exception:
         pass

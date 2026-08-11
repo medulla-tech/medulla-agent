@@ -4,7 +4,7 @@
 
 import sys
 from lib import utils
-from packaging.version import Version
+from distutils.version import StrictVersion
 import logging
 import tempfile
 import os
@@ -31,7 +31,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if bool(int(xmppobject.config.backup_enabled)):
                 # Update if version is lower
                 installed_version = checkurbackupversion()
-                if Version(installed_version) < Version(URBACKUP_VERSION):
+                if StrictVersion(installed_version) < StrictVersion(URBACKUP_VERSION):
                     updatebackupclient(xmppobject)
                     backupclientsettings(xmppobject)
     except Exception:

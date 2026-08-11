@@ -4,7 +4,7 @@
 
 import sys
 import os
-from packaging.version import Version
+from distutils.version import StrictVersion
 import logging
 import zipfile
 import platform
@@ -40,7 +40,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         try:
             # Update if version is lower
             installed_version = checksyncthingversion()
-            if Version(installed_version) < Version(SYNCTHINGVERSION):
+            if StrictVersion(installed_version) < StrictVersion(SYNCTHINGVERSION):
                 updatesyncthing(xmppobject, installed_version)
 
             # Configure syncthing

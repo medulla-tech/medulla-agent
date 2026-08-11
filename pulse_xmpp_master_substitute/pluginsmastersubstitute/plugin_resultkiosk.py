@@ -33,7 +33,7 @@ import random
 from slixmpp import jid
 import threading
 from lib.managesession import session, clean_session
-from packaging.version import LegacyVersion as LooseVersion, Version
+from distutils.version import LooseVersion, StrictVersion
 
 if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)

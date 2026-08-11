@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from setuptools import setup
-from setuptools._distutils.command.install import INSTALL_SCHEMES
+from distutils.command.install import INSTALL_SCHEMES
 
 import os
 

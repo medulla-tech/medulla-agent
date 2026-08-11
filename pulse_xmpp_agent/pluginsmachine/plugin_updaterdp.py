@@ -4,7 +4,7 @@
 
 import sys
 import os
-from packaging.version import Version
+from distutils.version import StrictVersion
 import logging
 from lib import utils
 from lib.agentconffile import (
@@ -28,7 +28,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checkrdpversion()
-        if Version(installed_version) < Version(RDPVERSION):
+        if StrictVersion(installed_version) < StrictVersion(RDPVERSION):
             updaterdp(xmppobject, installed_version)
         # Ensure Publisher exists (was never set due to previous bug)
         cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Medulla RDP" /v "Publisher"'

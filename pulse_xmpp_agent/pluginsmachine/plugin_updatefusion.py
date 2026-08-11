@@ -27,7 +27,7 @@ Note: This plugin assumes the availability of certain commands and paths on Wind
 
 import sys
 from lib import utils
-from packaging.version import Version
+from distutils.version import StrictVersion
 import logging
 import platform
 import tempfile
@@ -68,7 +68,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             # Update if version is lower
             check_if_binary_ok()
             installed_version = checkfusionversion()
-            if Version(installed_version) < Version(FUSIONVERSION):
+            if StrictVersion(installed_version) < StrictVersion(FUSIONVERSION):
                 updatefusion(xmppobject)
     except Exception as error_plugin:
         logger.error("An error occured. The error code is %s" % str(error_plugin))

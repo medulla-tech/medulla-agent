@@ -4,7 +4,7 @@
 
 import sys
 import os
-from packaging.version import Version
+from distutils.version import StrictVersion
 import logging
 import zipfile
 import platform
@@ -47,7 +47,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         # Update if version is lower
         check_medulla_conformity()
         installed_version = checkopensshversion()
-        if Version(installed_version) < Version(OPENSSHVERSION):
+        if StrictVersion(installed_version) < StrictVersion(OPENSSHVERSION):
             updateopenssh(xmppobject, installed_version)
         else:
             configure_ssh(xmppobject)

@@ -75,7 +75,7 @@ from sqlalchemy.ext.automap import automap_base
 from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
-from packaging.version import LegacyVersion as LooseVersion
+from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 

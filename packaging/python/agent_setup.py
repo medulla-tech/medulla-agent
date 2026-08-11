@@ -3,7 +3,7 @@
 
 from setuptools import setup
 import sys
-from setuptools._distutils.command.install import INSTALL_SCHEMES
+from distutils.command.install import INSTALL_SCHEMES
 
 import os
 
