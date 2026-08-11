@@ -33,7 +33,7 @@ import random
 from slixmpp import jid
 import threading
 from lib.managesession import session, clean_session
-from packaging.version import Version
+from packaging.version import LegacyVersion as LooseVersion, Version
 
 if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
@@ -532,7 +532,7 @@ def get_packages_for_machine(machine):
             if pkg_statuses[uuid]["uninstall"] is True:
                 pkg_statuses[uuid]["action"].append("Delete")
             if pkg_statuses[uuid]["update"] is True:
-                if Version(found[0][2]) < Version(pkg["version"]):
+                if LooseVersion(found[0][2]) < LooseVersion(pkg["version"]):
                     pkg_statuses[uuid]["action"].append("Update")
             # Installed but the package ships no uninstall section: nothing
             # actionable. Emit a non-actionable "Installed" badge so the kiosk

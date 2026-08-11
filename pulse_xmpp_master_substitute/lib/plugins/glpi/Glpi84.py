@@ -61,7 +61,7 @@ from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
 
-from packaging.version import Version
+from packaging.version import LegacyVersion as LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
@@ -273,9 +273,9 @@ class Glpi84(DatabaseHelper):
                 .fetchone()
                 .values()
             )[0].replace(" ", "")
-            if Version(self._glpi_version) >= Version(
+            if LooseVersion(self._glpi_version) >= LooseVersion(
                 "0.84"
-            ) and Version(self._glpi_version):
+            ) and LooseVersion(self._glpi_version):
                 logging.getLogger().debug(
                     "GLPI version %s found !" % self._glpi_version
                 )

@@ -61,7 +61,7 @@ from sqlalchemy.ext.automap import automap_base
 from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
-from packaging.version import Version
+from packaging.version import LegacyVersion as LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
@@ -243,7 +243,7 @@ class Itsmng21(DatabaseHelper):
                 .values()
             )[0].replace(" ", "")
 
-        if Version(self._glpi_version) >= Version("2.1.0") and Version(self._glpi_version) <= Version("2.1.99"):
+        if LooseVersion(self._glpi_version) >= LooseVersion("2.1.0") and LooseVersion(self._glpi_version) <= LooseVersion("2.1.99"):
             logging.getLogger().debug("Itsm-ng version %s found !" % self._glpi_version)
         else:
             logging.getLogger().debug("Itsm-ng higher than version 2.1 was not detected")
