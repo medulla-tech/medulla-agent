@@ -11,6 +11,7 @@ import logging
 import time
 import datetime
 import sqlalchemy.orm
+from sqlalchemy.orm import sessionmaker
 
 
 class CommandsOnHost(object):
@@ -241,10 +242,20 @@ class CommandsOnHost(object):
 
     def flush(self):
         """Handle SQL flushing"""
-        session = sqlalchemy.orm.create_session()
-        session.add(self)
-        session.flush()
-        session.close()
+        # Get session from parent module's session factory
+        from lib.plugins.msc import MscDatabase
+        msc_db = MscDatabase()
+        if msc_db.is_activated:
+            session_factory = sessionmaker(bind=msc_db.engine_mscmmaster_base, expire_on_commit=False)
+            session = session_factory()
+            try:
+                session.add(self)
+                session.flush()
+            finally:
+                session.close()
+        else:
+            # Database not initialized
+            pass
 
     def toH(self):
         return {

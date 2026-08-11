@@ -6,8 +6,8 @@
 kiosk database handler
 """
 # SqlAlchemy
-from sqlalchemy import create_engine, func, and_, or_
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, func, and_, or_, text
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import DBAPIError
 
 # PULSE2 modules
@@ -31,11 +31,6 @@ import json
 import re
 import base64
 
-try:
-    from sqlalchemy.orm.util import _entity_descriptor
-except ImportError:
-    from sqlalchemy.orm.base import _entity_descriptor
-
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.ext.automap import automap_base
 
@@ -57,7 +52,7 @@ class DatabaseHelper(Singleton):
         def __session(self, *args, **kw):
             created = False
             if not self.sessionkiosk:
-                self.sessionkiosk = sessionmaker(bind=self.engine_kiosk_base)
+                self.sessionkiosk = sessionmaker(bind=self.engine_kiosk_base, expire_on_commit=False)
                 created = True
             result = func(self, self.session, *args, **kw)
             if created:
@@ -72,7 +67,7 @@ class DatabaseHelper(Singleton):
     def _sessionm(self, func):
         @functools.wraps(func)
         def __sessionm(self, *args, **kw):
-            session_factory = sessionmaker(bind=self.engine_kiosk_base)
+            session_factory = sessionmaker(bind=self.engine_kiosk_base, expire_on_commit=False)
             sessionmultithread = scoped_session(session_factory)
             result = func(self, sessionmultithread, *args, **kw)
             sessionmultithread.remove()
@@ -115,7 +110,7 @@ class KioskDatabase(DatabaseHelper):
         )
         try:
             self.engine_kiosk_base = create_engine(
-                "mysql://%s:%s@%s:%s/%s?charset=%s"
+                "mysql+pymysql://%s:%s@%s:%s/%s?charset=%s"
                 % (
                     self.config.kiosk_dbuser,
                     self.config.kiosk_dbpasswd,
@@ -127,7 +122,6 @@ class KioskDatabase(DatabaseHelper):
                 pool_recycle=self.config.kiosk_dbpoolrecycle,
                 pool_size=self.config.kiosk_dbpoolsize,
                 pool_timeout=self.config.kiosk_dbpooltimeout,
-                convert_unicode=True,
             )
             self.Sessionkiosk = sessionmaker(bind=self.engine_kiosk_base)
 
@@ -185,7 +179,7 @@ class KioskDatabase(DatabaseHelper):
         """
         return version kiosk table
         """
-        return session.execute("SELECT * FROM kiosk.version limit 1;")
+        return session.execute(text("SELECT * FROM kiosk.version limit 1;"))
 
     @DatabaseHelper._sessionm
     def get_profiles_list(self, session):
@@ -242,7 +236,7 @@ class KioskDatabase(DatabaseHelper):
             % listou
         )
         try:
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             l = [x for x in result]

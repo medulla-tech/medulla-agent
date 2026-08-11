@@ -27,22 +27,14 @@ from sqlalchemy import (
     Boolean,
     bindparam,
 )
-from sqlalchemy.orm import sessionmaker, Query
+from sqlalchemy.orm import sessionmaker, Query, scoped_session, Session
 from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.sql.expression import literal
 from sqlalchemy import TypeDecorator
-from sqlalchemy.orm import scoped_session
 
 import functools
-
-
-try:
-    from sqlalchemy.orm.util import _entity_descriptor
-except ImportError:
-    # normal
-    from sqlalchemy.orm.base import _entity_descriptor
 
 
 from datetime import date, datetime, timedelta
@@ -246,7 +238,7 @@ class DatabaseHelper(Singleton):
         def __session(self, *args, **kw):
             created = False
             if not self.sessionxmpp:
-                self.sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
+                self.sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base, expire_on_commit=False)
                 created = True
             result = func(self, self.session, *args, **kw)
             if created:
@@ -276,7 +268,7 @@ class DatabaseHelper(Singleton):
         """
         @functools.wraps(func)
         def __sessionm(self, *args, **kw):
-            session_factory = sessionmaker(bind=self.engine_xmppmmaster_base)
+            session_factory = sessionmaker(bind=self.engine_xmppmmaster_base, expire_on_commit=False)
             sessionmultithread = scoped_session(session_factory)
             result = func(self, sessionmultithread, *args, **kw)
             sessionmultithread.remove()
@@ -331,7 +323,7 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             echodata = False
             self.engine_xmppmmaster_base = create_engine(
-                "mysql://%s:%s@%s:%s/%s"
+                "mysql+pymysql://%s:%s@%s:%s/%s"
                 % (
                     self.config.xmpp_dbuser,
                     self.config.xmpp_dbpasswd,
@@ -342,9 +334,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 pool_recycle=self.poolrecycle,
                 pool_size=self.poolsize,
                 echo=echodata,
-                convert_unicode=True,
             )
-            self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
+            self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base, expire_on_commit=False)
 
             Base = automap_base()
             Base.prepare(self.engine_xmppmmaster_base, reflect=True)

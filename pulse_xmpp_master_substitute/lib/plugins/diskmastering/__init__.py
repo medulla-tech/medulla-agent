@@ -6,8 +6,8 @@
 Mastering database handler
 """
 # SqlAlchemy
-from sqlalchemy import create_engine, func, and_, or_
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, func, and_, or_, text
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import DBAPIError
 import json
 import base64
@@ -31,11 +31,6 @@ import time
 from lib.configuration import confParameter
 import functools
 from datetime import datetime
-
-try:
-    from sqlalchemy.orm.util import _entity_descriptor
-except ImportError:
-    from sqlalchemy.orm.base import _entity_descriptor
 
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.ext.automap import automap_base
@@ -62,7 +57,7 @@ class DatabaseHelper(Singleton):
         def __session(self, *args, **kw):
             created = False
             if not self.sessionmastering:
-                self.sessionmastering = sessionmaker(bind=self.engine_mastering_base)
+                self.sessionmastering = sessionmaker(bind=self.engine_mastering_base, expire_on_commit=False)
                 created = True
             result = func(self, self.session, *args, **kw)
             if created:
@@ -77,7 +72,7 @@ class DatabaseHelper(Singleton):
     def _sessionm(self, func):
         @functools.wraps(func)
         def __sessionm(self, *args, **kw):
-            session_factory = sessionmaker(bind=self.engine_mastering_base)
+            session_factory = sessionmaker(bind=self.engine_mastering_base, expire_on_commit=False)
             sessionmultithread = scoped_session(session_factory)
             result = func(self, sessionmultithread, *args, **kw)
             sessionmultithread.remove()
@@ -120,7 +115,7 @@ class DiskMasteringDatabase(DatabaseHelper):
 
         try:
             self.engine_mastering_base = create_engine(
-                "mysql://%s:%s@%s:%s/%s?charset=%s"
+                "mysql+pymysql://%s:%s@%s:%s/%s?charset=%s"
                 % (
                     self.config.diskmastering_dbuser,
                     self.config.diskmastering_dbpasswd,
@@ -132,7 +127,6 @@ class DiskMasteringDatabase(DatabaseHelper):
                 pool_recycle=self.config.diskmastering_dbpoolrecycle,
                 pool_size=self.config.diskmastering_dbpoolsize,
                 pool_timeout=self.config.diskmastering_dbpooltimeout,
-                convert_unicode=True,
             )
             self.sessionmastering = sessionmaker(bind=self.engine_mastering_base)
 
@@ -191,7 +185,7 @@ from actions where id = :action_id
 """
         binds = {"action_id": action_id}
         try:
-            query = session.execute(sql, binds).all()
+            query = session.execute(text(sql), binds).all()
         except Exception as e:
             logger.error(e)
             return {}
@@ -232,7 +226,7 @@ from actions where id = :action_id
                 "session_id": session_id,
             }
         try:
-            session.execute(sql, bindings)
+            session.execute(text(sql), bindings)
             session.commit()
             session.flush()
         except Exception as e:
@@ -251,7 +245,7 @@ from actions where id = :action_id
             servers.entity_id
          from actions join servers on servers.id = actions.server_id where actions.id =:action_id"""
         binds = {"action_id": action_id}
-        query = session.execute(sql, binds).all()
+        query = session.execute(text(sql), binds).all()
         if query == None:
             return
 
@@ -281,7 +275,7 @@ from actions where id = :action_id
         sql = """INSERT INTO masters (name, description, uuid, path, size) VALUES(:name, :description, :uuid, :path, :size)"""
         binds = {"name": master_name, "description": master_description, "uuid": master_uuid, "path": master_path, "size": master_size}
         try:
-            session.execute(sql, binds)
+            session.execute(text(sql), binds)
             session.commit()
             session.flush()
         except Exception as e:
@@ -293,7 +287,7 @@ from actions where id = :action_id
         master_id = 0
         sql = """SELECT id from masters where uuid = :uuid"""
         binds = {"uuid": master_uuid}
-        query = session.execute(sql, binds).all()
+        query = session.execute(text(sql), binds).all()
         if query == None:
              return
         for e in query:
@@ -304,7 +298,7 @@ from actions where id = :action_id
         binds = {"master_id": master_id, "entity_id": entity_id}
 
         try:
-            session.execute(sql, binds)
+            session.execute(text(sql), binds)
 
         except Exception as e:
             session.rollback()
@@ -320,7 +314,7 @@ from actions where id = :action_id
 
         sql = """SELECT count(id) from actionStatus where action_id = :action_id and uuid =:uuid"""
         binds = {"action_id": action_id, "uuid": uuid}
-        query = session.execute(sql, binds).scalar()
+        query = session.execute(text(sql), binds).scalar()
         logger.error(query)
         mode = "update"
         if query is None or query == 0:
@@ -334,7 +328,7 @@ from actions where id = :action_id
             sql = """INSERT INTO actionStatus (action_id, uuid, status) VALUES(:action_id, :uuid, :status)"""
 
         try:
-            session.execute(sql, binds)
+            session.execute(text(sql), binds)
 
         except Exception as e:
             session.rollback()
@@ -355,7 +349,7 @@ from actions where id = :action_id
             "payload":""
         }
 
-        query = session.execute(sql, binds).all()
+        query = session.execute(text(sql), binds).all()
 
         if query == None:
             return result
@@ -431,7 +425,7 @@ from actions where id = :action_id
 
         result = ""
 
-        query = session.execute(sql, binds).all()
+        query = session.execute(text(sql), binds).all()
 
         if query == None:
             return result

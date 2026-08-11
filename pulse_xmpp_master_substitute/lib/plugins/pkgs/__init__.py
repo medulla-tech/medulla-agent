@@ -19,11 +19,10 @@ from sqlalchemy import (
     asc,
     desc,
     distinct,
+    text,
 )
-from sqlalchemy.orm import create_session, mapper
+from sqlalchemy.orm import sessionmaker, scoped_session, Session, registry
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import scoped_session
 from sqlalchemy.ext.automap import automap_base
 
 # ORM mappings
@@ -63,7 +62,7 @@ class DatabaseHelper(Singleton):
     def _sessionm(self, func1):
         @functools.wraps(func1)
         def __sessionm(self, *args, **kw):
-            session_factory = sessionmaker(bind=self.engine_pkgsmmaster_base)
+            session_factory = sessionmaker(bind=self.engine_pkgsmmaster_base, expire_on_commit=False)
             sessionmultithread = scoped_session(session_factory)
             result = func1(self, sessionmultithread, *args, **kw)
             sessionmultithread.remove()
@@ -108,7 +107,7 @@ class PkgsDatabase(DatabaseHelper):
 
         try:
             self.engine_pkgsmmaster_base = create_engine(
-                "mysql://%s:%s@%s:%s/%s?charset=%s"
+                "mysql+pymysql://%s:%s@%s:%s/%s?charset=%s"
                 % (
                     self.config.pkgs_dbuser,
                     self.config.pkgs_dbpasswd,
@@ -120,17 +119,18 @@ class PkgsDatabase(DatabaseHelper):
                 pool_recycle=self.config.pkgs_dbpoolrecycle,
                 pool_size=self.config.pkgs_dbpoolsize,
                 pool_timeout=self.config.pkgs_dbpooltimeout,
-                convert_unicode=True,
             )
 
-            self.metadata = MetaData(self.engine_pkgsmmaster_base)
+            self.metadata = MetaData()
+            self.mapper_registry = registry()
             if not self.initTables():
                 return False
 
             self.initMappers()
-            self.metadata.create_all()
+            self.metadata.create_all(bind=self.engine_pkgsmmaster_base)
             # FIXME: should be removed
-            self.session = create_session(bind=self.engine_pkgsmmaster_base)
+            session_factory = sessionmaker(bind=self.engine_pkgsmmaster_base, expire_on_commit=False)
+            self.session = session_factory()
             if self.session is not None:
                 self.is_activated = True
                 return True
@@ -147,49 +147,41 @@ class PkgsDatabase(DatabaseHelper):
         Initialize all SQLalchemy tables
         """
         try:
+            # Reflect all tables from the database (SQLAlchemy 2.0)
+            self.metadata.reflect(bind=self.engine_pkgsmmaster_base)
+            
             # packages
-            self.package = Table("packages", self.metadata, autoload=True)
+            self.package = self.metadata.tables.get("packages")
 
             # extensions
-            self.extensions = Table("extensions", self.metadata, autoload=True)
+            self.extensions = self.metadata.tables.get("extensions")
 
             # Dependencies
-            self.dependencies = Table("dependencies", self.metadata, autoload=True)
+            self.dependencies = self.metadata.tables.get("dependencies")
 
             # Syncthingsync
-            self.syncthingsync = Table("syncthingsync", self.metadata, autoload=True)
+            self.syncthingsync = self.metadata.tables.get("syncthingsync")
+            
             # package_pending_exclusions
-            self.package_pending_exclusions = Table(
-                "package_pending_exclusions", self.metadata, autoload=True
-            )
+            self.package_pending_exclusions = self.metadata.tables.get("package_pending_exclusions")
 
             # pkgs_shares_ars_web
-            self.pkgs_shares_ars_web = Table(
-                "pkgs_shares_ars_web", self.metadata, autoload=True
-            )
+            self.pkgs_shares_ars_web = self.metadata.tables.get("pkgs_shares_ars_web")
 
             # pkgs_shares_ars
-            self.pkgs_shares_ars = Table(
-                "pkgs_shares_ars", self.metadata, autoload=True
-            )
+            self.pkgs_shares_ars = self.metadata.tables.get("pkgs_shares_ars")
 
             # pkgs_shares
-            self.pkgs_shares = Table("pkgs_shares", self.metadata, autoload=True)
+            self.pkgs_shares = self.metadata.tables.get("pkgs_shares")
 
             # pkgs_rules_algos
-            self.pkgs_rules_algos = Table(
-                "pkgs_rules_algos", self.metadata, autoload=True
-            )
+            self.pkgs_rules_algos = self.metadata.tables.get("pkgs_rules_algos")
 
             # pkgs_rules_global
-            self.pkgs_rules_global = Table(
-                "pkgs_rules_global", self.metadata, autoload=True
-            )
+            self.pkgs_rules_global = self.metadata.tables.get("pkgs_rules_global")
 
             # pkgs_rules_local
-            self.pkgs_rules_local = Table(
-                "pkgs_rules_local", self.metadata, autoload=True
-            )
+            self.pkgs_rules_local = self.metadata.tables.get("pkgs_rules_local")
         except NoSuchTableError as e:
             self.logger.error(
                 "Cant load the Pkgs database : table '%s' does not exists"
@@ -204,7 +196,7 @@ class PkgsDatabase(DatabaseHelper):
         """
 
         Base = automap_base()
-        Base.prepare(self.engine_pkgsmmaster_base, reflect=True)
+        Base.prepare(autoload_with=self.engine_pkgsmmaster_base)
 
         # Only federated tables (beginning by local_) are automatically mapped
         # If needed, excludes tables from this list
@@ -216,17 +208,17 @@ class PkgsDatabase(DatabaseHelper):
             if table_name.startswith("local"):
                 setattr(self, table_name.capitalize(), mapped_class)
 
-        mapper(Packages, self.package)
-        mapper(Extensions, self.extensions)
-        mapper(Dependencies, self.dependencies)
-        mapper(Syncthingsync, self.syncthingsync)
-        mapper(Package_pending_exclusions, self.package_pending_exclusions)
-        mapper(Pkgs_shares, self.pkgs_shares)
-        mapper(Pkgs_shares_ars, self.pkgs_shares_ars)
-        mapper(Pkgs_shares_ars_web, self.pkgs_shares_ars_web)
-        mapper(Pkgs_rules_algos, self.pkgs_rules_algos)
-        mapper(Pkgs_rules_global, self.pkgs_rules_global)
-        mapper(Pkgs_rules_local, self.pkgs_rules_local)
+        self.mapper_registry.map_imperatively(Packages, self.package)
+        self.mapper_registry.map_imperatively(Extensions, self.extensions)
+        self.mapper_registry.map_imperatively(Dependencies, self.dependencies)
+        self.mapper_registry.map_imperatively(Syncthingsync, self.syncthingsync)
+        self.mapper_registry.map_imperatively(Package_pending_exclusions, self.package_pending_exclusions)
+        self.mapper_registry.map_imperatively(Pkgs_shares, self.pkgs_shares)
+        self.mapper_registry.map_imperatively(Pkgs_shares_ars, self.pkgs_shares_ars)
+        self.mapper_registry.map_imperatively(Pkgs_shares_ars_web, self.pkgs_shares_ars_web)
+        self.mapper_registry.map_imperatively(Pkgs_rules_algos, self.pkgs_rules_algos)
+        self.mapper_registry.map_imperatively(Pkgs_rules_global, self.pkgs_rules_global)
+        self.mapper_registry.map_imperatively(Pkgs_rules_local, self.pkgs_rules_local)
 
     ####################################
 

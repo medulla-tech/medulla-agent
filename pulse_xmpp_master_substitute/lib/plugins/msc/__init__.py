@@ -30,12 +30,11 @@ from sqlalchemy import (
     func,
     not_,
     distinct,
+    text,
 )
-from sqlalchemy.orm import create_session, mapper, relation
+from sqlalchemy.orm import registry, sessionmaker, scoped_session, Session
 from sqlalchemy.exc import NoSuchTableError, TimeoutError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import scoped_session
 from sqlalchemy.ext.automap import automap_base
 import datetime
 
@@ -201,7 +200,7 @@ class DatabaseHelper(Singleton):
     def _sessionm(self, func):
         @functools.wraps(func)
         def __sessionm(self, *args, **kw):
-            session_factory = sessionmaker(bind=self.engine_mscmmaster_base)
+            session_factory = sessionmaker(bind=self.engine_mscmmaster_base, expire_on_commit=False)
             sessionmultithread = scoped_session(session_factory)
             result = func(self, sessionmultithread, *args, **kw)
             sessionmultithread.remove()
@@ -246,7 +245,7 @@ class MscDatabase(DatabaseHelper):
         )
         try:
             self.engine_mscmmaster_base = create_engine(
-                "mysql://%s:%s@%s:%s/%s?charset=%s"
+                "mysql+pymysql://%s:%s@%s:%s/%s?charset=%s"
                 % (
                     self.config.msc_dbuser,
                     self.config.msc_dbpasswd,
@@ -258,17 +257,18 @@ class MscDatabase(DatabaseHelper):
                 pool_recycle=self.config.msc_dbpoolrecycle,
                 pool_size=self.config.msc_dbpoolsize,
                 pool_timeout=self.config.msc_dbpooltimeout,
-                convert_unicode=True,
             )
 
-            self.metadata = MetaData(self.engine_mscmmaster_base)
+            self.metadata = MetaData()
+            self.mapper_registry = registry()
             if not self.initTables():
                 return False
 
             self.initMappers()
-            self.metadata.create_all()
+            self.metadata.create_all(bind=self.engine_mscmmaster_base)
             # FIXME: should be removed
-            self.session = create_session(bind=self.engine_mscmmaster_base)
+            session_factory = sessionmaker(bind=self.engine_mscmmaster_base, expire_on_commit=False)
+            self.session = session_factory()
             if self.session is not None:
                 self.is_activated = True
                 self.logger.debug("Msc database connected")
@@ -288,35 +288,32 @@ class MscDatabase(DatabaseHelper):
         Initialize all SQLalchemy tables
         """
         try:
+            # Reflect all tables from the database (SQLAlchemy 2.0)
+            self.metadata.reflect(bind=self.engine_mscmmaster_base)
+            
             # commands
-            self.commands = Table(
-                "commands", self.metadata, autoload=True, extend_existing=True
-            )
+            self.commands = self.metadata.tables.get("commands")
+            
             # commands_history
-            self.commands_history = Table(
-                "commands_history", self.metadata, autoload=True
-            )
+            self.commands_history = self.metadata.tables.get("commands_history")
+            
             # target
-            self.target = Table("target", self.metadata, autoload=True)
+            self.target = self.metadata.tables.get("target")
 
             # pull_targets
-            self.pull_targets = Table("pull_targets", self.metadata, autoload=True)
+            self.pull_targets = self.metadata.tables.get("pull_targets")
 
             # bundle
-            self.bundle = Table("bundle", self.metadata, autoload=True)
+            self.bundle = self.metadata.tables.get("bundle")
 
             # commands_on_host_phase
-            self.commands_on_host_phase = Table(
-                "phase", self.metadata, autoload=True, extend_existing=True
-            )
+            self.commands_on_host_phase = self.metadata.tables.get("phase")
 
             # commands_on_host
-            self.commands_on_host = Table(
-                "commands_on_host", self.metadata, autoload=True, extend_existing=True
-            )
+            self.commands_on_host = self.metadata.tables.get("commands_on_host")
 
             # version
-            self.version = Table("version", self.metadata, autoload=True)
+            self.version = self.metadata.tables.get("version")
 
         except NoSuchTableError as e:
             self.logger.error(
@@ -343,13 +340,13 @@ class MscDatabase(DatabaseHelper):
             if table_name.startswith("local"):
                 setattr(self, table_name.capitalize(), mapped_class)
 
-        mapper(CommandsHistory, self.commands_history)
-        mapper(CommandsOnHostPhase, self.commands_on_host_phase)
-        mapper(PullTargets, self.pull_targets)
-        mapper(CommandsOnHost, self.commands_on_host)
-        mapper(Target, self.target)
-        mapper(Bundle, self.bundle)
-        mapper(Commands, self.commands)
+        self.mapper_registry.map_imperatively(CommandsHistory, self.commands_history)
+        self.mapper_registry.map_imperatively(CommandsOnHostPhase, self.commands_on_host_phase)
+        self.mapper_registry.map_imperatively(PullTargets, self.pull_targets)
+        self.mapper_registry.map_imperatively(CommandsOnHost, self.commands_on_host)
+        self.mapper_registry.map_imperatively(Target, self.target)
+        self.mapper_registry.map_imperatively(Bundle, self.bundle)
+        self.mapper_registry.map_imperatively(Commands, self.commands)
 
         # FIXME: Version is missing
 

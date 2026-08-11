@@ -19,12 +19,13 @@ from sqlalchemy import (
     Integer,
     ForeignKey,
     text,
+    inspect,
 )
-from sqlalchemy.orm import sessionmaker, Query, scoped_session, mapper
+from sqlalchemy.orm import sessionmaker, Query, scoped_session, Session
 from sqlalchemy.ext.automap import automap_base
 import functools
 
-from lib.configuration import confParameter
+from pulse_xmpp_master_substitute.lib.configuration import confParameter
 
 import traceback
 
@@ -44,7 +45,7 @@ class DatabaseHelper(Singleton):
     def _sessionm(self, func):
         @functools.wraps(func)
         def __sessionm(self, *args, **kw):
-            session_factory = sessionmaker(bind=self.engine_admin_base)
+            session_factory = sessionmaker(bind=self.engine_admin_base, expire_on_commit=False)
             sessionmultithread = scoped_session(session_factory)
             result = func(self, sessionmultithread, *args, **kw)
             sessionmultithread.remove()
@@ -95,8 +96,11 @@ class AdminDatabase(DatabaseHelper):
         )
         try:
             self.base = automap_base()
+            # NOTE: explicit driver in the URL (pymysql here — swap for
+            # mysqldb/mysqlconnector if that's what you have installed).
+            # "mysql://" alone no longer has a safe implicit default to rely on.
             self.engine_admin_base = create_engine(
-                "mysql://%s:%s@%s:%s/%s"
+                "mysql+pymysql://%s:%s@%s:%s/%s"
                 % (
                     self.config.admin_dbuser,
                     self.config.admin_dbpasswd,
@@ -104,13 +108,15 @@ class AdminDatabase(DatabaseHelper):
                     self.config.admin_dbport,
                     self.config.admin_dbname,
                 ),
-                pool_recycle=self.poolsize,
+                pool_recycle=self.poolrecycle,
                 pool_size=self.poolsize,
                 echo=self.config.admin_dbechoquery,
-                convert_unicode=True,
+                # convert_unicode was removed in modern SQLAlchemy — unicode
+                # handling is automatic now, so the argument is simply dropped.
             )
 
-            self.metadata = MetaData(self.engine_admin_base)
+            # MetaData no longer accepts a bound engine.
+            self.metadata = MetaData()
             self.Sessionadmin = sessionmaker(bind=self.engine_admin_base)
 
             self.is_activated = True
@@ -128,7 +134,8 @@ class AdminDatabase(DatabaseHelper):
             return False
 
     def map(self):
-        self.base.prepare(self.engine_admin_base, reflect=True)
+        # engine=... / reflect=True is deprecated in favor of autoload_with.
+        self.base.prepare(autoload_with=self.engine_admin_base)
 
         # Federated tables
         # If needed, excludes tables from this list
@@ -150,60 +157,57 @@ class AdminDatabase(DatabaseHelper):
             self.upd_rules = self.base.classes.upd_rules
             self.upd_list_pakage = self.base.classes.upd_list_pakage
 
-            self.version = Table("version", self.metadata, autoload=True)
+            # autoload=True -> autoload_with=<engine or connection>
+            self.version = Table(
+                "version", self.metadata, autoload_with=self.engine_admin_base
+            )
 
             return True
         except Exception:
             self.logger.error("\n%s" % (traceback.format_exc()))
             return False
 
+    @staticmethod
+    def _row_to_dict(row):
+        """Replacement for the old (pre-0.5) mapped-instance .items() behavior.
+
+        automap gives you real ORM instances, which no longer support
+        dict-style .items()/.keys() like they did in very old SQLAlchemy.
+        Rebuild the dict from the instance's mapped columns instead.
+        """
+        return {
+            c.key: getattr(row, c.key) for c in inspect(row).mapper.column_attrs
+        }
+
     @DatabaseHelper._sessionm
     def get_upd_list(self, session):
         resultproxy = session.query(self.upd_list).all()
-        return [
-            {column: value for column, value in rowproxy.items()}
-            for rowproxy in resultproxy
-        ]
+        return [self._row_to_dict(row) for row in resultproxy]
 
     @DatabaseHelper._sessionm
     def get_upd_method(self, session):
         resultproxy = session.query(self.upd_method).all()
-        return [
-            {column: value for column, value in rowproxy.items()}
-            for rowproxy in resultproxy
-        ]
+        return [self._row_to_dict(row) for row in resultproxy]
 
     @DatabaseHelper._sessionm
     def get_upd_msg_send(self, session):
         resultproxy = session.query(self.upd_msg_send).all()
-        return [
-            {column: value for column, value in rowproxy.items()}
-            for rowproxy in resultproxy
-        ]
+        return [self._row_to_dict(row) for row in resultproxy]
 
     @DatabaseHelper._sessionm
     def get_upd_package(self, session):
         resultproxy = session.query(self.upd_package).all()
-        return [
-            {column: value for column, value in rowproxy.items()}
-            for rowproxy in resultproxy
-        ]
+        return [self._row_to_dict(row) for row in resultproxy]
 
     @DatabaseHelper._sessionm
     def get_upd_rules(self, session):
         resultproxy = session.query(self.upd_rules).all()
-        return [
-            {column: value for column, value in rowproxy.items()}
-            for rowproxy in resultproxy
-        ]
+        return [self._row_to_dict(row) for row in resultproxy]
 
     @DatabaseHelper._sessionm
     def get_upd_list_pakage(self, session):
         resultproxy = session.query(self.upd_list_pakage).all()
-        return [
-            {column: value for column, value in rowproxy.items()}
-            for rowproxy in resultproxy
-        ]
+        return [self._row_to_dict(row) for row in resultproxy]
 
     @DatabaseHelper._sessionm
     def _ensure_inventory_entity_rules_table(self, session):

@@ -15,19 +15,12 @@ import logging
 from sqlalchemy import (
     create_engine,
     MetaData,
+    text,
 )
 from sqlalchemy.orm import (
     sessionmaker,
+    Session,
 )
-
-try:
-    from sqlalchemy.orm.util import _entity_descriptor
-except ImportError:
-    from sqlalchemy.orm.base import _entity_descriptor
-try:
-    from sqlalchemy.sql.expression import ColumnOperators
-except ImportError:
-    from sqlalchemy.sql.operators import ColumnOperators
 from sqlalchemy.exc import OperationalError
 from lib.configuration import confParameter
 
@@ -87,30 +80,25 @@ class Glpi:
 
         try:
             self.engine_glpi = create_engine(
-                f"mysql://{self.config.glpi_dbuser}:{self.config.glpi_dbpasswd}@{self.config.glpi_dbhost}:{self.config.glpi_dbport}/{self.config.glpi_dbname}?charset={self.config.charset}",
+                f"mysql+pymysql://{self.config.glpi_dbuser}:{self.config.glpi_dbpasswd}@{self.config.glpi_dbhost}:{self.config.glpi_dbport}/{self.config.glpi_dbname}?charset={self.config.charset}",
                 pool_recycle=self.config.glpi_dbpoolrecycle,
                 pool_size=self.config.glpi_dbpoolsize,
                 pool_timeout=self.config.xmpp_dbpooltimeout,
-                convert_unicode=True,
             )
 
             try:
-                self._glpi_version = (
-                    self.engine_glpi.execute("SELECT version FROM glpi_configs")
-                    .fetchone()[0]
-                    .replace(" ", "")
-                )
+                with self.engine_glpi.connect() as conn:
+                    result = conn.execute(text("SELECT version FROM glpi_configs"))
+                    row = result.fetchone()
+                    self._glpi_version = row[0].replace(" ", "")
             except OperationalError:
-                self._glpi_version = (
-                    self.engine_glpi.execute(
-                        'SELECT value FROM glpi_configs WHERE name = "version"'
-                    )
-                    .fetchone()[0]
-                    .replace(" ", "")
-                )
+                with self.engine_glpi.connect() as conn:
+                    result = conn.execute(text('SELECT value FROM glpi_configs WHERE name = "version"'))
+                    row = result.fetchone()
+                    self._glpi_version = row[0].replace(" ", "")
 
-            self.Session = sessionmaker(bind=self.engine_glpi)
-            self.metadata = MetaData(self.engine_glpi)
+            self.Session = sessionmaker(bind=self.engine_glpi, expire_on_commit=False)
+            self.metadata = MetaData()
 
             # Instanciation de la bonne version de GLPI
             versions_map = {
