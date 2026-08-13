@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 import socket
+import ssl
 from typing import Optional, Dict, List, Union, Any
 import glob
 import sys
@@ -865,8 +866,8 @@ class MUCBot(ClientXMPP):
         self.add_event_handler("register", self.register)
         self.add_event_handler("connecting", self.handle_connecting)
         self.add_event_handler("connected", self.handle_connected)
-        self.add_event_handler("connection_failed", self.handle_connection_failed)
-        self.add_event_handler("disconnected", self.handle_disconnected)
+        #self.add_event_handler("connection_failed", self.handle_connection_failed)
+        #self.add_event_handler("disconnected", self.handle_disconnected)
 
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
@@ -1332,7 +1333,8 @@ class MUCBot(ClientXMPP):
         self.loop.stop()
 
     def handle_connection_failed(self, data):
-        logger.debug(f"handle_connection_failed {self.server_address}")
+        logger.debug(f"handle_connection_failed {self.server_address} - data: {data}")
+        logger.error(f"Connection failed to {self.server_address}: {data}")
         self.disconnect()
 
     def handle_connecting(self, data):
@@ -4911,15 +4913,38 @@ class process_xmpp_agent:
             self.logger.debug("/---------------------------------\\")
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
             self.logger.debug("\---------------------------------/")
+            
+            # Force TLS configuration before connecting
+            xmpp.use_tls = True
+            xmpp.use_ssl = False
+            xmpp.ca_certs = None
+            self.logger.debug(f"Pre-connection TLS config: use_tls={xmpp.use_tls}, use_ssl={xmpp.use_ssl}, ca_certs={xmpp.ca_certs}")
+
+            # Disable certificate verification - create custom SSL context
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            xmpp.ssl_context = ssl_context
+            self.logger.debug(f"SSL context: verify_mode={xmpp.ssl_context.verify_mode}, check_hostname={xmpp.ssl_context.check_hostname}")
+
             try:
-                xmpp.connect(address=xmpp.server_address)
+                self.logger.debug(f"Attempting connection to {xmpp.server_address[0]}:{xmpp.server_address[1]}")
+                xmpp.connect(host=xmpp.server_address[0], port=xmpp.server_address[1])
+                self.logger.debug("Connection call completed")
             except Exception as e:
-                self.logger.error("Connection failed: %s. Retrying..." % e)
+                self.logger.error(f"Connection failed: {type(e).__name__}: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
             try:
                 loop = asyncio.get_event_loop()
+                self.logger.debug("Starting event loop")
                 loop.run_forever()
-            except RuntimeError:
-                self.logger.error("RuntimeError during connection")
+            except RuntimeError as e:
+                self.logger.error(f"RuntimeError during connection: {e}")
+            except Exception as e:
+                self.logger.error(f"Unexpected error in event loop: {type(e).__name__}: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
             finally:
                 # loop.close()
                 pass

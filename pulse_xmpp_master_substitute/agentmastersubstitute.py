@@ -9,6 +9,7 @@
 import sys
 import os
 import logging
+import asyncio
 from lib.configuration import confParameter
 from lib.utils import ipfromdns
 from lib.logcolor import add_coloring_to_emit_ansi
@@ -146,15 +147,16 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
     xmpp.config = confParameter(optfileconf)
     xmpp.address = (ipfromdns(xmpp.config.Server), int(xmpp.config.Port))
     try:
-        xmpp.connect(address=xmpp.address, force_starttls=None)
+        xmpp.connect(host=xmpp.address[0], port=xmpp.address[1])
     except Exception as e:
         logging.error("Connection failed: %s. Retrying..." % e)
     try:
-        xmpp.loop.run_forever()
-    except RuntimeError:
-        logging.error("RuntimeError during connection")
+        asyncio.get_event_loop().run_forever()
+    except (KeyboardInterrupt, RuntimeError) as e:
+        logging.error("Error during connection: %s" % e)
     finally:
-        xmpp.loop.close()
+        xmpp.disconnect()
+        asyncio.get_event_loop().close()
 
 
 # def handler_CTRL(signum, frame):

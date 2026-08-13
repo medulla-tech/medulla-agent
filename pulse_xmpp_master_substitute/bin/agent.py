@@ -22,6 +22,7 @@ import slixmpp
 import sys
 import os
 import asyncio
+import ssl
 import zlib
 
 if sys.platform == "win32":
@@ -83,6 +84,19 @@ class MUCBot(slixmpp.ClientXMPP):
             self.config.passwordconnection,
         )
 
+        # Configure TLS: STARTTLS enabled (try to upgrade to TLS)
+        self.use_tls = True       # Enable STARTTLS
+        self.use_ssl = False      # Don't start with SSL/TLS immediately
+        self.ca_certs = None      # Skip certificate verification
+        self.logger.debug(f"TLS Configuration: use_tls={self.use_tls}, use_ssl={self.use_ssl}, ca_certs={self.ca_certs}")
+        
+        # Disable certificate verification - create custom SSL context
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        self.ssl_context = ssl_context
+        self.logger.debug(f"SSL context: verify_mode={self.ssl_context.verify_mode}, check_hostname={self.ssl_context.check_hostname}")
+
         # update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
         logger.debug("slixmpp log level is %s" % self.config.log_level_slixmpp)
@@ -99,8 +113,8 @@ class MUCBot(slixmpp.ClientXMPP):
         self.add_event_handler("register", self.register)
         # self.add_event_handler("connecting", self.handle_connecting)
         self.add_event_handler("connected", self.handle_connected)
-        self.add_event_handler("connection_failed", self.handle_connection_failed)
-        self.add_event_handler("disconnected", self.handle_disconnected)
+        #self.add_event_handler("connection_failed", self.handle_connection_failed)
+        #self.add_event_handler("disconnected", self.handle_disconnected)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
 

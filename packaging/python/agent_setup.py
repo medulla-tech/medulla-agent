@@ -31,7 +31,9 @@ setup(
         "pulse_xmpp_agent.lib.ressources.filebrowser.js",
     ],
     classifiers=[
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
         "Operating System :: OS Independent",
     ],
@@ -51,7 +53,7 @@ setup(
     ]
     + (
         [
-            "slixmpp >= 1.8.2",
+            "slixmpp >= 1.10.0",
             "pathlib >= 1.0.1",
             "pypiwin32 >= 223",
             "comtypes >= 1.1.14",
@@ -61,7 +63,7 @@ setup(
         ]
         if "win" in sys.platform
         else [
-            "slixmpp == 1.8.5",
+            "slixmpp >= 1.10.0",
             "posix_ipc >= 1.0.5",
             "lmdb",
             "netifaces_plus",

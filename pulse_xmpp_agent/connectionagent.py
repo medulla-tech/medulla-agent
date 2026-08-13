@@ -13,6 +13,7 @@ from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp.xmlstream.stanzabase import ET
 import slixmpp
 import asyncio
+import ssl
 import configparser
 
 if sys.platform == "win32":
@@ -179,7 +180,7 @@ class MUCBot(ClientXMPP):
         self.add_event_handler("register", self.register)
         self.add_event_handler("connecting", self.handle_connecting)
         self.add_event_handler("connection_failed", self.handle_connection_failed)
-        self.add_event_handler("disconnected", self.handle_disconnected)
+        #self.add_event_handler("disconnected", self.handle_disconnected)
         self.add_event_handler("connected", self.handle_connected)
 
         # _______________________ Getion connection agent _____________________
@@ -1015,7 +1016,8 @@ class MUCBot(ClientXMPP):
         Args:
             data: The event data.
         """
-        print("CONNECTION FAILED")
+        logger.error(f"CONNECTION FAILED: {data}")
+        print(f"CONNECTION FAILED: {data}")
         loop1 = asyncio.get_event_loop()
         loop1.stop()
 
@@ -1315,14 +1317,28 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             logger.debug("---------------------------------------------------------------------")
             logger.debug("----- CONNECTION XMPP CONFIGURATEUR {ip_server}:{tg.confport}   -----")
             logger.debug("---------------------------------------------------------------------")
+            
+            # Force TLS configuration before connecting
+            xmpp.use_tls = True
+            xmpp.use_ssl = False
+            xmpp.ca_certs = None
+            logger.debug(f"Pre-connection TLS config: use_tls={xmpp.use_tls}, use_ssl={xmpp.use_ssl}, ca_certs={xmpp.ca_certs}")
+
+            # Disable certificate verification - create custom SSL context
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            xmpp.ssl_context = ssl_context
+            logger.debug(f"SSL context: verify_mode={xmpp.ssl_context.verify_mode}, check_hostname={xmpp.ssl_context.check_hostname}")
+            
             try:
                 logger.debug("connect TO ")
-                xmpp.connect(address=xmpp.address, force_starttls=None)
+                xmpp.connect(host=xmpp.address[0], port=xmpp.address[1])
             except Exception as e:
-                logging.error("Connection failed: %s. Retrying..." % e)
-                logging.error("Connection to: IP %s, Port %s." % (ip_server, tg.confport))
+                logger.error("Connection failed: %s. Retrying..." % e)
+                logger.error("Connection to: IP %s, Port %s." % (ip_server, tg.confport))
             try:
-                xmpp.loop.run_forever()
+                asyncio.get_event_loop().run_forever()
             except RuntimeError:
                 logging.error("RuntimeError during connection")
             finally:
