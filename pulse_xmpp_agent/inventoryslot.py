@@ -17,11 +17,11 @@ import time
 import urllib.request
 import signal
 from threading import Thread
-import imp
+import importlib
 
 logger = logging.getLogger()
 if sys.version_info < (3, 0):
-    imp.reload(sys)
+    importlib.reload(sys)
     sys.setdefaultencoding("utf8")
 else:
     raw_input = input
