@@ -524,7 +524,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 agenttype,
                 agentsubtitutename,
             )
-            machines = session.execute(sql)
+            machines = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -582,7 +582,7 @@ class XmppMasterDatabase(DatabaseHelper):
             state,
             dateend,
         )
-        machines = session.execute(sql)
+        machines = session.execute(text(sql))
         session.commit()
         session.flush()
         result = [x for x in machines]
@@ -641,7 +641,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 set_search,
                 nowdate,
             )
-            machines = session.execute(sql)
+            machines = session.execute(text(sql))
             session.commit()
             session.flush()
             result = [x for x in machines]
@@ -694,7 +694,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 state,
                 sql_id,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -788,7 +788,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 status,
                 sessionid,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -804,7 +804,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 sessionid,
             )
             print(sql)
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -823,7 +823,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 grp,
                 cmd,
             )
-            req = session.execute(sql)
+            req = session.execute(text(sql))
             session.commit()
             session.flush()
             ret = [elt for elt in req]
@@ -1019,7 +1019,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 command_result,
                 sessionid,
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -2156,7 +2156,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 WHERE `xmppmaster`.`relayserver`.`nameserver`='%s';"
                         % hostname
                     )
-                    session.execute(sql)
+                    session.execute(text(sql))
                     session.commit()
                     session.flush()
                 else:
@@ -2169,7 +2169,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         new_machine.id,
                     )
                     self.logger.debug(sql)
-                    session.execute(sql)
+                    session.execute(text(sql))
                     session.commit()
                     session.flush()
             except Exception as e:
@@ -2190,7 +2190,7 @@ class XmppMasterDatabase(DatabaseHelper):
               jiduser LIKE ('%s');""" % (
             jiduser
         )
-        req = session.execute(sql)
+        req = session.execute(text(sql))
         session.commit()
         session.flush()
         ret = [m[0] for m in req]
@@ -2214,7 +2214,7 @@ class XmppMasterDatabase(DatabaseHelper):
               jiduser LIKE ('%s');""" % (
             self.uuidtoid(id_inventory)
         )
-        req = session.execute(sql)
+        req = session.execute(text(sql))
         session.commit()
         session.flush()
         ret = [m[0] for m in req]
@@ -2236,7 +2236,7 @@ class XmppMasterDatabase(DatabaseHelper):
             jiduser,
             self.uuidtoid(id_inventory),
         )
-        req = session.execute(sql)
+        req = session.execute(text(sql))
         session.commit()
         session.flush()
         ret = [m[0] for m in req]
@@ -2448,7 +2448,7 @@ class XmppMasterDatabase(DatabaseHelper):
             % idcommand
         )
         try:
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             # result = [x for x in result]
@@ -2621,7 +2621,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 WHERE `id`='%s';"""
                     % t.id
                 )
-                session.execute(sql)
+                session.execute(text(sql))
                 session.commit()
                 session.flush()
             except Exception as e:
@@ -2901,7 +2901,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             limit 1;""" % (
                 jidmachine
             )
-            resultproxy = session.execute(sql)
+            resultproxy = session.execute(text(sql))
             session.commit()
             session.flush()
             if not resultproxy:
@@ -2936,7 +2936,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 jidrelay,
                 title,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -2996,7 +2996,7 @@ class XmppMasterDatabase(DatabaseHelper):
             iddeploy
         )
         # print "incr_count_transfert_terminate", sql
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -3024,7 +3024,7 @@ class XmppMasterDatabase(DatabaseHelper):
             jidmachine,
         )
         # print "update_transfert_progress", sql
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -3050,7 +3050,7 @@ class XmppMasterDatabase(DatabaseHelper):
             nbtransfert
         )
         # print "get_ars_for_pausing_syncthing"#, sql
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         if result is None:
@@ -3073,7 +3073,7 @@ class XmppMasterDatabase(DatabaseHelper):
             idars,
         )
         # print "update_ars_status", sql
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -3090,7 +3090,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 limit 1;""" % (
             packagename
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         resultat = [x for x in result]
@@ -3112,7 +3112,7 @@ class XmppMasterDatabase(DatabaseHelper):
             idpartage,
             ars,
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         resultat = [x for x in result]
@@ -3134,7 +3134,7 @@ class XmppMasterDatabase(DatabaseHelper):
             idpartage,
             numcluster,
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         resultat = [x for x in result]
@@ -3172,7 +3172,7 @@ class XmppMasterDatabase(DatabaseHelper):
             jidars,
             numcluster,
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         resultat = [x for x in result]
@@ -3302,7 +3302,7 @@ class XmppMasterDatabase(DatabaseHelper):
         sql = sql + setvalues + "\nGROUP BY progress ;"
 
         # print sql
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [(x[0], x[1]) for x in result]
@@ -3325,7 +3325,7 @@ class XmppMasterDatabase(DatabaseHelper):
             idgrp,
             idcmd,
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         re = [x for x in result]
@@ -3365,7 +3365,7 @@ class XmppMasterDatabase(DatabaseHelper):
             % jidrelay
         )
         # print "getnumclusterforars", sql
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result][0]
@@ -3394,7 +3394,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     xmppmaster.syncthing_deploy_group.id = %s ;"""
             % iddeploy
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [y for y in [x for x in result]]
@@ -3422,7 +3422,7 @@ class XmppMasterDatabase(DatabaseHelper):
             listidmachine,
         )
         print(sql)
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -3471,7 +3471,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 % status
             )
         sql = sql + ";"
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -3509,7 +3509,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             LIMIT 1);"""
             % jidars
         )
-        listars = session.execute(sql)
+        listars = session.execute(text(sql))
         session.commit()
         session.flush()
         cluster = {"ars": [], "numcluster": -1, "namecluster": "", "choose": ""}
@@ -3548,7 +3548,7 @@ class XmppMasterDatabase(DatabaseHelper):
             )
 
         sql = sql + " GROUP BY xmppmaster.has_cluster_ars.id_cluster;"
-        listars = session.execute(sql)
+        listars = session.execute(text(sql))
         session.commit()
         session.flush()
         cluster = {}
@@ -3574,7 +3574,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 WHERE `startcmd`<= "%s" and syncthing = 1;"""
             % datenow
         )
-        session.execute(sql)
+        session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -3587,7 +3587,7 @@ class XmppMasterDatabase(DatabaseHelper):
             iddeploy,
         )
 
-        session.execute(sql)
+        session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -3608,7 +3608,7 @@ class XmppMasterDatabase(DatabaseHelper):
             jidmachine,
             uidpackage,
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -3977,7 +3977,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     xmppmaster.machines
                 WHERE
                     `machines`.`agenttype` = 'relayserver';"""
-        presencelist = session.execute(sql)
+        presencelist = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -4003,7 +4003,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 LIMIT %s;"""
             % nblastline
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -4046,7 +4046,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 state,
                 sessionid,
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -4155,7 +4155,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     (`machines_id` = '%s');"""
             % machines_id
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return result
@@ -4227,7 +4227,7 @@ class XmppMasterDatabase(DatabaseHelper):
             "SELECT count(*) as nb FROM xmppmaster.relayserver where "
             "`relayserver`.`nameserver`='%s';" % nameserver
         )
-        nb = session.execute(sql)
+        nb = session.execute(text(sql))
         session.commit()
         session.flush()
         result = [x for x in nb][0][0]
@@ -4266,7 +4266,7 @@ class XmppMasterDatabase(DatabaseHelper):
                       WHERE `xmppmaster`.`relayserver`.`nameserver`='%s';"
                     % (enabled, classutil, nameserver)
                 )
-                session.execute(sql)
+                session.execute(text(sql))
                 session.commit()
                 session.flush()
             except Exception as e:
@@ -4312,7 +4312,7 @@ class XmppMasterDatabase(DatabaseHelper):
         country_name = self._iso_8859_1__to__utf8(country_name)
         createuser = datetime.now()
         try:
-            nb = session.execute(sql)
+            nb = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -4361,7 +4361,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     "select id from `xmppmaster`.`users` WHERE `xmppmaster`.`users`.`hostname`='%s';"
                     % hostname
                 )
-                result = session.execute(sql)
+                result = session.execute(text(sql))
                 result = [x for x in result][0]
                 session.commit()
                 session.flush()
@@ -4372,7 +4372,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     def get_count(self, q):
         count_q = q.statement.with_only_columns([func.count()]).order_by(None)
-        count = q.session.execute(count_q).scalar()
+        count = q.session.execute(text(count_q)).scalar()
         return count
 
     def get_count1(self, q):
@@ -4686,7 +4686,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
         lentaillerequette = self.get_count(deploylog)
 
-        result = session.execute(count)
+        result = session.execute(text(count))
         session.commit()
         session.flush()
         lenrequest = [x for x in result]
@@ -4927,7 +4927,7 @@ class XmppMasterDatabase(DatabaseHelper):
             FROM
                 xmppmaster.machines
             order BY `groupdeploy` ASC, `agenttype` DESC;"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -4976,7 +4976,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     xmppmaster.machines
                 WHERE
                     machines.agenttype = 'relayserver';"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -4994,7 +4994,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         AND machines.groupdeploy = '%s';"""
             % groupdeploy
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5012,7 +5012,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     order BY  `agenttype` DESC;"""
             % groupdeploy
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5045,7 +5045,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 user,
             )
 
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -5068,7 +5068,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 LIMIT 1;"""
             % user
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -5091,7 +5091,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 LIMIT 1;"""
             % user
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -5114,7 +5114,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 LIMIT 1;"""
             % user
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -5137,7 +5137,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 LIMIT 1;"""
             % user
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -5208,7 +5208,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 )
                 .limit(1)
             )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5315,7 +5315,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 re.escape(username),
                 enabled,
             )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5377,7 +5377,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 hostname,
                 enabled,
             )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         ret = [y for y in result]
@@ -5403,7 +5403,7 @@ class XmppMasterDatabase(DatabaseHelper):
             GROUP BY `machines`.`groupdeploy`
             ORDER BY nb DESC
             LIMIT 1;"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5440,7 +5440,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 enabled,
                 subnetmachine,
             )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5491,7 +5491,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 netmaskaddress,
                 enabled,
             )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5550,7 +5550,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 subnetmachine,
                 enabled,
             )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5567,7 +5567,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     id = %s;"""
             % id
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return list([x for x in result][0])
@@ -5584,7 +5584,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     ipconnection = '%s';"""
             % ip
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -5619,7 +5619,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`);""" % (
                 enabled
             )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5631,7 +5631,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 FROM
                     xmppmaster.rules
                 ORDER BY level;"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5685,7 +5685,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         `xmppmaster`.`has_guacamole`.`machine_id` = '%s';"""
             % machine_id
         )
-        session.execute(sql)
+        session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -5713,7 +5713,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     ;"""
             % moderelayserver
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5734,7 +5734,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 tablename,
                 basename,
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             return [x[0] for x in result]
@@ -5779,7 +5779,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                         ON xmppmaster.has_cluster_ars.id_ars = xmppmaster.relayserver.id
                                 ORDER BY RAND()) selectrandonlistars
                             GROUP BY cluster) selectcluster);"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         a = []
@@ -5803,7 +5803,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     jid
                 FROM
                     xmppmaster.machines;"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -5832,7 +5832,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     "SQL request to get the mac addresses list "
                     "for the presence machine #%s" % id_machine
                 )
-            listMacAdress = session.execute(sql)
+            listMacAdress = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -5857,7 +5857,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         LIMIT 1;"""
                 % uuid
             )
-            jidmachine = session.execute(sql)
+            jidmachine = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -5881,7 +5881,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 id_machineinventory,
                 idmachine,
             )
-            updatedb = session.execute(sql)
+            updatedb = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -5904,7 +5904,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 groupdeploy,
                 idmachine,
             )
-            updatedb = session.execute(sql)
+            updatedb = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -6008,7 +6008,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 uuid,
                 sql_id,
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             return result
@@ -6025,7 +6025,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     groupdeploy
                 FROM
                     xmppmaster.machines;"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         listrs = [x for x in result]
@@ -6046,7 +6046,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     xmppmaster.machines.agenttype = 'machine'
                 GROUP BY
                     groupdeploy;"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         listmachinebyRS = [x for x in result]
@@ -6115,7 +6115,7 @@ class XmppMasterDatabase(DatabaseHelper):
         ORDER BY id;""" % (
             sessiondeploy
         )
-        step = session.execute(sql)
+        step = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -6136,7 +6136,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     enabled = '1' and
                     agenttype = 'machine' and uuid_inventorymachine IS NOT NULL AND uuid_inventorymachine!='';"""
 
-        presencelist = session.execute(sql)
+        presencelist = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -6178,7 +6178,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         uuid_inventorymachine IS NOT NULL %s;"""
                 % strpresence
             )
-            presencelist = session.execute(sql)
+            presencelist = session.execute(text(sql))
             session.commit()
             session.flush()
             return [x[0] for x in presencelist]
@@ -6224,7 +6224,7 @@ class XmppMasterDatabase(DatabaseHelper):
                  WHERE
                     agenttype='machine' and uuid_inventorymachine IS NOT NULL;"""
 
-        presencelist = session.execute(sql)
+        presencelist = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -6251,7 +6251,7 @@ class XmppMasterDatabase(DatabaseHelper):
                  WHERE
                     agenttype='machine' and uuid_inventorymachine IS NOT NULL ;"""
 
-        presencelist = session.execute(sql)
+        presencelist = session.execute(text(sql))
         session.commit()
         session.flush()
         try:
@@ -6294,7 +6294,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 presence,
                 user,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             sql = """UPDATE
                         `xmppmaster`.`relayserver`
                     SET
@@ -6304,7 +6304,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 presence,
                 user,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -6339,7 +6339,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 reconf,
                 user,
             )
-            session.execute(set_reconf)
+            session.execute(text(set_reconf))
             session.commit()
             session.flush()
         except Exception as e:
@@ -6364,7 +6364,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         xmppmaster.machines.jid = '%s';"""
                 % jid
             )
-            id = session.execute(sql)
+            id = session.execute(text(sql))
             session.commit()
             session.flush()
             result = [x for x in id][0]
@@ -6391,9 +6391,9 @@ class XmppMasterDatabase(DatabaseHelper):
                                 `xmppmaster`.`relayserver`.`nameserver` = '%s';"""
                     % result[1]
                 )
-                session.execute(sql2)
-            session.execute(sql)
-            session.execute(sql3)
+                session.execute(text(sql2))
+            session.execute(text(sql))
+            session.execute(text(sql3))
             session.commit()
             session.flush()
         except IndexError:
@@ -6418,7 +6418,7 @@ class XmppMasterDatabase(DatabaseHelper):
               jid LIKE ('%s%%');""" % (
             user
         )
-        presencejid = session.execute(sql)
+        presencejid = session.execute(text(sql))
         session.commit()
         session.flush()
         ret = [m[0] for m in presencejid]
@@ -6440,7 +6440,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         xmppmaster.machines.jid like('%s@%%');"""
                 % jiduser
             )
-            id = session.execute(sql)
+            id = session.execute(text(sql))
             session.commit()
             session.flush()
             result = [x for x in id][0]
@@ -6466,9 +6466,9 @@ class XmppMasterDatabase(DatabaseHelper):
                                 `xmppmaster`.`relayserver`.`nameserver` = '%s';"""
                     % result[1]
                 )
-                session.execute(sql2)
-            session.execute(sql)
-            session.execute(sql3)
+                session.execute(text(sql2))
+            session.execute(text(sql))
+            session.execute(text(sql3))
             session.commit()
             session.flush()
         except IndexError:
@@ -6674,7 +6674,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 GROUP BY machines.id;"""
                 % hostname.strip()
             )
-            machines = session.execute(sql)
+            machines = session.execute(text(sql))
         except Exception as e:
             logging.getLogger().error(
                 "function getMachinedeployexistonHostname %s" % str(e)
@@ -6900,7 +6900,7 @@ class XmppMasterDatabase(DatabaseHelper):
               jid LIKE ('%s%%');""" % (
             user
         )
-        presencejid = session.execute(sql)
+        presencejid = session.execute(text(sql))
         session.commit()
         session.flush()
         ret = [m[0] for m in presencejid]
@@ -7156,7 +7156,7 @@ class XmppMasterDatabase(DatabaseHelper):
             HAVING nb != 0
                 AND COALESCE(`machines`.`groupdeploy`, '') <> ''
             ORDER BY nb DESC;"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [x for x in result]
@@ -7183,7 +7183,7 @@ class XmppMasterDatabase(DatabaseHelper):
             uuid_inventory
         )
 
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [element for element in result]
@@ -7203,7 +7203,7 @@ class XmppMasterDatabase(DatabaseHelper):
             machines
         WHERE
             kiosk_presence = 'True';"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -7248,7 +7248,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         ORDER BY type , totsub;""" % (
                     arsname
                 )
-                resultproxy = session.execute(sql)
+                resultproxy = session.execute(text(sql))
                 session.commit()
                 session.flush()
                 for listconfsubstituteitem in listconfsubstitute["conflist"]:
@@ -7280,7 +7280,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         `id` IN (%s);""" % ",".join(
                     [str(x) for x in incrementeiscount]
                 )
-                result = session.execute(sql)
+                result = session.execute(text(sql))
                 session.commit()
                 session.flush()
         except Exception as e:
@@ -7294,7 +7294,7 @@ class XmppMasterDatabase(DatabaseHelper):
             query = select(RelayServer.jid, RelayServer.ssh_public_key).where(
                 RelayServer.jid.in_(jids)
             )
-            result = session.execute(query).fetchall()
+            result = session.execute(text(query)).fetchall()
         except Exception as e:
             logger.error(f"Voilà mon erreur {e}")
             return []
@@ -7323,7 +7323,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     LIMIT 1;"""
                 % user
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             re = [x for x in result]
@@ -7359,7 +7359,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 status,
                 user,
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -7386,7 +7386,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         presence,
                         mach[1],
                     )
-                    session.execute(sql)
+                    session.execute(text(sql))
                     session.commit()
                     session.flush()
                 except Exception as e:
@@ -7442,7 +7442,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 user,
                 bare_jid,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -7585,7 +7585,7 @@ class XmppMasterDatabase(DatabaseHelper):
     WHERE
         xmppmaster.syncthing_deploy_group.dateend < NOW()
     GROUP BY xmppmaster.syncthing_ars_cluster.numcluster; """
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         ret = [
@@ -7618,7 +7618,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             id_ars = %s);"""
             % ars_id
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [
@@ -7636,7 +7636,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 WHERE id_cluster = %s;"""
             % cluster
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [
@@ -7650,7 +7650,7 @@ class XmppMasterDatabase(DatabaseHelper):
             """DELETE FROM `xmppmaster`.`syncthing_deploy_group` WHERE  id= %s;"""
             % iddeploy
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
 
@@ -7785,7 +7785,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 valueset,
                 liststr,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -7860,7 +7860,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 version,
                 hostname,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -7908,7 +7908,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 jid,
                 nb,
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             return [
@@ -7965,7 +7965,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 jid,
                 day,
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
             # We set nb to false to not use the last informations
@@ -8171,7 +8171,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     id = %s limit 1;"""
             % id_mon_machine
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         if not result:
@@ -8265,7 +8265,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 xmppmaster.mon_event.id = %s;""" % (
             id_device
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         if not result:
@@ -9352,7 +9352,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 value_status,
                 id_event,
             )
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -9381,7 +9381,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 id_rule,
             )
 
-            result = session.execute(sql)
+            result = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -9473,7 +9473,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     xmppmaster.mon_device_service
                 WHERE
                     enable = 1;"""
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         return [i[0].lower() for i in result]
@@ -9512,7 +9512,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             agenttype,
             device_type,
         )
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         if result:
@@ -9695,7 +9695,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             )
         sql += ";"
         logging.getLogger().error(sql)
-        result = session.execute(sql)
+        result = session.execute(text(sql))
         session.commit()
         session.flush()
         resultlist = []
@@ -9892,7 +9892,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             nblimit,
         )
         machines_jid_for_updating = []
-        borne = session.execute(sql)
+        borne = session.execute(text(sql))
 
         result = [x for x in borne][0]
         minid = result[0]
@@ -9909,7 +9909,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 maxid,
                 status,
             )
-            resultquery = session.execute(sql)
+            resultquery = session.execute(text(sql))
 
             for record_updating_machine in resultquery:
                 machines_jid_for_updating.append(
@@ -9927,7 +9927,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 maxid,
                 status,
             )
-            resultquery = session.execute(sql)
+            resultquery = session.execute(text(sql))
 
             session.commit()
             session.flush()
@@ -10037,7 +10037,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             sql = delete(Up_action_update_packages).where(
                 Up_action_update_packages.id.in_(idlist)
             )
-            resultquery = session.execute(sql)
+            resultquery = session.execute(text(sql))
             session.commit()
             session.flush()
 
@@ -10383,7 +10383,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             updateid IN (%s); """ % ",".join(
                     indata
                 )
-                req = session.execute(sql)
+                req = session.execute(text(sql))
                 session.commit()
                 session.flush()
                 ret = [elt[0] for elt in req]
@@ -10413,7 +10413,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             updateid IN (%s); """ % ",".join(
                     indata
                 )
-                req = session.execute(sql)
+                req = session.execute(text(sql))
                 session.commit()
                 session.flush()
                 ret = self._return_dict_from_dataset_mysql(req)
@@ -10757,7 +10757,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         # Exécution de la requête et validation des changements
         try:
-            req = session.execute(sql)
+            req = session.execute(text(sql))
             session.commit()
             session.flush()
         except Exception as e:
@@ -10836,7 +10836,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     xmppmaster.up_list_produit
                 WHERE
                     enable = 1; """
-            req = session.execute(sql)
+            req = session.execute(text(sql))
             session.commit()
             session.flush()
             ret = self._return_dict_from_dataset_mysql(req)
@@ -11370,7 +11370,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             )
 
             # Exécute la requête SQL.
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -11402,7 +11402,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 updateidreduit,
                 updateidreduit,
             )
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -11425,7 +11425,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 updateid
             )
             self.logger.info("delete_in_white_list : %s" % sql)
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -11460,7 +11460,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 )
                 sql = sql + filter
             sql += ";"
-            resultproxy = session.execute(sql)
+            resultproxy = session.execute(text(sql))
             session.commit()
             session.flush()
             return [rowproxy._asdict() for rowproxy in resultproxy]
@@ -11483,7 +11483,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 updateid
             )
             self.logger.info("delete_in_white_list : %s" % sql)
-            session.execute(sql)
+            session.execute(text(sql))
             session.commit()
             session.flush()
             return True
@@ -12141,7 +12141,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
     and
     d.state not regexp ("(SUCCESS)|(ABORT)|(ERROR)")"""%(jid, package_uuid)
 
-        query = session.execute(sql).one()
+        query = session.execute(text(sql)).one()
         count = query[0]
 
         return bool(count is not None and count != 0)
@@ -12348,7 +12348,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
                 GROUP BY xe.id;
             """
 
-            total_os_result = session.execute(total_os_sql).fetchall()
+            total_os_result = session.execute(text(total_os_sql)).fetchall()
             for row in total_os_result:
                 results["entity"].setdefault(
                     row.complete_name, {"count": int(row.count)}
@@ -12394,7 +12394,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
                         ORDER BY xe.complete_name , os;
             """
 
-            entity_result = session.execute(entity_sql).fetchall()
+            entity_result = session.execute(text(entity_sql)).fetchall()
             for row in entity_result:
                 # initialisation
                 results["entity"].setdefault(row.complete_name, {})
@@ -12524,7 +12524,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
 
         # Count the total number of matching elements using FOUND_ROWS()
         sql_count = text("SELECT FOUND_ROWS();")
-        ret_count = session.execute(sql_count).scalar()
+        ret_count = session.execute(text(sql_count)).scalar()
 
         # Extract common fields from the first row
         # common_entity_id = entity_result[0].entity_id if entity_result else ""
@@ -13342,7 +13342,7 @@ where d.jidmachine='%s' and c.package_id = '%s'
             LIMIT 1
         """)
 
-        row = session.execute(query).fetchone()
+        row = session.execute(text(query)).fetchone()
         if not row:
             return None
 
