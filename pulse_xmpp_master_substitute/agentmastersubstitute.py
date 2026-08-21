@@ -129,7 +129,7 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
         {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
     )
     xmpp.register_plugin("xep_0077")  # In-band Registration
-    xmpp["xep_0077"].force_registration = True
+    xmpp.plugin["xep_0077"].force_registration = True
 
     # Calculer la longueur totale de la ligne centrale
     total_length = (
@@ -142,7 +142,7 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
     xmpp.config = confParameter(optfileconf)
     xmpp.address = (ipfromdns(xmpp.config.Server), int(xmpp.config.Port))
     try:
-        xmpp.connect(address=xmpp.address, force_starttls=None)
+        xmpp.connect(host=xmpp.address[0], port=xmpp.address[1])
     except Exception as e:
         logging.error("Connection failed: %s. Retrying..." % e)
     try:

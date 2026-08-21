@@ -1307,7 +1307,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
                 {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
             )
             xmpp.register_plugin("xep_0077")  # In-band Registration
-            xmpp["xep_0077"].force_registration = True
+            xmpp.plugin["xep_0077"].force_registration = True
 
             # Connect to the XMPP server and start processing XMPP
             logger.debug(f"Connecting to {ip_server}:{tg.confport}")
@@ -1320,16 +1320,13 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             logger.debug("---------------------------------------------------------------------")
             logger.debug("----- CONNECTION XMPP CONFIGURATEUR {ip_server}:{tg.confport}   -----")
             logger.debug("---------------------------------------------------------------------")
-            if getattr(tg, 'enable_websocket', False):
-                MUCBot.__bases__ = (WebSocketXMPP,)
-            xmpp = MUCBot(tg)
             try:
                 logger.debug("connect TO ")
-                if getattr(xmpp, '_ws_url', ''):
+                if getattr(xmpp, '_ws_url', '') and getattr(tg, 'enable_websocket', False):
                     logger.debug(f"WebSocket connection to {xmpp._ws_url}")
                     xmpp.connect(url=xmpp._ws_url)
                 else:
-                    xmpp.connect(address=xmpp.address, force_starttls=None)
+                    xmpp.connect(host=xmpp.address[0], port=xmpp.address[1])
             except Exception as e:
                 logging.error("Connection failed: %s. Retrying..." % e)
                 logging.error("Connection to: IP %s, Port %s." % (ip_server, tg.confport))

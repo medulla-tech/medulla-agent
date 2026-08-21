@@ -122,6 +122,7 @@ import tempfile
 
 from slixmpp import ClientXMPP
 from slixmpp import WebSocketXMPP
+from slixmpp import jid
 from slixmpp.xmlstream import handler, matcher
 from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp.xmlstream.stanzabase import ET
@@ -1274,7 +1275,10 @@ class MUCBot(ClientXMPP):
         #     return
 
         if self.config.agenttype in ["relayserver"]:
-            self.reconnect(0.0, self.massage_reconection)
+            if not getattr(self, '_reconnecting', False):
+                self._reconnecting = True
+                self.reconnect(2.0, self.massage_reconection)
+                self._reconnecting = False
             return
 
         # if self.shared_dict.get("alternative"):
@@ -1334,7 +1338,8 @@ class MUCBot(ClientXMPP):
 
     def handle_connection_failed(self, data):
         logger.debug(f"handle_connection_failed {self.server_address}")
-        self.disconnect()
+        if self.config.agenttype not in ["relayserver"]:
+            self.disconnect()
 
     def handle_connecting(self, data):
         """
@@ -4790,7 +4795,7 @@ class process_xmpp_agent:
                 {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
             )
             xmpp.register_plugin("xep_0077")  # In-band Registration
-            xmpp["xep_0077"].force_registration = True
+            xmpp.plugin["xep_0077"].force_registration = True
             xmpp.server_address = (ipfromdns(tg.Server), int(tg.Port))
             time.sleep(0.2)
             try:
@@ -4803,11 +4808,11 @@ class process_xmpp_agent:
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
             self.logger.debug("\---------------------------------/")
             try:
-                if getattr(xmpp, '_ws_url', ''):
+                if getattr(xmpp, '_ws_url', '') and getattr(tg, 'enable_websocket', False):
                     self.logger.debug(f"WebSocket connection to {xmpp._ws_url}")
                     xmpp.connect(url=xmpp._ws_url)
                 else:
-                    xmpp.connect(address=xmpp.server_address)
+                    xmpp.connect(host=xmpp.server_address[0], port=xmpp.server_address[1])
             except Exception as e:
                 self.logger.error("Connection failed: %s. Retrying..." % e)
             try:

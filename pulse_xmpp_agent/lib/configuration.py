@@ -93,6 +93,7 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole,
     Config.set("connection", "server", ipfromdns(str(ipserver)))
     effective_ws_url = str(websocket_url) if websocket_url else "wss://%s:5443/ws" % ipfromdns(str(ipserver))
     Config.set("connection", "websocket_url", effective_ws_url)
+    Config.set("connection", "enable_websocket", "1" if websocket_url else "0")
     Config.set("global", "relayserver_agent", str(jidrelayserver))
     Config.set("type", "guacamole_baseurl", str(baseurlguacamole))
     with open(conffile, "w") as configfile:

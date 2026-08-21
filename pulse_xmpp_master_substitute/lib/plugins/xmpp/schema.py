@@ -385,6 +385,7 @@ class RelayServer(Base, XmppMasterDBObj):
     keysyncthing = Column(String(70), default="")
     syncthing_port = Column(Integer, default=23000)
     ssh_public_key = Column(Text)
+    websocket_url = Column(String(255), nullable=True)
 
 
 class Regles(Base, XmppMasterDBObj):

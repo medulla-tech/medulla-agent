@@ -237,61 +237,19 @@ class MUCBot(slixmpp.ClientXMPP):
         )
 
     def handle_connection_failed(self, data):
-        """
-        Gère le scénario où la connexion échoue.
-
-        Cette méthode est appelée lorsque la tentative de connexion échoue. Elle effectue les actions suivantes :
-        1. Déconnecte la connexion actuelle.
-        2. Enregistre un message d'erreur indiquant l'échec de la connexion et les paramètres de connexion.
-        3. Enregistre un message de débogage indiquant la tentative de reconnexion après un nombre spécifié de secondes.
-        4. Attend le nombre spécifié de secondes.
-        5. Réinitialise le compteur d'attente de la boucle de connexion.
-        6. Tente de se reconnecter avec un délai spécifié et un code de raison.
-
-        Paramètres :
-        data (any) : Les données associées à l'événement d'échec de connexion.
-
-        Retourne :
-        None
-        """
-        self.disconnect()
+        """Reconnect after connection failure, without calling disconnect() to avoid re-entrancy."""
         nbsecond = 5
-        logger.error(
-            "Connection failed: verify parameter connection for %s [%s:%s]"
-            % (self.boundjid.bare, self.address[0], self.address[1])
-        )
-        logger.debug("Retrying connection in %d seconds..." % nbsecond)
-        time.sleep(nbsecond)
         self._connect_loop_wait = 0
         self.reconnect(nbsecond, "from_handle_connection_failed")
 
     def handle_disconnected(self, data):
-        """
-        Gère le scénario où la connexion est déconnectée.
-
-        Cette méthode est appelée lorsque la connexion est déconnectée. Elle effectue les actions suivantes :
-        1. Enregistre un message d'avertissement indiquant la déconnexion et les paramètres de connexion.
-        2. Enregistre un message de débogage indiquant la tentative de reconnexion après un nombre spécifié de secondes.
-        3. Réinitialise le compteur d'attente de la boucle de connexion.
-        4. Enregistre un message de débogage indiquant la tentative de reconnexion.
-        5. Tente de se reconnecter avec un délai spécifié et un code de raison.
-
-        Paramètres :
-        data (any) : Les données associées à l'événement de déconnexion.
-
-        Retourne :
-        None
-        """
+        """Reconnect after disconnect, with re-entrancy guard for slixmpp 1.17."""
         nbsecond = 5
-        logger.warning(
-            "disconnected : parameter connection for %s [%s:%s]"
-            % (self.boundjid.bare, self.address[0], self.address[1])
-        )
-        logger.debug("Retrying connection in %d seconds..." % nbsecond)
-        # time.sleep(nbsecond)
-        self._connect_loop_wait = 0
-        logger.debug("Retrying connection...")
-        self.reconnect(nbsecond, "from_handle_disconnected")
+        if not getattr(self, '_reconnecting', False):
+            self._reconnecting = True
+            self._connect_loop_wait = 0
+            self.reconnect(nbsecond, "from_handle_disconnected")
+            self._reconnecting = False
 
     async def register(self, iq):
         """
