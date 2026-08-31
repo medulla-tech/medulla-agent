@@ -163,17 +163,27 @@ def deployPlugin(self, jid, plugin):
         logger.error("The plugin file %s does not exists" % FileName)
         return
     try:
-        PluginFile = open(FileName, "rb")
-        content = PluginFile.read()
-        PluginFile.close()
+        with open(FileName, "rb") as PluginFile:
+            content = PluginFile.read()
     except Exception:
         logger.error("File read error\n%s" % (traceback.format_exc()))
         return
     DataFile["action"] = "installplugin"
     DataFile["data"] = {}
     dd = {}
-    dd["datafile"] = content
     dd["pluginname"] = "plugin_%s.py" % plugin
+    # Use base64 only when content contains non-ASCII bytes (e.g. accented chars).
+    # ASCII-only plugins are sent as plain UTF-8 strings so that agents without
+    # the content_b64 decoder (< v1.29) can still install them safely.
+    try:
+        content.decode("ascii")
+        # Pure ASCII: old mechanism, compatible with all agent versions
+        dd["datafile"] = content.decode("utf-8")
+    except Exception:
+        # Non-ASCII content: base64 transport, requires agent plugin_installplugin >= v1.29
+        dd["datafile"] = base64.b64encode(content).decode("ascii")
+        dd["content_b64"] = True
+        logger.debug("Plugin %s contains non-ASCII: sending as base64" % plugin)
 
     DataFile["data"] = convert.encode_to_string_base64(convert.convert_dict_to_json(dd))
     DataFile["sessionid"] = "sans"
