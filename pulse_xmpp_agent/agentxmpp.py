@@ -1277,7 +1277,6 @@ class MUCBot(ClientXMPP):
             return
 
         # if self.shared_dict.get("alternative"):
-        # reconnecte alternative JFK
         if (
             self.alternatifconnection["nextserver"]
             > self.alternatifconnection["nbserver"]
@@ -2852,23 +2851,33 @@ class MUCBot(ClientXMPP):
         )
 
     def call_plugin_differed(self, time_differed=5):
-        try:
-            for pluginname in self.paramsdict:
+        for pluginname in self.paramsdict:
+            schedulename = "%s_%s" % (
+                pluginname["descriptor"]["action"],
+                pluginname["descriptor"]["sessionid"],
+            )
+            try:
                 self.schedule(
-                    pluginname["descriptor"]["action"],
+                    schedulename,
                     time_differed,
                     self.call_plugin_deffered_mode,
                     repeat=False,
                     kwargs={},
                     args=(),
                 )
-        except Exception:
-            logger.error(
-                "An error occured while calling the function call_plugin_differed."
-            )
-            logger.error(
-                "We encountered the backtrace: \n%s" % (traceback.format_exc())
-            )
+            except ValueError:
+                logger.warning(
+                    "A deferred event is already scheduled for %s, skipping duplicate"
+                    % pluginname["descriptor"]["action"]
+                )
+            except Exception:
+                logger.error(
+                    "An error occured while calling the function call_plugin_differed for %s."
+                    % pluginname["descriptor"]["action"]
+                )
+                logger.error(
+                    "We encountered the backtrace: \n%s" % (traceback.format_exc())
+                )
 
     def call_plugin_deffered_mode(self, *args, **kwargs):
         try:
@@ -3443,17 +3452,11 @@ class MUCBot(ClientXMPP):
     def reinstall_agent(self):
         BOOL_DISABLE_IMG = os.path.join(self.pathagent, "BOOL_DISABLE_IMG")
         if os.path.exists(BOOL_DISABLE_IMG):
+            logger.info("[REPLICATOR] BOOL_DISABLE_IMG present - mise a jour desactivee")
             return
         file_put_contents(
             os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"),
             "use file boolean update. enable verify update.",
-        )
-        logger.debug(
-            "We will update Medulla agent from version %s to %s"
-            % (
-                file_get_contents(os.path.join(self.img_agent, "agentversion")),
-                self.boundjid.bare,
-            )
         )
         agentversion = os.path.join(self.pathagent, "agentversion")
         versiondata = (
@@ -3462,6 +3465,28 @@ class MUCBot(ClientXMPP):
             .replace("\r", "")
             .strip()
         )
+        version_courante = (
+            file_get_contents(agentversion).replace("\n", "").replace("\r", "").strip()
+            if os.path.exists(agentversion) else "?"
+        )
+        logger.info("[REPLICATOR] ==============================================")
+        logger.info("[REPLICATOR] Demarrage de la mise a jour de l'agent")
+        logger.info(
+            "[REPLICATOR] %s installe l'agent depuis l'image %s"
+            % (self.boundjid.bare, self.img_agent)
+        )
+        logger.info("[REPLICATOR] Contenu de img_agent avant installation :")
+        for root, dirs, files in os.walk(self.img_agent):
+            relroot = os.path.relpath(root, self.img_agent)
+            logger.info("[REPLICATOR]   [%s]" % ("." if relroot == "." else relroot))
+            for dirname in sorted(dirs):
+                logger.info("[REPLICATOR]     dir  %s" % dirname)
+            for filename in sorted(files):
+                logger.info("[REPLICATOR]     file %s" % filename)
+        logger.info("[REPLICATOR]   version actuelle : %s" % version_courante)
+        logger.info("[REPLICATOR]   version image    : %s" % versiondata)
+        logger.info("[REPLICATOR]   img_agent        : %s" % self.img_agent)
+        logger.info("[REPLICATOR]   pathagent        : %s" % self.pathagent)
 
         try:
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
@@ -3473,45 +3498,46 @@ class MUCBot(ClientXMPP):
             pass
         pythonexec = self.programfilepath(psutil.Process().exe())
         replicatorfunction = os.path.join(self.pathagent, "replicator.py")
-        if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-            logger.debug(f"Replicator for os system  {pythonexec} {replicatorfunction}")
-        else:
-            logger.debug(
-                f"Replicator for os windows system {pythonexec} {replicatorfunction}"
-            )
-        replicatorcmd = f'"{pythonexec}" "{replicatorfunction}"'
-        logger.debug("cmd : %s" % (replicatorcmd))
+        # --verbose : replicator affiche le détail des fichiers copiés/supprimés
+        # sans changer le comportement d'installation (exit codes inchangés)
+        replicatorcmd = f'"{pythonexec}" "{replicatorfunction}" --verbose'
+        logger.info("[REPLICATOR] Lancement : %s" % replicatorcmd)
         result = simplecommand(replicatorcmd)
+        # Afficher la sortie de replicator dans les logs pour traçabilité
+        if result.get("result"):
+            for line in result["result"]:
+                if line.strip():
+                    logger.info("[REPLICATOR] > %s" % line.strip())
         if result["code"] == 0:
-            logger.warning(
-                "the agent is already installed for version  %s" % (versiondata)
+            logger.info(
+                "[REPLICATOR] OK Agent deja a jour (version %s) - aucune copie necessaire" % versiondata
             )
         elif result["code"] == 1:
-            logger.info("installed success agent version %s" % (versiondata))
+            logger.info("[REPLICATOR] OKOK Installation reussie - agent version %s" % versiondata)
         elif result["code"] == 120:
             logger.error(
-                "installed default agent version %s (rollback previous version.). We will not switch to new agent."
-                % (versiondata)
+                "[REPLICATOR] NOK Echec installation version %s - rollback effectue"
+                % versiondata
             )
         elif result["code"] == 121:
             logger.warning(
-                "installed success agent version %s (unable to update the version in the registry.)"
-                % (versiondata)
+                "[REPLICATOR] WARN Installation version %s reussie mais registre Windows non mis a jour"
+                % versiondata
             )
         elif result["code"] == 122:
             logger.warning(
-                "Some python modules needed for running lib are missing. We will not switch to new agent)"
+                "[REPLICATOR] WARN Modules Python manquants dans l'image - installation annulee"
             )
         elif result["code"] == 5:
             logger.warning(
-                "mode replicator non permit dans pluging, ni installation agent. We will not switch to new agent."
+                "[REPLICATOR] WARN Mode non permis dans plugin - installation annulee"
             )
         else:
             logger.error(
-                "installed agent version %s (indefinie operation). We will not switch to new agent."
-                % (versiondata)
+                "[REPLICATOR] NOK Operation indefinie pour version %s (code %s)"
+                % (versiondata, result["code"])
             )
-            logger.error("return code is : %s" % (result["code"]))
+        logger.info("[REPLICATOR] ==============================================")
 
     def checkinstallagent(self):
         if self.config.updating == 1:
@@ -3519,28 +3545,23 @@ class MUCBot(ClientXMPP):
                 if self.descriptor_master is not None:
                     Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True)
                     Update_Remote_Img = Update_Remote_Agent(self.img_agent, True)
-                    logger.debug(
-                        "Fingerprint of Remote Agenttest: %s"
-                        % Update_Remote_Agenttest.get_fingerprint_agent_base()
-                    )
-                    logger.debug(
-                        "Fingerprint of Remote Image: %s"
-                        % Update_Remote_Img.get_fingerprint_agent_base()
-                    )
-                    logger.debug(
-                        "Fingerprint of Master Image: %s"
-                        % self.descriptor_master["fingerprint"]
-                    )
-                    if (
-                        Update_Remote_Agenttest.get_fingerprint_agent_base()
-                        != Update_Remote_Img.get_fingerprint_agent_base()
-                        and Update_Remote_Img.get_fingerprint_agent_base()
-                        == self.descriptor_master["fingerprint"]
-                    ):
+                    fp_agent  = Update_Remote_Agenttest.get_fingerprint_agent_base()
+                    fp_img    = Update_Remote_Img.get_fingerprint_agent_base()
+                    fp_master = self.descriptor_master["fingerprint"]
+                    logger.info("[CHECKINSTALL] Controle periodique de mise a jour :")
+                    logger.info("[CHECKINSTALL]   agent   : %s" % fp_agent)
+                    logger.info("[CHECKINSTALL]   img     : %s" % fp_img)
+                    logger.info("[CHECKINSTALL]   master  : %s" % fp_master)
+                    if fp_agent != fp_img and fp_img == fp_master:
+                        logger.info("[CHECKINSTALL] OK img synchronisee avec master, agent pas encore a jour - declenchement reinstall_agent()")
                         self.reinstall_agent()
+                    elif fp_agent == fp_master:
+                        logger.info("[CHECKINSTALL] OKOK Agent a jour - aucune action")
+                    else:
+                        logger.info("[CHECKINSTALL] ... img non encore synchronisee avec master (transfert en cours)")
                 else:
                     logger.warning(
-                        "We have been asked for an update but we are missing the descriptor"
+                        "[CHECKINSTALL] Mise a jour demandee mais descripteur master absent"
                     )
                     os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
 

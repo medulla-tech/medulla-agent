@@ -11,7 +11,7 @@ import base64
 import traceback
 from lib import utils, update_remote_agent
 
-plugin = {"VERSION": "2.3", "VERSIONAGENT": "2.0", "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}  # fmt: skip
+plugin = {"VERSION": "2.5", "VERSIONAGENT": "2.0", "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}  # fmt: skip
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -42,6 +42,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         if data["subaction"] == "descriptor":
             difference = {}
             supprimefileimage = []
+            logger.info("[UPDATEAGENT] =======================================")
+            logger.info("[UPDATEAGENT] Test encodage : Medulla Agent - Mise a jour reussie")
+            logger.info("[UPDATEAGENT] Descripteur recu depuis le master substitut (éàüîç OK)")
+            if "fingerprint" in data.get("descriptoragent", {}):
+                logger.info("[UPDATEAGENT] Empreinte master : %s" % data["descriptoragent"]["fingerprint"])
+            if "version" in data.get("descriptoragent", {}):
+                logger.info("[UPDATEAGENT] Version agent proposee : %s" % data["descriptoragent"].get("version", "?").strip())
             utils.file_put_contents(
                 os.path.join(objectxmpp.pathagent, "BOOL_UPDATE_AGENT"),
                 "use file boolean update. enable verify update.",
@@ -60,13 +67,22 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 utils.file_put_contents(
                     os.path.join(objectxmpp.pathagent, "agentversion"), vers
                 )
+                logger.info(
+                    "[UPDATEAGENT] agentversion ecrit dans %s et %s"
+                    % (
+                        os.path.join(objectxmpp.img_agent, "agentversion"),
+                        os.path.join(objectxmpp.pathagent, "agentversion"),
+                    )
+                )
             # on genere descriptor actuel de l image
+            logger.info("[UPDATEAGENT] Generation du descripteur courant de img_agent: %s" % objectxmpp.img_agent)
             objdescriptorimage = update_remote_agent.Update_Remote_Agent(
                 objectxmpp.img_agent
             )
             descriptorimage = objdescriptorimage.get_md5_descriptor_agent()
             # on recoit le nouveau descripteur depuis base de l'agent.
             objectxmpp.descriptor_master = data["descriptoragent"]
+            logger.info("[UPDATEAGENT] Comparaison du descripteur master avec img_agent en cours")
 
             # il faut supprimer les fichier dans l'image qui ont ete supprimer dans la base.
             # on recherche les differences entre base de l'agent et l'image de
@@ -89,11 +105,18 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 supp2 = [os.path.join(objectxmpp.img_agent, dirname, x) for x in supp]
                 difference[directory_agent] = diff
                 supprimefileimage.extend(supp2)
+                logger.info(
+                    "[UPDATEAGENT] Diff %s: %d fichier(s) a copier, %d fichier(s) a supprimer"
+                    % (directory_agent, len(diff), len(supp))
+                )
                 for delfile in supp2:
                     try:
                         os.remove(delfile)
+                        logger.info("[UPDATEAGENT] Fichier obsolete supprime de l'image : %s" % delfile)
                     except BaseException:
                         pass
+            if supprimefileimage:
+                logger.info("[UPDATEAGENT] %d fichier(s) obsolete(s) supprime(s) de img_agent" % len(supprimefileimage))
             logger.debug(
                 "delete unnecessary files in image %s"
                 % json.dumps(supprimefileimage, indent=4)
@@ -124,9 +147,24 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 ):
                     # on peut mettre a jour l'agent suite a une suppression de
                     # fichier inutile
+                    logger.info("[UPDATEAGENT] OK Empreintes identiques apres nettoyage - declenchement de reinstall_agent()")
                     objectxmpp.reinstall_agent()
 
             logger.debug("to updating files %s" % json.dumps(difference, indent=4))
+            nb_prog = len(difference.get("program_agent", []))
+            nb_lib  = len(difference.get("lib_agent", []))
+            nb_scr  = len(difference.get("script_agent", []))
+            nb_total = nb_prog + nb_lib + nb_scr
+            if nb_total > 0:
+                logger.info("[UPDATEAGENT] %d fichier(s) a telecharger : %d programme(s), %d lib(s), %d script(s)" % (nb_total, nb_prog, nb_lib, nb_scr))
+                if nb_prog > 0:
+                    logger.info("[UPDATEAGENT]   programme(s) : %s" % ", ".join(difference.get("program_agent", [])))
+                if nb_lib > 0:
+                    logger.info("[UPDATEAGENT]   lib(s)        : %s" % ", ".join(difference.get("lib_agent", [])))
+                if nb_scr > 0:
+                    logger.info("[UPDATEAGENT]   script(s)     : %s" % ", ".join(difference.get("script_agent", [])))
+            else:
+                logger.info("[UPDATEAGENT] Aucune différence de fichiers détectée")
             try:
                 # on demande les fichiers differents pour la mise a jour de
                 # l'image
@@ -135,7 +173,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     or len(difference["lib_agent"]) != 0
                     or len(difference["script_agent"]) != 0
                 ):
-                    # demande de mise à jour.
+                    # demande de mise a jour.
                     # todo send message only files for updating.
                     # call resultupdateagent
                     msgupdate_me = {
@@ -156,6 +194,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     if "ars_update" in data and data["ars_update"] != "":
                         agent_installor = data["ars_update"]
                         msgupdate_me["action"] = "relayupdateagent"
+                    logger.info("[UPDATEAGENT] Demande de transfert des fichiers manquants envoyee a %s" % agent_installor)
                     objectxmpp.send_message(
                         mto=agent_installor,
                         mbody=json.dumps(msgupdate_me),
@@ -176,16 +215,22 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     )
 
                     # on regarde si il y a des diff entre img, base, et agent
-                    if (
-                        objectxmpp.descriptor_master["fingerprint"]
-                        == descriptorimage["fingerprint"]
-                    ) and (
-                        objectxmpp.descriptor_master["fingerprint"]
-                        != descriptoragent["fingerprint"]
-                    ):
+                    fp_master = objectxmpp.descriptor_master["fingerprint"]
+                    fp_img    = descriptorimage["fingerprint"]
+                    fp_agent  = descriptoragent["fingerprint"]
+                    logger.info("[UPDATEAGENT] Controle final des empreintes :")
+                    logger.info("[UPDATEAGENT]   master  : %s" % fp_master)
+                    logger.info("[UPDATEAGENT]   img     : %s" % fp_img)
+                    logger.info("[UPDATEAGENT]   agent   : %s" % fp_agent)
+                    if fp_master == fp_img and fp_master != fp_agent:
                         # on peut mettre a jour l'agent suite a une suppression
                         # de fichier inutile
+                        logger.info("[UPDATEAGENT] OK img_agent synchronisee, agent pas encore a jour - declenchement de reinstall_agent()")
                         objectxmpp.reinstall_agent()
+                    elif fp_master == fp_img and fp_master == fp_agent:
+                        logger.info("[UPDATEAGENT] OKOK Agent deja a jour - aucune action requise")
+                    else:
+                        logger.info("[UPDATEAGENT] NOK img_agent non synchronisee avec le master (transfert en attente)")
                     return
             except Exception as e:
                 logger.error(str(e))
@@ -195,6 +240,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 logger.error("update agent install lib name missing")
                 return
             else:
+                logger.info(
+                    "[UPDATEAGENT] Sous-action install_lib_agent recue pour %s depuis %s"
+                    % (data["namescript"], message["from"])
+                )
                 content = zlib.decompress(base64.b64decode(data["content"]))
                 dump_file_in_img(objectxmpp, data["namescript"], content, "lib_agent")
         elif data["subaction"] == "install_program_agent":
@@ -202,6 +251,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 logger.error("update agent install program name missing")
                 return
             else:
+                logger.info(
+                    "[UPDATEAGENT] Sous-action install_program_agent recue pour %s depuis %s"
+                    % (data["namescript"], message["from"])
+                )
                 content = zlib.decompress(base64.b64decode(data["content"]))
                 dump_file_in_img(
                     objectxmpp, data["namescript"], content, "program_agent"
@@ -211,6 +264,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 logger.error("updateagent install script name missing")
                 return
             else:
+                logger.info(
+                    "[UPDATEAGENT] Sous-action install_script_agent recue pour %s depuis %s"
+                    % (data["namescript"], message["from"])
+                )
                 content = zlib.decompress(base64.b64decode(data["content"]))
                 dump_file_in_img(
                     objectxmpp, data["namescript"], content, "script_agent"
@@ -297,33 +354,32 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
     if typescript in valid_types:
         file_name = os.path.join(valid_types[typescript], namescript)
         logger.debug("dump file %s to %s" % (namescript, file_name))
+        logger.info(
+            "[UPDATEAGENT] Ecriture dans img_agent: %s -> %s"
+            % (namescript, file_name)
+        )
 
         # Write the content to the file
         try:
             with open(file_name, "wb") as filescript:
                 filescript.write(content)
-            
-            logger.info("✓ Fichier écrit : %s (taille: %d octets)" % (file_name, len(content)))
+            logger.info("[UPDATEAGENT] OK Recu et ecrit dans img_agent : %s (%d octets)" % (namescript, len(content)))
 
-            # Update the remote agent
+            # Recalcul des empreintes apres reception du fichier
             newobjdescriptorimage = update_remote_agent.Update_Remote_Agent(
                 objectxmpp.img_agent
             )
             img_fingerprint = newobjdescriptorimage.get_fingerprint_agent_base()
             master_fingerprint = objectxmpp.descriptor_master["fingerprint"]
-            
-            logger.info("Comparaison des empreintes:")
-            logger.info("  - img_agent:      %s" % img_fingerprint)
-            logger.info("  - substitut_master_REG: %s" % master_fingerprint)
-            logger.info("  - descriptor_img: %s" % json.dumps(newobjdescriptorimage.get_md5_descriptor_agent(), indent=2))
-            
+            logger.info("[UPDATEAGENT]   empreinte img    : %s" % img_fingerprint)
+            logger.info("[UPDATEAGENT]   empreinte master : %s" % master_fingerprint)
             if img_fingerprint == master_fingerprint:
-                logger.info("✓✓✓ EMPREINTES IDENTIQUES - Déclenchement de reinstall_agent()")
+                logger.info("[UPDATEAGENT] OKOKOK EMPREINTES IDENTIQUES - declenchement de reinstall_agent()")
                 objectxmpp.reinstall_agent()
             else:
-                logger.warning("✗ Les empreintes ne correspondent pas encore")
+                logger.info("[UPDATEAGENT] ... en attente des autres fichiers (réception en cours)")
         except Exception as e:
-            logger.error("Impossible d'écrire le fichier %s: %s" % (file_name, str(e)))
+            logger.error("[UPDATEAGENT] Impossible d'ecrire le fichier %s: %s" % (file_name, str(e)))
             logger.error(traceback.format_exc())
     else:
         logger.error("Invalid file type: %s" % typescript)
@@ -355,5 +411,7 @@ def senddescriptormd5(objectxmpp, data):
         "sessionid": utils.getRandomName(5, "updateagent"),
     }
     # Send catalog of files.
+    logger.info("[UPDATEAGENT] Envoi du descripteur a [%s] (empreinte master : %s)" % (
+        data["jidagent"], descriptoragentbase.get("fingerprint", "?")))
     logger.debug("Send descriptor to agent [%s] for update" % data["jidagent"])
     objectxmpp.send_message(data["jidagent"], mbody=json.dumps(datasend), mtype="chat")
