@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 # file : src/python/xml_sync.py
-"""Point d'entree CLI pour injecter/synchroniser un inventaire vers GLPI."""
+"""Point d'entree CLI pour injecter/synchroniser un inventaire vers GLPI.
+
+Usage typique: `python xml_sync.py --config-ini <fichier.ini>` ou en
+passant chaque parametre en argument (--xml-path, --db-host, ...).
+Les valeurs CLI sont prioritaires sur celles de l'INI, elles-memes
+prioritaires sur les defauts (voir `_pick`).
+
+Codes de retour du process:
+    0: succes (ou dry-run reussi)
+    2: parametres invalides ou XML illisible
+    3: aucune machine exploitable trouvee dans l'inventaire
+    4: echec de connexion a la base GLPI
+    5: erreur SQL pendant l'injection (rollback effectue)
+"""
 
 from __future__ import annotations
 
@@ -75,7 +88,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def _pick(cli_value: object, ini_value: object, default_value: object) -> object:
-    """Retourne la valeur finale avec priorite a la CLI."""
+    """Retourne la premiere valeur non vide, dans l'ordre CLI > INI > defaut."""
     if cli_value is not None and cli_value != "":
         return cli_value
     if ini_value is not None and ini_value != "":
@@ -84,7 +97,12 @@ def _pick(cli_value: object, ini_value: object, default_value: object) -> object
 
 
 def resolve_args(args: argparse.Namespace) -> argparse.Namespace:
-    """Fusionne les options CLI avec un INI optionnel."""
+    """Fusionne les options CLI avec un INI optionnel (section [glpi_xml_sync]).
+
+    Leve ValueError si un parametre requis (xml_path, db_host, db_name,
+    db_user, db_pass) manque une fois CLI et INI combines, ou si
+    default_recursive n'est ni 0 ni 1.
+    """
     ini_values: dict[str, object] = {}
     config_base_dir: str | None = None
     if args.config_ini:
@@ -130,7 +148,10 @@ def resolve_args(args: argparse.Namespace) -> argparse.Namespace:
 
 
 def main() -> int:
-    """Point d'entree du script."""
+    """Point d'entree du script: parse le XML, injecte en base, affiche un JSON de resultat sur stdout.
+
+    Voir le docstring du module pour la signification des codes de retour.
+    """
     raw_args = parse_args()
     try:
         args = resolve_args(raw_args)
@@ -140,6 +161,9 @@ def main() -> int:
 
     xml_path = Path(args.xml_path).expanduser()
     if not xml_path.is_absolute() and getattr(args, "config_base_dir", None):
+        # xml_path relatif dans l'INI: on essaie d'abord a cote du fichier
+        # INI (usage courant), puis on retombe sur la racine du repo si
+        # seul ce dernier existe.
         candidate_config_dir = Path(args.config_base_dir) / xml_path
         candidate_repo_root = Path(__file__).resolve().parents[2] / xml_path
         if candidate_config_dir.exists() or not candidate_repo_root.exists():

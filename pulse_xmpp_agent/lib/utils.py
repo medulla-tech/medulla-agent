@@ -1,80 +1,55 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-    This file contains shared functions use in pulse client/server agents.
+This file contains shared functions use in pulse client/server agents.
 """
-from typing import (
-    Any,               # Type générique pour n'importe quel type
-    Callable,          # Type pour les fonctions et méthodes appelables
-    Dict,              # Type pour les dictionnaires (ex: Dict[str, int])
-    FrozenSet,         # Type pour les ensembles immuables (frozen sets)
-    Generic,           # Classe de base pour créer des classes génériques
-    Iterable,          # Type pour les objets itérables (ex: list, tuple)
-    Iterator,          # Type pour les itérateurs
-    List,              # Type pour les listes (ex: List[str])
-    Optional,          # Type pour les valeurs optionnelles (ex: Optional[str] = str | None)
-    Set,               # Type pour les ensembles (sets)
-    Tuple,             # Type pour les tuples (ex: Tuple[int, str])
-    Type,              # Type pour les classes et types (ex: Type[MyClass])
-    TypeVar,           # Variable de type pour les génériques
-    Union,             # Type pour les unions de types (ex: Union[int, str])
-    cast,              # Fonction pour forcer le type d'une valeur
-    no_type_check,     # Décorateur pour désactiver la vérification de type sur une fonction
-    overload,          # Décorateur pour surcharger les signatures de fonction
-)
 
-
-
-import shutil
-import sys
-import urllib.request as urllib2
-from urllib.parse import urlparse
-from configparser import ConfigParser
+import asyncio
+import base64
 import binascii
-import netifaces
-import json
-import subprocess
-import threading
-import os
 import fnmatch
+import hashlib
+import importlib.util
+import ipaddress
+import json
 import logging
+import os
+import pickle
+import platform
 import random
 import re
+import shutil
+import socket
+import subprocess
+import sys
+import threading
+import time
 import traceback
+import unicodedata
+import urllib.request as urllib2
+from configparser import ConfigParser
+from datetime import datetime, timedelta
 from pprint import pprint
-import hashlib
-import base64
-import pickle
+from xml.dom.minidom import parseString
+
+import netifaces
+import psutil
+import requests
+
 from .agentconffile import (
     conffilename,
     medullaPath,
-    directoryconffile,
     pulseTempDir,
-    conffilenametmp,
-    rotation_file,
 )
-from .uuid_deterministic import DeterministicUUID
-import socket
-import psutil
-import time
-from datetime import datetime, timedelta
-import importlib.util
-import requests
-import asyncio
-import unicodedata
-
-import platform
-import ipaddress
-from xml.dom.minidom import parseString
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from concurrent.futures import ThreadPoolExecutor
-from requests.exceptions import Timeout
 import zlib
+from concurrent.futures import ThreadPoolExecutor
+
+from requests.exceptions import Timeout
 
 try:
     from Cryptodome import Random
@@ -82,14 +57,15 @@ try:
 except:
     from Crypto import Random
     from Crypto.Cipher import AES
-import tarfile
-from functools import wraps
+import gzip
 import string
+import tarfile
 import urllib
-import yaml
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
-import gzip
+from functools import wraps
+
+import yaml
 
 logger = logging.getLogger()
 
@@ -97,29 +73,29 @@ DEBUGPULSE = 25
 
 
 if sys.platform.startswith("win"):
-    import pythoncom
-    import winreg as wr
-    import winreg
-
-    import win32api
-    import win32security
-    import ntsecuritycon
-    import win32net
     import ctypes
+    import winreg
+    import winreg as wr
+    from ctypes.wintypes import LPCSTR, LPCWSTR
+
+    import ntsecuritycon
+    import win32api
     import win32com.client
+    import win32net
+    import win32security
     from win32com.client import GetObject
-    from ctypes.wintypes import LPCWSTR, LPCSTR
 
 if sys.platform.startswith("linux"):
-    import pwd
     import grp
+    import pwd
+
+    import distro
     import posix_ipc
     import xmltodict
-    import distro
 
 if sys.platform.startswith("darwin"):
-    import pwd
     import grp
+    import pwd
 
 
 import inspect
@@ -175,7 +151,7 @@ def set_logging_level(func):
     return wrapper
 
 
-class Env(object):
+class Env:
     agenttype = None  # global runtime context
 
     @staticmethod
@@ -299,7 +275,6 @@ def get_python_exec():
     return sys.executable
 
 
-
 def os_version(brelease_windows=1, bbuild_windows=0):
     """
     Version Get-CimInstance (CIM).
@@ -336,14 +311,13 @@ def os_version(brelease_windows=1, bbuild_windows=0):
     try:
         # ----- WINDOWS -----
         if sys.platform.startswith("win"):
-
             # Récupération via CIM (PowerShell)
             ps_cmd = [
                 "powershell",
                 "-NoProfile",
                 "-Command",
                 "Get-CimInstance -ClassName Win32_OperatingSystem | "
-                "Select-Object Caption, Version, BuildNumber | ConvertTo-Json"
+                "Select-Object Caption, Version, BuildNumber | ConvertTo-Json",
             ]
 
             try:
@@ -361,9 +335,10 @@ def os_version(brelease_windows=1, bbuild_windows=0):
             if brelease_windows:
                 try:
                     import winreg
+
                     key = winreg.OpenKey(
                         winreg.HKEY_LOCAL_MACHINE,
-                        r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                        r"SOFTWARE\Microsoft\Windows NT\CurrentVersion",
                     )
                     release_id, _ = winreg.QueryValueEx(key, "DisplayVersion")
                     winreg.CloseKey(key)
@@ -393,8 +368,8 @@ def os_version(brelease_windows=1, bbuild_windows=0):
                             k, v = line.strip().split("=", 1)
                             info[k] = v.strip('"')
                     name = info.get("PRETTY_NAME") or info.get("NAME", "Linux")
-                    if 'linux' not in name.lower():
-                        name += ' linux'
+                    if "linux" not in name.lower():
+                        name += " linux"
                     return name
             else:
                 return platform.platform()
@@ -458,42 +433,26 @@ def dump_parameter(para=True, out=True, timeprocess=True):
                 params = dict(
                     args=dict(list(zip(arg_names, dec_fn_args))), kwargs=dec_fn_kwargs
                 )
-                result = ", ".join(
-                    ["{}={}".format(str(k), repr(v)) for k, v in list(params.items())]
-                )
-                log.info(
-                    "\n@@@ call func : {}({}) file {}".format(
-                        func_name, result, filepath
-                    )
-                )
-                log.info(
-                    "\n@@@ call func : {}({}) file {}".format(
-                        func_name, result, filepath
-                    )
-                )
+                result = ", ".join([f"{k!s}={v!r}" for k, v in list(params.items())])
+                log.info(f"\n@@@ call func : {func_name}({result}) file {filepath}")
+                log.info(f"\n@@@ call func : {func_name}({result}) file {filepath}")
             else:
-                log.info("\n@@@ call func : {}() file {}".format(func_name, filepath))
+                log.info(f"\n@@@ call func : {func_name}() file {filepath}")
             # Execute wrapped (decorated) function:
             outfunction = decorated_function(*dec_fn_args, **dec_fn_kwargs)
             timeruntime = time.time() - start
             if out:
                 if timeprocess:
                     log.info(
-                        "\n@@@ out func :{}() in {}s is -->{}".format(
-                            func_name, timeruntime, outfunction
-                        )
+                        f"\n@@@ out func :{func_name}() in {timeruntime}s is -->{outfunction}"
                     )
                 else:
-                    log.info(
-                        "\n@@@ out func :{}() is -->{}".format(func_name, outfunction)
-                    )
+                    log.info(f"\n@@@ out func :{func_name}() is -->{outfunction}")
             else:
                 if timeprocess:
-                    log.info(
-                        "\n@@@ out func :{}() in {}s".format(func_name, timeruntime)
-                    )
+                    log.info(f"\n@@@ out func :{func_name}() in {timeruntime}s")
                 else:
-                    log.info("\n@@@ out func :{}()".format(func_name))
+                    log.info(f"\n@@@ out func :{func_name}()")
             return outfunction
 
         return wrapper
@@ -638,16 +597,14 @@ def testagentconf(typeconf):
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
     return bool(
-        (
-            Config.has_option("type", "guacamole_baseurl")
-            and Config.has_option("connection", "port")
-            and Config.has_option("connection", "server")
-            and Config.has_option("global", "relayserver_agent")
-            and Config.get("type", "guacamole_baseurl") != ""
-            and Config.get("connection", "port") != ""
-            and Config.get("connection", "server") != ""
-            and Config.get("global", "relayserver_agent") != ""
-        )
+        Config.has_option("type", "guacamole_baseurl")
+        and Config.has_option("connection", "port")
+        and Config.has_option("connection", "server")
+        and Config.has_option("global", "relayserver_agent")
+        and Config.get("type", "guacamole_baseurl") != ""
+        and Config.get("connection", "port") != ""
+        and Config.get("connection", "server") != ""
+        and Config.get("global", "relayserver_agent") != ""
     )
 
 
@@ -666,13 +623,11 @@ def isTemplateConfFile(typeconf):
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
     return bool(
-        (
-            Config.has_option("configuration_server", "confserver")
-            and Config.has_option("configuration_server", "confport")
-            and Config.has_option("configuration_server", "confpassword")
-            and Config.has_option("configuration_server", "confdomain")
-            and Config.get("configuration_server", "keyAES32") != ""
-        )
+        Config.has_option("configuration_server", "confserver")
+        and Config.has_option("configuration_server", "confport")
+        and Config.has_option("configuration_server", "confpassword")
+        and Config.has_option("configuration_server", "confdomain")
+        and Config.get("configuration_server", "keyAES32") != ""
     )
 
 
@@ -772,6 +727,7 @@ def networkchanged():
 
     return True
 
+
 def refreshfingerprint():
     fp = createfingerprintnetwork()
     file_put_contents(os.path.join(Setdirectorytempinfo(), "fingerprintnetwork"), fp)
@@ -869,7 +825,7 @@ def showJSONData(jsondata):
     pp.pprint(jsondata)
 
 
-class StreamToLogger(object):
+class StreamToLogger:
     """
     Fake file-like stream object that redirects writes to a logger instance.
     """
@@ -1049,19 +1005,25 @@ def wait_until_msiexec_finishes():
         msiexec_count = 0
 
         # Iterate over all running processes
-        for proc in psutil.process_iter(['name']):
+        for proc in psutil.process_iter(["name"]):
             try:
                 # Check if the process name is msiexec.exe
-                if proc.info['name'] == 'msiexec.exe':
+                if proc.info["name"] == "msiexec.exe":
                     msiexec_count += 1
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
 
-        if msiexec_count < 2:  # Assuming less than 2 means no installation is in progress
-            logger.info("No MSI installation is currently running. Proceeding with the new installation.")
+        if (
+            msiexec_count < 2
+        ):  # Assuming less than 2 means no installation is in progress
+            logger.info(
+                "No MSI installation is currently running. Proceeding with the new installation."
+            )
             break
 
-        logger.info(f"An MSI installation is already in progress ({msiexec_count} instances running). Waiting...")
+        logger.info(
+            f"An MSI installation is already in progress ({msiexec_count} instances running). Waiting..."
+        )
         time.sleep(10)  # Wait for 10 seconds before checking again
 
 
@@ -1686,6 +1648,7 @@ def servicelinuxinit(name, action):
     obj["result"] = result
     return obj
 
+
 #
 # def service(name, action):
 #     """
@@ -1766,8 +1729,12 @@ def service(name, action):
     try:
         if sys.platform.startswith("linux"):
             # Detect init system
-            p = subprocess.Popen("cat /proc/1/comm", shell=True,
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(
+                "cat /proc/1/comm",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
             system = p.stdout.read().decode().strip()
 
             if system == "init":
@@ -1778,7 +1745,9 @@ def service(name, action):
                 obj["result"] = [f"Unsupported init system: {system}"]
                 return obj
 
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
             output = p.stdout.readlines()
             obj["code"] = p.wait()
             obj["result"] = [line.decode().strip() for line in output]
@@ -1794,7 +1763,9 @@ def service(name, action):
                 obj["result"] = [f"Unsupported action: {action}"]
                 return obj
 
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
             output = p.stdout.read().decode()
             obj["code"] = 0 if p.wait() == 0 else -1
             obj["result"] = output.splitlines()
@@ -1811,7 +1782,9 @@ def service(name, action):
                 obj["result"] = [f"Unsupported action: {action}"]
                 return obj
 
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
             output = p.stdout.readlines()
             obj["code"] = p.wait()
             obj["result"] = [line.decode().strip() for line in output]
@@ -1824,7 +1797,6 @@ def service(name, action):
         obj["result"] = [str(e)]
 
     return obj
-
 
 
 def listservice():
@@ -1889,10 +1861,11 @@ def joint_compteAD(domain, username, password, ou=None, restart=True):
     try:
         # Build the PowerShell command
         ps_cmd = [
-            "powershell", "-Command",
+            "powershell",
+            "-Command",
             f"$pass = ConvertTo-SecureString '{password}' -AsPlainText -Force;"
             f"$cred = New-Object System.Management.Automation.PSCredential('{username}', $pass);"
-            f"Add-Computer -DomainName '{domain}' -Credential $cred"
+            f"Add-Computer -DomainName '{domain}' -Credential $cred",
         ]
 
         if ou:
@@ -1965,7 +1938,9 @@ def methodservice_modern(service_name=None):
                 "$svc | Get-Member -MemberType Method | Select-Object -ExpandProperty Name"
             )
 
-        p = subprocess.Popen(ps_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        p = subprocess.Popen(
+            ps_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
         output = p.stdout.read().decode()
         code = p.wait()
 
@@ -1977,6 +1952,7 @@ def methodservice_modern(service_name=None):
         obj["methods"] = [str(e)]
 
     return obj
+
 
 def file_get_content(path):
     with open(path, "r") as inputFile:
@@ -2091,13 +2067,13 @@ def pulgindeploy1(func):
                 result["data"]["end"] = False
 
             print("----------------------------------------------------------------")
-            print(f'sent message to {message["from"]} ')
+            print(f"sent message to {message['from']} ")
             if "Devent" in data:
-                print(f'Devent : {data["Devent"]}')
+                print(f"Devent : {data['Devent']}")
             if "Dtypequery" in data:
-                print(f'Dtypequery : {data["Dtypequery"]}')
+                print(f"Dtypequery : {data['Dtypequery']}")
             if "Deventindex" in data:
-                print(f'Deventindex : {data["Deventindex"]}')
+                print(f"Deventindex : {data['Deventindex']}")
 
             if not result["data"]["end"]:
                 print("Envoi Message")
@@ -2124,6 +2100,7 @@ def pulgindeploy1(func):
 
     return wrapper
 
+
 def getIpXmppInterface(xmpp_client):
     """
     Récupère l'IP locale utilisée par la connexion XMPP active via la socket transport.
@@ -2142,6 +2119,7 @@ def getIpXmppInterface(xmpp_client):
     except Exception as e:
         logging.getLogger().error(f"Impossible de récupérer IP depuis la socket : {e}")
     return None
+
 
 # 3 functions used for subnet network
 def ipV4toDecimal(ipv4):
@@ -2235,8 +2213,7 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
     def decorateur(func):
         def wrapper(objetxmpp, action, sessionid, data, message, ret, dataobj):
             # avant
-            if action.startswith("result"):
-                action = action[6:]
+            action = action.removeprefix("result")
             if objetxmpp.session.isexist(sessionid):
                 if sessionaction == "actualise":
                     objetxmpp.session.reactualisesession(sessionid, 10)
@@ -2353,7 +2330,10 @@ class protodef:
                             port = cux.laddr.port
                         if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
                             protport["ssh"] = port
-                elif process.name() == "xrdp" or process.name() == "gnome-remote-desktop-daemon":
+                elif (
+                    process.name() == "xrdp"
+                    or process.name() == "gnome-remote-desktop-daemon"
+                ):
                     process_handler = psutil.Process(process.pid)
                     for cux in process_handler.connections():
                         try:
@@ -2445,7 +2425,7 @@ if sys.platform.startswith("win"):
             wr.SetValueEx(registry_key, name, 0, type, value)
             wr.CloseKey(registry_key)
             return True
-        except WindowsError:  # skipcq: PYL-E0602
+        except OSError:  # skipcq: PYL-E0602
             return False
 
     def get_reg(name, subkey, key=wr.HKEY_LOCAL_MACHINE):
@@ -2454,7 +2434,7 @@ if sys.platform.startswith("win"):
             value, regtype = wr.QueryValueEx(registry_key, name)
             wr.CloseKey(registry_key)
             return value
-        except WindowsError:  # skipcq: PYL-E0602
+        except OSError:  # skipcq: PYL-E0602
             return None
 
 
@@ -2469,16 +2449,15 @@ def shutdown_command():
             "linuxmint",
             "debian",
         ]:
-            cmd = 'systemctl poweroff -i'
+            cmd = "systemctl poweroff -i"
         else:
-            cmd = 'shutdown -P now'
+            cmd = "shutdown -P now"
     elif sys.platform.startswith("win"):
-        cmd = 'shutdown /p'
+        cmd = "shutdown /p"
     elif sys.platform.startswith("darwin"):
-        cmd = 'shutdown -h now'
+        cmd = "shutdown -h now"
     logging.debug(cmd)
     os.system(cmd)
-    return
 
 
 def vnc_set_permission(askpermission=1):
@@ -2631,7 +2610,7 @@ def loadjsonfile(filename):
                 dd = info.read()
             return json.loads(decode_strconsole(dd))
         except Exception as e:
-            logger.error(f"filename {filename} error decodage [{str(e)}]")
+            logger.error(f"filename {filename} error decodage [{e!s}]")
     else:
         logger.error(f"The file {filename} does not exist")
     return None
@@ -2749,7 +2728,7 @@ def getHomedrive(username="pulseuser"):
 
         try:
             regquery = (
-                'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" /v "ProfileImagePath" /s'
+                r'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" /v "ProfileImagePath" /s'
                 % usersid
             )
             resultquery = simplecommand(encode_strconsole(regquery))
@@ -2876,7 +2855,7 @@ def is_connectedServer(ip, port):
     try:
         sock.connect((ip, port))
         return True
-    except socket.error:
+    except OSError:
         return False
     finally:
         sock.close()
@@ -3546,7 +3525,7 @@ def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
     except Exception as e:
-        logger.error(f"Error creating tar.{compresstype} archive : {str(e)}")
+        logger.error(f"Error creating tar.{compresstype} archive : {e!s}")
         return False
 
 
@@ -3563,7 +3542,7 @@ def extract_file(imput_file__gz_bz2, to_directory=".", compresstype="gz"):
             tar.extractall()
         return True
     except Exception as e:
-        logger.error(f"Error extracting tar.{str(e)} : {compresstype}")
+        logger.error(f"Error extracting tar.{e!s} : {compresstype}")
         return False
     finally:
         os.chdir(cwd)
@@ -3610,9 +3589,7 @@ def _path_packagequickaction():
         try:
             os.makedirs(pathqd)
         except OSError as e:
-            logger.error(
-                f"Error creating folder for quick deployment packages : {str(e)}"
-            )
+            logger.error(f"Error creating folder for quick deployment packages : {e!s}")
     return pathqd
 
 
@@ -3641,7 +3618,7 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
 
         if (
             os.path.exists(pathxmpppackage)
-            and int((time.time() - os.stat(pathxmpppackage).st_mtime)) < 600
+            and int(time.time() - os.stat(pathxmpppackage).st_mtime) < 600
         ):
             logger.debug(
                 f"No need to generate quick deployment package {pathxmpppackage}"
@@ -3825,9 +3802,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
         if sys.platform.startswith("win"):
             # Désactiver l'expiration du mot de passe avec `net user`
             result = simplecommand(
-                encode_strconsole(
-                    'net user "%s" /passwordchg:no' % username
-                )
+                encode_strconsole('net user "%s" /passwordchg:no' % username)
             )
             if result["code"] != 0:
                 msg = f"Error setting {username} user account to not expire: {result}"
@@ -3856,6 +3831,7 @@ def pulseuser_useraccount_mustexist(username="pulseuser"):
     else:
         msg = f"Creation of {username} user account failed: {result}"
         return False, msg
+
 
 def pulseuser_profile_mustexist(username="pulseuser"):
     """
@@ -3918,7 +3894,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
             homedir = os.path.expanduser(f"~{username}")
-        except Exception as e:
+        except Exception:
             msg = f"Error getting information for creating home folder for user {username}"
             return False, msg
         if not os.path.isdir(homedir):
@@ -3938,7 +3914,7 @@ def pulseuser_profile_mustexist(username="pulseuser"):
             uid = pwd.getpwnam(username).pw_uid
             gid = pwd.getpwnam(username).pw_gid
             homedir = os.path.expanduser(f"~{username}")
-        except Exception as e:
+        except Exception:
             msg = f"Error getting information for creating home folder for user {username}"
             return False, msg
         if not os.path.isdir(homedir):
@@ -3974,7 +3950,7 @@ def get_user_sid(username="pulseuser"):
         return win32security.ConvertSidToStringSid(
             win32security.LookupAccountName(None, username)[0]
         )
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -4004,7 +3980,6 @@ def get_profile_path_from_registry(sid):
                 winreg.HKEY_LOCAL_MACHINE,
                 f"{profilelist_key}\\{sid_key}",
             ) as key:
-
                 path, _ = winreg.QueryValueEx(key, "ProfileImagePath")
                 if not path:
                     continue
@@ -4103,6 +4078,7 @@ def delete_profile(username="pulseuser"):
 
     return True
 
+
 def create_idrsa_on_client(username="pulseuser", key=""):
     """
     Used on client machine for connecting to relay server
@@ -4167,7 +4143,7 @@ def apply_perms_sshkey(path, private=True):
                     path, win32security.DACL_SECURITY_INFORMATION, sd
                 )
         except Exception as e:
-            msg = f"Error setting permissions on {path} for user {user}: {str(e)}"
+            msg = f"Error setting permissions on {path} for user {user}: {e!s}"
             return False, msg
     else:
         # The owner must be pulseuser (medullauser on macOS)
@@ -4184,7 +4160,7 @@ def apply_perms_sshkey(path, private=True):
             os.chmod(os.path.dirname(path), 0o700)
             os.chmod(path, 0o600)
         except Exception as e:
-            msg = f"Error setting permissions on {path} for user {pwd.getpwuid(uid).pw_name}: {str(e)}"
+            msg = f"Error setting permissions on {path} for user {pwd.getpwuid(uid).pw_name}: {e!s}"
             return False, msg
 
     if sys.platform.startswith("win"):
@@ -4198,7 +4174,7 @@ def apply_perms_sshkey(path, private=True):
         list_perms_cmd = f"ls -e -l {path}"
     result = simplecommand(encode_strconsole(list_perms_cmd))
     logger.debug(f"Permissions on file {path}:")
-    logger.debug(f'{"".join(result["result"])}')
+    logger.debug(f"{''.join(result['result'])}")
     msg = f"Success applying permissions to file {path}"
     return True, msg
 
@@ -4276,7 +4252,7 @@ def reversessh_keys_mustexist_on_relay(username="reversessh"):
     try:
         uid = pwd.getpwnam(username).pw_uid
         homedir = os.path.expanduser(f"~{username}")
-    except Exception as e:
+    except Exception:
         msg = f"Error getting information for creating home folder for user {username}"
         return False, msg
     if not os.path.isdir(homedir):
@@ -4299,7 +4275,7 @@ def reversessh_keys_mustexist_on_relay(username="reversessh"):
     authorized_keys_path = os.path.join(
         os.path.expanduser(f"~{username}"), ".ssh", "authorized_keys"
     )
-    addtoauth_cmd = f"grep -qxF \"$(ssh-keygen -y -f {id_rsa_key_path})\" {authorized_keys_path} || ssh-keygen -y -f {id_rsa_key_path}) >> {authorized_keys_path}"
+    addtoauth_cmd = f'grep -qxF "$(ssh-keygen -y -f {id_rsa_key_path})" {authorized_keys_path} || ssh-keygen -y -f {id_rsa_key_path}) >> {authorized_keys_path}'
     simplecommand(encode_strconsole(addtoauth_cmd))
     os.chmod(os.path.dirname(id_rsa_key_path), 0o700)
     os.chown(os.path.dirname(id_rsa_key_path), uid, -1)
@@ -4600,9 +4576,10 @@ class downloadfile:
             )
         except urllib2.URLError as e:
             return False, f"URL Error on {self.url}: {e.reason}"
-        except IOError as e:
-            return False, "I/O error {0} on file {1}: {2}".format(
-                e.errno, self.urllocalfile, e.strerror
+        except OSError as e:
+            return (
+                False,
+                f"I/O error {e.errno} on file {self.urllocalfile}: {e.strerror}",
             )
         except (
             BaseException
@@ -4724,7 +4701,9 @@ def serialnumbermachine() -> str:
                 os.makedirs(os.path.dirname(serial_cache_file), 0o751)
             file_put_contents(serial_cache_file, _normalize(value) + "\n")
         except Exception:
-            logger.debug("Impossible d'ecrire le cache serialnumberserie.txt", exc_info=True)
+            logger.debug(
+                "Impossible d'ecrire le cache serialnumberserie.txt", exc_info=True
+            )
 
     def _read_serial_from_inventory_xml():
         inventory_candidates = []
@@ -4785,13 +4764,21 @@ def serialnumbermachine() -> str:
             "to be filled by o.e.m.",
             "00000000-0000-0000-0000-000000000000",
         )
+
     try:
         if sys.platform.startswith("win"):
-            result = subprocess.check_output(
-                ["powershell", "-Command",
-                 "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"],
-                stderr=subprocess.DEVNULL
-            ).decode("utf-8").strip()
+            result = (
+                subprocess.check_output(
+                    [
+                        "powershell",
+                        "-Command",
+                        "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID",
+                    ],
+                    stderr=subprocess.DEVNULL,
+                )
+                .decode("utf-8")
+                .strip()
+            )
             serial_uuid_machine = result if not _is_invalid_uuid(result) else ""
         elif sys.platform.startswith("linux"):
             # Source prioritaire sous Linux: lisible sans privilege root.
@@ -4807,7 +4794,11 @@ def serialnumbermachine() -> str:
 
             # Fallback historique via dmidecode.
             if _is_invalid_uuid(serial_uuid_machine):
-                dmidecode_paths = ["/usr/sbin/dmidecode", "/sbin/dmidecode", "dmidecode"]
+                dmidecode_paths = [
+                    "/usr/sbin/dmidecode",
+                    "/sbin/dmidecode",
+                    "dmidecode",
+                ]
                 for path in dmidecode_paths:
                     try:
                         result = subprocess.run(
@@ -4815,7 +4806,9 @@ def serialnumbermachine() -> str:
                             capture_output=True,
                             text=True,
                         )
-                        if result.returncode == 0 and not _is_invalid_uuid(result.stdout):
+                        if result.returncode == 0 and not _is_invalid_uuid(
+                            result.stdout
+                        ):
                             serial_uuid_machine = result.stdout.strip()
                             break
                     except FileNotFoundError:
@@ -4834,10 +4827,12 @@ def serialnumbermachine() -> str:
                         pass
         elif sys.platform.startswith("darwin"):
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
-            result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True
-            )
-            if result.returncode == 0 and result.stdout and not _is_invalid_uuid(result.stdout):
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if (
+                result.returncode == 0
+                and result.stdout
+                and not _is_invalid_uuid(result.stdout)
+            ):
                 serial_uuid_machine = result.stdout.replace("UUID", "").strip()
         else:
             logger.warning(
@@ -4846,7 +4841,7 @@ def serialnumbermachine() -> str:
     except Exception:
         logger.error(
             "Une erreur est survenue lors de l'exécution de la fonction serialnumbermachine :\n%s",
-            traceback.format_exc()
+            traceback.format_exc(),
         )
 
     if _is_valid_serial(serial_uuid_machine):
@@ -4867,12 +4862,12 @@ def base64strencode(data):
         if sys.version_info[0] == 3:
             result = result.decode()
     except Exception as e:
-        logger.error(f"error decode data in function base64strencode {str(e)}")
+        logger.error(f"error decode data in function base64strencode {e!s}")
     finally:
         return result
 
 
-class Singleton(object):
+class Singleton:
     def __new__(cls, *args):
         if "_the_instance" not in cls.__dict__:
             cls._the_instance = object.__new__(cls)
@@ -5323,8 +5318,6 @@ def powerschellscript1ps1(namescript):
         logger.error("\n%s" % (traceback.format_exc()))
     return obj
 
-
-
     def get_system_locale_linux():
         """
         Renvoie la locale actuelle du système, quelque soit la distribution Linux.
@@ -5335,39 +5328,41 @@ def powerschellscript1ps1(namescript):
         """
         if sys.platform.startswith("linux"):
             # 1. Vérifier la variable d'environnement LANG
-            lang = os.environ.get('LANG')
+            lang = os.environ.get("LANG")
             if lang:
                 return lang
 
             # 2. Vérifier la variable d'environnement LC_ALL
-            lc_all = os.environ.get('LC_ALL')
+            lc_all = os.environ.get("LC_ALL")
             if lc_all:
                 return lc_all
 
             # 3. Vérifier les fichiers de configuration des locales
             locale_files = [
-                '/etc/default/locale',      # Debian/Ubuntu
-                '/etc/locale.conf',          # Arch Linux, CentOS, Fedora, openSUSE
-                '/etc/sysconfig/language',   # openSUSE (ancienne méthode)
-                '/etc/environment',          # Certaines distributions
+                "/etc/default/locale",  # Debian/Ubuntu
+                "/etc/locale.conf",  # Arch Linux, CentOS, Fedora, openSUSE
+                "/etc/sysconfig/language",  # openSUSE (ancienne méthode)
+                "/etc/environment",  # Certaines distributions
             ]
 
             for file_path in locale_files:
                 if os.path.exists(file_path):
                     try:
-                        with open(file_path, 'r') as file:
+                        with open(file_path, "r") as file:
                             for line in file:
                                 line = line.strip()
-                                if line.startswith(('LANG=', 'LC_ALL=')):
-                                    locale = line.split('=', 1)[1].strip().strip('"')
+                                if line.startswith(("LANG=", "LC_ALL=")):
+                                    locale = line.split("=", 1)[1].strip().strip('"')
                                     return locale
                     except Exception:
                         continue
 
             # 4. Utiliser la commande `locale` pour obtenir la locale
             try:
-                result = subprocess.run(['locale', 'LANG'], capture_output=True, text=True, check=True)
-                lang = result.stdout.strip().split('=')[1].strip('"')
+                result = subprocess.run(
+                    ["locale", "LANG"], capture_output=True, text=True, check=True
+                )
+                lang = result.stdout.strip().split("=")[1].strip('"')
                 if lang:
                     return lang
             except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
@@ -5375,17 +5370,20 @@ def powerschellscript1ps1(namescript):
 
             # 5. Utiliser `localectl` si disponible
             try:
-                result = subprocess.run(['localectl', 'status'], capture_output=True, text=True, check=True)
+                result = subprocess.run(
+                    ["localectl", "status"], capture_output=True, text=True, check=True
+                )
                 for line in result.stdout.splitlines():
-                    if 'System Locale:' in line:
-                        lang = line.split(':')[1].strip()
-                        if lang != 'n/a':
+                    if "System Locale:" in line:
+                        lang = line.split(":")[1].strip()
+                        if lang != "n/a":
                             return lang
             except (subprocess.CalledProcessError, FileNotFoundError, IndexError):
                 pass
 
             # Si aucune locale n'est trouvée, retourner 'C' (locale par défaut)
-            return 'C'
+            return "C"
+
 
 class offline_search_kb:
     def __init__(self):
@@ -5401,8 +5399,8 @@ class offline_search_kb:
             "version_edge": "",
             "infobuild": {},
             "platform_info": {},
-            "office" :{},
-            "visual" : {},
+            "office": {},
+            "visual": {},
             "win11_compatibility": {},
         }
 
@@ -5446,24 +5444,34 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
-            self.info_package["system_center_endpoint_protection"] = self.search_scep_info()
+            self.info_package["system_center_endpoint_protection"] = (
+                self.search_scep_info()
+            )
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
-            self.info_package["windows_disk_encryption"] = self.search_windows_disk_encryption_info()
+            self.info_package["windows_disk_encryption"] = (
+                self.search_windows_disk_encryption_info()
+            )
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
             searchkb = self.searchpackage()
-            searchkb = self._merge_defender_kb_into_installed(searchkb, self.info_package.get("defender", {}))
+            searchkb = self._merge_defender_kb_into_installed(
+                searchkb, self.info_package.get("defender", {})
+            )
             self.info_package["kb_installed"] = searchkb
             self.info_package["kb_list"] = self.compact_kb(searchkb)
             self.info_package["kb_list_history"] = self.compact_kb_with_dates(searchkb)
             history_kb = [
-                item for item in searchkb
-                if str(item.get("InstalledBy", "") or "").strip() == "Windows Update History"
+                item
+                for item in searchkb
+                if str(item.get("InstalledBy", "") or "").strip()
+                == "Windows Update History"
             ]
-            self.info_package["kb_list_history_windows_update"] = self.compact_kb_with_dates(history_kb)
+            self.info_package["kb_list_history_windows_update"] = (
+                self.compact_kb_with_dates(history_kb)
+            )
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
@@ -5488,15 +5496,21 @@ class offline_search_kb:
                             "windows11_compatibility_report.json invalide (type=%s), fallback check_windows11_compatibility",
                             type(win11_payload).__name__,
                         )
-                        self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+                        self.info_package["win11_compatibility"] = (
+                            self.check_windows11_compatibility()
+                        )
                 except Exception as e:
                     logger.warning(
                         "Erreur de lecture windows11_compatibility_report.json (%s), fallback check_windows11_compatibility",
                         e,
                     )
-                    self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+                    self.info_package["win11_compatibility"] = (
+                        self.check_windows11_compatibility()
+                    )
             else:
-                self.info_package["win11_compatibility"] = self.check_windows11_compatibility()
+                self.info_package["win11_compatibility"] = (
+                    self.check_windows11_compatibility()
+                )
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
@@ -5528,7 +5542,11 @@ class offline_search_kb:
         return sanitized
 
     def get_json(self):
-        return json.dumps(self._sanitize_info_package_for_platform(self.info_package), indent=4, ensure_ascii=False)
+        return json.dumps(
+            self._sanitize_info_package_for_platform(self.info_package),
+            indent=4,
+            ensure_ascii=False,
+        )
 
     def get(self):
         return self._sanitize_info_package_for_platform(self.info_package)
@@ -5543,8 +5561,7 @@ class offline_search_kb:
         compactlist = []
         for t in listkb:
             hotfix = str(t.get("HotFixID", "") or "").strip()
-            if hotfix.startswith("KB"):
-                hotfix = hotfix[2:]
+            hotfix = hotfix.removeprefix("KB")
             installed_on = str(t.get("InstalledOn", "") or "").strip()
             if hotfix:
                 compactlist.append(f"[{hotfix},{installed_on}]")
@@ -5577,7 +5594,9 @@ class offline_search_kb:
         }
 
         for key in ("latest_security_intelligence_update", "latest_platform_update"):
-            update_info = defender_info.get(key, {}) if isinstance(defender_info, dict) else {}
+            update_info = (
+                defender_info.get(key, {}) if isinstance(defender_info, dict) else {}
+            )
             if not isinstance(update_info, dict):
                 continue
 
@@ -5585,7 +5604,9 @@ class offline_search_kb:
             if not kb_field:
                 continue
 
-            installed_on = self._convert_ms_json_date_to_mdy(update_info.get("Date", ""))
+            installed_on = self._convert_ms_json_date_to_mdy(
+                update_info.get("Date", "")
+            )
             kb_numbers = re.findall(r"\d+", kb_field)
             for kb_number in kb_numbers:
                 hotfix_id = f"KB{kb_number}"
@@ -5636,12 +5657,12 @@ class offline_search_kb:
         try:
             # Replace typographic characters before NFD decomposition
             replacements = {
-                "\u2013": "-",   # en dash -> hyphen
-                "\u2014": "-",   # em dash -> hyphen
-                "\u00a0": " ",   # non-breaking space -> space
-                "\u202f": " ",   # narrow no-break space -> space
-                "\u2009": " ",   # thin space -> space
-                "\u2026": "...", # ellipsis -> three dots
+                "\u2013": "-",  # en dash -> hyphen
+                "\u2014": "-",  # em dash -> hyphen
+                "\u00a0": " ",  # non-breaking space -> space
+                "\u202f": " ",  # narrow no-break space -> space
+                "\u2009": " ",  # thin space -> space
+                "\u2026": "...",  # ellipsis -> three dots
             }
             for char, replacement in replacements.items():
                 text_value = text_value.replace(char, replacement)
@@ -5665,7 +5686,11 @@ class offline_search_kb:
             return "NT AUTHORITY\\SYSTEM"
         if "LOCAL SERVICE" in actor or "SERVICE LOCAL" in actor:
             return "NT AUTHORITY\\LOCAL SERVICE"
-        if "NETWORK SERVICE" in actor or "SERVICE RESEAU" in actor or "SERVICE R\u00c9SEAU" in actor:
+        if (
+            "NETWORK SERVICE" in actor
+            or "SERVICE RESEAU" in actor
+            or "SERVICE R\u00c9SEAU" in actor
+        ):
             return "NT AUTHORITY\\NETWORK SERVICE"
 
         return self._sanitize_text_value(value)
@@ -5689,7 +5714,10 @@ class offline_search_kb:
         raw_value = self._sanitize_text_value(value)
         lowered = raw_value.lower()
 
-        if "station de travail autonome" in lowered or "standalone workstation" in lowered:
+        if (
+            "station de travail autonome" in lowered
+            or "standalone workstation" in lowered
+        ):
             return "Standalone Workstation"
         if "member server" in lowered or "serveur membre" in lowered:
             return "Member Server"
@@ -5746,7 +5774,9 @@ class offline_search_kb:
                         kb.get("Description", "") or kb.get("description", "") or ""
                     ),
                     "HotFixID": hotfix_id,
-                    "InstalledBy": self._normalize_installed_by(kb.get("InstalledBy", "") or ""),
+                    "InstalledBy": self._normalize_installed_by(
+                        kb.get("InstalledBy", "") or ""
+                    ),
                     "InstalledOn": str(kb.get("InstalledOn", "") or "").strip(),
                 }
             )
@@ -5788,7 +5818,9 @@ class offline_search_kb:
                 return []
             return self._normalize_hotfix_entries(json.loads(output))
         except Exception:
-            logger.error("_search_hotfixes_in_update_history : %s" % traceback.format_exc())
+            logger.error(
+                "_search_hotfixes_in_update_history : %s" % traceback.format_exc()
+            )
             return []
 
     def _run_powershell_json(self, ps_command, timeout=30):
@@ -5861,13 +5893,17 @@ class offline_search_kb:
         )
         history_payload = self._run_powershell_json(history_command)
         if isinstance(history_payload, dict):
-            if isinstance(history_payload.get("latest_security_intelligence_update"), dict):
+            if isinstance(
+                history_payload.get("latest_security_intelligence_update"), dict
+            ):
                 security_update = history_payload["latest_security_intelligence_update"]
                 defender_info["latest_security_intelligence_update"] = {
                     "KB": "2267602",
                     "Date": security_update.get("Date"),
                     "Title": "Security intelligence update (KB2267602)",
-                    "TitleRaw": self._normalize_to_ascii(security_update.get("Title", "")),
+                    "TitleRaw": self._normalize_to_ascii(
+                        security_update.get("Title", "")
+                    ),
                 }
             if isinstance(history_payload.get("latest_platform_update"), dict):
                 platform_update = history_payload["latest_platform_update"]
@@ -5875,7 +5911,9 @@ class offline_search_kb:
                     "KB": "4052623/5007651",
                     "Date": platform_update.get("Date"),
                     "Title": "Defender platform update (KB4052623/KB5007651)",
-                    "TitleRaw": self._normalize_to_ascii(platform_update.get("Title", "")),
+                    "TitleRaw": self._normalize_to_ascii(
+                        platform_update.get("Title", "")
+                    ),
                 }
 
         return defender_info
@@ -5915,15 +5953,15 @@ class offline_search_kb:
             "} "
             "} "
             "} catch {} ; "
-            "$keys = @(" 
+            "$keys = @("
             "'HKLM:\\SOFTWARE\\Microsoft\\System Center Endpoint Protection', "
             "'HKLM:\\SOFTWARE\\Microsoft\\Microsoft Antimalware', "
-            "'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\System Center Endpoint Protection'" 
+            "'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\System Center Endpoint Protection'"
             "); "
             "foreach ($k in $keys) { if (Test-Path $k) { $result.registry_keys += $k } }; "
-            "$uninstall_paths = @(" 
+            "$uninstall_paths = @("
             "'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', "
-            "'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'" 
+            "'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'"
             "); "
             "foreach ($p in $uninstall_paths) { "
             "try { "
@@ -5953,7 +5991,9 @@ class offline_search_kb:
         scep_info["registry_keys"] = payload.get("registry_keys", []) or []
         scep_info["uninstall_entries"] = payload.get("uninstall_entries", []) or []
         scep_info["kb2461484_hotfix"] = bool(payload.get("kb2461484_hotfix", False))
-        scep_info["kb2461484_wu_history"] = bool(payload.get("kb2461484_wu_history", False))
+        scep_info["kb2461484_wu_history"] = bool(
+            payload.get("kb2461484_wu_history", False)
+        )
 
         if bool(payload.get("scep_in_security_center", False)):
             scep_info["sources"].append("security_center")
@@ -6019,16 +6059,16 @@ class offline_search_kb:
             try:
                 # Commande PowerShell avec date universelle M/d/yyyy
                 ps_command = (
-                    'Get-HotFix | '
-                    'Select-Object HotFixID, Description, InstalledBy, '
+                    "Get-HotFix | "
+                    "Select-Object HotFixID, Description, InstalledBy, "
                     '@{Name="InstalledOn";Expression={$_.InstalledOn.ToString("M/d/yyyy")}} | '
-                    'ConvertTo-Json'
+                    "ConvertTo-Json"
                 )
 
                 result = subprocess.run(
                     ["powershell", "-Command", ps_command],
                     capture_output=True,
-                    text=True
+                    text=True,
                 )
 
                 output = result.stdout
@@ -6044,10 +6084,17 @@ class offline_search_kb:
                 # Certaines KB Defender/SCEP n'apparaissent pas toujours dans Get-HotFix.
                 missing_hotfix_ids = [
                     hotfix_id
-                    for hotfix_id in ("KB5007651", "KB4052623", "KB2267602", "KB2461484")
+                    for hotfix_id in (
+                        "KB5007651",
+                        "KB4052623",
+                        "KB2267602",
+                        "KB2461484",
+                    )
                     if hotfix_id not in {item["HotFixID"] for item in endresult}
                 ]
-                endresult.extend(self._search_hotfixes_in_update_history(missing_hotfix_ids))
+                endresult.extend(
+                    self._search_hotfixes_in_update_history(missing_hotfix_ids)
+                )
 
             except Exception as e:
                 logger.error("searchpackage : %s" % e)
@@ -6070,7 +6117,7 @@ class offline_search_kb:
                     "ProductName",
                 )
                 try:
-                    cmd = """powershell "(Get-ChildItem 'C:\Windows\System32\mrt.exe').VersionInfo | Format-List *" """
+                    cmd = r"""powershell "(Get-ChildItem 'C:\Windows\System32\mrt.exe').VersionInfo | Format-List *" """
                     result = simplecommand(encode_strconsole(cmd))
                     if int(result["code"]) == 0:
                         line = [
@@ -6102,7 +6149,7 @@ class offline_search_kb:
                             % result["result"]
                         )
                 except:
-                    logging.getLogger().error(("%s" % (traceback.format_exc())))
+                    logging.getLogger().error("%s" % (traceback.format_exc()))
 
                 history_payload = self._run_powershell_json(
                     "$ErrorActionPreference = 'SilentlyContinue'; "
@@ -6117,8 +6164,12 @@ class offline_search_kb:
                 )
                 if isinstance(history_payload, dict) and history_payload.get("Date"):
                     result_cmd["UpdateDate"] = str(history_payload.get("Date", ""))
-                    result_cmd["UpdateTitle"] = "Windows Malicious Software Removal Tool (KB890830)"
-                    result_cmd["UpdateTitleRaw"] = self._normalize_to_ascii(history_payload.get("Title", ""))
+                    result_cmd["UpdateTitle"] = (
+                        "Windows Malicious Software Removal Tool (KB890830)"
+                    )
+                    result_cmd["UpdateTitleRaw"] = self._normalize_to_ascii(
+                        history_payload.get("Title", "")
+                    )
                     result_cmd["UpdateDateSource"] = "Windows Update History"
                 else:
                     file_payload = self._run_powershell_json(
@@ -6129,8 +6180,12 @@ class offline_search_kb:
                         "ConvertTo-Json -Compress "
                         "} catch { @{} | ConvertTo-Json -Compress }"
                     )
-                    if isinstance(file_payload, dict) and file_payload.get("UpdateDate"):
-                        result_cmd["UpdateDate"] = str(file_payload.get("UpdateDate", ""))
+                    if isinstance(file_payload, dict) and file_payload.get(
+                        "UpdateDate"
+                    ):
+                        result_cmd["UpdateDate"] = str(
+                            file_payload.get("UpdateDate", "")
+                        )
                         result_cmd["UpdateDateSource"] = "mrt.exe LastWriteTime"
         return result_cmd
 
@@ -6145,7 +6200,7 @@ class offline_search_kb:
                     if vers:
                         Versionedge = vers[0]
             except:
-                logging.getLogger().error(("%s" % (traceback.format_exc())))
+                logging.getLogger().error("%s" % (traceback.format_exc()))
         return Versionedge
 
     def search_net_info_reg(self):
@@ -6155,7 +6210,7 @@ class offline_search_kb:
                 "CBS",
                 "Install",
                 "InstallPath",
-                "Release," "Servicing",
+                "Release,Servicing",
                 "TargetVersion",
                 "Version",
             )
@@ -6199,7 +6254,9 @@ class offline_search_kb:
                 cmd = r'powershell -Command "Get-ChildItem \"HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" | ForEach-Object { Get-ItemProperty $_.PsPath } | Where-Object { $_.DisplayName -like \"*Microsoft Office*\" } | Select-Object -First 1 -ExpandProperty DisplayName"'
                 result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
-                    office_name = [x.strip() for x in result["result"] if x.strip() != ""]
+                    office_name = [
+                        x.strip() for x in result["result"] if x.strip() != ""
+                    ]
                     if office_name:
                         office_info["version"] = office_name[0]
                         # Extraction de l'année si présente dans la chaîne
@@ -6218,7 +6275,9 @@ class offline_search_kb:
                 cmd = r'powershell -Command "Get-ChildItem \"HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" | ForEach-Object { Get-ItemProperty $_.PsPath } | Where-Object { $_.DisplayName -like \"*Visual Studio*\" } | Select-Object -First 1 -ExpandProperty DisplayName"'
                 result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
-                    visual_name = [x.strip() for x in result["result"] if x.strip() != ""]
+                    visual_name = [
+                        x.strip() for x in result["result"] if x.strip() != ""
+                    ]
                     if visual_name:
                         visual_info["version"] = visual_name[0]
                         # Extraction de l'année si présente dans la chaîne
@@ -6246,7 +6305,6 @@ class offline_search_kb:
                     if len(lcmd) == 3:
                         return lcmd[2]
         return ""
-
 
     def search_system_info_reg(self):
         result_cmd = {}
@@ -6378,7 +6436,7 @@ class offline_search_kb:
                         "search WinSystemLocale : %s" % result["result"]
                     )
             except:
-                logging.getLogger().error(("%s" % (traceback.format_exc())))
+                logging.getLogger().error("%s" % (traceback.format_exc()))
             try:
                 cmd = """powershell -ExecutionPolicy Bypass "Get-WinSystemLocale| select ThreeLetterWindowsLanguageName" """
                 result = simplecommand(encode_strconsole(cmd))
@@ -6388,15 +6446,15 @@ class offline_search_kb:
                         for x in result["result"]
                         if x.strip() != ""
                     ][-1:][0]
-                    result_cmd["Locale"][
-                        "ThreeLetterWindowsLanguageName"
-                    ] = T_L_W_LanguageName
+                    result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = (
+                        T_L_W_LanguageName
+                    )
                 else:
                     logging.getLogger().error(
                         "search ThreeLetterWindowsLanguageName %s" % result["result"]
                     )
             except:
-                logging.getLogger().error(("%s" % (traceback.format_exc())))
+                logging.getLogger().error("%s" % (traceback.format_exc()))
         return result_cmd
 
     def bytes_to_string(self, x):
@@ -6440,7 +6498,9 @@ class offline_search_kb:
                     "node": str(line[0]),
                     "platform": line[1].lower(),
                     "version": line[2],
-                    "OS Configuration": self._normalize_os_configuration(os_configuration_raw),
+                    "OS Configuration": self._normalize_os_configuration(
+                        os_configuration_raw
+                    ),
                     "OS Configuration Raw": os_configuration_raw,
                     "Product ID": line[8],
                     "Original Install Date": line[9],
@@ -6488,7 +6548,7 @@ class offline_search_kb:
 
         # RAM >= 4 Go
         try:
-            ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+            ram_gb = psutil.virtual_memory().total / (1024**3)
             result["ram"] = {"ok": ram_gb >= 4, "value_gb": round(ram_gb, 2)}
         except Exception:
             result["ram"] = {"ok": False, "value_gb": None}
@@ -6496,7 +6556,7 @@ class offline_search_kb:
         # Disque C:\ >= 64 Go
         try:
             total, _, _ = shutil.disk_usage("C:\\")
-            disk_gb = total / (1024 ** 3)
+            disk_gb = total / (1024**3)
             result["disk"] = {"ok": disk_gb >= 64, "value_gb": round(disk_gb, 2)}
         except Exception:
             result["disk"] = {"ok": False, "value_gb": None}
@@ -6504,11 +6564,16 @@ class offline_search_kb:
         # UEFI
         try:
             r = subprocess.run(
-                ["powershell", "-NoProfile", "-Command",
-                 "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
-                 "$OutputEncoding = [System.Text.Encoding]::UTF8; "
-                 "Confirm-SecureBootUEFI"],
-                capture_output=True, text=False,
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+                    "$OutputEncoding = [System.Text.Encoding]::UTF8; "
+                    "Confirm-SecureBootUEFI",
+                ],
+                capture_output=True,
+                text=False,
             )
             stdout = r.stdout.decode("utf-8", errors="replace").strip().lower()
             stderr = r.stderr.decode("utf-8", errors="replace").strip().lower()
@@ -6539,7 +6604,8 @@ class offline_search_kb:
             )
             r = subprocess.run(
                 ["powershell", "-NoProfile", "-Command", ps_tpm],
-                capture_output=True, text=True,
+                capture_output=True,
+                text=True,
             )
             tpm = json.loads(r.stdout.strip()) if r.stdout.strip() else {}
             spec = tpm.get("SpecVersion", "") or ""
@@ -6561,13 +6627,13 @@ class offline_search_kb:
         try:
             cpu = platform.processor().lower()
             cpu_ok = False
-            intel_match = re.search(r'i[3579]-(\d{4,5})', cpu)
+            intel_match = re.search(r"i[3579]-(\d{4,5})", cpu)
             if intel_match:
                 digits = intel_match.group(1)
                 generation = int(digits[:2] if len(digits) == 5 else digits[:1])
                 cpu_ok = generation >= 8
             else:
-                amd_match = re.search(r'ryzen\s*(\d)', cpu)
+                amd_match = re.search(r"ryzen\s*(\d)", cpu)
                 if amd_match:
                     cpu_ok = int(amd_match.group(1)) >= 2
             result["cpu"] = {"ok": cpu_ok, "processor": cpu}
@@ -6584,7 +6650,8 @@ class offline_search_kb:
             )
             r = subprocess.run(
                 ["powershell", "-NoProfile", "-Command", ps_gpu],
-                capture_output=True, text=True,
+                capture_output=True,
+                text=True,
             )
             gpu_data = json.loads(r.stdout.strip()) if r.stdout.strip() else []
             if isinstance(gpu_data, dict):
@@ -6592,7 +6659,10 @@ class offline_search_kb:
             result["graphics"] = {
                 "ok": True,
                 "devices": [
-                    {"name": g.get("Name", ""), "driver_version": g.get("DriverVersion", "")}
+                    {
+                        "name": g.get("Name", ""),
+                        "driver_version": g.get("DriverVersion", ""),
+                    }
                     for g in gpu_data
                 ],
             }
@@ -6609,7 +6679,8 @@ class offline_search_kb:
             )
             r = subprocess.run(
                 ["powershell", "-NoProfile", "-Command", ps_screen],
-                capture_output=True, text=True,
+                capture_output=True,
+                text=True,
             )
             screens = json.loads(r.stdout.strip()) if r.stdout.strip() else []
             if isinstance(screens, dict):
@@ -6760,7 +6831,7 @@ def execute_medulla_info_update():
         try:
             # Exécuter le script en utilisant l'interpréteur Python
             subprocess.run(
-                ["c:\Program Files\Python3\python.exe", script_path], check=True
+                [r"c:\Program Files\Python3\python.exe", script_path], check=True
             )
             logger.info("Le script medulla_info_update.py a été exécuté avec succès.")
         except subprocess.CalledProcessError as e:
@@ -7068,7 +7139,7 @@ class convert:
                 raise yaml.YAMLError(
                     "Erreur lors de la conversion de la chaîne YAML en dictionnaire."
                 )
-        except yaml.YAMLError as e:
+        except yaml.YAMLError:
             raise ValueError(
                 "Erreur lors de la conversion de la chaîne YAML en dictionnaire."
             )
@@ -7095,7 +7166,7 @@ class convert:
             dict2 = convert.yaml_string_to_dict(yaml_string2)
             return convert.compare_dicts(dict1, dict2)
         except ValueError as e:
-            print(f"Erreur: {str(e)}")
+            print(f"Erreur: {e!s}")
             return False
 
     # JSON
@@ -7138,7 +7209,7 @@ class convert:
         if isinstance(stringdata, (str)):
             try:
                 return json.loads(stringdata)
-            except json.decoder.JSONDecodeError as e:
+            except json.decoder.JSONDecodeError:
                 raise
             except Exception as e:
                 # Code de gestion d'autres types d'exceptions
@@ -7177,7 +7248,7 @@ class convert:
             dict2 = convert.xml_to_dict(xml_file2)
             return convert.compare_dicts(dict1, dict2)
         except ValueError as e:
-            print(f"Erreur: {str(e)}")
+            print(f"Erreur: {e!s}")
             return False
 
     @staticmethod
@@ -7270,7 +7341,7 @@ class convert:
             try:
                 str(data)
                 return data
-            except Exception as e:
+            except Exception:
                 raise ValueError(
                     "Type %s impossible de convertir en string " % type(data)
                 )
@@ -7619,7 +7690,6 @@ class convert:
         return formatted_xml
 
 
-
 class NetworkInfoxmpp:
     """
     Classe pour récupérer les informations réseau d'une machine, notamment l'adresse IP, les détails de l'interface,
@@ -7633,6 +7703,7 @@ class NetworkInfoxmpp:
         ip_address (str | None): L'adresse IP locale obtenue.
         details (dict | None): Les détails de l'interface réseau (adresse IP, masque, passerelle, etc.).
     """
+
     def __init__(self, port: int | None = None, sock: socket.socket | None = None):
         """
         Initialise une instance de NetworkInfoxmpp avec un port ou une socket.
@@ -7684,7 +7755,9 @@ class NetworkInfoxmpp:
             if isinstance(local_addr, tuple):
                 return local_addr[0]
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération de l'IP depuis la socket : {e}")
+            logger.error(
+                f"Erreur lors de la récupération de l'IP depuis la socket : {e}"
+            )
             return None
         return None
 
@@ -7736,7 +7809,9 @@ class NetworkInfoxmpp:
                     details["ip_address"] = addr.address
                     details["netmask"] = addr.netmask
                     details["broadcast"] = addr.broadcast
-                    logger.debug(f"Interface trouvée : {interface_name}, détails : {details}")
+                    logger.debug(
+                        f"Interface trouvée : {interface_name}, détails : {details}"
+                    )
                     break
             if interface_name:
                 break
@@ -7747,8 +7822,7 @@ class NetworkInfoxmpp:
 
         try:
             network = ipaddress.IPv4Network(
-                f"{details['ip_address']}/{details['netmask']}",
-                strict=False
+                f"{details['ip_address']}/{details['netmask']}", strict=False
             )
             details["network"] = str(network.network_address)
         except Exception as e:
@@ -7791,14 +7865,22 @@ class NetworkInfoxmpp:
                             return socket.inet_ntoa(bytes.fromhex(fields[2])[::-1])
             elif platform.system() == "Windows":
                 import subprocess
-                result = subprocess.run(["netsh", "interface", "ipv4", "show", "route"], capture_output=True, text=True)
+
+                result = subprocess.run(
+                    ["netsh", "interface", "ipv4", "show", "route"],
+                    capture_output=True,
+                    text=True,
+                )
                 for line in result.stdout.splitlines():
                     if "0.0.0.0" in line and "Interface" in line:
                         gateway = line.split()[3]
                         return gateway
             elif platform.system() == "Darwin":  # macOS
                 import subprocess
-                result = subprocess.run(["netstat", "-rn"], capture_output=True, text=True)
+
+                result = subprocess.run(
+                    ["netstat", "-rn"], capture_output=True, text=True
+                )
                 for line in result.stdout.splitlines():
                     if "default" in line:
                         gateway = line.split()[1]
@@ -7841,12 +7923,7 @@ class NetworkInfoxmpp:
         Returns:
             str: L'adresse MAC réduite, sans séparateurs et en minuscules.
         """
-        reduced = (
-            mac.lower()
-            .replace(":", "")
-            .replace("-", "")
-            .replace(" ", "")
-        )
+        reduced = mac.lower().replace(":", "").replace("-", "").replace(" ", "")
         logger.debug(f"Adresse MAC réduite : {reduced}")
         return reduced
 
@@ -7872,51 +7949,49 @@ class NetworkInfoxmpp:
         sock_info = str(sock)
         logger.info(f"Informations de la socket : {sock_info}")
 
-        # Parsing des informations
-        parts = sock_info.split(", ")
+        # Parsing des informations. "laddr=('ip', port)" contient une virgule
+        # interne au tuple : un simple split(", ") la casse et perd le port.
+        # On capture donc chaque valeur soit comme un tuple "(...)" complet,
+        # soit comme un jeton simple jusqu'à la prochaine virgule.
         info_dict = {}
-        for part in parts:
-            if "=" in part:
-                key, value = part.split("=", 1)
-                info_dict[key.strip()] = value.strip()
+        for key, value in re.findall(r"(\w+)=(\([^)]*\)|[^,]+)", sock_info):
+            info_dict[key.strip()] = value.strip()
 
-        # Extraction des adresses locales et distantes
-        laddr_str = info_dict.get("laddr", "").strip("()")
-        raddr_str = info_dict.get("raddr", "").strip("()")
+        def _split_addr(raw):
+            match = re.match(r"\('([^']+)',\s*(\d+)\)", raw) if raw else None
+            if match:
+                return match.group(1), match.group(2)
+            return "N/A", "N/A"
 
-        # Gestion des cas où laddr_str ou raddr_str ne sont pas bien formatés
-        try:
-            laddr_ip, laddr_port = laddr_str.split(",") if "," in laddr_str else (laddr_str, "N/A")
-            laddr_ip = laddr_ip.strip("' ")
-            laddr_port = laddr_port.strip(") ")
-        except Exception as e:
-            logger.error(f"Erreur lors du parsing de l'adresse locale : {e}")
-            laddr_ip, laddr_port = "N/A", "N/A"
-
-        try:
-            raddr_ip, raddr_port = raddr_str.split(",") if "," in raddr_str else (raddr_str, "N/A")
-            raddr_ip = raddr_ip.strip("' ")
-            raddr_port = raddr_port.strip(") ")
-        except Exception as e:
-            logger.error(f"Erreur lors du parsing de l'adresse distante : {e}")
-            raddr_ip, raddr_port = "N/A", "N/A"
+        laddr_ip, laddr_port = _split_addr(info_dict.get("laddr"))
+        raddr_ip, raddr_port = _split_addr(info_dict.get("raddr"))
 
         # Affichage des informations
         logger.info("\n--- Détails de la connexion ---")
         logger.info(f"Type de socket : {sock.__class__.__name__}")
         logger.info(f"Descripteur de fichier (fd) : {info_dict.get('fd', 'N/A')}")
-        logger.info(f"Famille d'adresses : {'IPv4' if info_dict.get('family') == '2' else 'Inconnu'}")
-        logger.info(f"Type de socket : {'TCP (SOCK_STREAM)' if info_dict.get('type') == '1' else 'Inconnu'}")
-        logger.info(f"Protocole : {'TCP' if info_dict.get('proto') == '6' else 'Inconnu'}")
+        logger.info(
+            f"Famille d'adresses : {'IPv4' if info_dict.get('family') == '2' else 'Inconnu'}"
+        )
+        logger.info(
+            f"Type de socket : {'TCP (SOCK_STREAM)' if info_dict.get('type') == '1' else 'Inconnu'}"
+        )
+        logger.info(
+            f"Protocole : {'TCP' if info_dict.get('proto') == '6' else 'Inconnu'}"
+        )
         logger.info(f"Adresse locale (IP:Port) : ({laddr_ip}:{laddr_port})")
         logger.info(f"Adresse distante (IP:Port) : ({raddr_ip}:{raddr_port})")
 
         # Précision sur la connexion locale
         if laddr_ip != "N/A" and raddr_ip != "N/A" and laddr_ip == raddr_ip:
             logger.info("\n--- Analyse ---")
-            logger.info(f"L'agent et le serveur sont sur la même machine (IP : {laddr_ip}).")
+            logger.info(
+                f"L'agent et le serveur sont sur la même machine (IP : {laddr_ip})."
+            )
             logger.info(f"Port local utilisé : {laddr_port}")
-            logger.info(f"Port distant (service) : {raddr_port} (port standard pour XMPP).")
+            logger.info(
+                f"Port distant (service) : {raddr_port} (port standard pour XMPP)."
+            )
             logger.info(" boucle locale (loopback)")
         elif laddr_ip != "N/A" and raddr_ip != "N/A":
             logger.info("\n--- Analyse ---")
@@ -7924,8 +7999,12 @@ class NetworkInfoxmpp:
 
         # Autres informations intéressantes
         logger.info("\n--- Informations supplémentaires ---")
-        logger.info(f"Le port {raddr_port} est utilisé pour le protocole XMPP (Jabber).")
-        logger.info(f"Le port local {laddr_port} est attribué dynamiquement par le système pour cette connexion.")
+        logger.info(
+            f"Le port {raddr_port} est utilisé pour le protocole XMPP (Jabber)."
+        )
+        logger.info(
+            f"Le port local {laddr_port} est attribué dynamiquement par le système pour cette connexion."
+        )
 
 
 def clean_update_directories():
@@ -8029,8 +8108,12 @@ def eject_cdrom_drives():
             timeout=30,
         )
         if result.returncode == 0:
-            logger.debug("CD-ROM drives ejection completed: %s", result.stdout.strip() or "done")
+            logger.debug(
+                "CD-ROM drives ejection completed: %s", result.stdout.strip() or "done"
+            )
         else:
-            logger.warning("CD-ROM drives ejection issue: %s", result.stderr or result.stdout)
+            logger.warning(
+                "CD-ROM drives ejection issue: %s", result.stderr or result.stdout
+            )
     except Exception as e:
         logger.error("eject_cdrom_drives error: %s", str(e))

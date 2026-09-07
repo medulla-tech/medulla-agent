@@ -1,139 +1,125 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
-import socket
-from typing import Optional, Dict, List, Union, Any
-import glob
-import sys
-import os
-import logging
-from logging.handlers import TimedRotatingFileHandler
-import traceback
-import platform
+import asyncio
 import base64
-import json
-import time
-import threading
-import shutil
-import subprocess
-import psutil
-import random
-import hashlib
 import configparser
-from lib.manageresourceplugin import resource_plugin
-import zlib
+import glob
+import hashlib
 import importlib
+import json
+import logging
+import multiprocessing
+import os
+import platform
+import random
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import traceback
+import zipfile
+import zlib
+from datetime import datetime, timezone
+from logging.handlers import TimedRotatingFileHandler
+from modulefinder import ModuleFinder
+from multiprocessing import Event, Process, Queue, Value
+from multiprocessing.managers import SyncManager
+from optparse import OptionParser
+from zipfile import *
+
 import cherrypy
-from lib.reverseport import reverse_port_ssh
+import psutil
 from lib.agentconffile import (
     conffilename,
     conffilenametmp,
-    medullaPath,
     directoryconffile,
+    medullaPath,
     pulseTempDir,
 )
-from lib.update_remote_agent import Update_Remote_Agent
-from lib.xmppiq import dispach_iq_command
+from lib.configuration import (
+    changeconnection,
+    confParameter,
+    nextalternativeclusterconnectioninformation,
+)
+from lib.grafcetdeploy import grafcet
+from lib.httpserver import Controller
+from lib.iq_custom import Myiq
+from lib.logcolor import (
+    XmppLogHandler,
+    add_coloring_to_emit_ansi,
+    add_coloring_to_emit_windows,
+)
+from lib.manage_event import manage_event
+from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
+from lib.manage_scheduler import manage_scheduler
+from lib.manage_xmppbrowsing import xmppbrowsing
+from lib.managedbkiosk import manageskioskdb
+from lib.managedeployscheduler import ManageDbScheduler
+from lib.managefifo import fifodeploy
+from lib.managepackage import managepackage
+from lib.manageRSAsigned import MsgsignedRSA, installpublickey
+from lib.managesession import session
 from lib.networkinfo import (
+    adusergroups,
     networkagentinfo,
     organizationbymachine,
     organizationbyuser,
-    adusergroups,
 )
-from lib.configuration import (
-    confParameter,
-    nextalternativeclusterconnection,
-    changeconnection,
-    nextalternativeclusterconnectioninformation,
-    alternativeclusterconnection,
-)
-from lib.managesession import session
-from lib.managefifo import fifodeploy
-from lib.managedeployscheduler import ManageDbScheduler
-from lib.managedbkiosk import manageskioskdb
-
-from lib.iq_custom import iq_custom_xep, iq_value, Myiq
+from lib.reverseport import reverse_port_ssh
+from lib.syncthingapirest import conf_ars_deploy, iddevice, syncthing, syncthingprogram
+from lib.update_remote_agent import Update_Remote_Agent
 from lib.utils import (
     DEBUGPULSE,
+    DateTimebytesEncoderjson,
+    Env,
     NetworkInfoxmpp,
-    refreshfingerprint,
-    getRandomName,
-    load_back_to_deploy,
-    cleanbacktodeploy,
-    call_plugin,
-    call_mon_plugin,
-    subnetnetwork,
-    createfingerprintnetwork,
-    isWinUserAdmin,
-    isMacOsUserAdmin,
-    check_exist_ip_port,
-    ipfromdns,
-    shutdown_command,
-    reboot_command,
-    vnc_set_permission,
-    save_count_start,
-    unregister_agent,
-    unregister_subscribe,
-    test_kiosk_presence,
-    file_get_contents,
-    isBase64,
-    connection_established,
-    file_put_contents,
-    simplecommand,
-    testagentconf,
     Setdirectorytempinfo,
+    call_plugin,
+    call_plugin_sequentially,
+    check_exist_ip_port,
+    clean_update_directories,
+    cleanbacktodeploy,
+    connection_established,
+    convert,
+    createfingerprintnetwork,
+    file_get_contents,
+    file_message_iq,
+    file_put_contents,
+    geolocalisation_agent,
+    get_extracted_driver_key,
+    getRandomName,
+    ipfromdns,
+    isBase64,
+    isMacOsUserAdmin,
+    isWinUserAdmin,
+    load_back_to_deploy,
+    offline_search_kb,
+    os_version,
+    protodef,
+    reboot_command,
+    refreshfingerprint,
+    save_count_start,
+    serialnumbermachine,
     setgetcountcycle,
     setgetrestart,
-    protodef,
-    geolocalisation_agent,
-    Env,
-    serialnumbermachine,
-    file_put_contents_w_a,
-    os_version,
-    offline_search_kb,
-    file_message_iq,
-    call_plugin_sequentially,
-    convert,
-    DateTimebytesEncoderjson,
-    clean_update_directories,
-    get_extracted_driver_key,
+    shutdown_command,
+    simplecommand,
+    subnetnetwork,
+    test_kiosk_presence,
+    testagentconf,
+    unregister_agent,
+    vnc_set_permission,
 )
-from lib.manage_xmppbrowsing import xmppbrowsing
-from lib.manage_event import manage_event
-from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
-from lib.syncthingapirest import syncthing, syncthingprogram, iddevice, conf_ars_deploy
-from lib.manage_scheduler import manage_scheduler
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows, XmppLogHandler
-from lib.manageRSAsigned import MsgsignedRSA, installpublickey
-from lib.managepackage import managepackage
-from lib.httpserver import Controller
-from lib.grafcetdeploy import grafcet
-from zipfile import *
-from optparse import OptionParser
-from multiprocessing import Queue, Process, Event, Value
-from multiprocessing.managers import SyncManager
-import multiprocessing
-from modulefinder import ModuleFinder
-from datetime import datetime, timezone
-
-import zipfile
-import tempfile
-
-from slixmpp import ClientXMPP
-from slixmpp import jid
-from slixmpp.xmlstream import handler, matcher
+from lib.xmppiq import dispach_iq_command
+from slixmpp import ClientXMPP, jid
 from slixmpp.exceptions import IqError, IqTimeout
-from slixmpp.xmlstream.stanzabase import ET
 from slixmpp.xmlstream.handler import Callback, CoroutineCallback
-from slixmpp.xmlstream.matcher.xpath import MatchXPath
 from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
-from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
-from slixmpp.xmlstream.matcher.many import MatchMany
-from slixmpp.xmlstream.matcher.idsender import MatchIDSender
-from slixmpp.xmlstream.matcher.id import MatcherId
-from slixmpp.xmlstream.matcher.base import MatcherBase
-import asyncio
+from slixmpp.xmlstream.matcher.xpath import MatchXPath
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -141,19 +127,14 @@ if sys.platform == "win32":
 if sys.platform.startswith("win"):
     import win32api
     import win32con
-    import win32pipe
     import win32file
-    import win32com.client
 else:
     import signal
-    from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
-    import posix_ipc
 
 
 from lib.server_kiosk import (
     manage_kiosk_message,
 )
-
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
@@ -218,9 +199,7 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
         utc=False,
         compress="zip",
     ):
-        super(TimedCompressedRotatingFileHandler, self).__init__(
-            filename, when, interval, backupCount, encoding, delay, utc
-        )
+        super().__init__(filename, when, interval, backupCount, encoding, delay, utc)
         self.backupCountlocal = backupCount
 
     def get_files_by_date(self):
@@ -245,7 +224,7 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
         return result[1][1]
 
     def doRollover(self):
-        super(TimedCompressedRotatingFileHandler, self).doRollover()
+        super().doRollover()
         try:
             dfn = self.get_files_by_date()
         except Exception:
@@ -351,7 +330,6 @@ class MUCBot(ClientXMPP):
         laps_time_check_established_connection = 900
         laps_time_send_ping_to_kiosk = 350
 
-
         # log direct
         # attributs
         self.Log_Request = "Log_Request"
@@ -365,7 +343,7 @@ class MUCBot(ClientXMPP):
         # logger agent
         self.logger = logging.getLogger("agentxmpp")
         self.logger.setLevel(logging.DEBUG)
-        self.logger.addHandler(self.loghandler)   # IMPORTANT
+        self.logger.addHandler(self.loghandler)  # IMPORTANT
 
         # logger root (optionnel mais utile pour tout capter)
         root = logging.getLogger()
@@ -373,7 +351,6 @@ class MUCBot(ClientXMPP):
         root.addHandler(self.loghandler)
 
         logging.getLogger("slixmpp").propagate = False
-
 
         logging.debug(
             "check connexion xmpp %ss" % laps_time_check_established_connection
@@ -403,11 +380,14 @@ class MUCBot(ClientXMPP):
         logger.debug("slixmpp log level is %s" % self.config.log_level_slixmpp)
         handler_slixmpp.setLevel(self.config.log_level_slixmpp)
 
-        if handler_slixmpp.handlers:
-            hslixmpp = logger.handlers[
-                0
-            ]  # we assume the first handler is the one we want to configure
-            hslixmpp.setFormatter(formatter)
+        if not handler_slixmpp.handlers:
+            # propagate=False cuts slixmpp records from the root logger, and on
+            # Linux process_xmpp_agent only sets up a StreamHandler (no
+            # FileHandler), so the connection_lost/disconnect reason logged by
+            # slixmpp itself never reaches any file unless we open one here.
+            slixmpp_file_handler = logging.FileHandler(self.config.logfile)
+            slixmpp_file_handler.setFormatter(formatter)
+            handler_slixmpp.addHandler(slixmpp_file_handler)
 
         # _____________ verify network interface _____________
         # verifi si on a changer les interface pendant l'arret de l'agent.
@@ -519,7 +499,7 @@ class MUCBot(ClientXMPP):
                         os.path.join(self.img_agent, "agentversion"),
                     )
                 except Exception as e:
-                    logger.error(f"An error occurred while copying files: {str(e)}")
+                    logger.error(f"An error occurred while copying files: {e!s}")
             else:
                 logger.error("Your system is not supported.")
 
@@ -599,11 +579,6 @@ class MUCBot(ClientXMPP):
             else:
                 self.sub_subscribe_all = [jid.JID(self.config.sub_subscribe)]
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
-
-
-
-
-
 
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = jid.JID("master_subs@pulse")
@@ -699,7 +674,6 @@ class MUCBot(ClientXMPP):
                 )
             except Exception:
                 self.deviceid = ""
-                pass
         else:
             self.deviceid = ""
 
@@ -1006,7 +980,7 @@ class MUCBot(ClientXMPP):
                 try:
                     shutil.copy(source_file, target_file)
                 except Exception as e:
-                    logger.error(f"An error occurred while copying files: {str(e)}")
+                    logger.error(f"An error occurred while copying files: {e!s}")
 
     def iqsendpulse(self, to, datain, timeout=900, sessionid=None):
         """
@@ -1239,10 +1213,10 @@ class MUCBot(ClientXMPP):
         self.disconnect(wait=wait)
 
     def handle_disconnected(self, data):
-        logger.debug(f"handle_disconnected {self.server_address}")
+        logger.debug(f"handle_disconnected {self.server_address} reason={data!r}")
         with terminate_lock:
             if self.shared_dict.get("terminate"):
-                logger.debug(f"handle_disconnected TERMINATE")
+                logger.debug("handle_disconnected TERMINATE")
                 if sys.platform.startswith("win"):
                     try:
                         # TODO_REMOVABLE: Send terminate to legacy named pipe server.
@@ -1262,9 +1236,8 @@ class MUCBot(ClientXMPP):
                         win32file.WriteFile(fileHandle, "terminate")
                         fileHandle.Close()
                         time.sleep(2)
-                    except Exception as e:
+                    except Exception:
                         logger.error("\n%s" % (traceback.format_exc()))
-                        pass
                 self.loop.stop()
                 return
         #
@@ -1308,8 +1281,8 @@ class MUCBot(ClientXMPP):
         )
 
         self.alternatifconnection["nextserver"] = (
-            self.alternatifconnection["nextserver"]
-        ) + 1
+            (self.alternatifconnection["nextserver"]) + 1
+        )
         if (
             self.alternatifconnection["nextserver"]
             > self.alternatifconnection["nbserver"]
@@ -1339,7 +1312,6 @@ class MUCBot(ClientXMPP):
         """
         success connecting agent
         """
-        pass
 
     def handle_connected(self, data):
         self.demandeRestartBot_bool = False
@@ -1409,7 +1381,7 @@ class MUCBot(ClientXMPP):
                 win32file.WriteFile(fileHandle, "terminate")
                 fileHandle.Close()
                 time.sleep(2)
-            except Exception as e:
+            except Exception:
                 # logger.error("\n%s" % (traceback.format_exc()))
                 pass
         with terminate_lock:
@@ -1538,15 +1510,14 @@ class MUCBot(ClientXMPP):
                 with open(filenamejson, "r") as f:
                     data = json.load(f)
                     # signal error timeout reluanch
-                    data["data"][
-                        "repriseerror"
-                    ] = "ABORT DEPLOYMENT SHUTDOWN [USER NO CHOICE]"
+                    data["data"]["repriseerror"] = (
+                        "ABORT DEPLOYMENT SHUTDOWN [USER NO CHOICE]"
+                    )
                     grafcet(self, data)
             except:
                 logger.error("\n%s" % (traceback.format_exc()))
             finally:
                 os.remove(filenamejson)
-        return
 
     def reinjection_deploy_protected(self):
         # creation repertoire si probleme
@@ -1640,7 +1611,6 @@ class MUCBot(ClientXMPP):
                         "error_session_grafcet" + os.path.basename(filenamejson),
                     ),
                 )
-        return
 
     def reinjection_deplot_message_box(self):
         # creation repertoire si probleme
@@ -1705,7 +1675,6 @@ class MUCBot(ClientXMPP):
                         "error_session_grafcet_" + os.path.basename(filenamejson),
                     ),
                 )
-        return
 
     # syncthing function
     def is_exist_folder_id(self, idfolder, config):
@@ -2112,7 +2081,6 @@ class MUCBot(ClientXMPP):
                 # todo supprimer le fichier ars et descriptor.
                 # signaler l'erreur de decodage du fichier json.
                 logger.error("\n%s" % (traceback.format_exc()))
-                pass
 
     # end syncthing function
 
@@ -2214,7 +2182,7 @@ class MUCBot(ClientXMPP):
             # request the recv message
             recv_msg_from_kiosk = client_socket.recv(4096)
             if len(recv_msg_from_kiosk) != 0:
-                print("Received {}".format(recv_msg_from_kiosk))
+                print(f"Received {recv_msg_from_kiosk}")
                 datasend = {
                     "action": "resultkiosk",
                     "sessionid": getRandomName(6, "kioskGrub"),
@@ -2329,7 +2297,7 @@ class MUCBot(ClientXMPP):
             # le deploiement est treminée pour cette session.
             self.managefifo.delsessionfifo(sessionid)
             logging.warning(
-                "stop deploy session %s " "(deployment slot has passed)" % sessionid
+                "stop deploy session %s (deployment slot has passed)" % sessionid
             )
             self.xmpplog(
                 '<span class="log_err">Deployment error in fifo : '
@@ -2416,8 +2384,7 @@ class MUCBot(ClientXMPP):
 
     def checklevelcharge(self, ressource=0):
         self.levelcharge["charge"] = self.levelcharge["charge"] + ressource
-        if self.levelcharge["charge"] < 0:
-            self.levelcharge["charge"] = 0
+        self.levelcharge["charge"] = max(self.levelcharge["charge"], 0)
         return self.levelcharge["charge"]
 
     def getlevelmachinelist(self, jidmachine=""):
@@ -2454,7 +2421,9 @@ class MUCBot(ClientXMPP):
         dev_mode_file = "/opt/medulla/SIGHUP_DEV_MODE"
         target_modules_file = "/opt/medulla/SIGHUP_DEV_TARGETS"
         if not os.path.exists(dev_mode_file):
-            logger.warning("SIGHUP received but SIGHUP_DEV_MODE flag not found - ignoring (production mode)")
+            logger.warning(
+                "SIGHUP received but SIGHUP_DEV_MODE flag not found - ignoring (production mode)"
+            )
             return
 
         default_modules = [
@@ -2475,8 +2444,16 @@ class MUCBot(ClientXMPP):
                     if token.strip() and not token.strip().startswith("#")
                 ]
                 if tokens:
-                    selected = [module_name for module_name in tokens if module_name in allowed_modules]
-                    unknown = [module_name for module_name in tokens if module_name not in allowed_modules]
+                    selected = [
+                        module_name
+                        for module_name in tokens
+                        if module_name in allowed_modules
+                    ]
+                    unknown = [
+                        module_name
+                        for module_name in tokens
+                        if module_name not in allowed_modules
+                    ]
                     if unknown:
                         logger.warning(
                             "SIGHUP: Ignored unknown targets from %s: %s",
@@ -2798,11 +2775,12 @@ class MUCBot(ClientXMPP):
                 self.sockxmpp = self.transport.get_extra_info("socket")
                 if self.sockxmpp:
                     local_ip = self.sockxmpp.getsockname()[0]
-                    logger.debug(f"Adresse IP locale récupérée depuis le transport : {local_ip}")
+                    logger.debug(
+                        f"Adresse IP locale récupérée depuis le transport : {local_ip}"
+                    )
                     return local_ip
         except Exception as e:
             logger.error(f"Erreur dans _get_local_ip_from_transport : {e}")
-            pass
         return None
 
     async def start(self, event):
@@ -3024,7 +3002,6 @@ class MUCBot(ClientXMPP):
                             logging.error(
                                 "We failed to remove the file %s" % self.tmpfile
                             )
-                            pass
 
             except KeyError as keyerror:
                 logging.error(
@@ -3087,12 +3064,11 @@ class MUCBot(ClientXMPP):
         msgbody["session"] = sessionname
         self.send_message(mto=self.sub_logger, mbody=json.dumps(msgbody), mtype="chat")
 
-
     def send_xmpp_message_log(self, msg: str) -> None:
         """Fonction  pour envoyer un message XMPP."""
         self.xmpplog(
             msg,
-            type= "viewlog",
+            type="viewlog",
             sessionname=getRandomName(4, "Log_Request"),
             priority=1,
             action="xmpplog",
@@ -3104,7 +3080,6 @@ class MUCBot(ClientXMPP):
             fromuser=self.boundjid.bare,
             touser=self.log_justification,
         )
-
 
     def xmpplog(
         self,
@@ -3305,7 +3280,7 @@ class MUCBot(ClientXMPP):
         try:
             # load back to deploy after read session
             self.back_to_deploy = load_back_to_deploy()
-        except IOError:
+        except OSError:
             self.back_to_deploy = {}
         cleanbacktodeploy(self)
         for i in self.session.sessiondata:
@@ -3527,7 +3502,9 @@ class MUCBot(ClientXMPP):
     def reinstall_agent(self):
         BOOL_DISABLE_IMG = os.path.join(self.pathagent, "BOOL_DISABLE_IMG")
         if os.path.exists(BOOL_DISABLE_IMG):
-            logger.info("[REPLICATOR] BOOL_DISABLE_IMG present - mise a jour desactivee")
+            logger.info(
+                "[REPLICATOR] BOOL_DISABLE_IMG present - mise a jour desactivee"
+            )
             return
         file_put_contents(
             os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"),
@@ -3542,7 +3519,8 @@ class MUCBot(ClientXMPP):
         )
         version_courante = (
             file_get_contents(agentversion).replace("\n", "").replace("\r", "").strip()
-            if os.path.exists(agentversion) else "?"
+            if os.path.exists(agentversion)
+            else "?"
         )
         logger.info("[REPLICATOR] ==============================================")
         logger.info("[REPLICATOR] Demarrage de la mise a jour de l'agent")
@@ -3570,7 +3548,6 @@ class MUCBot(ClientXMPP):
                 "An error occured while trying to remove the %s file. \n We obtained the error %s"
                 % (os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"), remove_error)
             )
-            pass
         pythonexec = self.programfilepath(sys.executable)
         replicatorfunction = os.path.join(self.pathagent, "replicator.py")
         # --verbose : replicator affiche le détail des fichiers copiés/supprimés
@@ -3585,10 +3562,14 @@ class MUCBot(ClientXMPP):
                     logger.info("[REPLICATOR] > %s" % line.strip())
         if result["code"] == 0:
             logger.info(
-                "[REPLICATOR] OK Agent deja a jour (version %s) - aucune copie necessaire" % versiondata
+                "[REPLICATOR] OK Agent deja a jour (version %s) - aucune copie necessaire"
+                % versiondata
             )
         elif result["code"] == 1:
-            logger.info("[REPLICATOR] OKOK Installation reussie - agent version %s" % versiondata)
+            logger.info(
+                "[REPLICATOR] OKOK Installation reussie - agent version %s"
+                % versiondata
+            )
         elif result["code"] == 120:
             logger.error(
                 "[REPLICATOR] NOK Echec installation version %s - rollback effectue"
@@ -3620,20 +3601,24 @@ class MUCBot(ClientXMPP):
                 if self.descriptor_master is not None:
                     Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True)
                     Update_Remote_Img = Update_Remote_Agent(self.img_agent, True)
-                    fp_agent  = Update_Remote_Agenttest.get_fingerprint_agent_base()
-                    fp_img    = Update_Remote_Img.get_fingerprint_agent_base()
+                    fp_agent = Update_Remote_Agenttest.get_fingerprint_agent_base()
+                    fp_img = Update_Remote_Img.get_fingerprint_agent_base()
                     fp_master = self.descriptor_master["fingerprint"]
                     logger.info("[CHECKINSTALL] Controle periodique de mise a jour :")
                     logger.info("[CHECKINSTALL]   agent   : %s" % fp_agent)
                     logger.info("[CHECKINSTALL]   img     : %s" % fp_img)
                     logger.info("[CHECKINSTALL]   master  : %s" % fp_master)
                     if fp_agent != fp_img and fp_img == fp_master:
-                        logger.info("[CHECKINSTALL] OK img synchronisee avec master, agent pas encore a jour - declenchement reinstall_agent()")
+                        logger.info(
+                            "[CHECKINSTALL] OK img synchronisee avec master, agent pas encore a jour - declenchement reinstall_agent()"
+                        )
                         self.reinstall_agent()
                     elif fp_agent == fp_master:
                         logger.info("[CHECKINSTALL] OKOK Agent a jour - aucune action")
                     else:
-                        logger.info("[CHECKINSTALL] ... img non encore synchronisee avec master (transfert en cours)")
+                        logger.info(
+                            "[CHECKINSTALL] ... img non encore synchronisee avec master (transfert en cours)"
+                        )
                 else:
                     logger.warning(
                         "[CHECKINSTALL] Mise a jour demandee mais descripteur master absent"
@@ -3860,7 +3845,7 @@ class MUCBot(ClientXMPP):
                 else:
                     act = ""
                 dataerreur["data"]["msg"] = (
-                    "ERROR : Action ignored : %s\n " "structure msg\n%s" % (act, msgerr)
+                    "ERROR : Action ignored : %s\n structure msg\n%s" % (act, msgerr)
                 )
                 self.send_message(
                     mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
@@ -3892,7 +3877,7 @@ class MUCBot(ClientXMPP):
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
         if hasattr(self, "local_ip"):
             self.config.ipxmpp = self.local_ip
-        NetworkInfos = NetworkInfoxmpp(port=self.config.Port, sock=self.sockxmpp  )
+        NetworkInfos = NetworkInfoxmpp(port=self.config.Port, sock=self.sockxmpp)
         portconnection = self.config.Port
         if NetworkInfos.ip_address and NetworkInfos.details:
             if not self.config.ipxmpp:
@@ -4124,7 +4109,9 @@ AGENT %s ERROR TERMINATE""" % (
                     organizationbyuser(lastusersession).encode("utf-8")
                 ).decode("utf-8")
             except Exception:
-                logging.warning("Unable to get organization by user for %s" % (lastusersession))
+                logging.warning(
+                    "Unable to get organization by user for %s" % (lastusersession)
+                )
             try:
                 dataobj["adusergroups"] = base64.b64encode(
                     adusergroups(lastusersession).encode("utf-8")
@@ -4139,7 +4126,7 @@ AGENT %s ERROR TERMINATE""" % (
                 try:
                     mod = __import__(element[:-3])
                     importlib.reload(mod)
-                    module = getattr(mod, "plugin")
+                    module = mod.plugin
                     dataobj["plugin"][module["NAME"]] = module["VERSION"]
                 except Exception as e:
                     logger.error(
@@ -4624,7 +4611,7 @@ def doTask(
                 ],
                 stderr=subprocess.STDOUT,
             )
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             pass
     global signalint
 
@@ -4696,20 +4683,19 @@ def doTask(
             shared_dict["compteur"] % tous_les_n_essais == 0
             and shared_dict["compteur"] != 0
         ):
-
             # Si le compteur est un multiple de 10 et n'est pas égal à 0, lance connectionagent.py
             if pid_connecteur is None:
                 # Si pid_connecteur est None, lance le programme standalone
                 pid_connecteur = launch_standalone_program()
                 # with terminate_lock:
-                    # shared_dict["reconnect"] = True
-                    # Construire le chemin du fichier
-                    # force_reconfiguration = os.path.join(
-                    # os.path.dirname(os.path.realpath(__file__)),
-                    # "action_force_reconfiguration" )
-                    # # Créer le fichier vide
-                    # with open(force_reconfiguration, 'w') as f:
-                    # pass  # Le fichier est créé vide
+                # shared_dict["reconnect"] = True
+                # Construire le chemin du fichier
+                # force_reconfiguration = os.path.join(
+                # os.path.dirname(os.path.realpath(__file__)),
+                # "action_force_reconfiguration" )
+                # # Créer le fichier vide
+                # with open(force_reconfiguration, 'w') as f:
+                # pass  # Le fichier est créé vide
 
             else:
                 # Si pid_connecteur n'est pas None, vérifie si le processus est en cours d'exécution
@@ -4823,10 +4809,11 @@ class process_xmpp_agent:
         self.pidprogrammprincipal = pidprogrammprincipal
         self.shared_dict = shared_dict
         # self.terminate_lock =  terminate_lock
-        if sys.platform.startswith("win"):
-            format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
-            formatter = logging.Formatter(format)
-        elif sys.platform.startswith("lin") or sys.platform.startswith("darwin"):
+        if (
+            sys.platform.startswith("win")
+            or sys.platform.startswith("lin")
+            or sys.platform.startswith("darwin")
+        ):
             format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
             formatter = logging.Formatter(format)
 
@@ -4870,14 +4857,14 @@ class process_xmpp_agent:
         self.process_restartbot = False
         self.logger.debug("/---------------------------------\\")
         self.logger.debug("|--- INITIALISATION XMPP AGENT ---|")
-        self.logger.debug("\---------------------------------/")
+        self.logger.debug(r"\---------------------------------/")
 
         setgetcountcycle()
 
         setgetrestart()
         while True:
             tg = tgconf(optstypemachine)
-            self.logger.debug(f"{tg.Server}{ int(tg.Port)}")
+            self.logger.debug(f"{tg.Server}{int(tg.Port)}")
             xmpp = MUCBot(
                 tg,
                 queue_recv_tcp_to_xmpp,
@@ -4907,10 +4894,9 @@ class process_xmpp_agent:
             except:
                 self.readconfig_Marche_Arret = True
 
-
             self.logger.debug("/---------------------------------\\")
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
-            self.logger.debug("\---------------------------------/")
+            self.logger.debug(r"\---------------------------------/")
             try:
                 xmpp.connect(address=xmpp.server_address)
             except Exception as e:
@@ -4932,7 +4918,6 @@ class process_xmpp_agent:
                     break
 
                 if shared_dict.get("alternative"):
-
                     self.logger.info("CONNECTION XMPP AGENT")
                     self.logger.info("cherche alternative")
                     # loop.close()
@@ -4973,9 +4958,8 @@ def terminateserver(xmpp):
             )
             win32file.WriteFile(fileHandle, "terminate")
             fileHandle.Close()
-        except Exception as e:
+        except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
-            pass
     logger.debug("wait 2s end thread event loop")
     logger.debug("terminate manage data sharing")
     time.sleep(2)
@@ -5010,7 +4994,7 @@ if __name__ == "__main__":
     # Création d'un lock pour synchroniser l'accès à la valeur partagée
     lockrestart = multiprocessing.Lock()
     # Création d'une valeur partagée (initialisée à 0)
-    PROCESS_RESTART = Value('i', 1)  # 'i' pour entier (int)
+    PROCESS_RESTART = Value("i", 1)  # 'i' pour entier (int)
 
     if sys.platform.startswith("linux") and os.getuid() != 0:
         print("Agent must be running as root")
