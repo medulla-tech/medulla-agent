@@ -142,52 +142,8 @@ class grafcet:
             self.find_step_type()
             # attribute step curent in function section
             if int(self.data["stepcurrent"]) == 0:
-                mesg_install = ""
-                if "section" not in self.parameterdynamic:
-                    self.parameterdynamic["section"] = "install"
-                if "section" in self.parameterdynamic:
-                    strsection = str(self.parameterdynamic["section"]).lower()
-                    if strsection == "install":
-                        # attribute section "install" if exists
-                        mesg_install = "Starting Install section"
-                        if self.descriptorsection["action_section_install"] != -1:
-                            # stage status marked as complete
-                            self.__action_completed__(
-                                self.sequence[
-                                    self.descriptorsection["action_section_install"]
-                                ]
-                            )
-                            self.data["stepcurrent"] = (
-                                self.descriptorsection["action_section_install"] + 1
-                            )
-                    elif strsection == "uninstall":
-                        # Attribute section "uninstall" if exists
-                        mesg_install = "Starting Uninstall section"
-                        if "action_section_uninstall" in self.descriptorsection:
-                            self.__action_completed__(
-                                self.sequence[
-                                    self.descriptorsection["action_section_uninstall"]
-                                ]
-                            )
-                            self.data["stepcurrent"] = (
-                                self.descriptorsection["action_section_uninstall"] + 1
-                            )
-                    elif strsection == "update":
-                        # attribute section "update" if exists
-                        mesg_install = "Starting Update section"
-                        if "action_section_update" in self.descriptorsection:
-                            self.__action_completed__(
-                                self.sequence[
-                                    self.descriptorsection["action_section_update"]
-                                ]
-                            )
-                            self.data["stepcurrent"] = (
-                                self.descriptorsection["action_section_update"] + 1
-                            )
-                    self.__affiche_message(
-                        f'[{self.data["name"]}]-[{self.data["stepcurrent"]}]: {mesg_install}',
-                        module="Deployment | Execution",
-                    )
+                if not self.__enter_section__():
+                    return
             self.workingstep = self.sequence[self.data["stepcurrent"]]
             self.__execstep__()  # call action workingstep
         except BaseException as e:
@@ -295,6 +251,139 @@ class grafcet:
                     self.descriptorsection["action_section_launch"] = stepseq["step"]
                 elif stepseq["action"] == "actionsuccescompletedend":
                     self.descriptorsection["actionsuccescompletedend"] = stepseq["step"]
+
+    SECTION_MARKERS = {
+        "install": "action_section_install",
+        "uninstall": "action_section_uninstall",
+        "update": "action_section_update",
+        "launch": "action_section_launch",
+    }
+
+    # uninstall en dernier car c'est l'action la plus destructive ; launch en est
+    # exclu et doit toujours etre demande explicitement.
+    SECTION_PRIORITY = ("install", "update", "uninstall")
+
+    def __requested_section__(self):
+        """Retourne la section explicitement demandee, ou None.
+
+        Deux sources de selecteur, par priorite decroissante :
+        1. ``advanced.paramdeploy.section``, choix explicite au lancement ;
+        2. ``descriptor.info.type_section``, nature declaree du package.
+
+        Le point 2 est indispensable : un package d'update porte
+        ``type_section: update`` mais ne declare aucune section ``install``.
+
+        Returns:
+            str | None: nom de section demandee, None si aucun selecteur.
+        """
+        section = str(self.parameterdynamic.get("section", "")).lower()
+        if section in self.SECTION_MARKERS:
+            return section
+
+        info = self.data.get("descriptor", {}).get("info", {})
+        section = str(info.get("type_section", "")).lower()
+        if section in self.SECTION_MARKERS:
+            logger.debug(
+                "[Section] pas de selecteur dans paramdeploy, "
+                "utilisation de type_section '%s'" % section
+            )
+            return section
+
+        return None
+
+    def __available_sections__(self):
+        """Sections effectivement declarees dans le descripteur.
+
+        Returns:
+            dict: nom de section -> numero du step marqueur.
+        """
+        return {
+            name: self.descriptorsection[key]
+            for name, key in self.SECTION_MARKERS.items()
+            if self.descriptorsection.get(key, -1) != -1
+        }
+
+    def __enter_section__(self):
+        """Positionne ``stepcurrent`` sur la premiere etape a executer.
+
+        Regles de selection :
+        1. Aucun marqueur de section : execution depuis le step 0.
+        2. Selecteur fourni et section presente : cette section est executee.
+        3. Selecteur fourni mais section absente : erreur explicite. Executer
+           une autre section que celle demandee serait dangereux, en
+           particulier entre install et uninstall.
+        4. Aucun selecteur : priorite install > update > uninstall.
+
+        Un marqueur ``action_section_*`` delimite la FIN d'une section : le
+        moteur doit entrer a ``marqueur + 1``. Entrer sur le marqueur declenche
+        ``action_section_*``, qui saute vers ``actionsuccescompletedend`` et
+        clot le deploiement en succes sans rien avoir execute.
+
+        Returns:
+            bool: True si une etape executable a ete determinee. False si le
+            deploiement a ete termine en erreur, l'appelant doit s'arreter.
+        """
+        available = self.__available_sections__()
+
+        if not available:
+            logger.debug("[Section] aucun marqueur de section, demarrage au step 0")
+            return True
+
+        requested = self.__requested_section__()
+
+        if requested is None:
+            requested = next(
+                (name for name in self.SECTION_PRIORITY if name in available), None
+            )
+            if requested is None:
+                # Seule une section hors priorite est declaree, typiquement launch.
+                requested = next(iter(available))
+            logger.debug(
+                "[Section] aucun selecteur, section retenue par priorite : '%s' "
+                "(disponibles : %s)" % (requested, ", ".join(sorted(available)))
+            )
+        elif requested not in available:
+            dispo = ", ".join(sorted(available))
+            logger.error(
+                "[Section] section demandee '%s' absente du descripteur "
+                "(disponibles : %s)" % (requested, dispo)
+            )
+            self.__affiche_message(
+                '[%s]: ERREUR - section "%s" absente du descripteur '
+                "(disponibles : %s)" % (self.data["name"], requested, dispo),
+                module="Deployment | Error | Execution",
+            )
+            self.workingstep = self.sequence[0]
+            self.terminate(-1, False, "end error section %s not found" % requested)
+            return False
+
+        self.parameterdynamic["section"] = requested
+
+        marker_step = available[requested]
+        entry_step = marker_step + 1
+
+        if entry_step >= len(self.sequence):
+            logger.error(
+                "[Section] section '%s' vide, marqueur au step %s sans etape "
+                "suivante" % (requested, marker_step)
+            )
+            self.__affiche_message(
+                '[%s]: ERREUR - section "%s" vide' % (self.data["name"], requested),
+                module="Deployment | Error | Execution",
+            )
+            self.workingstep = self.sequence[marker_step]
+            self.terminate(-1, False, "end error section %s empty" % requested)
+            return False
+
+        # Le marqueur est marque comme traite pour ne pas etre rejoue.
+        self.__action_completed__(self.sequence[marker_step])
+        self.data["stepcurrent"] = entry_step
+        self.__affiche_message(
+            "[%s]-[%s]: Starting %s section"
+            % (self.data["name"], entry_step, requested.capitalize()),
+            module="Deployment | Execution",
+        )
+        return True
 
     def __execstep__(self):
         # call function self.workingstep['action']
