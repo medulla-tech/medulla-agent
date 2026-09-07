@@ -30,11 +30,11 @@
 # - PYTHON_VERSION_FULL   : major.minor.patch utilisé pour télécharger le .pkg sur python.org
 # - GLPI_AGENT_VERSION    : tag de release github.com/glpi-project/glpi-agent
 # ============================================================================
-AGENT_VERSION="5.6.3"
+AGENT_VERSION="5.6.4"
 PYTHON_VERSION="3.11"
 PYTHON_VERSION_FULL="3.11.9"
 GLPI_AGENT_VERSION="1.17"
-KIOSK_VERSION="2.1.2"
+KIOSK_VERSION="2.1.3"
 # PyQt6 pinné (PyQt6 ET PyQt6-Qt6 à la MÊME version, sinon ABI mismatch au
 # runtime), aligné sur les installeurs win/linux.
 PYQT6_VERSION="6.6.1"

@@ -1,5 +1,12 @@
 # Change Log
 
+## [5.6.4](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.4) (2026-09-03)
+- [FEATURE] New plugin for forcing a reset of the agent files from remoteagent base
+- [FEATURE] Improve replicator to allow execution from img_agent
+- [FEATURE] Support for Medulla kiosk version 2.1.3
+- [BUGFIX]  Fix calculation of MD5 checksums on agent files
+- [BUGFIX]  Fix to reboot and shutdown quick actions
+
 ## [5.6.3](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.3) (2026-07-02)
 - [FEATURE] Improve agent for Linux OS by using #!/usr/bin/env python3 shebangs
 - [BUGFIX]  Fix inventory substitute for Ubuntu distribution
