@@ -1034,7 +1034,7 @@ class MscDatabase(DatabaseHelper):
                                 `phase`.`name` = 'execute'
                                     AND `phase`.`state` = 'ready'
                                     AND NOW() BETWEEN commands.start_date AND commands.end_date
-                                    AND commands.deployment_intervals = ''
+                                    AND commands.deployment_intervals IN ('', '0')
                             GROUP BY `target`.`target_name`
                             ORDER BY RAND()
                             LIMIT %s )
@@ -1064,7 +1064,7 @@ class MscDatabase(DatabaseHelper):
                                 `phase`.`name` = 'execute'
                                     AND `phase`.`state` = 'ready'
                                     AND NOW() BETWEEN commands.start_date AND commands.end_date
-                                    AND commands.deployment_intervals != ''
+                                    AND commands.deployment_intervals NOT IN ('', '0')
                             GROUP BY `target`.`target_name`
                             ORDER BY RAND()
                             LIMIT %s);""" % (
@@ -1085,26 +1085,34 @@ class MscDatabase(DatabaseHelper):
                 updatemachine = []
 
                 for msc_machine_to_deploy in selectedMachines:
-                    if msc_machine_to_deploy.deployment_intervals:
+                    deployment_intervals = (
+                        msc_machine_to_deploy.deployment_intervals or ""
+                    ).strip()
+                    # "" et "0" == aucune contrainte horaire (0 est la valeur par
+                    # defaut ecrite par le flux update Linux). Toute autre valeur
+                    # est un ou plusieurs creneaux "HH-HH" separes par des ",".
+                    if deployment_intervals not in ("", "0"):
                         # self.pattern is reg exp compile "^([0-9]{1,2})[-;'.|@#\"]{1}[0-9]{1,2}$"
                         tb = [
                             re.sub("[-'*;|@#\"]{1}", "-", x)
-                            for x in msc_machine_to_deploy.deployment_intervals.split(
-                                ","
-                            )
+                            for x in deployment_intervals.split(",")
                             if self.pattern.match(x.strip())
                         ]
-                        for c in tb:
-                            start, end = c.split("-")
-                            if hactuel >= int(start) and hactuel <= int(end):
-                                # on a trouver 1 cas on deploy
-                                break
-                        else:  # end control slot
-                            # on a trouver aucun cas on ne deploy pas
-                            nb_machine_select_for_deploy_cycle = (
-                                nb_machine_select_for_deploy_cycle - 1
-                            )
-                            continue
+                        # tb vide => valeur non parsable : on la traite comme
+                        # "aucune contrainte" plutot que d'ignorer la machine a
+                        # chaque cycle (sinon le deploiement reste bloque a vie).
+                        if tb:
+                            for c in tb:
+                                start, end = c.split("-")
+                                if hactuel >= int(start) and hactuel <= int(end):
+                                    # on a trouver 1 cas on deploy
+                                    break
+                            else:  # end control slot
+                                # on a trouver aucun cas on ne deploy pas
+                                nb_machine_select_for_deploy_cycle = (
+                                    nb_machine_select_for_deploy_cycle - 1
+                                )
+                                continue
                     machine_status_update.append(
                         str(msc_machine_to_deploy.commands_on_host_id)
                     )
@@ -1229,14 +1237,19 @@ class MscDatabase(DatabaseHelper):
         res = query.first()
         if not res:
             return False
-        if res.deployment_intervals == "":
+        deployment_intervals = (res.deployment_intervals or "").strip()
+        # "" et "0" == aucune contrainte horaire
+        if deployment_intervals in ("", "0"):
             return True
         # analyse si deploy true or false
         tb = [
             re.sub("[-'*;|@#\"]{1}", "-", x)
-            for x in res.deployment_intervals.split(",")
+            for x in deployment_intervals.split(",")
             if self.pattern.match(x.strip())
         ]
+        # valeur non parsable => on ne bloque pas (aucune contrainte exploitable)
+        if not tb:
+            return True
         for c in tb:
             start, end = c.split("-")
             if hactuel >= int(start) and hactuel <= int(end):
