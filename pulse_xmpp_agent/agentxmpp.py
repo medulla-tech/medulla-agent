@@ -3193,9 +3193,10 @@ class MUCBot(ClientXMPP):
 
             logging.log(
                 DEBUGPULSE,
-                "SEND REGISTRATION XMPP to %s \n%s"
-                % (self.sub_registration, json.dumps(dataobj, indent=4)),
+                "SEND REGISTRATION XMPP to %s"
+                % self.sub_registration
             )
+            logger.debug("Registration info: \n%s", json.dumps(dataobj, indent=4))
 
             setgetcountcycle()
             self.send_message(
