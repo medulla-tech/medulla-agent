@@ -27,6 +27,7 @@ import uuid
 from lib.uuid_deterministic import DeterministicUUID
 from lib.utils import serialnumbermachine
 logger = logging.getLogger(__name__)
+APT_LOCK_TIMEOUT_SECONDS = 300
 
 # ######################################################################
 #  familles Linux
@@ -604,7 +605,7 @@ class DebianSystem(LinuxSystemBase):
 
     def _apt_base_opts(self) -> str:
         """Génère les options de base pour les commandes APT, en fonction du mode intranet."""
-        opts = []
+        opts = [f"-o DPkg::Lock::Timeout={APT_LOCK_TIMEOUT_SECONDS}"]
         if self.intranet_security and self.sources_name:
             opts.append(f"-o Dir::Etc::sourceparts=/etc/apt/sources.list.d/{self.sources_name}")
             opts.append("-o Dir::Etc::sourcelist=/dev/null")

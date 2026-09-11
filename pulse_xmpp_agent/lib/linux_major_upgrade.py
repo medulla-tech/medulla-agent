@@ -13,6 +13,16 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+APT_LOCK_TIMEOUT_SECONDS = 300
+
+
+def _apt_get_command(arguments):
+    """Construit une commande apt-get avec une attente bornee du verrou dpkg."""
+    return (
+        f"apt-get -o DPkg::Lock::Timeout={APT_LOCK_TIMEOUT_SECONDS} "
+        f"{arguments}"
+    )
+
 
 class DebianMajorUpgradeAudit:
     """Collect and validate data required for Debian major upgrade planning.
@@ -212,24 +222,26 @@ class DebianMajorUpgradeAudit:
             broken_packages = True
 
         try:
-            self._run("apt-get check")
+            apt_check_command = _apt_get_command("check")
+            self._run(apt_check_command)
             apt_check_ok = True
         except subprocess.CalledProcessError as exc:
             apt_check_ok = False
-            apt_check_error = self._command_error_payload("apt-get check", exc)
+            apt_check_error = self._command_error_payload(apt_check_command, exc)
         except Exception as exc:
             apt_check_ok = False
-            apt_check_error = {"command": "apt-get check", "error": str(exc)}
+            apt_check_error = {"command": apt_check_command, "error": str(exc)}
 
         try:
-            self._run("apt-get -qq update")
+            apt_update_command = _apt_get_command("-qq update")
+            self._run(apt_update_command)
             apt_update_ok = True
         except subprocess.CalledProcessError as exc:
             apt_update_ok = False
-            apt_update_error = self._command_error_payload("apt-get -qq update", exc)
+            apt_update_error = self._command_error_payload(apt_update_command, exc)
         except Exception as exc:
             apt_update_ok = False
-            apt_update_error = {"command": "apt-get -qq update", "error": str(exc)}
+            apt_update_error = {"command": apt_update_command, "error": str(exc)}
 
         return {
             "updates_available": upgradable_count,
