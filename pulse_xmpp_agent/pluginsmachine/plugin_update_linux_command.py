@@ -60,6 +60,7 @@ DEBUGPULSEPLUGIN = 25
 plugin = {"VERSION": "1.0", "VERSIONAGENT": "1.0", "NAME": "update_linux_command", "TYPE": "machine", "waittingmax": 120, "waittingmin": 5}  # fmt: skip
 
 SUPPORTED_LINUX_ACTIONS = {"security", "kernel", "other"}
+APT_LOCK_TIMEOUT_SECONDS = 300
 SUCCESS_STYLE = "color:#ffffff;background:#198754;padding:2px 6px;border-radius:3px;"
 ERROR_STYLE = "color:#ffffff;background:#b02a37;padding:2px 6px;border-radius:3px;"
 
@@ -275,6 +276,14 @@ def _run_release_upgrade_command(command, callback=None):
         preview = (output[:700] + "...") if len(output) > 700 else output
         callback(f"[OUT] {preview}")
     return output
+
+
+def _apt_get_command(arguments):
+    """Build apt-get command with a bounded wait for the dpkg lock."""
+    return (
+        "DEBIAN_FRONTEND=noninteractive "
+        f"apt-get -o DPkg::Lock::Timeout={APT_LOCK_TIMEOUT_SECONDS} {arguments}"
+    )
 
 
 def _rewrite_apt_sources_for_target(current_codename, target_codename, current_version=None, target_version=None, callback=None):
@@ -505,7 +514,7 @@ def _execute_debian_release_upgrade(updater, payload, audit, result):
         if callback:
             callback(f"[INFO] {commented_info['message']}")
 
-    update_cmd = "DEBIAN_FRONTEND=noninteractive apt-get -qq update"
+    update_cmd = _apt_get_command("-qq update")
     try:
         _run_release_upgrade_command(update_cmd, callback=callback)
     except subprocess.CalledProcessError as exc:
@@ -533,8 +542,8 @@ def _execute_debian_release_upgrade(updater, payload, audit, result):
         else:
             raise
 
-    _run_release_upgrade_command("DEBIAN_FRONTEND=noninteractive apt-get -y upgrade", callback=callback)
-    _run_release_upgrade_command("DEBIAN_FRONTEND=noninteractive apt-get -y full-upgrade", callback=callback)
+    _run_release_upgrade_command(_apt_get_command("-y upgrade"), callback=callback)
+    _run_release_upgrade_command(_apt_get_command("-y full-upgrade"), callback=callback)
 
     execute_result = {
         "action": "upgrade_execute",
