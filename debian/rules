@@ -7,7 +7,7 @@ DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//'
 VERSION_XMPP_AGENT=5.6.4
 VERSION_KIOSK_INTERFACE=2.1.3
 FILETREE_VERSION=0.1
-BRANCH=master
+BRANCH=integration
 
 PYVER=3
 PYTHON_MINOR := $(shell python3 -c 'import sys; print(sys.version_info.minor)')
