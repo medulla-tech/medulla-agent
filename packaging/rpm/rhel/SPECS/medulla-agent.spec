@@ -93,8 +93,12 @@ if ! getent passwd | grep -q "^reversessh:"; then
     echo -n "Adding user reversessh..."
     adduser --system \
         -d /var/lib/pulse2/clients/reversessh \
-        -s /bin/rbash \
+        -s /usr/sbin/nologin \
         reversessh
+    echo "..done"
+else
+    echo "User reversessh already exists. Updating shell to nologin..."
+    usermod -s /usr/sbin/nologin reversessh
     echo "..done"
 fi
 
