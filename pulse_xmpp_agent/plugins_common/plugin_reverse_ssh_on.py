@@ -27,7 +27,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "4.4", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "4.5", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):
@@ -222,7 +222,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     os.path.expanduser("~pulseuser"), ".ssh", "id_rsa"
                 )
                 dd = """#!/bin/bash
-                /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "%s" -l reversessh %s -p %s&
+                /usr/bin/ssh -N -T -%s %s:localhost:%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "%s" -l reversessh %s -p %s&
                 """ % (
                     reversetype,
                     data["port"],
