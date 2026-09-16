@@ -2682,7 +2682,7 @@ def reversessh_useraccount_mustexist_on_relay(username="reversessh"):
         adduser_cmd = (
             "adduser --system --quiet --group "
             "--home /var/lib/pulse2/clients/reversessh "
-            "--shell /bin/rbash --disabled-password %s" % username
+            "--shell /usr/sbin/nologin --disabled-password %s" % username
         )
     result = simplecommand(encode_strconsole(adduser_cmd))
     if result["code"] == 0:

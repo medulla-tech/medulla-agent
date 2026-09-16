@@ -13,9 +13,13 @@ case "$1" in
             echo -n "Adding user reversessh..."
             adduser --system --quiet \
                     --home /var/lib/pulse2/clients/reversessh \
-                    --shell /bin/rbash \
+                    --shell /usr/sbin/nologin \
                     --disabled-password \
                     reversessh
+            echo "..done"
+        else
+            echo "User reversessh already exists. Updating shell to nologin..."
+            usermod -s /usr/sbin/nologin reversessh
             echo "..done"
         fi
         if [ ! -f "/var/lib/pulse2/clients/reversessh/.ssh/id_rsa" ]; then
