@@ -1,5 +1,11 @@
 # Change Log
 
+## [5.6.5](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.5) (2026-09-18)
+- [FEATURE] Support for MacOS clients
+- [FEATURE] Harden reversessh connections
+- [FEATURE] Support for Medulla kiosk version 2.1.4
+- [FEATURE] Improve performance of Medulla agent updates
+
 ## [5.6.4](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.4) (2026-09-03)
 - [FEATURE] New plugin for forcing a reset of the agent files from remoteagent base
 - [FEATURE] Improve replicator to allow execution from img_agent
