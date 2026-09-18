@@ -1225,48 +1225,13 @@ class UpUbuntuVersions(Base, XmppMasterDBObj):
 
 
 class Reset_machine(Base, XmppMasterDBObj):
-    """File d'attente de reinitialisation forcee de base agent.
+    """File d'attente de regeneration complete de base agent.
 
-    Une ligne par machine a reinitialiser. Supprimee apres envoi reussi
+    Une ligne par machine a regenerer. Supprimee apres envoi reussi
     si la machine est presente. Conservee tant que la machine est hors ligne.
     """
 
     __tablename__ = "reset_machine"
-
-    jid = Column(
-        String(255),
-        nullable=False,
-        unique=True,
-        comment="JID complet de la machine cible a reinitialiser.",
-    )
-    reason = Column(
-        String(255),
-        nullable=False,
-        default="",
-        comment="Motif operateur du reset force.",
-    )
-    date_request = Column(
-        DateTime,
-        default=datetime.datetime.now,
-        comment="Date et heure de creation de la demande.",
-    )
-    nb_attempt = Column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Nombre de tentatives deja effectuees.",
-    )
-
-
-class Regenerate_agent(Base, XmppMasterDBObj):
-    """File d'attente pour la regeneration complete de la base agent.
-
-    Une ligne par machine a regenerer. Les demandes sont traitees avant les
-    reset classiques afin d'eviter d'interferer avec la reconstruction de
-    l'image de l'agent.
-    """
-
-    __tablename__ = "regenerate_agent"
 
     jid = Column(
         String(255),

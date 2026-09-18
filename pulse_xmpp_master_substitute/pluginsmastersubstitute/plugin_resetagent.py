@@ -89,17 +89,6 @@ def _queue_add(jid_target, reason):
 
 def _queue_process(xmppobject):
     """Traite toute la file reset_machine."""
-    # Une regeneration reconstruit l'image complete et doit toujours passer
-    # avant un reset de cache pour la meme periode de traitement.
-    try:
-        if XmppMasterDatabase().regenerate_agent_has_pending():
-            logger.info("[RESETAGENT-SUB] Regeneration en attente, reset differe")
-            return
-    except Exception:
-        logger.error("[RESETAGENT-SUB] Impossible de verifier regenerate_agent")
-        logger.error(traceback.format_exc())
-        return
-
     try:
         queue = XmppMasterDatabase().reset_machine_get_all()
     except Exception:
