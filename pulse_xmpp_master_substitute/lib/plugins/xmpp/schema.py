@@ -1289,3 +1289,44 @@ class Reset_machine(Base, XmppMasterDBObj):
         default=0,
         comment="Nombre de tentatives deja effectuees.",
     )
+
+
+class Regenerate_agent(Base, XmppMasterDBObj):
+    """File d'attente pour la regeneration complete de la base agent.
+
+    Une ligne par machine a regenerer. Les demandes sont traitees avant les
+    reset classiques afin d'eviter d'interferer avec la reconstruction de
+    l'image de l'agent.
+    """
+
+    __tablename__ = "regenerate_agent"
+
+    jid = Column(
+        String(255),
+        nullable=False,
+        unique=True,
+        comment="JID complet de la machine cible a regenerer.",
+    )
+    jidrelay = Column(
+        String(255),
+        nullable=False,
+        default="",
+        comment="JID du relay ARS associe a la machine.",
+    )
+    reason = Column(
+        String(255),
+        nullable=False,
+        default="",
+        comment="Motif operateur de la regeneration.",
+    )
+    date_request = Column(
+        DateTime,
+        default=datetime.datetime.now,
+        comment="Date et heure de creation de la demande.",
+    )
+    nb_attempt = Column(
+        Integer,
+        nullable=False,
+        default=0,
+        comment="Nombre de tentatives deja effectuees.",
+    )

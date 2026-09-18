@@ -13409,6 +13409,73 @@ where d.jidmachine='%s' and c.package_id = '%s'
             row.nb_attempt += 1
             session.commit()
 
+    # =========================================================================
+    # regenerate_agent : file d'attente de regeneration complete de l'agent
+    # =========================================================================
+
+    @DatabaseHelper._sessionm
+    def regenerate_agent_add(self, session, jid, reason="", jidrelay=""):
+        """Ajoute ou met a jour une machine dans la file de regeneration."""
+        from lib.plugins.xmpp.schema import Regenerate_agent
+        existing = session.query(Regenerate_agent).filter(
+            Regenerate_agent.jid == jid
+        ).first()
+        if existing:
+            existing.reason = reason
+            if jidrelay:
+                existing.jidrelay = jidrelay
+            existing.nb_attempt = 0
+        else:
+            session.add(
+                Regenerate_agent(
+                    jid=jid,
+                    jidrelay=jidrelay,
+                    reason=reason,
+                )
+            )
+        session.commit()
+
+    @DatabaseHelper._sessionm
+    def regenerate_agent_get_all(self, session):
+        """Retourne les machines en attente de regeneration."""
+        from lib.plugins.xmpp.schema import Regenerate_agent
+        rows = session.query(Regenerate_agent).all()
+        return [
+            {
+                "jid": r.jid,
+                "jidrelay": r.jidrelay,
+                "reason": r.reason,
+                "nb_attempt": r.nb_attempt,
+            }
+            for r in rows
+        ]
+
+    @DatabaseHelper._sessionm
+    def regenerate_agent_delete(self, session, jid):
+        """Supprime une machine de la file de regeneration apres traitement reussi."""
+        from lib.plugins.xmpp.schema import Regenerate_agent
+        session.query(Regenerate_agent).filter(
+            Regenerate_agent.jid == jid
+        ).delete(synchronize_session=False)
+        session.commit()
+
+    @DatabaseHelper._sessionm
+    def regenerate_agent_increment_attempt(self, session, jid):
+        """Incremente le compteur de tentatives pour une machine."""
+        from lib.plugins.xmpp.schema import Regenerate_agent
+        row = session.query(Regenerate_agent).filter(
+            Regenerate_agent.jid == jid
+        ).first()
+        if row:
+            row.nb_attempt += 1
+            session.commit()
+
+    @DatabaseHelper._sessionm
+    def regenerate_agent_has_pending(self, session):
+        """Vrai si une demande de regeneration est en attente."""
+        from lib.plugins.xmpp.schema import Regenerate_agent
+        return session.query(Regenerate_agent.id).first() is not None
+
     # -------------------------------------------------------------------------------
 
   
