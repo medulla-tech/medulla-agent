@@ -4817,6 +4817,9 @@ class process_xmpp_agent:
         ):
             format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
             formatter = logging.Formatter(format)
+        elif sys.platform.startswith("lin") or sys.platform.startswith("darwin"):
+            format = "%(asctime)s - %(levelname)s - (AG_EVENT)%(message)s"
+            formatter = logging.Formatter(format)
 
         logger = logging.getLogger()  # either the given logger or the root logger
         logger.setLevel(tglevellog)

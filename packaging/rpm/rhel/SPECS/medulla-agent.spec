@@ -11,13 +11,13 @@
 %define use_git         1
 %define branch master
 %define filetree_version 0.2
-%define kiosk_version 2.1.3
+%define kiosk_version 2.1.4
 
 %global __python %{__python3}
 
 Summary:	Pulse XMPP Agent
 Name:		medulla-agent
-Version:	5.6.4
+Version:	5.6.5
 %if ! %use_git
 Release:        1%{?dist}
 %else
