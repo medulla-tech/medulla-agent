@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Charge le traitement periodique de la file regenerate_agent."""
+"""Charge le traitement periodique de la file reset_machine."""
 
 import configparser
 import logging

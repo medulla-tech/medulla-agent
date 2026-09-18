@@ -65,16 +65,16 @@ def _parse_payload(data):
 
 def _queue_add(jid_target, reason):
     """Ajoute une demande dans la file de regeneration."""
-    XmppMasterDatabase().regenerate_agent_add(jid_target, reason)
-    logger.info("[REGENERATEAGENT-SUB] %s ajoutee a regenerate_agent" % jid_target)
+    XmppMasterDatabase().reset_machine_add(jid_target, reason)
+    logger.info("[REGENERATEAGENT-SUB] %s ajoutee a reset_machine" % jid_target)
 
 
 def _queue_process(xmppobject):
     """Envoie les machines presentes par lots limites au meme ARS."""
     try:
-        queue = XmppMasterDatabase().regenerate_agent_get_all()
+        queue = XmppMasterDatabase().reset_machine_get_all()
     except Exception:
-        logger.error("[REGENERATEAGENT-SUB] Impossible de lire regenerate_agent")
+        logger.error("[REGENERATEAGENT-SUB] Impossible de lire reset_machine")
         logger.error(traceback.format_exc())
         return
 
@@ -88,11 +88,11 @@ def _queue_process(xmppobject):
             if XmppMasterDatabase().getPresencejid(jid):
                 entries_by_relay.setdefault(jidrelay, []).append(entry)
             else:
-                XmppMasterDatabase().regenerate_agent_increment_attempt(jid)
+                XmppMasterDatabase().reset_machine_increment_attempt(jid)
         except Exception:
             logger.error("[REGENERATEAGENT-SUB] Echec pour %s" % jid)
             logger.error(traceback.format_exc())
-            XmppMasterDatabase().regenerate_agent_increment_attempt(jid)
+            XmppMasterDatabase().reset_machine_increment_attempt(jid)
 
     batch_size = getattr(xmppobject, "regenerate_queue_batch_size", 5)
     for jidrelay, entries in entries_by_relay.items():
@@ -101,12 +101,12 @@ def _queue_process(xmppobject):
             try:
                 _send_regenerate(xmppobject, jidrelay, batch)
                 for entry in batch:
-                    XmppMasterDatabase().regenerate_agent_delete(entry["jid"])
+                    XmppMasterDatabase().reset_machine_delete(entry["jid"])
             except Exception:
                 logger.error("[REGENERATEAGENT-SUB] Echec envoi lot vers %s" % jidrelay)
                 logger.error(traceback.format_exc())
                 for entry in batch:
-                    XmppMasterDatabase().regenerate_agent_increment_attempt(entry["jid"])
+                    XmppMasterDatabase().reset_machine_increment_attempt(entry["jid"])
 
 
 def action(xmppobject, action, sessionid, data, message, ret=None, dataobj=None):
