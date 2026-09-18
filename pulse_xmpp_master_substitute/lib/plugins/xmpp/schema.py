@@ -1258,9 +1258,9 @@ class UpUbuntuVersions(Base, XmppMasterDBObj):
 
 
 class Reset_machine(Base, XmppMasterDBObj):
-    """File d'attente de reinitialisation forcee de base agent.
+    """File d'attente de regeneration complete de base agent.
 
-    Une ligne par machine a reinitialiser. Supprimee apres envoi reussi
+    Une ligne par machine a regenerer. Supprimee apres envoi reussi
     si la machine est presente. Conservee tant que la machine est hors ligne.
     """
 
@@ -1270,13 +1270,19 @@ class Reset_machine(Base, XmppMasterDBObj):
         String(255),
         nullable=False,
         unique=True,
-        comment="JID complet de la machine cible a reinitialiser.",
+        comment="JID complet de la machine cible a regenerer.",
+    )
+    jidrelay = Column(
+        String(255),
+        nullable=False,
+        default="",
+        comment="JID du relay ARS associe a la machine.",
     )
     reason = Column(
         String(255),
         nullable=False,
         default="",
-        comment="Motif operateur du reset force.",
+        comment="Motif operateur de la regeneration.",
     )
     date_request = Column(
         DateTime,

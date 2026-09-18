@@ -440,86 +440,287 @@ class grafcet:
             logging.getLogger().error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
 
+    def __detect_connected_users__(self):
+        """
+        Return connected interactive users as text metadata for templates.
+        """
+        result = {
+            "connected": "false",
+            "user": "none",
+            "users": "none",
+            "count": "0",
+            "session_id": "none",
+            "source": "none",
+        }
+        users = []
+        session_id = "none"
+
+        try:
+            if sys.platform.startswith("win"):
+                query_result = simplecommand("query user")
+                for line in query_result.get("result", [])[1:]:
+                    line = line.strip().lstrip(">").strip()
+                    if not line:
+                        continue
+                    parts = [part for part in line.split(" ") if part]
+                    if len(parts) >= 3 and parts[2].isdigit() and not parts[1].isdigit():
+                        users.append(parts[0])
+                        if session_id == "none":
+                            session_id = parts[2]
+            elif sys.platform.startswith("linux"):
+                who_result = simplecommand("who")
+                for line in who_result.get("result", []):
+                    parts = [part for part in line.strip().split(" ") if part]
+                    if parts:
+                        users.append(parts[0])
+            elif sys.platform.startswith("darwin"):
+                console_result = simplecommand("stat -f %Su /dev/console")
+                if console_result.get("result"):
+                    console_user = console_result["result"][0].strip()
+                    if console_user and console_user != "root":
+                        users.append(console_user)
+        except (OSError, ValueError, TypeError, KeyError, IndexError):
+            logger.error("\n%s", traceback.format_exc())
+
+        users = sorted({user for user in users if user})
+        if users:
+            result["connected"] = "true"
+            result["user"] = users[0]
+            result["users"] = ",".join(users)
+            result["count"] = str(len(users))
+            result["session_id"] = session_id
+            if sys.platform.startswith("win"):
+                result["source"] = "windows_query_user"
+            elif sys.platform.startswith("linux"):
+                result["source"] = "linux_who"
+            elif sys.platform.startswith("darwin"):
+                result["source"] = "mac_stat_console"
+
+        return result
+
+    def __boot_time_epoch__(self):
+        try:
+            if sys.platform.startswith("linux"):
+                with open("/proc/stat", "r") as proc_stat_file:
+                    for line in proc_stat_file:
+                        if line.startswith("btime "):
+                            return int(line.split()[1])
+            elif sys.platform.startswith("win"):
+                command = (
+                    "powershell -NoProfile -Command "
+                    '"[int][double]::Parse((Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().Subtract([datetime]::UnixEpoch).TotalSeconds)"'
+                )
+                command_result = simplecommand(command)
+                if command_result.get("result"):
+                    return int(command_result["result"][0].strip())
+            elif sys.platform.startswith("darwin"):
+                command_result = simplecommand("sysctl -n kern.boottime")
+                if command_result.get("result"):
+                    match = re.search(r"sec\s*=\s*(\d+)", command_result["result"][0])
+                    if match:
+                        return int(match.group(1))
+        except (OSError, ValueError, TypeError, KeyError, IndexError):
+            logger.error("\n%s", traceback.format_exc())
+        return None
+
+    def __target_release__(self):
+        candidates = [
+            self.data.get("name", ""),
+            self.data.get("descriptor", {}).get("info", {}).get("name", ""),
+            self.data.get("descriptor", {}).get("info", {}).get("description", ""),
+        ]
+        for candidate in candidates:
+            match = re.search(r"\b\d{2}H[12]\b", str(candidate), re.IGNORECASE)
+            if match:
+                return match.group(0).upper()
+        return "none"
+
+    def __is_system_context__(self):
+        if hasattr(os, "geteuid"):
+            return "true" if os.geteuid() == 0 else "false"
+        return "true" if getpass.getuser().lower() in ["system", "localsystem"] else "false"
+
+    def __template_condition_is_true__(self, condition):
+        value = str(condition or "").strip().lower()
+        return value in {"true", "vrai", "1", "yes", "ok"}
+
+    def __process_template_directives__(self, cmd):
+        def replace_if_text(match):
+            condition = match.group(1)
+            message_true = match.group(2)
+            message_false = match.group(3)
+            return (
+                message_true
+                if self.__template_condition_is_true__(condition)
+                else message_false
+            )
+
+        cmd = re.sub(
+            r"@@@IF\|(.*?)\|(.*?)\|(.*?)@@@",
+            replace_if_text,
+            cmd,
+            flags=re.IGNORECASE,
+        )
+        return cmd
+
     def replaceTEMPLATE(self, cmd):
         # print "__________________________________"
         # print  "replaceTEMPLATE in %s"% cmd
         # print "__________________________________"
 
-        dynamic_param_deploy_json = self.__dynamic_param_deploy_json()
-        advanced_param_deploy_json = self.__advanced_param_deploy_json()
-        merged_deploy_params_json = self.__merged_deploy_params_json()
-
-        if "@@@ADVANCED_PARAM_DEPLOY_JSON@@@" in cmd:
+        if (
+            "@@@ADVANCED_PARAM_DEPLOY_JSON@@@" in cmd
+            or "@@@ADVANCED_PARAM_DEPLOY_B64@@@" in cmd
+            or "@@@ADVANCED_PARAM_DEPLOY_SHELL@@@" in cmd
+        ):
+            advanced_param_deploy_json = self.__advanced_param_deploy_json()
             cmd = cmd.replace("@@@ADVANCED_PARAM_DEPLOY_JSON@@@", advanced_param_deploy_json)
-
-        if "@@@ADVANCED_PARAM_DEPLOY_B64@@@" in cmd:
             cmd = cmd.replace(
                 "@@@ADVANCED_PARAM_DEPLOY_B64@@@",
                 self.__json_to_b64(advanced_param_deploy_json),
             )
-
-        if "@@@ADVANCED_PARAM_DEPLOY_SHELL@@@" in cmd:
             cmd = cmd.replace(
                 "@@@ADVANCED_PARAM_DEPLOY_SHELL@@@",
                 self.__json_to_shell(advanced_param_deploy_json),
             )
 
-        if "@@@MERGED_DEPLOY_PARAMS_JSON@@@" in cmd:
+        if (
+            "@@@MERGED_DEPLOY_PARAMS_JSON@@@" in cmd
+            or "@@@MERGED_DEPLOY_PARAMS_B64@@@" in cmd
+            or "@@@MERGED_DEPLOY_PARAMS_SHELL@@@" in cmd
+        ):
+            merged_deploy_params_json = self.__merged_deploy_params_json()
             cmd = cmd.replace("@@@MERGED_DEPLOY_PARAMS_JSON@@@", merged_deploy_params_json)
-
-        if "@@@MERGED_DEPLOY_PARAMS_B64@@@" in cmd:
             cmd = cmd.replace(
                 "@@@MERGED_DEPLOY_PARAMS_B64@@@",
                 self.__json_to_b64(merged_deploy_params_json),
             )
-
-        if "@@@MERGED_DEPLOY_PARAMS_SHELL@@@" in cmd:
             cmd = cmd.replace(
                 "@@@MERGED_DEPLOY_PARAMS_SHELL@@@",
                 self.__json_to_shell(merged_deploy_params_json),
             )
 
-        if "@@@DYNAMIC_PARAM_DEPLOY_JSON@@@" in cmd:
+        if (
+            "@@@DYNAMIC_PARAM_DEPLOY_JSON@@@" in cmd
+            or "@@@DYNAMIC_PARAM_DEPLOY_B64@@@" in cmd
+            or "@@@DYNAMIC_PARAM_DEPLOY_SHELL@@@" in cmd
+            or "@@@DYNAMIC_PARAM_DEPLOY@@@" in cmd
+        ):
+            dynamic_param_deploy_json = self.__dynamic_param_deploy_json()
             cmd = cmd.replace("@@@DYNAMIC_PARAM_DEPLOY_JSON@@@", dynamic_param_deploy_json)
-
-        if "@@@DYNAMIC_PARAM_DEPLOY_B64@@@" in cmd:
             cmd = cmd.replace(
                 "@@@DYNAMIC_PARAM_DEPLOY_B64@@@",
                 self.__json_to_b64(dynamic_param_deploy_json),
             )
-
-        if "@@@DYNAMIC_PARAM_DEPLOY_SHELL@@@" in cmd:
             cmd = cmd.replace(
                 "@@@DYNAMIC_PARAM_DEPLOY_SHELL@@@", self.__json_to_shell(dynamic_param_deploy_json)
             )
-
-        if "@@@DYNAMIC_PARAM_DEPLOY@@@" in cmd:
             # Replace by raw JSON text so script/command keeps explicit descriptor intent.
             cmd = cmd.replace(
                 "@@@DYNAMIC_PARAM_DEPLOY@@@",
                 dynamic_param_deploy_json,
             )
 
-        now_epoch = str(int(time.time()))
-        now_utc = datetime.datetime.now(datetime.timezone.utc)
-        now_iso8601 = now_utc.replace(microsecond=0).isoformat().replace("+00:00", "Z")
-        cmd = cmd.replace("@@@NOW_EPOCH@@@", now_epoch)
-        cmd = cmd.replace("@@@NOW_ISO8601@@@", now_iso8601)
-        cmd = cmd.replace("@@@DATE_YYYYMMDD@@@", now_utc.strftime("%Y%m%d"))
-        cmd = cmd.replace("@@@TIME_HHMMSS@@@", now_utc.strftime("%H%M%S"))
-        cmd = cmd.replace("@@@TIMEZONE@@@", str(datetime.datetime.now().astimezone().tzinfo))
+        connected_user_placeholders = (
+            "@@@USER_CONNECTED@@@",
+            "@@@CONNECTED_USER@@@",
+            "@@@CONNECTED_USERS@@@",
+            "@@@CONNECTED_USER_COUNT@@@",
+            "@@@CONNECTED_USER_SESSION_ID@@@",
+            "@@@CONNECTED_USER_SOURCE@@@",
+        )
+        if any(placeholder in cmd for placeholder in connected_user_placeholders):
+            connected_users = self.__detect_connected_users__()
+            cmd = cmd.replace("@@@USER_CONNECTED@@@", connected_users["connected"])
+            cmd = cmd.replace("@@@CONNECTED_USER@@@", connected_users["user"])
+            cmd = cmd.replace("@@@CONNECTED_USERS@@@", connected_users["users"])
+            cmd = cmd.replace("@@@CONNECTED_USER_COUNT@@@", connected_users["count"])
+            cmd = cmd.replace("@@@CONNECTED_USER_SESSION_ID@@@", connected_users["session_id"])
+            cmd = cmd.replace("@@@CONNECTED_USER_SOURCE@@@", connected_users["source"])
+        if "@@@BOOT_TIME_ISO8601@@@" in cmd or "@@@UPTIME_SECONDS@@@" in cmd:
+            boot_time_epoch = self.__boot_time_epoch__()
+            if "@@@BOOT_TIME_ISO8601@@@" in cmd:
+                if boot_time_epoch is None:
+                    boot_time_iso8601 = "none"
+                else:
+                    boot_time_iso8601 = (
+                        datetime.datetime.fromtimestamp(
+                            boot_time_epoch,
+                            datetime.timezone.utc,
+                        )
+                        .replace(microsecond=0)
+                        .isoformat()
+                        .replace("+00:00", "Z")
+                    )
+                cmd = cmd.replace("@@@BOOT_TIME_ISO8601@@@", boot_time_iso8601)
+            if "@@@UPTIME_SECONDS@@@" in cmd:
+                uptime_seconds = (
+                    "none"
+                    if boot_time_epoch is None
+                    else str(max(0, int(time.time()) - boot_time_epoch))
+                )
+                cmd = cmd.replace("@@@UPTIME_SECONDS@@@", uptime_seconds)
+        if "@@@IS_SYSTEM_CONTEXT@@@" in cmd:
+            cmd = cmd.replace("@@@IS_SYSTEM_CONTEXT@@@", self.__is_system_context__())
+        if "@@@PROCESS_PID@@@" in cmd:
+            cmd = cmd.replace("@@@PROCESS_PID@@@", str(os.getpid()))
+        deployment_placeholders = (
+            "@@@DEPLOYMENT_SECTION@@@",
+            "@@@DEPLOYMENT_STEP@@@",
+        )
+        if any(placeholder in cmd for placeholder in deployment_placeholders):
+            workingstep = getattr(self, "workingstep", {})
+            cmd = cmd.replace("@@@DEPLOYMENT_SECTION@@@", str(workingstep.get("action") or "none"))
+            cmd = cmd.replace("@@@DEPLOYMENT_STEP@@@", str(workingstep.get("step", "none")))
+        if "@@@PACKAGE_LOCAL_SHARE@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@PACKAGE_LOCAL_SHARE@@@",
+                str(self.data.get("descriptor", {}).get("info", {}).get("localisation_server") or "none"),
+            )
+        if "@@@TARGET_RELEASE@@@" in cmd:
+            cmd = cmd.replace("@@@TARGET_RELEASE@@@", self.__target_release__())
 
-        cmd = cmd.replace("@@@EXEC_USER@@@", getpass.getuser())
-        cmd = cmd.replace("@@@HOME_DIR@@@", os.path.expanduser("~"))
-        cmd = cmd.replace("@@@WORKING_DIR@@@", os.getcwd())
+        time_placeholders = (
+            "@@@NOW_EPOCH@@@",
+            "@@@NOW_ISO8601@@@",
+            "@@@DATE_YYYYMMDD@@@",
+            "@@@TIME_HHMMSS@@@",
+            "@@@TIMEZONE@@@",
+        )
+        if any(placeholder in cmd for placeholder in time_placeholders):
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
+            if "@@@NOW_EPOCH@@@" in cmd:
+                cmd = cmd.replace("@@@NOW_EPOCH@@@", str(int(now_utc.timestamp())))
+            if "@@@NOW_ISO8601@@@" in cmd:
+                now_iso8601 = now_utc.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+                cmd = cmd.replace("@@@NOW_ISO8601@@@", now_iso8601)
+            if "@@@DATE_YYYYMMDD@@@" in cmd:
+                cmd = cmd.replace("@@@DATE_YYYYMMDD@@@", now_utc.strftime("%Y%m%d"))
+            if "@@@TIME_HHMMSS@@@" in cmd:
+                cmd = cmd.replace("@@@TIME_HHMMSS@@@", now_utc.strftime("%H%M%S"))
+            if "@@@TIMEZONE@@@" in cmd:
+                cmd = cmd.replace("@@@TIMEZONE@@@", str(datetime.datetime.now().astimezone().tzinfo))
 
-        cmd = cmd.replace("@@@FQDN@@@", socket.getfqdn())
-        cmd = cmd.replace("@@@OS_VERSION@@@", platform.version())
-        cmd = cmd.replace("@@@KERNEL_VERSION@@@", platform.release())
+        if "@@@EXEC_USER@@@" in cmd:
+            cmd = cmd.replace("@@@EXEC_USER@@@", getpass.getuser())
+        if "@@@HOME_DIR@@@" in cmd:
+            cmd = cmd.replace("@@@HOME_DIR@@@", os.path.expanduser("~"))
+        if "@@@WORKING_DIR@@@" in cmd:
+            cmd = cmd.replace("@@@WORKING_DIR@@@", os.getcwd())
 
-        cmd = cmd.replace("@@@PATH_SEP@@@", os.sep)
-        cmd = cmd.replace("@@@LINE_SEP@@@", os.linesep)
-        cmd = cmd.replace("@@@NULL_DEVICE@@@", os.devnull)
+        if "@@@FQDN@@@" in cmd:
+            cmd = cmd.replace("@@@FQDN@@@", socket.getfqdn())
+        if "@@@OS_VERSION@@@" in cmd:
+            cmd = cmd.replace("@@@OS_VERSION@@@", platform.version())
+        if "@@@KERNEL_VERSION@@@" in cmd:
+            cmd = cmd.replace("@@@KERNEL_VERSION@@@", platform.release())
+
+        if "@@@PATH_SEP@@@" in cmd:
+            cmd = cmd.replace("@@@PATH_SEP@@@", os.sep)
+        if "@@@LINE_SEP@@@" in cmd:
+            cmd = cmd.replace("@@@LINE_SEP@@@", os.linesep)
+        if "@@@NULL_DEVICE@@@" in cmd:
+            cmd = cmd.replace("@@@NULL_DEVICE@@@", os.devnull)
 
         # Preferred placeholder for Linux updates.
         if "@@@UPDATE_LINUX@@@" in cmd:
@@ -555,43 +756,60 @@ class grafcet:
                         f"@@@DYNAMIC_PARAM@@@{nameparameter}@@@",
                         self.parameterdynamic[nameparameter],
                     )
-        if "oldresult" in self.datasend["data"]:
+        if "@@@PREC_RESULT@@@" in cmd and "oldresult" in self.datasend["data"]:
             cmd = cmd.replace("@@@PREC_RESULT@@@", self.datasend["data"]["oldresult"])
-        if "oldreturncode" in self.datasend["data"]:
+        if "@@@PREC_RETURNCODE@@@" in cmd and "oldreturncode" in self.datasend["data"]:
             cmd = cmd.replace(
                 "@@@PREC_RETURNCODE@@@", self.datasend["data"]["oldreturncode"]
             )
-        cmd = cmd.replace("@@@JID_MASTER@@@", self.datasend["data"]["jidmaster"])
-        cmd = cmd.replace("@@@JID_RELAYSERVER@@@", self.datasend["data"]["jidrelay"])
-        cmd = cmd.replace("@@@JID_MACHINE@@@", self.datasend["data"]["jidmachine"])
-        cmd = cmd.replace("@@@IP_MACHINE@@@", self.datasend["data"]["ipmachine"])
-        cmd = cmd.replace("@@@IP_RELAYSERVER@@@", self.datasend["data"]["iprelay"])
-        cmd = cmd.replace("@@@IP_MASTER@@@", self.datasend["data"]["ipmaster"])
-        cmd = cmd.replace("@@@PACKAGE_NAME@@@", self.datasend["data"]["name"])
-        cmd = cmd.replace("@@@SESSION_ID@@@", self.datasend["sessionid"])
-        cmd = cmd.replace("@@@HOSTNAME@@@", platform.node().split(".")[0])
+        if "@@@JID_MASTER@@@" in cmd:
+            cmd = cmd.replace("@@@JID_MASTER@@@", self.datasend["data"].get("jidmaster", "none"))
+        if "@@@JID_RELAYSERVER@@@" in cmd:
+            cmd = cmd.replace("@@@JID_RELAYSERVER@@@", self.datasend["data"].get("jidrelay", "none"))
+        if "@@@JID_MACHINE@@@" in cmd:
+            cmd = cmd.replace("@@@JID_MACHINE@@@", self.datasend["data"].get("jidmachine", "none"))
+        if "@@@IP_MACHINE@@@" in cmd:
+            cmd = cmd.replace("@@@IP_MACHINE@@@", self.datasend["data"].get("ipmachine", "none"))
+        if "@@@IP_RELAYSERVER@@@" in cmd:
+            cmd = cmd.replace("@@@IP_RELAYSERVER@@@", self.datasend["data"].get("iprelay", "none"))
+        if "@@@IP_MASTER@@@" in cmd:
+            cmd = cmd.replace("@@@IP_MASTER@@@", self.datasend["data"].get("ipmaster", "none"))
+        if "@@@PACKAGE_NAME@@@" in cmd:
+            cmd = cmd.replace("@@@PACKAGE_NAME@@@", self.datasend["data"].get("name", "none"))
+        if "@@@SESSION_ID@@@" in cmd:
+            cmd = cmd.replace("@@@SESSION_ID@@@", self.datasend.get("sessionid", "none"))
+        if "@@@HOSTNAME@@@" in cmd:
+            cmd = cmd.replace("@@@HOSTNAME@@@", platform.node().split(".")[0])
 
-        cmd = cmd.replace(
-            "@@@PYTHON_IMPLEMENTATION@@@", platform.python_implementation()
-        )
-        cmd = cmd.replace("@@@PYTHON_PATH@@@", sys.executable)
+        if "@@@PYTHON_IMPLEMENTATION@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@PYTHON_IMPLEMENTATION@@@", platform.python_implementation()
+            )
+        if "@@@PYTHON_PATH@@@" in cmd:
+            cmd = cmd.replace("@@@PYTHON_PATH@@@", sys.executable)
 
-        cmd = cmd.replace("@@@ARCHI_MACHINE@@@", platform.machine())
-        cmd = cmd.replace("@@@OS_FAMILY@@@", platform.system())
+        if "@@@ARCHI_MACHINE@@@" in cmd:
+            cmd = cmd.replace("@@@ARCHI_MACHINE@@@", platform.machine())
+        if "@@@OS_FAMILY@@@" in cmd:
+            cmd = cmd.replace("@@@OS_FAMILY@@@", platform.system())
 
-        cmd = cmd.replace("@@@OS_COMPLET_NAME@@@", platform.platform())
+        if "@@@OS_COMPLET_NAME@@@" in cmd:
+            cmd = cmd.replace("@@@OS_COMPLET_NAME@@@", platform.platform())
 
-        cmd = cmd.replace(
-            "@@@UUID_PACKAGE@@@",
-            os.path.basename(self.datasend["data"]["pathpackageonmachine"]),
-        )
+        if "@@@UUID_PACKAGE@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@UUID_PACKAGE@@@",
+                os.path.basename(self.datasend["data"].get("pathpackageonmachine", "none")),
+            )
 
-        cmd = cmd.replace(
-            "@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@",
-            self.datasend["data"]["pathpackageonmachine"],
-        )
+        if "@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@",
+                self.datasend["data"].get("pathpackageonmachine", "none"),
+            )
 
-        cmd = cmd.replace("@@@LIST_INTERFACE_NET@@@", " ".join(netifaces.interfaces()))
+        if "@@@LIST_INTERFACE_NET@@@" in cmd:
+            cmd = cmd.replace("@@@LIST_INTERFACE_NET@@@", " ".join(netifaces.interfaces()))
 
         # Replace windows registry value in template (only for windows)
         # @@@VRW@@@HKEY@@K@@Subkey@@K@@value@@@VRW@@@
@@ -637,16 +855,20 @@ class grafcet:
                 winreg.CloseKey(key)
                 cmd = cmd.replace(t, typevaleur)
 
-        cmd = cmd.replace(
-            "@@@LIST_INTERFACE_NET_NO_LOOP@@@",
-            " ".join([x for x in netifaces.interfaces() if x != "lo" and x != ""]),
-        )
+        if "@@@LIST_INTERFACE_NET_NO_LOOP@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@LIST_INTERFACE_NET_NO_LOOP@@@",
+                " ".join([x for x in netifaces.interfaces() if x != "lo" and x != ""]),
+            )
 
-        cmd = cmd.replace("@@@LIST_MAC_ADRESS@@@", " ".join(getMacAdressList()))
+        if "@@@LIST_MAC_ADRESS@@@" in cmd:
+            cmd = cmd.replace("@@@LIST_MAC_ADRESS@@@", " ".join(getMacAdressList()))
 
-        cmd = cmd.replace("@@@LIST_IP_ADRESS@@@", " ".join(getIPAdressList()))
+        if "@@@LIST_IP_ADRESS@@@" in cmd:
+            cmd = cmd.replace("@@@LIST_IP_ADRESS@@@", " ".join(getIPAdressList()))
 
-        cmd = cmd.replace("@@@IP_MACHINE_XMPP@@@", self.data["ipmachine"])
+        if "@@@IP_MACHINE_XMPP@@@" in cmd:
+            cmd = cmd.replace("@@@IP_MACHINE_XMPP@@@", self.data.get("ipmachine", "none"))
 
         # Quick fix for blacklisted mac addresses
         # TODO: A proper fix to blacklisted mac addresses will allow uncommenting
@@ -656,11 +878,14 @@ class grafcet:
         #     MacAdressToIp(
         #         self.data['ipmachine']))
 
-        cmd = cmd.replace("@@@TMP_DIR@@@", pulseTempDir())
+        if "@@@TMP_DIR@@@" in cmd:
+            cmd = cmd.replace("@@@TMP_DIR@@@", pulseTempDir())
         # recherche variable environnement
         for t in re.findall("@_@.*?@_@", cmd):
             z = t.replace("@_@", "")
             cmd = cmd.replace(t, os.environ[z])
+        if "@@@IF|" in cmd.upper():
+            cmd = self.__process_template_directives__(cmd)
         # print "__________________________________"
         # print "replace TEMPLATE ou %s"% cmd
         # print "__________________________________"
@@ -3228,6 +3453,14 @@ class grafcet:
             self.workingstep["sizeheader"] = int(self.workingstep["sizeheader"])
         if "sizemessage" in self.workingstep:
             self.workingstep["sizemessage"] = int(self.workingstep["sizemessage"])
+        if isinstance(message, bytes):
+            message = message.decode("utf-8")
+        if isinstance(titlemessage, bytes):
+            titlemessage = titlemessage.decode("utf-8")
+        message = self.replaceTEMPLATE(message)
+        titlemessage = self.replaceTEMPLATE(titlemessage)
+        self.workingstep["message"] = base64.b64encode(message.encode("utf-8")).decode("utf-8")
+        self.workingstep["titlemessage"] = base64.b64encode(titlemessage.encode("utf-8")).decode("utf-8")
         try:
             msg = []
             command = ""
@@ -3247,13 +3480,6 @@ class grafcet:
                 # self.objectxmpp.statusconnected=None
                 # START query user /MIN /B
                 # command = """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """\
-
-                if isinstance(message, bytes):
-                    message = message.decode("utf-8")
-
-                if isinstance(titlemessage, bytes):
-                    titlemessage = titlemessage.decode("utf-8")
-
                 command = (
                     """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i %s """
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py"""
