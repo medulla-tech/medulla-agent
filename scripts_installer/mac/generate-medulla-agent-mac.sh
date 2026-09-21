@@ -863,12 +863,6 @@ DISTEOF
         ln -sf "${OUTPUT}" "${PKG_NAME}-latest.pkg" 2>/dev/null
     fi
 
-    # Copy to downloads
-    if [ -d "${MAC_DIR}/downloads" ]; then
-        cp "${OUTPUT}" "${MAC_DIR}/downloads/"
-        colored_echo green "Copied to ${MAC_DIR}/downloads/"
-    fi
-
     rm -rf ${BUILD_DIR}
 }
 
@@ -877,7 +871,7 @@ DISTEOF
 # ============================================================
 check_arguments "$@"
 
-for ARCH in arm64 x86_64; do
+for ARCH in arm64; do
     PKG_NAME="Medulla-Agent-mac-${ARCH}"
     BUILD_DIR="/tmp/medulla-mac-build-${ARCH}"
     DMG_STAGING="${BUILD_DIR}/dmg"
