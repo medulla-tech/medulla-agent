@@ -150,36 +150,44 @@ restore_python_alternatives() {
         return
     fi
 
-    # Remove the python3.11 entry that Medulla added to the alternatives system
-    if [ -x /usr/bin/python3.11 ]; then
+    # Remove the python3.11 entry only when a legacy alternatives group exists.
+    # Current installers do not manage the distribution-owned python3 link.
+    if [ -x /usr/bin/python3.11 ] && "${UA_CMD}" --query python3 >/dev/null 2>&1; then
         "${UA_CMD}" --remove python3 /usr/bin/python3.11 2>/dev/null && \
             log_ok "Removed python3 alternative for /usr/bin/python3.11" || \
             log_warn "Could not remove python3 alternative for /usr/bin/python3.11 (may not exist)"
     else
-        log_warn "/usr/bin/python3.11 not found, skipping alternative removal"
+        log "No legacy python3 alternatives group found, skipping removal"
     fi
 
     # Switch to automatic mode: the system picks the highest-priority remaining entry
-    "${UA_CMD}" --auto python3 2>/dev/null && \
-        log_ok "python3 alternative restored to auto mode" || \
-        log_warn "Could not set python3 to auto mode"
+    if "${UA_CMD}" --query python3 >/dev/null 2>&1; then
+        "${UA_CMD}" --auto python3 2>/dev/null && \
+            log_ok "python3 alternative restored to auto mode" || \
+            log_warn "Could not set python3 to auto mode"
+    fi
 
     # Safety check: if /usr/bin/python3 is still broken, try to repair it
     local CURRENT_PY3
     CURRENT_PY3=$(readlink -f /usr/bin/python3 2>/dev/null || true)
     if [ -z "${CURRENT_PY3}" ] || [ ! -x "${CURRENT_PY3}" ]; then
         log_warn "/usr/bin/python3 is broken or missing, attempting repair..."
-        # Find the best available system python3 (e.g. python3.10, python3.12)
+        # Restore a package-owned system interpreter. Debian 12 legitimately
+        # uses python3.11, so it must not be excluded from the candidates.
         local FALLBACK_PY3
         FALLBACK_PY3=$(ls /usr/bin/python3.* 2>/dev/null \
             | grep -E '/usr/bin/python3\.[0-9]+$' \
-            | grep -v python3.11 \
+            | while read -r candidate; do
+                if command -v dpkg-query >/dev/null 2>&1; then
+                    dpkg-query -S "${candidate}" >/dev/null 2>&1 && echo "${candidate}"
+                elif command -v rpm >/dev/null 2>&1; then
+                    rpm -qf "${candidate}" >/dev/null 2>&1 && echo "${candidate}"
+                fi
+              done \
             | sort -V | tail -1 || true)
         if [ -n "${FALLBACK_PY3}" ] && [ -x "${FALLBACK_PY3}" ]; then
-            "${UA_CMD}" --install /usr/bin/python3 python3 "${FALLBACK_PY3}" 1 2>/dev/null
-            "${UA_CMD}" --set python3 "${FALLBACK_PY3}" 2>/dev/null && \
-                log_ok "Restored python3 -> ${FALLBACK_PY3}" || \
-                log_warn "Could not restore python3 alternative to ${FALLBACK_PY3}"
+            ln -sfn "$(basename "${FALLBACK_PY3}")" /usr/bin/python3
+            log_ok "Restored distribution python3 -> ${FALLBACK_PY3}"
         else
             log_warn "No fallback python3 found. /usr/bin/python3 may remain broken."
         fi
