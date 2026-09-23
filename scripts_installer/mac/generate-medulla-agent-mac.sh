@@ -485,14 +485,14 @@ ${APIP} install --upgrade pip setuptools 2>/dev/null
 ${APIP} install certifi requests urllib3 charset-normalizer idna cherrypy 2>/dev/null
 # Verify and fallback from PyPI if needed
 MISSING=""
-for mod in psutil Crypto yaml lxml cherrypy croniter netaddr lmdb posix_ipc requests OpenSSL configparser distro netifaces slixmpp pycurl wakeonlan aiofiles websockets; do
+for mod in psutil Crypto yaml lxml cherrypy croniter netaddr lmdb posix_ipc requests OpenSSL configparser distro netifaces slixmpp pycurl aiofiles websockets; do
     arch -${ARCH} ${INSTALL_DIR}/venv/bin/python3 -c "import $mod" 2>/dev/null || MISSING="$MISSING $mod"
 done
 if [ -n "$MISSING" ]; then
     log "Modules manquants:$MISSING - installation depuis PyPI..."
     ${APIP} install psutil pycryptodome PyYAML lxml cherrypy croniter netaddr \
         lmdb posix_ipc requests pyOpenSSL configparser distro netifaces-plus \
-        slixmpp==1.8.5 pycurl wakeonlan aiofiles websockets 2>&1 | tail -5
+        slixmpp==1.8.5 pycurl aiofiles websockets 2>&1 | tail -5
 fi
 
 # pycurl sdist sur macOS compile par defaut sans backend SSL choisi ("none/other"),
