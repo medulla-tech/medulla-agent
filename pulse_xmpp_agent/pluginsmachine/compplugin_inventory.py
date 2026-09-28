@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.4", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "4.5", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -244,7 +244,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         namefilexml,
                     )
                 else:
-                    cmd = '"%s" %s %s' % (
+                    cmd = '"%s" %s %s --full --config=none' % (
                         agent_cmd,
                         general_options,
                         location_option,
@@ -444,7 +444,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         namefilexml,
                     )
                 else:
-                    cmd = """\"%s\" %s %s""" % (
+                    cmd = """\"%s\" %s %s --full --config=none""" % (
                         program,
                         general_options,
                         location_option,
@@ -682,11 +682,18 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             return
     elif sys.platform.startswith("darwin"):
         try:
+            additional = ""
+            if namefilexml and os.path.exists(namefilexml):
+                additional = ' --additional-content="%s"' % namefilexml
+            else:
+                additional = " --full --config=none"
+
             for nbcmd in range(3):
                 # Warning: this command has been tested on only 1 Mac
                 cmd = (
                     "/Applications/GLPI-Agent/bin/glpi-inventory "
-                    "--backend-collect-timeout=%s > %s" % (timeoutfusion, inventoryfile)
+                    "--backend-collect-timeout=%s%s > %s"
+                    % (timeoutfusion, additional, inventoryfile)
                 )
                 msg.append(cmd)
                 logger.debug(cmd)

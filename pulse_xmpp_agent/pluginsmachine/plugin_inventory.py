@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.9", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "5.0", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -272,7 +272,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         namefilexml,
                     )
                 else:
-                    cmd = '"%s" %s %s' % (
+                    cmd = '"%s" %s %s --full --config=none' % (
                         active_cmd,
                         general_options,
                         location_option,
@@ -477,14 +477,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
             for nbcmd in range(3):
                 if os.path.exists(namefilexml):
-                    cmd = """\"%s\" %s %s """ """--additional-content=%s """ % (
+                    cmd = """\"%s\" %s %s --additional-content=%s """ % (
                         program,
                         general_options,
                         location_option,
                         namefilexml,
                     )
                 else:
-                    cmd = """\"%s\" %s %s""" % (
+                    cmd = """\"%s\" %s %s --full --config=none""" % (
                         program,
                         general_options,
                         location_option,
@@ -728,6 +728,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             additional = ""
             if namefilexml and os.path.exists(namefilexml):
                 additional = ' --additional-content="%s"' % namefilexml
+            else:
+                additional = " --full --config=none"
+
             for nbcmd in range(3):
                 cmd = (
                     "/Applications/GLPI-Agent/bin/glpi-inventory "
