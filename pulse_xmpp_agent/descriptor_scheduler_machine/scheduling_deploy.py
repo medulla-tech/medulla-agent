@@ -12,7 +12,7 @@ import traceback
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "scheduling_deploy", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "scheduling_deploy", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 # nb  -1 infinie
 SCHEDULE = {"schedule": "*/15 * * * *", "nb": -1}
