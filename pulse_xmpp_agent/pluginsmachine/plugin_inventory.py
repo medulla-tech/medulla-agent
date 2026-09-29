@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "4.9", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "5.0", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -255,7 +255,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             active_bin, active_cmd = exec_candidates[0]
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s" % (nbcmd, timeoutfusion))
-                general_options = "--backend-collect-timeout=%s" % timeoutfusion
+                general_options = "--full --config=none --backend-collect-timeout=%s" % timeoutfusion
                 if hasattr(xmppobject.config, "inventorytag"):
                     if xmppobject.config.inventorytag:
                         general_options = (
@@ -272,7 +272,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         namefilexml,
                     )
                 else:
-                    cmd = '"%s" %s %s' % (
+                    cmd = '"%s" %s %s ' % (
                         active_cmd,
                         general_options,
                         location_option,
@@ -420,7 +420,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
             program = os.path.join("c:\\", "progra~1", agent_path, agent_bin)
             general_options = (
-                "--config=none --scan-profiles "
+                "--config=none --full --scan-profiles "
                 "--backend-collect-timeout=%s" % timeoutfusion
             )
             if hasattr(xmppobject.config, "inventorytag"):
@@ -477,14 +477,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
             for nbcmd in range(3):
                 if os.path.exists(namefilexml):
-                    cmd = """\"%s\" %s %s """ """--additional-content=%s """ % (
+                    cmd = """\"%s\" %s %s --additional-content=%s """ % (
                         program,
                         general_options,
                         location_option,
                         namefilexml,
                     )
                 else:
-                    cmd = """\"%s\" %s %s""" % (
+                    cmd = """\"%s\" %s %s """ % (
                         program,
                         general_options,
                         location_option,
@@ -725,9 +725,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             # Passe le XML d'enrichissement (extensions navigateurs / Office
             # add-ins, USB, etc.) a glpi-inventory pour que GLPI recoive ces
             # donnees en plus de l'inventaire standard.
-            additional = ""
+            additional = "--full --config=none"
             if namefilexml and os.path.exists(namefilexml):
-                additional = ' --additional-content="%s"' % namefilexml
+                additional += ' --additional-content="%s"' % namefilexml
+
             for nbcmd in range(3):
                 cmd = (
                     "/Applications/GLPI-Agent/bin/glpi-inventory "
