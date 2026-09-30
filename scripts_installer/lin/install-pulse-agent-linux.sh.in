@@ -37,8 +37,8 @@ PYQT6_VERSION="6.6.1"
 VNC_PASSWORD="@@VNC_PASSWORD@@"
 SSH_PORT="@@SSH_PORT@@"
 GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
-GLPI_AGENT_FILENAME="glpi-agent-@@GLPI_AGENT_VERSION@@-1.noarch.rpm"
-GLPI_AGENT_BASE_URL="@@GLPI_AGENT_BASE_URL@@"
+GLPI_AGENT_FILENAME="glpi-agent-@@GLPI_AGENT_VERSION@@-linux-installer.pl"
+GLPI_AGENT_BASE_URL="@@BASE_URL@@/lin/downloads"
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -77,7 +77,11 @@ install_agent_deps_ubuntu() {
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
     # Install required packages
-    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
+    apt install -y crudini net-tools openssh-server rsync x11vnc sudo syncthing 
+    # Install GLPI Agent
+    echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
+    wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
+    perl /tmp/medulla/${GLPI_AGENT_FILENAME} --reinstall --silent --no-question --force --no-httpd
     # Remove deadsnakes repository
     rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-*.sources
     apt update
@@ -90,11 +94,15 @@ install_agent_deps_debian12() {
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
     # Install required packages
-    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
+    apt install -y crudini net-tools openssh-server rsync x11vnc sudo syncthing 
+    # Install GLPI Agent
+    echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
+    wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
+    perl /tmp/medulla/${GLPI_AGENT_FILENAME} --reinstall --silent --no-question --force --no-httpd
 }
 
 install_agent_deps_almalinux() {
-    # Enable EPEL repository (required for crudini, x11vnc, xrdp, fusioninventory-agent)
+    # Enable EPEL repository (required for crudini, x11vnc, xrdp)
     dnf install -y epel-release
     # Enable CRB (crb sur AlmaLinux 9, powertools sur AlmaLinux 8) pour les paquets -devel
     dnf config-manager --set-enabled crb 2>/dev/null || \
@@ -105,10 +113,10 @@ install_agent_deps_almalinux() {
     python3.11 -m ensurepip --upgrade
     # Install required packages
     dnf install -y crudini wget net-tools openssh-server rsync x11vnc sudo syncthing
-    # Install GLPI Agent from RPM
+    # Install GLPI Agent
     echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
     wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
-    dnf install -y /tmp/medulla/${GLPI_AGENT_FILENAME}
+    perl /tmp/medulla/${GLPI_AGENT_FILENAME} --reinstall --silent --no-question --force --no-httpd
     # Enable and start SSH daemon
     systemctl enable sshd
     systemctl start sshd
