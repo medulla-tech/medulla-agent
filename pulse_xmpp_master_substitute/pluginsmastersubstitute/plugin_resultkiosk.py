@@ -40,7 +40,7 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.7", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.8", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
 PREFIX_COMMAND = "commandkiosk"
 
 
@@ -375,11 +375,12 @@ def get_packages_for_machine(machine):
     # Setting up the sources datas info
     #
     entity = XmppMasterDatabase().getmachineentityfromjid(machine["jid"])
-    machine_entity =  ""
-    if hasattr(entity, "complete_name"):
-        entity.complete_name.replace(" > ", ">>") if entity is not None else None
+    if entity is None:
+        machine_entity = None
+    elif hasattr(entity, "complete_name"):
+        machine_entity = entity.complete_name.replace(" > ", ">>")
     else:
-        entity.completename.replace(" > ", ">>") if entity is not None else None
+        machine_entity = entity.completename.replace(" > ", ">>")
     OUmachine = (
         machine["ad_ou_machine"].replace("\n", "").replace("\r", "").replace("@@", ">>")
     )
@@ -484,9 +485,7 @@ def get_packages_for_machine(machine):
             uninstall_section_present = uninstall_has_content
 
         # Check if the launcher is specified
-        launcher = ""
-        if depl["info"]["launcher"] != "":
-            launcher = depl["info"]["launcher"]
+        launcher = depl.get("info", {}).get("launcher", "")
 
         # Check if the package is installed on the machine
         found = Glpi().find_software_info_for_machine(machine["uuid_inventorymachine"],  pkg)
