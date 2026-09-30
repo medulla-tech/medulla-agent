@@ -11,10 +11,10 @@ import tempfile
 import os
 import time
 
-GLPIAGENTVERSION = "1.12"
+GLPIAGENTVERSION = "1.20"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.9", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.10", "NAME": "updateglpiagent", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -133,6 +133,45 @@ def updateGlpiAgent(xmppobject):
             os.chdir(install_tempdir)
             # Run installer
             cmd = "msiexec /i %s /quiet" % filename
+
+            count = 0
+            while True:
+                cmd_result = utils.simplecommand(cmd)
+                if cmd_result["code"] == 0:
+                    logger.info("%s installed successfully" % filename)
+                    break
+                else:
+                    logger.error("Error installing %s: %s" % (filename, cmd_result["result"]))
+                count += 1
+                if count > 10:
+                    logger.error("Failed to install %s after several attempts." % filename)
+                    break
+                time.sleep(60)
+            if cmd_result["code"] == 0:
+                # Call inventory plugin after successful installation
+                sessionid = utils.getRandomName(6, "inventory")
+                callInventoryPlugin(xmppobject, sessionid)
+        else:
+            # Download error
+            logger.error("%s" % txtmsg)
+
+    elif sys.platform.startswith("lin"):
+        filename = "glpi-agent-%s-linux-installer.pl" % GLPIAGENTVERSION
+        dl_url = "%s/downloads/lin/downloads/%s" % (
+            xmppobject.config.update_server,
+            filename,
+        )
+        logger.debug("Downloading %s" % dl_url)
+        result, txtmsg = utils.downloadfile(
+            dl_url, os.path.join(install_tempdir, filename)
+        ).downloadurl()
+        if result:
+            # Download success
+            logger.info("%s" % txtmsg)
+            current_dir = os.getcwd()
+            os.chdir(install_tempdir)
+            # Run installer
+            cmd = "perl %s --reinstall --silent --no-question --force --no-httpd" % filename
 
             count = 0
             while True:

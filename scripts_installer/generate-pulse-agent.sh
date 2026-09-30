@@ -54,7 +54,7 @@ display_usage() {
     echo -e "\t [--vnc-password=<DES-encrypted VNC password>]"
     echo -e "\t [--ssh-port=<Default port 22>]"
     echo -e "\t [--disable-rdp (Disable RDP setup)]"
-    echo -e "\t [--disable-inventory (Disable Fusion Inventory)]"
+    echo -e "\t [--disable-inventory (Disable GLPI Inventory)]"
     echo -e "\t [--enable-geoloc (Enable geolocalisation)]"
     echo -e "\t [--linux-distros (Used linux distros)]"
     echo -e "\t [--updateserver (Download url for the agent updates)]"
@@ -245,9 +245,9 @@ compute_settings() {
     fi
 
     if [ -z ${DISABLE_INVENTORY} ]; then
-        colored_echo green " - Fusion Inventory is enabled"
+        colored_echo green " - GLPI Inventory is enabled"
     else
-        colored_echo green " - Fusion Inventory is disabled"
+        colored_echo green " - GLPI Inventory is disabled"
         DISABLE_INVENTORY="--disable-inventory"
     fi
 

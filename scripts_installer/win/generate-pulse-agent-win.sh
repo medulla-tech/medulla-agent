@@ -165,7 +165,7 @@ display_usage() {
     echo -e "\t [--vnc-password=<DES-encrypted VNC password>]"
     echo -e "\t [--ssh-port=<Default port 22>]\n"
     echo -e "\t [--disable-rdp [Disable RDP setup]\n"
-    echo -e "\t [--disable-inventory [Disable Fusion Inventory]\n"
+    echo -e "\t [--disable-inventory [Disable GLPI Inventory]\n"
 }
 
 check_arguments() {
