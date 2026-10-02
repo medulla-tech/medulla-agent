@@ -4031,6 +4031,8 @@ class XmppMasterDatabase(DatabaseHelper):
             - Cette fonction met à jour l'état d'une session de déploiement spécifiée par "sessionid" avec le nouvel état "state".
             - Elle exécute une requête SQL personnalisée pour mettre à jour l'état, en utilisant les valeurs fournies par les
             paramètres "state" et "sessionid".
+            - Lorsqu'une perte de présence force l'état "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)", la fenêtre du déploiement est
+            limitée à dix minutes afin que le timeout libère la ressource si aucun état terminal ne revient.
             - L'état ne sera mis à jour que si l'état précédent n'est pas "DEPLOYMENT SUCCESS", "ABORT DEPLOYMENT CANCELLED BY USER"
             ou s'il ne commence pas par "ERROR", "SUCCESS" ou "ABORT".
             - En cas de succès de la mise à jour, la fonction renvoie None. En cas d'erreur ou d'exception lors de l'exécution de la
@@ -4044,7 +4046,12 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             sql = """UPDATE `xmppmaster`.`deploy`
                 SET
-                    `state` = '%s'
+                    `state` = '%s',
+                    `endcmd` = CASE
+                        WHEN '%s' = 'DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)'
+                        THEN DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+                        ELSE `endcmd`
+                    END
                 WHERE
                     (deploy.sessionid = '%s'
                         AND ( `state` NOT IN ('DEPLOYMENT SUCCESS' ,
@@ -4052,6 +4059,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 OR
                               `state` REGEXP '^(?!ERROR)^(?!SUCCESS)^(?!ABORT)'));
                 """ % (
+                state,
                 state,
                 sessionid,
             )
