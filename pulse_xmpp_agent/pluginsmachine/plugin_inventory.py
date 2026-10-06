@@ -255,7 +255,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             active_bin, active_cmd = exec_candidates[0]
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s" % (nbcmd, timeoutfusion))
-                general_options = "--full --config=none --backend-collect-timeout=%s" % timeoutfusion
+                general_options = "--config=none --backend-collect-timeout=%s" % timeoutfusion
+                if agent_bin == "glpi-agent":
+                    general_options = " --full" + general_options
+
                 if hasattr(xmppobject.config, "inventorytag"):
                     if xmppobject.config.inventorytag:
                         general_options = (
@@ -420,9 +423,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
             program = os.path.join("c:\\", "progra~1", agent_path, agent_bin)
             general_options = (
-                "--config=none --full --scan-profiles "
-                "--backend-collect-timeout=%s" % timeoutfusion
+                "--config=none --scan-profiles "
+                "--backend-collect-timeout=%s " % timeoutfusion
             )
+            if agent == "glpiagent":
+                general_options = " --full" + general_options
             if hasattr(xmppobject.config, "inventorytag"):
                 if xmppobject.config.inventorytag:
                     general_options = (
