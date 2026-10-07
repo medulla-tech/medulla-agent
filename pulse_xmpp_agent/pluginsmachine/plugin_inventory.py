@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "5.1", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "5.3", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -255,9 +255,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             active_bin, active_cmd = exec_candidates[0]
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s" % (nbcmd, timeoutfusion))
-                general_options = "--config=none --backend-collect-timeout=%s" % timeoutfusion
+                general_options = (
+                    "--config=none --tasks=inventory "
+                    "--backend-collect-timeout=%s" % timeoutfusion
+                )
                 if agent_bin == "glpi-agent":
-                    general_options = " --full" + general_options
+                    general_options = "--full " + general_options
 
                 if hasattr(xmppobject.config, "inventorytag"):
                     if xmppobject.config.inventorytag:
@@ -422,12 +425,16 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 agent_path = "FusionInventory-Agent"
 
             program = os.path.join("c:\\", "progra~1", agent_path, agent_bin)
+            collector_is_ocs = (
+                hasattr(xmppobject.config, "collector")
+                and xmppobject.config.collector == "ocs"
+            )
             general_options = (
-                "--config=none --scan-profiles "
+                "--config=none --tasks=inventory --scan-profiles "
                 "--backend-collect-timeout=%s " % timeoutfusion
             )
             if agent == "glpiagent":
-                general_options = " --full" + general_options
+                general_options = "--full " + general_options
             if hasattr(xmppobject.config, "inventorytag"):
                 if xmppobject.config.inventorytag:
                     general_options = (
@@ -436,52 +443,56 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             location_option = '--local="%s"' % inventoryfile
             if xmppobject.config.via_xmpp == "False":
                 location_option = '--server="%s"' % xmppobject.config.urlinventory
-            if hasattr(xmppobject.config, "collector"):
-                if xmppobject.config.collector == "ocs":
-                    # If OCS x64 bits exists use it
-                    if os.path.exists(
-                        os.path.join(
-                            os.environ["ProgramFiles"],
-                            "OCS Inventory Agent",
-                            "OCSInventory.exe",
-                        )
-                    ):
-                        program = os.path.join(
-                            os.environ["ProgramFiles"],
-                            "OCS Inventory Agent",
-                            "OCSInventory.exe",
-                        )
-                    else:
-                        # Or use OCS x32 bits
-                        program = os.path.join(
-                            os.environ["ProgramFiles(x86)"],
-                            "OCS Inventory Agent",
-                            "OCSInventory.exe",
-                        )
-                    admininfoconf = os.path.join(
-                        os.environ["Programdata"],
-                        "OCS Inventory NG",
-                        "Agent",
-                        "admininfo.conf",
+            if collector_is_ocs:
+                # If OCS x64 bits exists use it
+                if os.path.exists(
+                    os.path.join(
+                        os.environ["ProgramFiles"],
+                        "OCS Inventory Agent",
+                        "OCSInventory.exe",
                     )
-                    if os.path.exists(admininfoconf):
-                        tree = ElementTree.parse(admininfoconf)
-                        accountinfo = tree.getroot()
-                        tag = accountinfo.find("./KEYVALUE").text
-                    try:
-                        general_options = '/debug /force /tag="%s"' % tag
-                    except NameError:
-                        general_options = "/debug /force"
-                    # /xml option is waiting for a folder path, not a file path
-                    # The inventory is generated as machine_name-id-datetime.xml
-                    location_option = '/xml="%s" /S' % pulseTempDir()
-                    if xmppobject.config.via_xmpp == "False":
-                        location_option = (
-                            '/server="%s"' % xmppobject.config.urlinventory
-                        )
+                ):
+                    program = os.path.join(
+                        os.environ["ProgramFiles"],
+                        "OCS Inventory Agent",
+                        "OCSInventory.exe",
+                    )
+                else:
+                    # Or use OCS x32 bits
+                    program = os.path.join(
+                        os.environ["ProgramFiles(x86)"],
+                        "OCS Inventory Agent",
+                        "OCSInventory.exe",
+                    )
+                admininfoconf = os.path.join(
+                    os.environ["Programdata"],
+                    "OCS Inventory NG",
+                    "Agent",
+                    "admininfo.conf",
+                )
+                if os.path.exists(admininfoconf):
+                    tree = ElementTree.parse(admininfoconf)
+                    accountinfo = tree.getroot()
+                    tag = accountinfo.find("./KEYVALUE").text
+                try:
+                    general_options = '/debug /force /tag="%s"' % tag
+                except NameError:
+                    general_options = "/debug /force"
+                # /xml option is waiting for a folder path, not a file path.
+                location_option = '/xml="%s" /S' % pulseTempDir()
+                if xmppobject.config.via_xmpp == "False":
+                    location_option = '/server="%s"' % xmppobject.config.urlinventory
 
             for nbcmd in range(3):
-                if os.path.exists(namefilexml):
+                # On Windows, the installed collector can write only the
+                # additional-content XML to --local. Keep the complete machine
+                # inventory authoritative; browser extensions are not sent for
+                # this collector until they can be merged safely afterward.
+                if (
+                    not sys.platform.startswith("win")
+                    and namefilexml
+                    and os.path.exists(namefilexml)
+                ):
                     cmd = """\"%s\" %s %s --additional-content=%s """ % (
                         program,
                         general_options,
@@ -497,20 +508,29 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 msg.append(cmd)
                 logger.debug(cmd)
                 obj = utils.simplecommand(cmd)
-                # find the .xml or .ocs file into pulseTempDir (C:\Program Files\Medulla\tmp)
-                files = os.listdir(pulseTempDir())
-                xmlfile = ""
-                for file in files:
-                    if file.endswith(".xml") or file.endswith(".ocs"):
-                        xmlfile = file
-                        break
-                if xmlfile != "":
-                    try:
-                        # a file has been found: try to rename it
-                        os.rename(os.path.join(pulseTempDir(), xmlfile), inventoryfile)
-                    except:
-                        # The file already exists, means the previous inventory has not been renamed in .back
-                        pass
+                if collector_is_ocs:
+                    # OCS only writes into a directory. GLPI Agent and
+                    # FusionInventory write directly to --local=inventoryfile.
+                    # Do not select auxiliary XML generated for --additional-content.
+                    excluded_xml = {"browserext_inventory.xml", "additional_content.xml"}
+                    candidates = [
+                        filename
+                        for filename in os.listdir(pulseTempDir())
+                        if filename not in excluded_xml
+                        and filename.lower().endswith((".xml", ".ocs"))
+                    ]
+                    if candidates:
+                        xmlfile = max(
+                            candidates,
+                            key=lambda filename: os.path.getmtime(
+                                os.path.join(pulseTempDir(), filename)
+                            ),
+                        )
+                        try:
+                            os.rename(os.path.join(pulseTempDir(), xmlfile), inventoryfile)
+                        except OSError:
+                            # The file may already have been handled by a prior retry.
+                            pass
                 msg.append("Result return code %s: %s" % (obj["code"], obj["result"]))
                 if obj["code"] == 0:
                     break
