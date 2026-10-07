@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "5.3", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "5.4", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -747,18 +747,23 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             return
     elif sys.platform.startswith("darwin"):
         try:
+            if hasattr(xmppobject.config, "inventorytag"):
+                if xmppobject.config.inventorytag:
+                    tag_options = ' --tag=%s' % xmppobject.config.inventorytag
+            else:
+                tag_options = ""
             # Passe le XML d'enrichissement (extensions navigateurs / Office
             # add-ins, USB, etc.) a glpi-inventory pour que GLPI recoive ces
             # donnees en plus de l'inventaire standard.
-            additional = "--full --config=none"
+            additional = ""
             if namefilexml and os.path.exists(namefilexml):
                 additional += ' --additional-content="%s"' % namefilexml
 
             for nbcmd in range(3):
                 cmd = (
                     "/Applications/GLPI-Agent/bin/glpi-inventory "
-                    "--backend-collect-timeout=%s%s > %s"
-                    % (timeoutfusion, additional, inventoryfile)
+                    "--backend-collect-timeout=%s%s%s > %s"
+                    % (timeoutfusion, additional, tag_options, inventoryfile)
                 )
                 msg.append(cmd)
                 logger.debug(cmd)
