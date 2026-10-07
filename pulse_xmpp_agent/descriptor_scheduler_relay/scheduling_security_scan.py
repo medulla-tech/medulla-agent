@@ -15,11 +15,10 @@ from datetime import datetime
 
 logger = logging.getLogger()
 
-plugin = { "VERSION": "1.2","NAME": "scheduling_security_scan","TYPE": "relayserver","SCHEDULED": True}
+plugin = { "VERSION": "1.3","NAME": "scheduling_security_scan","TYPE": "relayserver","SCHEDULED": True}
 
-# Tous les jours a 4h du matin, nb=-1 = repetition infinie
-SCHEDULE = {"schedule": "0 4 * * *", "nb": -1}
-
+# Tous les jours à une heure et des minutes aléatoires
+SCHEDULE = {"schedule": "$[0,59] $[0,23] * * *", "nb": -1}
 
 def schedule_main(objectxmpp):
     """Fonction principale du scheduler. Lance un scan CVE global."""
