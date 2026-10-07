@@ -3842,7 +3842,7 @@ class grafcet:
                 )
 
                 if "gotonouser" in self.workingstep:
-                    self.__search_Next_step_int__(self.workingstep["gototimeout"])
+                    self.__search_Next_step_int__(self.workingstep["gotonouser"])
                     self.__execstep__()
                 else:
                     self.__Etape_Next_in__()
