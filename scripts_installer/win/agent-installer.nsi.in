@@ -106,6 +106,7 @@ SetCompressor lzma
 
 ; Other useful modules
 !addincludedir libs
+!addplugindir /usr/share/nsis/Plugins
 !include "WinVer.nsh"
 !include "FileFunc.nsh"
 ; Needed on newer nsis but does not seems to work on stretch nsis

@@ -340,7 +340,7 @@ extract_parameters() {
 generate_agent_win() {
 	# Generate Medulla Agent for Windows
 	colored_echo blue "Generating Medulla Agent for Windows..."
-	COMMAND="./win/generate-pulse-agent-win.sh ${GENERATION_OPTIONS}"
+       COMMAND="./win/generate-pulse-agent-win.sh ${GENERATION_OPTIONS} ${OPTIONS_MINIMAL}"
 	echo "Running "${COMMAND}
 	${COMMAND}
 }

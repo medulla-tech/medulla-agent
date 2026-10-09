@@ -462,10 +462,10 @@ update_nsi_script() {
 }
 
 generate_agent_installer() {
-	colored_echo blue "### INFO Generating installer..."
+	colored_echo blue "### INFO Generating installer..."
 	makensis -V2 agent-installer.nsi
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Generation of agent failed. Please restart"
+		colored_echo red "### ER... Generation of agent failed. Please restart"
 		exit 1
 	fi
     chmod a+r /var/lib/pulse2/clients/win/Medulla-Agent-windows-*.exe
@@ -481,8 +481,14 @@ generate_agent_installer() {
 
     for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
     do
-        rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
-        cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
+        # Execute the deletion and copy only if the source file exists
+        # It prevent to lose the existing installer if the new one is not correctly generated
+        if [ -f /var/lib/pulse2/clients/win/${package}.exe ]; then
+            rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
+            cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
+        else
+            colored_echo yellow "### WARNING... /var/lib/pulse2/clients/win/${package}.exe not found. The current /var/lib/pulse2/imaging/postinst/winutils/${package}.exe s not replaced"
+        fi
     done
 
     colored_echo green "### INFO  Generating installer... Done"
