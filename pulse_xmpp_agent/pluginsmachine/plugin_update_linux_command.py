@@ -831,6 +831,125 @@ def _collect_update_action_statuses(result):
 
     return statuses
 
+
+def _collect_failed_update_actions(result):
+    """Return a list of failed update actions with their reason."""
+    failed = []
+    for entry in result.get("applied", []):
+        if not isinstance(entry, dict):
+            continue
+        for item in entry.get("failed", []) if isinstance(entry.get("failed"), list) else []:
+            if not isinstance(item, dict):
+                continue
+            failed.append(
+                {
+                    "action": str(item.get("action", "")).strip().lower(),
+                    "reason": str(item.get("error", "unknown error")),
+                }
+            )
+    return failed
+
+
+def _result_return_code(result):
+    """Return a grafcet-compatible code for the plugin result.
+
+    Scope deliberately stays narrow:
+    - classic Linux update failures must become non-zero;
+    - unsupported sections/payloads must become non-zero;
+    - non-update sections keep their historical success semantics unless an
+      exception escaped the section handler.
+    """
+    section = str(result.get("section", "")).strip().lower()
+    message = str(result.get("message", "")).strip().lower()
+
+    if "unsupported section" in message:
+        return 255
+
+    if section != "update":
+        return 0
+
+    requested_actions = _as_list(result.get("requested_actions"))
+    if requested_actions:
+        statuses = _collect_update_action_statuses(result)
+        if any(not status.get("ok") for status in statuses.values()):
+            return 255
+        return 0
+
+    if result.get("applied"):
+        return 0
+
+    return 255 if message else 0
+
+
+def _emit_payload_diagnostics(objectxmpp, sessionid, priority, payload):
+    """Emit explicit diagnostics when payload cannot drive an update action."""
+    if not payload:
+        _send_deploy_xmpplog(
+            objectxmpp,
+            sessionid,
+            "<span class='log_err' style='"
+            + ERROR_STYLE
+            + "'>Linux update payload missing</span>: expected section/update parameters in DYNAMIC_PARAM_DEPLOY.",
+            priority=priority,
+        )
+        return
+
+    section = str(payload.get("section", "update")).strip().lower()
+    if section != "update":
+        return
+
+    requested_actions = _as_list(payload.get("linux_actions"))
+    if not requested_actions and not (payload.get("linux_policy") or payload.get("policy")):
+        _send_deploy_xmpplog(
+            objectxmpp,
+            sessionid,
+            "<span class='log_err' style='"
+            + ERROR_STYLE
+            + "'>Linux update payload incomplete</span>: no linux_actions or policy provided.",
+            priority=priority,
+        )
+
+
+def _emit_result_diagnostics(objectxmpp, sessionid, priority, result):
+    """Emit explicit diagnostics for unsupported or failed Linux update actions."""
+    if str(result.get("section", "")).lower() != "update":
+        return
+
+    message = str(result.get("message", "")).strip()
+    unknown_actions = _as_list(result.get("unknown_actions") or [])
+    if unknown_actions:
+        _send_deploy_xmpplog(
+            objectxmpp,
+            sessionid,
+            "<span class='log_err' style='"
+            + ERROR_STYLE
+            + "'>Linux update unsupported actions</span>: "
+            + ", ".join(unknown_actions),
+            priority=priority,
+        )
+
+    failed_actions = _collect_failed_update_actions(result)
+    for item in failed_actions:
+        _send_deploy_xmpplog(
+            objectxmpp,
+            sessionid,
+            "<span class='log_err' style='"
+            + ERROR_STYLE
+            + "'>Linux update action failed</span>: "
+            + item["action"]
+            + " -> "
+            + item["reason"],
+            priority=priority,
+        )
+
+    if message and not unknown_actions and not failed_actions and not _as_list(result.get("requested_actions")):
+        _send_deploy_xmpplog(
+            objectxmpp,
+            sessionid,
+            "update_linux_command diagnostic=" + message,
+            priority=priority,
+        )
+
 def _make_xmpplog_callback(objectxmpp, sessionid, priority):
     """Return a log function sent via xmpplog for each system command/output.
 
@@ -875,6 +994,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         "update_linux_command execute payload=" + json.dumps(payload, sort_keys=True),
         priority=priority,
     )
+    _emit_payload_diagnostics(objectxmpp, sessionid, priority, payload)
 
     if not sys.platform.startswith("linux"):
         logger.info("update_linux_command ignored on non-linux platform: %s", sys.platform)
@@ -884,7 +1004,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             "update_linux_command skipped: unsupported platform " + sys.platform,
             priority=priority,
         )
-        return
+        return {
+            "ret": 0,
+            "result": {"section": str(payload.get("section", "update")).strip().lower()},
+            "message": "unsupported platform skipped",
+        }
 
     try:
         try:
@@ -908,6 +1032,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             "update_linux_command result=" + json.dumps(result, sort_keys=True),
             priority=priority,
         )
+        _emit_result_diagnostics(objectxmpp, sessionid, priority, result)
 
         # Send a detailed xmpplog line per applied/failed entry for upgrade/audit sections
         section = str(result.get("section", "")).lower()
@@ -1035,6 +1160,10 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 user_message,
                 priority=priority,
             )
+        return {
+            "ret": _result_return_code(result),
+            "result": result,
+        }
     except Exception as exc:
         logger.warning("Update Linux partiel: %s", str(exc))
         _send_deploy_xmpplog(
@@ -1052,3 +1181,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             + str(exc),
             priority=priority,
         )
+        return {
+            "ret": 255,
+            "result": {
+                "section": str(payload.get("section", "update")).strip().lower(),
+                "message": str(exc),
+            },
+            "message": str(exc),
+        }

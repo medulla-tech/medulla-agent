@@ -954,6 +954,74 @@ class grafcet:
         
         return {}
 
+    def __merged_update_linux_payload(self, marker_payload=None):
+        """Return merged Linux-update payload with marker priority.
+
+        Merge order:
+        1. dynamic_param_deploy
+        2. advanced_param_deploy
+        3. marker_payload
+        """
+        merged_dict = {}
+        if isinstance(self.dynamic_param_deploy, dict):
+            merged_dict.update(copy.deepcopy(self.dynamic_param_deploy))
+        if isinstance(self.advanced_param_deploy, dict):
+            merged_dict.update(copy.deepcopy(self.advanced_param_deploy))
+        if isinstance(marker_payload, dict):
+            merged_dict.update(copy.deepcopy(marker_payload))
+        return merged_dict
+
+    def __log_update_linux_resolution(self, resolved_command, marker_payload, merged_payload):
+        """Log the resolved Linux-update command and payload in deployment logs."""
+        try:
+            step_value = self.workingstep.get("step", 0)
+            self.objectxmpp.xmpplog(
+                "update_linux_command resolved_command=" + resolved_command,
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=step_value,
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why=self.data["name"],
+                module="Deployment | Execution | Update Linux",
+                date=None,
+                fromuser=self.data.get("login", ""),
+                touser="",
+            )
+            self.objectxmpp.xmpplog(
+                "update_linux_command marker_payload="
+                + json.dumps(marker_payload or {}, sort_keys=True),
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=step_value,
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why=self.data["name"],
+                module="Deployment | Execution | Update Linux",
+                date=None,
+                fromuser=self.data.get("login", ""),
+                touser="",
+            )
+            self.objectxmpp.xmpplog(
+                "update_linux_command merged_payload="
+                + json.dumps(merged_payload or {}, sort_keys=True),
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=step_value,
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why=self.data["name"],
+                module="Deployment | Execution | Update Linux",
+                date=None,
+                fromuser=self.data.get("login", ""),
+                touser="",
+            )
+        except Exception:
+            logger.debug("Unable to emit update_linux resolution logs", exc_info=True)
+
     def __dispatch_update_linux_command(self, marker_payload=None):
         """Dispatch Linux update execution through dedicated machine plugin.
         
@@ -970,10 +1038,7 @@ class grafcet:
         }
         
         # Merge payloads with priority: marker > advanced > dynamic
-        merged_dict = {}
-        merged_dict.update(self.dynamic_param_deploy or {})
-        merged_dict.update(self.advanced_param_deploy or {})
-        merged_dict.update(marker_payload or {})
+        merged_dict = self.__merged_update_linux_payload(marker_payload)
         
         dynamic_param_deploy_json = self.__dynamic_param_deploy_json()
         advanced_param_deploy_json = self.__advanced_param_deploy_json()
@@ -997,7 +1062,7 @@ class grafcet:
             "base64": False,
             "data": {"msg": "ERROR : update_linux_command"},
         }
-        call_plugin_sequentially(
+        return call_plugin_sequentially(
             "update_linux_command",
             self.objectxmpp,
             "update_linux_command",
@@ -1007,29 +1072,78 @@ class grafcet:
             dataerror,
         )
 
+    @staticmethod
+    def __plugin_dispatch_return_code(dispatch_result, default_return_code=255):
+        """Return an integer code extracted from a plugin dispatch result."""
+        if not isinstance(dispatch_result, dict):
+            return default_return_code
+        try:
+            return int(dispatch_result.get("ret", default_return_code))
+        except (TypeError, ValueError):
+            return default_return_code
+
+    def __handle_plugin_dispatch_failure(self, plugin_name, return_code):
+        """Route plugin marker failures to an explicit error path when needed."""
+        if return_code == 0:
+            return False
+
+        if any(key.startswith("gotoreturncode@") for key in self.workingstep):
+            return False
+
+        if "error" in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep["error"])
+            self.__execstep__()
+            return True
+
+        if self.__jump_to_label__("END_ERROR"):
+            return True
+
+        self.terminate(
+            -1,
+            False,
+            f"end error {plugin_name} step {self.workingstep['step']} rc={return_code}",
+        )
+        return True
+
     def __handle_update_linux_marker(self):
         """Handle Linux update marker by dispatching dedicated plugin and finalizing the step."""
         # Extract payload from marker in command/script
+        resolved_command = self.workingstep.get("command", "") or self.workingstep.get(
+            "script", ""
+        )
         marker_payload = self.__extract_marker_payload(
-            self.workingstep.get("command", "") or self.workingstep.get("script", "")
+            resolved_command
+        )
+        merged_payload = self.__merged_update_linux_payload(marker_payload)
+        self.__log_update_linux_resolution(
+            resolved_command=resolved_command,
+            marker_payload=marker_payload,
+            merged_payload=merged_payload,
         )
         
         # Dispatch with extracted marker payload (highest priority)
-        self.__dispatch_update_linux_command(marker_payload=marker_payload)
+        dispatch_result = self.__dispatch_update_linux_command(marker_payload=marker_payload)
         self.__action_completed__(self.workingstep)
-        self.workingstep["codereturn"] = 0
+        plugin_return_code = self.__plugin_dispatch_return_code(dispatch_result)
+        self.workingstep["codereturn"] = plugin_return_code
         
         # Log the payload used
-        logged_payload = marker_payload or (self.dynamic_param_deploy if self.dynamic_param_deploy else {})
+        logged_payload = merged_payload
+        result_lines = [
+            "update_linux_command plugin executed",
+            resolved_command,
+            json.dumps(logged_payload),
+        ]
+        if isinstance(dispatch_result, dict):
+            result_lines.append(json.dumps(dispatch_result, sort_keys=True))
         self.__resultinfo__(
             self.workingstep,
-            [
-                "update_linux_command plugin executed",
-                json.dumps(logged_payload),
-            ],
+            result_lines,
         )
         self.steplog()
-        if self.__Go_to_by_jump_succes_and_error__(0):
+        if self.__handle_plugin_dispatch_failure("update_linux_command", plugin_return_code):
+            return True
+        if self.__Go_to_by_jump_succes_and_error__(plugin_return_code):
             return True
         self.__Etape_Next_in__()
         return True
@@ -2525,23 +2639,8 @@ class grafcet:
             )
 
             if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["command"]:
-                self.__dispatch_update_linux_command()
-                self.__action_completed__(self.workingstep)
-                self.workingstep["codereturn"] = 0
-                self.__resultinfo__(
-                    self.workingstep,
-                    [
-                        "update_linux_command plugin executed",
-                        json.dumps(
-                            self.dynamic_param_deploy if self.dynamic_param_deploy else {}
-                        ),
-                    ],
-                )
-                self.steplog()
-                if self.__Go_to_by_jump_succes_and_error__(0):
+                if self.__handle_update_linux_marker():
                     return
-                self.__Etape_Next_in__()
-                return
 
             # Generic PLUGIN_CALL dispatch
             _pc_match2 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",

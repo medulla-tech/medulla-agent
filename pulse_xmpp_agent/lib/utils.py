@@ -1215,7 +1215,7 @@ def call_plugin_sequentially(name, *args, **kwargs):
                         f"call_plugin_sequentially Unable to load plugin action from {nameplugin}"
                     )
                     return
-                pluginaction.action(*args, **kwargs)
+                return pluginaction.action(*args, **kwargs)
             else:
                 logging.getLogger().debug(f"The plugin {args[1]} is excluded")
         else:
