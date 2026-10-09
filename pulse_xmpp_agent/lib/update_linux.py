@@ -632,19 +632,53 @@ class DebianSystem(LinuxSystemBase):
         return ""
 
     def _installed_kernel_packages(self) -> list:
-        """Return installed kernel package names eligible for --only-upgrade.
+        """Return installed kernel package names.
 
         Debian derivatives may not provide ubuntu-specific package families
-        (e.g. linux-modules-extra*). Selecting only installed packages avoids
-        apt-get exit status 100 due to unresolved wildcard names.
+        (e.g. linux-modules-extra*). Selecting only packages in installed
+        state avoids treating residual-config packages (``rc``) as upgrade
+        candidates.
         """
-        output = self._run("dpkg-query -W -f='${binary:Package}\\n'")
+        output = self._run("dpkg-query -W -f='${db:Status-Abbrev}\t${binary:Package}\\n'")
         pkgs = []
         for line in output.splitlines():
-            name = line.strip()
+            parts = line.split("\t", 1)
+            if len(parts) != 2:
+                continue
+
+            status_abbrev, name = parts[0].strip(), parts[1].strip()
+            if status_abbrev[:2] != "ii":
+                continue
+
             if re.match(r"^linux-(image|headers|modules|modules-extra)", name):
                 pkgs.append(name)
         return sorted(set(pkgs))
+
+    def _packages_with_apt_candidate(self, packages: list[str]) -> list[str]:
+        """Keep only packages that still have an APT candidate version.
+
+        Installed kernel packages can remain on disk after their repository
+        candidate disappeared. Passing such names to ``apt-get --only-upgrade``
+        aborts the whole kernel-only transaction.
+        """
+        eligible = []
+        for package_name in packages:
+            output = self._run(f"apt-cache policy {shlex.quote(package_name)}")
+            candidate = ""
+            for line in output.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("Candidate:"):
+                    candidate = stripped.split(":", 1)[1].strip()
+                    break
+
+            if candidate and candidate != "(none)":
+                eligible.append(package_name)
+            else:
+                logger.info(
+                    "Skipping kernel package without APT candidate: %s",
+                    package_name,
+                )
+        return eligible
 
     def set_intranet_security(self, enabled: bool, sources_name: str | None = None):
         """Active ou désactive le mode intranet sécurisé."""
@@ -778,8 +812,12 @@ class DebianSystem(LinuxSystemBase):
                 else:
                     raise
         elif policy == "kernel-only":
-            # Upgrade only installed kernel-related packages to avoid wildcard mismatch errors.
-            kernel_pkgs = self._installed_kernel_packages()
+            # Upgrade only installed kernel-related packages that still have
+            # an APT candidate, to avoid failures on residual or obsolete
+            # package names.
+            kernel_pkgs = self._packages_with_apt_candidate(
+                self._installed_kernel_packages()
+            )
             if not kernel_pkgs:
                 logger.info("No installed kernel packages matched for kernel-only policy")
                 return
