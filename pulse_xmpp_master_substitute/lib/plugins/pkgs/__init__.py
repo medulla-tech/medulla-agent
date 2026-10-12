@@ -589,7 +589,7 @@ class PkgsDatabase(DatabaseHelper):
             self.setSyncthingsync(uuidpackage, jid[0], typesynchro, watching="yes")
 
     @DatabaseHelper._sessionm
-    def clear_old_pending_synchro_package(self, session, timeseconde=35):
+    def clear_old_pending_synchro_package(self, session, timeseconde=30):
         sql = (
             """DELETE FROM `pkgs`.`syncthingsync`
             WHERE
