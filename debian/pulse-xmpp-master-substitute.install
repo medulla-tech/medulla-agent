@@ -15,6 +15,7 @@ usr/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-master.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
+usr/lib/systemd/system/pulse-xmpp-master-substitute-diskmastering.service
 etc/pulse-xmpp-agent-substitute/*.ini
 var/lib/pulse2/script_monitoring
 var/lib/pulse2/xml_fix/*

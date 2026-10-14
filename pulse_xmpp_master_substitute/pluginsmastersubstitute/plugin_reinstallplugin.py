@@ -124,6 +124,11 @@ def action(xmppobject, action, sessionid, data, msg, ret=None, dataobj=None):
         )
 
         if do_restart:
+            logger.info(
+                "restartbot requested for %s: forced reinstallation of plugin_%s.py",
+                jid_machine,
+                plugin_name,
+            )
             xmppobject.event("restartmachineasynchrone", jid_machine)
             logger.debug(
                 "reinstallplugin: restartmachineasynchrone event sent to %s"

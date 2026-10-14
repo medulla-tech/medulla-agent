@@ -1,0 +1,68 @@
+
+HOSTNAME=@@@hostname@@@
+
+# add user test
+useradd -m -s /bin/bash test
+
+# set password medulla for medulla user
+echo "@@login@@:@@password@@" | chpasswd
+usermod -aG sudo @@login@@
+
+# setup fr keyboard
+if [ -f /etc/default/keyboard ]; then
+    sed -i 's/^XKBLAYOUT="us"$/XKBLAYOUT="@@keyboard@@"/' /etc/default/keyboard
+fi
+
+# change hostname
+echo $HOSTNAME > /etc/hostname
+
+# place le script de lancement
+cat > /usr/local/sbin/premier-boot.sh <<'EOF'
+#!/bin/bash
+
+# Execute l'agent
+if [ -f /var/Medulla-Agent-Linux.sh ];then
+  ./var/Medulla-Agent-Linux.sh
+fi
+
+# Supprime le script de l'agent
+rm -f /var/Medulla-Agent-Linux.sh
+
+# Supprime le script
+rm -f /usr/local/sbin/premier-boot.sh
+
+# Désactive le service
+systemctl disable premier-boot.service
+
+# Supprime le fichier service
+rm -f /etc/systemd/system/premier-boot.service
+
+# Recharge systemd
+systemctl daemon-reload
+EOF
+
+chmod +x /usr/local/sbin/premier-boot.sh
+
+cat > /etc/systemd/system/premier-boot.service <<'EOF'
+[Unit]
+Description=Configuration premier démarrage
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshotat > /etc/systemd/system/premier-boot.service <<'EOF'
+[Unit]
+Description=Configuration premier démarrage
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/premier-boot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable premier-boot.service

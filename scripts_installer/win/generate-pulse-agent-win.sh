@@ -121,7 +121,7 @@ RSYNC_FILENAME="rsync.zip"
 OPENSSH_NAME="Medulla SSH"
 OPENSSH_VERSION="8.9"
 INVAGENT_NAME="GLPI Agent"
-INVAGENT_VERSION="1.12"
+INVAGENT_VERSION="1.20"
 INVAGENT_FILENAME="GLPI-Agent-${INVAGENT_VERSION}-x64.msi"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 DOWNLOADS_DIR="downloads"
@@ -165,7 +165,7 @@ display_usage() {
     echo -e "\t [--vnc-password=<DES-encrypted VNC password>]"
     echo -e "\t [--ssh-port=<Default port 22>]\n"
     echo -e "\t [--disable-rdp [Disable RDP setup]\n"
-    echo -e "\t [--disable-inventory [Disable Fusion Inventory]\n"
+    echo -e "\t [--disable-inventory [Disable GLPI Inventory]\n"
 }
 
 check_arguments() {
@@ -462,10 +462,10 @@ update_nsi_script() {
 }
 
 generate_agent_installer() {
-	colored_echo blue "### INFO Generating installer..."
+	colored_echo blue "### INFO Generating installer..."
 	makensis -V2 agent-installer.nsi
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Generation of agent failed. Please restart"
+		colored_echo red "### ER... Generation of agent failed. Please restart"
 		exit 1
 	fi
     chmod a+r /var/lib/pulse2/clients/win/Medulla-Agent-windows-*.exe
@@ -479,11 +479,15 @@ generate_agent_installer() {
         fi
     fi
 
-    for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
-    do
+    package=Medulla-Agent-windows-FULL-latest;
+    # Execute the deletion and copy only if the source file exists
+    # It prevent to lose the existing installer if the new one is not correctly generated
+    if [ -f /var/lib/pulse2/clients/win/${package}.exe ]; then
         rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
         cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
-    done
+    else
+        colored_echo yellow "### WARNING... /var/lib/pulse2/clients/win/${package}.exe not found. The current /var/lib/pulse2/imaging/postinst/winutils/${package}.exe s not replaced"
+    fi
 
     colored_echo green "### INFO  Generating installer... Done"
 

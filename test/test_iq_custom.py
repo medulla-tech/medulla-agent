@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import unittest
 from datetime import datetime, timedelta
-from iq_value import iq_value
+from pulse_xmpp_agent.lib.iq_custom import iq_value
 
 
 class TestIQValue(unittest.TestCase):

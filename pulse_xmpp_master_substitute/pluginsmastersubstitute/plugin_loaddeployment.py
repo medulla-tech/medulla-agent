@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2007-2009 Mandriva, http://www.mandriva.com/
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loaddeployment.py
 
 """ declare the substitute plugin for deployments"""
 import base64
@@ -15,6 +16,7 @@ import logging
 import hashlib
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
+from lib.plugins.pkgs import PkgsDatabase
 from lib.managepackage import managepackage
 from lib.managesession import session, clean_session
 from lib.utils import (
@@ -71,6 +73,8 @@ def scheduledeploy(self):
     nb_machine_select_for_deploy_cycle = 0
     datetimenow = datetime.datetime.now()
     startfunc = time.time()
+    # Soft lock for the deployment scheduler: taken by setting False at cycle start
+    # and released back to True in the finally block below.
     if not self.process_load_deployment_on:
         logger.warning(
             "We cannot start a new deployment cyle. The previous one is still running."
@@ -83,6 +87,15 @@ def scheduledeploy(self):
         )
     try:
         self.process_load_deployment_on = False
+        try:
+            PkgsDatabase().clear_old_pending_synchro_package(
+                self.syncthing_pending_cleanup_timeout
+            )
+        except Exception:
+            logger.error(
+                "Unable to clear expired syncthing pending packages\n%s"
+                % traceback.format_exc()
+            )
         msg = []
         try:
             self.mycompteurcallplugin += 1
@@ -1319,6 +1332,7 @@ def applicationdeploymentjson(
         )
         return False
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
+    command_parameters = MscDatabase().get_command_parameters(idcommand)
 
     if not objdeployadvanced:
         logger.warning(
@@ -1430,6 +1444,7 @@ def applicationdeploymentjson(
         "name": name,
         "login": login,
         "idcmd": idcommand,
+        "command_parameters": command_parameters,
         "title": title,
         "advanced": objdeployadvanced,
         "stardate": self.totimestamp(start_date),
@@ -1944,6 +1959,7 @@ def read_conf_loaddeployment(objectxmpp):
         objectxmpp.deployment_nbr_mach_cycle = 100
         objectxmpp.wol_interval = 60
         objectxmpp.session_check_interval = 15
+        objectxmpp.syncthing_pending_cleanup_timeout = 30
         objectxmpp.recover_glpi_identifier_from_name = False
         objectxmpp.force_redeploy = 1
         objectxmpp.reschedule = 0
@@ -1989,6 +2005,13 @@ def read_conf_loaddeployment(objectxmpp):
             )
         else:
             objectxmpp.session_check_interval = 15
+
+        if Config.has_option("parameters", "syncthing_pending_cleanup_timeout"):
+            objectxmpp.syncthing_pending_cleanup_timeout = Config.getint(
+                "parameters", "syncthing_pending_cleanup_timeout"
+            )
+        else:
+            objectxmpp.syncthing_pending_cleanup_timeout = 30
 
         if Config.has_option("parameters", "recover_glpi_identifier_from_name"):
             objectxmpp.recover_glpi_identifier_from_name = Config.getboolean(

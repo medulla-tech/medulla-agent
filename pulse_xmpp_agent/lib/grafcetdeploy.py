@@ -2,12 +2,16 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_agent/lib/grafcetdeploy.py
 
 import sys
 import os
 import platform
 import os.path
 import json
+import datetime
+import getpass
+import socket
 from lib.utils import (
     getMacAdressList,
     getIPAdressList,
@@ -19,6 +23,7 @@ from lib.utils import (
     downloadfile,
     simplecommand,
     send_data_tcp,
+    call_plugin_sequentially,
 )
 from lib.configuration import setconfigfile
 import traceback
@@ -31,6 +36,7 @@ import zipfile
 import base64
 import time
 import copy
+import shlex
 from .agentconffile import pulseTempDir
 
 if sys.platform.startswith("win"):
@@ -51,6 +57,7 @@ class grafcet:
         self.datasend = datasend
         logging.getLogger().debug(json.dumps(self.datasend, indent=4))
         self.parameterdynamic = {}
+        self.advanced_param_deploy = {}
         self.descriptorsection = {"action_section_install": -1}
         self.objectxmpp = objectxmpp
         self.userconecter = None
@@ -62,11 +69,37 @@ class grafcet:
         self.__clean_protected()
         self.sequence = self.data["descriptor"]["sequence"]
         self.__initialise_user_connected__()
+        self.dynamic_param_deploy = {}
+
+        # Dynamic parameters sent from msc.commands.parameters (master side).
+        raw_command_parameters = self.data.get("command_parameters")
+
+        # Compatibility fallbacks for older/alternate payload shapes.
+        if raw_command_parameters in (None, "", {}):
+            raw_command_parameters = self.datasend.get("command_parameters")
+        if raw_command_parameters in (None, "", {}):
+            raw_command_parameters = self.data.get("parameters")
+        if raw_command_parameters in (None, "", {}):
+            raw_command_parameters = self.datasend.get("parameters")
+
+        if isinstance(raw_command_parameters, dict):
+            self.dynamic_param_deploy = copy.deepcopy(raw_command_parameters)
+        elif isinstance(raw_command_parameters, str) and raw_command_parameters.strip():
+            try:
+                parsed = json.loads(raw_command_parameters)
+                if isinstance(parsed, dict):
+                    self.dynamic_param_deploy = parsed
+                else:
+                    self.dynamic_param_deploy = {"payload": parsed}
+            except Exception:
+                self.dynamic_param_deploy = {"payload": raw_command_parameters}
+
         if (
             "advanced" in self.data
             and "paramdeploy" in self.data["advanced"]
             and isinstance(self.data["advanced"]["paramdeploy"], dict)
         ):
+            self.advanced_param_deploy = copy.deepcopy(self.data["advanced"]["paramdeploy"])
             # there are  dynamic parameters.
             for k, v in list(self.data["advanced"]["paramdeploy"].items()):
                 self.parameterdynamic[k] = v
@@ -109,52 +142,8 @@ class grafcet:
             self.find_step_type()
             # attribute step curent in function section
             if int(self.data["stepcurrent"]) == 0:
-                mesg_install = ""
-                if "section" not in self.parameterdynamic:
-                    self.parameterdynamic["section"] = "install"
-                if "section" in self.parameterdynamic:
-                    strsection = str(self.parameterdynamic["section"]).lower()
-                    if strsection == "install":
-                        # attribute section "install" if exists
-                        mesg_install = "Starting Install section"
-                        if self.descriptorsection["action_section_install"] != -1:
-                            # stage status marked as complete
-                            self.__action_completed__(
-                                self.sequence[
-                                    self.descriptorsection["action_section_install"]
-                                ]
-                            )
-                            self.data["stepcurrent"] = (
-                                self.descriptorsection["action_section_install"] + 1
-                            )
-                    elif strsection == "uninstall":
-                        # Attribute section "uninstall" if exists
-                        mesg_install = "Starting Uninstall section"
-                        if "action_section_uninstall" in self.descriptorsection:
-                            self.__action_completed__(
-                                self.sequence[
-                                    self.descriptorsection["action_section_uninstall"]
-                                ]
-                            )
-                            self.data["stepcurrent"] = (
-                                self.descriptorsection["action_section_uninstall"] + 1
-                            )
-                    elif strsection == "update":
-                        # attribute section "update" if exists
-                        mesg_install = "Starting Update section"
-                        if "action_section_update" in self.descriptorsection:
-                            self.__action_completed__(
-                                self.sequence[
-                                    self.descriptorsection["action_section_update"]
-                                ]
-                            )
-                            self.data["stepcurrent"] = (
-                                self.descriptorsection["action_section_update"] + 1
-                            )
-                    self.__affiche_message(
-                        f'[{self.data["name"]}]-[{self.data["stepcurrent"]}]: {mesg_install}',
-                        module="Deployment | Execution",
-                    )
+                if not self.__enter_section__():
+                    return
             self.workingstep = self.sequence[self.data["stepcurrent"]]
             self.__execstep__()  # call action workingstep
         except BaseException as e:
@@ -263,6 +252,139 @@ class grafcet:
                 elif stepseq["action"] == "actionsuccescompletedend":
                     self.descriptorsection["actionsuccescompletedend"] = stepseq["step"]
 
+    SECTION_MARKERS = {
+        "install": "action_section_install",
+        "uninstall": "action_section_uninstall",
+        "update": "action_section_update",
+        "launch": "action_section_launch",
+    }
+
+    # uninstall en dernier car c'est l'action la plus destructive ; launch en est
+    # exclu et doit toujours etre demande explicitement.
+    SECTION_PRIORITY = ("install", "update", "uninstall")
+
+    def __requested_section__(self):
+        """Retourne la section explicitement demandee, ou None.
+
+        Deux sources de selecteur, par priorite decroissante :
+        1. ``advanced.paramdeploy.section``, choix explicite au lancement ;
+        2. ``descriptor.info.type_section``, nature declaree du package.
+
+        Le point 2 est indispensable : un package d'update porte
+        ``type_section: update`` mais ne declare aucune section ``install``.
+
+        Returns:
+            str | None: nom de section demandee, None si aucun selecteur.
+        """
+        section = str(self.parameterdynamic.get("section", "")).lower()
+        if section in self.SECTION_MARKERS:
+            return section
+
+        info = self.data.get("descriptor", {}).get("info", {})
+        section = str(info.get("type_section", "")).lower()
+        if section in self.SECTION_MARKERS:
+            logger.debug(
+                "[Section] pas de selecteur dans paramdeploy, "
+                "utilisation de type_section '%s'" % section
+            )
+            return section
+
+        return None
+
+    def __available_sections__(self):
+        """Sections effectivement declarees dans le descripteur.
+
+        Returns:
+            dict: nom de section -> numero du step marqueur.
+        """
+        return {
+            name: self.descriptorsection[key]
+            for name, key in self.SECTION_MARKERS.items()
+            if self.descriptorsection.get(key, -1) != -1
+        }
+
+    def __enter_section__(self):
+        """Positionne ``stepcurrent`` sur la premiere etape a executer.
+
+        Regles de selection :
+        1. Aucun marqueur de section : execution depuis le step 0.
+        2. Selecteur fourni et section presente : cette section est executee.
+        3. Selecteur fourni mais section absente : erreur explicite. Executer
+           une autre section que celle demandee serait dangereux, en
+           particulier entre install et uninstall.
+        4. Aucun selecteur : priorite install > update > uninstall.
+
+        Un marqueur ``action_section_*`` delimite la FIN d'une section : le
+        moteur doit entrer a ``marqueur + 1``. Entrer sur le marqueur declenche
+        ``action_section_*``, qui saute vers ``actionsuccescompletedend`` et
+        clot le deploiement en succes sans rien avoir execute.
+
+        Returns:
+            bool: True si une etape executable a ete determinee. False si le
+            deploiement a ete termine en erreur, l'appelant doit s'arreter.
+        """
+        available = self.__available_sections__()
+
+        if not available:
+            logger.debug("[Section] aucun marqueur de section, demarrage au step 0")
+            return True
+
+        requested = self.__requested_section__()
+
+        if requested is None:
+            requested = next(
+                (name for name in self.SECTION_PRIORITY if name in available), None
+            )
+            if requested is None:
+                # Seule une section hors priorite est declaree, typiquement launch.
+                requested = next(iter(available))
+            logger.debug(
+                "[Section] aucun selecteur, section retenue par priorite : '%s' "
+                "(disponibles : %s)" % (requested, ", ".join(sorted(available)))
+            )
+        elif requested not in available:
+            dispo = ", ".join(sorted(available))
+            logger.error(
+                "[Section] section demandee '%s' absente du descripteur "
+                "(disponibles : %s)" % (requested, dispo)
+            )
+            self.__affiche_message(
+                '[%s]: ERREUR - section "%s" absente du descripteur '
+                "(disponibles : %s)" % (self.data["name"], requested, dispo),
+                module="Deployment | Error | Execution",
+            )
+            self.workingstep = self.sequence[0]
+            self.terminate(-1, False, "end error section %s not found" % requested)
+            return False
+
+        self.parameterdynamic["section"] = requested
+
+        marker_step = available[requested]
+        entry_step = marker_step + 1
+
+        if entry_step >= len(self.sequence):
+            logger.error(
+                "[Section] section '%s' vide, marqueur au step %s sans etape "
+                "suivante" % (requested, marker_step)
+            )
+            self.__affiche_message(
+                '[%s]: ERREUR - section "%s" vide' % (self.data["name"], requested),
+                module="Deployment | Error | Execution",
+            )
+            self.workingstep = self.sequence[marker_step]
+            self.terminate(-1, False, "end error section %s empty" % requested)
+            return False
+
+        # Le marqueur est marque comme traite pour ne pas etre rejoue.
+        self.__action_completed__(self.sequence[marker_step])
+        self.data["stepcurrent"] = entry_step
+        self.__affiche_message(
+            "[%s]-[%s]: Starting %s section"
+            % (self.data["name"], entry_step, requested.capitalize()),
+            module="Deployment | Execution",
+        )
+        return True
+
     def __execstep__(self):
         # call function self.workingstep['action']
         # execute step current
@@ -318,10 +440,307 @@ class grafcet:
             logging.getLogger().error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
 
+    def __detect_connected_users__(self):
+        """
+        Return connected interactive users as text metadata for templates.
+        """
+        result = {
+            "connected": "false",
+            "user": "none",
+            "users": "none",
+            "count": "0",
+            "session_id": "none",
+            "source": "none",
+        }
+        users = []
+        session_id = "none"
+
+        try:
+            if sys.platform.startswith("win"):
+                query_result = simplecommand("query user")
+                for line in query_result.get("result", [])[1:]:
+                    line = line.strip().lstrip(">").strip()
+                    if not line:
+                        continue
+                    parts = [part for part in line.split(" ") if part]
+                    if len(parts) >= 3 and parts[2].isdigit() and not parts[1].isdigit():
+                        users.append(parts[0])
+                        if session_id == "none":
+                            session_id = parts[2]
+            elif sys.platform.startswith("linux"):
+                who_result = simplecommand("who")
+                for line in who_result.get("result", []):
+                    parts = [part for part in line.strip().split(" ") if part]
+                    if parts:
+                        users.append(parts[0])
+            elif sys.platform.startswith("darwin"):
+                console_result = simplecommand("stat -f %Su /dev/console")
+                if console_result.get("result"):
+                    console_user = console_result["result"][0].strip()
+                    if console_user and console_user != "root":
+                        users.append(console_user)
+        except (OSError, ValueError, TypeError, KeyError, IndexError):
+            logger.error("\n%s", traceback.format_exc())
+
+        users = sorted({user for user in users if user})
+        if users:
+            result["connected"] = "true"
+            result["user"] = users[0]
+            result["users"] = ",".join(users)
+            result["count"] = str(len(users))
+            result["session_id"] = session_id
+            if sys.platform.startswith("win"):
+                result["source"] = "windows_query_user"
+            elif sys.platform.startswith("linux"):
+                result["source"] = "linux_who"
+            elif sys.platform.startswith("darwin"):
+                result["source"] = "mac_stat_console"
+
+        return result
+
+    def __boot_time_epoch__(self):
+        try:
+            if sys.platform.startswith("linux"):
+                with open("/proc/stat", "r") as proc_stat_file:
+                    for line in proc_stat_file:
+                        if line.startswith("btime "):
+                            return int(line.split()[1])
+            elif sys.platform.startswith("win"):
+                command = (
+                    "powershell -NoProfile -Command "
+                    '"[int][double]::Parse((Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().Subtract([datetime]::UnixEpoch).TotalSeconds)"'
+                )
+                command_result = simplecommand(command)
+                if command_result.get("result"):
+                    return int(command_result["result"][0].strip())
+            elif sys.platform.startswith("darwin"):
+                command_result = simplecommand("sysctl -n kern.boottime")
+                if command_result.get("result"):
+                    match = re.search(r"sec\s*=\s*(\d+)", command_result["result"][0])
+                    if match:
+                        return int(match.group(1))
+        except (OSError, ValueError, TypeError, KeyError, IndexError):
+            logger.error("\n%s", traceback.format_exc())
+        return None
+
+    def __target_release__(self):
+        candidates = [
+            self.data.get("name", ""),
+            self.data.get("descriptor", {}).get("info", {}).get("name", ""),
+            self.data.get("descriptor", {}).get("info", {}).get("description", ""),
+        ]
+        for candidate in candidates:
+            match = re.search(r"\b\d{2}H[12]\b", str(candidate), re.IGNORECASE)
+            if match:
+                return match.group(0).upper()
+        return "none"
+
+    def __is_system_context__(self):
+        if hasattr(os, "geteuid"):
+            return "true" if os.geteuid() == 0 else "false"
+        return "true" if getpass.getuser().lower() in ["system", "localsystem"] else "false"
+
+    def __template_condition_is_true__(self, condition):
+        value = str(condition or "").strip().lower()
+        return value in {"true", "vrai", "1", "yes", "ok"}
+
+    def __process_template_directives__(self, cmd):
+        def replace_if_text(match):
+            condition = match.group(1)
+            message_true = match.group(2)
+            message_false = match.group(3)
+            return (
+                message_true
+                if self.__template_condition_is_true__(condition)
+                else message_false
+            )
+
+        cmd = re.sub(
+            r"@@@IF\|(.*?)\|(.*?)\|(.*?)@@@",
+            replace_if_text,
+            cmd,
+            flags=re.IGNORECASE,
+        )
+        return cmd
+
     def replaceTEMPLATE(self, cmd):
         # print "__________________________________"
         # print  "replaceTEMPLATE in %s"% cmd
         # print "__________________________________"
+
+        if (
+            "@@@ADVANCED_PARAM_DEPLOY_JSON@@@" in cmd
+            or "@@@ADVANCED_PARAM_DEPLOY_B64@@@" in cmd
+            or "@@@ADVANCED_PARAM_DEPLOY_SHELL@@@" in cmd
+        ):
+            advanced_param_deploy_json = self.__advanced_param_deploy_json()
+            cmd = cmd.replace("@@@ADVANCED_PARAM_DEPLOY_JSON@@@", advanced_param_deploy_json)
+            cmd = cmd.replace(
+                "@@@ADVANCED_PARAM_DEPLOY_B64@@@",
+                self.__json_to_b64(advanced_param_deploy_json),
+            )
+            cmd = cmd.replace(
+                "@@@ADVANCED_PARAM_DEPLOY_SHELL@@@",
+                self.__json_to_shell(advanced_param_deploy_json),
+            )
+
+        if (
+            "@@@MERGED_DEPLOY_PARAMS_JSON@@@" in cmd
+            or "@@@MERGED_DEPLOY_PARAMS_B64@@@" in cmd
+            or "@@@MERGED_DEPLOY_PARAMS_SHELL@@@" in cmd
+        ):
+            merged_deploy_params_json = self.__merged_deploy_params_json()
+            cmd = cmd.replace("@@@MERGED_DEPLOY_PARAMS_JSON@@@", merged_deploy_params_json)
+            cmd = cmd.replace(
+                "@@@MERGED_DEPLOY_PARAMS_B64@@@",
+                self.__json_to_b64(merged_deploy_params_json),
+            )
+            cmd = cmd.replace(
+                "@@@MERGED_DEPLOY_PARAMS_SHELL@@@",
+                self.__json_to_shell(merged_deploy_params_json),
+            )
+
+        if (
+            "@@@DYNAMIC_PARAM_DEPLOY_JSON@@@" in cmd
+            or "@@@DYNAMIC_PARAM_DEPLOY_B64@@@" in cmd
+            or "@@@DYNAMIC_PARAM_DEPLOY_SHELL@@@" in cmd
+            or "@@@DYNAMIC_PARAM_DEPLOY@@@" in cmd
+        ):
+            dynamic_param_deploy_json = self.__dynamic_param_deploy_json()
+            cmd = cmd.replace("@@@DYNAMIC_PARAM_DEPLOY_JSON@@@", dynamic_param_deploy_json)
+            cmd = cmd.replace(
+                "@@@DYNAMIC_PARAM_DEPLOY_B64@@@",
+                self.__json_to_b64(dynamic_param_deploy_json),
+            )
+            cmd = cmd.replace(
+                "@@@DYNAMIC_PARAM_DEPLOY_SHELL@@@", self.__json_to_shell(dynamic_param_deploy_json)
+            )
+            # Replace by raw JSON text so script/command keeps explicit descriptor intent.
+            cmd = cmd.replace(
+                "@@@DYNAMIC_PARAM_DEPLOY@@@",
+                dynamic_param_deploy_json,
+            )
+
+        connected_user_placeholders = (
+            "@@@USER_CONNECTED@@@",
+            "@@@CONNECTED_USER@@@",
+            "@@@CONNECTED_USERS@@@",
+            "@@@CONNECTED_USER_COUNT@@@",
+            "@@@CONNECTED_USER_SESSION_ID@@@",
+            "@@@CONNECTED_USER_SOURCE@@@",
+        )
+        if any(placeholder in cmd for placeholder in connected_user_placeholders):
+            connected_users = self.__detect_connected_users__()
+            cmd = cmd.replace("@@@USER_CONNECTED@@@", connected_users["connected"])
+            cmd = cmd.replace("@@@CONNECTED_USER@@@", connected_users["user"])
+            cmd = cmd.replace("@@@CONNECTED_USERS@@@", connected_users["users"])
+            cmd = cmd.replace("@@@CONNECTED_USER_COUNT@@@", connected_users["count"])
+            cmd = cmd.replace("@@@CONNECTED_USER_SESSION_ID@@@", connected_users["session_id"])
+            cmd = cmd.replace("@@@CONNECTED_USER_SOURCE@@@", connected_users["source"])
+        if "@@@BOOT_TIME_ISO8601@@@" in cmd or "@@@UPTIME_SECONDS@@@" in cmd:
+            boot_time_epoch = self.__boot_time_epoch__()
+            if "@@@BOOT_TIME_ISO8601@@@" in cmd:
+                if boot_time_epoch is None:
+                    boot_time_iso8601 = "none"
+                else:
+                    boot_time_iso8601 = (
+                        datetime.datetime.fromtimestamp(
+                            boot_time_epoch,
+                            datetime.timezone.utc,
+                        )
+                        .replace(microsecond=0)
+                        .isoformat()
+                        .replace("+00:00", "Z")
+                    )
+                cmd = cmd.replace("@@@BOOT_TIME_ISO8601@@@", boot_time_iso8601)
+            if "@@@UPTIME_SECONDS@@@" in cmd:
+                uptime_seconds = (
+                    "none"
+                    if boot_time_epoch is None
+                    else str(max(0, int(time.time()) - boot_time_epoch))
+                )
+                cmd = cmd.replace("@@@UPTIME_SECONDS@@@", uptime_seconds)
+        if "@@@IS_SYSTEM_CONTEXT@@@" in cmd:
+            cmd = cmd.replace("@@@IS_SYSTEM_CONTEXT@@@", self.__is_system_context__())
+        if "@@@PROCESS_PID@@@" in cmd:
+            cmd = cmd.replace("@@@PROCESS_PID@@@", str(os.getpid()))
+        deployment_placeholders = (
+            "@@@DEPLOYMENT_SECTION@@@",
+            "@@@DEPLOYMENT_STEP@@@",
+        )
+        if any(placeholder in cmd for placeholder in deployment_placeholders):
+            workingstep = getattr(self, "workingstep", {})
+            cmd = cmd.replace("@@@DEPLOYMENT_SECTION@@@", str(workingstep.get("action") or "none"))
+            cmd = cmd.replace("@@@DEPLOYMENT_STEP@@@", str(workingstep.get("step", "none")))
+        if "@@@PACKAGE_LOCAL_SHARE@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@PACKAGE_LOCAL_SHARE@@@",
+                str(self.data.get("descriptor", {}).get("info", {}).get("localisation_server") or "none"),
+            )
+        if "@@@TARGET_RELEASE@@@" in cmd:
+            cmd = cmd.replace("@@@TARGET_RELEASE@@@", self.__target_release__())
+
+        time_placeholders = (
+            "@@@NOW_EPOCH@@@",
+            "@@@NOW_ISO8601@@@",
+            "@@@DATE_YYYYMMDD@@@",
+            "@@@TIME_HHMMSS@@@",
+            "@@@TIMEZONE@@@",
+        )
+        if any(placeholder in cmd for placeholder in time_placeholders):
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
+            if "@@@NOW_EPOCH@@@" in cmd:
+                cmd = cmd.replace("@@@NOW_EPOCH@@@", str(int(now_utc.timestamp())))
+            if "@@@NOW_ISO8601@@@" in cmd:
+                now_iso8601 = now_utc.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+                cmd = cmd.replace("@@@NOW_ISO8601@@@", now_iso8601)
+            if "@@@DATE_YYYYMMDD@@@" in cmd:
+                cmd = cmd.replace("@@@DATE_YYYYMMDD@@@", now_utc.strftime("%Y%m%d"))
+            if "@@@TIME_HHMMSS@@@" in cmd:
+                cmd = cmd.replace("@@@TIME_HHMMSS@@@", now_utc.strftime("%H%M%S"))
+            if "@@@TIMEZONE@@@" in cmd:
+                cmd = cmd.replace("@@@TIMEZONE@@@", str(datetime.datetime.now().astimezone().tzinfo))
+
+        if "@@@EXEC_USER@@@" in cmd:
+            cmd = cmd.replace("@@@EXEC_USER@@@", getpass.getuser())
+        if "@@@HOME_DIR@@@" in cmd:
+            cmd = cmd.replace("@@@HOME_DIR@@@", os.path.expanduser("~"))
+        if "@@@WORKING_DIR@@@" in cmd:
+            cmd = cmd.replace("@@@WORKING_DIR@@@", os.getcwd())
+
+        if "@@@FQDN@@@" in cmd:
+            cmd = cmd.replace("@@@FQDN@@@", socket.getfqdn())
+        if "@@@OS_VERSION@@@" in cmd:
+            cmd = cmd.replace("@@@OS_VERSION@@@", platform.version())
+        if "@@@KERNEL_VERSION@@@" in cmd:
+            cmd = cmd.replace("@@@KERNEL_VERSION@@@", platform.release())
+
+        if "@@@PATH_SEP@@@" in cmd:
+            cmd = cmd.replace("@@@PATH_SEP@@@", os.sep)
+        if "@@@LINE_SEP@@@" in cmd:
+            cmd = cmd.replace("@@@LINE_SEP@@@", os.linesep)
+        if "@@@NULL_DEVICE@@@" in cmd:
+            cmd = cmd.replace("@@@NULL_DEVICE@@@", os.devnull)
+
+        # Preferred placeholder for Linux updates.
+        if "@@@UPDATE_LINUX@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@UPDATE_LINUX@@@", "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
+            )
+
+        # Backward-compatibility alias.
+        if "@@@DEPLOY@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@DEPLOY@@@", "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
+            )
+
+        # Generic plugin call: @@@PLUGIN_CALL_<name>@@@ or @@@PLUGIN_CALL_"<name>"@@@
+        # Case-insensitive. The plugin name is normalized to lowercase.
+        # Example: @@@PLUGIN_CALL_update_linux_command@@@
+        #          @@@PLUGIN_CALL_"My_Plugin"@@@
+        for _m in re.finditer(r'@@@PLUGIN_CALL_"?([^@"]+?)"?@@@', cmd, re.IGNORECASE):
+            _raw_name = _m.group(1).strip().strip('"').strip().lower()
+            cmd = cmd.replace(_m.group(0), f"@@@DEPLOY_ACTION_PLUGIN_CALL_{_raw_name}@@@")
 
         # remplace all dynamic parameters by values.
         # eg :  @@@DYNAMIC_PARAM@@@section@@@ is dynamique parameter "section"
@@ -337,43 +756,60 @@ class grafcet:
                         f"@@@DYNAMIC_PARAM@@@{nameparameter}@@@",
                         self.parameterdynamic[nameparameter],
                     )
-        if "oldresult" in self.datasend["data"]:
+        if "@@@PREC_RESULT@@@" in cmd and "oldresult" in self.datasend["data"]:
             cmd = cmd.replace("@@@PREC_RESULT@@@", self.datasend["data"]["oldresult"])
-        if "oldreturncode" in self.datasend["data"]:
+        if "@@@PREC_RETURNCODE@@@" in cmd and "oldreturncode" in self.datasend["data"]:
             cmd = cmd.replace(
                 "@@@PREC_RETURNCODE@@@", self.datasend["data"]["oldreturncode"]
             )
-        cmd = cmd.replace("@@@JID_MASTER@@@", self.datasend["data"]["jidmaster"])
-        cmd = cmd.replace("@@@JID_RELAYSERVER@@@", self.datasend["data"]["jidrelay"])
-        cmd = cmd.replace("@@@JID_MACHINE@@@", self.datasend["data"]["jidmachine"])
-        cmd = cmd.replace("@@@IP_MACHINE@@@", self.datasend["data"]["ipmachine"])
-        cmd = cmd.replace("@@@IP_RELAYSERVER@@@", self.datasend["data"]["iprelay"])
-        cmd = cmd.replace("@@@IP_MASTER@@@", self.datasend["data"]["ipmaster"])
-        cmd = cmd.replace("@@@PACKAGE_NAME@@@", self.datasend["data"]["name"])
-        cmd = cmd.replace("@@@SESSION_ID@@@", self.datasend["sessionid"])
-        cmd = cmd.replace("@@@HOSTNAME@@@", platform.node().split(".")[0])
+        if "@@@JID_MASTER@@@" in cmd:
+            cmd = cmd.replace("@@@JID_MASTER@@@", self.datasend["data"].get("jidmaster", "none"))
+        if "@@@JID_RELAYSERVER@@@" in cmd:
+            cmd = cmd.replace("@@@JID_RELAYSERVER@@@", self.datasend["data"].get("jidrelay", "none"))
+        if "@@@JID_MACHINE@@@" in cmd:
+            cmd = cmd.replace("@@@JID_MACHINE@@@", self.datasend["data"].get("jidmachine", "none"))
+        if "@@@IP_MACHINE@@@" in cmd:
+            cmd = cmd.replace("@@@IP_MACHINE@@@", self.datasend["data"].get("ipmachine", "none"))
+        if "@@@IP_RELAYSERVER@@@" in cmd:
+            cmd = cmd.replace("@@@IP_RELAYSERVER@@@", self.datasend["data"].get("iprelay", "none"))
+        if "@@@IP_MASTER@@@" in cmd:
+            cmd = cmd.replace("@@@IP_MASTER@@@", self.datasend["data"].get("ipmaster", "none"))
+        if "@@@PACKAGE_NAME@@@" in cmd:
+            cmd = cmd.replace("@@@PACKAGE_NAME@@@", self.datasend["data"].get("name", "none"))
+        if "@@@SESSION_ID@@@" in cmd:
+            cmd = cmd.replace("@@@SESSION_ID@@@", self.datasend.get("sessionid", "none"))
+        if "@@@HOSTNAME@@@" in cmd:
+            cmd = cmd.replace("@@@HOSTNAME@@@", platform.node().split(".")[0])
 
-        cmd = cmd.replace(
-            "@@@PYTHON_IMPLEMENTATION@@@", platform.python_implementation()
-        )
-        cmd = cmd.replace("@@@PYTHON_PATH@@@", sys.executable)
+        if "@@@PYTHON_IMPLEMENTATION@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@PYTHON_IMPLEMENTATION@@@", platform.python_implementation()
+            )
+        if "@@@PYTHON_PATH@@@" in cmd:
+            cmd = cmd.replace("@@@PYTHON_PATH@@@", sys.executable)
 
-        cmd = cmd.replace("@@@ARCHI_MACHINE@@@", platform.machine())
-        cmd = cmd.replace("@@@OS_FAMILY@@@", platform.system())
+        if "@@@ARCHI_MACHINE@@@" in cmd:
+            cmd = cmd.replace("@@@ARCHI_MACHINE@@@", platform.machine())
+        if "@@@OS_FAMILY@@@" in cmd:
+            cmd = cmd.replace("@@@OS_FAMILY@@@", platform.system())
 
-        cmd = cmd.replace("@@@OS_COMPLET_NAME@@@", platform.platform())
+        if "@@@OS_COMPLET_NAME@@@" in cmd:
+            cmd = cmd.replace("@@@OS_COMPLET_NAME@@@", platform.platform())
 
-        cmd = cmd.replace(
-            "@@@UUID_PACKAGE@@@",
-            os.path.basename(self.datasend["data"]["pathpackageonmachine"]),
-        )
+        if "@@@UUID_PACKAGE@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@UUID_PACKAGE@@@",
+                os.path.basename(self.datasend["data"].get("pathpackageonmachine", "none")),
+            )
 
-        cmd = cmd.replace(
-            "@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@",
-            self.datasend["data"]["pathpackageonmachine"],
-        )
+        if "@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@",
+                self.datasend["data"].get("pathpackageonmachine", "none"),
+            )
 
-        cmd = cmd.replace("@@@LIST_INTERFACE_NET@@@", " ".join(netifaces.interfaces()))
+        if "@@@LIST_INTERFACE_NET@@@" in cmd:
+            cmd = cmd.replace("@@@LIST_INTERFACE_NET@@@", " ".join(netifaces.interfaces()))
 
         # Replace windows registry value in template (only for windows)
         # @@@VRW@@@HKEY@@K@@Subkey@@K@@value@@@VRW@@@
@@ -419,16 +855,20 @@ class grafcet:
                 winreg.CloseKey(key)
                 cmd = cmd.replace(t, typevaleur)
 
-        cmd = cmd.replace(
-            "@@@LIST_INTERFACE_NET_NO_LOOP@@@",
-            " ".join([x for x in netifaces.interfaces() if x != "lo" and x != ""]),
-        )
+        if "@@@LIST_INTERFACE_NET_NO_LOOP@@@" in cmd:
+            cmd = cmd.replace(
+                "@@@LIST_INTERFACE_NET_NO_LOOP@@@",
+                " ".join([x for x in netifaces.interfaces() if x != "lo" and x != ""]),
+            )
 
-        cmd = cmd.replace("@@@LIST_MAC_ADRESS@@@", " ".join(getMacAdressList()))
+        if "@@@LIST_MAC_ADRESS@@@" in cmd:
+            cmd = cmd.replace("@@@LIST_MAC_ADRESS@@@", " ".join(getMacAdressList()))
 
-        cmd = cmd.replace("@@@LIST_IP_ADRESS@@@", " ".join(getIPAdressList()))
+        if "@@@LIST_IP_ADRESS@@@" in cmd:
+            cmd = cmd.replace("@@@LIST_IP_ADRESS@@@", " ".join(getIPAdressList()))
 
-        cmd = cmd.replace("@@@IP_MACHINE_XMPP@@@", self.data["ipmachine"])
+        if "@@@IP_MACHINE_XMPP@@@" in cmd:
+            cmd = cmd.replace("@@@IP_MACHINE_XMPP@@@", self.data.get("ipmachine", "none"))
 
         # Quick fix for blacklisted mac addresses
         # TODO: A proper fix to blacklisted mac addresses will allow uncommenting
@@ -438,15 +878,353 @@ class grafcet:
         #     MacAdressToIp(
         #         self.data['ipmachine']))
 
-        cmd = cmd.replace("@@@TMP_DIR@@@", pulseTempDir())
+        if "@@@TMP_DIR@@@" in cmd:
+            cmd = cmd.replace("@@@TMP_DIR@@@", pulseTempDir())
         # recherche variable environnement
         for t in re.findall("@_@.*?@_@", cmd):
             z = t.replace("@_@", "")
             cmd = cmd.replace(t, os.environ[z])
+        if "@@@IF|" in cmd.upper():
+            cmd = self.__process_template_directives__(cmd)
         # print "__________________________________"
         # print "replace TEMPLATE ou %s"% cmd
         # print "__________________________________"
         return cmd
+
+    def __dynamic_param_deploy_json(self):
+        return json.dumps(
+            self.dynamic_param_deploy if self.dynamic_param_deploy else {},
+            separators=(",", ":"),
+        )
+
+    def __json_to_b64(self, raw_json):
+        return base64.b64encode(raw_json.encode("utf-8")).decode("ascii")
+
+    def __json_to_shell(self, raw_json):
+        return shlex.quote(raw_json)
+
+    def __advanced_param_deploy_json(self):
+        return json.dumps(
+            self.advanced_param_deploy if self.advanced_param_deploy else {},
+            separators=(",", ":"),
+        )
+
+    def __merged_deploy_params_json(self):
+        merged = {}
+        if isinstance(self.dynamic_param_deploy, dict):
+            merged.update(self.dynamic_param_deploy)
+        if isinstance(self.advanced_param_deploy, dict):
+            # User launch-time choice has final priority over MSC defaults.
+            merged.update(self.advanced_param_deploy)
+        return json.dumps(merged, separators=(",", ":"))
+
+    def __extract_marker_payload(self, text):
+        """Extract JSON payload from @@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@ marker.
+        
+        Returns dict extracted from JSON after marker, or empty dict if not found/invalid.
+        """
+        marker = "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
+        if marker not in text:
+            return {}
+        
+        try:
+            # Find marker position and extract content after it
+            idx = text.find(marker)
+            content = text[idx + len(marker):].strip()
+            
+            # Try to parse as JSON
+            if content.startswith("{"):
+                # Extract JSON object (handle potential trailing text)
+                brace_count = 0
+                json_end = 0
+                for i, char in enumerate(content):
+                    if char == "{":
+                        brace_count += 1
+                    elif char == "}":
+                        brace_count -= 1
+                        if brace_count == 0:
+                            json_end = i + 1
+                            break
+                
+                if json_end > 0:
+                    json_str = content[:json_end]
+                    return json.loads(json_str)
+        except Exception as exc:
+            logger.warning("Failed to extract marker payload: %s", str(exc))
+        
+        return {}
+
+    def __merged_update_linux_payload(self, marker_payload=None):
+        """Return merged Linux-update payload with marker priority.
+
+        Merge order:
+        1. dynamic_param_deploy
+        2. advanced_param_deploy
+        3. marker_payload
+        """
+        merged_dict = {}
+        if isinstance(self.dynamic_param_deploy, dict):
+            merged_dict.update(copy.deepcopy(self.dynamic_param_deploy))
+        if isinstance(self.advanced_param_deploy, dict):
+            merged_dict.update(copy.deepcopy(self.advanced_param_deploy))
+        if isinstance(marker_payload, dict):
+            merged_dict.update(copy.deepcopy(marker_payload))
+        return merged_dict
+
+    def __log_update_linux_resolution(self, resolved_command, marker_payload, merged_payload):
+        """Log the resolved Linux-update command and payload in deployment logs."""
+        try:
+            step_value = self.workingstep.get("step", 0)
+            self.objectxmpp.xmpplog(
+                "update_linux_command resolved_command=" + resolved_command,
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=step_value,
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why=self.data["name"],
+                module="Deployment | Execution | Update Linux",
+                date=None,
+                fromuser=self.data.get("login", ""),
+                touser="",
+            )
+            self.objectxmpp.xmpplog(
+                "update_linux_command marker_payload="
+                + json.dumps(marker_payload or {}, sort_keys=True),
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=step_value,
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why=self.data["name"],
+                module="Deployment | Execution | Update Linux",
+                date=None,
+                fromuser=self.data.get("login", ""),
+                touser="",
+            )
+            self.objectxmpp.xmpplog(
+                "update_linux_command merged_payload="
+                + json.dumps(merged_payload or {}, sort_keys=True),
+                type="deploy",
+                sessionname=self.sessionid,
+                priority=step_value,
+                action="xmpplog",
+                who=self.objectxmpp.boundjid.bare,
+                how="",
+                why=self.data["name"],
+                module="Deployment | Execution | Update Linux",
+                date=None,
+                fromuser=self.data.get("login", ""),
+                touser="",
+            )
+        except Exception:
+            logger.debug("Unable to emit update_linux resolution logs", exc_info=True)
+
+    def __dispatch_update_linux_command(self, marker_payload=None):
+        """Dispatch Linux update execution through dedicated machine plugin.
+        
+        Args:
+            marker_payload: dict extracted from marker JSON (has highest priority)
+        """
+        if marker_payload is None:
+            marker_payload = {}
+        
+        msg = {
+            "from": self.objectxmpp.boundjid.bare,
+            "to": self.objectxmpp.boundjid.bare,
+            "type": "chat",
+        }
+        
+        # Merge payloads with priority: marker > advanced > dynamic
+        merged_dict = self.__merged_update_linux_payload(marker_payload)
+        
+        dynamic_param_deploy_json = self.__dynamic_param_deploy_json()
+        advanced_param_deploy_json = self.__advanced_param_deploy_json()
+        merged_deploy_params_json = json.dumps(merged_dict) if merged_dict else "{}"
+        
+        payload_data = {
+            "command_parameters": copy.deepcopy(self.dynamic_param_deploy),
+            "dynamic_param_deploy": copy.deepcopy(self.dynamic_param_deploy),
+            "advanced_param_deploy": copy.deepcopy(self.advanced_param_deploy),
+            "marker_payload": copy.deepcopy(marker_payload),
+            "payload": merged_deploy_params_json,
+            "deploy_step": self.workingstep.get("step", 0),
+            "source": "grafcetdeploy",
+        }
+        logger.info("DEBUG grafcetdeploy: payload_data being sent to plugin: %s", 
+                    json.dumps(payload_data, indent=4))
+        dataerror = {
+            "action": "resultupdate_linux_command",
+            "sessionid": self.sessionid,
+            "ret": 255,
+            "base64": False,
+            "data": {"msg": "ERROR : update_linux_command"},
+        }
+        return call_plugin_sequentially(
+            "update_linux_command",
+            self.objectxmpp,
+            "update_linux_command",
+            self.sessionid,
+            payload_data,
+            msg,
+            dataerror,
+        )
+
+    @staticmethod
+    def __plugin_dispatch_return_code(dispatch_result, default_return_code=255):
+        """Return an integer code extracted from a plugin dispatch result."""
+        if not isinstance(dispatch_result, dict):
+            return default_return_code
+        try:
+            return int(dispatch_result.get("ret", default_return_code))
+        except (TypeError, ValueError):
+            return default_return_code
+
+    def __handle_plugin_dispatch_failure(self, plugin_name, return_code):
+        """Route plugin marker failures to an explicit error path when needed."""
+        if return_code == 0:
+            return False
+
+        if any(key.startswith("gotoreturncode@") for key in self.workingstep):
+            return False
+
+        if "error" in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep["error"])
+            self.__execstep__()
+            return True
+
+        if self.__jump_to_label__("END_ERROR"):
+            return True
+
+        self.terminate(
+            -1,
+            False,
+            f"end error {plugin_name} step {self.workingstep['step']} rc={return_code}",
+        )
+        return True
+
+    def __handle_update_linux_marker(self):
+        """Handle Linux update marker by dispatching dedicated plugin and finalizing the step."""
+        # Extract payload from marker in command/script
+        resolved_command = self.workingstep.get("command", "") or self.workingstep.get(
+            "script", ""
+        )
+        marker_payload = self.__extract_marker_payload(
+            resolved_command
+        )
+        merged_payload = self.__merged_update_linux_payload(marker_payload)
+        self.__log_update_linux_resolution(
+            resolved_command=resolved_command,
+            marker_payload=marker_payload,
+            merged_payload=merged_payload,
+        )
+        
+        # Dispatch with extracted marker payload (highest priority)
+        dispatch_result = self.__dispatch_update_linux_command(marker_payload=marker_payload)
+        self.__action_completed__(self.workingstep)
+        plugin_return_code = self.__plugin_dispatch_return_code(dispatch_result)
+        self.workingstep["codereturn"] = plugin_return_code
+        
+        # Log the payload used
+        logged_payload = merged_payload
+        result_lines = [
+            "update_linux_command plugin executed",
+            resolved_command,
+            json.dumps(logged_payload),
+        ]
+        if isinstance(dispatch_result, dict):
+            result_lines.append(json.dumps(dispatch_result, sort_keys=True))
+        self.__resultinfo__(
+            self.workingstep,
+            result_lines,
+        )
+        self.steplog()
+        if self.__handle_plugin_dispatch_failure("update_linux_command", plugin_return_code):
+            return True
+        if self.__Go_to_by_jump_succes_and_error__(plugin_return_code):
+            return True
+        self.__Etape_Next_in__()
+        return True
+
+    def __handle_plugin_call_marker(self, plugin_name):
+        """Dispatch any plugin by name via @@@PLUGIN_CALL_<name>@@@ grafcet marker.
+
+        The plugin receives the same payload structure as update_linux_command:
+        marker_payload, command_parameters, dynamic_param_deploy, advanced_param_deploy.
+
+        Args:
+            plugin_name (str): Normalized (lowercase) plugin name to call.
+
+        Returns:
+            True after dispatching and finalizing the step.
+        """
+        marker_payload = self.__extract_marker_payload(
+            self.workingstep.get("command", "") or self.workingstep.get("script", "")
+        )
+
+        msg = {
+            "from": self.objectxmpp.boundjid.bare,
+            "to": self.objectxmpp.boundjid.bare,
+            "type": "chat",
+        }
+
+        payload_data = {
+            "command_parameters": copy.deepcopy(self.dynamic_param_deploy),
+            "dynamic_param_deploy": copy.deepcopy(self.dynamic_param_deploy),
+            "advanced_param_deploy": copy.deepcopy(self.advanced_param_deploy),
+            "marker_payload": copy.deepcopy(marker_payload),
+            "payload": self.__merged_deploy_params_json(),
+            "deploy_step": self.workingstep.get("step", 0),
+            "source": "grafcetdeploy",
+        }
+
+        logger.info("PLUGIN_CALL dispatch: plugin=%s payload=%s", plugin_name,
+                    json.dumps(payload_data, sort_keys=True))
+
+        dataerror = {
+            "action": f"result{plugin_name}",
+            "sessionid": self.sessionid,
+            "ret": 255,
+            "base64": False,
+            "data": {"msg": f"ERROR: {plugin_name}"},
+        }
+
+        call_plugin_sequentially(
+            plugin_name,
+            self.objectxmpp,
+            plugin_name,
+            self.sessionid,
+            payload_data,
+            msg,
+            dataerror,
+        )
+
+        self.__action_completed__(self.workingstep)
+        self.workingstep["codereturn"] = 0
+        self.__resultinfo__(
+            self.workingstep,
+            [f"PLUGIN_CALL {plugin_name} executed", json.dumps(marker_payload)],
+        )
+        self.steplog()
+        if self.__Go_to_by_jump_succes_and_error__(0):
+            return True
+        self.__Etape_Next_in__()
+        return True
+        logged_payload = marker_payload or (self.dynamic_param_deploy if self.dynamic_param_deploy else {})
+        self.__resultinfo__(
+            self.workingstep,
+            [
+                "update_linux_command plugin executed",
+                json.dumps(logged_payload),
+            ],
+        )
+        self.steplog()
+        if self.__Go_to_by_jump_succes_and_error__(0):
+            return True
+        self.__Etape_Next_in__()
+        return True
 
     def __search_Next_step_int__(self, val):
         """
@@ -513,12 +1291,103 @@ class grafcet:
             self.data["stepcurrent"] = self.data["stepcurrent"] + 1
             return 5
 
+    def __kiosk_uninstall_has_content__(self):
+        """True if the uninstall section holds a real command or script.
+
+        A declared but empty section would give a Delete button that runs
+        nothing. Same rule as get_packages_for_machine on the substitute.
+        """
+        in_uninstall_section = False
+        for step in self.data.get("descriptor", {}).get("sequence", []):
+            step_action = step.get("action", "")
+            if step_action == "action_section_uninstall":
+                in_uninstall_section = True
+                continue
+            if step_action in ("actionsuccescompletedend", "actionerrorcompletedend"):
+                in_uninstall_section = False
+                continue
+            if in_uninstall_section and (
+                str(step.get("command", "")).strip()
+                or str(step.get("script", "")).strip()
+            ):
+                return True
+        return False
+
+    def __kiosk_actions_installed__(self):
+        """Kiosk buttons for a package that just got installed: (actions, launcher).
+
+        Everything is local in the descriptor. Mirrors the installed branch of
+        get_packages_for_machine on the substitute; the launcher is read from
+        the same place, base64 as the kiosk expects.
+        """
+        actions = []
+        launcher = self.data.get("descriptor", {}).get("info", {}).get("launcher", "")
+        if launcher:
+            actions.append("Launch")
+
+        if self.__kiosk_uninstall_has_content__():
+            actions.append("Delete")
+        else:
+            # No uninstall: non actionable "Installed" badge instead of a button.
+            actions.append("Installed")
+        return actions, launcher
+
+    def __notify_kiosk_deployment_end__(self, ret):
+        """Tell the local kiosk the deployment it asked for is over (ret 0 = ok).
+
+        Unblocks the button right away with the final buttons, without waiting
+        for the next inventory. The substitute stays the source of truth and
+        resends the list then.
+        """
+        try:
+            path = self.datasend["data"].get("path", "")
+            uuid = os.path.basename(path) if path else ""
+            if not uuid:
+                logger.info(
+                    "Kiosk not notified for session %s: no package path"
+                    % self.sessionid
+                )
+                return
+
+            actions, launcher = (
+                self.__kiosk_actions_installed__() if ret == 0 else ([], "")
+            )
+            msgkiosk = {
+                "action": "deploymentEnd",
+                "sessionid": self.sessionid,
+                "data": {
+                    "uuid": uuid,
+                    "success": ret == 0,
+                    "action": actions,
+                    "launcher": launcher,
+                },
+                "ret": 0,
+                "base64": False,
+            }
+            logger.info(
+                "Notifying kiosk: deployment of %s ended (ret=%s) actions=%s"
+                % (uuid, ret, actions)
+            )
+            send_data_tcp(
+                json.dumps(msgkiosk), port=self.objectxmpp.config.kiosk_local_port
+            )
+        except Exception:
+            # A missing kiosk must never take the deployment down with it.
+            logger.error(
+                "Kiosk notification failed for session %s\n%s"
+                % (self.sessionid, traceback.format_exc())
+            )
+
     def terminate(self, ret, clear=True, msgstate=""):
         """
         use for terminate deploy
         send msg to log sequence
         Clean client disk packages (ie clear)
         """
+        # Kiosk deployments get a "commandkiosk" sessionid (plugin_resultkiosk).
+        # Done before "path" is deleted below, as it holds the package uuid.
+        if str(self.sessionid).startswith("commandkiosk"):
+            self.__notify_kiosk_deployment_end__(ret)
         login = self.data["login"]
         self.__clean_protected()
         restarmachine = False
@@ -1553,7 +2422,7 @@ class grafcet:
         {
                 "action": "action_no_operation",
                 "step": n,
-                "environ" : {"PLIP22" : "plop" ,"dede","kk" }
+                "environ" : {"PLIP22" : "plop" ,"kk" }
         }
         """
         try:
@@ -1672,6 +2541,18 @@ class grafcet:
             self.workingstep["command"] = self.replaceTEMPLATE(
                 self.workingstep["command"]
             )
+
+            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["command"]:
+                if self.__handle_update_linux_marker():
+                    return
+
+            # Generic PLUGIN_CALL dispatch
+            _pc_match = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                  self.workingstep["command"])
+            if _pc_match:
+                if self.__handle_plugin_call_marker(_pc_match.group(1).strip().lower()):
+                    return
+
             if "timeout" not in self.workingstep:
                 try:
                     self.workingstep["timeout"] = int(
@@ -1757,6 +2638,17 @@ class grafcet:
                 self.workingstep["command"]
             )
 
+            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["command"]:
+                if self.__handle_update_linux_marker():
+                    return
+
+            # Generic PLUGIN_CALL dispatch
+            _pc_match2 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                   self.workingstep["command"])
+            if _pc_match2:
+                if self.__handle_plugin_call_marker(_pc_match2.group(1).strip().lower()):
+                    return
+
             # self.objectxmpp.logtopulse("action_command_natif_shell")
             # todo si action deja faite return
             if "timeout" not in self.workingstep:
@@ -1806,6 +2698,10 @@ class grafcet:
                 fromuser=self.data["login"],
                 touser="",
             )
+
+    def action_command_natif(self):
+        """Backward-compatible alias for action_command_natif_shell."""
+        return self.action_command_natif_shell()
 
     def __clean_protected(self):
         dir_reprise_session = os.path.join(
@@ -1933,6 +2829,18 @@ class grafcet:
             self.workingstep["script"] = self.replaceTEMPLATE(
                 self.workingstep["script"]
             )
+
+            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["script"]:
+                if self.__handle_update_linux_marker():
+                    return
+
+            # Generic PLUGIN_CALL dispatch
+            _pc_match3 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
+                                   self.workingstep["script"])
+            if _pc_match3:
+                if self.__handle_plugin_call_marker(_pc_match3.group(1).strip().lower()):
+                    return
+
             if "timeout" not in self.workingstep:
                 self.workingstep["timeout"] = 900
                 logging.getLogger().warning("timeout missing : default value 900s")
@@ -1995,7 +2903,6 @@ class grafcet:
             # Create command
             if commandtype is not None:
                 command = commandtype + temp_path
-            self.__protected(self.workingstep["timeout"])
             # working Step recup from process et session
             if command != "":
                 code_return, output_lines = (
@@ -2645,6 +3552,14 @@ class grafcet:
             self.workingstep["sizeheader"] = int(self.workingstep["sizeheader"])
         if "sizemessage" in self.workingstep:
             self.workingstep["sizemessage"] = int(self.workingstep["sizemessage"])
+        if isinstance(message, bytes):
+            message = message.decode("utf-8")
+        if isinstance(titlemessage, bytes):
+            titlemessage = titlemessage.decode("utf-8")
+        message = self.replaceTEMPLATE(message)
+        titlemessage = self.replaceTEMPLATE(titlemessage)
+        self.workingstep["message"] = base64.b64encode(message.encode("utf-8")).decode("utf-8")
+        self.workingstep["titlemessage"] = base64.b64encode(titlemessage.encode("utf-8")).decode("utf-8")
         try:
             msg = []
             command = ""
@@ -2664,13 +3579,6 @@ class grafcet:
                 # self.objectxmpp.statusconnected=None
                 # START query user /MIN /B
                 # command = """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """\
-
-                if isinstance(message, bytes):
-                    message = message.decode("utf-8")
-
-                if isinstance(titlemessage, bytes):
-                    titlemessage = titlemessage.decode("utf-8")
-
                 command = (
                     """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i %s """
                     """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py"""
@@ -3033,7 +3941,7 @@ class grafcet:
                 )
 
                 if "gotonouser" in self.workingstep:
-                    self.__search_Next_step_int__(self.workingstep["gototimeout"])
+                    self.__search_Next_step_int__(self.workingstep["gotonouser"])
                     self.__execstep__()
                 else:
                     self.__Etape_Next_in__()

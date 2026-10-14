@@ -37,8 +37,30 @@ PYQT6_VERSION="6.6.1"
 VNC_PASSWORD="@@VNC_PASSWORD@@"
 SSH_PORT="@@SSH_PORT@@"
 GLPI_AGENT_VERSION="@@GLPI_AGENT_VERSION@@"
-GLPI_AGENT_FILENAME="glpi-agent-@@GLPI_AGENT_VERSION@@-1.noarch.rpm"
-GLPI_AGENT_BASE_URL="@@GLPI_AGENT_BASE_URL@@"
+GLPI_AGENT_FILENAME="glpi-agent-@@GLPI_AGENT_VERSION@@-linux-installer.pl"
+GLPI_AGENT_BASE_URL="@@BASE_URL@@/lin/downloads"
+CERTIFICATES_ONLY=0
+
+display_usage() {
+    echo "Usage: $0 [--certificates-only]"
+    echo ""
+    echo "  --certificates-only  Reinstall Medulla TLS certificates only"
+    echo "  --help               Show this help"
+}
+
+parse_arguments() {
+    for arg in "$@"; do
+        case "$arg" in
+            --certificates-only) CERTIFICATES_ONLY=1 ;;
+            --help)              display_usage; exit 0 ;;
+            *)
+                echo "Unknown option: $arg" >&2
+                display_usage >&2
+                exit 1
+                ;;
+        esac
+    done
+}
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -77,7 +99,11 @@ install_agent_deps_ubuntu() {
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
     # Install required packages
-    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
+    apt install -y crudini net-tools openssh-server rsync x11vnc sudo syncthing 
+    # Install GLPI Agent
+    echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
+    wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
+    perl /tmp/medulla/${GLPI_AGENT_FILENAME} --reinstall --silent --no-question --force --no-httpd
     # Remove deadsnakes repository
     rm -f /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-*.sources
     apt update
@@ -90,11 +116,15 @@ install_agent_deps_debian12() {
     # Install pip for Python 3.11
     python3.11 -m ensurepip --upgrade
     # Install required packages
-    apt install -y crudini net-tools fusioninventory-agent openssh-server rsync x11vnc sudo syncthing 
+    apt install -y crudini net-tools openssh-server rsync x11vnc sudo syncthing 
+    # Install GLPI Agent
+    echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
+    wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
+    perl /tmp/medulla/${GLPI_AGENT_FILENAME} --reinstall --silent --no-question --force --no-httpd
 }
 
 install_agent_deps_almalinux() {
-    # Enable EPEL repository (required for crudini, x11vnc, xrdp, fusioninventory-agent)
+    # Enable EPEL repository (required for crudini, x11vnc, xrdp)
     dnf install -y epel-release
     # Enable CRB (crb sur AlmaLinux 9, powertools sur AlmaLinux 8) pour les paquets -devel
     dnf config-manager --set-enabled crb 2>/dev/null || \
@@ -105,13 +135,45 @@ install_agent_deps_almalinux() {
     python3.11 -m ensurepip --upgrade
     # Install required packages
     dnf install -y crudini wget net-tools openssh-server rsync x11vnc sudo syncthing
-    # Install GLPI Agent from RPM
+    # Install GLPI Agent
     echo "Downloading GLPI Agent ${GLPI_AGENT_VERSION} ..."
     wget -P /tmp/medulla ${GLPI_AGENT_BASE_URL}/${GLPI_AGENT_FILENAME}
-    dnf install -y /tmp/medulla/${GLPI_AGENT_FILENAME}
+    perl /tmp/medulla/${GLPI_AGENT_FILENAME} --reinstall --silent --no-question --force --no-httpd
     # Enable and start SSH daemon
     systemctl enable sshd
     systemctl start sshd
+}
+
+download_ca_certificates() {
+    mkdir -p /tmp/medulla
+
+    wget -O /tmp/medulla/medulla-ca-chain.cert.pem \
+        "${BASE_URL}/medulla-ca-chain.cert.pem" || return 1
+    wget -O /tmp/medulla/medulla-rootca.cert.pem \
+        "${BASE_URL}/medulla-rootca.cert.pem" || return 1
+
+    openssl x509 -in /tmp/medulla/medulla-ca-chain.cert.pem -noout >/dev/null 2>&1 || return 1
+    openssl x509 -in /tmp/medulla/medulla-rootca.cert.pem -noout >/dev/null 2>&1 || return 1
+}
+
+install_ca_certificates() {
+    echo "Installing CA certificates ..."
+    case "$DISTRO" in
+        almalinux)
+            CERT_DIR="/etc/pki/ca-trust/source/anchors/"
+            install -m 0644 /tmp/medulla/medulla-ca-chain.cert.pem "${CERT_DIR}"
+            install -m 0644 /tmp/medulla/medulla-rootca.cert.pem "${CERT_DIR}"
+            update-ca-trust extract
+            ;;
+        *)
+            CERT_DIR="/usr/local/share/ca-certificates/"
+            openssl x509 -in /tmp/medulla/medulla-ca-chain.cert.pem \
+                -inform PEM -out "${CERT_DIR}/medulla-ca-chain.crt"
+            openssl x509 -in /tmp/medulla/medulla-rootca.cert.pem \
+                -inform PEM -out "${CERT_DIR}/medulla-rootca.crt"
+            update-ca-certificates
+            ;;
+    esac
 }
 
 download_agent_files() {
@@ -123,8 +185,10 @@ download_agent_files() {
     wget ${BASE_URL}/${PULSE_AGENT_FILENAME}
     wget ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
     wget ${BASE_URL}/${KIOSK_FILENAME}
-    wget ${BASE_URL}/medulla-ca-chain.cert.pem
-    wget ${BASE_URL}/medulla-rootca.cert.pem
+    download_ca_certificates || {
+        echo "Unable to download or validate Medulla CA certificates" >&2
+        exit 1
+    }
     wget ${BASE_URL}/config/agentconf.ini
     wget ${BASE_URL}/config/agentconf.ini.tpl
     wget ${BASE_URL}/config/inventory.ini
@@ -178,24 +242,7 @@ setup_agent() {
     fi
     x11vnc -storepasswd ${VNC_PASSWORD} /home/pulseuser/.vnc/passwd
 
-    # Install CA certificates
-    echo "Installing CA certificates ..."
-    case "$DISTRO" in
-        almalinux)
-            CERT_DIR="/etc/pki/ca-trust/source/anchors/"
-            cp /tmp/medulla/medulla-ca-chain.cert.pem ${CERT_DIR}
-            cp /tmp/medulla/medulla-rootca.cert.pem ${CERT_DIR}
-            update-ca-trust extract
-            ;;
-        *)
-            CERT_DIR="/usr/local/share/ca-certificates/"
-            cp /tmp/medulla/medulla-ca-chain.cert.pem ${CERT_DIR}
-            cp /tmp/medulla/medulla-rootca.cert.pem ${CERT_DIR}
-            openssl x509 -in ${CERT_DIR}/medulla-ca-chain.cert.pem -inform PEM -out ${CERT_DIR}/medulla-ca-chain.crt
-            openssl x509 -in ${CERT_DIR}/medulla-rootca.cert.pem -inform PEM -out ${CERT_DIR}/medulla-rootca.crt
-            update-ca-certificates
-            ;;
-    esac
+    install_ca_certificates
 
     # Copy agent configuration files
     echo "Copying agent configuration files ..."
@@ -363,8 +410,23 @@ start_agent() {
 }
 
 
+parse_arguments "$@"
 check_root
 check_distro
+
+if [ "${CERTIFICATES_ONLY}" -eq 1 ]; then
+    rm -rf /tmp/medulla
+    if ! download_ca_certificates; then
+        echo "Unable to download or validate Medulla CA certificates" >&2
+        rm -rf /tmp/medulla
+        exit 1
+    fi
+    install_ca_certificates
+    rm -rf /tmp/medulla
+    echo "Medulla CA certificates successfully reinstalled from ${BASE_URL}"
+    exit 0
+fi
+
 case "$DISTRO" in
     ubuntu|zorin|linuxmint)
         install_agent_deps_ubuntu

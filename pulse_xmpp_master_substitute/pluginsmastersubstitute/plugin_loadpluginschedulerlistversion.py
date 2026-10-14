@@ -94,6 +94,13 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                     # deploy on version changes
                     logger.debug("update plugin %s on agent %s" % (k, msg["from"]))
                     self.deployPluginscheduled(msg, k)
+                    logger.info(
+                        "restartbot requested for %s: scheduled plugin %s version %s -> %s",
+                        msg["from"],
+                        k,
+                        data["pluginscheduled"][k],
+                        v,
+                    )
                     self.restartmachineasynchrone(msg["from"])
                     break
                 else:
@@ -106,6 +113,11 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                 if k in self.plugintypescheduler:
                     if self.plugintypescheduler[k] == "all":
                         self.deployPluginscheduled(msg, k)
+                        logger.info(
+                            "restartbot requested for %s: missing scheduled plugin %s (type all)",
+                            msg["from"],
+                            k,
+                        )
                         self.restartmachineasynchrone(msg["from"])
                         break
                     if (
@@ -113,6 +125,11 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                         and data["agenttype"] == "relayserver"
                     ):
                         self.deployPluginscheduled(msg, k)
+                        logger.info(
+                            "restartbot requested for %s: missing scheduled plugin %s (type relayserver)",
+                            msg["from"],
+                            k,
+                        )
                         self.restartmachineasynchrone(msg["from"])
                         break
                     if (
@@ -120,6 +137,11 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                         and data["agenttype"] == "machine"
                     ):
                         self.deployPluginscheduled(msg, k)
+                        logger.info(
+                            "restartbot requested for %s: missing scheduled plugin %s (type machine)",
+                            msg["from"],
+                            k,
+                        )
                         self.restartmachineasynchrone(msg["from"])
                         break
 

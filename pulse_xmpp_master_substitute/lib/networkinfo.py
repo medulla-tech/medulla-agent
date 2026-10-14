@@ -8,12 +8,17 @@ import subprocess
 import sys
 import platform
 import logging
-import re
-import socket
-import psutil
-import os
-from ipaddress import ip_address
-from distutils.util import strtobool
+
+
+# Python 3.12+ removed distutils; keep same accepted truthy/falsy values.
+def strtobool(val):
+    val = str(val).strip().lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return 1
+    if val in ("n", "no", "f", "false", "off", "0"):
+        return 0
+    raise ValueError("invalid truth value %r" % (val,))
+
 from lib.utils import simplecommand, powerschellscriptps1
 from . import utils
 

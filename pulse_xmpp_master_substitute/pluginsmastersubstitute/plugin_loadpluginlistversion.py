@@ -128,7 +128,7 @@ def remoteinstallPlugin(self):
     This function is used  to installed the plugins on the Machines and
     Relayservers.
     """
-    restart_machine = set()
+    restart_machine = {}
 
     numberToUpdate = len(self.file_deploy_plugin)
     if numberToUpdate > 0:
@@ -141,13 +141,20 @@ def remoteinstallPlugin(self):
                         % (plugmachine["plugin"], plugmachine["dest"])
                     )
                     self.deployPlugin(plugmachine["dest"], plugmachine["plugin"])
-                    restart_machine.add(plugmachine["dest"])
+                    restart_machine.setdefault(plugmachine["dest"], []).append(
+                        plugmachine["plugin"]
+                    )
                 elif plugmachine["type"] == "deploySchedulingPlugin":
                     # It is the updating code for the scheduling plugins.
                     pass
-    for jidmachine in restart_machine:  # Itération pour chaque élément
+    for jidmachine, plugins in restart_machine.items():
         # call one function by message to processing asynchronous tasks and can
         # add a tempo on restart action.
+        logger.info(
+            "restartbot requested for %s: standard plugin synchronization (%s)",
+            jidmachine,
+            ", ".join(sorted(plugins)),
+        )
         self.event("restartmachineasynchrone", jidmachine)
 
 

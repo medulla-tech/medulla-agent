@@ -1,0 +1,15 @@
+[Unit]
+Description= Pulse master agent substitute for managing Disk Mastering
+After=samba.service slapd.service ejabberd.service
+
+[Service]
+#PIDFile=/var/run/launcher.pid
+#User=pulse
+#Group=pulse
+Type=forking
+ExecStart=/usr/lib/python3/dist-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py -d -f /etc/pulse-xmpp-agent-substitute/agent_master_substitute_dma.ini
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

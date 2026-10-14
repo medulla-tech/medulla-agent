@@ -7,9 +7,10 @@ DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//'
 VERSION_XMPP_AGENT=5.6.5
 VERSION_KIOSK_INTERFACE=2.1.4
 FILETREE_VERSION=0.1
-BRANCH=master
+BRANCH=integration
 
 PYVER=3
+PYTHON_MINOR := $(shell python3 -c 'import sys; print(sys.version_info.minor)')
 # Used during building to set the version
 export CFLAGS=-DVERSION=\"$(DEB_UPSTREAM_VERSION)\"
 
@@ -22,7 +23,7 @@ override_dh_auto_install:
 	dh_auto_install
 	# Move into a non python dependant folder.
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/
-	mv -f $(CURDIR)/debian/tmp/usr/lib/python${PYVER}.11/dist-packages/* $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/ 
+	mv -f $(CURDIR)/debian/tmp/usr/lib/python${PYVER}.$(PYTHON_MINOR)/dist-packages/* $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/ 
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent
 	cp -fr pulse_xmpp_agent/* $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent
 	rm -fr $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_agent/config
@@ -88,6 +89,7 @@ override_dh_auto_install:
 	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
+	sed -i 's,PATH,/usr/lib/python3/dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-diskmastering.service
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
 	# We create the installer part now
 	mkdir pulse-xmpp-agent-${VERSION_XMPP_AGENT}

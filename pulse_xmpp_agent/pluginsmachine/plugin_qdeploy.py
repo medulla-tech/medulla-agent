@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_agent/pluginsmachine/plugin_qdeploy.py
 
 import base64
 import json
@@ -68,6 +69,13 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             "ret": 0,
             "base64": False,
         }
+        # Keep command-level parameters coming from msc.commands.parameters
+        # so grafcet can consume them through template placeholders.
+        # Compatibility: some flows still provide this field as "parameters".
+        if "command_parameters" in data:
+            datasend["data"]["command_parameters"] = data["command_parameters"]
+        elif "parameters" in data:
+            datasend["data"]["command_parameters"] = data["parameters"]
         packagedir = os.path.join(managepackage.managepackage.packagedir(), namefolder)
         logger.debug("packagedir %s" % packagedir)
         # "filebase64":

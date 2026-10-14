@@ -1163,6 +1163,39 @@ class UpMachineUpdateLinux(Base, XmppMasterDBObj):
     )
 
 
+class UpOsVersions(Base, XmppMasterDBObj):
+    __tablename__ = "up_linux_os_versions"
+
+    distributor_id = Column(String(64), nullable=False)
+    release_version = Column(String(20), nullable=False)
+    target_version = Column(String(20))
+    name = Column(String(255))
+
+    is_managed = Column(Boolean, nullable=False, default=False)
+    is_current_stable = Column(Boolean, nullable=False, default=False)
+    is_recommended = Column(Boolean, nullable=False, default=False)
+
+    end_vendor_support = Column(DateTime)
+    end_extended_support = Column(DateTime)
+
+    description = Column(String(255))
+    package = Column(String(36))
+    packagename = Column(String(45))
+    parameters = Column(Text)
+
+    __table_args__ = (
+        UniqueConstraint("distributor_id", "release_version", name="uniq_distributor_release_version"),
+        Index("idx_distributor_id", "distributor_id"),
+        Index("idx_distribution_stable", "distributor_id", "is_current_stable"),
+        Index("idx_distribution_recommended", "distributor_id", "is_recommended"),
+        Index("idx_is_managed", "is_managed"),
+        Index("idx_vendor_support", "end_vendor_support"),
+        Index("idx_extended_support", "end_extended_support"),
+    )
+
+
+# Legacy per-distribution version tables kept for backward compatibility with
+# databases prior to schema 104. New code should use UpOsVersions.
 class UpRhelVersions(Base, XmppMasterDBObj):
     __tablename__ = "up_rhel_versions"
 

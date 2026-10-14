@@ -31,6 +31,7 @@ from sqlalchemy import (
     func,
     distinct,
     inspect,
+    literal,
 )
 from sqlalchemy.orm import (
     create_session,
@@ -482,8 +483,6 @@ class Glpi110(DatabaseHelper):
 
         # glpi_plugin_fusioninventory_locks
         self.fusionlocks = None
-        # glpi_plugin_fusioninventory_agents
-        self.fusionagents = None
 
         if self.fusionantivirus is not None:
             try:
@@ -495,27 +494,38 @@ class Glpi110(DatabaseHelper):
                     autoload=True,
                 )
                 mapper(FusionLocks, self.fusionlocks)
-                self.logger.debug("Load glpi_plugin_fusioninventory_agents")
-                self.fusionagents = Table(
-                    "glpi_plugin_fusioninventory_agents",
-                    self.metadata,
-                    Column(
-                        "computers_id", Integer, ForeignKey("glpi_computers_pulse.id")
-                    ),
-                    autoload=True,
-                )
-                mapper(FusionAgents, self.fusionagents)
             except:
+                self.logger.debug("Load of glpi_plugin_fusioninventory_locks failed")
+
+        # glpi_plugin_fusioninventory_agents, or glpi_agents since GLPI 10.
+        # Loaded independently of the antivirus table: GLPI 11 dropped
+        # glpi_computerantiviruses, which used to gate this block.
+        self.fusionagents = None
+
+        try:
+            self.logger.debug("Load glpi_plugin_fusioninventory_agents")
+            self.fusionagents = Table(
+                "glpi_plugin_fusioninventory_agents",
+                self.metadata,
+                Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                autoload=True,
+            )
+            mapper(FusionAgents, self.fusionagents)
+        except:
+            try:
                 self.logger.debug("Load glpi_agents")
                 self.fusionagents = Table(
                     "glpi_agents",
                     self.metadata,
-                    Column(
-                        "entities_id", Integer, ForeignKey("glpi_computers_pulse.id")
-                    ),
+                    Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
                     autoload=True,
                 )
                 mapper(FusionAgents, self.fusionagents)
+            except:
+                self.logger.warn("Load of glpi_agents table failed")
+                self.logger.warn(
+                    "The last inventory date will fall back on glpi_computers.date_mod"
+                )
 
         # glpi_items_disks
         self.disk = Table(
@@ -2969,7 +2979,7 @@ class Glpi110(DatabaseHelper):
         self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
     ):
         # Mutable dict options used as default argument to a method or function
-        query = self.filterOnUUID(
+        primary = (
             session.query(Machine)
             .add_entity(Infocoms)
             .add_column(self.entities.c.name)
@@ -2983,23 +2993,36 @@ class Glpi110(DatabaseHelper):
             .add_column(self.glpi_operatingsystemarchitectures.c.name)
             .add_column(self.glpi_domains.c.name)
             .add_column(self.state.c.name)
-            .add_column(self.fusionagents.c.last_contact)
-            .select_from(
-                self.machine.outerjoin(self.entities)
-                .outerjoin(self.locations)
-                .outerjoin(self.os)
-                .outerjoin(self.manufacturers)
-                .outerjoin(self.infocoms)
-                .outerjoin(self.glpi_computertypes)
-                .outerjoin(self.glpi_computermodels)
-                .outerjoin(self.glpi_operatingsystemservicepacks)
-                .outerjoin(self.glpi_operatingsystemarchitectures)
-                .outerjoin(self.state)
-                .outerjoin(self.fusionagents)
-                .outerjoin(self.glpi_domains)
-            ),
-            uuid,
         )
+
+        # last_contact column must stay last: the result loop below always
+        # unpacks it. When glpi_agents is unavailable, keep the shape with NULL.
+        if self.fusionagents is not None:
+            primary = primary.add_column(self.fusionagents.c.last_contact)
+        else:
+            primary = primary.add_column(literal(None).label("last_contact"))
+
+        # Build the FROM chain in one shot: this SQLAlchemy forbids a second
+        # select_from() once the query already has one.
+        from_clause = (
+            self.machine.outerjoin(self.entities)
+            .outerjoin(self.locations)
+            .outerjoin(self.os)
+            .outerjoin(self.manufacturers)
+            .outerjoin(self.infocoms)
+            .outerjoin(self.glpi_computertypes)
+            .outerjoin(self.glpi_computermodels)
+            .outerjoin(self.glpi_operatingsystemservicepacks)
+            .outerjoin(self.glpi_operatingsystemarchitectures)
+            .outerjoin(self.state)
+            .outerjoin(self.glpi_domains)
+        )
+        if self.fusionagents is not None:
+            from_clause = from_clause.outerjoin(self.fusionagents)
+
+        primary = primary.select_from(from_clause)
+
+        query = self.filterOnUUID(primary, uuid)
 
         if count:
             ret = query.count()
