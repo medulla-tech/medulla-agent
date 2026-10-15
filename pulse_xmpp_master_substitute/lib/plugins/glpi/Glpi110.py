@@ -4869,6 +4869,29 @@ class Glpi110(DatabaseHelper):
             result["data"]["uuidglpicomputer"] = result["data"].pop("uuid")
         return result
 
+    @DatabaseHelper._sessionm
+    def getMachineEntityId(self, session, computer_id):
+        """Lit l'entite effective d'une machine active, sans exclure l'entite 0."""
+        try:
+            if isinstance(computer_id, bool) or not isinstance(computer_id, int) or computer_id < 0:
+                raise ValueError("Invalid GLPI computer ID: %r" % (computer_id,))
+            row = session.query(self.machine.c.entities_id).filter(
+                self.machine.c.id == computer_id,
+                self.machine.c.is_deleted == 0,
+                self.machine.c.is_template == 0,
+            ).first()
+            if row is None:
+                raise LookupError("GLPI computer %s not found" % computer_id)
+            entity_id = row[0]
+            if isinstance(entity_id, bool) or not isinstance(entity_id, int) or entity_id < 0:
+                raise ValueError("Invalid GLPI entity ID: %r" % (entity_id,))
+            return entity_id
+        except Exception:
+            logging.getLogger().exception("Cannot read GLPI entity for computer %s", computer_id)
+            raise
+        finally:
+            session.close()
+
     def getMachineByUuidSetup(self, uuidsetupmachine):
         """@return: all computers that have this uuid setup machine"""
         session = create_session()

@@ -157,6 +157,10 @@ class Glpi:
     def getMachineInformationByUuidMachine(self, idmachine):
         return self.version_instance.getMachineInformationByUuidMachine(idmachine)
 
+    def getMachineEntityId(self, computer_id):
+        """Retourne l'entite effective via la version GLPI configuree."""
+        return self.version_instance.getMachineEntityId(computer_id)
+
     def getMachineByMacAddress(self, ctx, filter):
         return self.version_instance.getMachineByMacAddress(ctx, filter)
 
