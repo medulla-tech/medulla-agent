@@ -36,6 +36,7 @@ from sqlalchemy import TypeDecorator
 from sqlalchemy.orm import scoped_session
 
 import functools
+from contextlib import closing
 
 
 try:
@@ -1315,6 +1316,136 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error("Glpi_entity id : %s is not exist" % glpi_id)
             logging.getLogger().error("sql : %s" % traceback.format_exc())
         return None
+
+    @staticmethod
+    def _validate_glpi_entity_id(entity_id):
+        """Valide un identifiant GLPI, y compris l'entite racine 0."""
+        if isinstance(entity_id, bool) or not isinstance(entity_id, int) or entity_id < 0:
+            raise ValueError("Invalid GLPI entity ID: %r" % (entity_id,))
+
+    @staticmethod
+    def _validate_glpi_entity_names(entity):
+        """Refuse les noms absents ou trop longs sans les tronquer."""
+        for field, value, maximum in (
+            ("name", entity.name, 45),
+            ("complete_name", entity.completename, 512),
+        ):
+            if not isinstance(value, str) or len(value) > maximum:
+                raise ValueError(
+                    "GLPI entity %s: invalid %s (expected string, maximum %s characters)"
+                    % (entity.id, field, maximum)
+                )
+
+    def _glpi_entity_needs_sync(self, session, glpi_id):
+        """Compare la source federee a la destination sans ecriture."""
+        source_model = self.Local_glpi_entities
+        source = session.query(source_model).filter(source_model.id == glpi_id).first()
+        if source is None:
+            raise LookupError("Source GLPI entity %s not found" % glpi_id)
+        self._validate_glpi_entity_names(source)
+        targets = session.query(Glpi_entity).filter(Glpi_entity.glpi_id == glpi_id).all()
+        if len(targets) > 1:
+            raise ValueError("Duplicate glpi_entity.glpi_id: %s" % glpi_id)
+        return not targets or (
+            targets[0].name, targets[0].complete_name
+        ) != (source.name, source.completename)
+
+    def _sync_all_glpi_entities(self, session):
+        """Prepare la synchro ORM complete sans suppression ni changement d'ID."""
+        sources = session.query(self.Local_glpi_entities).all()
+        targets = {}
+        for target in session.query(Glpi_entity).all():
+            if target.glpi_id in targets:
+                raise ValueError("Duplicate glpi_entity.glpi_id: %s" % target.glpi_id)
+            targets[target.glpi_id] = target
+
+        inserts = []
+        updates = []
+        unchanged = 0
+        source_ids = set()
+        for source in sources:
+            self._validate_glpi_entity_id(source.id)
+            self._validate_glpi_entity_names(source)
+            if source.id in source_ids:
+                raise ValueError("Duplicate local_glpi_entities.id: %s" % source.id)
+            source_ids.add(source.id)
+            target = targets.get(source.id)
+            if target is None:
+                inserts.append(Glpi_entity(
+                    glpi_id=source.id,
+                    name=source.name,
+                    complete_name=source.completename,
+                ))
+            elif (target.name, target.complete_name) != (source.name, source.completename):
+                updates.append((target, source))
+            else:
+                unchanged += 1
+
+        session.add_all(inserts)
+        for target, source in updates:
+            target.name = source.name
+            target.complete_name = source.completename
+        return {
+            "status": "synchronized",
+            "created": len(inserts),
+            "updated": len(updates),
+            "unchanged": unchanged,
+        }
+
+    def sync_glpi_entities(self, glpi_id=None):
+        """Technique 1 : synchro complete si la cible manque ou differe.
+
+        Sans cible, effectue une synchro complete explicite. Les noms viennent
+        exclusivement de Local_glpi_entities. Le verrou MySQL est non bloquant :
+        un appel concurrent retourne busy avec un log DEBUG. Les erreurs sont
+        journalisees et propagees, les ecritures sont annulees.
+        """
+        lock_name = "medulla:glpi_entity_sync"
+        try:
+            if glpi_id is not None:
+                self._validate_glpi_entity_id(glpi_id)
+            # Une connexion reservee garde le verrou sur la meme session MySQL
+            # malgre les fins de transaction et le renouvellement du snapshot ORM.
+            with closing(self.engine_xmppmmaster_base.connect()) as connection:
+                with closing(self.Sessionxmpp(bind=connection)) as session:
+                    locked = False
+                    try:
+                        if glpi_id is not None and not self._glpi_entity_needs_sync(session, glpi_id):
+                            return {"status": "unchanged"}
+                        session.rollback()
+                        acquired = connection.execute(
+                            text("SELECT GET_LOCK(:name, 0)"), {"name": lock_name}
+                        ).scalar()
+                        if acquired == 0:
+                            logger.debug(
+                                "Entity sync deferred: another full sync is running, entity_id=%s",
+                                glpi_id,
+                            )
+                            return {"status": "busy"}
+                        if acquired != 1:
+                            raise RuntimeError("Cannot acquire GLPI entity sync lock")
+                        locked = True
+                        if glpi_id is not None and not self._glpi_entity_needs_sync(session, glpi_id):
+                            return {"status": "unchanged"}
+                        result = self._sync_all_glpi_entities(session)
+                        session.commit()
+                        logger.info("Full GLPI entity sync completed: %s", result)
+                        return result
+                    finally:
+                        try:
+                            session.rollback()
+                            if locked:
+                                released = connection.execute(
+                                    text("SELECT RELEASE_LOCK(:name)"), {"name": lock_name}
+                                ).scalar()
+                                if released != 1:
+                                    raise RuntimeError("Cannot release GLPI entity sync lock")
+                        except Exception:
+                            connection.invalidate()
+                            raise
+        except Exception:
+            logger.exception("GLPI entity synchronization failed: entity_id=%s", glpi_id)
+            raise
 
     @DatabaseHelper._sessionm
     def get_Glpi_location(self, session, glpi_id):
