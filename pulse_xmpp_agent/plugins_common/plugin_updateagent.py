@@ -370,10 +370,15 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
                 objectxmpp.img_agent
             )
             img_fingerprint = newobjdescriptorimage.get_fingerprint_agent_base()
-            master_fingerprint = objectxmpp.descriptor_master["fingerprint"]
+            master_fingerprint = _get_master_fingerprint(objectxmpp)
             logger.info("[UPDATEAGENT]   empreinte img    : %s" % img_fingerprint)
-            logger.info("[UPDATEAGENT]   empreinte master : %s" % master_fingerprint)
-            if img_fingerprint == master_fingerprint:
+            logger.info("[UPDATEAGENT]   empreinte master : %s" % (master_fingerprint or "absente"))
+            if master_fingerprint is None:
+                logger.warning(
+                    "[UPDATEAGENT] Descripteur master absent apres ecriture de %s - attente du prochain controle periodique"
+                    % namescript
+                )
+            elif img_fingerprint == master_fingerprint:
                 logger.info("[UPDATEAGENT] OKOKOK EMPREINTES IDENTIQUES - declenchement de reinstall_agent()")
                 objectxmpp.reinstall_agent()
             else:
@@ -383,6 +388,14 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
             logger.error(traceback.format_exc())
     else:
         logger.error("Invalid file type: %s" % typescript)
+
+
+def _get_master_fingerprint(objectxmpp):
+    """Return the master fingerprint when a valid descriptor is available."""
+    descriptor_master = getattr(objectxmpp, "descriptor_master", None)
+    if not isinstance(descriptor_master, dict):
+        return None
+    return descriptor_master.get("fingerprint")
 
 
 def senddescriptormd5(objectxmpp, data):

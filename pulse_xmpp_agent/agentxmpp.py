@@ -4,6 +4,7 @@
 import asyncio
 import base64
 import configparser
+import errno
 import glob
 import hashlib
 import importlib
@@ -3545,10 +3546,15 @@ class MUCBot(ClientXMPP):
         try:
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
         except OSError as remove_error:
-            logger.error(
-                "An error occured while trying to remove the %s file. \n We obtained the error %s"
-                % (os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"), remove_error)
-            )
+            if remove_error.errno == errno.ENOENT:
+                logger.debug(
+                    "[REPLICATOR] BOOL_UPDATE_AGENT deja absent avant lancement de replicator"
+                )
+            else:
+                logger.error(
+                    "An error occured while trying to remove the %s file. \n We obtained the error %s"
+                    % (os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"), remove_error)
+                )
         pythonexec = self.programfilepath(sys.executable)
         replicatorfunction = os.path.join(self.pathagent, "replicator.py")
         # --verbose : replicator affiche le détail des fichiers copiés/supprimés
