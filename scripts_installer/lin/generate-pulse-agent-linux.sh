@@ -29,7 +29,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="5.6.5"
+AGENT_VERSION="5.6.6"
 KIOSK_VERSION="2.1.4"
 GLPI_AGENT_VERSION="1.20"
 BASE_URL="https://agents.medulla-tech.io" # Overridden if --base-url is defined

@@ -1,5 +1,16 @@
 # Change Log
 
+## [5.6.6](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.6) (2026-10-15)
+- [FEATURE] Support for GLPI agent v1.20
+- [FEATURE] Randomise security scan schedules
+- [FEATURE] Add support for inventory tag on MacOS clients
+- [FEATURE] Add support for Windows 11 26H2 version
+- [BUGFIX]  Fix inventory on machines where glpi agent is already installed
+- [BUGFIX]  Fix entity isolation for kiosk profiles
+- [BUGFIX]  Fix pending deployment timeout when the client is no longer present
+- [BUGFIX]  Fix copy of generated agent to imaging
+- [BUGFIX]  Fix package synchronisation status
+
 ## [5.6.5](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.5) (2026-09-18)
 - [FEATURE] Support for MacOS clients
 - [FEATURE] Harden reversessh connections
