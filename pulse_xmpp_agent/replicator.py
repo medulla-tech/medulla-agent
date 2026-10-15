@@ -17,6 +17,7 @@ import shutil
 import importlib
 import urllib
 import subprocess
+import stat
 
 from pathlib import Path
 
@@ -186,6 +187,22 @@ def file_get_binarycontents(filename, offset=-1, maxlen=-1):
         fp.close()
 
 
+def _handle_remove_readonly(func, path, exc_info):
+    """Retry removal after clearing the readonly bit on Windows files."""
+    try:
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+    except OSError:
+        raise exc_info[1]
+
+
+def safe_rmtree(path):
+    """Remove a directory tree when present, tolerating missing paths."""
+    if not os.path.exists(path):
+        return
+    shutil.rmtree(path, onerror=_handle_remove_readonly)
+
+
 class Update_Remote_Agent:
     """
     this class calculates the fingerprint of the agent.
@@ -293,7 +310,7 @@ class Update_Remote_Agent:
 
 def restorationfolder(rollback_pulse_xmpp_agent, agent_folder):
     copytree2(rollback_pulse_xmpp_agent, agent_folder)
-    shutil.rmtree(rollback_pulse_xmpp_agent)
+    safe_rmtree(rollback_pulse_xmpp_agent)
 
 
 def install_direct(agent_image, agent_folder, force=False):
@@ -342,7 +359,7 @@ def prepare_folder_rollback(rollback_pulse_xmpp_agent, agent_folder):
     except OSError:
         # directory already exists
         pass
-    shutil.rmtree(rollback_pulse_xmpp_agent)
+    safe_rmtree(rollback_pulse_xmpp_agent)
     copytree2(agent_folder, rollback_pulse_xmpp_agent)
 
 
