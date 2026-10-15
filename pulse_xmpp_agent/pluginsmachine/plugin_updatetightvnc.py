@@ -13,11 +13,11 @@ from lib import utils
 import time
 
 
-TIGHTVNC = "2.8.81"
-COMPLETETIGHTVNC = "2.8.81.0"
+TIGHTVNC = "2.8.90"
+COMPLETETIGHTVNC = "2.8.90.0"
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.14", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.15", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 def get_tightvnc_identifying_number():
