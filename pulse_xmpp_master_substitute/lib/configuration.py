@@ -156,6 +156,58 @@ class confParameter:
         if "diskmastering" in self.plugins_list:
             self.readConfdiskMastering(Config)
 
+        if "dyngroup" in self.plugins_list:
+            self.readConfdyngroup(Config)
+
+    def readConfdyngroup(self, confiobject):
+        self.dyngroup_dbhost = "localhost"
+        if confiobject.has_option("dyngroupdatabase", "dyngroup_dbhost"):
+            self.dyngroup_dbhost = confiobject.get(
+                "dyngroupdatabase", "dyngroup_dbhost"
+            )
+
+        self.dyngroup_dbport = 3306
+        if confiobject.has_option("dyngroupdatabase", "dyngroup_dbport"):
+            self.dyngroup_dbport = confiobject.getint(
+                "dyngroupdatabase", "dyngroup_dbport"
+            )
+
+        self.dyngroup_dbname = "dyngroup"
+        if confiobject.has_option("dyngroupdatabase", "dyngroup_dbname"):
+            self.dyngroup_dbname = confiobject.get(
+                "dyngroupdatabase", "dyngroup_dbname"
+            )
+
+        self.dyngroup_dbuser = "mmc"
+        if confiobject.has_option("dyngroupdatabase", "dyngroup_dbuser"):
+            self.dyngroup_dbuser = confiobject.get(
+                "dyngroupdatabase", "dyngroup_dbuser"
+            )
+
+        self.dyngroup_dbpasswd = "mmc"
+        if confiobject.has_option("dyngroupdatabase", "dyngroup_dbpasswd"):
+            self.dyngroup_dbpasswd = confiobject.get(
+                "dyngroupdatabase", "dyngroup_dbpasswd"
+            )
+
+        self.dyngroup_dbpoolrecycle = 3600
+        if confiobject.has_option("dyngroupdatabase", "dyngroup_dbpoolrecycle"):
+            self.dyngroup_dbpoolrecycle = confiobject.getint(
+                "dyngroupdatabase", "dyngroup_dbpoolrecycle"
+            )
+
+        self.dyngroup_dbpoolsize = 60
+        if confiobject.has_option("dyngroupdatabase", "dyngroup_dbpoolsize"):
+            self.dyngroup_dbpoolsize = confiobject.getint(
+                "dyngroupdatabase", "dyngroup_dbpoolsize"
+            )
+
+        self.dyngroup_dbpooltimeout = 30
+        if confiobject.has_option("dyngroupdatabase", "dyngroup_dbpooltimeout"):
+            self.dyngroup_dbpooltimeout = confiobject.getint(
+                "dyngroupdatabase", "dyngroup_dbpooltimeout"
+            )
+
     def _levellogdata(self, levelstring):
         strlevel = levelstring.upper()
         if strlevel in ["CRITICAL", "FATAL"]:
@@ -535,7 +587,7 @@ class confParameter:
         # reg_key_2 = HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\ProductName|WindowsVersion
         ## max_key_index = 2
 
-        # reg_key_1 = HKEY_CURRENT_USER\Software\test\dede|dede
+        # reg_key_1 = HKEY_CURRENT_USER\Software\example\value|value
         # reg_key_1 = HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\EnableLUA|LUAEnabled
         # reg_key_2 = HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\ProductName|ProductName
         # max_key_index=2

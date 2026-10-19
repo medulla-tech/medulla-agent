@@ -21,6 +21,7 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.pkgs import PkgsDatabase
 from lib.plugins.diskmastering import DiskMasteringDatabase
+from lib.plugins.dyngroup import DyngroupDatabase
 
 from bin.agent import MUCBot
 
@@ -109,7 +110,8 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
         "kiosk": (KioskDatabase, "KIOSK"),
         "msc": (MscDatabase, "MSC"),
         "pkgs": (PkgsDatabase, "PKGS"),
-        "diskmastering": (DiskMasteringDatabase, "DMA")
+        "diskmastering": (DiskMasteringDatabase, "DMA"),
+        "dyngroup": (DyngroupDatabase, "DYGROUP"),
 
     }
 

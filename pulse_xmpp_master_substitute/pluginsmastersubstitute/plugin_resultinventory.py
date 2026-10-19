@@ -23,6 +23,7 @@ import time
 import json
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
+from lib.plugins.dyngroup import DyngroupDatabase
 from lib.plugins.admin import AdminMasterDatabase
 from lib.glpi_xml_sync.db import connect_db
 from lib.glpi_xml_sync.models import DbConfig, SyncConfig
@@ -44,6 +45,12 @@ import importlib.util
 logger = logging.getLogger()
 plugin = {"VERSION": "1.19", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 _RUNTIME_IDENTITY_LOGGED = False
+INVENTORY_MACHINE_LOOKUP_RETRIES = 4
+INVENTORY_MACHINE_LOOKUP_INTERVAL = 5
+
+
+class InventoryMachineNotFound(Exception):
+    """Raised when an injected inventory cannot be matched to a GLPI machine."""
 
 
 def _sync_inventory_entity(computer_id, jid):
@@ -64,6 +71,30 @@ def _sync_inventory_entity(computer_id, jid):
             "Inventory entity sync failed: jid=%s computer_id=%s", jid, computer_id
         )
         return {"status": "error"}
+
+
+def _sync_dyngroup_machine_name(computer_id, machine, jid):
+    """Met a jour le nom de machine conserve dans le cache Dyngroup."""
+    hostname = (machine.get("hostname") or "").strip()
+    if not hostname:
+        logger.warning("Dyngroup name sync skipped: missing hostname for jid=%s", jid)
+        return
+    try:
+        updated = DyngroupDatabase().updateNewNames(
+            {"UUID%s" % computer_id: hostname}
+        )
+        if not updated:
+            logger.info(
+                "Dyngroup machine cache name was unchanged for UUID%s jid=%s",
+                computer_id,
+                jid,
+            )
+    except Exception:
+        logger.exception(
+            "Dyngroup machine name sync failed: jid=%s computer_id=%s",
+            jid,
+            computer_id,
+        )
 
 
 class InventoryFix:
@@ -595,13 +626,18 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
             )
         time.sleep(15)
-        uuidglpi = XmppUpdateInventoried(msg["from"], machine)
+        try:
+            uuidglpi = XmppUpdateInventoried(msg["from"], machine)
+        except InventoryMachineNotFound as exc:
+            logger.error("Inventory machine lookup failed for %s: %s", msg["from"], exc)
+            uuidglpi = -1
         if uuidglpi == -1:
             logger.error(
-                "After injection of the inventory, no inventory is found for the address Macs."
+                "Inventory identity lookup failed after assumed injection: jid=%s",
+                msg["from"],
             )
             XmppMasterDatabase().setlogxmpp(
-                '<span class="log_err">Injection of inventory for machine %s failed</span>'
+                '<span class="log_err">GLPI machine identity could not be matched for %s</span>'
                 % (msg["from"]),
                 "Inventory",
                 "",
@@ -615,6 +651,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
             )
         else:
+            _sync_dyngroup_machine_name(uuidglpi, machine, msg["from"])
             _sync_inventory_entity(uuidglpi, msg["from"])
 
         # save registry inventory
@@ -736,10 +773,9 @@ def XmppUpdateInventoried(jid, machine):
            - Met à jour l'UUID dans la base XMPP.
            - Met à jour les références associées.
 
-    Cas d'échec :
-       - Aucun UUID valide ou aucune correspondance MAC trouvée.
-       - Données d'inventaire manquantes ou incohérentes.
-       - Machine non encore inventoriée dans GLPI.
+    Après plusieurs recherches par UUID matériel puis par adresse MAC, le
+    nom exact est utilisé uniquement si une seule machine correspond.
+    Une absence ou ambiguïté de correspondance lève InventoryMachineNotFound.
 
     Args:
         jid (str): Identifiant XMPP de la machine.
@@ -752,7 +788,10 @@ def XmppUpdateInventoried(jid, machine):
 
     Returns:
         int: ID GLPI de la machine si trouvée et synchronisée.
-        -1 : En cas d'erreur ou si aucune correspondance n'est trouvée.
+        -1 : En cas d'erreur lors de la mise à jour XMPP.
+
+    Raises:
+        InventoryMachineNotFound: aucune correspondance fiable n'a été trouvée.
 
     Logs:
         - DEBUG : étapes détaillées de recherche et normalisation
@@ -762,102 +801,134 @@ def XmppUpdateInventoried(jid, machine):
     Notes:
         - La recherche par UUID est prioritaire sur la recherche par MAC.
         - Les adresses MAC invalides sont ignorées.
+        - Le fallback par nom exige une correspondance exacte et unique.
         - La fonction modifie directement la base XMPP via XmppMasterDatabase().
     """
 
-    # Search by UUID setup
-    if machine.get("uuid_serial_machine"):
-        logger.debug(f"Searching machine by UUID setup: {machine['uuid_serial_machine']}")
-        setupuuid = getMachineByUuidSetup(machine["uuid_serial_machine"])
-        if setupuuid:
-            uuid = f"UUID{setupuuid['id']}"
-            if machine.get("uuid_inventorymachine") == uuid:
-                logger.debug(f"UUID already correct: {uuid}")
-                return setupuuid["id"]
+    setup_uuid = machine.get("uuid_serial_machine")
+    if setup_uuid:
+        logger.debug("Searching machine by UUID setup: %s", setup_uuid)
 
-            logger.debug("Updating UUID in XMPP database")
+    database = XmppMasterDatabase()
+    machine_id = machine["id"]
+    mac_addresses = []
+    mac_addresses_loaded = False
+
+    for attempt in range(INVENTORY_MACHINE_LOOKUP_RETRIES):
+        if setup_uuid:
+            setup_machine = getMachineByUuidSetup(setup_uuid)
+            if setup_machine:
+                computer_id = setup_machine["id"]
+                uuid = f"UUID{computer_id}"
+                if machine.get("uuid_inventorymachine") == uuid:
+                    logger.debug("UUID already correct: %s", uuid)
+                    return computer_id
+                try:
+                    database.updateMachineidinventory(uuid, machine_id)
+                    if machine.get("uuid_inventorymachine"):
+                        ret = database.replace_Organization_ad_id_inventory(
+                            machine["uuid_inventorymachine"], uuid
+                        )
+                        if ret == -1:
+                            logger.error("Failed to update Organization_ad.id_inventory")
+                            return -1
+                    return computer_id
+                except Exception as e:
+                    logger.error("Error updating UUID: %s", e)
+                    return -1
+
+        if not mac_addresses_loaded:
             try:
-                XmppMasterDatabase().updateMachineidinventory(uuid, machine["id"])
-                if machine.get("uuid_inventorymachine"):
-                    ret = XmppMasterDatabase().replace_Organization_ad_id_inventory(
-                        machine["uuid_inventorymachine"], uuid
-                    )
-                    if ret == -1:
-                        logger.error("Failed to update Organization_ad.id_inventory")
-                        return -1
-                return setupuuid["id"]
-            except Exception as e:
-                logger.error(f"Error updating UUID: {str(e)}")
-                return -1
+                result = database.listMacAdressforMachine(machine_id)
+                mac_addresses = result[0].split(",") if result and result[0] else []
+                if not mac_addresses:
+                    logger.warning("No MAC addresses found for machine ID: %s", machine_id)
+            except KeyError as e:
+                logger.error(
+                    "KeyError for machine %s: missing inventory data. "
+                    "Check if FusionInventory is running correctly. Error: %s",
+                    machine,
+                    e,
+                )
+            except Exception:
+                logger.exception("Could not retrieve MAC addresses for inventory %s", jid)
+            mac_addresses_loaded = True
 
-    # Search by MAC addresses
-    try:
-        result = XmppMasterDatabase().listMacAdressforMachine(machine["id"])
-        if not result or not result[0] or not result[0].strip():
-            logger.warning(f"No MAC addresses found for machine ID: {machine['id']}")
-            return -1
-
-        results = result[0].split(",")
-        logger.debug(f"MAC addresses to process: {results}")
-
-        for mac in results:
-            logger.debug(f"Processing raw MAC: {mac}")
-
-            # Normalize MAC address
-            mac = mac.strip().lower().replace("-", ":").replace("_", ":").replace(" ", "")
+        for raw_mac in mac_addresses:
+            mac = raw_mac.strip().lower().replace("-", ":").replace("_", ":").replace(" ", "")
             if len(mac) == 12 and ":" not in mac:
-                mac = ":".join([mac[i:i+2] for i in range(0, 12, 2)])
-
+                mac = ":".join(mac[i : i + 2] for i in range(0, 12, 2))
             if len(mac) != 17 or mac.count(":") != 5:
-                logger.warning(f"Invalid MAC format: {mac}")
+                logger.warning("Invalid MAC format: %s", mac)
                 continue
 
-            logger.debug(f"Querying machine by normalized MAC: {mac}")
             computer = getComputerByMac(mac)
             if not computer:
-                logger.warning(f"No machine found for MAC: {mac}")
                 continue
-
             uuid = f"UUID{computer.id}"
             if machine.get("uuid_inventorymachine") == uuid:
-                logger.debug(f"UUID already correct: {uuid}")
+                logger.debug("UUID already correct: %s", uuid)
                 return computer.id
-
             try:
                 if machine.get("uuid_inventorymachine"):
-                    ret = XmppMasterDatabase().replace_Organization_ad_id_inventory(
+                    ret = database.replace_Organization_ad_id_inventory(
                         machine["uuid_inventorymachine"], uuid
                     )
                     if ret == -1:
                         logger.error("Failed to update Organization_ad.id_inventory")
                         return -1
-
-                XmppMasterDatabase().updateMachineidinventory(uuid, machine["id"])
-                logger.debug(f"Successfully updated machine UUID to: {uuid}")
+                database.updateMachineidinventory(uuid, machine_id)
+                logger.debug("Successfully updated machine UUID to: %s", uuid)
                 return computer.id
-
             except Exception as e:
-                logger.error(f"Error during UUID update: {str(e)}")
+                logger.error("Error during UUID update: %s", e)
                 return -1
 
-        logger.warning(
-            f"No machine found with the provided MAC addresses for machine {machine['jid']}. "
-            "Possible reasons: "
-            "1. The inventory may not have been injected or processed yet in GLPI. "
-            "2. The machine may not be registered in GLPI. "
-            "3. The MAC address may be excluded (blacklisted) or not associated with this machine."
-        )
+        if attempt + 1 < INVENTORY_MACHINE_LOOKUP_RETRIES:
+            logger.info(
+                "No GLPI machine match yet for %s (attempt %s/%s); retrying in %s seconds",
+                jid,
+                attempt + 1,
+                INVENTORY_MACHINE_LOOKUP_RETRIES,
+                INVENTORY_MACHINE_LOOKUP_INTERVAL,
+            )
+            time.sleep(INVENTORY_MACHINE_LOOKUP_INTERVAL)
 
-    except KeyError as e:
-        logger.error(
-            f"KeyError for machine {machine}: missing inventory data. "
-            f"Check if FusionInventory is running correctly. Error: {str(e)}"
-        )
-    except Exception as e:
-        logger.error(
-            f"Unexpected error for inventory {jid}: {str(e)}\n"
-            f"Traceback: {traceback.format_exc()}"
-        )
+    hostname = (machine.get("hostname") or "").strip()
+    if hostname:
+        hostname_matches = Glpi().getMachineByHostname("imaging_module", hostname) or []
+        if len(hostname_matches) == 1:
+            computer_id = hostname_matches[0].id
+            uuid = f"UUID{computer_id}"
+            if machine.get("uuid_inventorymachine") == uuid:
+                return computer_id
+            try:
+                if machine.get("uuid_inventorymachine"):
+                    ret = database.replace_Organization_ad_id_inventory(
+                        machine["uuid_inventorymachine"], uuid
+                    )
+                    if ret == -1:
+                        logger.error("Failed to update Organization_ad.id_inventory")
+                        return -1
+                database.updateMachineidinventory(uuid, machine_id)
+                logger.warning(
+                    "Matched inventory machine by unique hostname fallback: jid=%s hostname=%s computer_id=%s",
+                    jid,
+                    hostname,
+                    computer_id,
+                )
+                return computer_id
+            except Exception as e:
+                logger.error("Error updating UUID from hostname fallback: %s", e)
+                return -1
+        if hostname_matches:
+            logger.error(
+                "Hostname fallback is ambiguous: jid=%s hostname=%s matches=%s",
+                jid,
+                hostname,
+                len(hostname_matches),
+            )
 
-    logger.warning(f"No valid UUID or MAC address found for machine: {jid}")
-    return -1
+    raise InventoryMachineNotFound(
+        "no GLPI machine matched setup UUID, MAC addresses, or a unique exact hostname"
+    )

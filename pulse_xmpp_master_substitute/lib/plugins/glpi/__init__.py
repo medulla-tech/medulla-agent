@@ -164,6 +164,9 @@ class Glpi:
     def getMachineByMacAddress(self, ctx, filter):
         return self.version_instance.getMachineByMacAddress(ctx, filter)
 
+    def getMachineByHostname(self, ctx, hostname):
+        return self.version_instance.getMachineByHostname(ctx, hostname)
+
     def getLastMachineInventoryPart(
         self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False
     ):

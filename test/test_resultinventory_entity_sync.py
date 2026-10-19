@@ -78,6 +78,7 @@ def load_plugin():
     modules = {}
     for name in (
         "lib", "lib.plugins", "lib.plugins.xmpp", "lib.plugins.glpi", "lib.plugins.admin",
+        "lib.plugins.dyngroup",
         "lib.glpi_xml_sync", "lib.glpi_xml_sync.db", "lib.glpi_xml_sync.models",
         "lib.glpi_xml_sync.sync_service", "lib.glpi_xml_sync.xml_parser", "lib.utils",
     ):
@@ -85,6 +86,7 @@ def load_plugin():
     for module_name, names in (
         ("lib.plugins.xmpp", ("XmppMasterDatabase",)),
         ("lib.plugins.glpi", ("Glpi",)),
+        ("lib.plugins.dyngroup", ("DyngroupDatabase",)),
         ("lib.plugins.admin", ("AdminMasterDatabase",)),
         ("lib.glpi_xml_sync.db", ("connect_db",)),
         ("lib.glpi_xml_sync.models", ("DbConfig", "SyncConfig")),
@@ -380,7 +382,12 @@ class TestEntitySync(unittest.TestCase):
     def run_inventory(self, mode="forward", computer_id=23, registry=False):
         """Exerce le chemin complet sans injection reseau ni temporisation."""
         database = Mock()
-        machine = {"id": 12, "uuid_serial_machine": "setup", "uuid_inventorymachine": "UUID23"}
+        machine = {
+            "id": 12,
+            "hostname": "machine",
+            "uuid_serial_machine": "setup",
+            "uuid_inventorymachine": "UUID23",
+        }
         database.getMachinefromjid.return_value = machine
         database.sync_glpi_entities.side_effect = LookupError("source unavailable")
         self.patch_plugin("XmppMasterDatabase", Mock(return_value=database))
@@ -391,12 +398,19 @@ class TestEntitySync(unittest.TestCase):
         self.patch_plugin("getMachineByUuidSetup", Mock(return_value={"id": 23}))
         if computer_id == -1:
             self.patch_plugin("XmppUpdateInventoried", Mock(return_value=-1))
+        elif computer_id == -2:
+            self.patch_plugin(
+                "XmppUpdateInventoried",
+                Mock(side_effect=self.plugin.InventoryMachineNotFound("not found")),
+            )
         fixer = Mock()
         fixer.get.return_value = "<QUERY>INVENTORY</QUERY><DEVICEID>machine</DEVICEID>"
         self.patch_plugin("InventoryFix", Mock(return_value=fixer))
         self.patch_plugin("_log_runtime_identity_once", Mock())
         self.patch_plugin("send_content", Mock(return_value=(200, b"")))
         self.patch_plugin("_inject_inventory_with_glpi_xml_sync", Mock(return_value=True))
+        self.dyngroup = Mock()
+        self.patch_plugin("DyngroupDatabase", Mock(return_value=self.dyngroup))
         xmpp = types.SimpleNamespace(
             config=types.SimpleNamespace(
                 inventory_verbose=False, xmlfixplugindir="/unused", xmldumpactive=False,
@@ -422,11 +436,71 @@ class TestEntitySync(unittest.TestCase):
                 glpi.getMachineEntityId.assert_called_once_with(23)
                 database.sync_glpi_entities.assert_called_once_with(5)
                 database.updateMachineidinventory.assert_not_called()
+                self.dyngroup.updateNewNames.assert_called_once_with(
+                    {"UUID23": "machine"}
+                )
 
     def test_failed_machine_lookup_does_not_sync(self):
         database, glpi = self.run_inventory(computer_id=-1)
         glpi.getMachineEntityId.assert_not_called()
         database.sync_glpi_entities.assert_not_called()
+
+    def test_missing_machine_exception_is_reported_without_entity_sync(self):
+        database, glpi = self.run_inventory(computer_id=-2)
+        glpi.getMachineEntityId.assert_not_called()
+        database.sync_glpi_entities.assert_not_called()
+
+    def test_machine_lookup_retries_then_uses_unique_hostname(self):
+        database = Mock()
+        database.listMacAdressforMachine.return_value = ["001122334455"]
+        database.updateMachineidinventory.return_value = 1
+        glpi = Mock()
+        glpi.getMachineByHostname.return_value = [types.SimpleNamespace(id=23)]
+        self.patch_plugin("XmppMasterDatabase", Mock(return_value=database))
+        self.patch_plugin("Glpi", Mock(return_value=glpi))
+        self.patch_plugin("getMachineByUuidSetup", Mock(return_value=None))
+        self.patch_plugin("getComputerByMac", Mock(return_value=None))
+        machine = {
+            "id": 12,
+            "jid": "machine@example",
+            "hostname": "machine",
+            "uuid_serial_machine": "setup",
+            "uuid_inventorymachine": "",
+        }
+
+        with patch.object(self.plugin.time, "sleep") as sleep:
+            result = self.plugin.XmppUpdateInventoried("machine@example", machine)
+
+        self.assertEqual(result, 23)
+        self.assertEqual(sleep.call_count, 3)
+        glpi.getMachineByHostname.assert_called_once_with("imaging_module", "machine")
+        database.updateMachineidinventory.assert_called_once_with("UUID23", 12)
+
+    def test_machine_lookup_raises_when_hostname_fallback_is_ambiguous(self):
+        database = Mock()
+        database.listMacAdressforMachine.return_value = [""]
+        glpi = Mock()
+        glpi.getMachineByHostname.return_value = [
+            types.SimpleNamespace(id=23),
+            types.SimpleNamespace(id=24),
+        ]
+        self.patch_plugin("XmppMasterDatabase", Mock(return_value=database))
+        self.patch_plugin("Glpi", Mock(return_value=glpi))
+        self.patch_plugin("getMachineByUuidSetup", Mock(return_value=None))
+        machine = {
+            "id": 12,
+            "jid": "machine@example",
+            "hostname": "machine",
+            "uuid_serial_machine": "setup",
+            "uuid_inventorymachine": "",
+        }
+
+        with patch.object(self.plugin.time, "sleep"), self.assertRaises(
+            self.plugin.InventoryMachineNotFound
+        ):
+            self.plugin.XmppUpdateInventoried("machine@example", machine)
+
+        database.updateMachineidinventory.assert_not_called()
 
     def test_registry_continues_after_sync_error(self):
         database, glpi = self.run_inventory(registry=True)
@@ -435,6 +509,42 @@ class TestEntitySync(unittest.TestCase):
     def test_plugin_identity_and_version(self):
         self.assertEqual(self.plugin.plugin["NAME"], "resultinventory")
         self.assertEqual(self.plugin.plugin["VERSION"], "1.19")
+
+
+class TestDyngroupAccess(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.database_class = load_class_methods(
+            SUBSTITUTE / "lib/plugins/dyngroup/__init__.py",
+            "DyngroupDatabase",
+            ("getAllMachinesUuid", "updateNewNames"),
+            {"text": text},
+        )
+
+    def setUp(self):
+        self.engine = create_engine("sqlite://")
+        self.addCleanup(self.engine.dispose)
+        with self.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE Machines "
+                    "(uuid VARCHAR(64) PRIMARY KEY, name VARCHAR(255))"
+                )
+            )
+            connection.execute(
+                text("INSERT INTO Machines (uuid, name) VALUES (:uuid, :name)"),
+                {"uuid": "UUID23", "name": "old-name"},
+            )
+        self.database = self.database_class()
+        self.database.engine_dyngroup_base = self.engine
+
+    def test_reads_and_updates_machine_name_cache(self):
+        self.assertEqual(self.database.getAllMachinesUuid(), {"UUID23": "old-name"})
+        self.assertEqual(
+            self.database.updateNewNames({"UUID23": "new-name", "": "ignored"}),
+            1,
+        )
+        self.assertEqual(self.database.getAllMachinesUuid(), {"UUID23": "new-name"})
 
 
 if __name__ == "__main__":
