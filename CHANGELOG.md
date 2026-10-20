@@ -1,5 +1,9 @@
 # Change Log
 
+## Unreleased
+- [BUGFIX] Preserve dynamic-group memberships when inventory reconciliation changes a machine's GLPI UUID.
+- [BUGFIX] Persist pending identity links before updating XMPP and retry them after restarts or imaging-profile conflict resolution, without selecting a profile automatically.
+
 ## [5.6.5](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.5) (2026-09-18)
 - [FEATURE] Support for MacOS clients
 - [FEATURE] Harden reversessh connections
@@ -482,5 +486,4 @@ when we cannot contact a database ).
 ## [v1.8.5]
 
 - Option to shutdown or reboot machine after deployment
-
 

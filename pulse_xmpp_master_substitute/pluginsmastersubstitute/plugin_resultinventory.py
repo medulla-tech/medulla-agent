@@ -43,7 +43,7 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.19", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.20", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 _RUNTIME_IDENTITY_LOGGED = False
 INVENTORY_MACHINE_LOOKUP_RETRIES = 4
 INVENTORY_MACHINE_LOOKUP_INTERVAL = 5
@@ -73,28 +73,56 @@ def _sync_inventory_entity(computer_id, jid):
         return {"status": "error"}
 
 
-def _sync_dyngroup_machine_name(computer_id, machine, jid):
-    """Met a jour le nom de machine conserve dans le cache Dyngroup."""
+def _sync_dyngroup_machine_identity(computer_id, machine, jid):
+    """Preserve les appartenances Dyngroup et signale les conflits de profils."""
     hostname = (machine.get("hostname") or "").strip()
     if not hostname:
         logger.warning("Dyngroup name sync skipped: missing hostname for jid=%s", jid)
-        return
+        return False
     try:
-        updated = DyngroupDatabase().updateNewNames(
-            {"UUID%s" % computer_id: hostname}
+        result = DyngroupDatabase().reconcilePendingMachineIdentity(
+            machine["id"], "UUID%s" % computer_id, hostname
         )
-        if not updated:
+        if result["status"] == "missing":
             logger.info(
-                "Dyngroup machine cache name was unchanged for UUID%s jid=%s",
+                "Dyngroup machine cache has no entry for UUID%s jid=%s",
                 computer_id,
                 jid,
             )
+        return True
     except Exception:
         logger.exception(
-            "Dyngroup machine name sync failed: jid=%s computer_id=%s",
+            "Dyngroup identity sync failed; memberships preserved: jid=%s old_uuid=%s new_uuid=UUID%s",
             jid,
+            machine.get("uuid_inventorymachine"),
             computer_id,
         )
+        return False
+
+
+def _update_inventory_identity(machine, computer_id):
+    """Persist retry information before replacing the XMPP inventory UUID."""
+    database = XmppMasterDatabase()
+    uuid = "UUID%s" % computer_id
+    old_uuid = machine.get("uuid_inventorymachine")
+    try:
+        DyngroupDatabase().rememberMachineIdentity(machine["id"], old_uuid, uuid)
+        if old_uuid == uuid:
+            return computer_id
+        result = database.updateMachineidinventory(uuid, machine["id"])
+        if result == -1:
+            raise RuntimeError("Failed to update XMPP inventory UUID")
+        if old_uuid:
+            result = database.replace_Organization_ad_id_inventory(old_uuid, uuid)
+            if result == -1:
+                raise RuntimeError("Failed to update Organization_ad.id_inventory")
+        return computer_id
+    except Exception:
+        logger.exception(
+            "Inventory identity update failed: machine_id=%s old_uuid=%s new_uuid=%s",
+            machine["id"], old_uuid, uuid,
+        )
+        return -1
 
 
 class InventoryFix:
@@ -651,7 +679,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
             )
         else:
-            _sync_dyngroup_machine_name(uuidglpi, machine, msg["from"])
+            if not _sync_dyngroup_machine_identity(uuidglpi, machine, msg["from"]):
+                XmppMasterDatabase().setlogxmpp(
+                    "Dyngroup identity reconciliation failed for %s: %s -> UUID%s. "
+                    "Group memberships and pending UUID links preserved; "
+                    "check substitute logs."
+                    % (msg["from"], machine.get("uuid_inventorymachine"), uuidglpi),
+                    "Inventory", "", 0, msg["from"], "", "",
+                    "Inventory | Notify | Error", "",
+                    xmppobject.boundjid.bare, xmppobject.boundjid.bare,
+                )
             _sync_inventory_entity(uuidglpi, msg["from"])
 
         # save registry inventory
@@ -818,24 +855,7 @@ def XmppUpdateInventoried(jid, machine):
         if setup_uuid:
             setup_machine = getMachineByUuidSetup(setup_uuid)
             if setup_machine:
-                computer_id = setup_machine["id"]
-                uuid = f"UUID{computer_id}"
-                if machine.get("uuid_inventorymachine") == uuid:
-                    logger.debug("UUID already correct: %s", uuid)
-                    return computer_id
-                try:
-                    database.updateMachineidinventory(uuid, machine_id)
-                    if machine.get("uuid_inventorymachine"):
-                        ret = database.replace_Organization_ad_id_inventory(
-                            machine["uuid_inventorymachine"], uuid
-                        )
-                        if ret == -1:
-                            logger.error("Failed to update Organization_ad.id_inventory")
-                            return -1
-                    return computer_id
-                except Exception as e:
-                    logger.error("Error updating UUID: %s", e)
-                    return -1
+                return _update_inventory_identity(machine, setup_machine["id"])
 
         if not mac_addresses_loaded:
             try:
@@ -865,24 +885,7 @@ def XmppUpdateInventoried(jid, machine):
             computer = getComputerByMac(mac)
             if not computer:
                 continue
-            uuid = f"UUID{computer.id}"
-            if machine.get("uuid_inventorymachine") == uuid:
-                logger.debug("UUID already correct: %s", uuid)
-                return computer.id
-            try:
-                if machine.get("uuid_inventorymachine"):
-                    ret = database.replace_Organization_ad_id_inventory(
-                        machine["uuid_inventorymachine"], uuid
-                    )
-                    if ret == -1:
-                        logger.error("Failed to update Organization_ad.id_inventory")
-                        return -1
-                database.updateMachineidinventory(uuid, machine_id)
-                logger.debug("Successfully updated machine UUID to: %s", uuid)
-                return computer.id
-            except Exception as e:
-                logger.error("Error during UUID update: %s", e)
-                return -1
+            return _update_inventory_identity(machine, computer.id)
 
         if attempt + 1 < INVENTORY_MACHINE_LOOKUP_RETRIES:
             logger.info(
@@ -899,28 +902,11 @@ def XmppUpdateInventoried(jid, machine):
         hostname_matches = Glpi().getMachineByHostname("imaging_module", hostname) or []
         if len(hostname_matches) == 1:
             computer_id = hostname_matches[0].id
-            uuid = f"UUID{computer_id}"
-            if machine.get("uuid_inventorymachine") == uuid:
-                return computer_id
-            try:
-                if machine.get("uuid_inventorymachine"):
-                    ret = database.replace_Organization_ad_id_inventory(
-                        machine["uuid_inventorymachine"], uuid
-                    )
-                    if ret == -1:
-                        logger.error("Failed to update Organization_ad.id_inventory")
-                        return -1
-                database.updateMachineidinventory(uuid, machine_id)
-                logger.warning(
-                    "Matched inventory machine by unique hostname fallback: jid=%s hostname=%s computer_id=%s",
-                    jid,
-                    hostname,
-                    computer_id,
-                )
-                return computer_id
-            except Exception as e:
-                logger.error("Error updating UUID from hostname fallback: %s", e)
-                return -1
+            logger.warning(
+                "Matched inventory machine by unique hostname fallback: jid=%s hostname=%s computer_id=%s",
+                jid, hostname, computer_id,
+            )
+            return _update_inventory_identity(machine, computer_id)
         if hostname_matches:
             logger.error(
                 "Hostname fallback is ambiguous: jid=%s hostname=%s matches=%s",

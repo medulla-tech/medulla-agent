@@ -13,12 +13,13 @@ import json
 import logging
 from pathlib import Path
 import sys
+import tempfile
 import types
 import unittest
 from unittest.mock import Mock, patch
 import zlib
 
-from sqlalchemy import Column, Integer, String, create_engine, event, text
+from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, event, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
 
@@ -379,14 +380,17 @@ class TestEntitySync(unittest.TestCase):
         glpi.engine_glpi.raw_connection.assert_not_called()
         database.engine_xmppmmaster_base.raw_connection.assert_not_called()
 
-    def run_inventory(self, mode="forward", computer_id=23, registry=False):
+    def run_inventory(
+        self, mode="forward", computer_id=23, registry=False, dyngroup_error=False,
+        old_uuid="UUID23",
+    ):
         """Exerce le chemin complet sans injection reseau ni temporisation."""
         database = Mock()
         machine = {
             "id": 12,
             "hostname": "machine",
             "uuid_serial_machine": "setup",
-            "uuid_inventorymachine": "UUID23",
+            "uuid_inventorymachine": old_uuid,
         }
         database.getMachinefromjid.return_value = machine
         database.sync_glpi_entities.side_effect = LookupError("source unavailable")
@@ -410,6 +414,13 @@ class TestEntitySync(unittest.TestCase):
         self.patch_plugin("send_content", Mock(return_value=(200, b"")))
         self.patch_plugin("_inject_inventory_with_glpi_xml_sync", Mock(return_value=True))
         self.dyngroup = Mock()
+        self.dyngroup.reconcilePendingMachineIdentity.return_value = {
+            "status": "updated", "merged": 0,
+        }
+        if dyngroup_error:
+            self.dyngroup.reconcilePendingMachineIdentity.side_effect = ValueError(
+                "Dyngroup profile conflict: old_uuid=UUID23 new_uuid=UUID42 profiles=[5, 6]"
+            )
         self.patch_plugin("DyngroupDatabase", Mock(return_value=self.dyngroup))
         xmpp = types.SimpleNamespace(
             config=types.SimpleNamespace(
@@ -436,8 +447,11 @@ class TestEntitySync(unittest.TestCase):
                 glpi.getMachineEntityId.assert_called_once_with(23)
                 database.sync_glpi_entities.assert_called_once_with(5)
                 database.updateMachineidinventory.assert_not_called()
-                self.dyngroup.updateNewNames.assert_called_once_with(
-                    {"UUID23": "machine"}
+                self.dyngroup.reconcilePendingMachineIdentity.assert_called_once_with(
+                    12, "UUID23", "machine"
+                )
+                self.dyngroup.rememberMachineIdentity.assert_called_once_with(
+                    12, "UUID23", "UUID23"
                 )
 
     def test_failed_machine_lookup_does_not_sync(self):
@@ -506,9 +520,68 @@ class TestEntitySync(unittest.TestCase):
         database, glpi = self.run_inventory(registry=True)
         glpi.addRegistryCollectContent.assert_called_once_with(23, 7, "Example", "value")
 
+    def test_dyngroup_conflict_is_reported_and_registry_continues(self):
+        database, glpi = self.run_inventory(
+            registry=True, dyngroup_error=True, old_uuid="UUID42"
+        )
+        messages = [call.args[0] for call in database.setlogxmpp.call_args_list]
+        self.assertTrue(any(
+            "Dyngroup identity reconciliation failed" in message
+            and "Group memberships and pending UUID links preserved" in message
+            for message in messages
+        ))
+        glpi.addRegistryCollectContent.assert_called_once_with(23, 7, "Example", "value")
+        database.sync_glpi_entities.assert_called_once_with(5)
+        database.updateMachineidinventory.assert_called_once_with("UUID23", 12)
+        self.dyngroup.rememberMachineIdentity.assert_called_once_with(
+            12, "UUID42", "UUID23"
+        )
+
+    def test_retry_link_is_persisted_before_xmpp_uuid_update(self):
+        database, dyngroup = Mock(), Mock()
+        calls = Mock()
+        calls.attach_mock(dyngroup.rememberMachineIdentity, "remember")
+        calls.attach_mock(database.updateMachineidinventory, "update")
+        self.patch_plugin("XmppMasterDatabase", Mock(return_value=database))
+        self.patch_plugin("DyngroupDatabase", Mock(return_value=dyngroup))
+        machine = {"id": 12, "uuid_inventorymachine": "UUID23"}
+        self.assertEqual(self.plugin._update_inventory_identity(machine, 42), 42)
+        self.assertEqual(
+            [(call[0], call[1]) for call in calls.mock_calls],
+            [("remember", (12, "UUID23", "UUID42")), ("update", ("UUID42", 12))],
+        )
+        database.replace_Organization_ad_id_inventory.assert_called_once_with(
+            "UUID23", "UUID42"
+        )
+
+    def test_queue_failure_does_not_lose_old_xmpp_uuid(self):
+        database, dyngroup = Mock(), Mock()
+        dyngroup.rememberMachineIdentity.side_effect = RuntimeError("queue unavailable")
+        self.patch_plugin("XmppMasterDatabase", Mock(return_value=database))
+        self.patch_plugin("DyngroupDatabase", Mock(return_value=dyngroup))
+        with self.assertLogs(level="ERROR"):
+            self.assertEqual(self.plugin._update_inventory_identity(
+                {"id": 12, "uuid_inventorymachine": "UUID23"}, 42
+            ), -1)
+        database.updateMachineidinventory.assert_not_called()
+
+    def test_xmpp_update_failure_is_not_reported_as_success(self):
+        database, dyngroup = Mock(), Mock()
+        database.updateMachineidinventory.return_value = -1
+        self.patch_plugin("XmppMasterDatabase", Mock(return_value=database))
+        self.patch_plugin("DyngroupDatabase", Mock(return_value=dyngroup))
+        with self.assertLogs(level="ERROR"):
+            self.assertEqual(self.plugin._update_inventory_identity(
+                {"id": 12, "uuid_inventorymachine": "UUID23"}, 42
+            ), -1)
+        dyngroup.rememberMachineIdentity.assert_called_once_with(
+            12, "UUID23", "UUID42"
+        )
+        database.replace_Organization_ad_id_inventory.assert_not_called()
+
     def test_plugin_identity_and_version(self):
         self.assertEqual(self.plugin.plugin["NAME"], "resultinventory")
-        self.assertEqual(self.plugin.plugin["VERSION"], "1.19")
+        self.assertEqual(self.plugin.plugin["VERSION"], "1.20")
 
 
 class TestDyngroupAccess(unittest.TestCase):
@@ -517,26 +590,46 @@ class TestDyngroupAccess(unittest.TestCase):
         cls.database_class = load_class_methods(
             SUBSTITUTE / "lib/plugins/dyngroup/__init__.py",
             "DyngroupDatabase",
-            ("getAllMachinesUuid", "updateNewNames"),
-            {"text": text},
+            (
+                "getAllMachinesUuid", "updateNewNames", "reconcileMachineIdentity",
+                "_reconcileMachineIdentity", "ensureIdentityQueue",
+                "rememberMachineIdentity", "reconcilePendingMachineIdentity",
+            ),
+            {
+                "text": text, "MetaData": MetaData,
+                "Table": Table, "Column": Column,
+                "Integer": Integer, "String": String,
+            },
         )
 
     def setUp(self):
-        self.engine = create_engine("sqlite://")
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.engine = create_engine("sqlite:///" + directory.name + "/dyngroup.db")
         self.addCleanup(self.engine.dispose)
         with self.engine.begin() as connection:
+            connection.execute(text("PRAGMA foreign_keys = ON"))
             connection.execute(
                 text(
                     "CREATE TABLE Machines "
-                    "(uuid VARCHAR(64) PRIMARY KEY, name VARCHAR(255))"
+                    "(id INTEGER PRIMARY KEY, uuid VARCHAR(64), name VARCHAR(255))"
                 )
             )
+            connection.execute(text(
+                "CREATE TABLE Results (id INTEGER PRIMARY KEY, FK_groups INTEGER, "
+                "FK_machines INTEGER REFERENCES Machines(id))"
+            ))
+            connection.execute(text(
+                "CREATE TABLE ProfilesResults (FK_groups INTEGER, "
+                "FK_machines INTEGER PRIMARY KEY REFERENCES Machines(id))"
+            ))
             connection.execute(
                 text("INSERT INTO Machines (uuid, name) VALUES (:uuid, :name)"),
                 {"uuid": "UUID23", "name": "old-name"},
             )
         self.database = self.database_class()
         self.database.engine_dyngroup_base = self.engine
+        self.database.ensureIdentityQueue()
 
     def test_reads_and_updates_machine_name_cache(self):
         self.assertEqual(self.database.getAllMachinesUuid(), {"UUID23": "old-name"})
@@ -545,6 +638,192 @@ class TestDyngroupAccess(unittest.TestCase):
             1,
         )
         self.assertEqual(self.database.getAllMachinesUuid(), {"UUID23": "new-name"})
+
+    def seed_memberships(self, target_profile=5):
+        with self.engine.begin() as connection:
+            connection.execute(text(
+                "INSERT INTO Machines VALUES (2, 'UUID42', 'new-name')"
+            ))
+            connection.execute(text(
+                "INSERT INTO Results VALUES (1, 10, 1), (2, 10, 2), (3, 11, 2)"
+            ))
+            connection.execute(text(
+                "INSERT INTO ProfilesResults VALUES (5, 1), (:profile, 2)"
+            ), {"profile": target_profile})
+
+    def snapshot(self):
+        with self.engine.connect() as connection:
+            return {
+                table: [tuple(row) for row in connection.execute(
+                    text("SELECT * FROM %s ORDER BY 1" % table)
+                )]
+                for table in ("Machines", "Results", "ProfilesResults")
+            }
+
+    def test_uuid_change_preserves_internal_id_and_links(self):
+        with self.engine.begin() as connection:
+            connection.execute(text("INSERT INTO Results VALUES (1, 10, 1)"))
+            connection.execute(text("INSERT INTO ProfilesResults VALUES (5, 1)"))
+        self.assertEqual(
+            self.database.reconcileMachineIdentity("UUID23", "UUID42", "renamed"),
+            {"status": "updated", "merged": 0},
+        )
+        self.assertEqual(self.snapshot(), {
+            "Machines": [(1, "UUID42", "renamed")],
+            "Results": [(1, 10, 1)],
+            "ProfilesResults": [(5, 1)],
+        })
+
+    def test_merge_unions_groups_and_identical_profiles_and_is_repeatable(self):
+        self.seed_memberships()
+        self.assertEqual(
+            self.database.reconcileMachineIdentity("UUID23", "UUID42", "renamed"),
+            {"status": "updated", "merged": 1},
+        )
+        expected = {
+            "Machines": [(1, "UUID42", "renamed")],
+            "Results": [(1, 10, 1), (3, 11, 1)],
+            "ProfilesResults": [(5, 1)],
+        }
+        self.assertEqual(self.snapshot(), expected)
+        self.database.reconcileMachineIdentity("UUID23", "UUID42", "renamed")
+        self.assertEqual(self.snapshot(), expected)
+
+    def test_conflicting_profiles_leave_all_rows_unchanged(self):
+        self.seed_memberships(target_profile=6)
+        before = self.snapshot()
+        with self.assertRaisesRegex(ValueError, "profile conflict"):
+            self.database.reconcileMachineIdentity("UUID23", "UUID42", "renamed")
+        self.assertEqual(self.snapshot(), before)
+
+    def test_target_only_profile_moves_to_preserved_source_id(self):
+        self.seed_memberships()
+        with self.engine.begin() as connection:
+            connection.execute(text(
+                "DELETE FROM ProfilesResults WHERE FK_machines = 1"
+            ))
+        self.database.reconcileMachineIdentity("UUID23", "UUID42", "renamed")
+        self.assertEqual(self.snapshot()["ProfilesResults"], [(5, 1)])
+
+    def test_existing_target_is_kept_when_source_is_missing(self):
+        with self.engine.begin() as connection:
+            connection.execute(text("INSERT INTO Results VALUES (1, 10, 1)"))
+        self.database.reconcileMachineIdentity("UUID99", "UUID23", "renamed")
+        self.assertEqual(self.snapshot()["Machines"], [(1, "UUID23", "renamed")])
+        self.assertEqual(self.snapshot()["Results"], [(1, 10, 1)])
+
+    def test_database_failure_rolls_back_membership_merge(self):
+        self.seed_memberships()
+        with self.engine.begin() as connection:
+            connection.execute(text(
+                "CREATE TRIGGER reject_identity BEFORE UPDATE ON Machines "
+                "BEGIN SELECT RAISE(ABORT, 'identity update failed'); END"
+            ))
+        before = self.snapshot()
+        with self.assertRaises(IntegrityError):
+            self.database.reconcileMachineIdentity("UUID23", "UUID42", "renamed")
+        self.assertEqual(self.snapshot(), before)
+
+    def test_missing_cache_does_not_recreate_memberships(self):
+        before = self.snapshot()
+        self.assertEqual(
+            self.database.reconcileMachineIdentity("UUID90", "UUID91", "missing"),
+            {"status": "missing", "merged": 0},
+        )
+        self.assertEqual(self.snapshot(), before)
+
+    def pending(self):
+        with self.engine.connect() as connection:
+            return [tuple(row) for row in connection.execute(text(
+                "SELECT xmpp_machine_id, old_uuid, new_uuid "
+                "FROM substitute_pending_machine_identity ORDER BY old_uuid"
+            ))]
+
+    def test_pending_survives_conflict_and_restarts_until_resolved(self):
+        self.seed_memberships(target_profile=6)
+        before = self.snapshot()
+        self.database.rememberMachineIdentity(12, "UUID23", "UUID42")
+        with self.assertRaisesRegex(ValueError, "profile conflict"):
+            self.database.reconcilePendingMachineIdentity(12, "UUID42", "renamed")
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual(self.pending(), [(12, "UUID23", "UUID42")])
+
+        restarted = self.database_class()
+        restarted.engine_dyngroup_base = create_engine(self.engine.url)
+        self.addCleanup(restarted.engine_dyngroup_base.dispose)
+        restarted.ensureIdentityQueue()
+        # XMPP already carries UUID42; this must not discard the pending UUID23.
+        restarted.rememberMachineIdentity(12, "UUID42", "UUID42")
+        with self.engine.begin() as connection:
+            connection.execute(text(
+                "UPDATE ProfilesResults SET FK_groups = 5 WHERE FK_machines = 2"
+            ))
+        restarted.reconcilePendingMachineIdentity(12, "UUID42", "renamed")
+        self.assertEqual(self.pending(), [])
+        self.assertEqual(self.snapshot()["Machines"], [(1, "UUID42", "renamed")])
+        self.assertEqual(self.snapshot()["Results"], [(1, 10, 1), (3, 11, 1)])
+
+    def test_second_uuid_change_preserves_all_pending_sources(self):
+        self.database.rememberMachineIdentity(12, "UUID23", "UUID42")
+        self.database.rememberMachineIdentity(12, "UUID42", "UUID50")
+        self.assertEqual(self.pending(), [
+            (12, "UUID23", "UUID50"), (12, "UUID42", "UUID50"),
+        ])
+        self.database.reconcilePendingMachineIdentity(12, "UUID50", "renamed")
+        self.assertEqual(self.pending(), [])
+        self.assertEqual(self.snapshot()["Machines"], [(1, "UUID50", "renamed")])
+
+    def test_multiple_pending_sources_merge_existing_machine_entries(self):
+        self.seed_memberships()
+        self.database.rememberMachineIdentity(12, "UUID23", "UUID42")
+        self.database.rememberMachineIdentity(12, "UUID42", "UUID50")
+        self.database.reconcilePendingMachineIdentity(12, "UUID50", "renamed")
+        state = self.snapshot()
+        self.assertEqual(len(state["Machines"]), 1)
+        machine_id, uuid, hostname = state["Machines"][0]
+        self.assertEqual((uuid, hostname), ("UUID50", "renamed"))
+        self.assertEqual(
+            {(row[1], row[2]) for row in state["Results"]},
+            {(10, machine_id), (11, machine_id)},
+        )
+        self.assertEqual(state["ProfilesResults"], [(5, machine_id)])
+        self.assertEqual(self.pending(), [])
+
+    def test_sql_failure_preserves_pending_and_memberships(self):
+        self.seed_memberships()
+        self.database.rememberMachineIdentity(12, "UUID23", "UUID42")
+        with self.engine.begin() as connection:
+            connection.execute(text(
+                "CREATE TRIGGER reject_queue_delete BEFORE DELETE "
+                "ON substitute_pending_machine_identity "
+                "BEGIN SELECT RAISE(ABORT, 'queue delete failed'); END"
+            ))
+        before = self.snapshot()
+        with self.assertRaises(IntegrityError):
+            self.database.reconcilePendingMachineIdentity(12, "UUID42", "renamed")
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual(self.pending(), [(12, "UUID23", "UUID42")])
+
+    def test_later_pending_conflict_rolls_back_all_reconciliations(self):
+        self.seed_memberships(target_profile=6)
+        self.database.rememberMachineIdentity(12, "UUID23", "UUID42")
+        self.database.rememberMachineIdentity(12, "UUID42", "UUID50")
+        before = self.snapshot()
+        pending = self.pending()
+
+        with self.assertRaisesRegex(ValueError, "profile conflict"):
+            self.database.reconcilePendingMachineIdentity(12, "UUID50", "renamed")
+
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual(self.pending(), pending)
+
+    def test_pending_target_mismatch_does_not_modify_memberships(self):
+        self.database.rememberMachineIdentity(12, "UUID23", "UUID42")
+        before = self.snapshot()
+        with self.assertRaisesRegex(ValueError, "target changed"):
+            self.database.reconcilePendingMachineIdentity(12, "UUID99", "renamed")
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual(self.pending(), [(12, "UUID23", "UUID42")])
 
 
 if __name__ == "__main__":
