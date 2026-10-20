@@ -56,6 +56,7 @@ class Computer(Base):
     __tablename__ = "glpi_computers"
     id = Column(Integer, primary_key=True)
     name = Column(String(255))
+    uuid = Column(String(255))
     entities_id = Column(Integer)
     is_deleted = Column(Integer, default=0)
     is_template = Column(Integer, default=0)
@@ -600,6 +601,38 @@ class TestEntitySync(unittest.TestCase):
     def test_plugin_identity_and_version(self):
         self.assertEqual(self.plugin.plugin["NAME"], "resultinventory")
         self.assertEqual(self.plugin.plugin["VERSION"], "1.21")
+
+
+class TestGlpiSetupUuidLookup(unittest.TestCase):
+    def test_recreated_machine_ignores_deleted_and_template_records(self):
+        engine = create_engine("sqlite://")
+        self.addCleanup(engine.dispose)
+        Base.metadata.create_all(engine)
+        factory = sessionmaker(bind=engine)
+        with closing(factory()) as session:
+            session.add_all([
+                Computer(id=1, uuid="hardware-uuid", is_deleted=1),
+                Computer(id=2, uuid="hardware-uuid", is_template=1),
+                Computer(id=3, uuid="hardware-uuid"),
+                Computer(id=4, uuid="deleted-only", is_deleted=1),
+                Computer(id=5, uuid="template-only", is_template=1),
+            ])
+            session.commit()
+        for version in GLPI_VERSIONS:
+            with self.subTest(version=version):
+                cls = load_class_methods(
+                    SUBSTITUTE / ("lib/plugins/glpi/%s.py" % version), version,
+                    ("getMachineByUuidSetup",),
+                    {"Machine": Computer, "create_session": factory},
+                )
+                database = cls()
+                database._machineobject = lambda row: {"id": row.id} if row else {}
+                self.assertEqual(
+                    database.getMachineByUuidSetup("hardware-uuid"), {"id": 3}
+                )
+                self.assertEqual(database.getMachineByUuidSetup("deleted-only"), {})
+                self.assertEqual(database.getMachineByUuidSetup("template-only"), {})
+                self.assertEqual(database.getMachineByUuidSetup("missing"), {})
 
 
 class TestGlpiHostnameLookup(unittest.TestCase):
