@@ -1,6 +1,8 @@
 # Change Log
 
 ## Unreleased
+- [BUGFIX] Keep the old XMPP inventory UUID available for retry when updating its AD reference fails.
+- [BUGFIX] Align inventory hostname lookup with MAC lookup's imaging context across supported GLPI versions, retaining entity filtering for other contexts.
 - [BUGFIX] Preserve dynamic-group memberships when inventory reconciliation changes a machine's GLPI UUID.
 - [BUGFIX] Persist pending identity links before updating XMPP and retry them after restarts or imaging-profile conflict resolution, without selecting a profile automatically.
 
@@ -486,4 +488,3 @@ when we cannot contact a database ).
 ## [v1.8.5]
 
 - Option to shutdown or reboot machine after deployment
-

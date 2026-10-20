@@ -55,6 +55,7 @@ class Computer(Base):
 
     __tablename__ = "glpi_computers"
     id = Column(Integer, primary_key=True)
+    name = Column(String(255))
     entities_id = Column(Integer)
     is_deleted = Column(Integer, default=0)
     is_template = Column(Integer, default=0)
@@ -541,6 +542,7 @@ class TestEntitySync(unittest.TestCase):
         database, dyngroup = Mock(), Mock()
         calls = Mock()
         calls.attach_mock(dyngroup.rememberMachineIdentity, "remember")
+        calls.attach_mock(database.replace_Organization_ad_id_inventory, "organization")
         calls.attach_mock(database.updateMachineidinventory, "update")
         self.patch_plugin("XmppMasterDatabase", Mock(return_value=database))
         self.patch_plugin("DyngroupDatabase", Mock(return_value=dyngroup))
@@ -548,7 +550,8 @@ class TestEntitySync(unittest.TestCase):
         self.assertEqual(self.plugin._update_inventory_identity(machine, 42), 42)
         self.assertEqual(
             [(call[0], call[1]) for call in calls.mock_calls],
-            [("remember", (12, "UUID23", "UUID42")), ("update", ("UUID42", 12))],
+            [("remember", (12, "UUID23", "UUID42")),
+             ("organization", ("UUID23", "UUID42")), ("update", ("UUID42", 12))],
         )
         database.replace_Organization_ad_id_inventory.assert_called_once_with(
             "UUID23", "UUID42"
@@ -577,11 +580,69 @@ class TestEntitySync(unittest.TestCase):
         dyngroup.rememberMachineIdentity.assert_called_once_with(
             12, "UUID23", "UUID42"
         )
-        database.replace_Organization_ad_id_inventory.assert_not_called()
+        database.replace_Organization_ad_id_inventory.assert_called_once_with(
+            "UUID23", "UUID42"
+        )
+
+    def test_organization_failure_keeps_old_xmpp_uuid_for_retry(self):
+        database, dyngroup = Mock(), Mock()
+        database.replace_Organization_ad_id_inventory.return_value = -1
+        self.patch_plugin("XmppMasterDatabase", Mock(return_value=database))
+        self.patch_plugin("DyngroupDatabase", Mock(return_value=dyngroup))
+        machine = {"id": 12, "uuid_inventorymachine": "UUID23"}
+        with self.assertLogs(level="ERROR"):
+            self.assertEqual(self.plugin._update_inventory_identity(machine, 42), -1)
+        database.updateMachineidinventory.assert_not_called()
+        database.replace_Organization_ad_id_inventory.return_value = 1
+        self.assertEqual(self.plugin._update_inventory_identity(machine, 42), 42)
+        database.updateMachineidinventory.assert_called_once_with("UUID42", 12)
 
     def test_plugin_identity_and_version(self):
         self.assertEqual(self.plugin.plugin["NAME"], "resultinventory")
-        self.assertEqual(self.plugin.plugin["VERSION"], "1.20")
+        self.assertEqual(self.plugin.plugin["VERSION"], "1.21")
+
+
+class TestGlpiHostnameLookup(unittest.TestCase):
+    def test_imaging_lookup_is_exact_and_filters_inactive_rows_in_all_versions(self):
+        engine = create_engine("sqlite://")
+        self.addCleanup(engine.dispose)
+        Base.metadata.create_all(engine)
+        factory = sessionmaker(bind=engine)
+        with closing(factory()) as session:
+            session.add_all([
+                Computer(id=1, name="machine", entities_id=0),
+                Computer(id=2, name="machine", entities_id=5),
+                Computer(id=3, name="machine-extra", entities_id=0),
+                Computer(id=4, name="machine", is_deleted=1),
+                Computer(id=5, name="machine", is_template=1),
+            ])
+            session.commit()
+        for version in GLPI_VERSIONS:
+            with self.subTest(version=version):
+                cls = load_class_methods(
+                    SUBSTITUTE / ("lib/plugins/glpi/%s.py" % version), version,
+                    ("getMachineByHostname", "__filter_on", "__filter_on_filter",
+                     "__filter_on_entity"),
+                    {"Machine": Computer, "create_session": factory},
+                )
+                database = cls()
+                database.machine = Computer.__table__
+                database.config = types.SimpleNamespace(filter_on=None)
+                self.assertEqual(
+                    {row.id for row in database.getMachineByHostname(
+                        "imaging_module", "machine"
+                    )}, {1, 2},
+                )
+                entity_filter = Mock(side_effect=lambda query, ctx: query.filter(
+                    Computer.entities_id == 5
+                ))
+                setattr(database, "_%s__filter_on_entity" % version, entity_filter)
+                self.assertEqual(
+                    [row.id for row in database.getMachineByHostname(
+                        "user-context", "machine"
+                    )], [2],
+                )
+                entity_filter.assert_called_once()
 
 
 class TestDyngroupAccess(unittest.TestCase):

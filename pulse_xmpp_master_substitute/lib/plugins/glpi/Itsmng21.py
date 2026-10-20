@@ -4016,7 +4016,8 @@ class Itsmng21(DatabaseHelper):
             self.machine.c.is_template == 0
         )
         query = self.__filter_on(query)
-        query = self.__filter_on_entity(query, ctx)
+        if ctx != "imaging_module":
+            query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.machine.c.name == hostname)
         ret = query.all()
         session.close()

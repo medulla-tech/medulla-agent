@@ -43,7 +43,7 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.20", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.21", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 _RUNTIME_IDENTITY_LOGGED = False
 INVENTORY_MACHINE_LOOKUP_RETRIES = 4
 INVENTORY_MACHINE_LOOKUP_INTERVAL = 5
@@ -109,13 +109,13 @@ def _update_inventory_identity(machine, computer_id):
         DyngroupDatabase().rememberMachineIdentity(machine["id"], old_uuid, uuid)
         if old_uuid == uuid:
             return computer_id
-        result = database.updateMachineidinventory(uuid, machine["id"])
-        if result == -1:
-            raise RuntimeError("Failed to update XMPP inventory UUID")
         if old_uuid:
             result = database.replace_Organization_ad_id_inventory(old_uuid, uuid)
             if result == -1:
                 raise RuntimeError("Failed to update Organization_ad.id_inventory")
+        result = database.updateMachineidinventory(uuid, machine["id"])
+        if result == -1:
+            raise RuntimeError("Failed to update XMPP inventory UUID")
         return computer_id
     except Exception:
         logger.exception(
