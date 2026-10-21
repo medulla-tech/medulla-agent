@@ -43,7 +43,7 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.21", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.22", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 _RUNTIME_IDENTITY_LOGGED = False
 INVENTORY_MACHINE_LOOKUP_RETRIES = 4
 INVENTORY_MACHINE_LOOKUP_INTERVAL = 5
@@ -123,6 +123,20 @@ def _update_inventory_identity(machine, computer_id):
             machine["id"], old_uuid, uuid,
         )
         return -1
+
+
+def _request_inventory_convergence(computer_id, jid):
+    try:
+        DyngroupDatabase().requestInventoryConvergence("UUID%s" % computer_id)
+        logger.info(
+            "Inventory convergence requested: jid=%s uuid=UUID%s", jid, computer_id
+        )
+    except Exception:
+        logger.exception(
+            "Inventory convergence request failed: jid=%s uuid=UUID%s; "
+            "the next successful inventory will retry",
+            jid, computer_id,
+        )
 
 
 class InventoryFix:
@@ -594,6 +608,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 list_url_to_forward = [
                     x.strip() for x in xmppobject.config.url_to_forward.split(",") if x.strip()
                 ]
+                forward_results = []
                 for url in list_url_to_forward:
                     codeerror, reponse = send_content(
                         url,
@@ -602,7 +617,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         user_agent=xmppobject.config.user_agent,
                         inventory_plugin_name=xmppobject.config.inventory_plugin,
                     )
-                forward_done = bool(list_url_to_forward)
+                    forward_results.append(codeerror == 200)
+                forward_done = bool(forward_results) and all(forward_results)
             else:
                 logger.info("Forward injection disabled by glpi.enable_forward")
 
@@ -679,7 +695,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
             )
         else:
-            if not _sync_dyngroup_machine_identity(uuidglpi, machine, msg["from"]):
+            identity_synced = _sync_dyngroup_machine_identity(
+                uuidglpi, machine, msg["from"]
+            )
+            if not identity_synced:
                 XmppMasterDatabase().setlogxmpp(
                     "Dyngroup identity reconciliation failed for %s: %s -> UUID%s. "
                     "Group memberships and pending UUID links preserved; "
@@ -690,6 +709,14 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     xmppobject.boundjid.bare, xmppobject.boundjid.bare,
                 )
             _sync_inventory_entity(uuidglpi, msg["from"])
+            if identity_synced and (forward_done or module_done):
+                _request_inventory_convergence(uuidglpi, msg["from"])
+            else:
+                logger.warning(
+                    "Inventory convergence not requested: jid=%s uuid=UUID%s "
+                    "identity_synced=%s forward_done=%s module_done=%s",
+                    msg["from"], uuidglpi, identity_synced, forward_done, module_done,
+                )
 
         # save registry inventory
         try:

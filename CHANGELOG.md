@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+- [BUGFIX] Queue one revisioned convergence request per GLPI machine after successful inventory injection and identity reconciliation. Requires the coordinated MMC hourly consumer; real post-imaging acceptance remains pending.
 - [BUGFIX] Exclude deleted computers and templates from hardware UUID lookup so inventory reconciliation can select a recreated GLPI record.
 - [BUGFIX] Keep the old XMPP inventory UUID available for retry when updating its AD reference fails.
 - [BUGFIX] Align inventory hostname lookup with MAC lookup's imaging context across supported GLPI versions, retaining entity filtering for other contexts.

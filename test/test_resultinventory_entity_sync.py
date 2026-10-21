@@ -384,7 +384,7 @@ class TestEntitySync(unittest.TestCase):
 
     def run_inventory(
         self, mode="forward", computer_id=23, registry=False, dyngroup_error=False,
-        old_uuid="UUID23",
+        old_uuid="UUID23", forward_status=200, module_done=True, queue_error=False,
     ):
         """Exerce le chemin complet sans injection reseau ni temporisation."""
         database = Mock()
@@ -413,8 +413,10 @@ class TestEntitySync(unittest.TestCase):
         fixer.get.return_value = "<QUERY>INVENTORY</QUERY><DEVICEID>machine</DEVICEID>"
         self.patch_plugin("InventoryFix", Mock(return_value=fixer))
         self.patch_plugin("_log_runtime_identity_once", Mock())
-        self.patch_plugin("send_content", Mock(return_value=(200, b"")))
-        self.patch_plugin("_inject_inventory_with_glpi_xml_sync", Mock(return_value=True))
+        self.patch_plugin("send_content", Mock(return_value=(forward_status, b"")))
+        self.patch_plugin(
+            "_inject_inventory_with_glpi_xml_sync", Mock(return_value=module_done)
+        )
         self.dyngroup = Mock()
         self.dyngroup.reconcilePendingMachineIdentity.return_value = {
             "status": "updated", "merged": 0,
@@ -422,6 +424,10 @@ class TestEntitySync(unittest.TestCase):
         if dyngroup_error:
             self.dyngroup.reconcilePendingMachineIdentity.side_effect = ValueError(
                 "Dyngroup profile conflict: old_uuid=UUID23 new_uuid=UUID42 profiles=[5, 6]"
+            )
+        if queue_error:
+            self.dyngroup.requestInventoryConvergence.side_effect = RuntimeError(
+                "queue unavailable"
             )
         self.patch_plugin("DyngroupDatabase", Mock(return_value=self.dyngroup))
         xmpp = types.SimpleNamespace(
@@ -455,11 +461,38 @@ class TestEntitySync(unittest.TestCase):
                 self.dyngroup.rememberMachineIdentity.assert_called_once_with(
                     12, "UUID23", "UUID23"
                 )
+                self.dyngroup.requestInventoryConvergence.assert_called_once_with(
+                    "UUID23"
+                )
+
+    def test_recreated_identity_requests_convergence_for_new_uuid(self):
+        self.run_inventory(old_uuid="UUID6")
+        self.dyngroup.requestInventoryConvergence.assert_called_once_with("UUID23")
+
+    def test_failed_injection_does_not_request_convergence(self):
+        for mode in ("forward", "module", "both"):
+            with self.subTest(mode=mode):
+                self.run_inventory(mode=mode, forward_status=500, module_done=False)
+                self.dyngroup.requestInventoryConvergence.assert_not_called()
+
+    def test_successful_module_can_request_after_failed_forward(self):
+        self.run_inventory(mode="both", forward_status=500)
+        self.dyngroup.requestInventoryConvergence.assert_called_once_with("UUID23")
+
+    def test_profile_conflict_does_not_request_convergence(self):
+        self.run_inventory(dyngroup_error=True)
+        self.dyngroup.requestInventoryConvergence.assert_not_called()
+
+    def test_convergence_queue_failure_does_not_abort_registry_inventory(self):
+        database, glpi = self.run_inventory(queue_error=True, registry=True)
+        glpi.getRegistryCollect.assert_called()
+        glpi.addRegistryCollectContent.assert_called()
 
     def test_failed_machine_lookup_does_not_sync(self):
         database, glpi = self.run_inventory(computer_id=-1)
         glpi.getMachineEntityId.assert_not_called()
         database.sync_glpi_entities.assert_not_called()
+        self.dyngroup.requestInventoryConvergence.assert_not_called()
 
     def test_missing_machine_exception_is_reported_without_entity_sync(self):
         database, glpi = self.run_inventory(computer_id=-2)
@@ -600,7 +633,7 @@ class TestEntitySync(unittest.TestCase):
 
     def test_plugin_identity_and_version(self):
         self.assertEqual(self.plugin.plugin["NAME"], "resultinventory")
-        self.assertEqual(self.plugin.plugin["VERSION"], "1.21")
+        self.assertEqual(self.plugin.plugin["VERSION"], "1.22")
 
 
 class TestGlpiSetupUuidLookup(unittest.TestCase):
@@ -688,6 +721,7 @@ class TestDyngroupAccess(unittest.TestCase):
                 "getAllMachinesUuid", "updateNewNames", "reconcileMachineIdentity",
                 "_reconcileMachineIdentity", "ensureIdentityQueue",
                 "rememberMachineIdentity", "reconcilePendingMachineIdentity",
+                "ensureInventoryConvergenceQueue", "requestInventoryConvergence",
             ),
             {
                 "text": text, "MetaData": MetaData,
@@ -724,6 +758,23 @@ class TestDyngroupAccess(unittest.TestCase):
         self.database = self.database_class()
         self.database.engine_dyngroup_base = self.engine
         self.database.ensureIdentityQueue()
+        self.database.ensureInventoryConvergenceQueue()
+
+    def test_convergence_requests_survive_restart_and_keep_new_notifications(self):
+        self.database.requestInventoryConvergence("UUID23")
+        restarted = self.database_class()
+        restarted.engine_dyngroup_base = self.engine
+        restarted.ensureInventoryConvergenceQueue()
+        restarted.requestInventoryConvergence("UUID23")
+        with self.engine.connect() as connection:
+            rows = connection.execute(text(
+                "SELECT id, machine_uuid FROM substitute_inventory_convergence ORDER BY id"
+            )).fetchall()
+        self.assertEqual([tuple(row) for row in rows], [(1, "UUID23")])
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text(
+                "SELECT revision FROM substitute_inventory_convergence"
+            )).scalar(), 2)
 
     def test_reads_and_updates_machine_name_cache(self):
         self.assertEqual(self.database.getAllMachinesUuid(), {"UUID23": "old-name"})

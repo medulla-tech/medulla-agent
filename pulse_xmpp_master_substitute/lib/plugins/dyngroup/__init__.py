@@ -57,6 +57,7 @@ class DyngroupDatabase:
                 pool_timeout=config.dyngroup_dbpooltimeout,
             )
             self.ensureIdentityQueue()
+            self.ensureInventoryConvergenceQueue()
             self.is_activated = True
             self.logger.info("Dyngroup database connected")
             return True
@@ -115,6 +116,38 @@ class DyngroupDatabase:
                     ),
                     dict(parameters, old_uuid=old_uuid),
                 )
+
+    def ensureInventoryConvergenceQueue(self):
+        """Share durable inventory notifications with the MMC convergence worker."""
+        queue = Table(
+            "substitute_inventory_convergence",
+            MetaData(),
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("machine_uuid", String(64), nullable=False, unique=True),
+            Column("revision", Integer, nullable=False, server_default="1"),
+            mysql_engine="InnoDB",
+        )
+        queue.create(self.engine_dyngroup_base, checkfirst=True)
+
+    def requestInventoryConvergence(self, machine_uuid):
+        if not machine_uuid or not machine_uuid.startswith("UUID"):
+            raise ValueError("Inventory convergence requires a GLPI UUID")
+        with self.engine_dyngroup_base.begin() as connection:
+            if connection.dialect.name in {"mysql", "mariadb"}:
+                update = "ON DUPLICATE KEY UPDATE revision = revision + 1"
+            elif connection.dialect.name == "sqlite":
+                update = (
+                    "ON CONFLICT(machine_uuid) DO UPDATE SET revision = revision + 1"
+                )
+            else:
+                raise RuntimeError("Unsupported inventory convergence queue database")
+            connection.execute(
+                text(
+                    "INSERT INTO substitute_inventory_convergence (machine_uuid) "
+                    "VALUES (:machine_uuid) " + update
+                ),
+                {"machine_uuid": machine_uuid},
+            )
 
     def reconcilePendingMachineIdentity(self, machine_id, new_uuid, hostname):
         """Replay and clear pending links atomically with membership reconciliation."""
