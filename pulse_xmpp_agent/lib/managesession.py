@@ -183,7 +183,7 @@ class session:
         listfilesession = [
             x
             for x in glob.glob(os.path.join(self.dirsavesession, "*"))
-            if (os.path.isfile(x) and os.path.basename(x).startswith("command"))
+            if (os.path.isfile(x) and os.path.basename(x).startswith(("command", "update")))
         ]
         for filesession in listfilesession:
             os.remove(filesession)
@@ -239,7 +239,7 @@ class session:
             listfilesession = [
                 x
                 for x in glob.glob(os.path.join(self.dirsavesession, "*"))
-                if (os.path.isfile(x) and os.path.basename(x).startswith("command"))
+                if (os.path.isfile(x) and os.path.basename(x).startswith(("command", "update")))
             ]
         except Session as e:
             logging.getLogger().error("unable to read the list of session files")

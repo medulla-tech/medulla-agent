@@ -26,21 +26,6 @@ from lib.agentconffile import (
     rotation_file,
 )
 
-_import_update_linux_error = None
-_import_update_linux_traceback = None
-UpdateLinux = None
-if sys.platform.startswith("linux"):
-    try:
-        from lib.update_linux import UpdateLinux
-    except Exception as exc_lib:
-        _import_update_linux_error = exc_lib
-        _import_update_linux_traceback = traceback.format_exc()
-        try:
-            from update_linux import UpdateLinux
-        except Exception as exc_local:
-            _import_update_linux_error = exc_local
-            _import_update_linux_traceback = traceback.format_exc()
-
 import hashlib
 
 logger = logging.getLogger()
@@ -52,7 +37,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "5.5", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "5.8", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -69,18 +54,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         xmppobject.sub_updates
     except:
         xmppobject.sub_updates = jid.JID("master_upd@pulse")
-    if sys.platform.startswith("win"):
-        try:
-            send_plugin_update_windows(xmppobject)
-        except Exception as e:
-            logger.error("An error occured while calling the plugin:  %s" % str(e))
-            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
-    elif sys.platform.startswith("linux"):
-        try:
-            send_plugin_update_linux(xmppobject)
-        except Exception as e:
-            logger.error("An error occured while calling the plugin:  %s" % str(e))
-            logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
+    if sys.platform.startswith("win") or sys.platform.startswith("linux"):
+        name = "updates_windows" if sys.platform.startswith("win") else "updates_linux"
+        utils.call_plugin(name, xmppobject, name, sessionid, {}, message, dataerreur)
 
     boolchange = True
     namefilexml = ""
@@ -1310,75 +1286,3 @@ def printer_string(
     if status is not None:
         xmlprinter = "%s\n<STATUS>%s</STATUS>" % (xmlprinter, status)
     return "%s\n</PRINTERS>" % (xmlprinter)
-
-
-def send_plugin_update_windows(xmppobject):
-    sessioniddata = utils.getRandomName(6, "update_windows")
-    try:
-        update_information = {
-            "action": "update_windows",
-            "sessionid": sessioniddata,
-            "data": {"system_info": utils.offline_search_kb().get()},
-            "ret": 0,
-            "base64": False,
-        }
-
-        xmppobject.send_message(
-            mto=xmppobject.sub_updates,
-            mbody=json.dumps(update_information),
-            mtype="chat",
-        )
-    except Exception as e:
-        logger.error("An error occured while calling the plugin:  %s" % str(e))
-        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
-
-
-def send_plugin_update_linux(xmppobject):
-    if not sys.platform.startswith("linux"):
-        logger.debug("send_plugin_update_linux ignored on non-linux platform")
-        return
-
-    if UpdateLinux is None:
-        logger.warning(
-            "Module UpdateLinux indisponible: update_linux non envoye (inventaire principal maintenu). Cause import: %s",
-            repr(_import_update_linux_error),
-        )
-        if _import_update_linux_traceback:
-            logger.error(
-                "Traceback import UpdateLinux:\n%s",
-                _import_update_linux_traceback,
-            )
-        return
-
-    sessioniddata = utils.getRandomName(6, "update_linux")
-    updater = UpdateLinux(
-        dry_run=False,            # execution reelle
-        intranet_security=False   # depots normaux
-    )
-    logger.info(f"Distribution detectee : {updater.distro_name}\n")
-
-    # ============================
-    # 1. Fetch updates
-    # ============================
-    logger.info("[1] Recherche des mises a jour...")
-    infosys = updater.fetch_updates()
-    json_report = updater.to_json(return_dict=True)
-    # logger.info(f"[1] Recherche des mises a jour... {json_report}")
-
-    try:
-        update_information = {
-            "action": "update_linux",
-            "sessionid": sessioniddata,
-             "data": {"system_info": updater.to_json(base64_encode=True)},
-            "ret": 0,
-            "base64": False,
-        }
-        logger.info(f"send_message... {xmppobject.sub_updates}")
-        xmppobject.send_message(
-            mto=xmppobject.sub_updates,
-            mbody=json.dumps(update_information),
-            mtype="chat",
-        )
-    except Exception as e:
-        logger.error("An error occured while calling the plugin:  %s" % str(e))
-        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))

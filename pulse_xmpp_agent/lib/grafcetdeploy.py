@@ -385,9 +385,31 @@ class grafcet:
         )
         return True
 
+    def __session_ticks__(self):
+        # session counters are decremented once per handlemanagesession period
+        period = getattr(self.objectxmpp, "laps_time_handlemanagesession", 20)
+        try:
+            timeout = int(float(self.workingstep.get("timeout", 0)))
+        except (TypeError, ValueError):
+            timeout = 0
+        return 180 + -(-max(timeout, 0) // period)
+
+    def __keep_session_alive__(self):
+        try:
+            objsession = self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
+            if objsession is None:
+                return
+            ticks = self.__session_ticks__()
+            if ticks > objsession.timevalid:
+                self.objectxmpp.session.reactualisesession(self.sessionid, ticks)
+                objsession.sauvesession()
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
     def __execstep__(self):
         # call function self.workingstep['action']
         # execute step current
+        self.__keep_session_alive__()
         method = getattr(self, self.workingstep["action"])
         method()
 
@@ -722,21 +744,9 @@ class grafcet:
         if "@@@NULL_DEVICE@@@" in cmd:
             cmd = cmd.replace("@@@NULL_DEVICE@@@", os.devnull)
 
-        # Preferred placeholder for Linux updates.
-        if "@@@UPDATE_LINUX@@@" in cmd:
-            cmd = cmd.replace(
-                "@@@UPDATE_LINUX@@@", "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
-            )
-
-        # Backward-compatibility alias.
-        if "@@@DEPLOY@@@" in cmd:
-            cmd = cmd.replace(
-                "@@@DEPLOY@@@", "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
-            )
-
         # Generic plugin call: @@@PLUGIN_CALL_<name>@@@ or @@@PLUGIN_CALL_"<name>"@@@
         # Case-insensitive. The plugin name is normalized to lowercase.
-        # Example: @@@PLUGIN_CALL_update_linux_command@@@
+        # Example: @@@PLUGIN_CALL_my_plugin@@@
         #          @@@PLUGIN_CALL_"My_Plugin"@@@
         for _m in re.finditer(r'@@@PLUGIN_CALL_"?([^@"]+?)"?@@@', cmd, re.IGNORECASE):
             _raw_name = _m.group(1).strip().strip('"').strip().lower()
@@ -918,241 +928,11 @@ class grafcet:
             merged.update(self.advanced_param_deploy)
         return json.dumps(merged, separators=(",", ":"))
 
-    def __extract_marker_payload(self, text):
-        """Extract JSON payload from @@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@ marker.
-        
-        Returns dict extracted from JSON after marker, or empty dict if not found/invalid.
-        """
-        marker = "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@"
-        if marker not in text:
-            return {}
-        
-        try:
-            # Find marker position and extract content after it
-            idx = text.find(marker)
-            content = text[idx + len(marker):].strip()
-            
-            # Try to parse as JSON
-            if content.startswith("{"):
-                # Extract JSON object (handle potential trailing text)
-                brace_count = 0
-                json_end = 0
-                for i, char in enumerate(content):
-                    if char == "{":
-                        brace_count += 1
-                    elif char == "}":
-                        brace_count -= 1
-                        if brace_count == 0:
-                            json_end = i + 1
-                            break
-                
-                if json_end > 0:
-                    json_str = content[:json_end]
-                    return json.loads(json_str)
-        except Exception as exc:
-            logger.warning("Failed to extract marker payload: %s", str(exc))
-        
-        return {}
-
-    def __merged_update_linux_payload(self, marker_payload=None):
-        """Return merged Linux-update payload with marker priority.
-
-        Merge order:
-        1. dynamic_param_deploy
-        2. advanced_param_deploy
-        3. marker_payload
-        """
-        merged_dict = {}
-        if isinstance(self.dynamic_param_deploy, dict):
-            merged_dict.update(copy.deepcopy(self.dynamic_param_deploy))
-        if isinstance(self.advanced_param_deploy, dict):
-            merged_dict.update(copy.deepcopy(self.advanced_param_deploy))
-        if isinstance(marker_payload, dict):
-            merged_dict.update(copy.deepcopy(marker_payload))
-        return merged_dict
-
-    def __log_update_linux_resolution(self, resolved_command, marker_payload, merged_payload):
-        """Log the resolved Linux-update command and payload in deployment logs."""
-        try:
-            step_value = self.workingstep.get("step", 0)
-            self.objectxmpp.xmpplog(
-                "update_linux_command resolved_command=" + resolved_command,
-                type="deploy",
-                sessionname=self.sessionid,
-                priority=step_value,
-                action="xmpplog",
-                who=self.objectxmpp.boundjid.bare,
-                how="",
-                why=self.data["name"],
-                module="Deployment | Execution | Update Linux",
-                date=None,
-                fromuser=self.data.get("login", ""),
-                touser="",
-            )
-            self.objectxmpp.xmpplog(
-                "update_linux_command marker_payload="
-                + json.dumps(marker_payload or {}, sort_keys=True),
-                type="deploy",
-                sessionname=self.sessionid,
-                priority=step_value,
-                action="xmpplog",
-                who=self.objectxmpp.boundjid.bare,
-                how="",
-                why=self.data["name"],
-                module="Deployment | Execution | Update Linux",
-                date=None,
-                fromuser=self.data.get("login", ""),
-                touser="",
-            )
-            self.objectxmpp.xmpplog(
-                "update_linux_command merged_payload="
-                + json.dumps(merged_payload or {}, sort_keys=True),
-                type="deploy",
-                sessionname=self.sessionid,
-                priority=step_value,
-                action="xmpplog",
-                who=self.objectxmpp.boundjid.bare,
-                how="",
-                why=self.data["name"],
-                module="Deployment | Execution | Update Linux",
-                date=None,
-                fromuser=self.data.get("login", ""),
-                touser="",
-            )
-        except Exception:
-            logger.debug("Unable to emit update_linux resolution logs", exc_info=True)
-
-    def __dispatch_update_linux_command(self, marker_payload=None):
-        """Dispatch Linux update execution through dedicated machine plugin.
-        
-        Args:
-            marker_payload: dict extracted from marker JSON (has highest priority)
-        """
-        if marker_payload is None:
-            marker_payload = {}
-        
-        msg = {
-            "from": self.objectxmpp.boundjid.bare,
-            "to": self.objectxmpp.boundjid.bare,
-            "type": "chat",
-        }
-        
-        # Merge payloads with priority: marker > advanced > dynamic
-        merged_dict = self.__merged_update_linux_payload(marker_payload)
-        
-        dynamic_param_deploy_json = self.__dynamic_param_deploy_json()
-        advanced_param_deploy_json = self.__advanced_param_deploy_json()
-        merged_deploy_params_json = json.dumps(merged_dict) if merged_dict else "{}"
-        
-        payload_data = {
-            "command_parameters": copy.deepcopy(self.dynamic_param_deploy),
-            "dynamic_param_deploy": copy.deepcopy(self.dynamic_param_deploy),
-            "advanced_param_deploy": copy.deepcopy(self.advanced_param_deploy),
-            "marker_payload": copy.deepcopy(marker_payload),
-            "payload": merged_deploy_params_json,
-            "deploy_step": self.workingstep.get("step", 0),
-            "source": "grafcetdeploy",
-        }
-        logger.info("DEBUG grafcetdeploy: payload_data being sent to plugin: %s", 
-                    json.dumps(payload_data, indent=4))
-        dataerror = {
-            "action": "resultupdate_linux_command",
-            "sessionid": self.sessionid,
-            "ret": 255,
-            "base64": False,
-            "data": {"msg": "ERROR : update_linux_command"},
-        }
-        return call_plugin_sequentially(
-            "update_linux_command",
-            self.objectxmpp,
-            "update_linux_command",
-            self.sessionid,
-            payload_data,
-            msg,
-            dataerror,
-        )
-
-    @staticmethod
-    def __plugin_dispatch_return_code(dispatch_result, default_return_code=255):
-        """Return an integer code extracted from a plugin dispatch result."""
-        if not isinstance(dispatch_result, dict):
-            return default_return_code
-        try:
-            return int(dispatch_result.get("ret", default_return_code))
-        except (TypeError, ValueError):
-            return default_return_code
-
-    def __handle_plugin_dispatch_failure(self, plugin_name, return_code):
-        """Route plugin marker failures to an explicit error path when needed."""
-        if return_code == 0:
-            return False
-
-        if any(key.startswith("gotoreturncode@") for key in self.workingstep):
-            return False
-
-        if "error" in self.workingstep:
-            self.__search_Next_step_int__(self.workingstep["error"])
-            self.__execstep__()
-            return True
-
-        if self.__jump_to_label__("END_ERROR"):
-            return True
-
-        self.terminate(
-            -1,
-            False,
-            f"end error {plugin_name} step {self.workingstep['step']} rc={return_code}",
-        )
-        return True
-
-    def __handle_update_linux_marker(self):
-        """Handle Linux update marker by dispatching dedicated plugin and finalizing the step."""
-        # Extract payload from marker in command/script
-        resolved_command = self.workingstep.get("command", "") or self.workingstep.get(
-            "script", ""
-        )
-        marker_payload = self.__extract_marker_payload(
-            resolved_command
-        )
-        merged_payload = self.__merged_update_linux_payload(marker_payload)
-        self.__log_update_linux_resolution(
-            resolved_command=resolved_command,
-            marker_payload=marker_payload,
-            merged_payload=merged_payload,
-        )
-        
-        # Dispatch with extracted marker payload (highest priority)
-        dispatch_result = self.__dispatch_update_linux_command(marker_payload=marker_payload)
-        self.__action_completed__(self.workingstep)
-        plugin_return_code = self.__plugin_dispatch_return_code(dispatch_result)
-        self.workingstep["codereturn"] = plugin_return_code
-        
-        # Log the payload used
-        logged_payload = merged_payload
-        result_lines = [
-            "update_linux_command plugin executed",
-            resolved_command,
-            json.dumps(logged_payload),
-        ]
-        if isinstance(dispatch_result, dict):
-            result_lines.append(json.dumps(dispatch_result, sort_keys=True))
-        self.__resultinfo__(
-            self.workingstep,
-            result_lines,
-        )
-        self.steplog()
-        if self.__handle_plugin_dispatch_failure("update_linux_command", plugin_return_code):
-            return True
-        if self.__Go_to_by_jump_succes_and_error__(plugin_return_code):
-            return True
-        self.__Etape_Next_in__()
-        return True
-
     def __handle_plugin_call_marker(self, plugin_name):
         """Dispatch any plugin by name via @@@PLUGIN_CALL_<name>@@@ grafcet marker.
 
-        The plugin receives the same payload structure as update_linux_command:
-        marker_payload, command_parameters, dynamic_param_deploy, advanced_param_deploy.
+        The plugin receives marker_payload, command_parameters,
+        dynamic_param_deploy and advanced_param_deploy.
 
         Args:
             plugin_name (str): Normalized (lowercase) plugin name to call.
@@ -1160,10 +940,6 @@ class grafcet:
         Returns:
             True after dispatching and finalizing the step.
         """
-        marker_payload = self.__extract_marker_payload(
-            self.workingstep.get("command", "") or self.workingstep.get("script", "")
-        )
-
         msg = {
             "from": self.objectxmpp.boundjid.bare,
             "to": self.objectxmpp.boundjid.bare,
@@ -1174,7 +950,7 @@ class grafcet:
             "command_parameters": copy.deepcopy(self.dynamic_param_deploy),
             "dynamic_param_deploy": copy.deepcopy(self.dynamic_param_deploy),
             "advanced_param_deploy": copy.deepcopy(self.advanced_param_deploy),
-            "marker_payload": copy.deepcopy(marker_payload),
+            "marker_payload": {},
             "payload": self.__merged_deploy_params_json(),
             "deploy_step": self.workingstep.get("step", 0),
             "source": "grafcetdeploy",
@@ -1205,20 +981,7 @@ class grafcet:
         self.workingstep["codereturn"] = 0
         self.__resultinfo__(
             self.workingstep,
-            [f"PLUGIN_CALL {plugin_name} executed", json.dumps(marker_payload)],
-        )
-        self.steplog()
-        if self.__Go_to_by_jump_succes_and_error__(0):
-            return True
-        self.__Etape_Next_in__()
-        return True
-        logged_payload = marker_payload or (self.dynamic_param_deploy if self.dynamic_param_deploy else {})
-        self.__resultinfo__(
-            self.workingstep,
-            [
-                "update_linux_command plugin executed",
-                json.dumps(logged_payload),
-            ],
+            [f"PLUGIN_CALL {plugin_name} executed", json.dumps({})],
         )
         self.steplog()
         if self.__Go_to_by_jump_succes_and_error__(0):
@@ -2542,10 +2305,6 @@ class grafcet:
                 self.workingstep["command"]
             )
 
-            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["command"]:
-                if self.__handle_update_linux_marker():
-                    return
-
             # Generic PLUGIN_CALL dispatch
             _pc_match = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
                                   self.workingstep["command"])
@@ -2637,10 +2396,6 @@ class grafcet:
             self.workingstep["command"] = self.replaceTEMPLATE(
                 self.workingstep["command"]
             )
-
-            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["command"]:
-                if self.__handle_update_linux_marker():
-                    return
 
             # Generic PLUGIN_CALL dispatch
             _pc_match2 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
@@ -2829,10 +2584,6 @@ class grafcet:
             self.workingstep["script"] = self.replaceTEMPLATE(
                 self.workingstep["script"]
             )
-
-            if "@@@DEPLOY_ACTION_UPDATE_LINUX_COMMAND@@@" in self.workingstep["script"]:
-                if self.__handle_update_linux_marker():
-                    return
 
             # Generic PLUGIN_CALL dispatch
             _pc_match3 = re.search(r"@@@DEPLOY_ACTION_PLUGIN_CALL_([^@]+)@@@",
@@ -3260,6 +3011,13 @@ class grafcet:
 
             # rewrite session
             objsession = self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
+            if objsession is None:
+                logger.warning(f"session {self.sessionid} missing before restart: recreated")
+                objsession = self.objectxmpp.session.createsessiondatainfo(
+                    self.sessionid,
+                    datasession=self.datasend,
+                    timevalid=self.__session_ticks__(),
+                )
             objsession.setdatasession(self.datasend)
             # Restart machine based on OS
             self.steplog()

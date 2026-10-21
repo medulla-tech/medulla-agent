@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .utils import decode_strconsole, encode_strconsole
+from .utils import decode_strconsole, encode_strconsole, kill_process_tree
 import sys
 import os
 import json
@@ -165,26 +165,38 @@ class process_on_end_send_message_xmpp:
 
         if not (step is None or isinstance(step, int)):
             logging.error("Error Descriptor Step is not an Integer")
-            return -1
+            return -1, ["Error Descriptor Step is not an Integer"]
         if tosucces is None and toerror is None:
             logging.error("No agent to process result from queue")
-            return -1
+            return -1, ["No agent to process result from queue"]
 
         try:
-            # Capture of the command output
-            result = subprocess.run(
-                command, shell=True, timeout=timeout, capture_output=True, text=True
+            proc = subprocess.Popen(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
             )
-            code_return = result.returncode
-            output_lines = result.stdout.splitlines() if result.stdout else []
-            return code_return, output_lines
+            try:
+                stdout, _ = proc.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                logging.error(f"Command '{command}' timed out after {timeout} seconds.")
+                kill_process_tree(proc.pid, parentprocess=True)
+                proc.kill()
+                try:
+                    stdout, _ = proc.communicate(timeout=5)
+                except subprocess.TimeoutExpired:
+                    stdout = ""
+                output_lines = stdout.splitlines() if stdout else []
+                output_lines.append(f"timeout after {timeout} s")
+                return -15, output_lines
+            output_lines = stdout.splitlines() if stdout else []
+            return proc.returncode, output_lines
 
-        except subprocess.TimeoutExpired:
-            logging.error(f"Command '{command}' timed out after {timeout} seconds.")
-            return -2
         except Exception as e:
             logging.error(f"Error executing command '{command}': {str(e)}")
-            return -1
+            return -1, [f"Error executing command : {str(e)}"]
 
     def processstepcommand(self, command, queue_out_session, messagestr, timeout, step):
         logging.getLogger().error("########processstepcommand")
