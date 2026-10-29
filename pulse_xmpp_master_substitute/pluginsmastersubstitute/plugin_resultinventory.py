@@ -21,6 +21,8 @@ import urllib.request
 import urllib.error
 import time
 import json
+import subprocess
+from xml.etree import ElementTree
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.dyngroup import DyngroupDatabase
@@ -43,10 +45,12 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.22", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.23", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 _RUNTIME_IDENTITY_LOGGED = False
 INVENTORY_MACHINE_LOOKUP_RETRIES = 4
 INVENTORY_MACHINE_LOOKUP_INTERVAL = 5
+IMAGING_CONVERGENCE_SCRIPT = "/usr/sbin/pulse2-convergence-add-host"
+IMAGING_CONVERGENCE_TIMEOUT = 300
 
 
 class InventoryMachineNotFound(Exception):
@@ -137,6 +141,64 @@ def _request_inventory_convergence(computer_id, jid):
             "the next successful inventory will retry",
             jid, computer_id,
         )
+
+
+def _is_davos_inventory(content):
+    try:
+        root = ElementTree.fromstring(content)
+    except ElementTree.ParseError:
+        logger.exception("Cannot inspect inventory XML for the Davos marker")
+        return False
+    return any(
+        node.tag.rsplit("}", 1)[-1] == "ARCHNAME"
+        and (node.text or "").strip() == "davos-imaging-diskless-env"
+        for node in root.iter()
+    )
+
+
+def _should_launch_inventory_convergence(config, content):
+    mode = getattr(config, "inventory_convergence_mode", "off")
+    if not isinstance(mode, str) or mode.strip().lower() not in {"off", "davos", "all"}:
+        logger.error(
+            "Invalid inventory_convergence_mode=%r; expected off, davos or all; "
+            "targeted script not called",
+            mode,
+        )
+        return False
+    mode = mode.strip().lower()
+    return mode == "all" or (mode == "davos" and _is_davos_inventory(content))
+
+
+def _launch_imaging_convergence(computer_id, jid):
+    machine_uuid = "UUID%s" % computer_id
+    try:
+        result = subprocess.run(
+            [IMAGING_CONVERGENCE_SCRIPT, machine_uuid],
+            capture_output=True,
+            text=True,
+            timeout=IMAGING_CONVERGENCE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        logger.exception(
+            "Imaging convergence call failed: jid=%s uuid=%s; "
+            "execution status unknown, no immediate retry",
+            jid, machine_uuid,
+        )
+        return
+    if result.returncode != 0:
+        logger.error(
+            "Imaging convergence script failed: jid=%s uuid=%s exit=%s stdout=%s stderr=%s; "
+            "no immediate retry",
+            jid, machine_uuid, result.returncode,
+            result.stdout.strip(), result.stderr.strip(),
+        )
+        return
+    logger.info(
+        "Imaging convergence script completed: jid=%s uuid=%s result=%s; "
+        "installation completion not implied",
+        jid, machine_uuid, result.stdout.strip(),
+    )
 
 
 class InventoryFix:
@@ -537,6 +599,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         content = convert.convert_bytes_datetime_to_string(
             zlib.decompress(base64.b64decode(data["inventory"]))
         )
+        launch_convergence = _should_launch_inventory_convergence(xmppobject.config, content)
         QUERY = "FAILS"
         DEVICEID = ""
         try:
@@ -711,6 +774,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             _sync_inventory_entity(uuidglpi, msg["from"])
             if identity_synced and (forward_done or module_done):
                 _request_inventory_convergence(uuidglpi, msg["from"])
+                if launch_convergence:
+                    _launch_imaging_convergence(uuidglpi, msg["from"])
             else:
                 logger.warning(
                     "Inventory convergence not requested: jid=%s uuid=UUID%s "

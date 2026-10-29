@@ -505,6 +505,10 @@ class confParameter:
                 "glpi", "inventory_injection_mode"
             )
 
+        self.inventory_convergence_mode = confiobject.get(
+            "glpi", "inventory_convergence_mode", fallback="off"
+        ).strip().lower()
+
         self.inventory_enable_forward_ocsserver = False
         if confiobject.has_option("glpi", "enable_forward_ocsserver"):
             self.inventory_enable_forward_ocsserver = confiobject.getboolean(
