@@ -385,6 +385,7 @@ class TestEntitySync(unittest.TestCase):
     def run_inventory(
         self, mode="forward", computer_id=23, registry=False, dyngroup_error=False,
         old_uuid="UUID23", forward_status=200, module_done=True, queue_error=False,
+        davos=False, script_error=None, convergence_mode="davos",
     ):
         """Exerce le chemin complet sans injection reseau ni temporisation."""
         database = Mock()
@@ -410,10 +411,26 @@ class TestEntitySync(unittest.TestCase):
                 Mock(side_effect=self.plugin.InventoryMachineNotFound("not found")),
             )
         fixer = Mock()
-        fixer.get.return_value = "<QUERY>INVENTORY</QUERY><DEVICEID>machine</DEVICEID>"
+        marker = (
+            "<ARCHNAME>davos-imaging-diskless-env</ARCHNAME>" if davos else ""
+        )
+        fixer.get.return_value = (
+            "<REQUEST><QUERY>INVENTORY</QUERY><DEVICEID>machine</DEVICEID>"
+            "<CONTENT><HARDWARE>%s</HARDWARE></CONTENT></REQUEST>" % marker
+        )
         self.patch_plugin("InventoryFix", Mock(return_value=fixer))
         self.patch_plugin("_log_runtime_identity_once", Mock())
         self.patch_plugin("send_content", Mock(return_value=(forward_status, b"")))
+        self.imaging_run = Mock(
+            return_value=types.SimpleNamespace(
+                returncode=0, stdout="Commands with an added target: [26]", stderr=""
+            )
+        )
+        self.imaging_run.side_effect = script_error
+        self.patch_plugin("subprocess", types.SimpleNamespace(
+            run=self.imaging_run,
+            TimeoutExpired=__import__("subprocess").TimeoutExpired,
+        ))
         self.patch_plugin(
             "_inject_inventory_with_glpi_xml_sync", Mock(return_value=module_done)
         )
@@ -435,6 +452,7 @@ class TestEntitySync(unittest.TestCase):
                 inventory_verbose=False, xmlfixplugindir="/unused", xmldumpactive=False,
                 inventory_injection_mode=mode, inventory_enable_forward=True,
                 url_to_forward="http://unused", user_agent="test", inventory_plugin="",
+                inventory_convergence_mode=convergence_mode,
             ),
             boundjid=types.SimpleNamespace(bare="substitute@example"),
         )
@@ -447,6 +465,121 @@ class TestEntitySync(unittest.TestCase):
             self.plugin.action(xmpp, "resultinventory", "session", payload,
                                {"from": "machine@example"}, 0, {})
         return database, glpi
+
+    def test_davos_marker_is_an_xml_archname_value(self):
+        examples = (
+            ("<REQUEST><ARCHNAME>davos-imaging-diskless-env</ARCHNAME></REQUEST>", True),
+            ("<REQUEST><ARCHNAME> davos-imaging-diskless-env </ARCHNAME></REQUEST>", True),
+            ('<r xmlns="urn:inventory"><ARCHNAME>davos-imaging-diskless-env</ARCHNAME></r>', True),
+            ("<REQUEST><COMMENT>davos-imaging-diskless-env</COMMENT></REQUEST>", False),
+            ("<REQUEST><ARCHNAME>x86_64</ARCHNAME></REQUEST>", False),
+            ("<REQUEST/>", False),
+        )
+        for xml, expected in examples:
+            with self.subTest(xml=xml):
+                self.assertEqual(self.plugin._is_davos_inventory(xml), expected)
+        with self.assertLogs(level="ERROR"):
+            self.assertFalse(self.plugin._is_davos_inventory("<broken"))
+
+    def test_convergence_script_modes_and_missing_parameter(self):
+        marked = "<REQUEST><ARCHNAME>davos-imaging-diskless-env</ARCHNAME></REQUEST>"
+        plain = "<REQUEST/>"
+        for mode, xml, expected in (
+            ("off", marked, False), ("davos", marked, True),
+            ("davos", plain, False), ("all", plain, True),
+            ("all", marked, True), (" ALL ", plain, True),
+        ):
+            with self.subTest(mode=mode, xml=xml):
+                config = types.SimpleNamespace(inventory_convergence_mode=mode)
+                self.assertEqual(
+                    self.plugin._should_launch_inventory_convergence(config, xml), expected
+                )
+        self.assertFalse(self.plugin._should_launch_inventory_convergence(
+            types.SimpleNamespace(), marked
+        ))
+        for invalid in ("", "mastering", "yes", None, True):
+            with self.subTest(invalid=invalid), self.assertLogs(level="ERROR"):
+                self.assertFalse(self.plugin._should_launch_inventory_convergence(
+                    types.SimpleNamespace(inventory_convergence_mode=invalid), marked
+                ))
+
+    def test_off_does_not_call_script_even_with_marker(self):
+        self.run_inventory(davos=True, convergence_mode="off")
+        self.imaging_run.assert_not_called()
+        self.dyngroup.requestInventoryConvergence.assert_called_once_with("UUID23")
+
+    def test_all_calls_script_without_marker_but_requires_injection(self):
+        self.run_inventory(convergence_mode="all")
+        self.imaging_run.assert_called_once()
+        self.run_inventory(convergence_mode="all", forward_status=500)
+        self.imaging_run.assert_not_called()
+
+    def test_davos_inventory_calls_script_with_resolved_glpi_id_in_all_modes(self):
+        for mode in ("forward", "module", "both"):
+            with self.subTest(mode=mode):
+                self.run_inventory(mode=mode, davos=True)
+                self.imaging_run.assert_called_once_with(
+                    ["/usr/sbin/pulse2-convergence-add-host", "UUID23"],
+                    capture_output=True, text=True, timeout=300, check=False,
+                )
+                self.dyngroup.requestInventoryConvergence.assert_called_once_with("UUID23")
+
+    def test_unmarked_inventory_does_not_call_script(self):
+        self.run_inventory()
+        self.imaging_run.assert_not_called()
+        self.dyngroup.requestInventoryConvergence.assert_called_once_with("UUID23")
+
+    def test_davos_call_requires_successful_injection_and_identity(self):
+        for options in (
+            {"forward_status": 500},
+            {"mode": "module", "module_done": False},
+            {"mode": "both", "module_done": False, "forward_status": 500},
+            {"dyngroup_error": True},
+            {"computer_id": -1},
+            {"computer_id": -2},
+        ):
+            with self.subTest(options=options):
+                self.run_inventory(davos=True, **options)
+                self.imaging_run.assert_not_called()
+
+    def test_davos_call_can_use_successful_module_when_forward_fails(self):
+        self.run_inventory(davos=True, mode="both", forward_status=500)
+        self.imaging_run.assert_called_once()
+
+    def test_davos_call_preserves_registry_when_script_fails(self):
+        database, glpi = self.run_inventory(
+            davos=True, registry=True, script_error=FileNotFoundError("script missing"),
+        )
+        self.imaging_run.assert_called_once()
+        glpi.addRegistryCollectContent.assert_called_once()
+
+    def test_imaging_script_errors_are_logged_without_automatic_retry(self):
+        import subprocess
+        failures = (
+            FileNotFoundError("script missing"),
+            PermissionError("console not accessible"),
+            subprocess.TimeoutExpired("script", 300),
+        )
+        for failure in failures:
+            run = Mock(side_effect=failure)
+            self.patch_plugin("subprocess", types.SimpleNamespace(
+                run=run, TimeoutExpired=subprocess.TimeoutExpired,
+            ))
+            with self.subTest(failure=failure), self.assertLogs(level="ERROR"):
+                self.plugin._launch_imaging_convergence(23, "machine@example")
+            run.assert_called_once()
+
+    def test_imaging_script_nonzero_exit_is_not_reported_as_success(self):
+        self.patch_plugin("subprocess", types.SimpleNamespace(
+            run=Mock(return_value=types.SimpleNamespace(
+                returncode=1, stdout="auth OK", stderr="method unavailable",
+            )),
+            TimeoutExpired=__import__("subprocess").TimeoutExpired,
+        ))
+        with self.assertLogs(level="ERROR") as logs:
+            self.plugin._launch_imaging_convergence(23, "machine@example")
+        self.assertIn("method unavailable", "\n".join(logs.output))
+        self.assertIn("exit=1", "\n".join(logs.output))
 
     def test_already_correct_uuid_reaches_sync_in_all_modes(self):
         for mode in ("forward", "module", "both"):
@@ -633,7 +766,7 @@ class TestEntitySync(unittest.TestCase):
 
     def test_plugin_identity_and_version(self):
         self.assertEqual(self.plugin.plugin["NAME"], "resultinventory")
-        self.assertEqual(self.plugin.plugin["VERSION"], "1.22")
+        self.assertEqual(self.plugin.plugin["VERSION"], "1.23")
 
 
 class TestGlpiSetupUuidLookup(unittest.TestCase):
