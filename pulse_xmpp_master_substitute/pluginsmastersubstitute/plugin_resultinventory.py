@@ -4,13 +4,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # file : pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_resultinventory.py
 
-"""Reception des inventaires et synchronisation des entites GLPI.
-
-Apres identification de la machine dans GLPI, l'entite effective est
-controlee : si glpi_entity manque ou differe de local_glpi_entities
-(source de verite), une synchronisation complete est lancee.
-"""
-
 import sys
 import os
 import gzip
@@ -42,28 +35,8 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.19", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.18", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 _RUNTIME_IDENTITY_LOGGED = False
-
-
-def _sync_inventory_entity(computer_id, jid):
-    """Journalise une erreur de synchro sans interrompre l'inventaire registre."""
-    try:
-        entity_id = Glpi().getMachineEntityId(computer_id)
-        result = XmppMasterDatabase().sync_glpi_entities(entity_id)
-        logger.debug(
-            "Inventory entity check: jid=%s computer_id=%s entity_id=%s result=%s",
-            jid,
-            computer_id,
-            entity_id,
-            result,
-        )
-        return result
-    except Exception:
-        logger.exception(
-            "Inventory entity sync failed: jid=%s computer_id=%s", jid, computer_id
-        )
-        return {"status": "error"}
 
 
 class InventoryFix:
@@ -263,8 +236,7 @@ def _log_runtime_identity_once(xmppobject, injection_mode):
     glpi_dbuser = getattr(xmppobject.config, "glpi_dbuser", "<unset>")
 
     logger.info(
-        "%s runtime identity: version=%s file=%s mode=%s enable_forward=%s glpi_db=%s:%s/%s user=%s",
-        plugin["NAME"],
+        "resultinventory runtime identity: version=%s file=%s mode=%s enable_forward=%s glpi_db=%s:%s/%s user=%s",
         plugin["VERSION"],
         os.path.abspath(__file__),
         injection_mode,
@@ -614,8 +586,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
                 xmppobject.boundjid.bare,
             )
-        else:
-            _sync_inventory_entity(uuidglpi, msg["from"])
 
         # save registry inventory
         try:
