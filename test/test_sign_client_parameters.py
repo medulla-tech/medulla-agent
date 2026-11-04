@@ -45,7 +45,7 @@ class TestSignClientParameters(unittest.TestCase):
         os.mkdir(self.certificates)
         for name in CONFIG_FILES:
             self.write(os.path.join(self.config, name), name)
-        for name in CERTIFICATE_FILES:
+        for name in CERTIFICATE_FILES + ("revocations.json", "revocations.sig"):
             self.write(os.path.join(self.certificates, name), name)
         self.key, self.certificate = self.new_certificate("server", "medulla.example.test")
 
@@ -69,7 +69,8 @@ class TestSignClientParameters(unittest.TestCase):
         return subprocess.run(
             ["bash", SCRIPT, "--organisation=" + organisation, "--download-tag=" + download_tag,
              "--config-dir=" + self.config,
-             "--certificates-dir=" + self.certificates, "--key=" + (key or self.key),
+             "--certificates-dir=" + self.certificates, "--revocations-dir=" + self.certificates,
+             "--key=" + (key or self.key),
              "--certificate=" + (certificate or self.certificate), "--output=" + self.output],
             capture_output=True, text=True,
         )
@@ -89,14 +90,19 @@ class TestSignClientParameters(unittest.TestCase):
         self.assertEqual(self.sign().returncode, 0)
         self.assertEqual(
             sorted(os.listdir(os.path.join(self.output, "client-a"))),
-            ["parameters.sig", "parameters.tar", "server.crt"],
+            ["parameters.sig", "parameters.tar", "revocations.json", "revocations.sig", "server.crt"],
         )
 
     def test_manifest_describes_the_server_and_the_organisation(self):
         self.sign()
         self.assertEqual(
             self.manifest(),
-            {"server": "medulla.example.test", "organisation": "client-a", "version": 1},
+            {
+                "server": "medulla.example.test",
+                "organisation": "client-a",
+                "download_tag": "client-a",
+                "version": 1,
+            },
         )
 
     def test_archive_holds_all_the_parameters(self):
@@ -196,6 +202,10 @@ class TestSignClientParameters(unittest.TestCase):
 
     def test_missing_key_is_refused(self):
         self.assertFails(self.sign(key=self.path("missing.key")), "Cannot read the signing key")
+
+    def test_missing_revocation_list_is_refused(self):
+        os.remove(os.path.join(self.certificates, "revocations.sig"))
+        self.assertFails(self.sign(), "Cannot read the revocation list")
 
     def test_missing_parameter_file_publishes_nothing(self):
         os.remove(os.path.join(self.config, "inventory.ini"))

@@ -16,12 +16,15 @@ The chain of trust follows the UEFI Secure Boot principle:
 
 Nothing read from the archive is trusted before its signature is checked.
 """
+import configparser
 import io
 import json
 import os
 import re
 import tarfile
 import tempfile
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 
 from cryptography import x509
@@ -30,6 +33,16 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 MANIFEST_NAME = "manifest.json"
+PUBLISHED_FILES = (
+    "parameters.tar",
+    "parameters.sig",
+    "server.crt",
+    "revocations.json",
+    "revocations.sig",
+)
+MAX_DOWNLOAD_SIZE = 16 * 1024 * 1024
+DOWNLOAD_TIMEOUT = 30
+NAME_REGEX = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*(:[0-9]+)?")
 ACCEPTED_CERTIFICATE_HASHES = (hashes.SHA256, hashes.SHA384, hashes.SHA512)
 PEM_CERTIFICATE = re.compile(
     b"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", re.DOTALL
@@ -38,6 +51,10 @@ PEM_CERTIFICATE = re.compile(
 
 class ParametersRefused(Exception):
     """The parameters must not be applied. The message gives the reason."""
+
+
+class ParametersUnavailable(Exception):
+    """The parameters could not be downloaded. Nothing was changed."""
 
 
 def _load_certificate(pem, label):
@@ -167,7 +184,7 @@ def verify_parameters(
     revocation_list,
     revocation_signature,
     expected_server,
-    expected_organisation,
+    expected_download_tag,
     installed_version=0,
     installed_revocation_version=0,
 ):
@@ -182,7 +199,7 @@ def verify_parameters(
         revocation_list (bytes): Revocation list (JSON).
         revocation_signature (bytes): Signature of the list by the root key.
         expected_server (str): Name of the server the agent was given.
-        expected_organisation (str): Tag of the organisation of the agent.
+        expected_download_tag (str): Download tag of the organisation of the agent.
         installed_version (int): Last parameters version accepted.
         installed_revocation_version (int): Last revocation list version accepted.
 
@@ -209,9 +226,9 @@ def verify_parameters(
     manifest = _read_manifest(archive)
     if _common_name(server) != expected_server or manifest.get("server") != expected_server:
         raise ParametersRefused(f"These parameters are not for server {expected_server}")
-    if manifest.get("organisation") != expected_organisation:
+    if manifest.get("download_tag") != expected_download_tag:
         raise ParametersRefused(
-            f"These parameters are not for organisation {expected_organisation}"
+            f"These parameters are not for organisation {expected_download_tag}"
         )
     version = manifest.get("version")
     if type(version) is not int:
@@ -256,3 +273,131 @@ def extract_parameters(archive, destination):
             output.write(content)
         os.replace(temporary, os.path.join(destination, name))
     return sorted(files)
+
+
+def read_bootstrap(path):
+    """
+    Read the server and the download tag given to the installer.
+
+    Args:
+        path (str): The bootstrap.ini file written by the installer.
+
+    Returns:
+        tuple: (server, download_tag), or None without a usable file.
+    """
+    config = configparser.ConfigParser()
+    if not config.read(path):
+        return None
+    server = config.get("bootstrap", "server", fallback="").strip()
+    download_tag = config.get("bootstrap", "tag", fallback="").strip()
+    if not server or not download_tag:
+        return None
+    return server, download_tag
+
+
+def download_parameters(server, download_tag, tls_context=None):
+    """
+    Download the files published for an organisation.
+
+    Nothing downloaded here is trusted before verify_parameters.
+
+    Args:
+        server (str): Address of the Medulla server.
+        download_tag (str): Download tag of the organisation.
+        tls_context (ssl.SSLContext): Overrides the default TLS checks.
+
+    Returns:
+        dict: The content of each file of PUBLISHED_FILES.
+
+    Raises:
+        ParametersUnavailable: If a file cannot be downloaded.
+    """
+    if not NAME_REGEX.fullmatch(server) or not NAME_REGEX.fullmatch(download_tag):
+        raise ParametersUnavailable("Invalid server or download tag")
+
+    base_url = f"https://{server}/medulla_agent/{download_tag}"
+    files = {}
+    for name in PUBLISHED_FILES:
+        # The web server filters this directory on the Referer
+        request = urllib.request.Request(
+            f"{base_url}/{name}", headers={"Referer": f"https://{server}/"}
+        )
+        try:
+            with urllib.request.urlopen(
+                request, timeout=DOWNLOAD_TIMEOUT, context=tls_context
+            ) as response:
+                content = response.read(MAX_DOWNLOAD_SIZE + 1)
+        except (urllib.error.URLError, OSError) as error:
+            raise ParametersUnavailable(f"Cannot download {name}: {error}")
+        if len(content) > MAX_DOWNLOAD_SIZE:
+            raise ParametersUnavailable(f"{name} is too large")
+        files[name] = content
+    return files
+
+
+def _read_state(path):
+    if not os.path.exists(path):
+        return {"parameters_version": 0, "revocation_version": 0}
+    try:
+        with open(path) as content:
+            state = json.load(content)
+        versions = (state["parameters_version"], state["revocation_version"])
+    except (OSError, ValueError, KeyError, TypeError):
+        # Going back to zero would accept an older version
+        raise ParametersRefused(f"The state file {path} is not readable")
+    if any(type(version) is not int for version in versions):
+        raise ParametersRefused(f"The state file {path} is not readable")
+    return state
+
+
+def _write_state(path, state):
+    descriptor, temporary = tempfile.mkstemp(dir=os.path.dirname(path) or ".")
+    with os.fdopen(descriptor, "w") as output:
+        json.dump(state, output)
+    os.replace(temporary, path)
+
+
+def update_parameters(
+    root_pem, server, download_tag, destination, state_path, tls_context=None
+):
+    """
+    Download, verify and write the parameters of an organisation.
+
+    Args:
+        root_pem (bytes): Root certificate embedded in the agent.
+        server (str): Address of the Medulla server.
+        download_tag (str): Download tag of the organisation.
+        destination (str): Directory of the agent configuration files.
+        state_path (str): File remembering the last accepted versions.
+        tls_context (ssl.SSLContext): Overrides the default TLS checks.
+
+    Returns:
+        dict: The manifest of the applied parameters.
+
+    Raises:
+        ParametersUnavailable: If the files cannot be downloaded.
+        ParametersRefused: If any check fails. Nothing is written.
+    """
+    state = _read_state(state_path)
+    files = download_parameters(server, download_tag, tls_context)
+    manifest = verify_parameters(
+        root_pem,
+        files["server.crt"],
+        files["parameters.tar"],
+        files["parameters.sig"],
+        files["revocations.json"],
+        files["revocations.sig"],
+        server,
+        download_tag,
+        state["parameters_version"],
+        state["revocation_version"],
+    )
+    extract_parameters(files["parameters.tar"], destination)
+    _write_state(
+        state_path,
+        {
+            "parameters_version": manifest["version"],
+            "revocation_version": manifest["revocation_version"],
+        },
+    )
+    return manifest

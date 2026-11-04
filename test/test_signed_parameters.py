@@ -8,7 +8,9 @@ import os
 import tarfile
 import tempfile
 import unittest
+import urllib.error
 from datetime import datetime, timedelta, timezone
+from unittest import mock
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -17,7 +19,11 @@ from cryptography.x509.oid import NameOID
 
 from pulse_xmpp_agent.lib.signed_parameters import (
     ParametersRefused,
+    ParametersUnavailable,
+    download_parameters,
     extract_parameters,
+    read_bootstrap,
+    update_parameters,
     verify_parameters,
 )
 
@@ -69,7 +75,12 @@ def tar_of(files):
 
 
 def parameters(server=SERVER, organisation=ORGANISATION, version=5):
-    manifest = {"server": server, "organisation": organisation, "version": version}
+    manifest = {
+        "server": server,
+        "organisation": organisation,
+        "download_tag": organisation,
+        "version": version,
+    }
     return tar_of(
         {
             "manifest.json": json.dumps(manifest).encode(),
@@ -78,7 +89,7 @@ def parameters(server=SERVER, organisation=ORGANISATION, version=5):
     )
 
 
-class TestVerifyParameters(unittest.TestCase):
+class ChainTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.root_key = new_key()
@@ -96,13 +107,15 @@ class TestVerifyParameters(unittest.TestCase):
         content = json.dumps({"version": version, "revoked": list(revoked)}).encode()
         return content, sign(self.root_key, content)
 
+
+class TestVerifyParameters(ChainTestCase):
     def verify(
         self, archive=None, signature=None, server=None, intermediate=None, revocations=None, **options
     ):
         archive = parameters() if archive is None else archive
         signature = sign(self.server_key, archive) if signature is None else signature
         revocation_list, revocation_signature = revocations or self.revocations()
-        arguments = {"expected_server": SERVER, "expected_organisation": ORGANISATION}
+        arguments = {"expected_server": SERVER, "expected_download_tag": ORGANISATION}
         arguments.update(options)
         return verify_parameters(
             pem(self.root),
@@ -255,6 +268,123 @@ class TestVerifyParameters(unittest.TestCase):
     def test_version_that_is_not_an_integer_is_refused(self):
         self.assertRefused("version is not readable", archive=parameters(version="9"))
         self.assertRefused("version is not readable", archive=parameters(version=True))
+
+
+class FakeResponse(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *arguments):
+        self.close()
+
+
+class TestUpdateParameters(ChainTestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.etc = os.path.join(directory.name, "etc")
+        os.mkdir(self.etc)
+        self.state = os.path.join(directory.name, "state.json")
+        self.requests = []
+        self.archive = parameters()
+        revocation_list, revocation_signature = self.revocations()
+        self.published = {
+            "parameters.tar": self.archive,
+            "parameters.sig": sign(self.server_key, self.archive),
+            "server.crt": pem(self.server) + pem(self.intermediate),
+            "revocations.json": revocation_list,
+            "revocations.sig": revocation_signature,
+        }
+        patcher = mock.patch("urllib.request.urlopen", side_effect=self.serve)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def serve(self, request, timeout=None, context=None):
+        self.requests.append(request)
+        name = request.full_url.rsplit("/", 1)[1]
+        if name not in self.published:
+            raise urllib.error.URLError("not found")
+        return FakeResponse(self.published[name])
+
+    def update(self):
+        return update_parameters(pem(self.root), SERVER, ORGANISATION, self.etc, self.state)
+
+    def test_parameters_are_downloaded_verified_and_written(self):
+        self.assertEqual(self.update()["version"], 5)
+        self.assertEqual(os.listdir(self.etc), ["agentconf.ini"])
+
+    def test_requests_use_the_download_tag_and_the_referer(self):
+        self.update()
+        self.assertEqual(
+            self.requests[0].full_url,
+            f"https://{SERVER}/medulla_agent/{ORGANISATION}/parameters.tar",
+        )
+        self.assertEqual(self.requests[0].get_header("Referer"), f"https://{SERVER}/")
+
+    def test_accepted_versions_are_remembered(self):
+        self.update()
+        with open(self.state) as content:
+            self.assertEqual(
+                json.load(content), {"parameters_version": 5, "revocation_version": 1}
+            )
+
+    def test_older_parameters_are_refused_after_an_update(self):
+        self.update()
+        older = parameters(version=4)
+        self.published["parameters.tar"] = older
+        self.published["parameters.sig"] = sign(self.server_key, older)
+        with self.assertRaisesRegex(ParametersRefused, "older than 5"):
+            self.update()
+
+    def test_refused_parameters_write_nothing(self):
+        self.published["parameters.tar"] += b"x"
+        with self.assertRaises(ParametersRefused):
+            self.update()
+        self.assertEqual(os.listdir(self.etc), [])
+        self.assertFalse(os.path.exists(self.state))
+
+    def test_missing_file_changes_nothing(self):
+        del self.published["revocations.sig"]
+        with self.assertRaisesRegex(ParametersUnavailable, "revocations.sig"):
+            self.update()
+        self.assertEqual(os.listdir(self.etc), [])
+
+    def test_unreadable_state_is_refused(self):
+        with open(self.state, "w") as output:
+            output.write("garbage")
+        with self.assertRaisesRegex(ParametersRefused, "not readable"):
+            self.update()
+
+    def test_invalid_server_or_tag_is_refused_without_a_request(self):
+        for server, tag in (("evil.test/../x", "tag"), (SERVER, "../evil")):
+            with self.assertRaisesRegex(ParametersUnavailable, "Invalid"):
+                download_parameters(server, tag)
+        self.assertEqual(self.requests, [])
+
+    def test_too_large_file_is_refused(self):
+        with mock.patch("pulse_xmpp_agent.lib.signed_parameters.MAX_DOWNLOAD_SIZE", 4):
+            with self.assertRaisesRegex(ParametersUnavailable, "too large"):
+                self.update()
+
+
+class TestReadBootstrap(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.path = os.path.join(directory.name, "bootstrap.ini")
+
+    def test_server_and_tag_are_read(self):
+        with open(self.path, "w") as output:
+            output.write("[bootstrap]\nserver=medulla.example.test\ntag=7f3c\n")
+        self.assertEqual(read_bootstrap(self.path), ("medulla.example.test", "7f3c"))
+
+    def test_missing_file_gives_nothing(self):
+        self.assertIsNone(read_bootstrap(self.path))
+
+    def test_incomplete_file_gives_nothing(self):
+        with open(self.path, "w") as output:
+            output.write("[bootstrap]\nserver=medulla.example.test\n")
+        self.assertIsNone(read_bootstrap(self.path))
 
 
 class TestExtractParameters(unittest.TestCase):
