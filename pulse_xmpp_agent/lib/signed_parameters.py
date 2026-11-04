@@ -6,9 +6,11 @@ Verify the signed client parameters downloaded by the base agent.
 
 The chain of trust follows the UEFI Secure Boot principle:
 
-    root key (embedded in the agent)
-      -> signs the certificate of each Medulla server
+    root key (its certificate is embedded in the agent)
+      -> signs the intermediate authority
       -> signs the revocation list
+    intermediate key
+      -> signs the certificate of each Medulla server
     server key
       -> signs the parameters archive of each organisation
 
@@ -17,6 +19,7 @@ Nothing read from the archive is trusted before its signature is checked.
 import io
 import json
 import os
+import re
 import tarfile
 import tempfile
 from datetime import datetime, timezone
@@ -28,6 +31,9 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 MANIFEST_NAME = "manifest.json"
 ACCEPTED_CERTIFICATE_HASHES = (hashes.SHA256, hashes.SHA384, hashes.SHA512)
+PEM_CERTIFICATE = re.compile(
+    b"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", re.DOTALL
+)
 
 
 class ParametersRefused(Exception):
@@ -39,6 +45,17 @@ def _load_certificate(pem, label):
         return x509.load_pem_x509_certificate(pem)
     except ValueError:
         raise ParametersRefused(f"The {label} certificate is not readable")
+
+
+def _load_chain(pem):
+    # The server publishes its certificate followed by the intermediate
+    certificates = PEM_CERTIFICATE.findall(pem)
+    if len(certificates) != 2:
+        raise ParametersRefused("The server chain must hold the server and the intermediate")
+    return (
+        _load_certificate(certificates[0], "server"),
+        _load_certificate(certificates[1], "intermediate"),
+    )
 
 
 def _rsa_public_key(certificate, label):
@@ -68,34 +85,44 @@ def _validity_dates(certificate):
     )
 
 
-def _check_server_certificate(root, server):
-    if server.issuer != root.subject:
-        raise ParametersRefused("The server certificate was not issued by the root")
-    if not isinstance(server.signature_hash_algorithm, ACCEPTED_CERTIFICATE_HASHES):
-        raise ParametersRefused("The server certificate uses a weak hash algorithm")
+def _check_issued_by(issuer, certificate, label, issuer_label):
+    if certificate.issuer != issuer.subject:
+        raise ParametersRefused(f"The {label} certificate was not issued by the {issuer_label}")
+    if not isinstance(certificate.signature_hash_algorithm, ACCEPTED_CERTIFICATE_HASHES):
+        raise ParametersRefused(f"The {label} certificate uses a weak hash algorithm")
     try:
-        _rsa_public_key(root, "root").verify(
-            server.signature,
-            server.tbs_certificate_bytes,
+        _rsa_public_key(issuer, issuer_label).verify(
+            certificate.signature,
+            certificate.tbs_certificate_bytes,
             padding.PKCS1v15(),
-            server.signature_hash_algorithm,
+            certificate.signature_hash_algorithm,
         )
     except InvalidSignature:
-        raise ParametersRefused("The server certificate is not signed by the root")
+        raise ParametersRefused(f"The {label} certificate is not signed by the {issuer_label}")
 
-    not_before, not_after = _validity_dates(server)
+    not_before, not_after = _validity_dates(certificate)
     if not not_before <= datetime.now(timezone.utc) <= not_after:
-        raise ParametersRefused("The server certificate is not valid at this date")
+        raise ParametersRefused(f"The {label} certificate is not valid at this date")
 
+
+def _is_authority(certificate):
     try:
-        constraints = server.extensions.get_extension_for_class(x509.BasicConstraints)
+        constraints = certificate.extensions.get_extension_for_class(x509.BasicConstraints)
     except x509.ExtensionNotFound:
-        return
-    if constraints.value.ca:
+        return False
+    return constraints.value.ca
+
+
+def _check_chain(root, intermediate, server):
+    _check_issued_by(root, intermediate, "intermediate", "root")
+    if not _is_authority(intermediate):
+        raise ParametersRefused("The intermediate certificate must be an authority")
+    _check_issued_by(intermediate, server, "server", "intermediate")
+    if _is_authority(server):
         raise ParametersRefused("The server certificate must not be an authority")
 
 
-def _check_not_revoked(root, server, revocation_list, signature, minimum_version):
+def _check_not_revoked(root, certificates, revocation_list, signature, minimum_version):
     if not _is_signed_by(root, signature, revocation_list, "root"):
         raise ParametersRefused("The revocation list is not signed by the root")
     try:
@@ -110,8 +137,9 @@ def _check_not_revoked(root, server, revocation_list, signature, minimum_version
         raise ParametersRefused(
             f"Revocation list version {version} is older than {minimum_version}"
         )
-    if format(server.serial_number, "x") in revoked:
-        raise ParametersRefused("This server is revoked")
+    for label, certificate in certificates.items():
+        if format(certificate.serial_number, "x") in revoked:
+            raise ParametersRefused(f"This {label} is revoked")
     return version
 
 
@@ -148,7 +176,7 @@ def verify_parameters(
 
     Args:
         root_pem (bytes): Root certificate embedded in the agent.
-        server_pem (bytes): Certificate published by the server.
+        server_pem (bytes): Certificate of the server, then the intermediate.
         archive (bytes): Parameters archive (tar).
         signature (bytes): Signature of the archive by the server key.
         revocation_list (bytes): Revocation list (JSON).
@@ -165,11 +193,15 @@ def verify_parameters(
         ParametersRefused: If any check fails.
     """
     root = _load_certificate(root_pem, "root")
-    server = _load_certificate(server_pem, "server")
+    server, intermediate = _load_chain(server_pem)
 
-    _check_server_certificate(root, server)
+    _check_chain(root, intermediate, server)
     revocation_version = _check_not_revoked(
-        root, server, revocation_list, revocation_signature, installed_revocation_version
+        root,
+        {"server": server, "intermediate": intermediate},
+        revocation_list,
+        revocation_signature,
+        installed_revocation_version,
     )
     if not _is_signed_by(server, signature, archive, "server"):
         raise ParametersRefused("The parameters signature is invalid")
