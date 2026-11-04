@@ -23,6 +23,7 @@ from pulse_xmpp_agent.lib.signed_parameters import (
     download_parameters,
     extract_parameters,
     read_bootstrap,
+    refresh_parameters,
     update_parameters,
     verify_parameters,
 )
@@ -335,6 +336,57 @@ class TestUpdateParameters(ChainTestCase):
         self.published["parameters.sig"] = sign(self.server_key, older)
         with self.assertRaisesRegex(ParametersRefused, "older than 5"):
             self.update()
+
+    def test_same_version_is_not_written_again(self):
+        self.update()
+        path = os.path.join(self.etc, "agentconf.ini")
+        with open(path, "w") as output:
+            output.write("rewritten by the agent")
+        self.assertFalse(self.update()["applied"])
+        with open(path) as content:
+            self.assertEqual(content.read(), "rewritten by the agent")
+
+    def test_newer_version_is_written(self):
+        self.update()
+        newer = parameters(version=6)
+        self.published["parameters.tar"] = newer
+        self.published["parameters.sig"] = sign(self.server_key, newer)
+        self.assertTrue(self.update()["applied"])
+
+    def bootstrap(self):
+        with open(os.path.join(self.etc, "bootstrap.ini"), "w") as output:
+            output.write(f"[bootstrap]\nserver={SERVER}\ntag={ORGANISATION}\n")
+        with open(os.path.join(self.etc, "parameters-root.crt"), "wb") as output:
+            output.write(pem(self.root))
+
+    def test_refresh_without_bootstrap_does_nothing(self):
+        self.assertFalse(refresh_parameters(self.etc))
+        self.assertEqual(self.requests, [])
+
+    def test_refresh_writes_the_parameters(self):
+        self.bootstrap()
+        self.assertTrue(refresh_parameters(self.etc))
+        self.assertTrue(os.path.exists(os.path.join(self.etc, "agentconf.ini")))
+        self.assertTrue(os.path.exists(os.path.join(self.etc, "parameters-state.json")))
+
+    def test_refresh_does_not_raise_when_the_server_is_down(self):
+        self.bootstrap()
+        self.published.clear()
+        with self.assertLogs(level="ERROR"):
+            self.assertFalse(refresh_parameters(self.etc))
+
+    def test_refresh_does_not_raise_on_refused_parameters(self):
+        self.bootstrap()
+        self.published["parameters.tar"] += b"x"
+        with self.assertLogs(level="ERROR"):
+            self.assertFalse(refresh_parameters(self.etc))
+        self.assertFalse(os.path.exists(os.path.join(self.etc, "agentconf.ini")))
+
+    def test_refresh_does_not_raise_without_root_certificate(self):
+        self.bootstrap()
+        os.remove(os.path.join(self.etc, "parameters-root.crt"))
+        with self.assertLogs(level="ERROR"):
+            self.assertFalse(refresh_parameters(self.etc))
 
     def test_refused_parameters_write_nothing(self):
         self.published["parameters.tar"] += b"x"

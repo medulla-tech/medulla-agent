@@ -1108,6 +1108,26 @@ def conffilename(agenttype):
     return fileconf if os.path.isfile(fileconf) else conffilenameparameter
 
 
+def refresh_signed_parameters():
+    """
+    Download the signed parameters of an agent installed with /server and /tag.
+
+    The module is only loaded on these agents, and a failure never stops the
+    launcher: the agent keeps its current configuration.
+    """
+    configuration_directory = directoryconffile()
+    if configuration_directory is None or not os.path.isfile(
+        os.path.join(configuration_directory, "bootstrap.ini")
+    ):
+        return
+    try:
+        from lib.signed_parameters import refresh_parameters
+
+        refresh_parameters(configuration_directory)
+    except Exception:
+        logger.error("Signed parameters not updated:\n%s" % traceback.format_exc())
+
+
 def testagentconf(typeconf):
     if typeconf == "relayserver":
         return True
@@ -1362,6 +1382,9 @@ if __name__ == "__main__":
 
     if os.path.exists(BOOL_DISABLE_RESCUE):
         opts.check_agent = False
+
+    if opts.typemachine.lower() in ["machine"]:
+        refresh_signed_parameters()
 
     namefileconfig = os.path.join(directoryconffile(), conffilename(opts.typemachine))
     templatefileconfig = os.path.join(directoryconffile(), namefileconfig) + ".tpl"
