@@ -19,6 +19,7 @@ Nothing read from the archive is trusted before its signature is checked.
 import configparser
 import io
 import json
+import logging
 import os
 import re
 import tarfile
@@ -32,7 +33,12 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
+logger = logging.getLogger()
+
 MANIFEST_NAME = "manifest.json"
+BOOTSTRAP_NAME = "bootstrap.ini"
+ROOT_CERTIFICATE_NAME = "parameters-root.crt"
+STATE_NAME = "parameters-state.json"
 PUBLISHED_FILES = (
     "parameters.tar",
     "parameters.sig",
@@ -372,7 +378,9 @@ def update_parameters(
         tls_context (ssl.SSLContext): Overrides the default TLS checks.
 
     Returns:
-        dict: The manifest of the applied parameters.
+        dict: The manifest, with "applied" telling if the files were written.
+        The agent rewrites its own configuration, so a version already
+        applied is not written again.
 
     Raises:
         ParametersUnavailable: If the files cannot be downloaded.
@@ -392,7 +400,9 @@ def update_parameters(
         state["parameters_version"],
         state["revocation_version"],
     )
-    extract_parameters(files["parameters.tar"], destination)
+    applied = manifest["version"] > state["parameters_version"]
+    if applied:
+        extract_parameters(files["parameters.tar"], destination)
     _write_state(
         state_path,
         {
@@ -400,4 +410,39 @@ def update_parameters(
             "revocation_version": manifest["revocation_version"],
         },
     )
-    return manifest
+    return dict(manifest, applied=applied)
+
+
+def refresh_parameters(configuration_directory):
+    """
+    Update the parameters at the start of the agent, when it has a bootstrap.
+
+    A failure is logged and never raised: the agent keeps the configuration
+    it already has.
+
+    Args:
+        configuration_directory (str): Directory of the agent configuration.
+
+    Returns:
+        bool: True if new parameters were written.
+    """
+    bootstrap = read_bootstrap(os.path.join(configuration_directory, BOOTSTRAP_NAME))
+    if bootstrap is None:
+        return False
+    server, download_tag = bootstrap
+    try:
+        with open(os.path.join(configuration_directory, ROOT_CERTIFICATE_NAME), "rb") as root:
+            root_pem = root.read()
+        manifest = update_parameters(
+            root_pem,
+            server,
+            download_tag,
+            configuration_directory,
+            os.path.join(configuration_directory, STATE_NAME),
+        )
+    except (ParametersRefused, ParametersUnavailable, OSError) as error:
+        logger.error(f"Parameters of {download_tag} not updated: {error}")
+        return False
+    if manifest["applied"]:
+        logger.info(f"Parameters version {manifest['version']} applied from {server}")
+    return manifest["applied"]
