@@ -33,7 +33,9 @@ def name(common_name):
     return x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
 
 
-def certificate(subject, issuer, public_key, signing_key, ca=False, days=(-1, 365)):
+def certificate(
+    subject, issuer, public_key, signing_key, ca=False, days=(-1, 365), algorithm=hashes.SHA256
+):
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     return (
         x509.CertificateBuilder()
@@ -44,7 +46,7 @@ def certificate(subject, issuer, public_key, signing_key, ca=False, days=(-1, 36
         .not_valid_before(now + timedelta(days=days[0]))
         .not_valid_after(now + timedelta(days=days[1]))
         .add_extension(x509.BasicConstraints(ca=ca, path_length=None), critical=True)
-        .sign(signing_key, hashes.SHA256())
+        .sign(signing_key, algorithm())
     )
 
 
@@ -81,14 +83,22 @@ class TestVerifyParameters(unittest.TestCase):
     def setUpClass(cls):
         cls.root_key = new_key()
         cls.root = certificate("Root", "Root", cls.root_key.public_key(), cls.root_key, ca=True)
+        cls.intermediate_key = new_key()
+        cls.intermediate = certificate(
+            "Intermediate", "Root", cls.intermediate_key.public_key(), cls.root_key, ca=True
+        )
         cls.server_key = new_key()
-        cls.server = certificate(SERVER, "Root", cls.server_key.public_key(), cls.root_key)
+        cls.server = certificate(
+            SERVER, "Intermediate", cls.server_key.public_key(), cls.intermediate_key
+        )
 
     def revocations(self, revoked=(), version=1):
         content = json.dumps({"version": version, "revoked": list(revoked)}).encode()
         return content, sign(self.root_key, content)
 
-    def verify(self, archive=None, signature=None, server=None, revocations=None, **options):
+    def verify(
+        self, archive=None, signature=None, server=None, intermediate=None, revocations=None, **options
+    ):
         archive = parameters() if archive is None else archive
         signature = sign(self.server_key, archive) if signature is None else signature
         revocation_list, revocation_signature = revocations or self.revocations()
@@ -96,7 +106,7 @@ class TestVerifyParameters(unittest.TestCase):
         arguments.update(options)
         return verify_parameters(
             pem(self.root),
-            pem(server or self.server),
+            pem(server or self.server) + pem(intermediate or self.intermediate),
             archive,
             signature,
             revocation_list,
@@ -127,19 +137,63 @@ class TestVerifyParameters(unittest.TestCase):
 
     def test_fake_root_with_the_same_name_is_refused(self):
         pirate_key = new_key()
-        fake = certificate(SERVER, "Root", pirate_key.public_key(), pirate_key)
+        fake_intermediate = certificate(
+            "Intermediate", "Root", pirate_key.public_key(), pirate_key, ca=True
+        )
+        fake_server = certificate(SERVER, "Intermediate", pirate_key.public_key(), pirate_key)
         archive = parameters()
         self.assertRefused(
-            "not signed by the root",
+            "intermediate certificate is not signed by the root",
             archive=archive,
             signature=sign(pirate_key, archive),
-            server=fake,
+            server=fake_server,
+            intermediate=fake_intermediate,
         )
+
+    def test_server_signed_by_another_key_is_refused(self):
+        pirate_key = new_key()
+        fake = certificate(SERVER, "Intermediate", pirate_key.public_key(), pirate_key)
+        self.assertRefused("server certificate is not signed by the intermediate", server=fake)
+
+    def test_server_signed_directly_by_the_root_is_refused(self):
+        direct = certificate(SERVER, "Root", self.server_key.public_key(), self.root_key)
+        self.assertRefused("not issued by the intermediate", server=direct)
+
+    def test_chain_without_intermediate_is_refused(self):
+        archive = parameters()
+        revocation_list, revocation_signature = self.revocations()
+        with self.assertRaisesRegex(ParametersRefused, "must hold the server and the intermediate"):
+            verify_parameters(
+                pem(self.root), pem(self.server), archive, sign(self.server_key, archive),
+                revocation_list, revocation_signature, SERVER, ORGANISATION,
+            )
+
+    def test_certificate_with_a_weak_hash_is_refused(self):
+        weak = certificate(
+            SERVER, "Intermediate", self.server_key.public_key(), self.intermediate_key,
+            algorithm=hashes.SHA224,
+        )
+        self.assertRefused("server certificate uses a weak hash algorithm", server=weak)
+
+    def test_intermediate_that_is_not_an_authority_is_refused(self):
+        leaf = certificate("Intermediate", "Root", self.intermediate_key.public_key(), self.root_key)
+        self.assertRefused("must be an authority", intermediate=leaf)
+
+    def test_expired_intermediate_is_refused(self):
+        expired = certificate(
+            "Intermediate", "Root", self.intermediate_key.public_key(), self.root_key,
+            ca=True, days=(-30, -1),
+        )
+        self.assertRefused("intermediate certificate is not valid at this date", intermediate=expired)
+
+    def test_revoked_intermediate_is_refused(self):
+        serial = format(self.intermediate.serial_number, "x")
+        self.assertRefused("This intermediate is revoked", revocations=self.revocations([serial]))
 
     def test_certificate_from_another_issuer_is_refused(self):
         pirate_key = new_key()
         fake = certificate(SERVER, "Pirate", pirate_key.public_key(), pirate_key)
-        self.assertRefused("not issued by the root", server=fake)
+        self.assertRefused("not issued by the intermediate", server=fake)
 
     def test_parameters_of_another_server_are_refused(self):
         self.assertRefused("not for server", expected_server="other.example.test")
@@ -156,7 +210,7 @@ class TestVerifyParameters(unittest.TestCase):
 
     def test_revoked_server_is_refused(self):
         serial = format(self.server.serial_number, "x")
-        self.assertRefused("is revoked", revocations=self.revocations([serial]))
+        self.assertRefused("This server is revoked", revocations=self.revocations([serial]))
 
     def test_other_servers_are_not_affected_by_a_revocation(self):
         self.assertEqual(self.verify(revocations=self.revocations(["abc123"]))["version"], 5)
@@ -174,13 +228,13 @@ class TestVerifyParameters(unittest.TestCase):
 
     def test_expired_certificate_is_refused(self):
         expired = certificate(
-            SERVER, "Root", self.server_key.public_key(), self.root_key, days=(-30, -1)
+            SERVER, "Intermediate", self.server_key.public_key(), self.intermediate_key, days=(-30, -1)
         )
-        self.assertRefused("not valid at this date", server=expired)
+        self.assertRefused("server certificate is not valid at this date", server=expired)
 
     def test_authority_certificate_is_refused_as_server(self):
         authority = certificate(
-            SERVER, "Root", self.server_key.public_key(), self.root_key, ca=True
+            SERVER, "Intermediate", self.server_key.public_key(), self.intermediate_key, ca=True
         )
         self.assertRefused("must not be an authority", server=authority)
 
@@ -188,7 +242,7 @@ class TestVerifyParameters(unittest.TestCase):
         with self.assertRaisesRegex(ParametersRefused, "not readable"):
             revocation_list, revocation_signature = self.revocations()
             verify_parameters(
-                pem(self.root), b"garbage", b"", b"", revocation_list, revocation_signature,
+                pem(self.root), b"-----BEGIN CERTIFICATE-----x-----END CERTIFICATE-----" * 2, b"", b"", revocation_list, revocation_signature,
                 SERVER, ORGANISATION,
             )
 

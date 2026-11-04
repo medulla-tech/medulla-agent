@@ -146,6 +146,15 @@ class TestSignClientParameters(unittest.TestCase):
         self.assertFails(self.sign(download_tag="../evil"), "Invalid download tag")
         self.assertFalse(os.path.exists(self.output))
 
+    def test_whole_certificate_chain_is_published(self):
+        with open(self.certificate) as source:
+            chain = source.read()
+        with open(self.certificate, "a") as output:
+            output.write(chain)
+        self.assertEqual(self.sign().returncode, 0)
+        with open(self.published("server.crt")) as published:
+            self.assertEqual(published.read().count("BEGIN CERTIFICATE"), 2)
+
     def test_no_temporary_directory_is_left(self):
         self.sign()
         self.assertEqual(os.listdir(self.output), ["client-a"])
