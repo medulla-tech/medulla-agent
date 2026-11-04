@@ -155,6 +155,7 @@ ROOTCERTIFICATE_FILENAME="medulla-rootca.cert.pem"
 CACERTIFICATE_FILENAME="medulla-ca-chain.cert.pem"
 CACERT_NAME="Medulla CA Cert"
 CACERT_VERSION="1.1"
+PARAMETERS_SIGNING_KEY="/etc/medulla/parameters/server.key"
 VIM_NAME="Medulla Vim"
 # Display usage
 display_usage() {
@@ -493,6 +494,34 @@ generate_agent_installer() {
 
 }
 
+read_download_tag() {
+    # The agents of an organisation are published under its download tag
+    [[ ${INVENTORY_TAG} =~ ^[A-Za-z0-9._-]+$ ]] || return
+    local config=/etc/mmc/plugins/xmppmaster.ini.local
+    local dbhost=$(crudini --get ${config} database dbhost 2> /dev/null || echo localhost)
+    local dbport=$(crudini --get ${config} database dbport 2> /dev/null || echo 3306)
+    local dbuser=$(crudini --get ${config} database dbuser 2> /dev/null || echo mmc)
+    local dbpass=$(crudini --get ${config} database dbpasswd 2> /dev/null)
+    mysql -u${dbuser} -p${dbpass} -h${dbhost} -P${dbport} -Dadmin -Bse \
+        "SELECT dl_tag FROM saas_organisations WHERE tag_name='${INVENTORY_TAG}';" 2> /dev/null
+}
+
+sign_client_parameters() {
+    # Only the servers holding a parameters signing key are concerned
+    if [ ! -f ${PARAMETERS_SIGNING_KEY} ]; then
+        return
+    fi
+    colored_echo blue "### INFO Signing client parameters..."
+    local download_tag=$(read_download_tag)
+    ../sign-client-parameters.sh --organisation="${INVENTORY_TAG:-default}" \
+        --download-tag="${download_tag}" --key="${PARAMETERS_SIGNING_KEY}"
+    if [ ! $? -eq 0 ]; then
+        colored_echo red "### ER... Signing of client parameters failed"
+        exit 1
+    fi
+    colored_echo green "### INFO Signing client parameters... Done"
+}
+
 # Run the script
 check_arguments "$@"
 prepare_mandatory_includes
@@ -507,3 +536,4 @@ enable_and_configure_vnc_plugin
 configure_rdp_plugin
 configure_inventory_plugin
 generate_agent_installer
+sign_client_parameters
