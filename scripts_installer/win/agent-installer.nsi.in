@@ -119,6 +119,8 @@ SetCompressor lzma
 !include "Junction.nsh"
 
 Var FIREWALL
+Var BOOTSTRAP_SERVER
+Var BOOTSTRAP_TAG
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -447,6 +449,13 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
+  ; Keep the server and the download tag given on the command line
+  ${If} $BOOTSTRAP_SERVER != ""
+  ${AndIf} $BOOTSTRAP_TAG != ""
+    WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "server" "$BOOTSTRAP_SERVER"
+    WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "tag" "$BOOTSTRAP_TAG"
+  ${EndIf}
+
   ; Install of CA Certificates
   ClearErrors
   SetOutPath "$INSTDIR\tmp"
@@ -673,6 +682,14 @@ SectionEnd
 ; Functions
 
 Function .onInit
+  ; Server and download tag of the organisation: /server=<address> /tag=<dl_tag>
+  ${GetParameters} $0
+  ClearErrors
+  ${GetOptions} $0 "/server=" $BOOTSTRAP_SERVER
+  ClearErrors
+  ${GetOptions} $0 "/tag=" $BOOTSTRAP_TAG
+  ClearErrors
+
   ; XP or later
   ${IfNot} ${AtLeastWinXP}
     MessageBox MB_OK|MB_ICONSTOP "XP and above required for running ${PRODUCT_NAME}"

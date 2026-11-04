@@ -22,7 +22,8 @@
 # MA 02110-1301, USA.
 #
 # Builds and signs the parameters archive of an organisation, then publishes
-# parameters.tar, parameters.sig and server.crt in <output>/<download tag>/,
+# parameters.tar, parameters.sig, server.crt and the revocation list in
+# <output>/<download tag>/,
 # next to the agents of the organisation.
 # The base agent verifies them with lib/signed_parameters.py.
 
@@ -35,6 +36,7 @@ CONFIG_DIR="/var/lib/pulse2/clients/config"
 CERTIFICATES_DIR="/var/lib/pulse2/clients"
 SIGNING_KEY="/etc/medulla/parameters/server.key"
 SERVER_CERTIFICATE="/etc/medulla/parameters/server.crt"
+REVOCATIONS_DIR="/etc/medulla/parameters"
 OUTPUT_DIR="/var/lib/pulse2/medulla_agent"
 
 CONFIG_FILES="agentconf.ini agentconf.ini.tpl manage_scheduler_machine.ini inventory.ini
@@ -45,7 +47,7 @@ NAME_REGEX='^[A-Za-z0-9][A-Za-z0-9._-]*$'
 
 display_usage() {
     echo "Usage: $0 [--organisation=<tag>] [--download-tag=<dl_tag>] [--config-dir=<dir>] [--certificates-dir=<dir>]"
-    echo "          [--key=<file>] [--certificate=<file>] [--output=<dir>]"
+    echo "          [--key=<file>] [--certificate=<file>] [--revocations-dir=<dir>] [--output=<dir>]"
 }
 
 fail() {
@@ -74,6 +76,9 @@ check_arguments() {
             --certificate=*)
                 SERVER_CERTIFICATE="${i#*=}"
                 ;;
+            --revocations-dir=*)
+                REVOCATIONS_DIR="${i#*=}"
+                ;;
             --output=*)
                 OUTPUT_DIR="${i#*=}"
                 ;;
@@ -92,6 +97,8 @@ check_arguments() {
 check_signing_material() {
     [ -r "${SIGNING_KEY}" ] || fail "Cannot read the signing key ${SIGNING_KEY}"
     [ -r "${SERVER_CERTIFICATE}" ] || fail "Cannot read the certificate ${SERVER_CERTIFICATE}"
+    [ -r "${REVOCATIONS_DIR}/revocations.json" ] && [ -r "${REVOCATIONS_DIR}/revocations.sig" ] \
+        || fail "Cannot read the revocation list in ${REVOCATIONS_DIR}"
     local key_public certificate_public
     key_public=$(openssl pkey -in "${SIGNING_KEY}" -pubout)
     certificate_public=$(openssl x509 -in "${SERVER_CERTIFICATE}" -noout -pubkey)
@@ -128,8 +135,8 @@ build_and_sign() {
     for file in ${CERTIFICATE_FILES}; do
         cp -L "${CERTIFICATES_DIR}/${file}" "${work}/content/" || fail "Missing file ${file}"
     done
-    printf '{"server": "%s", "organisation": "%s", "version": %s}\n' \
-        "${SERVER_NAME}" "${ORGANISATION}" "${version}" > "${work}/content/manifest.json"
+    printf '{"server": "%s", "organisation": "%s", "download_tag": "%s", "version": %s}\n' \
+        "${SERVER_NAME}" "${ORGANISATION}" "${DOWNLOAD_TAG}" "${version}" > "${work}/content/manifest.json"
     # Flat names only: the agent refuses any member with a path
     tar --owner=0 --group=0 -cf "${work}/parameters.tar" -C "${work}/content" \
         manifest.json ${CONFIG_FILES} ${CERTIFICATE_FILES}
@@ -145,8 +152,11 @@ publish() {
     mkdir -p "${destination}"
     chmod 755 "${destination}"
     cp "${SERVER_CERTIFICATE}" "${work}/server.crt"
-    chmod 644 "${work}/parameters.tar" "${work}/parameters.sig" "${work}/server.crt"
-    mv -f "${work}/server.crt" "${work}/parameters.sig" "${work}/parameters.tar" "${destination}/"
+    cp "${REVOCATIONS_DIR}/revocations.json" "${REVOCATIONS_DIR}/revocations.sig" "${work}/"
+    chmod 644 "${work}/parameters.tar" "${work}/parameters.sig" "${work}/server.crt" \
+        "${work}/revocations.json" "${work}/revocations.sig"
+    mv -f "${work}/server.crt" "${work}/revocations.json" "${work}/revocations.sig" \
+        "${work}/parameters.sig" "${work}/parameters.tar" "${destination}/"
 }
 
 check_arguments "$@"

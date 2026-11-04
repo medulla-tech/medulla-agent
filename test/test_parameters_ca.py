@@ -83,7 +83,8 @@ class TestParametersCa(unittest.TestCase):
                 output.write(name)
         subprocess.run(
             ["bash", SIGN, "--organisation=" + ORGANISATION, "--config-dir=" + config,
-             "--certificates-dir=" + config, "--key=" + os.path.join(key_dir, "server.key"),
+             "--certificates-dir=" + config, "--revocations-dir=" + self.root,
+             "--key=" + os.path.join(key_dir, "server.key"),
              "--certificate=" + os.path.join(key_dir, "server.crt"),
              "--output=" + os.path.join(key_dir, "output")],
             check=True, capture_output=True,
