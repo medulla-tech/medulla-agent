@@ -71,6 +71,7 @@ override_dh_auto_install:
 	cp pulse_xmpp_master_substitute/agentmastersubstitute.py $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
 	cp pulse_xmpp_master_substitute/agentversion $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
 	cp -r pulse_xmpp_master_substitute/bin/ $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/descriptor_scheduler_substitute/ $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
 	cp -r pulse_xmpp_master_substitute/lib/  $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
 	cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
 	cp -r pulse_xmpp_master_substitute/script/ $(CURDIR)/debian/tmp/usr/lib/python${PYVER}/dist-packages/pulse_xmpp_master_substitute/
