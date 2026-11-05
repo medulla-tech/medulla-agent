@@ -35,8 +35,27 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.18", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.19", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 _RUNTIME_IDENTITY_LOGGED = False
+
+
+def _sync_inventory_entity(computer_id, jid):
+    """Realigne l'entite de la machine inventoriee sans interrompre l'inventaire."""
+    try:
+        changes = XmppMasterDatabase().sync_machines_glpi_entity(
+            computer_id=computer_id
+        )
+        logger.debug(
+            "Inventory machine entity sync: jid=%s computer_id=%s changes=%s",
+            jid,
+            computer_id,
+            changes,
+        )
+    except Exception:
+        logger.exception(
+            "Inventory machine entity sync failed: jid=%s computer_id=%s",
+            jid, computer_id
+        )
 
 
 class InventoryFix:
@@ -586,6 +605,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
                 xmppobject.boundjid.bare,
             )
+        else:
+            _sync_inventory_entity(uuidglpi, msg["from"])
 
         # save registry inventory
         try:
