@@ -766,7 +766,7 @@ class TestEntitySync(unittest.TestCase):
 
     def test_plugin_identity_and_version(self):
         self.assertEqual(self.plugin.plugin["NAME"], "resultinventory")
-        self.assertEqual(self.plugin.plugin["VERSION"], "1.23")
+        self.assertEqual(self.plugin.plugin["VERSION"], "1.24")
 
 
 class TestGlpiSetupUuidLookup(unittest.TestCase):

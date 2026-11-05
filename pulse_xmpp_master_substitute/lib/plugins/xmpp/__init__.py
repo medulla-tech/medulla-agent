@@ -1447,6 +1447,63 @@ class XmppMasterDatabase(DatabaseHelper):
             logger.exception("GLPI entity synchronization failed: entity_id=%s", glpi_id)
             raise
 
+    def sync_machines_glpi_entity(self, computer_id=None, reconf=True, sync_entities=True):
+        """Aligne machines.glpi_entity_id sur l'entite GLPI (local_glpi_filters).
+
+        Avec sync_entities, complete d'abord glpi_entity (synchro complete),
+        puis corrige les machines dont l'entite differe. Avec computer_id, seule
+        la machine UUID<computer_id> est traitee. Avec reconf, need_reconf=1
+        est pose sur les machines corrigees.
+        Retourne la liste des corrections (id, hostname, old, new).
+        """
+        if sync_entities:
+            try:
+                self.sync_glpi_entities()
+            except Exception:
+                # Les entites deja presentes permettent quand meme l'alignement.
+                logger.exception("GLPI entity completion failed before machine sync")
+
+        where_uuid = ""
+        params = {}
+        if computer_id is not None:
+            where_uuid = " AND m.uuid_inventorymachine = :uuid"
+            params["uuid"] = "UUID%s" % int(computer_id)
+        select_sql = text(
+            """
+            SELECT m.id, m.hostname, m.glpi_entity_id, ge.id AS new_entity_id
+            FROM machines m
+            JOIN local_glpi_filters lgf
+                 ON m.uuid_inventorymachine = CONCAT('UUID', lgf.id)
+            JOIN glpi_entity ge ON ge.glpi_id = lgf.entities_id
+            WHERE m.agenttype = 'machine'
+              AND (m.glpi_entity_id IS NULL OR m.glpi_entity_id <> ge.id)%s
+            """ % where_uuid
+        )
+        update_sql = text(
+            "UPDATE machines SET glpi_entity_id = :new_entity_id%s WHERE id = :id"
+            % (", need_reconf = 1" if reconf else "")
+        )
+        changes = []
+        with self.engine_xmppmmaster_base.begin() as connection:
+            for row in connection.execute(select_sql, params).fetchall():
+                connection.execute(
+                    update_sql, {"id": row.id, "new_entity_id": row.new_entity_id}
+                )
+                changes.append(
+                    {
+                        "id": row.id,
+                        "hostname": row.hostname,
+                        "old_entity_id": row.glpi_entity_id,
+                        "new_entity_id": row.new_entity_id,
+                    }
+                )
+        for change in changes:
+            logger.info(
+                "Machine entity realigned: %(hostname)s (id=%(id)s) "
+                "glpi_entity_id %(old_entity_id)s -> %(new_entity_id)s" % change
+            )
+        return changes
+
     @DatabaseHelper._sessionm
     def get_Glpi_location(self, session, glpi_id):
         """
