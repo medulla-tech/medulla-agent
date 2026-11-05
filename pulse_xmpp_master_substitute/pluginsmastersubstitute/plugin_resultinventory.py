@@ -42,12 +42,13 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.19", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.191", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
 _RUNTIME_IDENTITY_LOGGED = False
 
 
 def _sync_inventory_entity(computer_id, jid):
     """Journalise une erreur de synchro sans interrompre l'inventaire registre."""
+    result = {"status": "error"}
     try:
         entity_id = Glpi().getMachineEntityId(computer_id)
         result = XmppMasterDatabase().sync_glpi_entities(entity_id)
@@ -58,12 +59,21 @@ def _sync_inventory_entity(computer_id, jid):
             entity_id,
             result,
         )
-        return result
     except Exception:
         logger.exception(
             "Inventory entity sync failed: jid=%s computer_id=%s", jid, computer_id
         )
-        return {"status": "error"}
+    try:
+        XmppMasterDatabase().sync_machines_glpi_entity(
+            computer_id=computer_id, sync_entities=False
+        )
+    except Exception:
+        logger.exception(
+            "Inventory machine entity realign failed: jid=%s computer_id=%s",
+            jid,
+            computer_id,
+        )
+    return result
 
 
 class InventoryFix:
