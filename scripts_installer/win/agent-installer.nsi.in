@@ -351,6 +351,11 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} "Medulla Agent Installation...."
   ${LogString} "------------------------------------------------------"
 
+  ; The accepted versions of the signed parameters outlive a reinstallation
+  ${If} ${FileExists} "$INSTDIR\etc\parameters-state.json"
+    Rename "$INSTDIR\etc\parameters-state.json" "$INSTDIR\parameters-state.json"
+  ${EndIf}
+
   ; Remove previous Medulla configuration if present
   ClearErrors
   IfFileExists "C:\Progra~1\Pulse" 0 +2
@@ -459,6 +464,10 @@ Section "!${PRODUCT_NAME}" sec_app
 !Else
   File /nonfatal "../parameters-root.crt"
 !EndIf
+
+  ${If} ${FileExists} "$INSTDIR\parameters-state.json"
+    Rename "$INSTDIR\parameters-state.json" "$INSTDIR\etc\parameters-state.json"
+  ${EndIf}
 
   ; Keep the server and the download tag given on the command line
   ${If} $BOOTSTRAP_SERVER != ""

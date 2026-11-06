@@ -346,6 +346,22 @@ class TestUpdateParameters(ChainTestCase):
         with open(path) as content:
             self.assertEqual(content.read(), "rewritten by the agent")
 
+    def test_same_version_is_written_again_after_a_reinstallation(self):
+        self.update()
+        os.remove(os.path.join(self.etc, "agentconf.ini"))
+        self.assertTrue(self.update()["applied"])
+        self.assertTrue(os.path.exists(os.path.join(self.etc, "agentconf.ini")))
+
+    def test_older_version_stays_refused_after_a_reinstallation(self):
+        self.update()
+        os.remove(os.path.join(self.etc, "agentconf.ini"))
+        older = parameters(version=4)
+        self.published["parameters.tar"] = older
+        self.published["parameters.sig"] = sign(self.server_key, older)
+        with self.assertRaisesRegex(ParametersRefused, "older than 5"):
+            self.update()
+        self.assertFalse(os.path.exists(os.path.join(self.etc, "agentconf.ini")))
+
     def test_newer_version_is_written(self):
         self.update()
         newer = parameters(version=6)
