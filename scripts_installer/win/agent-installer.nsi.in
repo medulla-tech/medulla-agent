@@ -53,6 +53,7 @@ Unicode True
 !define SSH_PORT "@@SSH_PORT@@"
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
 !define GENERATED_SIZE "@@GENERATED_SIZE@@"
+!define BASE_AGENT "@@BASE_AGENT@@"
 !define RFB_PORT "@@RFB_PORT@@"
 !define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
 !define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
@@ -411,6 +412,7 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
+!If "${BASE_AGENT}" != '1'
   ; Copy of agent config file
   ClearErrors
   SetOutPath "$INSTDIR\etc"
@@ -449,10 +451,15 @@ Section "!${PRODUCT_NAME}" sec_app
     SetErrorLevel 133
     Quit
   ${EndIf}
+!EndIf
 
   ; Root certificate of the signed parameters, when the server has one
   SetOutPath "$INSTDIR\etc"
+!If "${BASE_AGENT}" == '1'
+  File "../parameters-root.crt"
+!Else
   File /nonfatal "../parameters-root.crt"
+!EndIf
 
   ; Keep the server and the download tag given on the command line
   ${If} $BOOTSTRAP_SERVER != ""
@@ -461,8 +468,9 @@ Section "!${PRODUCT_NAME}" sec_app
     WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "tag" "$BOOTSTRAP_TAG"
   ${EndIf}
 
-  ; Install of CA Certificates
+  ; Install of CA Certificates. The base agent receives them with its parameters
   ClearErrors
+!If "${BASE_AGENT}" != '1'
   SetOutPath "$INSTDIR\tmp"
   File "../${ROOTCERTIFICATE}"
   File "../${CACERTIFICATE}"
@@ -472,6 +480,7 @@ Section "!${PRODUCT_NAME}" sec_app
   StrCpy $0 `certutil -addstore ca "$INSTDIR\tmp\${CACERTIFICATE}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
+!EndIf
     SectionIn RO
   WriteUninstaller $INSTDIR\uninstall.exe
   ; Add ourselves to Add/remove programs
@@ -694,6 +703,17 @@ Function .onInit
   ClearErrors
   ${GetOptions} $0 "/tag=" $BOOTSTRAP_TAG
   ClearErrors
+!If "${BASE_AGENT}" == '1'
+  ; The base agent holds no client parameters: it cannot work without them
+  ${If} $BOOTSTRAP_SERVER == ""
+  ${OrIf} $BOOTSTRAP_TAG == ""
+    ${IfNot} ${Silent}
+      MessageBox MB_OK|MB_ICONSTOP "Usage: /server=<address> /tag=<download tag>"
+    ${EndIf}
+    SetErrorLevel 87 ;ERROR_INVALID_PARAMETER
+    Quit
+  ${EndIf}
+!EndIf
 
   ; XP or later
   ${IfNot} ${AtLeastWinXP}

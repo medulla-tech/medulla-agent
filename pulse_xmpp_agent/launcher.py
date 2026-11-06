@@ -1113,19 +1113,25 @@ def refresh_signed_parameters():
     Download the signed parameters of an agent installed with /server and /tag.
 
     The module is only loaded on these agents, and a failure never stops the
-    launcher: the agent keeps its current configuration.
+    launcher: the agent keeps its current configuration. The base agent has no
+    configuration before its first parameters, so it keeps trying.
     """
     configuration_directory = directoryconffile()
     if configuration_directory is None or not os.path.isfile(
         os.path.join(configuration_directory, "bootstrap.ini")
     ):
         return
-    try:
-        from lib.signed_parameters import refresh_parameters
+    agent_configuration = os.path.join(configuration_directory, "agentconf.ini")
+    while True:
+        try:
+            from lib.signed_parameters import refresh_parameters
 
-        refresh_parameters(configuration_directory)
-    except Exception:
-        logger.error("Signed parameters not updated:\n%s" % traceback.format_exc())
+            refresh_parameters(configuration_directory)
+        except Exception:
+            logger.error("Signed parameters not updated:\n%s" % traceback.format_exc())
+        if os.path.isfile(agent_configuration):
+            return
+        time.sleep(60)
 
 
 def testagentconf(typeconf):
