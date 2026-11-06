@@ -3412,7 +3412,7 @@ class MUCBot(ClientXMPP):
                 self.force_full_registration()
                 # il y a 1 changement dans le reseau
                 # on verify si on connecte
-                if self.state.ensure("connected"):
+                if self.is_connected():
                     logging.log(
                         DEBUGPULSE, "AGENT MACHINE ALWAY CONNECTED ON CHANG RESEAU"
                     )

@@ -230,7 +230,7 @@ def handle_client_connection(self, msg):
                     self.networkMonitor()
                     return True, {}
 
-                if self.state.ensure("connected"):
+                if self.is_connected():
                     # toujours connected.
                     self.md5reseau = ()
                     self.update_plugin()
