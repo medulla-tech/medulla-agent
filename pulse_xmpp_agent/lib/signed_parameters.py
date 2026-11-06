@@ -387,7 +387,7 @@ def update_parameters(
     Returns:
         dict: The manifest, with "applied" telling if the files were written.
         The agent rewrites its own configuration, so a version already
-        applied is not written again.
+        applied is only written again if that configuration is missing.
 
     Raises:
         ParametersUnavailable: If the files cannot be downloaded.
@@ -407,7 +407,10 @@ def update_parameters(
         state["parameters_version"],
         state["revocation_version"],
     )
-    applied = manifest["version"] > state["parameters_version"]
+    configuration = os.path.join(destination, AGENT_CONFIGURATION_FILES[0])
+    applied = manifest["version"] > state["parameters_version"] or not os.path.isfile(
+        configuration
+    )
     if applied:
         extract_parameters(files["parameters.tar"], destination)
     _write_state(
