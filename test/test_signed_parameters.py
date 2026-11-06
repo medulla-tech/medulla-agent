@@ -388,6 +388,46 @@ class TestUpdateParameters(ChainTestCase):
         with self.assertLogs(level="ERROR"):
             self.assertFalse(refresh_parameters(self.etc))
 
+    def test_windows_settings_are_applied_with_new_parameters(self):
+        self.bootstrap()
+        archive = tar_of(
+            {
+                "manifest.json": json.dumps(
+                    {
+                        "server": SERVER,
+                        "organisation": ORGANISATION,
+                        "download_tag": ORGANISATION,
+                        "version": 5,
+                    }
+                ).encode(),
+                "agentconf.ini": b"[connection]\n",
+                "medulla-rootca.cert.pem": b"root",
+                "medulla-ca-chain.cert.pem": b"chain",
+            }
+        )
+        self.published["parameters.tar"] = archive
+        self.published["parameters.sig"] = sign(self.server_key, archive)
+        with mock.patch("sys.platform", "win32"), mock.patch("subprocess.run") as run:
+            self.assertTrue(refresh_parameters(self.etc))
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertEqual([command[0] for command in commands], ["icacls", "certutil", "certutil"])
+        self.assertEqual(commands[1][:3], ["certutil", "-addstore", "root"])
+        self.assertEqual(commands[2][:3], ["certutil", "-addstore", "ca"])
+
+    def test_windows_settings_are_not_applied_without_new_parameters(self):
+        self.bootstrap()
+        refresh_parameters(self.etc)
+        with mock.patch("sys.platform", "win32"), mock.patch("subprocess.run") as run:
+            self.assertFalse(refresh_parameters(self.etc))
+        run.assert_not_called()
+
+    def test_failing_windows_command_does_not_raise(self):
+        self.bootstrap()
+        with mock.patch("sys.platform", "win32"), mock.patch(
+            "subprocess.run", side_effect=OSError("not found")
+        ), self.assertLogs(level="ERROR"):
+            self.assertTrue(refresh_parameters(self.etc))
+
     def test_refused_parameters_write_nothing(self):
         self.published["parameters.tar"] += b"x"
         with self.assertRaises(ParametersRefused):

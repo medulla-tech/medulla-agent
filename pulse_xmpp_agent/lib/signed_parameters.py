@@ -22,6 +22,8 @@ import json
 import logging
 import os
 import re
+import subprocess
+import sys
 import tarfile
 import tempfile
 import urllib.error
@@ -39,6 +41,11 @@ MANIFEST_NAME = "manifest.json"
 BOOTSTRAP_NAME = "bootstrap.ini"
 ROOT_CERTIFICATE_NAME = "parameters-root.crt"
 STATE_NAME = "parameters-state.json"
+AGENT_CONFIGURATION_FILES = ("agentconf.ini", "agentconf.ini.tpl")
+CERTIFICATE_STORES = (
+    ("root", "medulla-rootca.cert.pem"),
+    ("ca", "medulla-ca-chain.cert.pem"),
+)
 PUBLISHED_FILES = (
     "parameters.tar",
     "parameters.sig",
@@ -413,6 +420,35 @@ def update_parameters(
     return dict(manifest, applied=applied)
 
 
+def _run_windows_command(command):
+    try:
+        subprocess.run(command, check=True, capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as error:
+        logger.error(f"{command[0]} failed: {error}")
+
+
+def _apply_windows_settings(configuration_directory):
+    """Do what the installer does for the files it no longer embeds."""
+    for name in AGENT_CONFIGURATION_FILES:
+        path = os.path.join(configuration_directory, name)
+        if os.path.isfile(path):
+            _run_windows_command(
+                [
+                    "icacls",
+                    path,
+                    "/inheritance:r",
+                    "/grant:r",
+                    "NT AUTHORITY\\SYSTEM:(F)",
+                    "/grant:r",
+                    "*S-1-5-32-544:(F)",
+                ]
+            )
+    for store, name in CERTIFICATE_STORES:
+        path = os.path.join(configuration_directory, name)
+        if os.path.isfile(path):
+            _run_windows_command(["certutil", "-addstore", store, path])
+
+
 def refresh_parameters(configuration_directory):
     """
     Update the parameters at the start of the agent, when it has a bootstrap.
@@ -445,4 +481,6 @@ def refresh_parameters(configuration_directory):
         return False
     if manifest["applied"]:
         logger.info(f"Parameters version {manifest['version']} applied from {server}")
+        if sys.platform.startswith("win"):
+            _apply_windows_settings(configuration_directory)
     return manifest["applied"]

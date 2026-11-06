@@ -156,6 +156,7 @@ CACERTIFICATE_FILENAME="medulla-ca-chain.cert.pem"
 CACERT_NAME="Medulla CA Cert"
 CACERT_VERSION="1.1"
 PARAMETERS_SIGNING_KEY="/etc/medulla/parameters/server.key"
+BASE_AGENT=0
 VIM_NAME="Medulla Vim"
 # Display usage
 display_usage() {
@@ -178,6 +179,10 @@ check_arguments() {
                 ;;
             --minimal*)
                 MINIMAL=1
+                shift
+                ;;
+            --base-agent*)
+                BASE_AGENT=1
                 shift
                 ;;
             --base-url*)
@@ -434,6 +439,7 @@ update_nsi_script() {
         -e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
         -e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
         -e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
+        -e "s/@@BASE_AGENT@@/${BASE_AGENT}/" \
         -e "s/@@CREATE_PROFILE_FILENAME@@/${CREATE_PROFILE_FILENAME}/" \
         -e "s/@@REMOVE_PROFILE_FILENAME@@/${REMOVE_PROFILE_FILENAME}/" \
         -e "s/@@PULSE_SERVICE_FILENAME@@/${PULSE_SERVICE_FILENAME}/" \
@@ -471,6 +477,13 @@ generate_agent_installer() {
 	fi
     chmod a+r /var/lib/pulse2/clients/win/Medulla-Agent-windows-*.exe
 
+    # The base agent is not client specific: it stays out of the client agents
+    if [[ ${BASE_AGENT} -eq 1 ]]; then
+        ln -s -f Medulla-Agent-windows-BASE-${AGENT_VERSION}.exe Medulla-Agent-windows-BASE-latest.exe
+        colored_echo green "### INFO  Generating installer... Done"
+        return
+    fi
+
     # Create symlinks to latest version
     if [[ ${INVENTORY_TAG} == '' ]]; then
         if [[ ${MINIMAL} -eq 1 ]]; then
@@ -503,8 +516,8 @@ read_download_tag() {
 }
 
 sign_client_parameters() {
-    # Only the servers holding a parameters signing key are concerned
-    if [ ! -f ${PARAMETERS_SIGNING_KEY} ]; then
+    # Only the client agents of servers holding a signing key are concerned
+    if [[ ${BASE_AGENT} -eq 1 ]] || [ ! -f ${PARAMETERS_SIGNING_KEY} ]; then
         return
     fi
     colored_echo blue "### INFO Signing client parameters..."
@@ -525,6 +538,9 @@ if [[ ${MINIMAL} -eq 1 ]]; then
 	compute_parameters_dl
 else
 	compute_parameters_full
+fi
+if [[ ${BASE_AGENT} -eq 1 ]]; then
+    GENERATED_SIZE='BASE'
 fi
 update_nsi_script
 configure_ssh_plugin
