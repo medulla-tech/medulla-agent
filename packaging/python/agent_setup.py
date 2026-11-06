@@ -71,5 +71,6 @@ setup(
             "websockets",
             "distro",
         ]
-    ),
+    )
+    + (["cryptography >= 41.0.2"] if sys.platform.startswith("win") else []),
 )
