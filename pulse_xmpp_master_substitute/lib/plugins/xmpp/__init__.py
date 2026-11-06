@@ -8,7 +8,6 @@ xmppmaster database handler
 """
 
 # Python standard library
-from contextlib import closing
 from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Union
 
 # SqlAlchemy
@@ -37,6 +36,7 @@ from sqlalchemy import TypeDecorator
 from sqlalchemy.orm import scoped_session
 
 import functools
+from contextlib import closing
 
 
 try:
