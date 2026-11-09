@@ -504,6 +504,7 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "DisplayVersion" "${CACERT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CACERT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
   ${EndIf}
+!If "${BASE_AGENT}" != '1'
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${IfNot} $1 == 0
@@ -514,6 +515,7 @@ Section "!${PRODUCT_NAME}" sec_app
     SetErrorLevel 138
     Quit
   ${EndIf}
+!EndIf
 
   ; Create log folder to hold agent logs
   CreateDirectory $INSTDIR\var\log
