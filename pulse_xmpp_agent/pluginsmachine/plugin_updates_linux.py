@@ -37,7 +37,7 @@ from lib import utils
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.11", "NAME": "updates_linux", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "updates_linux", "TYPE": "machine"}  # fmt: skip
 
 REPORT_FORMAT = 1
 REPORT_INTERVAL = 86400

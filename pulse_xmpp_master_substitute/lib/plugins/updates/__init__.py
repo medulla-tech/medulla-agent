@@ -524,16 +524,19 @@ class UpdatesStore(object):
         upgrade are its missing updates, nothing to compute."""
         row = report_row(jid, report, glpi_uuid)
         columns = list(row)
-        # Upsert, never REPLACE: the cascade would drop the missing updates
+        # Upsert, never REPLACE: the cascade would drop the missing updates.
+        # A report sent while the machine registers has no GLPI uuid yet: keep the known one
         self.execute(
             "INSERT INTO machine_reports (%s, received_at) VALUES (%s, NOW())"
-            " ON DUPLICATE KEY UPDATE %s, received_at = NOW()"
+            " ON DUPLICATE KEY UPDATE %s, received_at = NOW(),"
+            " glpi_uuid = COALESCE(VALUES(glpi_uuid), glpi_uuid)"
             % (
                 ", ".join("`%s`" % column for column in columns),
                 ", ".join(":%s" % column for column in columns),
                 ", ".join(
                     "`%s` = VALUES(`%s`)" % (column, column)
                     for column in updated_columns(report)
+                    if column != "glpi_uuid"
                 ),
             ),
             row,

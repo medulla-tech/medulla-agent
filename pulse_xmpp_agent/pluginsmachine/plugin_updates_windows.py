@@ -35,7 +35,7 @@ from lib.agentconffile import medullaPath
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.13", "NAME": "updates_windows", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "updates_windows", "TYPE": "machine"}  # fmt: skip
 
 REPORT_FORMAT = 1
 REPORT_INTERVAL = 86400
@@ -527,7 +527,7 @@ def collect_graphics():
     try:
         if os.path.exists(path):
             os.remove(path)
-        subprocess.run(["dxdiag", "/x", path], timeout=DXDIAG_TIMEOUT)
+        subprocess.run(["dxdiag", "/x", path], timeout=DXDIAG_TIMEOUT, cwd=tempfile.gettempdir())
         # dxdiag may return before the file is fully written
         deadline = time.time() + DXDIAG_TIMEOUT
         while time.time() < deadline:
@@ -569,6 +569,8 @@ def run_powershell(script, timeout=SCRIPT_TIMEOUT):
         encoding="utf-8",
         errors="replace",
         timeout=timeout,
+        # The deployment engine moves the agent into the package folder, deleted at its end
+        cwd=tempfile.gettempdir(),
     )
     output = (result.stdout or "").strip()
     if not output:

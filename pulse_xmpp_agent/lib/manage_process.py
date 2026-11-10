@@ -151,13 +151,21 @@ class process_on_end_send_message_xmpp:
         logging.debug("manage process start")
 
     def add_processcommand(
-        self, command, message, tosucces=None, toerror=None, timeout=50, step=None
+        self,
+        command,
+        message,
+        tosucces=None,
+        toerror=None,
+        timeout=50,
+        step=None,
+        on_start=None,
     ):
         """
         Executes a command, captures its output, and returns the return code and result lines.
 
         - Executes the command with a specified timeout.
         - Returns the command's return code and output lines for further processing.
+        - on_start, if given, receives the pid once the process runs.
         """
         message["data"]["tosucces"] = tosucces
         message["data"]["toerror"] = toerror
@@ -178,6 +186,8 @@ class process_on_end_send_message_xmpp:
                 stderr=subprocess.PIPE,
                 text=True,
             )
+            if on_start is not None:
+                on_start(proc.pid)
             try:
                 stdout, _ = proc.communicate(timeout=timeout)
             except subprocess.TimeoutExpired:

@@ -1213,12 +1213,13 @@ def unsupported_reason(files, kb=None):
     return None
 
 
-def enablement_files(files, entry_kb, own_kbs):
-    """The enablement cab among the files of an upgrade entry ([] when none)."""
+def enablement_files(files, entry_kb, own_kbs, shared=frozenset()):
+    """The enablement cab among the files of an upgrade entry ([] when none).
+    shared: ids of the files other versions carry too (cumulative, stack)."""
     found = []
     for file in files:
         match = ENABLEMENT_NAME.search(file["name"] or "")
-        if match and int(match.group(1)) not in own_kbs | {entry_kb}:
+        if match and int(match.group(1)) not in own_kbs | {entry_kb} and file.get("id") not in shared:
             found.append(dict(file, enablement_kb=int(match.group(1))))
     return found
 
@@ -1948,6 +1949,18 @@ class PackageStore(object):
         )
         return {row[0] for row in rows}
 
+    def files_of_other_releases(self, update_id):
+        """Ids of the files of the update that an entry of another version carries too."""
+        rows = self.store.execute(
+            "SELECT DISTINCT uf.file_id FROM update_files uf"
+            " JOIN updates u ON u.id = :id"
+            " JOIN update_files other ON other.file_id = uf.file_id"
+            " JOIN updates o ON o.id = other.update_id AND NOT o.release_id <=> u.release_id"
+            " WHERE uf.update_id = :id",
+            {"id": update_id},
+        )
+        return {row[0] for row in rows}
+
     def update_files(self, update_id):
         rows = self.store.execute(
             "SELECT f.id, f.sha1, f.sha256, f.name, f.size, f.url, f.kind"
@@ -2075,7 +2088,8 @@ class Builder(object):
             if update is not None and update["classification"] == UPGRADES:
                 # Only the enablement package: the rest of the entry is the full image
                 kbs = {int(m.group(1)) for m in (ENABLEMENT_NAME.search(f["name"] or "") for f in files) if m}
-                files = enablement_files(files, update["kb"], store.own_kbs(kbs))
+                files = enablement_files(
+                    files, update["kb"], store.own_kbs(kbs), store.files_of_other_releases(update_id))
                 if files:
                     update = dict(update, kb=files[0]["enablement_kb"])
                 else:

@@ -37,6 +37,7 @@ import base64
 import time
 import copy
 import shlex
+import psutil
 from .agentconffile import pulseTempDir
 
 if sys.platform.startswith("win"):
@@ -444,6 +445,52 @@ class grafcet:
         # next running if session existe then session clearing
         self.datasend["data"]["sessionreload"] = False
         self.datasend["data"]["restart"] = False
+
+    def __session_survives_restart__(self, running):
+        # A script can outlast the agent: a restarted agent comes back on this step
+        self.datasend["data"]["sessionreload"] = running
+        if not running:
+            self.data.pop("running_process", None)
+        self.__save_session__()
+
+    def __save_running_process__(self, pid):
+        try:
+            created = psutil.Process(pid).create_time()
+        except psutil.Error:
+            return
+        self.data["running_process"] = {"pid": pid, "created": created}
+        self.__save_session__()
+
+    def __wait_process_of_previous_run__(self):
+        # The agent restarted while the script ran: let it end before running the step again
+        running = self.data.pop("running_process", None)
+        if not running:
+            return
+        try:
+            process = psutil.Process(running["pid"])
+            if process.create_time() != running["created"]:
+                return
+        except psutil.Error:
+            return
+        self.__affiche_message(
+            f'[{self.data["name"]}]-[{self.workingstep["step"]}]: Agent restarted during'
+            f" the step: waiting for process {running['pid']} before running it again",
+            module="Deployment | Execution",
+        )
+        try:
+            process.wait(timeout=self.workingstep["timeout"])
+        except psutil.TimeoutExpired:
+            pass
+
+    def __save_session__(self):
+        objsession = self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
+        if objsession is None:
+            objsession = self.objectxmpp.session.createsessiondatainfo(
+                self.sessionid,
+                datasession=self.datasend,
+                timevalid=self.__session_ticks__(),
+            )
+        objsession.setdatasession(self.datasend)
 
     def __next_current_step__(self):
         # pointer to the next step
@@ -2575,6 +2622,11 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
+            # The step rewrites its script below: keep the source for a second run
+            if "script_source" in self.workingstep:
+                self.workingstep["script"] = self.workingstep["script_source"]
+            else:
+                self.workingstep["script_source"] = self.workingstep["script"]
             self.workingstep["script"] = isBase64tostring(self.workingstep["script"])
             # HTML form textareas post scripts with CRLF; normalize to LF so
             # unix shells don't choke on the \r (Windows tolerates LF just fine).
@@ -2656,6 +2708,8 @@ class grafcet:
                 command = commandtype + temp_path
             # working Step recup from process et session
             if command != "":
+                self.__wait_process_of_previous_run__()
+                self.__session_survives_restart__(True)
                 code_return, output_lines = (
                     self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
                         command,
@@ -2664,8 +2718,10 @@ class grafcet:
                         self.objectxmpp.boundjid.bare,
                         self.workingstep["timeout"],
                         self.workingstep["step"],
+                        on_start=self.__save_running_process__,
                     )
                 )
+                self.__session_survives_restart__(False)
 
             # Indicate the return code and process the results
             self.workingstep["codereturn"] = code_return
