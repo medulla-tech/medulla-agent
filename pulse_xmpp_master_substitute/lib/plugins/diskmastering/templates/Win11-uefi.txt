@@ -1,0 +1,571 @@
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+
+
+    <settings pass="offlineServicing"></settings>
+    <settings pass="windowsPE">
+        <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <SetupUILanguage>
+                <UILanguage>@@SetupUILanguage@@</UILanguage>
+            </SetupUILanguage>
+            <InputLocale>@@InputLocale@@</InputLocale>
+            <SystemLocale>@@SetupUILanguage@@</SystemLocale>
+            <UILanguage>@@SetupUILanguage@@</UILanguage>
+            <UILanguageFallback>@@SetupUILanguage@@</UILanguageFallback>
+            <UserLocale>@@UserLocale@@</UserLocale>
+        </component>
+        
+        
+
+        <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+            <ImageInstall>
+                <OSImage>
+                    <InstallTo>
+                        <DiskID>0</DiskID>
+                        <PartitionID>3</PartitionID>
+                    </InstallTo>
+                </OSImage>
+            </ImageInstall>
+
+            <UserData>
+                <AcceptEula>@@AcceptEULA@@</AcceptEula>
+                <FullName>@@FullName@@</FullName>
+                <Organization>@@OrginazationName@@</Organization>
+                <ProductKey>
+                    <Key>@@ProductKey1@@-@@ProductKey2@@-@@ProductKey3@@-@@ProductKey4@@-@@ProductKey5@@</Key>
+                    <WillShowUI>OnError</WillShowUI>
+                </ProductKey>
+            </UserData>
+            <EnableFirewall>@@EnableFirewall@@</EnableFirewall>
+            <UseConfigurationSet>false</UseConfigurationSet>
+            <RunSynchronous>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <Path>cmd.exe /c &gt;&gt;X:\\diskpart.txt (echo SELECT DISK=0&amp;echo CLEAN&amp;echo CONVERT GPT&amp;echo CREATE PARTITION EFI SIZE=300&amp;echo FORMAT QUICK FS=FAT32 LABEL=^"System^"&amp;echo CREATE PARTITION MSR SIZE=16)"</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+					<Order>2</Order>
+					<Path>cmd.exe /c &gt;&gt;X:\\diskpart.txt (echo:FORMAT QUICK FS=NTFS LABEL=^"Windows^"&amp;echo:ASSIGN LETTER=@@DriveLetter@@)</Path>
+				</RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>3</Order>
+                    <Path>cmd.exe /c "diskpart.exe /s "X:\\diskpart.txt" &gt;&gt;"X:\\diskpart.log" || ( type "X:\\diskpart.log" &amp; echo diskpart encountered an error. &amp; pause &amp; exit /b 1 )"</Path>
+                </RunSynchronousCommand>
+            </RunSynchronous>
+        </component>
+    </settings>
+    
+    
+
+    <settings pass="offlineServicing">
+        <component name="Microsoft-Windows-LUA-Settings" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <EnableLUA>@@EnableUAC@@</EnableLUA>
+        </component>
+    </settings>
+    <settings pass="generalize">
+        <component name="Microsoft-Windows-Security-SPP" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <SkipRearm>@@SkipRearm@@</SkipRearm>
+        </component>
+    </settings>
+    
+    
+
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <InputLocale>@@InputLocale@@</InputLocale>
+            <SystemLocale>@@UILanguage@@</SystemLocale>
+            <UILanguage>@@UILanguage@@</UILanguage>
+            <UILanguageFallback>@@UILanguage@@</UILanguageFallback>
+            <UserLocale>@@UserLocale@@</UserLocale>
+        </component>
+
+        <component name="Microsoft-Windows-UnattendedJoin" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Identification>
+                <Credentials>
+                    <Domain>@@Domain@@</Domain>
+                    <Password>@@DomainPassword@@</Password>
+                    <Username>@@DomainUser@@</Username>
+                </Credentials>
+                <JoinDomain>@@JoinDomain@@</JoinDomain>
+                <MachineObjectOU>@@MachineObjectOU@@</MachineObjectOU>
+            </Identification>
+        </component>
+
+        <component name="Microsoft-Windows-Security-SPP-UX" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <SkipAutoActivation>@@SkipAutoActivation@@</SkipAutoActivation>
+        </component>
+
+        <component name="Microsoft-Windows-SQMApi" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <CEIPEnabled>@@CEIPEnabled@@</CEIPEnabled>
+        </component>
+
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <ComputerName>@@ComputerName@@</ComputerName>
+            <CopyProfile>@@CopyProfile@@</CopyProfile>
+        </component>
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <ExtendOSPartition>
+                <Extend>@@ExtendOSPartition@@</Extend>
+            </ExtendOSPartition>
+            <RunSynchronous>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "$xml = [xml]::new(); $xml.Load('C:\\Windows\\Panther\\unattend.xml'); $sb = [scriptblock]::Create( $xml.unattend.Extensions.ExtractScript ); Invoke-Command -ScriptBlock $sb -ArgumentList $xml;"</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>2</Order>
+                    <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "Get-Content -LiteralPath 'C:\\Windows\\Setup\\Scripts\\Specialize.ps1' -Raw | Invoke-Expression;"</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>3</Order>
+                    <Path>reg.exe load "HKU\\DefaultUser" "C:\\Users\\Default\\NTUSER.DAT"</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>4</Order>
+                    <Path>powershell.exe -WindowStyle Normal -NoProfile -Command "Get-Content -LiteralPath 'C:\\Windows\\Setup\\Scripts\\DefaultUser.ps1' -Raw | Invoke-Expression;"</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>5</Order>
+                    <Path>reg.exe unload "HKU\\DefaultUser"</Path>
+                </RunSynchronousCommand>
+            </RunSynchronous>
+        </component>
+    </settings>
+    
+    
+
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <InputLocale>@@InputLocale@@</InputLocale>
+            <SystemLocale>@@UILanguage@@</SystemLocale>
+            <UILanguage>@@UILanguage@@</UILanguage>
+            <UserLocale>@@UserLocale@@</UserLocale>
+        </component>
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <OOBE>
+
+                <HideEULAPage>@@HideEULA@@</HideEULAPage>
+
+                <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+
+                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+
+                <HideWirelessSetupInOOBE>@@HideWireless@@</HideWirelessSetupInOOBE>
+                <ProtectYourPC>@@ProtectComputer@@</ProtectYourPC>
+            </OOBE>
+            <UserAccounts>
+                <LocalAccounts>
+                    <LocalAccount wcm:action="add">
+                        
+                        <Password>
+                            <Value>@@Password@@</Value>
+                            <PlainText>true</PlainText>
+                        </Password>
+                        
+                        <Description>@@Description@@</Description>
+                        
+                        <DisplayName>@@FullName@@</DisplayName>
+                        
+                        <Group>@@Group@@</Group>
+                        
+                        <Name>@@FullName@@</Name>
+                    </LocalAccount>
+                </LocalAccounts>
+                <AdministratorPassword>
+                    <Value>@@PasswordAdmin@@</Value>
+                    <PlainText>true</PlainText>
+                </AdministratorPassword>
+            </UserAccounts>
+            
+            <RegisteredOrganization>@@OrginazationName@@</RegisteredOrganization>
+            
+            <RegisteredOwner>@@FullName@@</RegisteredOwner>
+            
+            <DisableAutoDaylightTimeSet>@@DaylightSettings@@</DisableAutoDaylightTimeSet>
+            <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add">
+                    <Description>Control Panel View</Description>
+                    <Order>1</Order>
+                    <CommandLine>reg add "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ControlPanel" /v StartupPage /t REG_DWORD /d 1@@ControlPanelView@@ /f</CommandLine>
+                    <RequiresUserInput>true</RequiresUserInput>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <Order>2</Order>
+                    <Description>Control Panel Icon Size</Description>
+                    <RequiresUserInput>false</RequiresUserInput>
+                    <CommandLine>reg add "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ControlPanel" /v AllItemsIconView /t REG_DWORD /d @@ControlPanelIconSize@@ /f</CommandLine>
+                </SynchronousCommand>
+            </FirstLogonCommands>
+            
+            <TimeZone>@@TimeZone@@</TimeZone>
+        </component>
+    </settings>
+    <Extensions xmlns="https://schneegans.de/windows/unattend-generator/">
+        <ExtractScript>
+param(
+    [xml] $Document
+);
+foreach( $file in $Document.unattend.Extensions.File ) {
+$path = [System.Environment]::ExpandEnvironmentVariables( $file.GetAttribute( 'path' ) );
+mkdir -Path( $path | Split-Path -Parent ) -ErrorAction 'SilentlyContinue';
+$encoding = switch( [System.IO.Path]::GetExtension( $path ) ) {
+{ $_ -in '.ps1', '.xml' } { [System.Text.Encoding]::UTF8; }
+{ $_ -in '.reg', '.vbs', '.js' } { [System.Text.UnicodeEncoding]::new( $false, $true ); }
+default { [System.Text.Encoding]::Default; }
+};
+$bytes = $encoding.GetPreamble() + $encoding.GetBytes( $file.InnerText.Trim() );
+[System.IO.File]::WriteAllBytes( $path, $bytes );
+}
+        </ExtractScript>
+        
+        <File path="C:\\Windows\\Setup\\Scripts\\RemovePackages.ps1">
+$selectors = @(
+@@BloatsRemovePackages@@
+);
+$getCommand = {
+Get-AppxProvisionedPackage -Online;
+};
+$filterCommand = {
+$_.DisplayName -eq $selector;
+};
+$removeCommand = {
+[CmdletBinding()]
+param(
+[Parameter( Mandatory, ValueFromPipeline )]
+$InputObject
+);
+process {
+$InputObject | Remove-AppxProvisionedPackage -AllUsers -Online -ErrorAction 'Continue';
+}
+};
+$type = 'Package';
+$logfile = 'C:\\Windows\\Setup\\Scripts\\RemovePackages.log';
+&amp; {
+$installed = &amp; $getCommand;
+foreach( $selector in $selectors ) {
+$result = [ordered] @{
+Selector = $selector;
+};
+$found = $installed | Where-Object -FilterScript $filterCommand;
+if( $found ) {
+$result.Output = $found | &amp; $removeCommand;
+if( $? ) {
+    $result.Message = "$type removed.";
+} else {
+    $result.Message = "$type not removed.";
+    $result.Error = $Error[0];
+}
+} else {
+$result.Message = "$type not installed.";
+}
+$result | ConvertTo-Json -Depth 3 -Compress;
+}
+} *$gt;&amp;1 &gt;&gt; $logfile;
+    </File>
+
+    
+    <File path="C:\\Windows\\Setup\\Scripts\\RemoveCapabilities.ps1">
+$selectors = @(
+@@BloatsRemoveCapabilities@@
+);
+$getCommand = {
+Get-WindowsCapability -Online | Where-Object -Property 'State' -NotIn -Value @(
+'NotPresent';
+'Removed';
+);
+};
+$filterCommand = {
+($_.Name -split '~')[0] -eq $selector;
+};
+$removeCommand = {
+[CmdletBinding()]
+param(
+[Parameter( Mandatory, ValueFromPipeline )]
+$InputObject
+);
+process {
+$InputObject | Remove-WindowsCapability -Online -ErrorAction 'Continue';
+}
+};
+$type = 'Capability';
+$logfile = 'C:\\Windows\\Setup\\Scripts\\RemoveCapabilities.log';
+&amp; {
+$installed = &amp; $getCommand;
+foreach( $selector in $selectors ) {
+$result = [ordered] @{
+Selector = $selector;
+};
+$found = $installed | Where-Object -FilterScript $filterCommand;
+if( $found ) {
+$result.Output = $found | &amp; $removeCommand;
+if( $? ) {
+$result.Message = "$type removed.";
+} else {
+$result.Message = "$type not removed.";
+$result.Error = $Error[0];
+}
+} else {
+$result.Message = "$type not installed.";
+}
+$result | ConvertTo-Json -Depth 3 -Compress;
+}
+} *$gt;&amp;1 &gt;&gt; $logfile;
+</File>
+
+<File path="C:\\Windows\\Setup\\Scripts\\RemoveFeatures.ps1">
+$selectors = @(
+@@BloatsRemoveFeatures@@
+);
+$getCommand = {
+Get-WindowsOptionalFeature -Online | Where-Object -Property 'State' -NotIn -Value @(
+'Disabled';
+'DisabledWithPayloadRemoved';
+);
+};
+$filterCommand = {
+$_.FeatureName -eq $selector;
+};
+$removeCommand = {
+[CmdletBinding()]
+param(
+[Parameter( Mandatory, ValueFromPipeline )]
+$InputObject
+);
+process {
+$InputObject | Disable-WindowsOptionalFeature -Online -Remove -NoRestart -ErrorAction 'Continue';
+}
+};
+$type = 'Feature';
+$logfile = 'C:\\Windows\\Setup\\Scripts\\RemoveFeatures.log';
+&amp; {
+$installed = &amp; $getCommand;
+foreach( $selector in $selectors ) {
+$result = [ordered] @{
+Selector = $selector;
+};
+$found = $installed | Where-Object -FilterScript $filterCommand;
+if( $found ) {
+$result.Output = $found | &amp; $removeCommand;
+if( $? ) {
+$result.Message = "$type removed.";
+} else {
+$result.Message = "$type not removed.";
+$result.Error = $Error[0];
+}
+} else {
+$result.Message = "$type not installed.";
+}
+$result | ConvertTo-Json -Depth 3 -Compress;
+}
+} *$gt;&amp;1 &gt;&gt; $logfile;
+</File>
+
+<File path="C:\\Windows\\Setup\\Scripts\\PauseWindowsUpdate.ps1">
+$formatter = {
+$args[0].ToString( "yyyy'-'MM'-'dd'T'HH':'mm':'ssK" );
+};
+$now = [datetime]::UtcNow;
+$start = &amp; $formatter $now;
+$end = &amp; $formatter $now.AddDays( 7 );
+
+$params = @{
+LiteralPath = 'Registry::HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings';
+Type = 'String';
+Force = $true;
+};
+
+Set-ItemProperty @params -Name 'PauseFeatureUpdatesStartTime' -Value $start;
+Set-ItemProperty @params -Name 'PauseFeatureUpdatesEndTime' -Value $end;
+Set-ItemProperty @params -Name 'PauseQualityUpdatesStartTime' -Value $start;
+Set-ItemProperty @params -Name 'PauseQualityUpdatesEndTime' -Value $end;
+Set-ItemProperty @params -Name 'PauseUpdatesStartTime' -Value $start;
+Set-ItemProperty @params -Name 'PauseUpdatesExpiryTime' -Value $end;
+</File>
+
+
+<File path="C:\\Windows\\Setup\\Scripts\\PauseWindowsUpdate.xml">
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+<Triggers>
+<BootTrigger>
+<Repetition>
+<Interval>P1D</Interval>
+<StopAtDurationEnd>false</StopAtDurationEnd>
+</Repetition>
+<Enabled>true</Enabled>
+</BootTrigger>
+</Triggers>
+<Principals>
+<Principal id="Author">
+<UserId>S-1-5-19</UserId>
+<RunLevel>LeastPrivilege</RunLevel>
+</Principal>
+</Principals>
+<Settings>
+<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+<AllowHardTerminate>true</AllowHardTerminate>
+<StartWhenAvailable>false</StartWhenAvailable>
+<RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+<IdleSettings>
+<StopOnIdleEnd>true</StopOnIdleEnd>
+<RestartOnIdle>false</RestartOnIdle>
+</IdleSettings>
+<AllowStartOnDemand>true</AllowStartOnDemand>
+<Enabled>true</Enabled>
+<Hidden>false</Hidden>
+<RunOnlyIfIdle>false</RunOnlyIfIdle>
+<WakeToRun>false</WakeToRun>
+<ExecutionTimeLimit>PT72H</ExecutionTimeLimit>
+<Priority>7</Priority>
+</Settings>
+<Actions Context="Author">
+<Exec>
+<Command>C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe</Command>
+<Arguments>-Command "Get-Content -LiteralPath 'C:\\Windows\\Setup\\Scripts\\PauseWindowsUpdate.ps1' -Raw | Invoke-Expression;"</Arguments>
+</Exec>
+</Actions>
+</Task>
+</File>
+
+<File path="C:\\Windows\\Setup\\Scripts\\SetStartPins.ps1">
+$json = '{"pinnedList":[]}';
+if( [System.Environment]::OSVersion.Version.Build -lt 20000 ) {
+return;
+}
+
+$key = 'Registry::HKLM\\SOFTWARE\\Microsoft\\PolicyManager\\current\\device\\Start';
+New-Item -Path $key -ItemType 'Directory' -ErrorAction 'SilentlyContinue';
+Set-ItemProperty -LiteralPath $key -Name 'ConfigureStartPins' -Value $json -Type 'String';
+</File>
+
+
+<File path="C:\\Windows\\Setup\\Scripts\\Specialize.ps1">
+$scripts = @(
+@@BloatsSpecialize@@
+{ net.exe accounts /maxpwage:UNLIMITED; };
+{
+Register-ScheduledTask -TaskName 'PauseWindowsUpdate' -Xml $( Get-Content -LiteralPath 'C:\\Windows\\Setup\\Scripts\\PauseWindowsUpdate.xml' -Raw );
+};
+{
+reg.exe add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f;
+};
+{
+reg.exe add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f;
+};
+{
+reg.exe add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\BitLocker" /v "PreventDeviceEncryption" /t REG_DWORD /d 1 /f;
+};
+{
+reg.exe add "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge" /v HideFirstRunExperience /t REG_DWORD /d 1 /f;
+};
+{
+Get-Content -LiteralPath 'C:\\Windows\\Setup\\Scripts\\SetStartPins.ps1' -Raw | Invoke-Expression;
+};
+{
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\ControlAnimations" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\AnimateMinMax" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\TaskbarAnimations" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\DWMAeroPeekEnabled" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\MenuAnimation" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\TooltipAnimation" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\SelectionFade" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\DWMSaveThumbnailEnabled" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\CursorShadow" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\ListviewShadow" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\ThumbnailsOrIcon" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\ListviewAlphaSelect" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\DragFullWindows" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\ComboBoxAnimation" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\FontSmoothing" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\ListBoxSmoothScrolling" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+Set-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\\DropShadow" -Name 'DefaultValue' -Value 0 -Type 'DWord' -Force;
+};
+);
+
+&amp; {
+[float] $complete = 0;
+[float] $increment = 100 / $scripts.Count;
+foreach( $script in $scripts ) {
+Write-Progress -Activity 'Running scripts to customize your Windows installation. Do not close this window.' -PercentComplete $complete;
+'*** Will now execute command &#xAB;{0}&#xBB;.' -f $(
+$str = $script.ToString().Trim() -replace '\\s+', ' ';
+$max = 100;
+if( $str.Length -le $max ) {
+$str;
+} else {
+$str.Substring( 0, $max - 1 ) + '&#x2026;';
+}
+);
+$start = [datetime]::Now;
+&amp; $script;
+'*** Finished executing command after {0:0} ms.' -f [datetime]::Now.Subtract( $start ).TotalMilliseconds;
+"`r`n" * 3;
+$complete += $increment;
+}
+} *$gt;&amp;1 &gt;&gt; "C:\\Windows\\Setup\\Scripts\\Specialize.log";
+</File>
+
+<File path="C:\\Windows\\Setup\\Scripts\\UserOnce.ps1">
+$scripts = @(
+@@BloatsUserOnce@@
+{
+Set-ItemProperty -LiteralPath 'Registry::HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects' -Name 'VisualFXSetting' -Type 'DWord' -Value 2 -Force;
+};
+);
+
+&amp; {
+[float] $complete = 0;
+[float] $increment = 100 / $scripts.Count;
+foreach( $script in $scripts ) {
+Write-Progress -Activity 'Running scripts to configure this user account. Do not close this window.' -PercentComplete $complete;
+'*** Will now execute command &#xAB;{0}&#xBB;.' -f $(
+$str = $script.ToString().Trim() -replace '\\s+', ' ';
+$max = 100;
+if( $str.Length -le $max ) {
+$str;
+} else {
+$str.Substring( 0, $max - 1 ) + '&#x2026;';
+}
+);
+$start = [datetime]::Now;
+&amp; $script;
+'*** Finished executing command after {0:0} ms.' -f [datetime]::Now.Subtract( $start ).TotalMilliseconds;
+"`r`n" * 3;
+$complete += $increment;
+}
+} *$gt;&amp;1 &gt;&gt; "$env:TEMP\\UserOnce.log";
+</File>
+
+<File path="C:\\Windows\\Setup\\Scripts\\DefaultUser.ps1">
+$scripts = @(
+@@BloatsDefaultUser@@
+{
+reg.exe add "HKU\\DefaultUser\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced" /v TaskbarAl /t REG_DWORD /d 0 /f;
+};
+{
+reg.exe add "HKU\\DefaultUser\\Software\\Policies\\Microsoft\\Windows\\Explorer" /v DisableSearchBoxSuggestions /t REG_DWORD /d 1 /f;
+};
+{
+reg.exe add "HKU\\DefaultUser\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce" /v "UnattendedSetup" /t REG_SZ /d "powershell.exe -WindowStyle Normal -NoProfile -Command """Get-Content -LiteralPath 'C:\\Windows\\Setup\\Scripts\\UserOnce.ps1' -Raw | Invoke-Expression;""" /f;
+};
+);
+</File>
+<File path="C:\\Windows\\Setup\\Scripts\\FirstLogon.ps1">
+$scripts = @(
+{
+Set-ItemProperty -LiteralPath 'Registry::HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon' -Name 'AutoLogonCount' -Type 'DWord' -Force -Value 0;
+};
+);
+&amp; {
+[float] $complete = 0; 
+[float] $increment = 100 / $scripts.Count;
+foreach($script in $scripts )
+{
+Write-Progress -Activity 'Running scripts to finalize your Windows installation. Do not close this window.' -PercentComplete $complete; '*** Will now execute command &#xAB;{0}&#xBB;.' -f $( $str = $script.ToString().Trim() -replace '\\s+', ' '; $max = 100; if( $str.Length -le $max ) { $str; } else { $str.Substring( 0, $max - 1 ) + '&#x2026;'; } ); $start = [datetime]::Now; &amp; $script; '*** Finished executing command after {0:0} ms.' -f [datetime]::Now.Subtract( $start ).TotalMilliseconds; "`r`n" * 3; $complete += $increment;
+
+}
+} *&gt;&amp;1 &gt;&gt; "C:\\Windows\\Setup\\Scripts\\FirstLogon.log";
+</File>
+</Extensions>
+</unattend>

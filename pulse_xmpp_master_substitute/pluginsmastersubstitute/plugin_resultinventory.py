@@ -2,6 +2,7 @@
 # -*- coding: utf-8; -*-
 # SPDX-FileCopyrightText: 2016-2023 Siveo <support@siveo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
+# file : pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_resultinventory.py
 
 import sys
 import os
@@ -15,6 +16,11 @@ import time
 import json
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
+from lib.plugins.admin import AdminMasterDatabase
+from lib.glpi_xml_sync.db import connect_db
+from lib.glpi_xml_sync.models import DbConfig, SyncConfig
+from lib.glpi_xml_sync.sync_service import process_record
+from lib.glpi_xml_sync.xml_parser import parse_inventory
 from lib.utils import convert
 import re
 import inspect
@@ -29,7 +35,8 @@ import importlib.util
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.14", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.18", "NAME": "resultinventory", "TYPE": "substitute"}  # fmt: skip
+_RUNTIME_IDENTITY_LOGGED = False
 
 
 class InventoryFix:
@@ -196,6 +203,209 @@ def send_content(
     return reponsecode, reponsequery
 
 
+def _resolve_inventory_injection_mode(xmppobject):
+    """Retourne le mode d'injection normalise (forward/module/both)."""
+    mode = getattr(xmppobject.config, "inventory_injection_mode", "forward")
+    mode = str(mode or "forward").strip().lower()
+
+    aliases = {
+        "current": "forward",
+        "legacy": "forward",
+        "glpi_xml_sync": "module",
+    }
+    mode = aliases.get(mode, mode)
+
+    if mode not in {"forward", "module", "both"}:
+        logger.warning(
+            "Unknown inventory_injection_mode '%s', fallback to 'forward'", mode
+        )
+        mode = "forward"
+    return mode
+
+
+def _log_runtime_identity_once(xmppobject, injection_mode):
+    """Log une signature runtime pour verifier la bonne version et le bon fichier deploye."""
+    global _RUNTIME_IDENTITY_LOGGED
+    if _RUNTIME_IDENTITY_LOGGED:
+        return
+
+    forward_enabled = bool(getattr(xmppobject.config, "inventory_enable_forward", True))
+    glpi_dbhost = getattr(xmppobject.config, "glpi_dbhost", "<unset>")
+    glpi_dbport = getattr(xmppobject.config, "glpi_dbport", "<unset>")
+    glpi_dbname = getattr(xmppobject.config, "glpi_dbname", "<unset>")
+    glpi_dbuser = getattr(xmppobject.config, "glpi_dbuser", "<unset>")
+
+    logger.info(
+        "resultinventory runtime identity: version=%s file=%s mode=%s enable_forward=%s glpi_db=%s:%s/%s user=%s",
+        plugin["VERSION"],
+        os.path.abspath(__file__),
+        injection_mode,
+        forward_enabled,
+        glpi_dbhost,
+        glpi_dbport,
+        glpi_dbname,
+        glpi_dbuser,
+    )
+    _RUNTIME_IDENTITY_LOGGED = True
+
+
+def _get_admin_rule_database(xmppobject):
+    """Retourne l'acces admin aux regles globales tag->entite."""
+    required_admin_attrs = [
+        "admin_dbhost",
+        "admin_dbport",
+        "admin_dbname",
+        "admin_dbuser",
+        "admin_dbpasswd",
+    ]
+    missing_attrs = [
+        attr for attr in required_admin_attrs if not hasattr(xmppobject.config, attr)
+    ]
+    if missing_attrs:
+        logger.info(
+            "Admin tag rules disabled: missing config attrs=%s",
+            ",".join(missing_attrs),
+        )
+        return None
+
+    admin_db = AdminMasterDatabase()
+    try:
+        admin_db.activate()
+    except AttributeError as exc:
+        logger.warning(
+            "Admin DB config not available (%s). Continue without admin tag rules.",
+            exc,
+        )
+        return None
+    except Exception as exc:
+        logger.error("Admin DB activation error: %s", exc)
+        return None
+    if not admin_db.is_activated:
+        logger.error("Admin DB unavailable: inventory tag rules cannot be resolved")
+        return None
+    try:
+        admin_db.ensure_inventory_entity_rules_schema()
+    except Exception as exc:
+        logger.error("Admin DB schema error for inventory rules: %s", exc)
+        return None
+    return admin_db
+
+
+def _inject_inventory_with_glpi_xml_sync(xmppobject, content):
+    """Injecte l'inventaire XML dans GLPI via le module glpi_xml_sync."""
+    logger.info(
+        "MODULE injection path selected (glpi_xml_sync): plugin_version=%s",
+        plugin["VERSION"],
+    )
+    try:
+        records = parse_inventory(
+            content,
+            allow_missing_ocsid=True,
+            format_hint="xml",
+            best_effort=True,
+        )
+    except Exception as exc:
+        logger.error("glpi_xml_sync parse error: %s", exc)
+        return False
+
+    if not records:
+        logger.warning("glpi_xml_sync: no exploitable machine found in inventory")
+        return False
+
+    db_config = DbConfig(
+        host=xmppobject.config.glpi_dbhost,
+        port=int(xmppobject.config.glpi_dbport),
+        name=xmppobject.config.glpi_dbname,
+        user=xmppobject.config.glpi_dbuser,
+        password=xmppobject.config.glpi_dbpasswd,
+    )
+    logger.info(
+        "glpi_xml_sync target DB: host=%s port=%s db=%s user=%s",
+        db_config.host,
+        db_config.port,
+        db_config.name,
+        db_config.user,
+    )
+    base_sync_config = SyncConfig(
+        mode="auto",
+        default_entity=0,
+        default_recursive=0,
+    )
+
+    try:
+        conn = connect_db(db_config)
+    except Exception as exc:
+        logger.error("glpi_xml_sync DB connection error: %s", exc)
+        return False
+
+    counters = {
+        "inserted": 0,
+        "updated": 0,
+        "sync_created": 0,
+        "skipped_existing": 0,
+    }
+    admin_db = _get_admin_rule_database(xmppobject)
+    rule_cache = {}
+    try:
+        cursor = conn.cursor()
+        for record in records:
+            target_entity = base_sync_config.default_entity
+            tag_value = (record.tag or "").strip()
+            cache_key = ("TAG", tag_value)
+            if tag_value and admin_db:
+                if cache_key not in rule_cache:
+                    rule_cache[cache_key] = admin_db.resolve_inventory_entity_rule(
+                        "TAG", tag_value
+                    )
+                matched_rule = rule_cache[cache_key]
+                if matched_rule:
+                    target_entity = int(matched_rule["entity_id"])
+                    logger.info(
+                        "admin inventory rule matched: tag=%s entity_id=%s rule=%s",
+                        tag_value,
+                        target_entity,
+                        matched_rule.get("rule_name") or "<unnamed>",
+                    )
+
+            sync_config = SyncConfig(
+                mode=base_sync_config.mode,
+                default_entity=target_entity,
+                default_recursive=base_sync_config.default_recursive,
+            )
+            try:
+                action = process_record(cursor, record, sync_config)
+                counters[action] = counters.get(action, 0) + 1
+                conn.commit()
+            except Exception as record_exc:
+                error_text = str(record_exc)
+                conn.rollback()
+
+                if "1062" in error_text and "unicity" in error_text.lower():
+                    counters["skipped_existing"] = counters.get("skipped_existing", 0) + 1
+                    logger.warning(
+                        "glpi_xml_sync duplicate key skipped: name=%s serial=%s tag=%s error=%s",
+                        record.name,
+                        record.serial,
+                        tag_value,
+                        error_text,
+                    )
+                    continue
+
+                raise
+        logger.info(
+            "glpi_xml_sync injection success: machines=%s result=%s",
+            len(records),
+            counters,
+        )
+        return True
+    except Exception as exc:
+        conn.rollback()
+        logger.error("glpi_xml_sync injection error: %s\n%s", exc, traceback.format_exc())
+        return False
+    finally:
+        conn.close()
+
+
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     if "inventory" not in data:
         payload_keys = sorted(data.keys()) if isinstance(data, dict) else []
@@ -226,76 +436,102 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         content = convert.convert_bytes_datetime_to_string(
             zlib.decompress(base64.b64decode(data["inventory"]))
         )
-        if xmppobject.config.inventory_enable_forward:
-            list_url_to_forward = [
-                x.strip() for x in xmppobject.config.url_to_forward.split(",")
-            ]
+        QUERY = "FAILS"
+        DEVICEID = ""
+        try:
+            QUERY = re.search(r"<QUERY>([\w-]+)</QUERY>", content).group(1)
+        except AttributeError:
+            logger.warn("Could not get any QUERY section in inventory")
             QUERY = "FAILS"
+        try:
+            DEVICEID = re.search(r"<DEVICEID>([\w-]+)</DEVICEID>", content).group(1)
+        except AttributeError:
+            logger.warn("Could not get any DEVICEID section in inventory")
             DEVICEID = ""
-            try:
-                QUERY = re.search(r"<QUERY>([\w-]+)</QUERY>", content).group(1)
-            except AttributeError as e:
-                logger.warn("Could not get any QUERY section in inventory")
-                QUERY = "FAILS"
-            try:
-                DEVICEID = re.search(r"<DEVICEID>([\w-]+)</DEVICEID>", content).group(1)
-            except AttributeError as e:
-                logger.warn("Could not get any DEVICEID section in inventory")
-                DEVICEID = ""
-            if xmppobject.config.inventory_verbose:
-                logger.info(
-                    "################################################################"
-                )
-                logger.info(
-                    "####################### DETAIL INVENTORY #######################"
-                )
-                logger.info(
-                    "################################################################"
-                )
-                logger.info("inventory QUERY %s : " % QUERY)
-                logger.info("inventory DEVICEID %s : " % DEVICEID)
-                logger.info(
-                    "################################################################"
-                )
-                logger.info("%s\n...\n...\n%s" % (content[:150], content[-150:]))
-                logger.info(
-                    "######################## INVENTORY FIX #########################"
-                )
-                logger.info(
-                    "Execution des fonctions 'def xml_fix(contenu_xml_inventory)' in tout les fichiers .py du repertoire : %s "
-                    % xmppobject.config.xmlfixplugindir
-                )
-                logger.info(
-                    "les fonctions xml_fix(contenu_xml_inventory) de chaque fichiers doivent renvoyés 1 xml conforme en string"
-                )
-                logger.info(
-                    "################################################################"
-                )
-            # on modifie le xml suivant les fix pluging contenu dans xmppobject.config.xmlfixplugindir
-            invfix = InventoryFix(
-                xmppobject.config.xmlfixplugindir,
-                content,
-                xmldumpactive=xmppobject.config.xmldumpactive,
-                verbose=xmppobject.config.inventory_verbose,
+
+        if xmppobject.config.inventory_verbose:
+            logger.info(
+                "################################################################"
             )
-            content = invfix.get()
-            if xmppobject.config.inventory_verbose:
-                logger.info(
-                    "################################################################"
-                )
-                logger.info(content[:150])
-                # fix contenue xml pour qu'il soit conforme OCS comme fusioninventory
-                logger.info(
-                    "################################################################"
-                )
-            for url in list_url_to_forward:
-                codeerror, reponse = send_content(
-                    url,
-                    content,
-                    verbose=xmppobject.config.inventory_verbose,
-                    user_agent=xmppobject.config.user_agent,
-                    inventory_plugin_name=xmppobject.config.inventory_plugin,
-                )
+            logger.info(
+                "####################### DETAIL INVENTORY #######################"
+            )
+            logger.info(
+                "################################################################"
+            )
+            logger.info("inventory QUERY %s : " % QUERY)
+            logger.info("inventory DEVICEID %s : " % DEVICEID)
+            logger.info(
+                "################################################################"
+            )
+            logger.info("%s\n...\n...\n%s" % (content[:150], content[-150:]))
+            logger.info(
+                "######################## INVENTORY FIX #########################"
+            )
+            logger.info(
+                "Execution des fonctions 'def xml_fix(contenu_xml_inventory)' in tout les fichiers .py du repertoire : %s "
+                % xmppobject.config.xmlfixplugindir
+            )
+            logger.info(
+                "les fonctions xml_fix(contenu_xml_inventory) de chaque fichiers doivent renvoyés 1 xml conforme en string"
+            )
+            logger.info(
+                "################################################################"
+            )
+
+        # on modifie le xml suivant les fix pluging contenu dans xmppobject.config.xmlfixplugindir
+        invfix = InventoryFix(
+            xmppobject.config.xmlfixplugindir,
+            content,
+            xmldumpactive=xmppobject.config.xmldumpactive,
+            verbose=xmppobject.config.inventory_verbose,
+        )
+        content = invfix.get()
+        if xmppobject.config.inventory_verbose:
+            logger.info(
+                "################################################################"
+            )
+            logger.info(content[:150])
+            # fix contenue xml pour qu'il soit conforme OCS comme fusioninventory
+            logger.info(
+                "################################################################"
+            )
+
+        injection_mode = _resolve_inventory_injection_mode(xmppobject)
+        _log_runtime_identity_once(xmppobject, injection_mode)
+        forward_done = False
+        module_done = False
+
+        if injection_mode in {"forward", "both"}:
+            if xmppobject.config.inventory_enable_forward:
+                list_url_to_forward = [
+                    x.strip() for x in xmppobject.config.url_to_forward.split(",") if x.strip()
+                ]
+                for url in list_url_to_forward:
+                    codeerror, reponse = send_content(
+                        url,
+                        content,
+                        verbose=xmppobject.config.inventory_verbose,
+                        user_agent=xmppobject.config.user_agent,
+                        inventory_plugin_name=xmppobject.config.inventory_plugin,
+                    )
+                forward_done = bool(list_url_to_forward)
+            else:
+                logger.info("Forward injection disabled by glpi.enable_forward")
+
+        if injection_mode in {"module", "both"}:
+            logger.info(
+                "Inventory will execute MODULE injection (glpi_xml_sync), mode=%s",
+                injection_mode,
+            )
+            module_done = _inject_inventory_with_glpi_xml_sync(xmppobject, content)
+
+        logger.info(
+            "Inventory injection mode=%s forward_done=%s module_done=%s",
+            injection_mode,
+            forward_done,
+            module_done,
+        )
         inventory = content
         machine = XmppMasterDatabase().getMachinefromjid(msg["from"])
         if not machine:
@@ -359,7 +595,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         # send inventory to inventory server
 
         XmppMasterDatabase().setlogxmpp(
-            "Sending inventory to inventory server",
+            "Inventory injection mode=%s forward=%s module=%s"
+            % (injection_mode, int(forward_done), int(module_done)),
             "Inventory",
             "",
             0,

@@ -40,7 +40,7 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.7", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.8", "NAME": "resultkiosk", "TYPE": "substitute"}  # fmt: skip
 PREFIX_COMMAND = "commandkiosk"
 
 
@@ -266,6 +266,7 @@ def last_inventory(data, message, xmppobject):
         str: The last inventory date for the machine, or None if not found."""
 
     machine = XmppMasterDatabase().getMachinefromjid(message["from"])
+    logger.debug("Inventory date requested by %s" % message["from"])
 
     # Force inventory update
     callinventory(xmppobject, message["from"])
@@ -273,14 +274,25 @@ def last_inventory(data, message, xmppobject):
     time.sleep(5)
     if machine and "uuid_inventorymachine" in machine:
         machine_uuid = machine["uuid_inventorymachine"]
+        logger.debug("Machine found, uuid_inventorymachine=%s" % machine_uuid)
 
-        last_inv = Glpi().getLastMachineInventoryPart(
-            machine_uuid,
-            "Summary",
-            0,
-            -1,
-            "",
-            {"hide_win_updates": True, "history_delta": ""},
+        try:
+            last_inv = Glpi().getLastMachineInventoryPart(
+                machine_uuid,
+                "Summary",
+                0,
+                -1,
+                "",
+                {"hide_win_updates": True, "history_delta": ""},
+            )
+        except Exception:
+            logger.error(
+                "getLastMachineInventoryPart(Summary) raised:\n%s"
+                % traceback.format_exc()
+            )
+            return None
+        logger.debug(
+            "getLastMachineInventoryPart(Summary) returned: %s" % last_inv
         )
 
         last_inventory_date = None
@@ -303,16 +315,26 @@ def last_inventory(data, message, xmppobject):
                 sessionid=getRandomName(6, "inventory"),
             )
 
+            logger.debug(
+                "Sending inventory date '%s' to %s"
+                % (last_inventory_date, message["from"])
+            )
             xmppobject.send_message(
                 mto=message["from"], mbody=json.dumps(message_to_machine), mtype="chat"
             )
 
             return last_inventory_date
         else:
-            logger.debug(f"No inventory date found for the machine {machine_uuid}")
+            logger.debug(
+                "No 'Last Inventory Date' in Summary for machine %s "
+                "-> nothing sent to the kiosk (stays N/A)" % machine_uuid
+            )
             return None
     else:
-        logger.debug(f"Machine or UUID not found for JID: {message['from']}")
+        logger.debug(
+            "Machine or uuid_inventorymachine not found for JID: %s "
+            "-> nothing sent to the kiosk (stays N/A)" % message["from"]
+        )
         return None
 
 
@@ -353,11 +375,12 @@ def get_packages_for_machine(machine):
     # Setting up the sources datas info
     #
     entity = XmppMasterDatabase().getmachineentityfromjid(machine["jid"])
-    machine_entity =  ""
-    if hasattr(entity, "complete_name"):
-        entity.complete_name.replace(" > ", ">>") if entity is not None else None
+    if entity is None:
+        machine_entity = None
+    elif hasattr(entity, "complete_name"):
+        machine_entity = entity.complete_name.replace(" > ", ">>")
     else:
-        entity.completename.replace(" > ", ">>") if entity is not None else None
+        machine_entity = entity.completename.replace(" > ", ">>")
     OUmachine = (
         machine["ad_ou_machine"].replace("\n", "").replace("\r", "").replace("@@", ">>")
     )
@@ -462,9 +485,7 @@ def get_packages_for_machine(machine):
             uninstall_section_present = uninstall_has_content
 
         # Check if the launcher is specified
-        launcher = ""
-        if depl["info"]["launcher"] != "":
-            launcher = depl["info"]["launcher"]
+        launcher = depl.get("info", {}).get("launcher", "")
 
         # Check if the package is installed on the machine
         found = Glpi().find_software_info_for_machine(machine["uuid_inventorymachine"],  pkg)

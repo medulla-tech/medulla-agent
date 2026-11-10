@@ -6,7 +6,7 @@
 kiosk database handler
 """
 # SqlAlchemy
-from sqlalchemy import create_engine, func, and_, or_
+from sqlalchemy import create_engine, func, and_, or_, literal
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import DBAPIError
 
@@ -659,9 +659,18 @@ class KioskDatabase(DatabaseHelper):
 
         filters = []
         for source in sources:
+            if source == "entity":
+                value = sources[source]
+                ou_condition = or_(
+                    Profile_has_ou.ou == value,
+                    func.left(literal(value), func.char_length(Profile_has_ou.ou) + 2)
+                    == func.concat(Profile_has_ou.ou, ">>"),
+                )
+            else:
+                ou_condition = Profile_has_ou.ou.like("%s%%" % sources[source])
             filters.append(and_(
                 Profiles.source == source,
-                Profile_has_ou.ou.like("%s%%" % sources[source]),
+                ou_condition,
             ))
 
         query = query.filter(or_(*filters))

@@ -7,6 +7,7 @@
 import subprocess
 import json
 import re
+import shlex
 import platform
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +27,7 @@ import uuid
 from lib.uuid_deterministic import DeterministicUUID
 from lib.utils import serialnumbermachine
 logger = logging.getLogger(__name__)
+APT_LOCK_TIMEOUT_SECONDS = 300
 
 # ######################################################################
 #  familles Linux
@@ -81,14 +83,17 @@ class LinuxSystemBase(ABC):
     Définit l'interface commune et les méthodes partagées par toutes les distributions.
     """
 
-    def __init__(self, dry_run: bool = False):
+    def __init__(self, dry_run: bool = False, log_callback=None):
         """
         Initialise les attributs communs à toutes les distributions.
 
         Args:
             dry_run (bool): Si True, les commandes sont simulées (mode "sec").
+            log_callback (callable|None): Fonction optionnelle appelée pour chaque
+                commande système et sa sortie. Signature: log_callback(message: str).
         """
         self.dry_run = dry_run
+        self._log_callback = log_callback  # fn(str) -> None | None
         self.system_info = {}
         self.counts = {
             "security": 0,
@@ -101,10 +106,9 @@ class LinuxSystemBase(ABC):
         self.kernel_updates = []
         self.other_updates = []
 
-    @staticmethod
-    def _run(cmd: str) -> str:
+    def _run(self, cmd: str) -> str:
         """
-        Exécute une commande shell et retourne sa sortie.
+        Exécute une commande shell, notifie le callback si présent, et retourne la sortie.
 
         Args:
             cmd (str): Commande à exécuter.
@@ -116,7 +120,101 @@ class LinuxSystemBase(ABC):
             subprocess.CalledProcessError: Si la commande échoue.
         """
         logger.debug(cmd)
-        return subprocess.check_output(cmd, shell=True, text=True).strip()
+        callback = getattr(self, "_log_callback", None)
+        if callback:
+            callback(f"[CMD] {cmd}")
+        try:
+            output = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.STDOUT).strip()
+        except subprocess.CalledProcessError as e:
+            self._log_command_failure(cmd, e, callback=callback)
+            raise
+
+        if callback and output:
+            preview = (output[:400] + "...") if len(output) > 400 else output
+            callback(f"[OUT] {preview}")
+        return output
+
+    @staticmethod
+    def _log_command_failure(cmd: str, exc: subprocess.CalledProcessError, callback=None):
+        """Journalise une erreur de commande avec un extrait de sortie utile."""
+        raw_output = getattr(exc, "output", "") or ""
+        output = str(raw_output).strip()
+        tail_lines = output.splitlines()[-12:] if output else []
+        tail = "\n".join(tail_lines)
+
+        logger.warning(
+            "Command failed rc=%s cmd=%s%s",
+            getattr(exc, "returncode", "?"),
+            cmd,
+            f"\nOutput (tail):\n{tail}" if tail else "",
+        )
+
+        apt_hint = LinuxSystemBase._apt_update_hint(cmd, output)
+        if apt_hint:
+            logger.warning(apt_hint)
+
+        if callback:
+            callback(f"[ERR] rc={getattr(exc, 'returncode', '?')} cmd={cmd}")
+            if tail:
+                preview = (tail[:700] + "...") if len(tail) > 700 else tail
+                callback(f"[ERR_OUT] {preview}")
+            if apt_hint:
+                callback(f"[WARN] {apt_hint}")
+
+    @staticmethod
+    def _apt_update_hint(cmd: str, output: str) -> str:
+        """Retourne une explication courte pour certains echecs APT connus.
+
+        Contexte important:
+        - L'agent Medulla peut tourner dans un environnement virtuel Python
+          independant, par exemple en Python 3.11.
+        - Les commandes APT (`apt-get`, `dpkg`, hooks APT) appartiennent au
+          systeme Linux, pas a l'environnement virtuel de l'agent.
+        - Certains hooks lances par `apt-get update` sont des scripts Python
+          systeme avec un shebang vers `/usr/bin/python3`.
+        - Le module `apt_pkg` est fourni par le paquet systeme `python3-apt` et
+          il est compile pour la version Python attendue par la distribution.
+
+        Exemple reel:
+        Sur Ubuntu 24.04, `python3-apt` fournit typiquement un module compile
+        pour Python 3.12. Si `/usr/bin/python3` a ete force vers Python 3.11
+        pour correspondre au venv agent, le hook APT ne trouve plus `apt_pkg`.
+
+        On ne bloque pas ici l'agent: le code appelant continue avec les index
+        APT disponibles. Cette fonction ajoute seulement un feedback lisible
+        pour expliquer quoi verifier sur la machine.
+        """
+        if "apt-get" not in cmd:
+            return ""
+
+        # On cherche le symptome generique plutot qu'un hook precis.
+        # Le cas observe passe par `/usr/lib/cnf-update-db` (paquet
+        # command-not-found), mais d'autres hooks/scripts APT peuvent echouer
+        # de la meme facon si le Python systeme et `python3-apt` ne sont pas
+        # compatibles. La presence de `apt_pkg` plus une erreur d'import suffit
+        # a produire un diagnostic utile et non bloquant.
+        apt_pkg_missing = (
+            "apt_pkg" in output
+            and (
+                "ModuleNotFoundError" in output
+                or "No module named" in output
+                or "ImportError" in output
+            )
+        )
+        if apt_pkg_missing:
+            # Message volontairement general:
+            # - ne suppose pas une distribution precise;
+            # - ne demande pas de changer le Python de l'agent;
+            # - rappelle que le venv agent doit rester isole du Python systeme;
+            # - explique que l'operation continue avec les index existants.
+            return (
+                "apt-get a echoue dans un hook/script Python systeme APT: apt_pkg est introuvable. "
+                "Verifier que /usr/bin/python3 correspond au Python systeme attendu par la distribution "
+                "et que le paquet python3-apt est installe pour cette meme version. Si l'agent utilise "
+                "un environnement virtuel, il doit rester isole et ne doit pas remplacer le Python systeme. "
+                "Les mises a jour continuent avec les index APT disponibles."
+            )
+        return ""
 
     def get_deterministic_uuid():
         hostname = socket.gethostname()
@@ -292,7 +390,14 @@ class UpdateLinux:
                 Retourne le nom du système d'exploitation si la détection échoue.
         """
         try:
-            return distro.id().lower()
+            distro_name = distro.id().lower()
+            aliases = {
+                "zorinos": "zorin",
+                "linux-mint": "linuxmint",
+                "opensuse leap": "opensuse-leap",
+                "opensuse tumbleweed": "opensuse-tumbleweed",
+            }
+            return aliases.get(distro_name, distro_name)
         except Exception:
             return platform.system().lower()
 
@@ -312,9 +417,9 @@ class UpdateLinux:
         Raises:
             NotImplementedError: Si la distribution n'est pas supportée.
         """
-        # Debian / Ubuntu / Linux Mint
-        # Linux Mint repose sur la pile APT d'Ubuntu, on réutilise donc le backend DebianSystem.
-        if self.distro_name in ("debian", "ubuntu", "linuxmint"):
+        # Debian / Ubuntu / Linux Mint / Zorin
+        # Linux Mint et Zorin reposent sur la pile APT d'Ubuntu, on réutilise donc le backend DebianSystem.
+        if self.distro_name in ("debian", "ubuntu", "linuxmint", "mint", "zorin"):
             return DebianSystem(**kwargs)
 
         # RedHat / CentOS / Rocky / AlmaLinux
@@ -325,6 +430,21 @@ class UpdateLinux:
         elif self.distro_name == "fedora":
             return FedoraSystem(**kwargs)
 
+        # SUSE / openSUSE (zypper)
+        elif self.distro_name in (
+            "suse",
+            "opensuse",
+            "opensuse-leap",
+            "opensuse-tumbleweed",
+            "sles",
+            "sled",
+        ):
+            return SuseSystem(**kwargs)
+
+        # Alpine Linux
+        elif self.distro_name == "alpine":
+            return AlpineSystem(**kwargs)
+
         # Arch Linux
         elif self.distro_name == "arch":
             return ArchSystem(**kwargs)
@@ -332,7 +452,8 @@ class UpdateLinux:
         else:
             raise NotImplementedError(
                 f"Distribution non supportée : {self.distro_name}. "
-                "Distributions supportées: debian, ubuntu, linuxmint, rhel, redhat, centos, rocky, almalinux, fedora, arch."
+                "Distributions supportées: debian, ubuntu, linuxmint/mint, zorin, "
+                "rhel/redhat/centos/rocky/almalinux, fedora, suse/opensuse/sles, alpine, arch."
             )
 
     # ============================
@@ -401,16 +522,29 @@ class UpdateLinux:
         }
 
         applied = []
+        failed = []
         for action in normalized:
             policy = policy_by_action[action]
-            self.system.update(policy=policy)
-            applied.append({"action": action, "policy": policy})
+            try:
+                self.system.update(policy=policy)
+                applied.append({"action": action, "policy": policy})
+            except Exception as exc:
+                logger.warning(
+                    "Linux update action '%s' (policy=%s) failed, continuing: %s",
+                    action,
+                    policy,
+                    str(exc),
+                )
+                failed.append({"action": action, "policy": policy, "error": str(exc)})
 
-        return {
+        result = {
             "distribution": self.distro_name,
             "actions": normalized,
             "applied": applied,
         }
+        if failed:
+            result["failed"] = failed
+        return result
 
     def update_from_command_payload(self, payload):
         """Apply updates from master JSON payload.
@@ -450,7 +584,7 @@ class DebianSystem(LinuxSystemBase):
     Classe spécialisée pour la gestion des mises à jour et de la maintenance des systèmes Debian/Ubuntu.
     """
 
-    def __init__(self, intranet_security: bool = False, sources_name: str | None = None, dry_run: bool = False):
+    def __init__(self, intranet_security: bool = False, sources_name: str | None = None, dry_run: bool = False, log_callback=None):
         """
         Initialise une instance de DebianSystem.
 
@@ -458,8 +592,9 @@ class DebianSystem(LinuxSystemBase):
             intranet_security (bool): Active le mode intranet sécurisé si True.
             sources_name (str|None): Nom du fichier de sources APT pour le mode intranet.
             dry_run (bool): Si True, les commandes sont simulées (mode "sec").
+            log_callback (callable|None): Fonction appelée pour chaque commande/sortie APT.
         """
-        super().__init__(dry_run)
+        super().__init__(dry_run=dry_run, log_callback=log_callback)
         self.intranet_security = intranet_security
         self.sources_name = sources_name
         self.set_intranet_security(intranet_security, sources_name)
@@ -470,7 +605,7 @@ class DebianSystem(LinuxSystemBase):
 
     def _apt_base_opts(self) -> str:
         """Génère les options de base pour les commandes APT, en fonction du mode intranet."""
-        opts = []
+        opts = [f"-o DPkg::Lock::Timeout={APT_LOCK_TIMEOUT_SECONDS}"]
         if self.intranet_security and self.sources_name:
             opts.append(f"-o Dir::Etc::sourceparts=/etc/apt/sources.list.d/{self.sources_name}")
             opts.append("-o Dir::Etc::sourcelist=/dev/null")
@@ -481,9 +616,69 @@ class DebianSystem(LinuxSystemBase):
         return "--just-print" if self.dry_run else ""
 
     def _apt_security_opts(self) -> str:
-        """Génère les options pour forcer l'utilisation du dépôt de sécurité."""
-        release = self.system_info.get("Release", "")
-        return f"-o APT::Default-Release={release}-security" if release else ""
+        """Génère les options pour forcer l'utilisation du dépôt de sécurité UNIQUEMENT."""
+        # Essaie d'obtenir le codename (bookworm, bullseye, etc) au lieu du numéro de version
+        codename = self.system_info.get("VERSION_CODENAME", "")
+        if not codename:
+            try:
+                # Fallback: utilise lsb_release -cs
+                codename = self._run("lsb_release -cs").strip()
+            except Exception:
+                codename = ""
+        # Combine pinning (-t) avec restriction pour SEULEMENT upgrader (-o APT::Get::Only-Upgrade=true)
+        # Ça garantit qu'on n'install QUE les paquets du dépôt de sécurité, et seulement les upgrades
+        if codename:
+            return f"-t {codename}-security -o APT::Get::Only-Upgrade=true"
+        return ""
+
+    def _installed_kernel_packages(self) -> list:
+        """Return installed kernel package names.
+
+        Debian derivatives may not provide ubuntu-specific package families
+        (e.g. linux-modules-extra*). Selecting only packages in installed
+        state avoids treating residual-config packages (``rc``) as upgrade
+        candidates.
+        """
+        output = self._run("dpkg-query -W -f='${db:Status-Abbrev}\t${binary:Package}\\n'")
+        pkgs = []
+        for line in output.splitlines():
+            parts = line.split("\t", 1)
+            if len(parts) != 2:
+                continue
+
+            status_abbrev, name = parts[0].strip(), parts[1].strip()
+            if status_abbrev[:2] != "ii":
+                continue
+
+            if re.match(r"^linux-(image|headers|modules|modules-extra)", name):
+                pkgs.append(name)
+        return sorted(set(pkgs))
+
+    def _packages_with_apt_candidate(self, packages: list[str]) -> list[str]:
+        """Keep only packages that still have an APT candidate version.
+
+        Installed kernel packages can remain on disk after their repository
+        candidate disappeared. Passing such names to ``apt-get --only-upgrade``
+        aborts the whole kernel-only transaction.
+        """
+        eligible = []
+        for package_name in packages:
+            output = self._run(f"apt-cache policy {shlex.quote(package_name)}")
+            candidate = ""
+            for line in output.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("Candidate:"):
+                    candidate = stripped.split(":", 1)[1].strip()
+                    break
+
+            if candidate and candidate != "(none)":
+                eligible.append(package_name)
+            else:
+                logger.info(
+                    "Skipping kernel package without APT candidate: %s",
+                    package_name,
+                )
+        return eligible
 
     def set_intranet_security(self, enabled: bool, sources_name: str | None = None):
         """Active ou désactive le mode intranet sécurisé."""
@@ -522,14 +717,15 @@ class DebianSystem(LinuxSystemBase):
         # -----------------------------
         # 1️⃣ Mettre à jour les dépôts APT
         # -----------------------------
+        update_cmd = f"apt-get -qq update {self._apt_base_opts()}"
         try:
-            self._run(f"apt-get -qq update {self._apt_base_opts()}")
+            self._run(update_cmd)
         except subprocess.CalledProcessError as e:
             # Certains dépôts peuvent échouer (code 100) sans compromettre les autres.
-            # On log un warning et on continue pour exploiter les index partiellement rafraîchis.
+            # On log un warning détaillé et on continue pour exploiter les index partiellement rafraîchis.
+            self._log_command_failure(update_cmd, e, callback=getattr(self, "_log_callback", None))
             logger.warning(
-                "apt-get update returned non-zero exit status (some repositories may be unavailable): %s",
-                str(e),
+                "apt-get update returned non-zero exit status (some repositories may be unavailable), continuing",
             )
 
         # -----------------------------
@@ -592,14 +788,48 @@ class DebianSystem(LinuxSystemBase):
         base = self._apt_base_opts()
         dry = self._apt_dry_run_opts()
         sec = self._apt_security_opts()
-        self._run(f"apt-get -qq update {base}")
+        update_cmd = f"apt-get -qq update {base}"
+        try:
+            self._run(update_cmd)
+        except subprocess.CalledProcessError as e:
+            # Some repositories may fail (404/temporary issues) while others remain usable.
+            self._log_command_failure(update_cmd, e, callback=getattr(self, "_log_callback", None))
+            logger.warning(
+                "apt-get update returned non-zero exit status (continuing with available indexes)",
+            )
 
         if policy == "security-only":
-            self._run(f"apt-get -qq upgrade -y {dry} {sec} {base}")
+            # Try with security release pinning, fallback to simple upgrade if unavailable.
+            try:
+                self._run(f"apt-get -qq upgrade -y {dry} {sec} {base}")
+            except subprocess.CalledProcessError as e:
+                if sec:
+                    logger.warning(
+                        "Security release pinning failed, retrying without it: %s",
+                        str(e),
+                    )
+                    self._run(f"apt-get -qq upgrade -y {dry} {base}")
+                else:
+                    raise
         elif policy == "kernel-only":
-            self._run(f"apt-get -qq install --only-upgrade linux-image-amd64 -y {dry} {base}")
+            # Upgrade only installed kernel-related packages that still have
+            # an APT candidate, to avoid failures on residual or obsolete
+            # package names.
+            kernel_pkgs = self._packages_with_apt_candidate(
+                self._installed_kernel_packages()
+            )
+            if not kernel_pkgs:
+                logger.info("No installed kernel packages matched for kernel-only policy")
+                return
+
+            kernel_args = " ".join(shlex.quote(pkg) for pkg in kernel_pkgs)
+            self._run(
+                f"apt-get -qq install --only-upgrade {kernel_args} -y {dry} "
+                f"-o APT::Get::Only-Upgrade=true {base}"
+            )
         elif policy == "applications-only":
-            self._run(f"apt-get -qq upgrade -y {dry} {base}")
+            # Upgrade ONLY already-installed applications, no kernel, no security-specific (from all repos)
+            self._run(f"apt-get -qq upgrade -y {dry} -o APT::Get::Only-Upgrade=true {base}")
         elif policy == "all":
             self._run(f"apt-get -qq full-upgrade -y {dry} {base}")
         else:
@@ -707,7 +937,7 @@ class RedHatSystem(LinuxSystemBase):
             parts = line.split()
             if len(parts) < 2:
                 continue
-            logger.error("JFKJFK %s \n" % parts)
+            logger.error("parse error on line: %s \n" % parts)
             pkg = parts[0]
             entry = {"package": pkg, "cve": []}
 

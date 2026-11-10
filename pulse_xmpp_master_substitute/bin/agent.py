@@ -617,6 +617,11 @@ class MUCBot(slixmpp.ClientXMPP):
         # TODO : Remplacer print par log
         # print "Restart Machine jid %s fait" % jid
         # Vérifie si restartAgent n'est pas appelé depuis un plugin ou une lib.
+        logger.info(
+            "restartbot sent to %s after %s seconds",
+            jid,
+            waittingrestart,
+        )
         self.restartAgent(jid)
 
     def xmpplog(

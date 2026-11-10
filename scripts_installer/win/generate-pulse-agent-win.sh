@@ -479,17 +479,15 @@ generate_agent_installer() {
         fi
     fi
 
-    for package in Medulla-Agent-windows-MINIMAL-latest Medulla-Agent-windows-FULL-latest;
-    do
-        # Execute the deletion and copy only if the source file exists
-        # It prevent to lose the existing installer if the new one is not correctly generated
-        if [ -f /var/lib/pulse2/clients/win/${package}.exe ]; then
-            rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
-            cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
-        else
-            colored_echo yellow "### WARNING... /var/lib/pulse2/clients/win/${package}.exe not found. The current /var/lib/pulse2/imaging/postinst/winutils/${package}.exe s not replaced"
-        fi
-    done
+    package=Medulla-Agent-windows-FULL-latest;
+    # Execute the deletion and copy only if the source file exists
+    # It prevent to lose the existing installer if the new one is not correctly generated
+    if [ -f /var/lib/pulse2/clients/win/${package}.exe ]; then
+        rm -f /var/lib/pulse2/imaging/postinst/winutils/${package}.exe
+        cp -Lfv /var/lib/pulse2/clients/win/${package}.exe /var/lib/pulse2/imaging/postinst/winutils/
+    else
+        colored_echo yellow "### WARNING... /var/lib/pulse2/clients/win/${package}.exe not found. The current /var/lib/pulse2/imaging/postinst/winutils/${package}.exe s not replaced"
+    fi
 
     colored_echo green "### INFO  Generating installer... Done"
 

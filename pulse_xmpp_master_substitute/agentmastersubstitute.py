@@ -20,6 +20,8 @@ from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.pkgs import PkgsDatabase
+from lib.plugins.diskmastering import DiskMasteringDatabase
+
 from bin.agent import MUCBot
 
 # import signal
@@ -107,6 +109,8 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
         "kiosk": (KioskDatabase, "KIOSK"),
         "msc": (MscDatabase, "MSC"),
         "pkgs": (PkgsDatabase, "PKGS"),
+        "diskmastering": (DiskMasteringDatabase, "DMA")
+
     }
 
     for module, (cls, name) in modules.items():

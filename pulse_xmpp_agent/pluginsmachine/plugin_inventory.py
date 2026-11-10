@@ -52,7 +52,7 @@ from slixmpp import jid
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "5.4", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "5.5", "NAME": "inventory", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -144,7 +144,31 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     dataerreur["action"] = resultaction
     dataerreur["data"]["msg"] = "ERROR : %s" % action
     dataerreur["sessionid"] = sessionid
-    timeoutfusion = 120
+    def get_inventory_int_config(config_name, default_value, minimum_value):
+        if hasattr(xmppobject.config, config_name):
+            try:
+                config_value = int(getattr(xmppobject.config, config_name))
+                if config_value < minimum_value:
+                    raise ValueError(
+                        "%s must be >= %s" % (config_name, minimum_value)
+                    )
+                return config_value
+            except (TypeError, ValueError):
+                logger.warning(
+                    "Invalid %s=%s, fallback to %s",
+                    config_name,
+                    getattr(xmppobject.config, config_name, None),
+                    default_value,
+                )
+        return default_value
+
+    inventory_collect_timeout = get_inventory_int_config(
+        "inventory_collect_timeout", 250, 1
+    )
+    inventory_retry_count = get_inventory_int_config("inventory_retry_count", 2, 1)
+    inventory_retry_step = get_inventory_int_config("inventory_retry_step", 80, 0)
+
+    timeoutfusion = inventory_collect_timeout
     msg = []
     executed_commands = []
 
@@ -230,7 +254,30 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             os.environ.get("PATH", ""),
         )
         try:
-            for nbcmd in range(1, 4):
+            # Build ordered list of (bin, cmd) to try at execution time.
+            # agent_cmd is the primary resolved binary. If it fails with code 127
+            # (shell reports "not found" despite resolution, e.g. broken snap wrapper),
+            # fall back to the alternate candidate.
+            exec_candidates = [(agent_bin, agent_cmd)]
+            for fallback_bin in agent_candidates:
+                if fallback_bin == agent_bin:
+                    continue
+                fallback_cmd = shutil.which(fallback_bin)
+                if not fallback_cmd:
+                    for candidate_path in [
+                        "/usr/bin/%s" % fallback_bin,
+                        "/usr/local/bin/%s" % fallback_bin,
+                        "/bin/%s" % fallback_bin,
+                        "/snap/bin/%s" % fallback_bin,
+                    ]:
+                        if os.path.isfile(candidate_path) and os.access(candidate_path, os.X_OK):
+                            fallback_cmd = candidate_path
+                            break
+                if fallback_cmd:
+                    exec_candidates.append((fallback_bin, fallback_cmd))
+
+            active_bin, active_cmd = exec_candidates[0]
+            for nbcmd in range(1, inventory_retry_count + 1):
                 logger.debug("process inventory %s timeout %s" % (nbcmd, timeoutfusion))
                 general_options = (
                     "--config=none --tasks=inventory "
@@ -249,7 +296,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     location_option = '--server="%s"' % xmppobject.config.urlinventory
                 if namefilexml and os.path.exists(namefilexml):
                     cmd = '"%s" %s %s --additional-content=%s' % (
-                        agent_cmd,
+                        active_cmd,
                         general_options,
                         location_option,
                         namefilexml,
@@ -274,7 +321,19 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 )
                 if obj["code"] == 0:
                     break
-                timeoutfusion = timeoutfusion + 60
+                # If binary is truly missing at runtime (code 127), switch to fallback immediately.
+                if obj["code"] == 127 and len(exec_candidates) > 1:
+                    _next = exec_candidates[1]
+                    logger.warning(
+                        "Inventory agent '%s' not found at runtime (code 127), switching to fallback '%s'",
+                        active_bin,
+                        _next[0],
+                    )
+                    active_bin, active_cmd = _next
+                    exec_candidates = exec_candidates[1:]
+                    timeoutfusion = inventory_collect_timeout
+                    continue
+                timeoutfusion = timeoutfusion + inventory_retry_step
             for mesg in msg:
                 logger.debug(mesg)
                 xmppobject.xmpplog(
@@ -288,6 +347,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     date=None,
                 )
             msg = []
+            if obj["code"] != 0:
+                raise ValueError(
+                    "Inventory collector failed with return code %s" % obj["code"]
+                )
             if os.path.exists(inventoryfile) and os.path.getsize(inventoryfile) > 0:
                 try:
                     result["data"]["inventory"], boolchange = compact_xml(inventoryfile)
@@ -448,7 +511,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 if xmppobject.config.via_xmpp == "False":
                     location_option = '/server="%s"' % xmppobject.config.urlinventory
 
-            for nbcmd in range(3):
+            for nbcmd in range(1, inventory_retry_count + 1):
                 # On Windows, the installed collector can write only the
                 # additional-content XML to --local. Keep the complete machine
                 # inventory authoritative; browser extensions are not sent for
@@ -499,7 +562,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 msg.append("Result return code %s: %s" % (obj["code"], obj["result"]))
                 if obj["code"] == 0:
                     break
-                timeoutfusion = timeoutfusion + 60
+                timeoutfusion = timeoutfusion + inventory_retry_step
             for mesg in msg:
                 xmppobject.xmpplog(
                     mesg,
@@ -512,6 +575,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     date=None,
                 )
             msg = []
+            if obj["code"] != 0:
+                raise ValueError(
+                    "Inventory collector failed with return code %s" % obj["code"]
+                )
             if xmppobject.config.via_xmpp == "True":
                 if os.path.exists(inventoryfile) and os.path.getsize(inventoryfile) > 0:
                     try:
@@ -724,7 +791,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if namefilexml and os.path.exists(namefilexml):
                 additional += ' --additional-content="%s"' % namefilexml
 
-            for nbcmd in range(3):
+            for nbcmd in range(1, inventory_retry_count + 1):
                 cmd = (
                     "/Applications/GLPI-Agent/bin/glpi-inventory "
                     "--backend-collect-timeout=%s%s%s > %s"
@@ -736,7 +803,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 msg.append("Result return code %s: %s" % (obj["code"], obj["result"]))
                 if obj["code"] == 0:
                     break
-                timeoutfusion = timeoutfusion + 60
+                timeoutfusion = timeoutfusion + inventory_retry_step
             for mesg in msg:
                 xmppobject.xmpplog(
                     mesg,
@@ -749,6 +816,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     date=None,
                 )
             msg = []
+            if obj["code"] != 0:
+                raise ValueError(
+                    "Inventory collector failed with return code %s" % obj["code"]
+                )
             if not os.path.exists(inventoryfile) or os.path.getsize(inventoryfile) == 0:
                 logger.warning("Inventory file missing or empty: skipping this cycle (%s)" % inventoryfile)
                 return
@@ -902,6 +973,16 @@ def compact_xml(inputfile, graine=""):
         inputfile = inputfile.encode(encoding="UTF-8")
 
     xmlTree = ET.parse(inputfile, parser=parser)
+    query_nodes = xmlTree.xpath("/REQUEST/QUERY")
+    if len(query_nodes) != 1:
+        raise ValueError("Inventory XML missing /REQUEST/QUERY tag")
+
+    query_value = "".join(query_nodes[0].itertext()).strip()
+    if query_value.lower() != "inventory":
+        raise ValueError(
+            "Inventory XML has unexpected /REQUEST/QUERY value '%s'" % query_value
+        )
+
     contentfile = ET.tostring(xmlTree, pretty_print=False).decode("utf-8")
     strinventorysave = '<?xml version="1.0" encoding="UTF-8" ?>' + contentfile
     utils.file_put_contents_w_a(inputfile, strinventorysave)

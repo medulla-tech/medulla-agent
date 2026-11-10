@@ -1,0 +1,95 @@
+# LOCALIZATION
+@@CheckLocale@@d-i debian-installer/locale string @@SelectLocale@@
+@@CheckLanguage@@d-i debian-installer/language string @@SelectLanguage@@
+@@CheckCountry@@d-i debian-installer/country string @@SelectCountry@@
+@@CheckSupportedLocales@@d-i localechooser/supported-locales multiselect @@SelectSupportedLocales@@, en_US.UTF-8
+@@CheckKeyboardLayouts@@d-i keyboard-configuration/layoutcode string @@SelectKeyboardLayouts@@
+@@CheckKeyboardToggle@@d-i keyboard-configuration/toggle select @@SelectKeyboardToggle@@
+
+### NETWORK
+@@CheckEnableNetwork@@d-i netcfg/enable boolean @@CheckEnableNetworkValue@@
+# METAPARAM for netcfg/choose_interface @@SelectInterface@@
+@@CheckInterface@@d-i netcfg/choose_interface select @@InputInterface@@
+@@CheckLinkTimeout@@d-i netcfg/link_wait_timeout number @@NumberLinkTimeout@@
+@@CheckDhcpTimeout@@d-i netcfg/dhcp_timeout number @@NumberDhcpTimeout@@
+@@CheckDhcpV6Timeout@@d-i netcfg/dhcpv6_timeout number @@NumberDhcpV6Timeout@@
+@@CheckDisableAutoconfig@@d-i netcfg/disable_autoconfig boolean @@CheckDisableAutoconfigValue@@
+@@CheckDisableDhcp@@d-i netcfg/dhcp_options boolean @@CheckDisableDhcpValue@@
+@@CheckDisableDhcp@@@@CheckDisableDhcpCombine@@d-i netcfg/get_ipaddress string @@InputGetIpaddress@@
+@@CheckDisableDhcp@@@@CheckDisableDhcpCombine@@d-i netcfg/get_netmask string @@InputGetNetmask@@
+@@CheckDisableDhcp@@@@CheckDisableDhcpCombine@@d-i netcfg/get_gateway string @@InputGetGateway@@
+@@CheckDisableDhcp@@@@CheckDisableDhcpCombine@@d-i netcfg/get_nameservers string @@InputGetNameservers@@
+@@CheckDisableDhcp@@@@CheckDisableDhcpCombine@@d-i netcfg/confirm_static boolean true
+@@CheckHostname@@d-i netcfg/get_hostname string @@InputHostname@@
+@@CheckDomaine@@d-i netcfg/get_Domaine string @@InputDomaine@@
+@@CheckForceHostname@@d-i netcfg/hostname string @@InputForceHostname@@
+@@CheckDhcpHostname@@d-i netcfg/dhcp_hostname string @@InputDhcpHostname@@
+@@CheckLoadFirmware@@d-i hw-detect/load_firmware boolean @@CheckLoadFirmwareValue@@
+
+### NETWORK CONSOLE
+@@CheckNetworkConsole@@d-i anna/choose_modules @@CheckNetworkConsoleType@@ @@CheckNetworkConsoleValue@@
+@@CheckAuthorizedKeysUrl@@d-i network-console/authorized_keys_url string @@InputAuthorizedKeysUrl@@
+
+### MIRROR
+@@CheckMirrorProtocol@@d-i mirror/protocol select @@SelectMirrorProtocol@@
+@@CheckMirrorProtocol@@d-i mirror/http/hostname string @@InputMirrorHostname@@
+@@CheckMirrorProtocol@@d-i mirror/http/directory string @@InputMirrorDirectory@@
+@@CheckMirrorProtocol@@d-i mirror/http/proxy string @@InputMirrorProxy@@
+@@CheckMirrorCountry@@d-i mirror/country string @@SelectMirrorCountry@@
+@@CheckMirrorSuite@@d-i mirror/suite string @@InputMirrorSuite@@
+@@CheckMirrorSuiteComponents@@d-i mirror/udeb/suite string testing @@InputMirrorSuiteComponents@@
+
+### ACCOUNT
+@@CheckSkipRootLogin@@d-i passwd/root-login boolean @@CheckSkipRootLoginValue@@
+@@CheckRootPasswd@@d-i passwd/root-password @@InputRootPasswd@@
+@@CheckMakeUser@@d-i passwd/make-user boolean @@CheckMakeUserValue@@
+@@CheckUserFullname@@d-i passwd/user-fullname string @@InputUserFullname@@
+@@CheckUsername@@d-i passwd/username string @@InputUsername@@
+@@CheckUserPasswd@@d-i passwd/user-password password @@InputUserPasswd@@
+@@CheckUserUid@@d-i passwd/user-uid number @@NumberUserUid@@
+@@CheckUserGroup@@d-i passwd/user-default-groups string @@InputUserGroup@@
+@@CheckUtc@@d-i clock-setup/utc boolean @@CheckUtcValue@@
+@@CheckTimezone@@d-i time/zone string @@SelectTimezone@@
+@@CheckInitPartition@@d-i partman-auto/init_automatically_partition select @@SelectInitPartition@@
+@@CheckLvmSize@@d-i partman-auto-lvm/guided_size string @@InputLvmSize@@
+@@CheckRemoveOldLvm@@d-i partman-lvm/device_remove_lvm boolean @@CheckRemoveOldLvmValue@@
+@@CheckLvmConfirm@@d-i partman-lvm/confirm boolean @@CheckLvmConfirmValue@@
+@@CheckLvmNoOverwrite@@d-i partman-lvm/confirm_nooverwrite boolean @@CheckLvmNoOverwriteValue@@
+
+### BASE SYSTEM INSTALLATION
+@@CheckInstallRecommends@@d-i base-installer/install-recommends boolean @@CheckInstallRecommendsValue@@
+@@CheckKernelImage@@d-i base-installer/kernel/image string @@InputKernelImage@@
+
+### APT SETUP
+@@CheckSetFirst@@d-i apt-setup/cdrom/set-first boolean @@CheckSetFirstValue@@
+@@CheckNonFreeFirmware@@d-i apt-setup/non-free-firmware boolean @@CheckNonFreeFirmwareValue@@
+@@CheckNonFree@@d-i apt-setup/non-free boolean @@CheckNonFreeValue@@
+@@CheckContrib@@d-i apt-setup/contrib boolean @@CheckContribValue@@
+@@CheckDisableCdrom@@d-i apt-setup/disable-cdrom-entries boolean @@CheckDisableCdromValue@@
+@@CheckUseMirror@@d-i apt-setup/use_mirror boolean @@CheckUseMirrorValue@@
+@@CheckServicesSelect@@d-i apt-setup/services-select string @@InputServicesSelect@@
+@@CheckSecurityHost@@d-i apt-setup/security_host string @@InputSecurityHost@@
+@@CheckAddRepo@@d-i apt-setup/local0/repository string @@InputAddRepo@@
+@@CheckAddComment@@d-i additional_comment string @@InputAddComment@@
+@@CheckAddSource@@d-i apt-setup/local0/source boolean @@CheckAddSourceValue@@
+@@CheckAddKey@@d-i apt-setup/local0/key string @@InputAddKey@@
+@@CheckAllowUnauth@@d-i debian-installer/allow_unauthenticated boolean @@CheckAllowUnauthValue@@
+@@CheckMultiArch@@d-i apt-setup/multiarch string @@InputMultiArch@@
+
+### PACKAGE SELECTION
+@@CheckTasksel@@tasksel tasksel/first multiselect @@InputTasksel@@
+@@CheckRunTasksel@@d-i pkgsel/run_tasksel string @@InputRunTasksel@@
+@@CheckInclude@@d-i pkgsel/include string @@InputInclude@@
+@@CheckUpgrade@@d-i pkgsel/upgrade select @@SelectUpgrade@@
+@@CheckContest@@popularity-contest popularity-contest/participate boolean @@CheckContestValue@@
+
+### BOOT LOADER
+@@CheckDebian@@d-i grub-installer/only_debian boolean @@CheckDebianValue@@
+@@CheckMulti@@d-i grub-installer/with_other_os boolean @@CheckMultiValue@@
+
+### FINISHING
+@@CheckKeepConsoles@@d-i finish-install/keep-consoles boolean @@CheckKeepConsolesValue@@
+@@CheckRebootInProgress@@d-i finish-install/reboot_in_progress boolean @@CheckRebootInProgressValue@@
+@@CheckEjectCdrom@@d-i cdrom-detect/eject boolean @@CheckEjectCdromValue@@
+@@CheckReboot@@d-i debian-installer/exit/halt boolean @@CheckRebootValue@@
+@@CheckPoweroff@@d-i debian-installer/exit/poweroff boolean @@CheckPoweroffValue@@
