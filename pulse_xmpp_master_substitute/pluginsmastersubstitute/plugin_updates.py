@@ -63,6 +63,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             "Updates of %s not recomputed\n%s" % (jid, traceback.format_exc())
         )
         return
+    # A report may bring an update already approved by a rule: its package is built now
+    start_build(database)
     # A report may end a step of a launched upgrade: the next one starts now
     threading.Thread(target=database.run_upgrades, name="updates_upgrades", daemon=True).start()
 
