@@ -953,6 +953,12 @@ QUESTION_MESSAGE = (
     " Un redémarrage est nécessaire pour appliquer la modification."
     " Redémarrer maintenant ?"
 )
+RESTART_FIRST_MESSAGE = (
+    "Windows updates are waiting for a restart. Medulla installs the next ones"
+    " after it. Restart now?\n\n"
+    "Des mises à jour Windows attendent un redémarrage. Medulla installe"
+    " les suivantes ensuite. Redémarrer maintenant ?"
+)
 
 
 # Exit 20: restart pending, 21: servicing busy (TiWorker runs while CBS
@@ -1336,18 +1342,19 @@ def base_configuration(package_id, name, description, now, targetos="win", share
     }
 
 
-def precheck_step(next_label="INSTALL"):
+def precheck_step(next_label="INSTALL", label="PRECHECK", restart_label="POSTPONED"):
+    """restart_label: where a pending restart leads."""
     return {
         "action": "actionprocessscriptfile",
         "step": 0,
         "codereturn": "",
-        "actionlabel": "PRECHECK",
+        "actionlabel": label,
         "typescript": "powershell",
         "script": b64(PRECHECK_SCRIPT),
         "timeout": PRECHECK_TIMEOUT,
         "10@lastlines": "10@lastlines",
         "gotoreturncode@=0": next_label,
-        "gotoreturncode@=20": "POSTPONED",
+        "gotoreturncode@=20": restart_label,
         "gotoreturncode@=21": "POSTPONED",
         # A failing precheck never blocks the installation
         "gotoreturncode@OUT20,21": next_label,
@@ -1397,32 +1404,66 @@ def exe_step(target, exe):
     return batch_install_step(command, exe["restart_codes"], exe["done_codes"])
 
 
-def sessions_step():
+def sessions_step(label="CHECK_SESSIONS", restart="REBOOT", ask="ASK_REBOOT", none="REPORT_SUCCESS"):
+    """none: where no restart leads (a server, or a failed check)."""
     return {
         "action": "actionprocessscriptfile",
         "step": 0,
         "codereturn": "",
-        "actionlabel": "CHECK_SESSIONS",
+        "actionlabel": label,
         "typescript": "powershell",
         "script": b64(SESSIONS_SCRIPT),
         "timeout": SESSIONS_TIMEOUT,
         "10@lastlines": "10@lastlines",
-        "gotoreturncode@=10": "REBOOT",
-        "gotoreturncode@=11": "ASK_REBOOT",
-        "gotoreturncode@=12": "REPORT_SUCCESS",
-        # Unmatched codes, 0 included, would fall through to ASK_REBOOT
-        "gotoreturncode@OUT10,12": "REPORT_SUCCESS",
+        "gotoreturncode@=10": restart,
+        "gotoreturncode@=11": ask,
+        "gotoreturncode@=12": none,
+        # Unmatched codes, 0 included, would fall through to the question
+        "gotoreturncode@OUT10,12": none,
     }
 
 
-def restart_step():
-    """Must stay right before REPORT_SUCCESS: the agent resumes on the next step."""
+def question_step(label, message, restart, refused):
+    # No gotonouser: action_question would follow gototimeout,
+    # without a user the next step (the restart) is taken
+    return {
+        "action": "action_question",
+        "step": 0,
+        "codereturn": "",
+        "actionlabel": label,
+        "titlemessage": b64(QUESTION_TITLE),
+        "sizeheader": "15",
+        "message": b64(message),
+        "sizemessage": "10",
+        "textbuttonyes": "Yes",
+        "textbuttonno": "No",
+        "gotoyes": restart,
+        "gotono": refused,
+        "gototimeout": refused,
+        "timeout": QUESTION_TIMEOUT,
+    }
+
+
+def restart_step(label="REBOOT"):
+    """The agent resumes on the next step: REPORT_SUCCESS, or the second precheck."""
     return {
         "action": "actionrestart",
         "step": 0,
-        "actionlabel": "REBOOT",
+        "actionlabel": label,
         "targetrestart": "MA",
     }
+
+
+def restart_first_steps(next_label):
+    """A restart is pending before the installation: taken as after one (alone without a
+    session, asked with one), then the installation goes on. Reached by jumps only; a
+    restart still pending after it postpones the installation."""
+    return [
+        sessions_step("RESTART_FIRST", "RESTART_FIRST_REBOOT", "RESTART_FIRST_ASK", "POSTPONED"),
+        question_step("RESTART_FIRST_ASK", RESTART_FIRST_MESSAGE, "RESTART_FIRST_REBOOT", "POSTPONED"),
+        restart_step("RESTART_FIRST_REBOOT"),
+        precheck_step(next_label, "PRECHECK_AGAIN"),
+    ]
 
 
 def uninstall_steps(kb, title):
@@ -1511,34 +1552,19 @@ def windows_sequence(target, restart=False, kb=None, title=None):
 
 
 def media_sequence():
-    return update_sequence([scan_step(), upgrade_step()])
+    # A pending restart may be the one of this very upgrade: nothing runs after it
+    return update_sequence([scan_step(), upgrade_step()], resume="POSTPONED")
 
 
-def update_sequence(work, tail=()):
-    """Section update: precheck, work, restart and report."""
+def update_sequence(work, tail=(), resume=None):
+    """Section update: precheck, work, restart and report.
+    resume: where the installation goes on after a restart taken first (the work by default)."""
     sequence = [
         {"action": "action_section_update", "step": 0, "actionlabel": "SECTION_UPDATE"},
-        precheck_step(work[0]["actionlabel"]),
+        precheck_step(work[0]["actionlabel"], restart_label="RESTART_FIRST"),
     ] + list(work) + [
         sessions_step(),
-        # No gotonouser: action_question would follow gototimeout,
-        # without a user the next step (REBOOT) is taken
-        {
-            "action": "action_question",
-            "step": 0,
-            "codereturn": "",
-            "actionlabel": "ASK_REBOOT",
-            "titlemessage": b64(QUESTION_TITLE),
-            "sizeheader": "15",
-            "message": b64(QUESTION_MESSAGE),
-            "sizemessage": "10",
-            "textbuttonyes": "Yes",
-            "textbuttonno": "No",
-            "gotoyes": "REBOOT",
-            "gotono": "REPORT_SUCCESS",
-            "gototimeout": "REPORT_SUCCESS",
-            "timeout": QUESTION_TIMEOUT,
-        },
+        question_step("ASK_REBOOT", QUESTION_MESSAGE, "REBOOT", "REPORT_SUCCESS"),
         restart_step(),
         report_step("REPORT_SUCCESS", "END_SUCCESS"),
         {
@@ -1552,7 +1578,7 @@ def update_sequence(work, tail=()):
         # END_ERROR cannot run an inventory
         report_step("REPORT_ERROR", "END_ERROR"),
         {"action": "actionerrorcompletedend", "step": 0, "actionlabel": "END_ERROR"},
-    ] + list(tail)
+    ] + restart_first_steps(resume or work[0]["actionlabel"]) + list(tail)
     for index, step in enumerate(sequence):
         step["step"] = index
     return sequence

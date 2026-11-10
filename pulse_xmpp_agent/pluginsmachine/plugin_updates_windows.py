@@ -265,8 +265,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         start_forced_report(xmppobject)
         return
     if isinstance(data, dict) and data.get("check") is True:
-        # Scheduled check: a report only when the machine changed since the last one
-        if state_changed():
+        # Scheduled check: a report only when the machine changed since the last one.
+        # Not during a deployment: its own report follows, on the final state
+        if not deployment_running(xmppobject) and state_changed():
             start_report(xmppobject)
         return
     send_report(xmppobject, force)
@@ -688,6 +689,14 @@ def write_last_search(path, timestamp, version):
 
 
 # Pure functions below (unit tested on any OS)
+
+
+def deployment_running(xmppobject):
+    """A deployment holds the machine: its session is open."""
+    return any(
+        str(session.sessionid).startswith(("command", "update"))
+        for session in xmppobject.session.sessiondata
+    )
 
 
 def after_deployment(data):
