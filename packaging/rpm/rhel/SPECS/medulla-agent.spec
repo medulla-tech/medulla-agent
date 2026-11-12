@@ -155,6 +155,7 @@ Requires:       python3.11-xmltodict
 Requires:       python3.11-croniter
 Requires:       python3.11-distro
 Requires:       jq
+Requires:       wimtools
 BuildArch:      noarch
 
 %description -n pulse-xmpp-master-substitute
