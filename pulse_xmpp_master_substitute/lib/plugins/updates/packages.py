@@ -37,7 +37,10 @@ import uuid
 
 import requests
 
-from lib.plugins.updates.upgrades import POSTPONED_COMMENT, RESTART_FIRST_CODE, enablement_update_sql
+from lib.plugins.updates.upgrades import (
+    BUSY_CODE, NO_SESSION_CODE, POSTPONED_COMMENT, RESTART_FIRST_CODE, UNATTENDED_PARAMETER,
+    enablement_update_sql,
+)
 
 logger = logging.getLogger()
 
@@ -965,6 +968,10 @@ RESTART_FIRST_MESSAGE = (
 # works, TrustedInstaller stays started idle), 0: ready; any failure is
 # 1, the installation then goes on. 64-bit registry view: the agent may
 # run a 32-bit PowerShell.
+# Windows installs the language features of the user 15 minutes after a session
+# opens (logon trigger of the task), a session it opens by itself after an upgrade:
+# started during a cumulative update, that installation never ends and holds it.
+# sihost is the shell host of an open session
 PRECHECK_SCRIPT = r"""$ErrorActionPreference = "Stop"
 try {
     $hklm = [Microsoft.Win32.RegistryKey]::OpenBaseKey("LocalMachine", "Registry64")
@@ -991,11 +998,25 @@ try {
             exit 20
         }
     }
+    function LanguageInstallDue {
+        $session = Get-Process -Name sihost -ErrorAction SilentlyContinue |
+            Sort-Object StartTime | Select-Object -Last 1
+        $task = Get-ScheduledTask -TaskPath "\Microsoft\Windows\LanguageComponentsInstaller\" `
+            -TaskName "Installation" -ErrorAction SilentlyContinue
+        if (-not $session -or -not $task) { return $false }
+        if ($task.State -eq "Running") { return $true }
+        if ($task.State -ne "Ready") { return $false }
+        return ($task | Get-ScheduledTaskInfo).LastRunTime -lt $session.StartTime
+    }
     $deadline = (Get-Date).AddMinutes(15)
-    while (Get-Process -Name TiWorker -ErrorAction SilentlyContinue) {
+    while ($true) {
+        $busy = $null
+        if (LanguageInstallDue) { $busy = "Windows installs language features after a session opened" }
+        elseif (Get-Process -Name TiWorker -ErrorAction SilentlyContinue) { $busy = "Windows servicing busy" }
+        if (-not $busy) { break }
         if ((Get-Date) -ge $deadline) {
-            Write-Output "Installation postponed: Windows servicing busy for 15 minutes"
-            exit 21
+            Write-Output ("Installation postponed: {0} for 15 minutes" -f $busy)
+            exit %(busy)d
         }
         Start-Sleep -Seconds 30
     }
@@ -1005,7 +1026,7 @@ try {
     Write-Output ("Precheck failed, installing anyway: {0}" -f $_.Exception.Message)
     exit 1
 }
-"""
+""" % {"busy": BUSY_CODE}
 
 
 # Exit 0: removed, 3010: removed, restart needed, 13: no installed package
@@ -1122,6 +1143,16 @@ try {
         Write-Output "Server: no restart"
         exit 12
     }
+    $unattended = $false
+    try {
+        $parameters = [Text.Encoding]::UTF8.GetString(
+            [Convert]::FromBase64String('@@@DYNAMIC_PARAM_DEPLOY_B64@@@')) | ConvertFrom-Json
+        $unattended = [bool]$parameters.%(parameter)s
+    } catch {}
+    if ($unattended) {
+        Write-Output "Upgrade already restarted without a session: no question"
+        exit %(no_session)d
+    }
     Add-Type -TypeDefinition @"
 using System;
 using System.ComponentModel;
@@ -1170,14 +1201,14 @@ public static class MedullaSessions {
 "@
     $users, $active = [MedullaSessions]::Count()
     Write-Output ("User sessions: {0}, active: {1}" -f $users, $active)
-    if ($users -eq 0) { exit 10 }
+    if ($users -eq 0) { exit %(no_session)d }
     if ($users -eq 1 -and $active -eq 1) { exit 11 }
     exit 12
 } catch {
     Write-Output ("Sessions unknown: {0}" -f $_.Exception.Message)
     exit 12
 }
-"""
+""" % {"no_session": NO_SESSION_CODE, "parameter": UNATTENDED_PARAMETER}
 
 
 class BuildFailed(Exception):
@@ -1355,9 +1386,9 @@ def precheck_step(next_label="INSTALL", label="PRECHECK", restart_label="POSTPON
         "10@lastlines": "10@lastlines",
         "gotoreturncode@=0": next_label,
         "gotoreturncode@=20": restart_label,
-        "gotoreturncode@=21": "POSTPONED",
+        "gotoreturncode@=%d" % BUSY_CODE: "POSTPONED",
         # A failing precheck never blocks the installation
-        "gotoreturncode@OUT20,21": next_label,
+        "gotoreturncode@OUT20,%d" % BUSY_CODE: next_label,
     }
 
 
@@ -1415,11 +1446,11 @@ def sessions_step(label="CHECK_SESSIONS", restart="REBOOT", ask="ASK_REBOOT", no
         "script": b64(SESSIONS_SCRIPT),
         "timeout": SESSIONS_TIMEOUT,
         "10@lastlines": "10@lastlines",
-        "gotoreturncode@=10": restart,
+        "gotoreturncode@=%d" % NO_SESSION_CODE: restart,
         "gotoreturncode@=11": ask,
         "gotoreturncode@=12": none,
         # Unmatched codes, 0 included, would fall through to the question
-        "gotoreturncode@OUT10,12": none,
+        "gotoreturncode@OUT%d,12" % NO_SESSION_CODE: none,
     }
 
 

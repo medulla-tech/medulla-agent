@@ -70,6 +70,15 @@ POSTPONED_COMMENT = "Installation postponed"
 # ERROR_DISK_FULL, then its HRESULT 0x80070070 unsigned and signed
 DISK_FULL_CODES = (112, 2147942512, -2147024784)
 DISK_FULL = "disk_full"
+# Sessions check of a Windows package: its steps, and its answer with nobody on the
+# machine, which then restarts without a question. A launched upgrade that restarted
+# that way goes on without one: Windows opens a session by itself after an upgrade
+SESSIONS_LABELS = ("CHECK_SESSIONS", "RESTART_FIRST")
+NO_SESSION_CODE = 10
+UNATTENDED_PARAMETER = "unattended"
+# Precheck of a Windows package: Windows itself is busy. Nobody is asked anything, the
+# step is tried again even with a restart pending, which the package then does first
+BUSY_CODE = 21
 # Linux release package: exit codes of a stop that left the machine as it was. Only
 # "release:" in run_error tells an upgrade really begun, to resume
 PRECHECK = "precheck"
@@ -296,7 +305,8 @@ def step_action(upgrade, deployment, received_at):
             return FAILED, "%s: %s" % (step, deployment["state"])
         # Try again once the machine reports after its restart; a step done in
         # the meantime is no longer the first one of the report
-        if not report_after(deployment, received_at) or upgrade.get("reboot_pending"):
+        waits_restart = upgrade.get("reboot_pending") and not deployment.get("busy")
+        if not report_after(deployment, received_at) or waits_restart:
             return WAIT, step
         return DEPLOY, step
     if not deployment["success"]:
@@ -321,7 +331,7 @@ def run_action(upgrade, deployment, received_at, now=None):
     upgrade: machine_upgrades row (state, steps as a list, reboot_pending,
     pending_packages), recomputed from the last report. deployment: last deployment of
     the package of its first step since the launch, {"running", "success", "postponed",
-    "interrupted": bool, "state", "session", "ended_at", "attempts": deployments of that
+    "interrupted", "busy": bool, "state", "session", "ended_at", "attempts": deployments of that
     package since the launch}, None when there is none (Linux up to date: the release step one,
     a failed upgrade may already announce the new release). received_at: date of the
     last report. now: past STEP_WAIT_LIMIT after the end of the step, waiting is over.
@@ -358,6 +368,19 @@ def result_return_code(result):
         return None
     codes = [step_code(step) for step in sequence]
     return next((code for code in reversed(codes) if code), None)
+
+
+def restarted_alone(result):
+    """A sessions check in xmppmaster.deploy.result found nobody on the machine."""
+    try:
+        runs = json.loads(result)["descriptorslist"]
+    except (TypeError, ValueError, KeyError):
+        return False
+    return any(
+        isinstance(step, dict) and step.get("actionlabel") in SESSIONS_LABELS
+        and step_code(step) == NO_SESSION_CODE
+        for sequence in runs if isinstance(sequence, list) for step in sequence
+    )
 
 
 def failure_reason(store, upgrade, deployment, step, reason):
@@ -464,6 +487,8 @@ def run_one(store, upgrade, create, request_build):
             candidate.update(title=LINUX_TITLE % (LINUX_DISTRIBUTIONS[upgrade["distribution"]],
                                                   upgrade["target_release"]),
                              parameters={"release": codename} if codename else {})
+        elif store.restarted_alone(upgrade):
+            candidate["parameters"] = {UNATTENDED_PARAMETER: True}
         create(candidate)
         store.clear_run_error(upgrade["jid"])
         logger.info("Upgrade of %s: %s step deployed" % (upgrade["jid"], step))

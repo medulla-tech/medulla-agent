@@ -948,6 +948,7 @@ class UpdatesStore(object):
         being restarted by xmppmaster until that date; success =
         « Execution successful » without « Package execution error »,
         postponed = POSTPONED_COMMENT logged by the package (restart pending, Windows busy),
+        busy = postponed by BUSY_CODE,
         interrupted = ended by the server without a result from the machine (machine
         lost from sight a moment: the package may still run)."""
         params = {"uuid": glpi_uuid, "package": package_uuid, "since": since}
@@ -994,6 +995,8 @@ class UpdatesStore(object):
             "running": bool(pending) or not ended,
             "success": ended and bool(successful) and not errors,
             "postponed": ended and bool(postponed),
+            "busy": ended and bool(postponed)
+            and self.last_return_code(session) == upgrades.BUSY_CODE,
             "interrupted": ended and not answered,
             "state": state,
             "session": session,
@@ -1016,15 +1019,17 @@ class UpdatesStore(object):
             {"uuid": glpi_uuid},
         ).first() is not None
 
-    # Deployments of a launched upgrade not ended yet
-    OPEN_STEPS_SQL = (
+    # Deployments of a launched upgrade
+    STEPS_SQL = (
         " xmppmaster.deploy d JOIN msc.commands c ON c.id = d.command"
         " WHERE d.inventoryuuid = :uuid AND ("
         + " OR ".join("d.title LIKE '%s'" % title.replace("%s", "%")
                       for title in (upgrades.WINDOWS_TITLE, upgrades.LINUX_TITLE))
         + ")"
-        " AND d.start >= :since AND NOT " + DEPLOY_FINAL_SQL + " AND d.endcmd > NOW()"
+        " AND d.start >= :since"
     )
+    # Those not ended yet
+    OPEN_STEPS_SQL = STEPS_SQL + " AND NOT " + DEPLOY_FINAL_SQL + " AND d.endcmd > NOW()"
     # The report shows the package of the step applied: its KB installed, or the
     # build of its upgrade entry or of its media reached. Linux: never, the server
     # ends the step at its end date
@@ -1047,6 +1052,14 @@ class UpdatesStore(object):
             "SELECT COUNT(*) FROM" + self.OPEN_STEPS_SQL,
             {"uuid": upgrade["glpi_uuid"], "since": upgrade["launched_at"]},
         ).scalar() or 0
+
+    def restarted_alone(self, upgrade):
+        """A step of the launched upgrade restarted the machine with no session open."""
+        rows = self.execute(
+            "SELECT d.result FROM" + self.STEPS_SQL,
+            {"uuid": upgrade["glpi_uuid"], "since": upgrade["launched_at"]},
+        ).fetchall()
+        return any(upgrades.restarted_alone(row[0]) for row in rows)
 
     def end_lost_steps(self, upgrade, package_uuid=None):
         """Bring forward the end date of the deployments of the launched upgrade, other

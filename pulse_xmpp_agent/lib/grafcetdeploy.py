@@ -463,7 +463,8 @@ class grafcet:
 
     def __wait_process_of_previous_run__(self):
         # The agent restarted while the script ran: let it end before running the step again
-        running = self.data.pop("running_process", None)
+        # Kept in the session until the process ends: the agent may restart again meanwhile
+        running = self.data.get("running_process")
         if not running:
             return
         try:
