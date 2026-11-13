@@ -435,7 +435,7 @@ class manage_kiosk_message:
                         self.objectxmpp.networkMonitor()
                         return
 
-                    if self.objectxmpp.state.ensure("connected"):
+                    if self.objectxmpp.is_connected():
                         # toujours connected.
                         self.objectxmpp.md5reseau = refreshfingerprint()
                         self.objectxmpp.update_plugin()
