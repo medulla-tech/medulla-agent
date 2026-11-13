@@ -156,6 +156,9 @@ class confParameter:
         if "diskmastering" in self.plugins_list:
             self.readConfdiskMastering(Config)
 
+        if "updates" in self.plugins_list:
+            self.readConfupdates(Config)
+
     def _levellogdata(self, levelstring):
         strlevel = levelstring.upper()
         if strlevel in ["CRITICAL", "FATAL"]:
@@ -295,6 +298,17 @@ class confParameter:
             self.kiosk_dbpoolsize = confiobject.getint(
                 "kioskdatabase", "kiosk_dbpoolsize"
             )
+
+    def readConfupdates(self, confiobject):
+        section = "updatesdatabase"
+        self.updates_dbhost = confiobject.get(section, "updates_dbhost", fallback="localhost")
+        self.updates_dbport = confiobject.getint(section, "updates_dbport", fallback=3306)
+        self.updates_dbname = confiobject.get(section, "updates_dbname", fallback="updates")
+        self.updates_dbuser = confiobject.get(section, "updates_dbuser", fallback="mmc")
+        self.updates_dbpasswd = confiobject.get(section, "updates_dbpasswd", fallback="mmc")
+        self.updates_dbpoolrecycle = confiobject.getint(section, "updates_dbpoolrecycle", fallback=3600)
+        self.updates_dbpoolsize = confiobject.getint(section, "updates_dbpoolsize", fallback=60)
+        self.updates_dbpooltimeout = confiobject.getint(section, "updates_dbpooltimeout", fallback=30)
 
     def readConfmsc(self, confiobject):
         self.msc_dbpooltimeout = 30

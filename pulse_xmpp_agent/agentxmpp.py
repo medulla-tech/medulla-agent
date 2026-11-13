@@ -97,7 +97,6 @@ from lib.utils import (
     isMacOsUserAdmin,
     isWinUserAdmin,
     load_back_to_deploy,
-    offline_search_kb,
     os_version,
     protodef,
     reboot_command,
@@ -168,7 +167,10 @@ def create_config_file_atomically(file_path, config_data):
         config[server] = config_data[server]
 
     # Generate the configuration content as a string
-    with tempfile.NamedTemporaryFile(delete=False, mode="w") as temp_file:
+    # Same folder as the target: os.replace cannot cross filesystems (/tmp on tmpfs)
+    with tempfile.NamedTemporaryFile(
+        delete=False, mode="w", dir=os.path.dirname(os.path.abspath(file_path))
+    ) as temp_file:
         config.write(temp_file)
         temp_file.flush()
         temp_file_path = temp_file.name
@@ -327,6 +329,7 @@ class MUCBot(ClientXMPP):
         laps_time_update_plugin = 3600
         laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
+        self.laps_time_handlemanagesession = laps_time_handlemanagesession
         laps_time_check_established_connection = 900
         laps_time_send_ping_to_kiosk = 350
 
@@ -2427,9 +2430,7 @@ class MUCBot(ClientXMPP):
             return
 
         default_modules = [
-            "pulse_xmpp_agent.lib.update_linux",
             "pulse_xmpp_agent.lib.grafcetdeploy",
-            "pulse_xmpp_agent.pluginsmachine.plugin_update_linux_command",
         ]
         allowed_modules = set(default_modules)
         modules_to_reload = list(default_modules)
@@ -3992,25 +3993,6 @@ AGENT %s ERROR TERMINATE""" % (
             self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
 
-        system_info = offline_search_kb().get()
-        if "infobuild" in system_info:
-            # Information version pour windows
-            if "DisplayVersion" in system_info["infobuild"]:
-                er.messagejson["info"]["DisplayVersion"] = system_info["infobuild"][
-                    "DisplayVersion"
-                ]
-            if "update_major" in system_info["infobuild"]:
-                er.messagejson["info"]["update_major"] = system_info["infobuild"][
-                    "update_major"
-                ]
-            if "ProductName" in system_info["infobuild"]:
-                er.messagejson["info"]["ProductName"] = system_info["infobuild"][
-                    "ProductName"
-                ]
-            if "code_lang_iso" in system_info["infobuild"]:
-                er.messagejson["info"]["code_lang_iso"] = system_info["infobuild"][
-                    "code_lang_iso"
-                ]
         dataobj = {
             "action": "infomachine",
             "from": self.config.jidagent,
@@ -4055,7 +4037,6 @@ AGENT %s ERROR TERMINATE""" % (
             "keysyncthing": self.deviceid,
             "uuid_serial_machine": serialnumbermachine(),
             "updatingagent": self.config.updating,
-            "system_info": system_info,
         }
         if sys.platform.startswith("win"):
             dataobj["extractedDrivers"] = get_extracted_driver_key()
