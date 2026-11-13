@@ -3637,6 +3637,15 @@ class MUCBot(ClientXMPP):
             self.boundjid.user,
             "log",
             self.jidchatroomcommand.user,
+            "master_asse",
+            "master_depl",
+            "master_inv",
+            "master_log",
+            "master_mon",
+            "master_reconf",
+            "master_reg",
+            "master_subs",
+            "master_upd",
         ] + self.agentsiveo
         possibleclient = [str(x) for x in possibleclient]
         if not msg["type"] == "chat":
@@ -3663,11 +3672,12 @@ class MUCBot(ClientXMPP):
             if not (
                 "sessionid" in dataobj and self.session.isexist(dataobj["sessionid"])
             ):
-                # les messages venant d'une machine sont filtré sauf si une
-                # session message existe dans le gestionnaire de session.
-                if self.config.ordreallagent:
+                # Les messages d'un emetteur non autorise (hors possibleclient)
+                # et sans session active sont rejetes par defaut.
+                # L'autorisation inter-agents doit etre explicite (inter_agent = True).
+                if self.config.agenttype not in ["relayserver"] and not self.config.ordreallagent:
                     logging.warning(
-                        "filtre message from %s eg possible client" % (msg["from"].bare)
+                        "Messages from %s are not allowed" % (msg["from"].bare)
                     )
                     return
 
