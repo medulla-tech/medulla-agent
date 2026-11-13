@@ -191,6 +191,9 @@ class DeploymentStore(object):
     def __init__(self, store):
         self.store = store
 
+    def relays(self, jid):
+        return machine_relays(self.store.execute, jid)
+
     def open_entities(self, now):
         rows = self.store.execute(ENTITIES_SQL)
         return [row[0] for row in rows if in_window(now, row[1], row[2])]
@@ -244,6 +247,36 @@ def linux_candidate(row, packages):
     }
 
 
+# Relays of the cluster of the machine: any of them may be given its deployment
+MACHINE_RELAYS_SQL = (
+    "SELECT DISTINCT r2.nameserver FROM xmppmaster.machines m"
+    " JOIN xmppmaster.relayserver r ON r.jid = m.groupdeploy"
+    " LEFT JOIN xmppmaster.has_cluster_ars h ON h.id_ars = r.id"
+    " LEFT JOIN xmppmaster.has_cluster_ars h2 ON h2.id_cluster = h.id_cluster"
+    " JOIN xmppmaster.relayserver r2 ON r2.id = COALESCE(h2.id_ars, r.id)"
+    " WHERE SUBSTRING_INDEX(m.jid, '/', 1) = :jid"
+)
+
+
+def machine_relays(execute, jid):
+    """Host names of the relays that may serve the machine."""
+    return [row[0] for row in execute(MACHINE_RELAYS_SQL, {"jid": jid}) if row[0]]
+
+
+def relays_pending(package_uuid, relays=None):
+    """Why a deployment of the package waits for the relays of the machine, None when it
+    may start."""
+    from lib import package_sync
+    from lib.plugins.updates.packages import PACKAGES_DIR
+
+    try:
+        return package_sync.pending("%s/%s" % (PACKAGES_DIR, package_uuid), relays)
+    except package_sync.Unknown as error:
+        # No answer: the deployment starts, a missing package is tried again as before
+        logger.debug("Relays not asked for %s: %s" % (package_uuid, error))
+        return None
+
+
 def create_deployment(candidate, start_date, end_date):
     """Same records as the deployment of an update from the console."""
     from lib.plugins.msc import MscDatabase
@@ -287,7 +320,8 @@ def create_deployment(candidate, start_date, end_date):
     )
 
 
-def run(open_store, limit=DEFAULT_LIMIT, create=create_deployment, now=None, linux_packages=None):
+def run(open_store, limit=DEFAULT_LIMIT, create=create_deployment, now=None, linux_packages=None,
+        pending=None):
     """Create the deployments of this run; return how many were created.
     linux_packages: {family: package identifier} of the Linux packages built."""
     now = now or datetime.now().replace(microsecond=0)
@@ -296,8 +330,16 @@ def run(open_store, limit=DEFAULT_LIMIT, create=create_deployment, now=None, lin
         candidates = store.candidates(entity_ids)
         candidates += store.linux_candidates(entity_ids, linux_packages or {})
     chosen = pick(candidates, limit)
+    with open_store() as store:
+        relays = {candidate["jid"]: store.relays(candidate["jid"]) for candidate in chosen}
+    pending = pending or relays_pending
     created = 0
     for candidate in chosen:
+        waiting = pending(candidate["package_uuid"], relays[candidate["jid"]])
+        if waiting:
+            logger.info("Automatic deployment of %s on %s waits: %s"
+                        % (label(candidate), candidate["hostname"], waiting))
+            continue
         try:
             create(candidate, now, now + DURATION)
         except Exception:

@@ -921,6 +921,13 @@ class UpdatesStore(object):
         ).fetchone()
         return {"uuid": row[0], "state": row[1], "kb": None} if row else None
 
+    def relays_pending(self, package_uuid, jid):
+        """Why a step waits for the relays of the machine before its deployment, None when
+        it may start."""
+        from lib.plugins.updates.deployments import machine_relays, relays_pending
+
+        return relays_pending(package_uuid, machine_relays(self.execute, jid))
+
     def linux_upgrade_package(self, distribution):
         """Package of the release upgrade of the distribution, None when not built."""
         from lib.plugins.updates import packages

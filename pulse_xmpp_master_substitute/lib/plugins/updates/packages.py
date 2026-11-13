@@ -55,7 +55,9 @@ PROXIES = None
 # wusa/DISM first run a full applicability scan: 1h49 seen for 4.7 GB
 INSTALL_TIMEOUT = "14400"
 SESSIONS_TIMEOUT = "120"
-PRECHECK_TIMEOUT = "1200"
+# A precheck waits for Windows itself (language features, servicing) with no delay of
+# its own: only the time an installation may take stops it
+PRECHECK_TIMEOUT = INSTALL_TIMEOUT
 # Under the 600 s the agent waits for the question window
 QUESTION_TIMEOUT = "300"
 # setup.exe /compat scanonly: 3 to 10 minutes seen
@@ -971,6 +973,9 @@ RESTART_FIRST_MESSAGE = (
 # Windows installs the language features of the user 15 minutes after a session
 # opens (logon trigger of the task), a session it opens by itself after an upgrade:
 # started during a cumulative update, that installation never ends and holds it.
+# The precheck waits for facts, not for a delay of its own: the task has run since the
+# session opened and is over, its start time being read in its own trigger. An
+# installation that ends by asking for a restart is not waited for any longer.
 # sihost is the shell host of an open session
 PRECHECK_SCRIPT = r"""$ErrorActionPreference = "Stop"
 try {
@@ -979,25 +984,29 @@ try {
         "SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending",
         "SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired"
     )
-    foreach ($path in $keys) {
-        $key = $hklm.OpenSubKey($path)
-        if ($key) {
-            $key.Close()
-            Write-Output ("HKLM\{0}" -f $path)
-            Write-Output "Installation postponed: a restart is pending"
-            exit 20
+    function RestartPending {
+        foreach ($path in $keys) {
+            $key = $hklm.OpenSubKey($path)
+            if ($key) {
+                $key.Close()
+                return ("HKLM\{0}" -f $path)
+            }
         }
-    }
-    $setup = $hklm.OpenSubKey("SYSTEM\Setup\MoSetup\Volatile")
-    if ($setup) {
-        $progress = $setup.GetValue("SetupProgress")
-        $setup.Close()
-        if ($progress -eq 100) {
-            Write-Output "HKLM\SYSTEM\Setup\MoSetup\Volatile SetupProgress=100"
-            Write-Output "Installation postponed: a restart is pending"
-            exit 20
+        $setup = $hklm.OpenSubKey("SYSTEM\Setup\MoSetup\Volatile")
+        if ($setup) {
+            $progress = $setup.GetValue("SetupProgress")
+            $setup.Close()
+            if ($progress -eq 100) { return "HKLM\SYSTEM\Setup\MoSetup\Volatile SetupProgress=100" }
         }
+        return $null
     }
+    $pending = RestartPending
+    if ($pending) {
+        Write-Output $pending
+        Write-Output "Installation postponed: a restart is pending"
+        exit 20
+    }
+    $poll = 30
     function LanguageInstallDue {
         $session = Get-Process -Name sihost -ErrorAction SilentlyContinue |
             Sort-Object StartTime | Select-Object -Last 1
@@ -1006,19 +1015,26 @@ try {
         if (-not $session -or -not $task) { return $false }
         if ($task.State -eq "Running") { return $true }
         if ($task.State -ne "Ready") { return $false }
-        return ($task | Get-ScheduledTaskInfo).LastRunTime -lt $session.StartTime
+        if (($task | Get-ScheduledTaskInfo).LastRunTime -ge $session.StartTime) { return $false }
+        # Not run yet for this session: Windows starts it after the delay of its trigger.
+        # Not started once due, it will not start
+        $trigger = $task.Triggers | Where-Object { $_.Delay } | Select-Object -First 1
+        if (-not $trigger) { return $false }
+        $due = $session.StartTime + [System.Xml.XmlConvert]::ToTimeSpan($trigger.Delay)
+        return (Get-Date) -le $due.AddSeconds(2 * $poll)
     }
-    $deadline = (Get-Date).AddMinutes(15)
     while ($true) {
         $busy = $null
         if (LanguageInstallDue) { $busy = "Windows installs language features after a session opened" }
         elseif (Get-Process -Name TiWorker -ErrorAction SilentlyContinue) { $busy = "Windows servicing busy" }
         if (-not $busy) { break }
-        if ((Get-Date) -ge $deadline) {
-            Write-Output ("Installation postponed: {0} for 15 minutes" -f $busy)
+        $pending = RestartPending
+        if ($pending) {
+            Write-Output $pending
+            Write-Output ("Installation postponed: {0}, a restart is now pending" -f $busy)
             exit %(busy)d
         }
-        Start-Sleep -Seconds 30
+        Start-Sleep -Seconds $poll
     }
     Write-Output "No pending restart, Windows servicing idle"
     exit 0

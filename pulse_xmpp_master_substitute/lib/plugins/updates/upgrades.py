@@ -462,6 +462,11 @@ def run_one(store, upgrade, create, request_build):
     if action == DEPLOY and not upgrade.get("in_window", True):
         # Outside the upgrade window of the entity: the step starts in it
         return 0
+    if action == DEPLOY:
+        waiting = store.relays_pending(package["uuid"], upgrade["jid"])
+        if waiting:
+            logger.info("Upgrade of %s: %s step waits, %s" % (upgrade["jid"], step, waiting))
+            return 0
     if action == DONE:
         store.stop_upgrade(upgrade["jid"], None)
         logger.info("Upgrade of %s done: %s" % (upgrade["jid"], upgrade["target_release"]))
