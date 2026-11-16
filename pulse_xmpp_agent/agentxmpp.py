@@ -3681,6 +3681,55 @@ class MUCBot(ClientXMPP):
                     )
                     return
 
+        # Controle sur les relais. Sur un relais, les actions sensibles ne viennent que du
+        # master / des substituts ou du relais lui-meme.
+        SENSITIVE_ACTIONS = (
+            "shellcommand",
+            "installplugin",
+            "installpluginscheduled",
+            "reverse_ssh_on",
+            "enable_rescue",
+            "force_setup_agent",
+            "regenerateagent",
+            "updateagent",
+            "updateversion",
+            "restartbot",
+        )
+        _action = dataobj.get("action", "")
+        if self.config.agenttype == "relayserver" and _action in SENSITIVE_ACTIONS:
+            _control = {str(self.boundjid.bare)}
+            try:
+                _control.add(str(self.agentmaster.bare))
+                _domain = self.agentmaster.domain or "pulse"
+            except Exception:
+                _domain = "pulse"
+            for _extra in ("master_depl", "master_reconf"):
+                _control.add("%s@%s" % (_extra, _domain))
+            for _src in (self, getattr(self, "config", None)):
+                if _src is None:
+                    continue
+                for _name in dir(_src):
+                    if not _name.startswith("sub_"):
+                        continue
+                    _v = getattr(_src, _name, None)
+                    if not _v:
+                        continue
+                    _items = _v if isinstance(_v, (list, tuple, set)) else [_v]
+                    for _it in _items:
+                        try:
+                            _control.add(str(jid.JID(str(_it)).bare))
+                        except Exception:
+                            pass
+            _has_session = "sessionid" in dataobj and self.session.isexist(
+                dataobj["sessionid"]
+            )
+            if str(msg["from"].bare) not in _control and not _has_session:
+                logging.warning(
+                    "Action '%s' refused on the relay : sender %s not allowed"
+                    % (_action, msg["from"].bare)
+                )
+                return
+
         dataerreur = {
             "action": "resultmsginfoerror",
             "sessionid": "",
