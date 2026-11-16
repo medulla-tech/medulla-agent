@@ -103,5 +103,7 @@ def upgrades_launched(xmppobject, jid, entity_id):
     database = master_change(xmppobject, jid, entity_id, "upgrades")
     if database is None:
         return
-    # Without waiting for the next scheduled pass
-    threading.Thread(target=database.run_upgrades, name="updates_upgrades", daemon=True).start()
+    # Without waiting for the next scheduled pass; a failed package they need is built again
+    threading.Thread(
+        target=database.run_upgrades, args=(True,), name="updates_upgrades", daemon=True
+    ).start()

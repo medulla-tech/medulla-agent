@@ -35,9 +35,11 @@ from lib.agentconffile import medullaPath
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updates_windows", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "updates_windows", "TYPE": "machine"}  # fmt: skip
 
 REPORT_FORMAT = 1
+# Dates of the report: UTC
+ISO_UTC_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 REPORT_INTERVAL = 86400
 SEARCH_MIN_INTERVAL = 20 * 3600
 SEARCH_TIMEOUT = 600
@@ -54,6 +56,11 @@ LEGACY_REGISTRY_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medu
 LEGACY_TASK = "win11compatcheck"
 PACKAGES_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\Packages"
 MICROSOFT_UPDATE_SERVICE = "7971f918-a847-4430-9279-4a52d1efe18d"
+# Categories Windows gives a missing update: identifier (GUID) and name of a product,
+# name of a classification
+CATEGORY_ID_LENGTH = 36
+PRODUCT_NAME_LENGTH = 255
+CLASSIFICATION_LENGTH = 64
 
 # HKLM keys present while Windows waits for a restart
 REBOOT_PENDING_KEYS = (
@@ -212,6 +219,27 @@ $videos = @(Get-CimInstance Win32_VideoController |
 } | ConvertTo-Json -Compress -Depth 3
 """
 
+# The class behind Get-MpComputerStatus, read without the Defender module.
+# Prints null when Defender cannot be read (absent, stopped, removed)
+DEFENDER_SCRIPT = r"""
+try {
+    $status = Get-CimInstance -Namespace 'root\Microsoft\Windows\Defender' `
+        -ClassName MSFT_MpComputerStatus -ErrorAction Stop
+    $updated = $null
+    if ($status.AntivirusSignatureLastUpdated) {
+        $updated = $status.AntivirusSignatureLastUpdated.ToUniversalTime().ToString(
+            "yyyy-MM-dd'T'HH:mm:ss'Z'", [System.Globalization.CultureInfo]::InvariantCulture)
+    }
+    [pscustomobject]@{
+        enabled = $status.AntivirusEnabled
+        signature_version = $status.AntivirusSignatureVersion
+        signature_updated_at = $updated
+    } | ConvertTo-Json -Compress
+} catch {
+    'null'
+}
+"""
+
 SEARCH_SCRIPT = r"""
 $result = [ordered]@{ server = 'windows_update'; result_code = $null; hresult = $null; error = $null; missing = @() }
 try {
@@ -233,7 +261,19 @@ try {
         $kb = $null
         $ids = @($update.KBArticleIDs)
         if ($ids.Count -gt 0) { $kb = [int]$ids[0] }
-        [pscustomobject]@{ id = $update.Identity.UpdateID; kb = $kb; title = $update.Title }
+        # Categories that cannot be read are unknown ($null), the search still stands
+        $products = $null
+        $classification = $null
+        try {
+            $categories = @($update.Categories)
+            $products = @($categories | Where-Object { $_.Type -eq 'Product' } | ForEach-Object {
+                [pscustomobject]@{ id = $_.CategoryID; name = $_.Name }
+            })
+            $classification = $categories | Where-Object { $_.Type -eq 'UpdateClassification' } |
+                Select-Object -First 1 -ExpandProperty Name
+        } catch {}
+        [pscustomobject]@{ id = $update.Identity.UpdateID; kb = $kb; title = $update.Title
+            products = $products; classification = $classification }
     })
 } catch {
     $exception = $_.Exception
@@ -241,7 +281,7 @@ try {
     $result.hresult = $exception.HResult
     $result.error = $exception.Message
 }
-ConvertTo-Json -InputObject ([pscustomobject]$result) -Compress -Depth 3
+ConvertTo-Json -InputObject ([pscustomobject]$result) -Compress -Depth 5
 """ % {"service_id": MICROSOFT_UPDATE_SERVICE}
 
 
@@ -427,6 +467,7 @@ def build_report(force):
         "search": search,
         "policy": policy,
         "windows11": windows11,
+        "defender": normalize_defender(collect(DEFENDER_SCRIPT)),
         "reboot_pending": reboot_pending(),
     }
 
@@ -742,7 +783,16 @@ def iso_utc(timestamp):
     if timestamp is None:
         return None
     moment = datetime.fromtimestamp(timestamp, timezone.utc)
-    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return moment.strftime(ISO_UTC_FORMAT)
+
+
+def utc_date(value):
+    """A date of the report as sent by a script, None when it is not one."""
+    try:
+        datetime.strptime(value, ISO_UTC_FORMAT)
+    except (TypeError, ValueError):
+        return None
+    return value
 
 
 def to_int(value):
@@ -824,6 +874,21 @@ def normalize_policy(raw):
     }
 
 
+def normalize_defender(raw):
+    """Defender definitions, None without a signature version."""
+    if not isinstance(raw, dict):
+        return None
+    version = raw.get("signature_version")
+    if not isinstance(version, str) or not version.strip():
+        return None
+    enabled = raw.get("enabled")
+    return {
+        "enabled": enabled if isinstance(enabled, bool) else None,
+        "signature_version": version.strip(),
+        "signature_updated_at": utc_date(raw.get("signature_updated_at")),
+    }
+
+
 def merge_installed(items):
     """Deduplicate by KB, keeping the most recent known date."""
     if isinstance(items, dict):
@@ -866,11 +931,36 @@ def search_result(raw):
     result["status"] = "ok"
     result["error"] = None
     result["missing"] = [
-        {"id": item.get("id"), "kb": to_int(item.get("kb")), "title": item.get("title")}
+        {"id": item.get("id"), "kb": to_int(item.get("kb")), "title": item.get("title"),
+         "products": missing_products(item.get("products")),
+         "classification": bounded_text(item.get("classification"), CLASSIFICATION_LENGTH)}
         for item in missing
-        if item.get("id")
+        if isinstance(item, dict) and item.get("id")
     ]
     return result
+
+
+def bounded_text(value, length):
+    """Stripped text cut to length, None when empty or not a text."""
+    if not isinstance(value, str):
+        return None
+    return value.strip()[:length] or None
+
+
+def missing_products(raw):
+    """Products Windows gives a missing update: [{"id", "name"}], None when not known
+    (PowerShell gives a single one as an object, not a list)."""
+    if isinstance(raw, dict):
+        raw = [raw]
+    if not isinstance(raw, list):
+        return None
+    products = []
+    for item in raw:
+        category_id = bounded_text(item.get("id"), CATEGORY_ID_LENGTH) if isinstance(item, dict) else None
+        if category_id:
+            products.append({"id": category_id.lower(),
+                             "name": bounded_text(item.get("name"), PRODUCT_NAME_LENGTH)})
+    return products
 
 
 RED_REASON_BLOCKERS = {

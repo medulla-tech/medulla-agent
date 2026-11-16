@@ -4,9 +4,11 @@
 # file : pulse_xmpp_master_substitute/lib/plugins/updates/deployments.py
 
 """
-Automatic deployment of the approved Windows updates, inside the
-window of each entity that enabled it. Workstations only: a server
-is never updated automatically.
+Automatic deployment of the approved Windows updates and Linux packages, inside
+the window of each entity that enabled it (auto_deploy). The fileless KBs
+(packages.fileless_kbs(), the Defender definitions) follow neither that setting nor
+its window: kept up to date at any time once their product is tracked and a rule
+covers them. Workstations only: a server is never updated automatically.
 """
 
 from contextlib import contextmanager
@@ -50,6 +52,31 @@ def pending_command_sql(uuid):
 # The precheck of the package would postpone it and end in error; unknown: as today
 NO_RESTART_PENDING_SQL = "COALESCE(mr.reboot_pending, 0) = 0"
 
+# Machines of the reports known to GLPI and enabled, with their entity (lgm.entities_id)
+MACHINES_SQL = (
+    " FROM machine_reports mr"
+    " JOIN xmppmaster.local_glpi_machines lgm"
+    " ON mr.glpi_uuid REGEXP '^UUID[0-9]+$'"
+    " AND lgm.id = CAST(SUBSTRING(mr.glpi_uuid, 5) AS UNSIGNED)"
+    " AND lgm.is_deleted = 0 AND lgm.is_template = 0"
+    " JOIN xmppmaster.machines xm"
+    " ON SUBSTRING_INDEX(xm.jid, '/', 1) = mr.jid AND xm.enabled = 1"
+)
+# Another deployment still holds the machine
+NOT_DEPLOYING_SQL = (
+    " AND NOT EXISTS (SELECT 1 FROM xmppmaster.deploy d"
+    " WHERE d.inventoryuuid = mr.glpi_uuid AND " + DEPLOY_RUNNING_SQL + ")"
+)
+# An upgrade launched by the admin runs its own steps
+NO_LAUNCHED_UPGRADE_SQL = (
+    " AND NOT EXISTS (SELECT 1 FROM machine_upgrades mg"
+    " WHERE mg.jid = mr.jid AND mg.launched_at IS NOT NULL)"
+)
+# A command not yet handed to the deployment loop
+NO_PENDING_COMMAND_SQL = " AND NOT EXISTS (" + pending_command_sql("mr.glpi_uuid") + ")"
+
+# Entities of the automatic deployments of updates and Linux packages; not asked for
+# the fileless KBs
 ENTITIES_SQL = (
     "SELECT entity_id, window_start, window_end FROM effective_settings"
     " WHERE auto_deploy = 1"
@@ -61,13 +88,7 @@ CANDIDATES_SQL = (
     " EXISTS (SELECT 1 FROM kb_cves kc JOIN cves c ON c.id = kc.cve_id"
     " WHERE kc.kb = u.kb AND c.exploited = 1) AS exploited,"
     " (u.severity = 'Critical') AS critical"
-    " FROM machine_reports mr"
-    " JOIN xmppmaster.local_glpi_machines lgm"
-    " ON mr.glpi_uuid REGEXP '^UUID[0-9]+$'"
-    " AND lgm.id = CAST(SUBSTRING(mr.glpi_uuid, 5) AS UNSIGNED)"
-    " AND lgm.is_deleted = 0 AND lgm.is_template = 0"
-    " JOIN xmppmaster.machines xm"
-    " ON SUBSTRING_INDEX(xm.jid, '/', 1) = mr.jid AND xm.enabled = 1"
+    + MACHINES_SQL +
     " JOIN machine_updates mu ON mu.jid = mr.jid AND mu.offer = 'main'"
     " JOIN approved_updates au"
     " ON au.entity_id = lgm.entities_id AND au.update_id = mu.update_id"
@@ -76,20 +97,15 @@ CANDIDATES_SQL = (
     " JOIN packages p ON p.uuid = up.package_uuid AND p.state = 'ready'"
     " WHERE lgm.entities_id IN :entities"
     " AND mr.system_type = 'client'"
-    " AND " + NO_RESTART_PENDING_SQL +
-    # Another deployment still holds the machine
-    " AND NOT EXISTS (SELECT 1 FROM xmppmaster.deploy d"
-    " WHERE d.inventoryuuid = mr.glpi_uuid AND " + DEPLOY_RUNNING_SQL + ")"
-    # An upgrade launched by the admin runs its own steps
-    " AND NOT EXISTS (SELECT 1 FROM machine_upgrades mg"
-    " WHERE mg.jid = mr.jid AND mg.launched_at IS NOT NULL)"
+    " AND " + NO_RESTART_PENDING_SQL
+    + NOT_DEPLOYING_SQL
+    + NO_LAUNCHED_UPGRADE_SQL +
     # One automatic try per package and machine: after a failure the admin redeploys
     " AND NOT EXISTS (SELECT 1 FROM xmppmaster.deploy d"
     " JOIN msc.commands c ON c.id = d.command"
     " WHERE d.inventoryuuid = mr.glpi_uuid"
     " AND c.package_id COLLATE utf8mb4_unicode_ci = up.package_uuid)"
-    # A command not yet handed to the deployment loop
-    " AND NOT EXISTS (" + pending_command_sql("mr.glpi_uuid") + ")"
+    + NO_PENDING_COMMAND_SQL +
     " ORDER BY exploited DESC, critical DESC, u.published_at IS NULL,"
     " u.published_at, u.id, mr.jid"
 )
@@ -110,13 +126,7 @@ LINUX_CANDIDATES_SQL = (
     " GROUP_CONCAT(DISTINCT mu.package ORDER BY mu.package SEPARATOR ' '),"
     " GROUP_CONCAT(DISTINCT CONCAT(mu.package, '=', COALESCE(mu.available_version, ''))"
     " SEPARATOR ' ')"
-    " FROM machine_reports mr"
-    " JOIN xmppmaster.local_glpi_machines lgm"
-    " ON mr.glpi_uuid REGEXP '^UUID[0-9]+$'"
-    " AND lgm.id = CAST(SUBSTRING(mr.glpi_uuid, 5) AS UNSIGNED)"
-    " AND lgm.is_deleted = 0 AND lgm.is_template = 0"
-    " JOIN xmppmaster.machines xm"
-    " ON SUBSTRING_INDEX(xm.jid, '/', 1) = mr.jid AND xm.enabled = 1"
+    + MACHINES_SQL +
     " JOIN effective_rules er ON er.entity_id = lgm.entities_id AND er.os = 'linux'"
     " JOIN machine_updates mu ON mu.jid = mr.jid AND mu.package IS NOT NULL"
     " JOIN approval_rules ar ON ar.entity_id = er.source_id AND ar.os = 'linux'"
@@ -126,19 +136,77 @@ LINUX_CANDIDATES_SQL = (
     " AND mr.os = 'linux' AND mr.family IN :families"
     # Unknown type: not a desktop for sure, a server is never updated automatically
     " AND mr.system_type = 'client'"
-    " AND NOT EXISTS (SELECT 1 FROM xmppmaster.deploy d"
-    " WHERE d.inventoryuuid = mr.glpi_uuid AND " + DEPLOY_RUNNING_SQL + ")"
+    + NOT_DEPLOYING_SQL +
     " AND NOT EXISTS (" + LINUX_UPGRADE_HOLD_SQL + ")"
     " AND NOT EXISTS (SELECT 1 FROM xmppmaster.deploy d"
     " JOIN msc.commands c ON c.id = d.command"
     " WHERE d.inventoryuuid = mr.glpi_uuid"
     " AND c.package_id COLLATE utf8mb4_unicode_ci IN :packages"
     " AND d.start >= mr.received_at)"
-    " AND NOT EXISTS (" + pending_command_sql("mr.glpi_uuid") + ")"
+    + NO_PENDING_COMMAND_SQL +
     " GROUP BY mr.jid, mr.glpi_uuid, xm.hostname, mr.hostname, mr.family"
     " ORDER BY mr.jid"
 )
 LINUX_TITLE = "Linux updates"
+
+# Releases of the build of the machine, of its system type (compute.own_releases)
+OWN_RELEASES_SQL = (
+    "r.build = mr.build AND r.architecture = mr.architecture"
+    " AND r.os_product_name LIKE CONCAT(mr.system_type, '.%')"
+)
+
+def report_value_sql(path):
+    """Scalar of the raw report of the machine as text, NULL when absent. JSON_EXTRACT
+    alone keeps the quotes of a string and gives a boolean as the text true."""
+    return "JSON_UNQUOTE(JSON_EXTRACT(mr.report, '%s'))" % path
+
+
+# Windows workstations whose last report made a search that lists a fileless KB
+# (packages.fileless_kbs(): never a row of machine_updates), of a product their entity
+# tracks, with a Windows rule of their entity covering a catalog entry of the KB, and
+# Defender said active by the report. One try per report, as for Linux, hence per
+# search. Any entity, at any time: neither auto_deploy nor its window. A pending restart
+# does not stop it: its package has no precheck and never restarts (binds :kb, :package,
+# the identifier of the package of the KB)
+FILELESS_CANDIDATES_SQL = (
+    "SELECT mr.jid, mr.glpi_uuid, COALESCE(xm.hostname, mr.hostname)"
+    + MACHINES_SQL +
+    " JOIN effective_products ep ON ep.entity_id = lgm.entities_id"
+    " JOIN effective_rules er ON er.entity_id = lgm.entities_id AND er.os = 'windows'"
+    " JOIN packages p ON p.uuid = :package AND p.state = 'ready'"
+    " WHERE mr.os = 'windows' AND mr.system_type = 'client'"
+    # The stored list is the one of this report: a report without a search (skipped)
+    # keeps the list and the search_status of the last search
+    " AND " + report_value_sql("$.search.status") + " = 'ok'"
+    # Absent, null or false: the script of the package would fail at every report
+    " AND " + report_value_sql("$.defender.enabled") + " = 'true'"
+    " AND EXISTS (SELECT 1 FROM machine_missing_updates mm"
+    " WHERE mm.jid = mr.jid AND mm.kb = :kb)"
+    # A machine on a known version the entity does not track gets nothing
+    # (compute.is_version_tracked)
+    " AND (NOT EXISTS (SELECT 1 FROM releases r"
+    " WHERE " + OWN_RELEASES_SQL + " AND r.name IS NOT NULL)"
+    " OR EXISTS (SELECT 1 FROM releases r JOIN entity_releases erl"
+    " ON erl.entity_id = ep.source_id AND erl.product_id = r.product_id"
+    " AND erl.release_name = r.name WHERE " + OWN_RELEASES_SQL + "))"
+    " AND EXISTS (SELECT 1 FROM updates u"
+    " JOIN update_products upr ON upr.update_id = u.id"
+    " JOIN entity_products enp"
+    " ON enp.entity_id = ep.source_id AND enp.product_id = upr.product_id"
+    " JOIN approval_rules ar ON ar.entity_id = er.source_id AND ar.os = 'windows'"
+    " AND ar.classification = u.classification"
+    " AND (ar.severity IS NULL OR ar.severity = u.severity)"
+    " WHERE u.kb = :kb AND u.removed = 0)"
+    + NOT_DEPLOYING_SQL
+    + NO_LAUNCHED_UPGRADE_SQL +
+    " AND NOT EXISTS (SELECT 1 FROM xmppmaster.deploy d"
+    " JOIN msc.commands c ON c.id = d.command"
+    " WHERE d.inventoryuuid = mr.glpi_uuid"
+    " AND c.package_id COLLATE utf8mb4_unicode_ci = :package"
+    " AND d.start >= mr.received_at)"
+    + NO_PENDING_COMMAND_SQL +
+    " ORDER BY mr.jid"
+)
 TARGETS_PARAMETER = "targets"
 
 
@@ -219,6 +287,21 @@ class DeploymentStore(object):
         )
         candidates = [linux_candidate(row, packages) for row in rows.fetchall()]
         return [candidate for candidate in candidates if not self.linux_attempted(candidate)]
+
+    def fileless_candidates(self, packages):
+        """packages: fileless_packages(), {KB: identifier of its package}. Machines of
+        any entity: open_entities() is not asked."""
+        candidates = []
+        for kb, package_uuid in sorted(packages.items()):
+            rows = self.store.execute(
+                FILELESS_CANDIDATES_SQL, {"kb": kb, "package": package_uuid}
+            )
+            candidates += [
+                {"jid": row[0], "glpi_uuid": row[1], "hostname": row[2], "kb": kb,
+                 "package_uuid": package_uuid}
+                for row in rows
+            ]
+        return candidates
 
     def linux_attempted(self, candidate):
         """One automatic try per list of packages and versions: after a failure the
@@ -321,14 +404,17 @@ def create_deployment(candidate, start_date, end_date):
 
 
 def run(open_store, limit=DEFAULT_LIMIT, create=create_deployment, now=None, linux_packages=None,
-        pending=None):
+        pending=None, fileless_packages=None):
     """Create the deployments of this run; return how many were created.
-    linux_packages: {family: package identifier} of the Linux packages built."""
+    linux_packages: {family: package identifier} of the Linux packages built.
+    fileless_packages: {KB: package identifier} of the fileless packages built; their
+    candidates come last, of any entity and outside the windows, within the same limit."""
     now = now or datetime.now().replace(microsecond=0)
     with open_store() as store:
         entity_ids = store.open_entities(now.time())
         candidates = store.candidates(entity_ids)
         candidates += store.linux_candidates(entity_ids, linux_packages or {})
+        candidates += store.fileless_candidates(fileless_packages or {})
     chosen = pick(candidates, limit)
     with open_store() as store:
         relays = {candidate["jid"]: store.relays(candidate["jid"]) for candidate in chosen}
@@ -386,8 +472,41 @@ def linux_packages(database):
     return built
 
 
-def start(database, limit=DEFAULT_LIMIT):
+def fileless_packages(database):
+    """{KB: package identifier} of the fileless KBs (packages.fileless_kbs()) a tracked
+    product holds, written and registered when missing (cheap once they exist)."""
+    from lib.plugins.updates import packages
+
+    builder = packages.Builder(packages.database_store(database))
+    built = {}
+    for kb in sorted(packages.fileless_kbs()):
+        try:
+            package_id = builder.fileless_package(kb)
+        except Exception:
+            logger.error("Package of KB%s not built\n%s" % (kb, traceback.format_exc()))
+            continue
+        if package_id:
+            built[kb] = package_id
+    return built
+
+
+def windows_update_package(database):
+    """Identifier of the package of the installation by Windows Update, written and
+    registered when missing (cheap once it exists); None when it could not be. Never
+    deployed from here: by the admin only, from the machine page."""
+    from lib.plugins.updates import packages
+
     try:
-        run(database_store(database), limit, linux_packages=linux_packages(database))
+        return packages.Builder(packages.database_store(database)).windows_update_package()
+    except Exception:
+        logger.error("Windows Update package not built\n%s" % traceback.format_exc())
+        return None
+
+
+def start(database, limit=DEFAULT_LIMIT):
+    windows_update_package(database)
+    try:
+        run(database_store(database), limit, linux_packages=linux_packages(database),
+            fileless_packages=fileless_packages(database))
     except Exception:
         logger.error("Automatic deployments failed\n%s" % traceback.format_exc())

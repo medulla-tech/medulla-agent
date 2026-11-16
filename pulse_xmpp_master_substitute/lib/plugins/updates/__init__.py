@@ -27,8 +27,10 @@ from lib.plugins.updates.deployments import (
 )
 from lib.plugins.updates.replication import file_rows, to_datetime
 from lib.plugins.updates.reports import (
+    declared_categories,
     installed_rows,
     is_linux,
+    kept_missing,
     linux_update_rows,
     missing_rows,
     report_row,
@@ -131,8 +133,11 @@ class UpdatesDatabase(Singleton):
             logger.info("Updates: %d report(s) of unknown machines removed" % purged)
         return purged
 
-    def run_upgrades(self):
-        """Steps of the upgrades launched by the admin (scheduled with the automatic deployments)."""
+    def run_upgrades(self, retry_failed=False):
+        """Steps of the upgrades launched by the admin (scheduled with the automatic deployments).
+
+        retry_failed: pass of a launch by the admin, never skipped; the failed packages
+        its upgrades need are built again."""
         from lib.plugins.updates.deployments import DURATION, create_deployment
         from lib.plugins.updates.packages import start_build
 
@@ -141,11 +146,12 @@ class UpdatesDatabase(Singleton):
             create_deployment(candidate, now, now + DURATION)
 
         # The scheduled pass and the one of a launch must not both deploy a step
-        if not UPGRADES_LOCK.acquire(blocking=False):
+        if not UPGRADES_LOCK.acquire(blocking=retry_failed):
             return
         try:
             with self.store() as store:
-                upgrades.run_launched(store, create, lambda: start_build(self))
+                upgrades.run_launched(
+                    store, create, lambda retry=False: start_build(self, retry), retry_failed)
         except Exception:
             logger.error("Upgrades not run\n%s" % traceback.format_exc())
         finally:
@@ -308,6 +314,13 @@ class UpdatesStore(object):
 
     def reset_copied(self):
         self.execute("UPDATE products SET copied = 0")
+
+    def forget_untracked(self):
+        """A product no entity tracks receives no update: copied again from zero once tracked."""
+        self.execute(
+            "UPDATE products SET copied = 0 WHERE copied = 1 AND id NOT IN"
+            " (SELECT product_id FROM entity_products)"
+        )
 
     def tracked_products(self, copied):
         """Products tracked by at least one entity."""
@@ -522,6 +535,11 @@ class UpdatesStore(object):
     def save_machine_report(self, jid, report, glpi_uuid=None):
         """Store the updates report of a machine. Linux: the packages it would
         upgrade are its missing updates, nothing to compute."""
+        if not is_linux(report) and missing_rows(jid, report) is None:
+            previous = self.execute(
+                "SELECT report FROM machine_reports WHERE jid = :jid", {"jid": jid}
+            ).scalar()
+            report = kept_missing(report, previous)
         row = report_row(jid, report, glpi_uuid)
         columns = list(row)
         # Upsert, never REPLACE: the cascade would drop the missing updates.
@@ -690,6 +708,9 @@ class UpdatesStore(object):
         return {row[0] for row in rows}
 
     def windows_missing(self, jid):
+        """Windows list of the machine. declared_products: how many products Windows gives
+        the update, 0 for none, None when its report does not say; products: products.id
+        of those the server knows among them; classification: the one Windows gives."""
         rows = self.execute(
             "SELECT m.kb, m.title, m.windows_update_id, i.installed_on"
             " FROM machine_missing_updates m"
@@ -697,8 +718,24 @@ class UpdatesStore(object):
             " WHERE m.jid = :jid",
             {"jid": jid},
         )
-        return [{"kb": row[0], "title": row[1], "windows_update_id": row[2], "installed_on": row[3]}
-                for row in rows]
+        missing = [{"kb": row[0], "title": row[1], "windows_update_id": row[2], "installed_on": row[3]}
+                   for row in rows]
+        declared = declared_categories(self.execute(
+            "SELECT report FROM machine_reports WHERE jid = :jid", {"jid": jid}
+        ).scalar())
+        product_ids = None
+        for item in missing:
+            said = declared.get((item["windows_update_id"] or "").lower()) or {}
+            item["classification"] = said.get("classification")
+            item["declared_products"] = None
+            item["products"] = set()
+            if said.get("products") is not None:
+                item["declared_products"] = len(said["products"])
+                if product_ids is None:
+                    product_ids = {mirror_id.lower(): id for mirror_id, id in self.product_ids().items()}
+                item["products"] = {product_ids[product] for product in said["products"]
+                                    if product in product_ids}
+        return missing
 
     def machine_catalog(self, build, architecture, kbs):
         """Current updates and system cumulatives of the machine release, and every update of kbs."""
@@ -912,6 +949,13 @@ class UpdatesStore(object):
         ).fetchone()
         return dict(zip(("uuid", "state", "kb"), row)) if row else None
 
+    def retry_package(self, package_uuid):
+        """A failed package waits for the builder again; its error stays until it is built."""
+        self.execute(
+            "UPDATE packages SET state = 'building' WHERE uuid = :uuid AND state = 'failed'",
+            {"uuid": package_uuid},
+        )
+
     def media_package(self, file_name, edition):
         """Package of the media (ESD and edition) of the scan and media steps."""
         row = self.execute(
@@ -1013,10 +1057,17 @@ class UpdatesStore(object):
 
     def last_return_code(self, session):
         """Code the failed step of the deployment ended with, None if unknown."""
-        return upgrades.result_return_code(self.execute(
+        return upgrades.result_return_code(self.deploy_result(session))
+
+    def last_stop_line(self, session):
+        """Last line the failed step of the deployment wrote, None if unknown."""
+        return upgrades.result_stop_line(self.deploy_result(session))
+
+    def deploy_result(self, session):
+        return self.execute(
             "SELECT result FROM xmppmaster.deploy WHERE sessionid = :session LIMIT 1",
             {"session": session},
-        ).scalar())
+        ).scalar()
 
     def machine_busy(self, glpi_uuid):
         """A deployment of any package still runs on the machine."""
@@ -1151,8 +1202,11 @@ class UpdatesStore(object):
         else:
             tracked = self.entity_products(source_id)
             tracked_releases = self.entity_releases(source_id)
+        from lib.plugins.updates.packages import fileless_kbs
+
         facts = self.machine_facts(jid, report)
-        rows = compute.machine_updates(report, tracked, tracked_releases, *facts)
+        rows = compute.machine_updates(report, tracked, tracked_releases, *facts,
+                                       fileless_kbs=fileless_kbs())
         self.save_machine_updates(jid, rows)
         logger.debug("Updates of %s: %d missing" % (jid, len(rows)))
         self.recompute_upgrade(jid, report, source_id, rows, facts)

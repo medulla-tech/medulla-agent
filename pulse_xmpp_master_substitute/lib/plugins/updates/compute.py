@@ -15,9 +15,12 @@ Inputs (loaded by UpdatesStore):
 - machine_releases: (products.id, release name) of the releases matching the
   machine build and architecture
 - installed_kbs: set of installed KB numbers
-- windows_missing: [{"kb", "title", "windows_update_id", "installed_on"}] from
-  the last successful search of the machine, empty when there is none;
-  installed_on the date this KB was installed, None when not known
+- windows_missing: [{"kb", "title", "windows_update_id", "installed_on",
+  "declared_products", "products", "classification"}] from the last successful search
+  of the machine, empty when there is none; installed_on the date this KB was
+  installed, None when not known; declared_products how many products Windows gives
+  the update, None when its report does not say; products the products.id of those
+  the server knows among them; classification the one Windows gives it
 - catalog: [{"id", "kb", "title", "build", "architecture", "published_at",
   "superseded", "removed", "classification", "target_version", "dotnet",
   "wsus_id", "products", "release"}], build and architecture being those of the update
@@ -27,6 +30,9 @@ Inputs (loaded by UpdatesStore):
   of products.id
 
 - supersedes: {superseded update id: [(superseding update id, its kb)]}
+- fileless_kbs: KBs whose package carries no file (packages.fileless_kbs()), the
+  machine fetching the content itself: deployed on their own (deployments.py),
+  never a missing update, whatever the Windows list and the catalog say
 
 The catalog decides, the Windows list completes it, and has the last word
 on older updates: after a successful search at Microsoft, an update of the
@@ -36,6 +42,13 @@ stay decided by its UBR, unless the restart is pending and they are installed an
 no longer listed by a successful search: the UBR only moves at the restart.
 Without such a search (WSUS, no access, failure),
 the catalog alone decides.
+A KB Windows lists that no catalog entry carries at all is missing too, without
+catalog update (update_id None), with the classification Windows gives it: only the
+Windows Update of the machine can install it. Only for a machine on a known version
+its entity tracks, and an update Windows gives either no product at all (the system
+itself) or a product the entity tracks: the catalog only holds the products some
+entity tracks, a KB missing from it may be of any other. A KB of the catalog whose
+product or version is not tracked stays out, and so does a driver (no KB).
 A .NET cumulative replaces the older ones of its family (release,
 architecture, .NET versions), whose supersedence the catalog does not know.
 The catalog does not propose a .NET update of a family, or a servicing stack
@@ -143,6 +156,7 @@ def machine_updates(
     windows_missing,
     catalog,
     supersedes,
+    fileless_kbs=(),
 ):
     """Rows {update_id, kb, title, origin, offer} of what the machine misses."""
     if tracked_products is None:
@@ -150,8 +164,10 @@ def machine_updates(
     if not is_version_tracked(machine_releases, tracked_releases):
         return []
     tracking = (tracked_products, tracked_releases)
+    catalog = [update for update in catalog if update["kb"] not in fileless_kbs]
     windows_missing = [
-        item for item in windows_missing if not predates_install(item, report, installed_kbs)
+        item for item in windows_missing
+        if item.get("kb") not in fileless_kbs and not predates_install(item, report, installed_kbs)
     ]
     candidates = [update for update in catalog if is_candidate(update, report, tracking)]
     latest = latest_ubr(candidates, report)
@@ -166,7 +182,8 @@ def machine_updates(
     return merge(
         cumulative_rows(report, tracking, installed_kbs, catalog, supersedes, families, listed_kbs)
         + deduce(report, installed_kbs, others, supersedes, latest, families, listed_kbs),
-        from_windows(report, tracking, windows_missing, catalog, latest, families),
+        from_windows(report, tracking, windows_missing, catalog, latest, families,
+                     runs_tracked_version(machine_releases, tracked_releases)),
     )
 
 
@@ -178,7 +195,9 @@ def missing_cumulatives(report, machine_releases, installed_kbs, windows_missing
     releases = {update["release"] for update in catalog if update["release"]} | set(machine_releases)
     rows = machine_updates(dict(report, reboot_pending=False), products, releases, machine_releases,
                            installed_kbs, windows_missing, catalog, supersedes)
-    system = [row for row in rows if is_system_cumulative(row["title"])]
+    # A KB outside the catalog has no package an upgrade could deploy
+    catalog_kbs = {update["kb"] for update in catalog}
+    system = [row for row in rows if row["kb"] in catalog_kbs and is_system_cumulative(row["title"])]
     main = [row for row in system if row["offer"] == MAIN]
     if main or any(
         is_system_cumulative(update["title"])
@@ -250,6 +269,11 @@ def is_version_tracked(machine_releases, tracked_releases):
     """False when the machine runs a known version the entity does not track."""
     known = [release for release in machine_releases or () if is_named(release)]
     return not known or any(release in tracked_releases for release in known)
+
+
+def runs_tracked_version(machine_releases, tracked_releases):
+    """True when the machine runs a known version the entity tracks."""
+    return any(is_named(release) and release in tracked_releases for release in machine_releases or ())
 
 
 def is_tracked(update, tracking):
@@ -471,7 +495,19 @@ def reported_update(updates, item):
     return min(matches, key=lambda update: update["id"], default=None)
 
 
-def from_windows(report, tracking, windows_missing, catalog, latest=None, families=None):
+def is_offered_outside_catalog(item, tracked_products):
+    """An update Windows gives no product is one of the system itself; one it gives
+    products needs a tracked one among them (a product the server does not know is
+    tracked by no entity); products not known: not offered."""
+    declared = item.get("declared_products")
+    if declared is None:
+        return False
+    return declared == 0 or not tracked_products.isdisjoint(item.get("products") or ())
+
+
+def from_windows(report, tracking, windows_missing, catalog, latest=None, families=None,
+                 outside_catalog=False):
+    """outside_catalog: a KB without any catalog entry is a row too (update_id None)."""
     by_kb = {}
     for update in catalog:
         if update["kb"] is not None:
@@ -481,7 +517,12 @@ def from_windows(report, tracking, windows_missing, catalog, latest=None, famili
     for item in windows_missing:
         kb = item.get("kb")
         known = by_kb.get(kb, []) if kb is not None else []
-        # Outside the catalog or of an untracked product or version: not proposed
+        if kb is not None and not known:
+            if outside_catalog and is_offered_outside_catalog(item, tracking[0]):
+                rows.append(dict(row(None, kb, item.get("title"), "machine"),
+                                 classification=item.get("classification")))
+            continue
+        # A driver (no KB), or of an untracked product or version: not proposed
         tracked = [update for update in known if is_tracked(update, tracking)]
         if not tracked:
             continue
