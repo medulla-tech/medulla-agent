@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from slixmpp import ClientXMPP
-from slixmpp import WebSocketXMPP
+from lib.xmpp_transport import client_base, connect_client, init_client
 from slixmpp import jid
 from slixmpp.xmlstream import handler, matcher
 from slixmpp.exceptions import IqError, IqTimeout
@@ -132,8 +132,7 @@ class MUCBot(ClientXMPP):
         self.assessor_response_timeout = 120
         self.timedebut = time.time()  # Start time
 
-        ClientXMPP.__init__(self, conf.jidagent, conf.confpassword) if not getattr(conf, 'enable_websocket', False) else WebSocketXMPP.__init__(self, conf.jidagent, conf.confpassword, getattr(conf, 'websocket_url', ''))
-        self._ws_url = getattr(conf, 'websocket_url', '')
+        init_client(self, conf.jidagent, conf.confpassword, conf)
         self.config = conf
 
         # Create tmp config file
@@ -1295,8 +1294,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         if tg.agenttype != "relayserver":
             logger.debug(f"host_unknown et host_unknown compteur connect {host_unknown} {try_host_unknown}")
             logger.debug(f"connect {ip_server} {tg.confport}")
-            if getattr(tg, 'enable_websocket', False):
-                MUCBot.__bases__ = (WebSocketXMPP,)
+            MUCBot.__bases__ = (client_base(tg),)
             xmpp = MUCBot(tg)
             xmpp.register_plugin("xep_0030")  # Service Discovery
             xmpp.register_plugin("xep_0045")  # Multi-User Chat
@@ -1322,11 +1320,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             logger.debug("---------------------------------------------------------------------")
             try:
                 logger.debug("connect TO ")
-                if getattr(xmpp, '_ws_url', '') and getattr(tg, 'enable_websocket', False):
-                    logger.debug(f"WebSocket connection to {xmpp._ws_url}")
-                    xmpp.connect(url=xmpp._ws_url)
-                else:
-                    xmpp.connect(host=xmpp.address[0], port=xmpp.address[1])
+                connect_client(xmpp, ip_server, int(tg.confport))
             except Exception as e:
                 logging.error("Connection failed: %s. Retrying..." % e)
                 logging.error("Connection to: IP %s, Port %s." % (ip_server, tg.confport))

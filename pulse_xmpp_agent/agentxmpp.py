@@ -121,7 +121,7 @@ import zipfile
 import tempfile
 
 from slixmpp import ClientXMPP
-from slixmpp import WebSocketXMPP
+from lib.xmpp_transport import client_base, connect_client, init_client
 from slixmpp import jid
 from slixmpp.xmlstream import handler, matcher
 from slixmpp.exceptions import IqError, IqTimeout
@@ -345,8 +345,7 @@ class MUCBot(ClientXMPP):
         )
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs(self.dirsyncthing, 0o755)
-        ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection) if not getattr(conf, 'enable_websocket', False) else WebSocketXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection, getattr(conf, 'websocket_url', ''))
-        self._ws_url = getattr(conf, 'websocket_url', '')
+        init_client(self, jid.JID(conf.jidagent), conf.passwordconnection, conf)
         laps_time_update_plugin = 3600
         laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
@@ -1275,10 +1274,7 @@ class MUCBot(ClientXMPP):
         #     return
 
         if self.config.agenttype in ["relayserver"]:
-            if not getattr(self, '_reconnecting', False):
-                self._reconnecting = True
-                self.reconnect(2.0, self.massage_reconection)
-                self._reconnecting = False
+            self.reconnect(0.0, self.massage_reconection)
             return
 
         # if self.shared_dict.get("alternative"):
@@ -1338,8 +1334,7 @@ class MUCBot(ClientXMPP):
 
     def handle_connection_failed(self, data):
         logger.debug(f"handle_connection_failed {self.server_address}")
-        if self.config.agenttype not in ["relayserver"]:
-            self.disconnect()
+        self.disconnect()
 
     def handle_connecting(self, data):
         """
@@ -4772,8 +4767,7 @@ class process_xmpp_agent:
         while True:
             tg = tgconf(optstypemachine)
             self.logger.debug(f"{tg.Server}{ int(tg.Port)}")
-            if getattr(tg, 'enable_websocket', False):
-                MUCBot.__bases__ = (WebSocketXMPP,)
+            MUCBot.__bases__ = (client_base(tg),)
             xmpp = MUCBot(
                 tg,
                 queue_recv_tcp_to_xmpp,
@@ -4808,11 +4802,8 @@ class process_xmpp_agent:
             self.logger.debug("|----- CONNECTION XMPP AGENT -----|")
             self.logger.debug("\---------------------------------/")
             try:
-                if getattr(xmpp, '_ws_url', '') and getattr(tg, 'enable_websocket', False):
-                    self.logger.debug(f"WebSocket connection to {xmpp._ws_url}")
-                    xmpp.connect(url=xmpp._ws_url)
-                else:
-                    xmpp.connect(host=xmpp.server_address[0], port=xmpp.server_address[1])
+                self.logger.debug(f"XMPP transport: {client_base(tg).__name__}")
+                connect_client(xmpp, xmpp.server_address[0], xmpp.server_address[1])
             except Exception as e:
                 self.logger.error("Connection failed: %s. Retrying..." % e)
             try:
