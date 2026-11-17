@@ -490,21 +490,32 @@ def fileless_packages(database):
     return built
 
 
-def windows_update_package(database):
-    """Identifier of the package of the installation by Windows Update, written and
-    registered when missing (cheap once it exists); None when it could not be. Never
-    deployed from here: by the admin only, from the machine page."""
+def named_package(database, build, label):
+    """Identifier of the package Builder.<build>() gives, written and registered when
+    missing (cheap once it exists); None when it could not be. Never deployed from
+    here: by the admin only, from the machine page."""
     from lib.plugins.updates import packages
 
     try:
-        return packages.Builder(packages.database_store(database)).windows_update_package()
+        return getattr(packages.Builder(packages.database_store(database)), build)()
     except Exception:
-        logger.error("Windows Update package not built\n%s" % traceback.format_exc())
+        logger.error("%s package not built\n%s" % (label, traceback.format_exc()))
         return None
+
+
+def windows_update_package(database):
+    """Package of the installation by Windows Update."""
+    return named_package(database, "windows_update_package", "Windows Update")
+
+
+def office_update_package(database):
+    """Package of the update of Office Click-to-Run by itself."""
+    return named_package(database, "office_update_package", "Office update")
 
 
 def start(database, limit=DEFAULT_LIMIT):
     windows_update_package(database)
+    office_update_package(database)
     try:
         run(database_store(database), limit, linux_packages=linux_packages(database),
             fileless_packages=fileless_packages(database))

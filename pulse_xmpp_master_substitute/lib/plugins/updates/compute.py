@@ -8,8 +8,10 @@ Updates missing on a machine, from its report and the replicated catalog.
 
 Inputs (loaded by UpdatesStore):
 - report: machine_reports row (build, ubr, architecture, esu_licensed,
-  search_status, search_server, searched_at) and dotnet, the .NET versions
-  installed (None when the machine does not report them)
+  search_status, search_server, searched_at), dotnet, the .NET versions
+  installed (None when the machine does not report them), and office, its
+  Click-to-Run Office {"name", "products", "version", "channel", "architecture",
+  "language"} (None without one)
 - tracked_products: products.id tracked by the machine entity, None without entity
 - tracked_releases: (products.id, release name) tracked by the machine entity
 - machine_releases: (products.id, release name) of the releases matching the
@@ -33,6 +35,11 @@ Inputs (loaded by UpdatesStore):
 - fileless_kbs: KBs whose package carries no file (packages.fileless_kbs()), the
   machine fetching the content itself: deployed on their own (deployments.py),
   never a missing update, whatever the Windows list and the catalog say
+
+For office_updates(), apart from machine_updates():
+- latest: office_channels.latest_version of the channel of the machine Office,
+  None when the channel is not known
+- catalog: the entries of OFFICE_KB, in the same form
 
 The catalog decides, the Windows list completes it, and has the last word
 on older updates: after a successful search at Microsoft, an update of the
@@ -60,12 +67,28 @@ those its UBR already reached left out:
 - optional: previews and out of band ones more recent than main
 - esu: Windows 10 without license, the main it would otherwise have, never deployable
 Any other update is main.
+
+Office Click-to-Run updates itself from its channel, outside Windows Update: every
+catalog entry of its updates carries OFFICE_KB, never a row by the catalog or the
+Windows list. One row (update_id None, installed_version, available_version) when
+the version of the machine is behind the latest of its channel and the entity tracks
+a product of a catalog entry of that KB. Unknown channel or unreadable version: no row.
 """
 
 from datetime import date, datetime, timedelta
 import re
 
 TITLE_LENGTH = 500
+# machine_updates.installed_version, available_version
+VERSION_LENGTH = 128
+
+# KB Microsoft gives every Office Click-to-Run update in its catalog
+OFFICE_KB = 3104046
+OFFICE_VERSION = re.compile(r"^\d+(\.\d+){3}$")
+OFFICE_TITLE = "Microsoft Office Click-to-Run %s"
+# End of the catalog title of an Office update, the last two numbers of its version
+OFFICE_TITLE_BUILD = "(Build %s)"
+OFFICE_TITLE_ARCHITECTURE = "%s based"
 
 # Windows 10 left support on 2025-10-14: later updates need an ESU license
 WINDOWS10_BUILDS = (19044, 19045)
@@ -164,10 +187,11 @@ def machine_updates(
     if not is_version_tracked(machine_releases, tracked_releases):
         return []
     tracking = (tracked_products, tracked_releases)
-    catalog = [update for update in catalog if update["kb"] not in fileless_kbs]
+    excluded = set(fileless_kbs) | {OFFICE_KB}
+    catalog = [update for update in catalog if update["kb"] not in excluded]
     windows_missing = [
         item for item in windows_missing
-        if item.get("kb") not in fileless_kbs and not predates_install(item, report, installed_kbs)
+        if item.get("kb") not in excluded and not predates_install(item, report, installed_kbs)
     ]
     candidates = [update for update in catalog if is_candidate(update, report, tracking)]
     latest = latest_ubr(candidates, report)
@@ -185,6 +209,57 @@ def machine_updates(
         from_windows(report, tracking, windows_missing, catalog, latest, families,
                      runs_tracked_version(machine_releases, tracked_releases)),
     )
+
+
+def office_version(value):
+    """Numbers of an Office version, None when it is not one."""
+    if not isinstance(value, str) or len(value) > VERSION_LENGTH or not OFFICE_VERSION.match(value):
+        return None
+    return tuple(int(number) for number in value.split("."))
+
+
+def office_channel(office):
+    """Channel of the Office block of a report, None without one."""
+    channel = office.get("channel") if isinstance(office, dict) else None
+    return channel.lower() if isinstance(channel, str) and channel else None
+
+
+def office_behind(office, latest):
+    """True when the Office of the machine is older than the latest version of its channel."""
+    installed = office_version(office.get("version")) if isinstance(office, dict) else None
+    available = office_version(latest)
+    return installed is not None and available is not None and installed < available
+
+
+def office_title(office, latest, catalog):
+    """Title of the only current catalog entry of that build and architecture, a
+    generic one otherwise."""
+    build = OFFICE_TITLE_BUILD % ".".join(latest.split(".")[-2:])
+    architecture = office.get("architecture")
+    titles = [
+        update["title"] for update in catalog
+        if update["kb"] == OFFICE_KB and not update["superseded"] and not update["removed"]
+        and (update["title"] or "").endswith(build)
+        and isinstance(architecture, str)
+        and (OFFICE_TITLE_ARCHITECTURE % architecture).lower() in update["title"].lower()
+    ]
+    return titles[0] if len(titles) == 1 else OFFICE_TITLE % latest
+
+
+def office_updates(office, latest, catalog, tracked_products):
+    """Row of the Office of the machine when behind latest, the latest version of its
+    channel (None when the channel is not known). catalog: the entries of OFFICE_KB;
+    as for any product, nothing unless the entity tracks one of theirs."""
+    if not office_behind(office, latest):
+        return []
+    if not any(
+        update["kb"] == OFFICE_KB and not update["removed"]
+        and not update["products"].isdisjoint(tracked_products or ())
+        for update in catalog
+    ):
+        return []
+    return [dict(row(None, OFFICE_KB, office_title(office, latest, catalog), "machine"),
+                 installed_version=office["version"], available_version=latest)]
 
 
 def missing_cumulatives(report, machine_releases, installed_kbs, windows_missing, catalog, supersedes):
