@@ -37,6 +37,21 @@ DEPLOY_FINAL_SQL = (
 DEPLOY_RUNNING_SQL = "NOT " + DEPLOY_FINAL_SQL + " AND (d.endcmd IS NULL OR d.endcmd >= NOW())"
 
 
+# products.family of the products DISM serves: a package of files only installs their updates
+WINDOWS_FAMILY = "Windows"
+
+
+def outside_windows_sql(update_id):
+    """True for the update update_id (SQL expression) when it has products of a known
+    family and none of the Windows one: never a package of files, the Windows Update
+    of the machine installs it (compute.from_windows)."""
+    return (
+        "(COALESCE((SELECT MAX(wf.family = '" + WINDOWS_FAMILY + "') FROM update_products wp"
+        " JOIN products wf ON wf.id = wp.product_id"
+        " WHERE wp.update_id = " + update_id + " AND wf.family IS NOT NULL), 1) = 0)"
+    )
+
+
 def pending_command_sql(uuid):
     """Command of the machine uuid (SQL expression) not yet handed to the deployment loop."""
     return (
@@ -49,7 +64,7 @@ def pending_command_sql(uuid):
     )
 
 
-# The precheck of the package would postpone it and end in error; unknown: as today
+# The precheck of the package would postpone it and end in error; unknown: deployed
 NO_RESTART_PENDING_SQL = "COALESCE(mr.reboot_pending, 0) = 0"
 
 # Machines of the reports known to GLPI and enabled, with their entity (lgm.entities_id)
@@ -97,6 +112,7 @@ CANDIDATES_SQL = (
     " JOIN packages p ON p.uuid = up.package_uuid AND p.state = 'ready'"
     " WHERE lgm.entities_id IN :entities"
     " AND mr.system_type = 'client'"
+    " AND NOT " + outside_windows_sql("u.id") +
     " AND " + NO_RESTART_PENDING_SQL
     + NOT_DEPLOYING_SQL
     + NO_LAUNCHED_UPGRADE_SQL +

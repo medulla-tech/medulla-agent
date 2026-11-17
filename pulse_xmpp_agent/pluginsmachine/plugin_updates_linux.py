@@ -37,7 +37,7 @@ from lib import utils
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updates_linux", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updates_linux", "TYPE": "machine"}  # fmt: skip
 
 REPORT_FORMAT = 1
 REPORT_INTERVAL = 86400
@@ -167,7 +167,12 @@ def send_report(xmppobject, wait):
         return
     try:
         clean_legacy(xmppobject)
-        family = family_of(read_os_release())
+        release = read_os_release()
+        if not release.get("ID"):
+            logger.warning("Linux updates report not sent: os-release unreadable")
+            forget_fingerprint()
+            return
+        family = family_of(release)
         if family == "apt" and not apt_idle(wait):
             logger.debug("Linux updates report: apt or dpkg running, not sent")
             return
@@ -627,6 +632,14 @@ UPGRADE_CHECKS = {"debian": debian_upgrade, "ubuntu": ubuntu_upgrade, "almalinux
 
 def fingerprint_path():
     return os.path.join(utils.Setdirectorytempinfo(), FINGERPRINT_FILE)
+
+
+def forget_fingerprint():
+    """Without its file the state counts as changed: the next check sends a report."""
+    try:
+        os.remove(fingerprint_path())
+    except OSError:
+        pass
 
 
 def state_changed():

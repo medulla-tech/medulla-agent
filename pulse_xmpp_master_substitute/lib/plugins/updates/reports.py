@@ -43,6 +43,15 @@ def to_date(value):
     return to_datetime(value).date() if value else None
 
 
+def is_usable(report):
+    """False for a report whose system could not be read (Windows without build, Linux
+    without distribution): it says nothing of the machine."""
+    system = report.get("system") or {}
+    if is_linux(report):
+        return bool(system.get("distribution"))
+    return to_int(system.get("build")) is not None
+
+
 def report_row(jid, report, glpi_uuid=None):
     """machine_reports row (received_at is set by the database)."""
     system = report.get("system") or {}

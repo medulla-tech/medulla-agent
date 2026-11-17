@@ -29,7 +29,8 @@ Inputs (loaded by UpdatesStore):
   release (None without release), release its (products.id, name) (None
   without a named release), target_version the build.UBR it brings, dotnet
   the .NET versions it targets (None when not a .NET update), products a set
-  of products.id
+  of products.id, outside_windows True when it has products of a known family and
+  none of the Windows one
 
 - supersedes: {superseded update id: [(superseding update id, its kb)]}
 - fileless_kbs: KBs whose package carries no file (packages.fileless_kbs()), the
@@ -56,6 +57,11 @@ its entity tracks, and an update Windows gives either no product at all (the sys
 itself) or a product the entity tracks: the catalog only holds the products some
 entity tracks, a KB missing from it may be of any other. A KB of the catalog whose
 product or version is not tracked stays out, and so does a driver (no KB).
+An update of the catalog outside Windows (Office, developer tools...) has no package
+of files, DISM only serving Windows: never deduced from the catalog, a row only when
+Windows lists it and the entity tracks one of its products, then as a KB without
+catalog entry (update_id None, title and classification of Windows), for the Windows
+Update of the machine to install.
 A .NET cumulative replaces the older ones of its family (release,
 architecture, .NET versions), whose supersedence the catalog does not know.
 The catalog does not propose a .NET update of a family, or a servicing stack
@@ -580,9 +586,14 @@ def is_offered_outside_catalog(item, tracked_products):
     return declared == 0 or not tracked_products.isdisjoint(item.get("products") or ())
 
 
+def is_outside_windows(update):
+    return bool(update.get("outside_windows"))
+
+
 def from_windows(report, tracking, windows_missing, catalog, latest=None, families=None,
                  outside_catalog=False):
-    """outside_catalog: a KB without any catalog entry is a row too (update_id None)."""
+    """outside_catalog: a KB without any catalog entry is a row too (update_id None).
+    A KB whose tracked catalog entries are all outside Windows is such a row as well."""
     by_kb = {}
     for update in catalog:
         if update["kb"] is not None:
@@ -600,6 +611,11 @@ def from_windows(report, tracking, windows_missing, catalog, latest=None, famili
         # A driver (no KB), or of an untracked product or version: not proposed
         tracked = [update for update in known if is_tracked(update, tracking)]
         if not tracked:
+            continue
+        tracked = [update for update in tracked if not is_outside_windows(update)]
+        if not tracked:
+            rows.append(dict(row(None, kb, item.get("title"), "machine"),
+                             classification=item.get("classification")))
             continue
         # Offered by cumulative_rows, which keeps the origin
         if any(is_system_cumulative(update["title"]) and matches_release(update, report)
@@ -671,6 +687,7 @@ def is_missing(update, report, installed_kbs, supersedes, listed_kbs=()):
 def is_candidate(update, report, tracking):
     return (
         matches_release(update, report)
+        and not is_outside_windows(update)
         and update.get("classification") != UPGRADES
         and is_tracked(update, tracking)
         and not update["superseded"]
@@ -703,6 +720,7 @@ def system_cumulatives(catalog, report, tracking):
         if (
             is_system_cumulative(update["title"])
             and matches_release(update, report)
+            and not is_outside_windows(update)
             and update.get("classification") != UPGRADES
             and not update["removed"]
             and is_tracked(update, tracking)

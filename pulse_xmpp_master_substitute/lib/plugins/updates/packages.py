@@ -38,6 +38,7 @@ import uuid
 
 import requests
 
+from lib.plugins.updates.deployments import outside_windows_sql
 from lib.plugins.updates.upgrades import (
     BUSY_CODE, NO_SESSION_CODE, POSTPONED_COMMENT, RESTART_FIRST_CODE, SOURCES_RESTORED,
     UNATTENDED_PARAMETER, UNIT_LOG_MARK, enablement_update_sql,
@@ -937,7 +938,7 @@ LINUX_UPGRADE_SCRIPTS = {DEBIAN_UPGRADE: DEBIAN_UPGRADE_SCRIPT, UBUNTU_UPGRADE: 
 
 SETUP_OPTIONS = "/quiet /noreboot /eula accept /dynamicupdate disable"
 # Without /auto upgrade the scan has no install choice: 0xC1900204 « selected
-# install choice is not available » (29/10, ath-w10-1)
+# install choice is not available »
 SCAN_COMMAND = '"@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@\\setup.exe" /auto upgrade /compat scanonly ' + SETUP_OPTIONS
 UPGRADE_COMMAND = '"@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@\\setup.exe" /auto upgrade ' + SETUP_OPTIONS
 # 0xC1900210: no compatibility issue, unsigned and signed. Anything else stops:
@@ -1344,8 +1345,8 @@ OFFICE_UPDATE_PARAMETER = "office_version"
 OFFICE_KEY = r"SOFTWARE\Microsoft\Office\ClickToRun\Configuration"
 OFFICE_UPDATES_KEY = r"SOFTWARE\Microsoft\Office\ClickToRun\Updates"
 # Office updates itself: OfficeC2RClient hands the work to update processes of the
-# Click-to-Run service and returns at once, they already run when it returns (17/11,
-# ath-w11-1). The script waits for them to end, a fact, then reads the version.
+# Click-to-Run service and returns at once, they already run when it returns. The
+# script waits for them to end, a fact, then reads the version.
 # forceappshutdown=false: an open Office application is never closed, Office then
 # keeps the update ready (UpdatesReadyToApply) and applies it when they are closed.
 # Exit 0: version reached, or update ready to apply; 1: anything else, the reason in
@@ -2380,11 +2381,13 @@ def directory_size(path):
 
 
 def not_built_sql(update_id):
+    """An update outside Windows is never built."""
     return (
         " LEFT JOIN update_packages l ON l.update_id = " + update_id +
         " LEFT JOIN packages p ON p.uuid = l.package_uuid"
         " WHERE " + update_id + " IS NOT NULL AND (p.uuid IS NULL"
         " OR (:retry AND p.state IN ('failed', 'building')))"
+        " AND NOT " + outside_windows_sql(update_id)
     )
 
 

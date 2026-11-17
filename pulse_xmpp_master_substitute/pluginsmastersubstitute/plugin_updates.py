@@ -45,7 +45,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     try:
         glpi_uuid = XmppMasterDatabase().get_inventory_uuid_from_bare_jid(jid)
         with database.store() as store:
-            store.save_machine_report(jid, data, glpi_uuid)
+            stored = store.save_machine_report(jid, data, glpi_uuid)
+        if not stored:
+            # The stored report stays, nothing is recomputed, no upgrade step is decided
+            logger.warning("Updates report of %s ignored: system unreadable" % jid)
+            return
         logger.debug(
             "Windows updates report of %s stored (search %s)"
             % (jid, (data.get("search") or {}).get("status"))
