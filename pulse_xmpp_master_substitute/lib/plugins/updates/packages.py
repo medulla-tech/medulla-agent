@@ -29,6 +29,7 @@ import logging
 import os
 import re
 import shutil
+import struct
 import subprocess
 import threading
 import traceback
@@ -38,8 +39,8 @@ import uuid
 import requests
 
 from lib.plugins.updates.upgrades import (
-    BUSY_CODE, NO_SESSION_CODE, POSTPONED_COMMENT, RESTART_FIRST_CODE, UNATTENDED_PARAMETER,
-    enablement_update_sql,
+    BUSY_CODE, NO_SESSION_CODE, POSTPONED_COMMENT, RESTART_FIRST_CODE, SOURCES_RESTORED,
+    UNATTENDED_PARAMETER, UNIT_LOG_MARK, enablement_update_sql,
 )
 
 logger = logging.getLogger()
@@ -55,7 +56,9 @@ PROXIES = None
 # wusa/DISM first run a full applicability scan: 1h49 seen for 4.7 GB
 INSTALL_TIMEOUT = "14400"
 SESSIONS_TIMEOUT = "120"
-PRECHECK_TIMEOUT = "1200"
+# A precheck waits for Windows itself (language features, servicing) with no delay of
+# its own: only the time an installation may take stops it
+PRECHECK_TIMEOUT = INSTALL_TIMEOUT
 # Under the 600 s the agent waits for the question window
 QUESTION_TIMEOUT = "300"
 # setup.exe /compat scanonly: 3 to 10 minutes seen
@@ -228,6 +231,7 @@ fi
 # its output. The step only waits. A run while the unit is active waits for it instead of
 # starting a second one; once finished, its result stays until the next run. The agent ends the
 # step at RELEASE_TIMEOUT: the unit stops just before (exit 1), so that the step reports it.
+# The step ends on the last lines of the run: upgrades.result_stop_line reads its cause there.
 UPGRADE_UNIT_START = r"""exec </dev/null
 UNIT=medulla-release-upgrade.service
 UNIT_SCRIPT=/var/lib/medulla/release-upgrade.sh
@@ -241,22 +245,22 @@ unit_running() {
 }
 # This run only: the file keeps the previous ones
 unit_output() {
-    FROM=$(grep -an '^Medulla release upgrade: ' "$UNIT_LOG" 2>/dev/null | tail -n 1 | cut -d: -f1)
+    FROM=$(grep -an '^@@UNIT_LOG_MARK@@: ' "$UNIT_LOG" 2>/dev/null | tail -n 1 | cut -d: -f1)
     tail -n +"${FROM:-1}" "$UNIT_LOG" 2>/dev/null | tail -n 30
 }
 write_unit_script() {
     mkdir -p "$(dirname "$UNIT_SCRIPT")" "$(dirname "$UNIT_LOG")" || return 1
     cat > "$UNIT_SCRIPT.new" <<'MEDULLA_UNIT_SCRIPT' || return 1
 exec >> /var/log/pulse/release-upgrade.log 2>&1
-echo "Medulla release upgrade: $(date)"
+echo "@@UNIT_LOG_MARK@@: $(date)"
 (
-"""
+""".replace("@@UNIT_LOG_MARK@@", UNIT_LOG_MARK)
 UPGRADE_UNIT_END = r""")
 CODE=$?
-echo "Medulla release upgrade over, exit $CODE: $(date)"
+echo "@@UNIT_LOG_MARK@@ over, exit $CODE: $(date)"
 echo "$CODE" > /var/lib/medulla/release-upgrade.result.new
 mv -f /var/lib/medulla/release-upgrade.result.new /var/lib/medulla/release-upgrade.result
-"""
+""".replace("@@UNIT_LOG_MARK@@", UNIT_LOG_MARK)
 UPGRADE_UNIT_WAIT = r"""exit "$CODE"
 MEDULLA_UNIT_SCRIPT
     mv -f "$UNIT_SCRIPT.new" "$UNIT_SCRIPT"
@@ -361,7 +365,7 @@ restore_sources() {
     rm -rf "/var/backups/medulla-apt-$CURRENT"
     BEGUN=""
     apt-get update -q >/dev/null 2>&1
-    echo "Sources restored"
+    echo "@@SOURCES_RESTORED@@"
 }
 
 """ + UPGRADE_DISK + r"""no_space() {
@@ -543,7 +547,7 @@ if [ -n "$AGENT_PYTHON" ]; then
 fi
 echo "Now on $PRETTY_NAME, restart pending"
 exit 0
-""", UPGRADE_AGENT_RESTART)
+""", UPGRADE_AGENT_RESTART).replace("@@SOURCES_RESTORED@@", SOURCES_RESTORED)
 
 # do-release-upgrade with its non-interactive frontend: answers yes, never restarts.
 # The target comes from the machine (Prompt of release-upgrades); {"release": "<codename>"}
@@ -971,6 +975,9 @@ RESTART_FIRST_MESSAGE = (
 # Windows installs the language features of the user 15 minutes after a session
 # opens (logon trigger of the task), a session it opens by itself after an upgrade:
 # started during a cumulative update, that installation never ends and holds it.
+# The precheck waits for facts, not for a delay of its own: the task has run since the
+# session opened and is over, its start time being read in its own trigger. An
+# installation that ends by asking for a restart is not waited for any longer.
 # sihost is the shell host of an open session
 PRECHECK_SCRIPT = r"""$ErrorActionPreference = "Stop"
 try {
@@ -979,25 +986,29 @@ try {
         "SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending",
         "SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired"
     )
-    foreach ($path in $keys) {
-        $key = $hklm.OpenSubKey($path)
-        if ($key) {
-            $key.Close()
-            Write-Output ("HKLM\{0}" -f $path)
-            Write-Output "Installation postponed: a restart is pending"
-            exit 20
+    function RestartPending {
+        foreach ($path in $keys) {
+            $key = $hklm.OpenSubKey($path)
+            if ($key) {
+                $key.Close()
+                return ("HKLM\{0}" -f $path)
+            }
         }
-    }
-    $setup = $hklm.OpenSubKey("SYSTEM\Setup\MoSetup\Volatile")
-    if ($setup) {
-        $progress = $setup.GetValue("SetupProgress")
-        $setup.Close()
-        if ($progress -eq 100) {
-            Write-Output "HKLM\SYSTEM\Setup\MoSetup\Volatile SetupProgress=100"
-            Write-Output "Installation postponed: a restart is pending"
-            exit 20
+        $setup = $hklm.OpenSubKey("SYSTEM\Setup\MoSetup\Volatile")
+        if ($setup) {
+            $progress = $setup.GetValue("SetupProgress")
+            $setup.Close()
+            if ($progress -eq 100) { return "HKLM\SYSTEM\Setup\MoSetup\Volatile SetupProgress=100" }
         }
+        return $null
     }
+    $pending = RestartPending
+    if ($pending) {
+        Write-Output $pending
+        Write-Output "Installation postponed: a restart is pending"
+        exit 20
+    }
+    $poll = 30
     function LanguageInstallDue {
         $session = Get-Process -Name sihost -ErrorAction SilentlyContinue |
             Sort-Object StartTime | Select-Object -Last 1
@@ -1006,19 +1017,26 @@ try {
         if (-not $session -or -not $task) { return $false }
         if ($task.State -eq "Running") { return $true }
         if ($task.State -ne "Ready") { return $false }
-        return ($task | Get-ScheduledTaskInfo).LastRunTime -lt $session.StartTime
+        if (($task | Get-ScheduledTaskInfo).LastRunTime -ge $session.StartTime) { return $false }
+        # Not run yet for this session: Windows starts it after the delay of its trigger.
+        # Not started once due, it will not start
+        $trigger = $task.Triggers | Where-Object { $_.Delay } | Select-Object -First 1
+        if (-not $trigger) { return $false }
+        $due = $session.StartTime + [System.Xml.XmlConvert]::ToTimeSpan($trigger.Delay)
+        return (Get-Date) -le $due.AddSeconds(2 * $poll)
     }
-    $deadline = (Get-Date).AddMinutes(15)
     while ($true) {
         $busy = $null
         if (LanguageInstallDue) { $busy = "Windows installs language features after a session opened" }
         elseif (Get-Process -Name TiWorker -ErrorAction SilentlyContinue) { $busy = "Windows servicing busy" }
         if (-not $busy) { break }
-        if ((Get-Date) -ge $deadline) {
-            Write-Output ("Installation postponed: {0} for 15 minutes" -f $busy)
+        $pending = RestartPending
+        if ($pending) {
+            Write-Output $pending
+            Write-Output ("Installation postponed: {0}, a restart is now pending" -f $busy)
             exit %(busy)d
         }
-        Start-Sleep -Seconds 30
+        Start-Sleep -Seconds $poll
     }
     Write-Output "No pending restart, Windows servicing idle"
     exit 0
@@ -1073,6 +1091,8 @@ try {
 """
 # Build and revision in the catalog title of a cumulative, e.g. "(26100.4349)"
 TITLE_BUILD = re.compile(r"\(\d{5}\.(\d+)\)")
+# Version in the catalog title of the Defender definitions, e.g. "(Version 1.441.207.0)"
+TITLE_VERSION = re.compile(r"\s*\(Version [\d.]+\)", re.IGNORECASE)
 
 # Exit 1: no platform folder or no MpCmdRun.exe, anything else: its code. The
 # folders are versions, some with a "-0" suffix; "CurrentVersion" is not one.
@@ -1111,10 +1131,219 @@ DEFENDER_PLATFORM_COMMAND = (
     ' ("@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@\\UpdatePlatform.%PROCESSOR_ARCHITECTURE%fre.exe")'
 )
 
-# Updates delivered as an .exe run directly, by KB. Anything else than the
+# Machine field of a PE header, under the name Windows gives that architecture in
+# PROCESSOR_ARCHITECTURE
+PE_ARCHITECTURES = {0x8664: "AMD64", 0xAA64: "ARM64", 0x014C: "x86"}
+
+
+def architecture_name(name, architecture):
+    """Name of a file in its package when the files are named after their architecture."""
+    stem, extension = os.path.splitext(name)
+    return "%s.%s%s" % (stem, architecture, extension)
+
+
+# Exit 0: the platform of the .exe is in place; 1: no .exe for the machine among those
+# named after their architecture, or the result the program left is not its own version;
+# else the code of the program. SecurityHealthSetup.exe answers 0 even when it fails and
+# writes its result in the registry value "wu": its own file version once installed or
+# already in place, else a word (CopyError, VerifyError, VersionError). File version
+# from its four numbers: the string may carry a suffix. The agent may be 32-bit:
+# PROCESSOR_ARCHITECTURE then says x86, PROCESSOR_ARCHITEW6432 the machine; 64-bit
+# registry view. The process is waited for: PowerShell does not wait for a program
+# without a console.
+SECURITY_PLATFORM_SCRIPT = r"""$ErrorActionPreference = "Stop"
+try {
+    $architecture = $env:PROCESSOR_ARCHITEW6432
+    if (-not $architecture) { $architecture = $env:PROCESSOR_ARCHITECTURE }
+    $path = Join-Path '@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@' ('%(file)s' -f $architecture)
+    if (-not (Test-Path -LiteralPath $path)) {
+        Write-Output ("No %(name)s for the {0} architecture in this package" -f $architecture)
+        exit 1
+    }
+    $file = (Get-Item -LiteralPath $path).VersionInfo
+    $version = "{0}.{1}.{2}.{3}" -f $file.FileMajorPart, $file.FileMinorPart, $file.FileBuildPart, $file.FilePrivatePart
+    $start = New-Object System.Diagnostics.ProcessStartInfo $path
+    $start.UseShellExecute = $false
+    $process = [System.Diagnostics.Process]::Start($start)
+    $process.WaitForExit()
+    if ($process.ExitCode -ne 0) {
+        Write-Output ("Windows Security platform not installed: exit code {0}" -f $process.ExitCode)
+        exit $process.ExitCode
+    }
+    $result = $null
+    $hklm = [Microsoft.Win32.RegistryKey]::OpenBaseKey("LocalMachine", "Registry64")
+    $key = $hklm.OpenSubKey("SOFTWARE\Microsoft\Windows Security Health\Updates")
+    if ($key) {
+        $result = $key.GetValue("wu")
+        $key.Close()
+    }
+    if ($result -ceq $version) {
+        Write-Output ("Windows Security platform {0}" -f $version)
+        exit 0
+    }
+    if ($null -eq $result) { $result = "no result" }
+    Write-Output ("Windows Security platform not installed: {0}" -f $result)
+    exit 1
+} catch {
+    Write-Output ("Windows Security platform not installed: {0}" -f $_.Exception.Message)
+    exit 1
+}
+""" % {"name": "SecurityHealthSetup.exe", "file": architecture_name("SecurityHealthSetup.exe", "{0}")}
+
+
+# Exit 0: Defender updated its definitions itself, from its own sources; 1: the
+# WinDefend service is missing or not running (another antivirus is the active
+# one), or the update failed, the reason in the output. Versions read before and
+# after in the CIM class, as the machine plugin does; "?" for one that cannot be
+# read, which fails nothing. Never restarts the machine, shows nothing, needs no
+# idle Windows servicing. Run by the 64-bit PowerShell even from a 32-bit agent.
+# -ErrorAction on the cmdlets: module functions do not follow the preference of
+# the script.
+DEFENDER_DEFINITIONS_SCRIPT = r"""$ErrorActionPreference = "Stop"
+try {
+    if ($env:PROCESSOR_ARCHITEW6432) {
+        $native = Join-Path $env:windir "sysnative\WindowsPowerShell\v1.0\powershell.exe"
+        & $native -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath
+        exit $LASTEXITCODE
+    }
+    function DefinitionsVersion {
+        try {
+            $status = Get-CimInstance -Namespace "root\Microsoft\Windows\Defender" `
+                -ClassName MSFT_MpComputerStatus -ErrorAction Stop
+            if ($status.AntivirusSignatureVersion) { return $status.AntivirusSignatureVersion }
+        } catch {}
+        return "?"
+    }
+    $service = Get-Service -Name WinDefend
+    if ($service.Status -ne "Running") {
+        Write-Output ("Microsoft Defender Antivirus is not running (service WinDefend: {0})" -f $service.Status)
+        exit 1
+    }
+    $before = DefinitionsVersion
+    Update-MpSignature -ErrorAction Stop
+    Write-Output ("Definitions {0} -> {1}" -f $before, (DefinitionsVersion))
+    exit 0
+} catch {
+    Write-Output ("Definitions update failed: {0}" -f $_.Exception.Message)
+    exit 1
+}
+"""
+
+# Installation by the Windows Update of the machine itself, for a KB Windows asks for
+# that no catalog entry carries: one package without any file, the identifiers of the
+# updates (IUpdate.Identity.UpdateID, windows_update_id of the machine report) come
+# with the deployment ({"windows_update_ids": [...]}).
+# pkgs label of the package: the MMC finds it by this name, as the Linux ones
+WINDOWS_UPDATE_PACKAGE_NAME = "Installation by Windows Update"
+WINDOWS_UPDATE_PARAMETER = "windows_update_ids"
+# Microsoft Update service; the same as in the search of the machine plugin
+# (plugin_updates_windows.MICROSOFT_UPDATE_SERVICE)
+MICROSOFT_UPDATE_SERVICE = "7971f918-a847-4430-9279-4a52d1efe18d"
+# Exit 0: installed without restart, or none of the identifiers is asked for any more
+# (installed since the report); %(restart)d: installed, restart required; 1: anything
+# else, the reason in the output. Same search as the report of the machine plugin, same
+# server: the identifiers are those of that search. OperationResultCode: 2 succeeded,
+# 3 succeeded with errors, 4 failed, 5 aborted; a search is used with 2 or 3, as in the
+# report, a download or an installation only succeeds with 2. Changes no Windows Update
+# setting (service, policy, pause). Run by the 64-bit PowerShell even from a 32-bit agent.
+WINDOWS_UPDATE_SCRIPT = r"""$ErrorActionPreference = "Stop"
+function Hex($value) { return "0x{0:X8}" -f [int]$value }
+try {
+    if ($env:PROCESSOR_ARCHITEW6432) {
+        $native = Join-Path $env:windir "sysnative\WindowsPowerShell\v1.0\powershell.exe"
+        & $native -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath
+        exit $LASTEXITCODE
+    }
+    $parameters = [Text.Encoding]::UTF8.GetString(
+        [Convert]::FromBase64String('@@@DYNAMIC_PARAM_DEPLOY_B64@@@')) | ConvertFrom-Json
+    $wanted = @($parameters.%(parameter)s | Where-Object { $_ })
+    if (-not $wanted.Count) {
+        Write-Output "No Windows Update identifier received with the deployment"
+        exit 1
+    }
+    $session = New-Object -ComObject Microsoft.Update.Session
+    $session.ClientApplicationID = 'Medulla'
+    $searcher = $session.CreateUpdateSearcher()
+    $server = 'windows_update'
+    $serviceId = '%(service_id)s'
+    $manager = New-Object -ComObject Microsoft.Update.ServiceManager
+    if (@($manager.Services | Where-Object { $_.ServiceID -eq $serviceId }).Count -gt 0) {
+        $searcher.ServerSelection = 3
+        $searcher.ServiceID = $serviceId
+        $server = 'microsoft_update'
+    } else {
+        $searcher.ServerSelection = 2
+    }
+    $found = $searcher.Search('IsInstalled=0 and IsHidden=0')
+    Write-Output ("Search at {0}: ResultCode {1}, {2} update(s) asked for by Windows" -f `
+        $server, $found.ResultCode, $found.Updates.Count)
+    if (@(2, 3) -notcontains $found.ResultCode) {
+        Write-Output "Installation by Windows Update failed: the search did not succeed"
+        exit 1
+    }
+    $updates = New-Object -ComObject Microsoft.Update.UpdateColl
+    foreach ($update in $found.Updates) {
+        if ($wanted -contains $update.Identity.UpdateID) {
+            if (-not $update.EulaAccepted) { $update.AcceptEula() }
+            [void]$updates.Add($update)
+            Write-Output ("To install: {0} ({1})" -f $update.Title, $update.Identity.UpdateID)
+        }
+    }
+    if ($updates.Count -eq 0) {
+        Write-Output ("Windows no longer asks for {0}: nothing to install" -f ($wanted -join ", "))
+        exit 0
+    }
+    $downloader = $session.CreateUpdateDownloader()
+    $downloader.Updates = $updates
+    $download = $downloader.Download()
+    for ($index = 0; $index -lt $updates.Count; $index++) {
+        $result = $download.GetUpdateResult($index)
+        Write-Output ("Download: ResultCode {0}, HResult {1}: {2}" -f `
+            $result.ResultCode, (Hex $result.HResult), $updates.Item($index).Title)
+    }
+    if ($download.ResultCode -ne 2) {
+        Write-Output ("Installation by Windows Update failed: download ResultCode {0}, HResult {1}" -f `
+            $download.ResultCode, (Hex $download.HResult))
+        exit 1
+    }
+    $installer = $session.CreateUpdateInstaller()
+    $installer.Updates = $updates
+    $install = $installer.Install()
+    for ($index = 0; $index -lt $updates.Count; $index++) {
+        $result = $install.GetUpdateResult($index)
+        Write-Output ("Installation: ResultCode {0}, HResult {1}: {2}" -f `
+            $result.ResultCode, (Hex $result.HResult), $updates.Item($index).Title)
+    }
+    if ($install.ResultCode -ne 2) {
+        Write-Output ("Installation by Windows Update failed: installation ResultCode {0}, HResult {1}" -f `
+            $install.ResultCode, (Hex $install.HResult))
+        exit 1
+    }
+    if ($install.RebootRequired) {
+        Write-Output "Installed, restart required"
+        exit %(restart)d
+    }
+    Write-Output "Installed, no restart required"
+    exit 0
+} catch {
+    $exception = $_.Exception
+    while ($exception.InnerException) { $exception = $exception.InnerException }
+    Write-Output ("Installation by Windows Update failed: {0} {1}" -f (Hex $exception.HResult), $exception.Message)
+    exit 1
+}
+""" % {"parameter": WINDOWS_UPDATE_PARAMETER, "service_id": MICROSOFT_UPDATE_SERVICE,
+       "restart": INSTALLED_CODES[0]}
+
+# Updates the catalog delivers as an .exe, by KB. Anything else than the
 # done_codes and restart_codes is an error. options: of the only .exe of the
-# package; command: the whole command instead, the package keeping all its .exe.
+# package; command: the whole command instead, the package keeping all its .exe,
+# a batch unless typescript says otherwise.
 # uninstall_script: None without an uninstall section.
+# architecture_names True: the catalog gives the .exe of every architecture under one
+# name; each is stored in the package under architecture_name(), its architecture read
+# in its PE header.
+# files False: one package for the KB whatever its catalog entries, without any
+# file, its PowerShell script alone (fileless_sequence): no restart, no uninstall.
 EXE_UPDATES = {
     # Malicious Software Removal Tool, exit codes of KB891716: 0 no infection, 10
     # and 13 removal done with a restart required; 6 (infection found) is an error
@@ -1130,6 +1359,24 @@ EXE_UPDATES = {
         "done_codes": (0,),
         "restart_codes": (),
         "uninstall_script": DEFENDER_REVERT_SCRIPT,
+    },
+    # Windows Security platform: no option, no interface, no uninstall, no restart.
+    # Measured: 0 on Windows 11 with the version already in place, 0 as well on a
+    # Windows 10 22H2 where it failed (wu = CopyError)
+    "5007651": {
+        "command": SECURITY_PLATFORM_SCRIPT,
+        "typescript": "powershell",
+        "architecture_names": True,
+        "done_codes": (0,),
+        "restart_codes": (),
+        "uninstall_script": None,
+    },
+    # Defender definitions: every catalog line is a version of the same content,
+    # as differentials from given versions. Defender takes the latest one itself.
+    "2267602": {
+        "files": False,
+        "script": DEFENDER_DEFINITIONS_SCRIPT,
+        "done_codes": (0,),
     },
 }
 
@@ -1236,11 +1483,12 @@ def unsupported_reason(files, kb=None):
     if not files:
         return "no language-neutral file"
     exe = exe_update(kb)
+    same_name = bool(exe) and exe.get("architecture_names", False)
     names = set()
     for file in files:
         if not FILE_NAME.match(file["name"] or ""):
             return "unsafe file name %r" % file["name"]
-        if file["name"].lower() in names:
+        if file["name"].lower() in names and not same_name:
             return "duplicate file name %s" % file["name"]
         names.add(file["name"].lower())
         if file_kind(file) != "exe" if exe else file_kind(file) not in KINDS:
@@ -1248,6 +1496,23 @@ def unsupported_reason(files, kb=None):
     if exe and "command" not in exe and len(files) > 1:
         return "one .exe expected for KB%s, %d files" % (kb_number(kb), len(files))
     return None
+
+
+def pe_architecture(source):
+    """Architecture of the executable read from the binary file source, as named in
+    PE_ARCHITECTURES. BuildFailed when it is not a PE file or its machine is unknown."""
+    header = source.read(0x40)
+    if len(header) < 0x40 or header[:2] != b"MZ":
+        raise BuildFailed("no PE header")
+    # e_lfanew: offset of the PE signature, the Machine field right after it
+    source.seek(struct.unpack_from("<I", header, 0x3C)[0])
+    signature = source.read(6)
+    if len(signature) < 6 or signature[:4] != b"PE\0\0":
+        raise BuildFailed("no PE header")
+    machine = struct.unpack_from("<H", signature, 4)[0]
+    if machine not in PE_ARCHITECTURES:
+        raise BuildFailed("unknown PE machine 0x%04X" % machine)
+    return PE_ARCHITECTURES[machine]
 
 
 def enablement_files(files, entry_kb, own_kbs, shared=frozenset()):
@@ -1267,6 +1532,16 @@ def kb_number(kb):
 
 def exe_update(kb):
     return EXE_UPDATES.get(kb_number(kb))
+
+
+def is_fileless(kb):
+    """The package of this KB carries no catalog file."""
+    exe = exe_update(kb)
+    return bool(exe) and not exe.get("files", True)
+
+
+def fileless_kbs():
+    return {int(kb) for kb in EXE_UPDATES if is_fileless(kb)}
 
 
 def install_target(names, kb):
@@ -1306,6 +1581,12 @@ def b64(text):
 
 def package_name(update):
     return " ".join((update["title"] or "").split()) or "KB%s" % update["kb"]
+
+
+def versionless(update):
+    """The update under its catalog title without the version: names the package of a
+    fileless KB, the same for every version."""
+    return dict(update, title=TITLE_VERSION.sub("", update["title"] or ""))
 
 
 def package_description(update):
@@ -1402,28 +1683,29 @@ def postponed_step():
     }
 
 
-def batch_install_step(command, restart_codes, done_codes):
+def script_install_step(script, restart_codes, done_codes, typescript="Batch",
+                        success="REPORT_SUCCESS", error="REPORT_ERROR"):
     install = {
         "action": "actionprocessscriptfile",
         "step": 0,
         "codereturn": "",
         "actionlabel": "INSTALL",
-        "typescript": "Batch",
-        "script": b64(command),
+        "typescript": typescript,
+        "script": b64(script),
         "timeout": INSTALL_TIMEOUT,
         "30@lastlines": "30@lastlines",
     }
     for code in restart_codes:
         install["gotoreturncode@=%d" % code] = "CHECK_SESSIONS"
     for code in done_codes:
-        install["gotoreturncode@=%d" % code] = "REPORT_SUCCESS"
+        install["gotoreturncode@=%d" % code] = success
     # Explicit: an unmatched code would fall through to the next step
-    install["gotoreturncode@!=0"] = "REPORT_ERROR"
+    install["gotoreturncode@!=0"] = error
     return install
 
 
 def install_step(target, restart=False):
-    install = batch_install_step(install_command(target), INSTALLED_CODES, SKIPPED_CODES)
+    install = script_install_step(install_command(target), INSTALLED_CODES, SKIPPED_CODES)
     if restart:
         # An enablement package answers 0 but only takes effect at the restart
         install["gotoreturncode@=0"] = "CHECK_SESSIONS"
@@ -1432,7 +1714,7 @@ def install_step(target, restart=False):
 
 def exe_step(target, exe):
     command = exe.get("command") or EXE_COMMAND % (target, exe["options"])
-    return batch_install_step(command, exe["restart_codes"], exe["done_codes"])
+    return script_install_step(command, exe["restart_codes"], exe["done_codes"], exe.get("typescript", "Batch"))
 
 
 def sessions_step(label="CHECK_SESSIONS", restart="REBOOT", ask="ASK_REBOOT", none="REPORT_SUCCESS"):
@@ -1575,11 +1857,35 @@ def upgrade_step():
 
 def windows_sequence(target, restart=False, kb=None, title=None):
     exe = exe_update(kb)
+    if is_fileless(kb):
+        return fileless_sequence(exe)
     if exe:
         script = exe["uninstall_script"]
         return update_sequence([exe_step(target, exe)], uninstall_section(script) if script else [])
     # Runs only when asked for; jumps back to the steps above
     return update_sequence([install_step(target, restart)], uninstall_steps(kb, title) if kb else [])
+
+
+def fileless_sequence(exe):
+    """Section update of a fileless KB: its script alone. No precheck: it could restart
+    the machine or ask its user. No report nor inventory at the end: the machine would
+    report again after each of these deployments. The package folder is still removed."""
+    sequence = [
+        {"action": "action_section_update", "step": 0, "actionlabel": "SECTION_UPDATE"},
+        script_install_step(exe["script"], (), exe["done_codes"], "powershell",
+                            success="END_SUCCESS", error="END_ERROR"),
+        {
+            "action": "actionsuccescompletedend",
+            "step": 0,
+            "actionlabel": "END_SUCCESS",
+            "clear": "True",
+            "inventory": "False",
+        },
+        {"action": "actionerrorcompletedend", "step": 0, "actionlabel": "END_ERROR"},
+    ]
+    for index, step in enumerate(sequence):
+        step["step"] = index
+    return sequence
 
 
 def media_sequence():
@@ -1711,10 +2017,35 @@ def linux_share(family):
     return MAJOR_SHARE if family in LINUX_UPGRADE_NAMES else SHARE
 
 
-def linux_package_id(family):
+def sequence_uuid(key, sequence):
     """Identifier from the content: a changed sequence is a new package."""
-    content = json.dumps(linux_sequence(family), sort_keys=True)
-    return package_uuid("linux:%s:%s" % (family, hashlib.sha1(content.encode("utf-8")).hexdigest()))
+    content = json.dumps(sequence, sort_keys=True)
+    return package_uuid("%s:%s" % (key, hashlib.sha1(content.encode("utf-8")).hexdigest()))
+
+
+def linux_package_id(family):
+    return sequence_uuid("linux:%s" % family, linux_sequence(family))
+
+
+def fileless_package_id(kb):
+    """Of the KB and its sequence only: the same for every version and catalog entry."""
+    return sequence_uuid("fileless:%s" % kb_number(kb), fileless_sequence(exe_update(kb)))
+
+
+def windows_update_sequence():
+    """Section update of the installation by Windows Update: the one of a catalog
+    update, the script instead of DISM, no uninstall section."""
+    return update_sequence([script_install_step(WINDOWS_UPDATE_SCRIPT, INSTALLED_CODES, (0,), "powershell")])
+
+
+def windows_update_package_id():
+    return sequence_uuid("windows-update", windows_update_sequence())
+
+
+def windows_update_descriptor(package_id, now):
+    data = descriptor_info(package_id, WINDOWS_UPDATE_PACKAGE_NAME, WINDOWS_UPDATE_PACKAGE_NAME, now)
+    data.update(windows_section(windows_update_sequence()))
+    return data
 
 
 def linux_descriptor(package_id, family, now):
@@ -1995,6 +2326,20 @@ class PackageStore(object):
             return None
         return {"id": row[0], "kb": row[1], "title": row[2], "classification": row[3]}
 
+    def tracked_update(self, kb):
+        """Most recent catalog entry of the KB among the products an entity tracks,
+        None without any."""
+        row = self.store.execute(
+            "SELECT u.id, u.kb, u.title, u.classification FROM updates u"
+            " WHERE u.kb = :kb AND u.removed = 0 AND EXISTS ("
+            "SELECT 1 FROM update_products up"
+            " JOIN entity_products ep ON ep.product_id = up.product_id"
+            " WHERE up.update_id = u.id)"
+            " ORDER BY u.published_at DESC, u.id DESC LIMIT 1",
+            {"kb": int(kb_number(kb))},
+        ).fetchone()
+        return dict(zip(("id", "kb", "title", "classification"), row)) if row else None
+
     def own_kbs(self, kbs):
         """KBs among kbs that have a catalog entry of their own (not an upgrade)."""
         if not kbs:
@@ -2041,8 +2386,9 @@ class PackageStore(object):
             " created_at, ready_at)"
             " VALUES (:uuid, :hash, :share, :state, :error, :size, NOW(),"
             " IF(:state = 'ready', NOW(), NULL))"
-            " ON DUPLICATE KEY UPDATE state = VALUES(state), error = VALUES(error),"
-            " size = VALUES(size), ready_at = VALUES(ready_at)",
+            # A package built again keeps the error of its last build until it ends
+            " ON DUPLICATE KEY UPDATE error = IF(VALUES(state) = 'building', error, VALUES(error)),"
+            " state = VALUES(state), size = VALUES(size), ready_at = VALUES(ready_at)",
             {
                 "uuid": package_id,
                 "hash": digest,
@@ -2151,7 +2497,8 @@ class Builder(object):
                     update = dict(update, kb=files[0]["enablement_kb"])
                 else:
                     update = dict(update, unsupported="no enablement package in the upgrade entry")
-        if update is None:
+        # A fileless KB has one package of its own (fileless_package)
+        if update is None or is_fileless(update["kb"]):
             return
         digest = files_hash(files)
         package_id = package_uuid(digest)
@@ -2200,9 +2547,13 @@ class Builder(object):
             if os.path.lexists(work):
                 shutil.rmtree(work)
             os.mkdir(work)
+            by_architecture = (exe_update(update["kb"]) or {}).get("architecture_names", False)
             try:
                 for file in files:
-                    self.fetch(file, os.path.join(work, file["name"]))
+                    if by_architecture:
+                        self.fetch_by_architecture(file, work)
+                    else:
+                        self.fetch(file, os.path.join(work, file["name"]))
                 now = datetime.now()
                 write_json(
                     os.path.join(work, "conf.json"),
@@ -2240,6 +2591,21 @@ class Builder(object):
         if file.get("size") and size != file["size"]:
             raise BuildFailed("size mismatch for %s" % file["name"])
 
+    def fetch_by_architecture(self, file, work):
+        """Fetch the file into work under the name of its architecture."""
+        # Not a name a catalog file can have (FILE_NAME)
+        path = os.path.join(work, ".download")
+        self.fetch(file, path)
+        try:
+            with open(path, "rb") as source:
+                architecture = pe_architecture(source)
+        except BuildFailed as error:
+            raise BuildFailed("%s (file %s): %s" % (file["name"], file.get("id"), error))
+        named = os.path.join(work, architecture_name(file["name"], architecture))
+        if os.path.lexists(named):
+            raise BuildFailed("several %s for the %s architecture" % (file["name"], architecture))
+        os.rename(path, named)
+
     def build_media(self, media, retry_failed, attempted):
         digest = media_digest(media)
         package_id = package_uuid(digest)
@@ -2275,7 +2641,38 @@ class Builder(object):
     def linux_package(self, family):
         """Package of a Linux family, written and registered once; its identifier."""
         package_id = linux_package_id(family)
-        share_dir = self.major_dir if linux_share(family) == MAJOR_SHARE else self.share_dir
+        now = datetime.now()
+        name = linux_package_name(family)
+        return self.script_package(
+            package_id, linux_share(family),
+            base_configuration(package_id, name, name, now, "linux", linux_share(family)),
+            linux_descriptor(package_id, family, now))
+
+    def fileless_package(self, kb):
+        """Package of a fileless KB, written and registered once; its identifier, None
+        while no entity tracks a product of the KB."""
+        with self.open_store() as store:
+            update = store.tracked_update(kb)
+        if update is None:
+            return None
+        package_id = fileless_package_id(kb)
+        update = versionless(update)
+        now = datetime.now()
+        return self.script_package(package_id, SHARE, configuration(package_id, update, now),
+                                   descriptor(package_id, update, now))
+
+    def windows_update_package(self):
+        """Package of the installation by Windows Update, written and registered once;
+        its identifier."""
+        package_id = windows_update_package_id()
+        now = datetime.now()
+        name = WINDOWS_UPDATE_PACKAGE_NAME
+        return self.script_package(package_id, SHARE, base_configuration(package_id, name, name, now),
+                                   windows_update_descriptor(package_id, now))
+
+    def script_package(self, package_id, share, conf, data):
+        """Package without any file: conf.json and xmppdeploy.json, written once."""
+        share_dir = self.major_dir if share == MAJOR_SHARE else self.share_dir
         target = os.path.join(share_dir, package_id)
         if not os.path.isdir(target):
             if not os.path.isdir(share_dir):
@@ -2284,16 +2681,13 @@ class Builder(object):
             if os.path.lexists(work):
                 shutil.rmtree(work)
             os.mkdir(work)
-            now = datetime.now()
-            name = linux_package_name(family)
-            write_json(os.path.join(work, "conf.json"),
-                       base_configuration(package_id, name, name, now, "linux", linux_share(family)))
-            write_json(os.path.join(work, "xmppdeploy.json"), linux_descriptor(package_id, family, now))
+            write_json(os.path.join(work, "conf.json"), conf)
+            write_json(os.path.join(work, "xmppdeploy.json"), data)
             os.rename(work, target)
         size = self.publish(package_id, target)
         with self.open_store() as store:
             store.save_package(package_id, hashlib.sha1(package_id.encode()).hexdigest(), "ready",
-                               size=size, share=linux_share(family))
+                               size=size, share=share)
         return package_id
 
     def build_media_package(self, package_id, media):
@@ -2372,7 +2766,8 @@ def build_loop(builder):
 def start_build(database, retry_failed=False, builder=None):
     """Build the missing packages in the background.
 
-    retry_failed: also rebuild the failed packages (once per hourly run)."""
+    retry_failed: also rebuild the failed packages (once per replication, hourly by
+    default, and once when the admin launches an upgrade that needs one)."""
     with state_lock:
         state["retry_failed"] = state["retry_failed"] or retry_failed
         if state["running"]:

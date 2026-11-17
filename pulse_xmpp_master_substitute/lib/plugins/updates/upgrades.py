@@ -84,6 +84,12 @@ BUSY_CODE = 21
 PRECHECK = "precheck"
 STOPPED = "stopped"
 PRECHECK_CODES = {113: DISK_FULL, 114: STOPPED}
+# Linux release package: its unit starts the first and the last line of a run with it
+UNIT_LOG_MARK = "Medulla release upgrade"
+# Debian release package: written after the cause of a stop, once the sources are back
+SOURCES_RESTORED = "Sources restored"
+# Step key the agent fills with the end of the output: "30@lastlines"
+LAST_LINES = "@lastlines"
 # Linux release package: a restart is needed first, nothing of the upgrade begun. The
 # package logs POSTPONED_COMMENT: the step runs again after the restart
 RESTART_FIRST_CODE = 115
@@ -356,9 +362,9 @@ def step_code(step):
         return None
 
 
-def result_return_code(result):
-    """Last non-zero code of the last run in xmppmaster.deploy.result, None if none:
-    the report step that follows a failed step always ends with 0."""
+def failed_step(result):
+    """Last step with a non-zero code of the last run in xmppmaster.deploy.result, None
+    if none: the report step that follows a failed step always ends with 0."""
     try:
         runs = json.loads(result)["descriptorslist"]
         sequence = runs[-1]
@@ -366,8 +372,23 @@ def result_return_code(result):
         return None
     if not isinstance(sequence, list):
         return None
-    codes = [step_code(step) for step in sequence]
-    return next((code for code in reversed(codes) if code), None)
+    return next((step for step in reversed(sequence) if step_code(step)), None)
+
+
+def result_return_code(result):
+    return step_code(failed_step(result))
+
+
+def result_stop_line(result):
+    """Last line the failed step wrote, as plain text on one line, None if none. Not
+    the marks of the unit nor SOURCES_RESTORED: the cause of the stop comes before them."""
+    step = failed_step(result) or {}
+    output = next((value for key, value in step.items()
+                   if key.endswith(LAST_LINES) and isinstance(value, str) and value != key), "")
+    lines = [" ".join(re.sub(r"[<>\x00-\x1f\x7f]", " ", line).split()) for line in output.splitlines()]
+    lines = [line for line in lines
+             if line and not line.startswith(UNIT_LOG_MARK) and line != SOURCES_RESTORED]
+    return lines[-1] if lines else None
 
 
 def restarted_alone(result):
@@ -385,39 +406,44 @@ def restarted_alone(result):
 
 def failure_reason(store, upgrade, deployment, step, reason):
     """Cause of a stopped upgrade: a failed step out of disk space says so, a Linux
-    release package that stopped without changing anything is not a release failure.
-    Its step may be gone from a machine already on the target."""
+    release package that stopped without changing anything is not a release failure
+    and gives the last line it wrote. Its step may be gone from a machine already on
+    the target."""
     if deployment is None or deployment["success"]:
         return reason
     if upgrade.get("os") == "linux" and deployment["postponed"]:
         return RESTART_FIRST_FAILURE
     try:
         code = store.last_return_code(deployment.get("session"))
+        linux_precheck = upgrade.get("os") == "linux" and code in PRECHECK_CODES
+        line = store.last_stop_line(deployment.get("session")) if linux_precheck else None
     except Exception as error:
         logger.warning("Upgrade of %s: return code not read: %s" % (upgrade["jid"], error))
         return reason
     if upgrade.get("os") == "linux" and code == RESTART_FIRST_CODE:
         return RESTART_FIRST_FAILURE
-    if upgrade.get("os") == "linux" and code in PRECHECK_CODES:
-        return "%s: %s" % (PRECHECK, PRECHECK_CODES[code])
+    if linux_precheck:
+        return ": ".join(filter(None, (PRECHECK, PRECHECK_CODES[code], line)))
     return "%s: %s" % (step or RELEASE, DISK_FULL) if code in DISK_FULL_CODES else reason
 
 
-def run_launched(store, create, request_build):
+def run_launched(store, create, request_build, retry_failed=False):
     """One pass over the upgrades launched by the admin; return the deployments created.
 
     store: UpdatesStore (caller's transaction); create(candidate): creates a deployment;
-    request_build(): asks the package builder to run."""
+    request_build(): asks the package builder to run, request_build(True) to rebuild
+    the failed packages too; retry_failed: pass of a launch by the admin, the failed
+    package of a step is built again instead of stopping the upgrade."""
     created = 0
     for upgrade in store.launched_upgrades():
         try:
-            created += run_one(store, upgrade, create, request_build)
+            created += run_one(store, upgrade, create, request_build, retry_failed)
         except Exception:
             logger.error("Upgrade of %s not run\n%s" % (upgrade["jid"], traceback.format_exc()))
     return created
 
 
-def run_one(store, upgrade, create, request_build):
+def run_one(store, upgrade, create, request_build, retry_failed=False):
     deployment = None
     step = upgrade["steps"][0] if upgrade["steps"] else None
     package = None
@@ -433,6 +459,11 @@ def run_one(store, upgrade, create, request_build):
                     store.stop_upgrade(upgrade["jid"], "%s: no catalog update" % step)
                 return 0
             package = store.step_package(update_id)
+        if retry_failed and package is not None and package["state"] == "failed":
+            # Back to building, its error kept: the later passes wait for the build
+            store.retry_package(package["uuid"])
+            request_build(True)
+            return 0
         if package is None or package["state"] == "building":
             if step not in LINUX_STEPS:
                 request_build()
@@ -462,6 +493,11 @@ def run_one(store, upgrade, create, request_build):
     if action == DEPLOY and not upgrade.get("in_window", True):
         # Outside the upgrade window of the entity: the step starts in it
         return 0
+    if action == DEPLOY:
+        waiting = store.relays_pending(package["uuid"], upgrade["jid"])
+        if waiting:
+            logger.info("Upgrade of %s: %s step waits, %s" % (upgrade["jid"], step, waiting))
+            return 0
     if action == DONE:
         store.stop_upgrade(upgrade["jid"], None)
         logger.info("Upgrade of %s done: %s" % (upgrade["jid"], upgrade["target_release"]))

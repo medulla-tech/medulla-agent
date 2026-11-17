@@ -21,6 +21,8 @@ SEARCH_COLUMNS = (
 )
 
 TITLE_LENGTH = 500
+# machine_updates.classification
+CLASSIFICATION_LENGTH = 64
 
 # Architecture names of the Windows reports
 ARCHITECTURES = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64"}
@@ -112,6 +114,48 @@ def missing_rows(jid, report):
                 "title": (item.get("title") or "")[:TITLE_LENGTH] or None,
             }
     return list(rows.values())
+
+
+def kept_missing(report, previous_raw):
+    """The report with the Windows list of the stored one it replaces. For a report
+    without a list (missing_rows() None): machine_missing_updates keeps its rows, the
+    stored report keeps what Windows said of them (declared_categories)."""
+    try:
+        missing = (json.loads(previous_raw).get("search") or {}).get("missing")
+    except (TypeError, ValueError, AttributeError):
+        return report
+    if not isinstance(missing, list):
+        return report
+    return dict(report, search=dict(report.get("search") or {}, missing=missing))
+
+
+def declared_categories(raw):
+    """{windows_update_id: {"products", "classification"}} of the Windows list of a
+    stored report: products the identifiers (Microsoft category GUID, products.mirror_id)
+    Windows gives the update, None when the report does not say; classification its name
+    of it, None when not given."""
+    try:
+        missing = (json.loads(raw).get("search") or {}).get("missing")
+    except (TypeError, ValueError, AttributeError):
+        return {}
+    declared = {}
+    for item in missing if isinstance(missing, list) else []:
+        if not isinstance(item, dict) or not isinstance(item.get("id"), str):
+            continue
+        products = item.get("products")
+        if isinstance(products, list):
+            products = [product["id"].lower() for product in products
+                        if isinstance(product, dict) and isinstance(product.get("id"), str)]
+        else:
+            products = None
+        classification = item.get("classification")
+        if not isinstance(classification, str):
+            classification = None
+        declared[item["id"].lower()] = {
+            "products": products,
+            "classification": (classification or "")[:CLASSIFICATION_LENGTH] or None,
+        }
+    return declared
 
 
 def is_linux(report):

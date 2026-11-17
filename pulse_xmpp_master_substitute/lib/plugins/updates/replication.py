@@ -168,6 +168,7 @@ def copy_updates(client, store):
 
     Return True when updates were copied (media alone change no machine)."""
     generation, version = store.state()
+    store.forget_untracked()
     catalog = client.get("/v1/catalog")
     since = version or 0
     kept = None

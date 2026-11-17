@@ -37,7 +37,7 @@ from lib import utils
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updates_linux", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "updates_linux", "TYPE": "machine"}  # fmt: skip
 
 REPORT_FORMAT = 1
 REPORT_INTERVAL = 86400
@@ -58,6 +58,10 @@ HISTORY_DAYS = 30
 HISTORY_TRANSACTIONS = 100
 HISTORY_PACKAGES = 200
 APT_HISTORY = "/var/log/apt/history.log"
+# Written by update-notifier-common or needrestart: always on Ubuntu, not on every Debian
+REBOOT_REQUIRED = "/var/run/reboot-required"
+# Installed kernel images, named after their release as uname -r gives it
+BOOT_KERNELS = "/boot/vmlinuz-*"
 # rpm keeps no transaction: packages installed less than this apart are grouped
 RPM_TRANSACTION_GAP = 300
 # Running package tools (/proc/<pid>/comm, 15 characters at most): an upgrade or an
@@ -69,6 +73,12 @@ APT_WAIT = 30
 DEBIAN_RELEASES = "/usr/share/distro-info/debian.csv"
 APT_SOURCES = ("/etc/apt/sources.list", "/etc/apt/sources.list.d/*.list",
                "/etc/apt/sources.list.d/*.sources")
+# deb [options] uri suite components
+APT_ONE_LINE = re.compile(r"^\s*deb\s+(?:\[[^\]]*\]\s*)?\S+\s+(\S+)")
+# Field of a deb822 stanza
+APT_FIELD = re.compile(r"^([A-Za-z0-9-]+):\s*(.*)$")
+# Values of « Enabled: » apt reads as no (StringToBool)
+APT_DISABLED = ("no", "false", "0", "off", "disable", "without")
 # Written by the upgrade package before it switches the sources
 APT_BACKUP = "/var/backups/medulla-apt-%s"
 # Debian 13 release notes, 5.1.5: /boot of 768 MB at least, about 300 MB free
@@ -106,7 +116,7 @@ SEVERITIES = ("Critical", "Important", "Moderate", "Low")
 
 # Files changed by an installation or a pending restart (fingerprint)
 STATE_FILES = {
-    "apt": ("/var/lib/dpkg/status", "/var/run/reboot-required", "/etc/apt/sources.list",
+    "apt": ("/var/lib/dpkg/status", REBOOT_REQUIRED, "/etc/apt/sources.list",
             "/etc/apt/sources.list.d"),
     "dnf": ("/var/lib/rpm/rpmdb.sqlite", "/var/lib/rpm/Packages"),
     "zypper": ("/var/lib/rpm/rpmdb.sqlite", "/var/lib/rpm/Packages"),
@@ -341,7 +351,14 @@ def apt_failure(error):
 
 
 def reboot_apt():
-    return os.path.exists("/var/run/reboot-required")
+    return os.path.exists(REBOOT_REQUIRED) or newer_kernel_installed(
+        platform.release(), installed_kernels()
+    )
+
+
+def installed_kernels():
+    """Releases of the kernel images in /boot; none in a container."""
+    return [os.path.basename(path).split("-", 1)[1] for path in glob.glob(BOOT_KERNELS)]
 
 
 def history_apt(since):
@@ -383,7 +400,10 @@ def debian_upgrade(release):
 def upgrade_blockers(codename):
     """What the upgrade package refuses, as short codes."""
     blockers = []
-    if backports_enabled(read_apt_sources(), codename):
+    sources = read_apt_sources()
+    if not base_repository_enabled(sources, codename):
+        blockers.append("base_repository")
+    if backports_enabled(sources, codename):
         blockers.append("backports")
     return blockers + apt_blockers()
 
@@ -511,7 +531,8 @@ def read_apt_sources():
                     texts.append(handle.read())
             except OSError:
                 continue
-    return "\n".join(texts)
+    # A blank line: the last deb822 stanza of a file ends there
+    return "\n\n".join(texts)
 
 
 # dnf
@@ -754,9 +775,59 @@ def backports_enabled(text, codename):
     return bool(codename) and source_mentions(text, codename + "-backports")
 
 
+def apt_suites(text):
+    """Suites of the enabled binary sources, one-line and deb822 formats."""
+    suites = set()
+    stanza = {}
+    key = None
+    for line in text.splitlines() + [""]:
+        line = line.split("#", 1)[0].rstrip()
+        one_line = APT_ONE_LINE.match(line)
+        field = APT_FIELD.match(line)
+        if one_line:
+            suites.add(one_line.group(1))
+        elif field:
+            key = field.group(1).lower()
+            stanza[key] = field.group(2)
+        elif line[:1].isspace() and key:
+            stanza[key] += " " + line.strip()
+        elif not line:
+            if ("deb" in stanza.get("types", "").split()
+                    and stanza.get("enabled", "yes").lower() not in APT_DISABLED):
+                suites.update(stanza.get("suites", "").split())
+            stanza, key = {}, None
+    return suites
+
+
+def base_repository_enabled(text, codename):
+    """A source gives the release itself, not only its -security or -updates suite:
+    the one the upgrade package switches to the target."""
+    return bool(codename) and codename in apt_suites(text)
+
+
 def sources_switched(text, current, target, backup):
     """The upgrade package already switched the sources: its own rule (RESUME)."""
     return source_mentions(text, target) and (backup or not source_mentions(text, current))
+
+
+def kernel_version(release):
+    """(numbers, flavor) of a kernel release: ((6, 1, 0, 54), "cloud-amd64") for
+    6.1.0-54-cloud-amd64, ((6, 12, 117, 13), "amd64") for 6.12.117+deb13-amd64."""
+    parts = release.split("-")
+    cut = len(parts)
+    while cut > 1 and parts[cut - 1][:1].isalpha():
+        cut -= 1
+    numbers = tuple(int(number) for number in re.findall(r"\d+", "-".join(parts[:cut])))
+    return numbers, "-".join(parts[cut:])
+
+
+def newer_kernel_installed(running, installed):
+    """A kernel of the flavor of the running one, more recent, waits for a restart."""
+    version, flavor = kernel_version(running)
+    return any(
+        other == flavor and numbers > version
+        for numbers, other in (kernel_version(release) for release in installed)
+    )
 
 
 def apt_periodic_enabled(text):
