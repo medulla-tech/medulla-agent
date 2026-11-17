@@ -3694,6 +3694,11 @@ class MUCBot(ClientXMPP):
             "updateagent",
             "updateversion",
             "restartbot",
+            "asynchromeremoteshell",
+            "restarfrommaster",
+            "shutdownfrommaster",
+            "vncchangepermsfrommaster",
+            "installkeymaster",
         )
         _action = dataobj.get("action", "")
         if self.config.agenttype == "relayserver" and _action in SENSITIVE_ACTIONS:
