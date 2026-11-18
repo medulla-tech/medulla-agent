@@ -38,7 +38,6 @@ import uuid
 
 import requests
 
-from lib.plugins.updates.deployments import outside_windows_sql
 from lib.plugins.updates.upgrades import (
     BUSY_CODE, NO_SESSION_CODE, POSTPONED_COMMENT, RESTART_FIRST_CODE, SOURCES_RESTORED,
     UNATTENDED_PARAMETER, UNIT_LOG_MARK, enablement_update_sql,
@@ -1335,81 +1334,6 @@ try {
 """ % {"parameter": WINDOWS_UPDATE_PARAMETER, "service_id": MICROSOFT_UPDATE_SERVICE,
        "restart": INSTALLED_CODES[0]}
 
-# Update of Office Click-to-Run by Office itself (compute.OFFICE_KB): one package
-# without any file, the version to reach comes with the deployment
-# ({"office_version": "16.0.20527.20196"}).
-# pkgs label of the package: the MMC finds it by this name
-OFFICE_UPDATE_PACKAGE_NAME = "Office update"
-OFFICE_UPDATE_PARAMETER = "office_version"
-# Same key as the report of the machine plugin (plugin_updates_windows.OFFICE_KEY)
-OFFICE_KEY = r"SOFTWARE\Microsoft\Office\ClickToRun\Configuration"
-OFFICE_UPDATES_KEY = r"SOFTWARE\Microsoft\Office\ClickToRun\Updates"
-# Office updates itself: OfficeC2RClient hands the work to update processes of the
-# Click-to-Run service and returns at once, they already run when it returns. The
-# script waits for them to end, a fact, then reads the version.
-# forceappshutdown=false: an open Office application is never closed, Office then
-# keeps the update ready (UpdatesReadyToApply) and applies it when they are closed.
-# Exit 0: version reached, or update ready to apply; 1: anything else, the reason in
-# the output. 64-bit registry view: the agent may run a 32-bit PowerShell.
-OFFICE_UPDATE_SCRIPT = r"""$ErrorActionPreference = "Stop"
-try {
-    $parameters = [Text.Encoding]::UTF8.GetString(
-        [Convert]::FromBase64String('@@@DYNAMIC_PARAM_DEPLOY_B64@@@')) | ConvertFrom-Json
-    $wanted = $parameters.%(parameter)s
-    if (-not $wanted) {
-        Write-Output "No Office version received with the deployment"
-        exit 1
-    }
-    $hklm = [Microsoft.Win32.RegistryKey]::OpenBaseKey("LocalMachine", "Registry64")
-    function Value($path, $name) {
-        $key = $hklm.OpenSubKey($path)
-        if (-not $key) { return $null }
-        $value = $key.GetValue($name)
-        $key.Close()
-        return $value
-    }
-    function Installed { [string](Value "%(key)s" "VersionToReport") }
-    function Updating {
-        $service = (Get-CimInstance Win32_Service -Filter "Name='ClickToRunSvc'").ProcessId
-        @(Get-Process OfficeClickToRun, OfficeC2RClient -ErrorAction SilentlyContinue |
-            Where-Object { $_.Id -ne $service }).Count -gt 0
-    }
-    $start = Installed
-    if (-not $start) {
-        Write-Output "Office Click-to-Run is not installed"
-        exit 1
-    }
-    if ([version]$start -ge [version]$wanted) {
-        Write-Output ("Office {0}: version {1} already reached" -f $start, $wanted)
-        exit 0
-    }
-    $client = Join-Path $env:CommonProgramFiles "microsoft shared\ClickToRun\OfficeC2RClient.exe"
-    $process = Start-Process -FilePath $client -Wait -PassThru `
-        -ArgumentList "/update user displaylevel=false forceappshutdown=false"
-    if ($process.ExitCode -ne 0) {
-        Write-Output ("Office refused the update: OfficeC2RClient returned {0}" -f $process.ExitCode)
-        exit 1
-    }
-    while (Updating) { Start-Sleep -Seconds 30 }
-    $end = Installed
-    if ([version]$end -ge [version]$wanted) {
-        Write-Output ("Office {0} -> {1}" -f $start, $end)
-        exit 0
-    }
-    $ready = [string](Value "%(updates)s" "UpdatesReadyToApply")
-    if ($ready -and $ready -ne "0") {
-        Write-Output ("Office {0}: version {1} ready, applied when the Office applications are closed" -f $end, $ready)
-        exit 0
-    }
-    Write-Output ("Office stays at {0}: version {1} not reached" -f $end, $wanted)
-    exit 1
-} catch {
-    Write-Output ("Office update failed: {0}" -f $_.Exception.Message)
-    exit 1
-}
-""" % {"parameter": OFFICE_UPDATE_PARAMETER, "key": OFFICE_KEY,
-       "updates": OFFICE_UPDATES_KEY}
-
 # Updates the catalog delivers as an .exe, by KB. Anything else than the
 # done_codes and restart_codes is an error. options: of the only .exe of the
 # package; command: the whole command instead, the package keeping all its .exe,
@@ -1971,21 +1895,18 @@ def media_sequence():
     return update_sequence([scan_step(), upgrade_step()], resume="POSTPONED")
 
 
-def update_sequence(work, tail=(), resume=None, restart=True):
+def update_sequence(work, tail=(), resume=None):
     """Section update: precheck, work, restart and report.
-    resume: where the installation goes on after a restart taken first (the work by default).
-    restart False: the work needs no restart, none is taken nor asked, a pending one
-    does not hold it."""
-    first = work[0]["actionlabel"]
+    resume: where the installation goes on after a restart taken first (the work by default)."""
     sequence = [
         {"action": "action_section_update", "step": 0, "actionlabel": "SECTION_UPDATE"},
-        precheck_step(first, restart_label="RESTART_FIRST" if restart else first,
-                      busy_label="RESTART_FIRST" if restart else "POSTPONED"),
-    ] + list(work) + ([
+        precheck_step(work[0]["actionlabel"], restart_label="RESTART_FIRST",
+                      busy_label="RESTART_FIRST"),
+    ] + list(work) + [
         sessions_step(),
         question_step("ASK_REBOOT", QUESTION_MESSAGE, "REBOOT", "REPORT_SUCCESS"),
         restart_step(),
-    ] if restart else []) + [
+    ] + [
         report_step("REPORT_SUCCESS", "END_SUCCESS"),
         {
             "action": "actionsuccescompletedend",
@@ -1998,7 +1919,7 @@ def update_sequence(work, tail=(), resume=None, restart=True):
         # END_ERROR cannot run an inventory
         report_step("REPORT_ERROR", "END_ERROR"),
         {"action": "actionerrorcompletedend", "step": 0, "actionlabel": "END_ERROR"},
-    ] + (restart_first_steps(resume or first) if restart else []) + list(tail)
+    ] + restart_first_steps(resume or work[0]["actionlabel"]) + list(tail)
     for index, step in enumerate(sequence):
         step["step"] = index
     return sequence
@@ -2126,28 +2047,8 @@ def windows_update_package_id():
 
 
 def windows_update_descriptor(package_id, now):
-    return named_descriptor(package_id, WINDOWS_UPDATE_PACKAGE_NAME, windows_update_sequence(), now)
-
-
-def office_update_sequence():
-    """Section update of the update of Office by itself: the one of a catalog update,
-    the script instead of DISM, no restart, no uninstall section."""
-    return update_sequence([script_install_step(OFFICE_UPDATE_SCRIPT, (), (0,), "powershell")],
-                           restart=False)
-
-
-def office_update_package_id():
-    return sequence_uuid("office-update", office_update_sequence())
-
-
-def office_update_descriptor(package_id, now):
-    return named_descriptor(package_id, OFFICE_UPDATE_PACKAGE_NAME, office_update_sequence(), now)
-
-
-def named_descriptor(package_id, name, sequence, now):
-    """xmppdeploy.json of a package known by its name alone."""
-    data = descriptor_info(package_id, name, name, now)
-    data.update(windows_section(sequence))
+    data = descriptor_info(package_id, WINDOWS_UPDATE_PACKAGE_NAME, WINDOWS_UPDATE_PACKAGE_NAME, now)
+    data.update(windows_section(windows_update_sequence()))
     return data
 
 
@@ -2384,13 +2285,11 @@ def directory_size(path):
 
 
 def not_built_sql(update_id):
-    """An update outside Windows is never built."""
     return (
         " LEFT JOIN update_packages l ON l.update_id = " + update_id +
         " LEFT JOIN packages p ON p.uuid = l.package_uuid"
         " WHERE " + update_id + " IS NOT NULL AND (p.uuid IS NULL"
         " OR (:retry AND p.state IN ('failed', 'building')))"
-        " AND NOT " + outside_windows_sql(update_id)
     )
 
 
@@ -2769,19 +2668,11 @@ class Builder(object):
     def windows_update_package(self):
         """Package of the installation by Windows Update, written and registered once;
         its identifier."""
-        return self.named_package(windows_update_package_id(), WINDOWS_UPDATE_PACKAGE_NAME,
-                                  windows_update_descriptor)
-
-    def office_update_package(self):
-        """Package of the update of Office by itself, written and registered once; its
-        identifier."""
-        return self.named_package(office_update_package_id(), OFFICE_UPDATE_PACKAGE_NAME,
-                                  office_update_descriptor)
-
-    def named_package(self, package_id, name, descriptor):
+        package_id = windows_update_package_id()
         now = datetime.now()
+        name = WINDOWS_UPDATE_PACKAGE_NAME
         return self.script_package(package_id, SHARE, base_configuration(package_id, name, name, now),
-                                   descriptor(package_id, now))
+                                   windows_update_descriptor(package_id, now))
 
     def script_package(self, package_id, share, conf, data):
         """Package without any file: conf.json and xmppdeploy.json, written once."""

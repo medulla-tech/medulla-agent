@@ -146,33 +146,21 @@ def copy_media(client, store):
     return True
 
 
-def copy_list(client, name, label, version, save):
-    """Replace the list /v1/<name> of the mirror when its version changed; return True
-    when copied. A mirror without the route keeps the list."""
+def copy_linux_releases(client, store):
+    """Replace the Linux versions when the mirror's version changed; return True when copied."""
+    version = store.linux_releases_version()
     try:
-        data = client.get("/v1/%s" % name, {"version": version} if version else None)
+        data = client.get("/v1/linux_releases", {"version": version} if version else None)
     except requests.exceptions.HTTPError as error:
         if error.response is None or error.response.status_code != 404:
             raise
-        logger.warning("Updates mirror: no %s on this mirror, list kept" % label)
+        logger.warning("Updates mirror: no Linux versions on this mirror, list kept")
         return False
     if data.get("unchanged"):
         return False
-    save(data.get(name) or [], data["version"])
-    logger.info("Updates mirror: %d %s" % (len(data.get(name) or []), label))
+    store.save_linux_releases(data.get("linux_releases") or [], data["version"])
+    logger.info("Updates mirror: %d Linux versions" % len(data.get("linux_releases") or []))
     return True
-
-
-def copy_linux_releases(client, store):
-    """Replace the Linux versions when the mirror's version changed; return True when copied."""
-    return copy_list(client, "linux_releases", "Linux versions",
-                     store.linux_releases_version(), store.save_linux_releases)
-
-
-def copy_office_channels(client, store):
-    """Replace the Office channels when the mirror's version changed; return True when copied."""
-    return copy_list(client, "office_channels", "Office channels",
-                     store.office_channels_version(), store.save_office_channels)
 
 
 def copy_updates(client, store):
@@ -257,11 +245,9 @@ def reattach(store, kept):
 
 
 def run(client, database):
-    """Replicate the updates, the media, the Linux versions and the Office channels, each
-    in its transaction; record the outcome.
+    """Replicate the updates, the media and the Linux versions, each in its transaction; record the outcome.
 
-    Return True when updates or Office channels were copied and committed: the machines
-    are to recompute."""
+    Return True when updates were copied and committed."""
     with database.store() as store:
         store.mark_attempt()
     copied = False
@@ -272,9 +258,6 @@ def run(client, database):
             copy_media(client, store)
         with database.store() as store:
             copy_linux_releases(client, store)
-        with database.store() as store:
-            channels = copy_office_channels(client, store)
-        copied = copied or channels
     except Exception as error:
         logger.error("Updates mirror replication failed: %s" % error)
         with database.store() as store:

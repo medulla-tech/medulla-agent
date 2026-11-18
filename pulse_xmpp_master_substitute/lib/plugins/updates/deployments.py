@@ -37,21 +37,6 @@ DEPLOY_FINAL_SQL = (
 DEPLOY_RUNNING_SQL = "NOT " + DEPLOY_FINAL_SQL + " AND (d.endcmd IS NULL OR d.endcmd >= NOW())"
 
 
-# products.family of the products DISM serves: a package of files only installs their updates
-WINDOWS_FAMILY = "Windows"
-
-
-def outside_windows_sql(update_id):
-    """True for the update update_id (SQL expression) when it has products of a known
-    family and none of the Windows one: never a package of files, the Windows Update
-    of the machine installs it (compute.from_windows)."""
-    return (
-        "(COALESCE((SELECT MAX(wf.family = '" + WINDOWS_FAMILY + "') FROM update_products wp"
-        " JOIN products wf ON wf.id = wp.product_id"
-        " WHERE wp.update_id = " + update_id + " AND wf.family IS NOT NULL), 1) = 0)"
-    )
-
-
 def pending_command_sql(uuid):
     """Command of the machine uuid (SQL expression) not yet handed to the deployment loop."""
     return (
@@ -112,7 +97,6 @@ CANDIDATES_SQL = (
     " JOIN packages p ON p.uuid = up.package_uuid AND p.state = 'ready'"
     " WHERE lgm.entities_id IN :entities"
     " AND mr.system_type = 'client'"
-    " AND NOT " + outside_windows_sql("u.id") +
     " AND " + NO_RESTART_PENDING_SQL
     + NOT_DEPLOYING_SQL
     + NO_LAUNCHED_UPGRADE_SQL +
@@ -506,32 +490,21 @@ def fileless_packages(database):
     return built
 
 
-def named_package(database, build, label):
-    """Identifier of the package Builder.<build>() gives, written and registered when
-    missing (cheap once it exists); None when it could not be. Never deployed from
-    here: by the admin only, from the machine page."""
+def windows_update_package(database):
+    """Identifier of the package of the installation by Windows Update, written and
+    registered when missing (cheap once it exists); None when it could not be. Never
+    deployed from here: by the admin only, from the machine page."""
     from lib.plugins.updates import packages
 
     try:
-        return getattr(packages.Builder(packages.database_store(database)), build)()
+        return packages.Builder(packages.database_store(database)).windows_update_package()
     except Exception:
-        logger.error("%s package not built\n%s" % (label, traceback.format_exc()))
+        logger.error("Windows Update package not built\n%s" % traceback.format_exc())
         return None
-
-
-def windows_update_package(database):
-    """Package of the installation by Windows Update."""
-    return named_package(database, "windows_update_package", "Windows Update")
-
-
-def office_update_package(database):
-    """Package of the update of Office Click-to-Run by itself."""
-    return named_package(database, "office_update_package", "Office update")
 
 
 def start(database, limit=DEFAULT_LIMIT):
     windows_update_package(database)
-    office_update_package(database)
     try:
         run(database_store(database), limit, linux_packages=linux_packages(database),
             fileless_packages=fileless_packages(database))
