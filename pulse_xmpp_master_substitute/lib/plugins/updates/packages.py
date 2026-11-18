@@ -937,7 +937,7 @@ LINUX_UPGRADE_SCRIPTS = {DEBIAN_UPGRADE: DEBIAN_UPGRADE_SCRIPT, UBUNTU_UPGRADE: 
 
 SETUP_OPTIONS = "/quiet /noreboot /eula accept /dynamicupdate disable"
 # Without /auto upgrade the scan has no install choice: 0xC1900204 « selected
-# install choice is not available » (29/10, ath-w10-1)
+# install choice is not available »
 SCAN_COMMAND = '"@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@\\setup.exe" /auto upgrade /compat scanonly ' + SETUP_OPTIONS
 UPGRADE_COMMAND = '"@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@\\setup.exe" /auto upgrade ' + SETUP_OPTIONS
 # 0xC1900210: no compatibility issue, unsigned and signed. Anything else stops:
@@ -1654,8 +1654,10 @@ def base_configuration(package_id, name, description, now, targetos="win", share
     }
 
 
-def precheck_step(next_label="INSTALL", label="PRECHECK", restart_label="POSTPONED"):
-    """restart_label: where a pending restart leads."""
+def precheck_step(next_label="INSTALL", label="PRECHECK", restart_label="POSTPONED",
+                  busy_label="POSTPONED"):
+    """restart_label: where a pending restart leads; busy_label: where the restart that
+    Windows asks for at the end of its own work leads."""
     return {
         "action": "actionprocessscriptfile",
         "step": 0,
@@ -1667,7 +1669,7 @@ def precheck_step(next_label="INSTALL", label="PRECHECK", restart_label="POSTPON
         "10@lastlines": "10@lastlines",
         "gotoreturncode@=0": next_label,
         "gotoreturncode@=20": restart_label,
-        "gotoreturncode@=%d" % BUSY_CODE: "POSTPONED",
+        "gotoreturncode@=%d" % BUSY_CODE: busy_label,
         # A failing precheck never blocks the installation
         "gotoreturncode@OUT20,%d" % BUSY_CODE: next_label,
     }
@@ -1898,11 +1900,13 @@ def update_sequence(work, tail=(), resume=None):
     resume: where the installation goes on after a restart taken first (the work by default)."""
     sequence = [
         {"action": "action_section_update", "step": 0, "actionlabel": "SECTION_UPDATE"},
-        precheck_step(work[0]["actionlabel"], restart_label="RESTART_FIRST"),
+        precheck_step(work[0]["actionlabel"], restart_label="RESTART_FIRST",
+                      busy_label="RESTART_FIRST"),
     ] + list(work) + [
         sessions_step(),
         question_step("ASK_REBOOT", QUESTION_MESSAGE, "REBOOT", "REPORT_SUCCESS"),
         restart_step(),
+    ] + [
         report_step("REPORT_SUCCESS", "END_SUCCESS"),
         {
             "action": "actionsuccescompletedend",

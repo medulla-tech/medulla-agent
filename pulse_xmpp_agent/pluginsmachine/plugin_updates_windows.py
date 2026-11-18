@@ -35,7 +35,7 @@ from lib.agentconffile import medullaPath
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updates_windows", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updates_windows", "TYPE": "machine"}  # fmt: skip
 
 REPORT_FORMAT = 1
 # Dates of the report: UTC
@@ -341,6 +341,11 @@ def send_report(xmppobject, force, wait=False):
         clean_legacy(xmppobject)
         fingerprint = state_fingerprint()
         report = build_report(force)
+        if report is None:
+            # Windows not ready yet after a start: the next check tries again
+            logger.warning("Windows updates report not sent: system unreadable")
+            forget_fingerprint()
+            return
         xmppobject.send_message(
             mto=getattr(xmppobject, "sub_updates", "master_upd@pulse"),
             mbody=json.dumps(
@@ -425,7 +430,10 @@ def forget_legacy_task(xmppobject):
 
 
 def build_report(force):
+    """The report, None when the system cannot be read (no build)."""
     system = normalize_system(collect(SYSTEM_SCRIPT) or {})
+    if system["build"] is None:
+        return None
     system["dotnet"] = dotnet_versions()
     policy = normalize_policy(collect(POLICY_SCRIPT) or {})
     policy["paused_until"] = paused_until()
@@ -658,6 +666,14 @@ def online_search(policy):
 
 def fingerprint_path():
     return os.path.join(utils.Setdirectorytempinfo(), FINGERPRINT_FILE)
+
+
+def forget_fingerprint():
+    """Without its file the state counts as changed: the next check sends a report."""
+    try:
+        os.remove(fingerprint_path())
+    except OSError:
+        pass
 
 
 def state_changed():

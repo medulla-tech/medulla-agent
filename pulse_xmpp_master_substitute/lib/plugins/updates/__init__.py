@@ -30,6 +30,7 @@ from lib.plugins.updates.reports import (
     declared_categories,
     installed_rows,
     is_linux,
+    is_usable,
     kept_missing,
     linux_update_rows,
     missing_rows,
@@ -533,8 +534,11 @@ class UpdatesStore(object):
             )
 
     def save_machine_report(self, jid, report, glpi_uuid=None):
-        """Store the updates report of a machine. Linux: the packages it would
-        upgrade are its missing updates, nothing to compute."""
+        """Store the updates report of a machine; False for a report left out, the
+        stored one kept (reports.is_usable). Linux: the packages it would upgrade are
+        its missing updates, nothing to compute."""
+        if not is_usable(report):
+            return False
         if not is_linux(report) and missing_rows(jid, report) is None:
             previous = self.execute(
                 "SELECT report FROM machine_reports WHERE jid = :jid", {"jid": jid}
@@ -579,7 +583,7 @@ class UpdatesStore(object):
             packages = linux_update_rows(jid, report)
             if packages is not None:
                 self.save_machine_updates(jid, packages)
-            return
+            return True
         missing = missing_rows(jid, report)
         if missing is not None:
             self.execute(
@@ -590,6 +594,7 @@ class UpdatesStore(object):
                 " VALUES (:jid, :windows_update_id, :kb, :title)",
                 missing,
             )
+        return True
 
     def machines(self):
         return self.execute("SELECT jid, glpi_uuid FROM machine_reports").fetchall()

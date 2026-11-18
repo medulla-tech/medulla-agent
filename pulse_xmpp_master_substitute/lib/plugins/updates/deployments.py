@@ -49,7 +49,7 @@ def pending_command_sql(uuid):
     )
 
 
-# The precheck of the package would postpone it and end in error; unknown: as today
+# The precheck of the package would postpone it and end in error; unknown: deployed
 NO_RESTART_PENDING_SQL = "COALESCE(mr.reboot_pending, 0) = 0"
 
 # Machines of the reports known to GLPI and enabled, with their entity (lgm.entities_id)
