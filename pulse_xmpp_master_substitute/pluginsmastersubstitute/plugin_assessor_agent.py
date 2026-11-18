@@ -911,7 +911,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(
                 )
         if showinfomachine:
             logger.info("msg['from'] %s" % data["agent_machine_name"])
-        XmppMasterDatabase().updateMachinereconf(data["agent_machine_name"])
+        XmppMasterDatabase().updateMachinereconf(str(msg["from"]))
         if showinfomachine:
             logger.info("updateMachinereconf %s " % data["agent_machine_name"])
 

@@ -1098,6 +1098,10 @@ def applicationdeployjsonuuid(
 
 
 def generate_hash(path, package_id, hash_type, packages, keyAES32):
+    for _comp in (str(path), str(package_id)):
+        if ".." in _comp or _comp.startswith("/") or "\\" in _comp:
+            logger.error("generate_hash refused: unsafe path component %r" % _comp)
+            return
     source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
     dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
     BLOCK_SIZE = 65535

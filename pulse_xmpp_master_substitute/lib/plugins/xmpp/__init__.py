@@ -1789,7 +1789,7 @@ class XmppMasterDatabase(DatabaseHelper):
         if agenttype is None:
             machine = (
                 session.query(Machines)
-                .filter(Machines.macaddress.like(macaddress))
+                .filter(Machines.macaddress == macaddress)
                 .first()
             )
         elif agenttype == "machine":
@@ -1797,7 +1797,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.query(Machines)
                 .filter(
                     and_(
-                        Machines.macaddress.like(macaddress),
+                        Machines.macaddress == macaddress,
                         Machines.agenttype.like("machine"),
                     )
                 )
@@ -1808,7 +1808,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.query(Machines)
                 .filter(
                     and_(
-                        Machines.macaddress.like(macaddress),
+                        Machines.macaddress == macaddress,
                         Machines.agenttype.like("relayserver"),
                     )
                 )
@@ -1850,7 +1850,7 @@ class XmppMasterDatabase(DatabaseHelper):
         if agenttype is None:
             machine = (
                 session.query(Machines)
-                .filter(Machines.uuid_serial_machine.like(uuid_serial_machine))
+                .filter(Machines.uuid_serial_machine == uuid_serial_machine)
                 .first()
             )
         elif agenttype == "machine":
@@ -1858,7 +1858,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.query(Machines)
                 .filter(
                     and_(
-                        Machines.uuid_serial_machine.like(uuid_serial_machine),
+                        Machines.uuid_serial_machine == uuid_serial_machine,
                         Machines.agenttype.like("machine"),
                     )
                 )
@@ -1869,7 +1869,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.query(Machines)
                 .filter(
                     and_(
-                        Machines.uuid_serial_machine.like(uuid_serial_machine),
+                        Machines.uuid_serial_machine == uuid_serial_machine,
                         Machines.agenttype.like("relayserver"),
                     )
                 )

@@ -51,6 +51,22 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("call %s from %s" % (plugin, msg["from"]))
         logger.debug("=====================================================")
         msgq = {"to": str(msg["to"]), "from": str(msg["from"])}
+        # authentifie (msg["from"]), jamais des champs du corps du message.
+        if isinstance(data, dict):
+            _sender_bare = str(msg["from"].bare)
+            if data.get("from") and str(jid.JID(str(data["from"])).bare) != _sender_bare:
+                logger.warning(
+                    "registeryagent refused: body from=%s != sender=%s"
+                    % (data.get("from"), _sender_bare)
+                )
+                return
+            data["from"] = str(msg["from"])
+            if "oldjid" in data and str(jid.JID(str(data["oldjid"])).bare) != _sender_bare:
+                logger.warning(
+                    "registeryagent: oldjid=%s deletion refused (sender=%s)"
+                    % (data.get("oldjid"), _sender_bare)
+                )
+                data.pop("oldjid", None)
         timeact = int(time.time())
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
 
@@ -761,6 +777,20 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     logger.info(
                         "uuid serial machine : %s" % data["uuid_serial_machine"]
                     )
+                # MAC/serial finaux ne doivent pas appartenir a une AUTRE machine.
+                _cl_serial = data.get("uuid_serial_machine", "")
+                _cl_mac = data.get("xmppmacaddress", "")
+                _owner = {}
+                if _cl_serial:
+                    _owner = XmppMasterDatabase().getMachinefromuuidsetup(_cl_serial)
+                if not _owner and _cl_mac:
+                    _owner = XmppMasterDatabase().getMachinefrommacadress(_cl_mac)
+                if _owner and _owner.get("jid") and str(jid.JID(str(_owner["jid"])).bare) != str(msg["from"].bare):
+                    logger.warning(
+                        "registeryagent refused: MAC/serial owned by %s != sender %s"
+                        % (_owner.get("jid"), str(msg["from"].bare))
+                    )
+                    return
                 idmachine, msgret = XmppMasterDatabase().addPresenceMachine(
                     data["from"],
                     data["platform"],
@@ -1255,7 +1285,13 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data, showinfobool=True)
             logger.info(
                 "Setting guacamole parameters in base for machine id %s" % data["uuid"]
             )
-        XmppMasterDatabase().addlistguacamoleidformachineid(data["machine_id"], {})
+        _own = XmppMasterDatabase().getMachinefromjid(data.get("from", "")) or {}
+        if _own.get("id"):
+            XmppMasterDatabase().addlistguacamoleidformachineid(_own["id"], {})
+        else:
+            logger.warning(
+                "guacamole list skipped: no machine for sender %s" % data.get("from")
+            )
 
 
 def callinventory(xmppobject, to):
