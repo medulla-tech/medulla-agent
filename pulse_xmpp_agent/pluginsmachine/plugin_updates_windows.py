@@ -35,7 +35,7 @@ from lib.agentconffile import medullaPath
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updates_windows", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "updates_windows", "TYPE": "machine"}  # fmt: skip
 
 REPORT_FORMAT = 1
 # Dates of the report: UTC
@@ -51,8 +51,9 @@ LAST_SEARCH_FILE = "lastsearchupdates"
 # Same convention as fingerprintinventory: what the last report sent
 FINGERPRINT_FILE = "fingerprintupdates"
 CURRENT_VERSION_KEY = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+UNINSTALL_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
 # What the previous update engine left on the machine
-LEGACY_REGISTRY_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Medulla Update Info"
+LEGACY_REGISTRY_KEY = UNINSTALL_KEY + r"\Medulla Update Info"
 LEGACY_TASK = "win11compatcheck"
 PACKAGES_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\Packages"
 MICROSOFT_UPDATE_SERVICE = "7971f918-a847-4430-9279-4a52d1efe18d"
@@ -76,6 +77,22 @@ PAUSE_VALUES = ("PauseUpdatesExpiryTime", "PauseQualityUpdatesEndTime")
 PAUSE_DATE = re.compile(
     r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$"
 )
+
+# Office Click-to-Run (Microsoft 365 Apps, Office 2019 and later)
+OFFICE_KEY = r"SOFTWARE\Microsoft\Office\ClickToRun\Configuration"
+OFFICE_VALUES = ("ProductReleaseIds", "VersionToReport", "Platform", "ClientCulture",
+                 "UpdateChannel", "CDNBaseUrl")
+# UpdatesReadyToApply: the version Office downloaded and applies once its applications
+# are closed, 0 or empty when none
+OFFICE_UPDATES_KEY = r"SOFTWARE\Microsoft\Office\ClickToRun\Updates"
+OFFICE_VERSION = re.compile(r"^\d+(\.\d+){3}$")
+# Both URLs end with the identifier of the channel
+OFFICE_CHANNEL = re.compile(r"/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})/?$", re.IGNORECASE)
+OFFICE_ARCHITECTURES = ("x64", "x86", "arm64")
+OFFICE_PRODUCTS = 32
+OFFICE_PRODUCT_LENGTH = 64
+OFFICE_VERSION_LENGTH = 32
+OFFICE_LANGUAGE_LENGTH = 16
 
 DOTNET_KEY = r"SOFTWARE\Microsoft\NET Framework Setup\NDP"
 # Lowest Release value of each .NET Framework 4 version (Microsoft documentation)
@@ -476,6 +493,7 @@ def build_report(force):
         "policy": policy,
         "windows11": windows11,
         "defender": normalize_defender(collect(DEFENDER_SCRIPT)),
+        "office": office_report(),
         "reboot_pending": reboot_pending(),
     }
 
@@ -560,6 +578,26 @@ def dotnet_versions(registry=None):
     if release is not None:
         versions.append(dotnet4_version(release))
     return versions
+
+
+def office_report(registry=None):
+    """Click-to-Run Office of the machine, None without one or when the registry
+    is unavailable."""
+    if registry is None:
+        try:
+            import winreg as registry
+        except ImportError:
+            return None
+    raw = {name: registry_value(registry, OFFICE_KEY, name) for name in OFFICE_VALUES}
+    raw["UpdatesReadyToApply"] = registry_value(registry, OFFICE_UPDATES_KEY, "UpdatesReadyToApply")
+    products = office_products(raw["ProductReleaseIds"])
+    if products and isinstance(raw["ClientCulture"], str):
+        raw["DisplayName"] = registry_value(
+            registry,
+            r"%s\%s - %s" % (UNINSTALL_KEY, products[0], raw["ClientCulture"].strip()),
+            "DisplayName",
+        )
+    return normalize_office(raw)
 
 
 def collect(script):
@@ -689,7 +727,8 @@ def state_changed():
 
 def state_fingerprint(registry=None):
     """MD5 of what makes a report change (build, UBR, installed packages,
-    pending restart), None when the registry is unreadable. Registry only:
+    pending restart, Office version and update ready to apply), None when the registry
+    is unreadable. Registry only:
     cheap enough to run every 30 minutes."""
     try:
         if registry is None:
@@ -702,6 +741,8 @@ def state_fingerprint(registry=None):
             registry_value(registry, CURRENT_VERSION_KEY, "UBR"),
             reboot_pending(registry),
             packages,
+            registry_value(registry, OFFICE_KEY, "VersionToReport"),
+            office_version(registry_value(registry, OFFICE_UPDATES_KEY, "UpdatesReadyToApply")),
         )
     except Exception:
         logger.warning("Updates fingerprint unknown\n%s" % traceback.format_exc())
@@ -768,8 +809,9 @@ def after_deployment(data):
     )
 
 
-def fingerprint_text(build, ubr, pending, packages):
-    text = "%s.%s|%s|%s" % (build, ubr, pending, "\n".join(sorted(packages)))
+def fingerprint_text(build, ubr, pending, packages, office=None, office_ready=None):
+    text = "%s.%s|%s|%s|%s|%s" % (build, ubr, pending, "\n".join(sorted(packages)), office,
+                                  office_ready)
     return hashlib.md5(text.encode("utf-8")).hexdigest()
 
 
@@ -902,6 +944,61 @@ def normalize_defender(raw):
         "enabled": enabled if isinstance(enabled, bool) else None,
         "signature_version": version.strip(),
         "signature_updated_at": utc_date(raw.get("signature_updated_at")),
+    }
+
+
+def office_products(value):
+    """Product identifiers of ProductReleaseIds, comma separated."""
+    if not isinstance(value, str):
+        return []
+    products = [bounded_text(item, OFFICE_PRODUCT_LENGTH) for item in value.split(",")]
+    return [product for product in products if product][:OFFICE_PRODUCTS]
+
+
+def office_version(value):
+    """An Office version as text, None when it is not one."""
+    version = value.strip() if isinstance(value, str) else ""
+    if len(version) > OFFICE_VERSION_LENGTH or not OFFICE_VERSION.match(version):
+        return None
+    return version
+
+
+def office_channel(url):
+    """Identifier of the channel an Office URL ends with, None when it has none."""
+    found = OFFICE_CHANNEL.search(url.strip()) if isinstance(url, str) else None
+    return found.group(1).lower() if found else None
+
+
+def office_name(display_name, culture):
+    """DisplayName of the uninstall key without its " - <culture>" suffix."""
+    name = bounded_text(display_name, PRODUCT_NAME_LENGTH)
+    suffix = " - %s" % culture if culture else None
+    if name and suffix and name.lower().endswith(suffix.lower()):
+        name = name[:-len(suffix)].strip() or None
+    return name
+
+
+def normalize_office(raw):
+    """Click-to-Run Office from its registry values (OFFICE_VALUES, UpdatesReadyToApply
+    and the DisplayName of its first product), None without a version."""
+    if not isinstance(raw, dict):
+        return None
+    version = office_version(raw.get("VersionToReport"))
+    if version is None:
+        return None
+    culture = bounded_text(raw.get("ClientCulture"), OFFICE_LANGUAGE_LENGTH)
+    architecture = raw.get("Platform")
+    architecture = architecture.strip().lower() if isinstance(architecture, str) else None
+    # UpdateChannel is where Office takes its updates, CDNBaseUrl where it was installed from
+    source = bounded_text(raw.get("UpdateChannel"), PRODUCT_NAME_LENGTH) or raw.get("CDNBaseUrl")
+    return {
+        "name": office_name(raw.get("DisplayName"), culture),
+        "products": office_products(raw.get("ProductReleaseIds")),
+        "version": version,
+        "channel": office_channel(source),
+        "architecture": architecture if architecture in OFFICE_ARCHITECTURES else None,
+        "language": culture.lower() if culture else None,
+        "ready": office_version(raw.get("UpdatesReadyToApply")),
     }
 
 
