@@ -10,6 +10,7 @@
 - [BUGFIX]  Fix pending deployment timeout when the client is no longer present
 - [BUGFIX]  Fix copy of generated agent to imaging
 - [BUGFIX]  Fix package synchronisation status
+- [BUGFIX]  Improve control on JID sent by machine (reported by kta1kri - https://github.com/kta1kri)
 
 ## [5.6.5](https://github.com/medulla-tech/medulla-agent/releases/tag/5.6.5) (2026-09-18)
 - [FEATURE] Support for MacOS clients
