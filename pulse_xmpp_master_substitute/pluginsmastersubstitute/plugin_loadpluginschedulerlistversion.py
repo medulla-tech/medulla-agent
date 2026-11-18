@@ -98,7 +98,7 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                         data["pluginscheduled"][k],
                         v,
                     )
-                    self.restartmachineasynchrone(msg["from"])
+                    self.event("restartmachineasynchrone", msg["from"])
                     break
                 else:
                     logger.debug(
@@ -115,7 +115,7 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                             msg["from"],
                             k,
                         )
-                        self.restartmachineasynchrone(msg["from"])
+                        self.event("restartmachineasynchrone", msg["from"])
                         break
                     if (
                         self.plugintypescheduler[k] == "relayserver"
@@ -127,7 +127,7 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                             msg["from"],
                             k,
                         )
-                        self.restartmachineasynchrone(msg["from"])
+                        self.event("restartmachineasynchrone", msg["from"])
                         break
                     if (
                         self.plugintypescheduler[k] == "machine"
@@ -139,7 +139,7 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                             msg["from"],
                             k,
                         )
-                        self.restartmachineasynchrone(msg["from"])
+                        self.event("restartmachineasynchrone", msg["from"])
                         break
 
 

@@ -48,7 +48,7 @@ if sys.platform == "win32":
 # without this iqsendpulse can't work.
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -382,18 +382,6 @@ def handle_client_connection(self, msg):
                     pass
                 datasend["data"]["subaction"] = "presence"
                 datasend["data"]["value"] = self.kiosk_presence
-            elif result["action"] in ["terminalInformations", "terminalAlert"]:
-                substitute_recv = self.sub_monitoring
-                datasend["action"] = "vectormonitoringagent"
-                datasend["sessionid"] = utils.getRandomName(
-                    6, "monitoringterminalInformations"
-                )
-                datasend["data"] = result["data"]
-                datasend["data"]["subaction"] = result["action"]
-                if "date" in result:
-                    result["data"]["date"] = result["date"]
-                if "serial" in result:
-                    result["data"]["serial"] = result["serial"]
             else:
                 # bad action
                 logger.warning(
