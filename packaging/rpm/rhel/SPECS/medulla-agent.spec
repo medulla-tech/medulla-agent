@@ -178,7 +178,6 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-master.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-diskmastering.service
-%_var/lib/pulse2/script_monitoring/
 %_var/lib/pulse2/xml_fix
 
 #--------------------------------------------------------------------
@@ -422,15 +421,6 @@ cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/powershell-policy-remotesigned.pol %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/uninstall-medulla-agent-windows.ps1 %buildroot%_var/lib/pulse2/clients/win/
-mkdir -p %buildroot%_var/lib/pulse2/script_monitoring
-cp -fv contrib/monitoring/readme %buildroot%_var/lib/pulse2/script_monitoring/
-cp -fv contrib/monitoring/schema_mon_pulsesystem.sql %buildroot%_var/lib/pulse2/script_monitoring/
-cp -fv contrib/monitoring/template_alert_email_html_test.py %buildroot%_var/lib/pulse2/script_monitoring/
-cp -fv contrib/monitoring/template_consolidate_online_machines_count.py %buildroot%_var/lib/pulse2/script_monitoring/
-cp -fv contrib/monitoring/template_script_bash_test.sh %buildroot%_var/lib/pulse2/script_monitoring/
-cp -fv contrib/monitoring/template_script_python_test.py %buildroot%_var/lib/pulse2/script_monitoring/
-cp -fv contrib/monitoring/template_script_remote_bash_test.sh %buildroot%_var/lib/pulse2/script_monitoring/
-cp -fv contrib/monitoring/template_script_remote_python_test.py %buildroot%_var/lib/pulse2/script_monitoring/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
 cp pulse_xmpp_agent/bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
