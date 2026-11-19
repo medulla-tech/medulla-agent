@@ -15,9 +15,9 @@ import logging
 import traceback
 
 from lib.plugins.reflex import reflex_backend, is_reflex_substitute, \
-    active_machines, send_configuration, _to_int
+    active_machines, send_configuration
 
-plugin = {"VERSION": "1.1", "NAME": "scheduling_reflex_config", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "scheduling_reflex_config", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/30 * * * *", "nb": -1}
 
@@ -52,7 +52,7 @@ def schedule_main(objectxmpp):
                 logger.info("reflex: %d configurations sent, the rest follows "
                             "on the next round" % sent)
                 break
-            state = backend.agent_config_state(_to_int(machine.get("id"), 0))
+            state = backend.agent_config_state(machine.get("jiduser"))
             if state and state.get("sent_version") \
                     and state.get("sent_version") != state.get("acked_version"):
                 drifted += 1
