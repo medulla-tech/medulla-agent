@@ -18,7 +18,7 @@ from lib.agentconffile import (
     medullaPath,
 )
 
-KIOSKINTERFACEVERSION = "2.1.4"
+KIOSKINTERFACEVERSION = "2.1.5"
 
 logger = logging.getLogger()
 
