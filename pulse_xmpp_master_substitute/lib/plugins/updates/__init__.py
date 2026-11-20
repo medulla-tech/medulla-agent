@@ -22,6 +22,7 @@ from lib.plugins.updates.deployments import (
     DEPLOY_FINAL_SQL,
     DEPLOY_RUNNING_SQL,
     TRANSFER_FAILED,
+    WINDOWS_FAMILY,
     in_window,
     pending_command_sql,
 )
@@ -174,6 +175,15 @@ def reported_dotnet(raw):
     return dotnet if isinstance(dotnet, list) else None
 
 
+def reported_office(raw):
+    """Click-to-Run Office of the stored report, None when it has none."""
+    try:
+        office = json.loads(raw).get("office")
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return office if isinstance(office, dict) else None
+
+
 def machine_entity(jid, glpi_uuid):
     """GLPI entity of the machine, None when GLPI does not know it."""
     database = XmppMasterDatabase()
@@ -263,6 +273,40 @@ class UpdatesStore(object):
             "UPDATE replication SET linux_releases_version = :version WHERE id = 1",
             {"version": version},
         )
+
+    def office_channels_version(self):
+        return self.execute(
+            "SELECT office_channels_version FROM replication WHERE id = 1"
+        ).scalar()
+
+    def save_office_channels(self, channels, version):
+        self.execute("DELETE FROM office_channels")
+        self.execute_many(
+            "INSERT INTO office_channels (channel_id, name, latest_version, release_name,"
+            " available_at) VALUES (:channel_id, :name, :latest_version, :release_name,"
+            " :available_at)",
+            [
+                {
+                    "channel_id": item["channel_id"].lower(),
+                    "name": item["name"],
+                    "latest_version": item["latest_version"],
+                    "release_name": item.get("release_name"),
+                    "available_at": to_datetime(item.get("available_at")),
+                }
+                for item in channels
+            ],
+        )
+        self.execute(
+            "UPDATE replication SET office_channels_version = :version WHERE id = 1",
+            {"version": version},
+        )
+
+    def office_latest_version(self, channel_id):
+        """Latest version of the Office channel, None when it is not known."""
+        return self.execute(
+            "SELECT latest_version FROM office_channels WHERE channel_id = :channel_id",
+            {"channel_id": channel_id},
+        ).scalar()
 
     def kept_references(self):
         """Approvals and package links, with the Microsoft identity of their update."""
@@ -643,6 +687,7 @@ class UpdatesStore(object):
         report = dict(zip(columns, row))
         raw = report.pop("report")
         report["dotnet"] = reported_dotnet(raw)
+        report["office"] = reported_office(raw)
         if report.get("os") == "linux":
             report["raw_report"] = raw
         if report["windows11_eligible"] is not None:
@@ -779,18 +824,26 @@ class UpdatesStore(object):
                 "dotnet": row[12].split(",") if row[12] else None,
                 "wsus_id": row[13],
                 "products": set(),
+                "outside_windows": False,
             }
             for row in rows
         }
         if catalog:
             links = self.execute_in(
-                "SELECT update_id, product_id FROM update_products"
-                " WHERE update_id IN :ids",
+                "SELECT up.update_id, up.product_id, p.family FROM update_products up"
+                " LEFT JOIN products p ON p.id = up.product_id"
+                " WHERE up.update_id IN :ids",
                 {"ids": list(catalog)},
                 "ids",
             )
-            for update_id, product_id in links:
+            families = {}
+            for update_id, product_id, family in links:
                 catalog[update_id]["products"].add(product_id)
+                if family is not None:
+                    families.setdefault(update_id, set()).add(family)
+            # Same rule as deployments.outside_windows_sql()
+            for update_id, known in families.items():
+                catalog[update_id]["outside_windows"] = WINDOWS_FAMILY not in known
         return list(catalog.values())
 
     def supersedes(self, update_ids):
@@ -1212,9 +1265,20 @@ class UpdatesStore(object):
         facts = self.machine_facts(jid, report)
         rows = compute.machine_updates(report, tracked, tracked_releases, *facts,
                                        fileless_kbs=fileless_kbs())
+        rows += self.office_updates(report.get("office"), tracked)
         self.save_machine_updates(jid, rows)
         logger.debug("Updates of %s: %d missing" % (jid, len(rows)))
         self.recompute_upgrade(jid, report, source_id, rows, facts)
+
+    def office_updates(self, office, tracked):
+        """Row of the Click-to-Run Office of the machine when behind its channel."""
+        channel = compute.office_channel(office)
+        latest = self.office_latest_version(channel) if channel else None
+        if not compute.office_behind(office, latest):
+            return []
+        return compute.office_updates(
+            office, latest, self.machine_catalog(None, None, {compute.OFFICE_KB}), tracked
+        )
 
     def machine_facts(self, jid, report):
         """(machine_releases, installed_kbs, windows_missing, catalog, supersedes) of compute."""
