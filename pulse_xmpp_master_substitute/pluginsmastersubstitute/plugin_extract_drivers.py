@@ -51,8 +51,11 @@ plugin = {"VERSION": "2.0", "NAME": "extract_drivers", "TYPE": "mastersub"}
 # Configuration (surchargeable par variables d'environnement)
 # ---------------------------------------------------------------------------
 
-#: Racine du depot VUE PAR LE SERVEUR (partage monte localement).
-DEPOT_ROOT = os.environ.get("MEDULLA_DRIVERS_DEPOT", "/mnt/drivers")
+#: Racine du depot VUE PAR LE SERVEUR. Par defaut, le dossier du partage
+#: SMB `[drivers]` (cree par medulla-davos-client) sous `sysprep/drivers`.
+DEPOT_ROOT = os.environ.get(
+    "MEDULLA_DRIVERS_DEPOT", "/var/lib/pulse2/imaging/postinst/sysprep"
+)
 
 #: Sous-repertoire du depot, impose par le serveur. Vide : les modeles sont
 #: ecrits directement sous DEPOT_ROOT (disposition de l'ancien partage SMB).
