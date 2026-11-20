@@ -3371,7 +3371,9 @@ class MUCBot(ClientXMPP):
         if os.path.isfile(namefilebool):
             os.remove(namefilebool)
 
-        connectionagentArgs = ["py", nameprogconnection, "-t", "machine"]
+        # The "py" launcher only exists on Windows.
+        python_cmd = sys.executable if sys.platform == "darwin" else "py"
+        connectionagentArgs = [python_cmd, nameprogconnection, "-t", "machine"]
         subprocess.call(connectionagentArgs)
 
         for i in range(15):
