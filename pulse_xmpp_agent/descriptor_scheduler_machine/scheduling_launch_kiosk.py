@@ -17,7 +17,7 @@ from lib.agentconffile import directoryconffile
 import configparser
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.6", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "scheduling_launch_kiosk", "TYPE": "machine", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/5 * * * *", "nb": -1}  # fmt: skip
 
@@ -192,6 +192,8 @@ def launch_kiosk_macos():
         logger.warning("Cannot resolve uid of console user '%s'.", user)
         return
 
+    give_macos_kiosk_log_to(user)
+
     # Lance python -m kiosk_interface directement (evite Gatekeeper qui refuse
     # le bundle .app non signe). Le bundle /Applications/Medulla Kiosk.app est
     # conserve pour son icone visible dans /Applications, mais le scheduler ne
@@ -213,6 +215,27 @@ def launch_kiosk_macos():
         logger.debug("Kiosk launch command sent for user '%s'.", user)
     except Exception as e:
         logger.error("Failed to start Kiosk: %s", e)
+
+
+def give_macos_kiosk_log_to(user):
+    """Make the kiosk log file writable by the user the kiosk is started for.
+
+    On macOS the kiosk logs to a single file, /var/log/medulla/kiosk-interface.log,
+    created by the first user who ran the kiosk and writable by him only. Started
+    for another user of the same Mac, the kiosk cannot open it and exits at once,
+    without any message. The agent runs as root: hand the file over to the user
+    the kiosk is about to be started for.
+    """
+    logfile = "/var/log/medulla/kiosk-interface.log"
+    try:
+        import pwd
+
+        account = pwd.getpwnam(user)
+        if os.path.exists(logfile) and os.stat(logfile).st_uid != account.pw_uid:
+            os.chown(logfile, account.pw_uid, account.pw_gid)
+            logger.debug("Kiosk log file %s handed over to '%s'.", logfile, user)
+    except Exception as e:
+        logger.debug("Cannot hand the kiosk log file over to '%s': %s", user, e)
 
 
 def get_macos_console_user():
