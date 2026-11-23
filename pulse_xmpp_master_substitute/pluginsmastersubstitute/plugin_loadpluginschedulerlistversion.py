@@ -12,7 +12,7 @@ import configparser
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.0", "NAME": "loadpluginschedulerlistversion", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "loadpluginschedulerlistversion", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):
@@ -75,9 +75,6 @@ def read_conf_load_plugin_scheduler_list_version(objectxmpp):
         % objectxmpp.reload_schedulerplugins_interval
     )
     # function definie dynamiquement
-    objectxmpp.plugin_loadpluginschedulerlistversion = types.MethodType(
-        plugin_loadpluginschedulerlistversion, objectxmpp
-    )
     objectxmpp.deployPluginscheduled = types.MethodType(
         deployPluginscheduled, objectxmpp
     )
@@ -184,8 +181,8 @@ def deployPluginscheduled(self, msg, plugin):
 
 def loadPluginschedulerList(self):
     logger.debug("Verify base plugin scheduler")
-    self.plugindatascheduler = {}
-    self.plugintypescheduler = {}
+    plugindatascheduler = {}
+    plugintypescheduler = {}
     for element in os.listdir(self.dirschedulerplugins):
         if element.endswith(".py") and element.startswith("scheduling_"):
             f = open(os.path.join(self.dirschedulerplugins, element), "r")
@@ -195,9 +192,14 @@ def loadPluginschedulerList(self):
                 if "VERSION" in ligne and "NAME" in ligne:
                     line = ligne.split("=")
                     plugin = eval(line[1])
-                    self.plugindatascheduler[plugin["NAME"]] = plugin["VERSION"]
+                    plugindatascheduler[plugin["NAME"]] = plugin["VERSION"]
                     try:
-                        self.plugintypescheduler[plugin["NAME"]] = plugin["TYPE"]
+                        plugintypescheduler[plugin["NAME"]] = plugin["TYPE"]
                     except Exception:
-                        self.plugintypescheduler[plugin["NAME"]] = "machine"
+                        plugintypescheduler[plugin["NAME"]] = "machine"
                     break
+    self.plugintypescheduler = plugintypescheduler
+    self.plugindatascheduler = plugindatascheduler
+    self.plugin_loadpluginschedulerlistversion = types.MethodType(
+        plugin_loadpluginschedulerlistversion, self
+    )

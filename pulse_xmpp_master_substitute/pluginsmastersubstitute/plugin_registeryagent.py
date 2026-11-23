@@ -7,6 +7,7 @@
 plugin register machine dans presence table xmpp.
 """
 import base64
+import threading
 import traceback
 import os
 import sys
@@ -380,6 +381,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         )
                                     getattr(xmppobject, function_plugin)(msg, data)
                                 else:
+                                    call_plugin_when_loaded(
+                                        xmppobject, function_plugin, msg, data
+                                    )
                                     if showinfobool:
                                         logger.warning(
                                             "The %s plugin is not called"
@@ -1084,6 +1088,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.info("Calling plugin %s" % function_plugin)
                             getattr(xmppobject, function_plugin)(msg, data)
                         else:
+                            call_plugin_when_loaded(
+                                xmppobject, function_plugin, msg, data
+                            )
                             if showinfobool:
                                 logger.warning(
                                     "The %s plugin is not called" % function_plugin
@@ -1771,6 +1778,45 @@ def adduserdatageolocalisation(xmppobject, data, msg, sessionid, showinfobool):
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
         return -1, {}
+
+
+def call_plugin_when_loaded(xmppobject, function_plugin, msg, data, attempt=1):
+    """A start plugin may still be loading when the first machines register."""
+    name = function_plugin[len("plugin_"):]
+    if name not in getattr(xmppobject.config, "pluginliststart", []):
+        return
+    if not hasattr(xmppobject, "plugins_awaited"):
+        xmppobject.plugins_awaited = set()
+    key = (str(msg["from"]), function_plugin)
+    if attempt == 1:
+        if key in xmppobject.plugins_awaited:
+            return
+        xmppobject.plugins_awaited.add(key)
+
+    def retry():
+        try:
+            if hasattr(xmppobject, function_plugin):
+                xmppobject.plugins_awaited.discard(key)
+                logger.info(
+                    "plugin %s loaded: late call for %s" % (name, msg["from"])
+                )
+                getattr(xmppobject, function_plugin)(msg, data)
+            elif attempt < 6:
+                call_plugin_when_loaded(
+                    xmppobject, function_plugin, msg, data, attempt + 1
+                )
+            else:
+                xmppobject.plugins_awaited.discard(key)
+                logger.warning(
+                    "plugin %s still not loaded: not called for %s"
+                    % (name, msg["from"])
+                )
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
+    timer = threading.Timer(5, retry)
+    timer.daemon = True
+    timer.start()
 
 
 def read_conf_remote_registeryagent(xmppobject):

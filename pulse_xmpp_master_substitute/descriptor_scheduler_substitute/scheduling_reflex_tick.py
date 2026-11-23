@@ -20,9 +20,9 @@ from lib.plugins.reflex import reflex_backend, is_reflex_substitute, _to_int, \
     SKIP_CHANNEL_TYPE_UNSUPPORTED, SKIP_RULE_NO_RECIPIENT, \
     SKIP_RETRY_ALERT_RESOLVED, SKIP_RETRY_ATTEMPTS_EXHAUSTED, \
     SKIP_RETRY_RULE_UNAVAILABLE, SKIP_RETRY_TARGET_NOT_MATCHED, \
-    SKIP_RETRY_CHANNEL_ENTITY_MISMATCH
+    SKIP_RETRY_CHANNEL_ENTITY_MISMATCH, _jiduser
 
-plugin = {"VERSION": "1.2", "NAME": "scheduling_reflex_tick", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "scheduling_reflex_tick", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 
@@ -31,10 +31,10 @@ logger = logging.getLogger()
 MAX_RETRIES_PER_ROUND = 50
 MAX_ATTEMPTS = 5
 
-# machines_id and the uuid are carried for the language, read from the
+# jiduser and the uuid are carried for the language, read from the
 # placement; the measure and its threshold so a second mail says what the
 # first one said.
-_ALERT_FIELDS = ("probe_id", "machines_id", "uuid_inventorymachine",
+_ALERT_FIELDS = ("probe_id", "jiduser", "uuid_inventorymachine",
                 "hostname", "severity", "message", "opened_at", "instance",
                 "unit", "value_type", "value_at_trigger",
                 "value_text_at_trigger", "detail_at_trigger",
@@ -89,17 +89,17 @@ def _sweep_stale_conditions(backend):
         # and each alert judged over its own window inside it.
         spans = dict((_to_int(alert.get("id"), 0),
                       backend.judgement_span(alert, probe_id, {
-                          "id": alert.get("machines_id"),
+                          "jiduser": alert.get("jiduser"),
                           "uuid_inventorymachine":
                               alert.get("uuid_inventorymachine"),
                           "entity_id": alert.get("entity_id")}))
                      for alert in alerts)
         measures = backend.recent_measures(
-            probe_id, [_to_int(alert.get("machines_id"), 0)
-                       for alert in alerts], max(spans.values()))
+            probe_id, [alert.get("jiduser") for alert in alerts],
+            max(spans.values()))
         for alert in alerts:
             alert_id = _to_int(alert.get("id"), 0)
-            window = measures.get(_to_int(alert.get("machines_id"), 0)) or []
+            window = measures.get(_jiduser(alert)) or []
             stands = backend.condition_still_stands(alert, window,
                                                     spans[alert_id])
             if stands is not False:
