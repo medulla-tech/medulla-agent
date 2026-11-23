@@ -32,7 +32,7 @@ import time
 # import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.57", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.58", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
 
 params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.
@@ -305,7 +305,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         if machine["enabled"] == False:
                             # on passe la machine a 1
                             XmppMasterDatabase().SetPresenceMachine(
-                                msg["from"].user, presence=1
+                                str(msg["from"]), presence=1
                             )
                         machine["enabled"] = 1
                     except Exception:
