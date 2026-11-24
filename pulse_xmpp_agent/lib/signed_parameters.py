@@ -39,6 +39,7 @@ logger = logging.getLogger()
 
 MANIFEST_NAME = "manifest.json"
 BOOTSTRAP_NAME = "bootstrap.ini"
+BOOTSTRAP_REGISTRY_KEY = r"SOFTWARE\Medulla\Bootstrap"
 ROOT_CERTIFICATE_NAME = "parameters-root.crt"
 STATE_NAME = "parameters-state.json"
 AGENT_CONFIGURATION_FILES = ("agentconf.ini", "agentconf.ini.tpl")
@@ -308,6 +309,70 @@ def read_bootstrap(path):
     return server, download_tag
 
 
+def write_bootstrap(path, server, download_tag):
+    """
+    Keep the server and the download tag found by discover_bootstrap.
+
+    The agent then stays on this server, even if its source changes later.
+    """
+    config = configparser.ConfigParser()
+    config["bootstrap"] = {"server": server, "tag": download_tag}
+    descriptor, temporary = tempfile.mkstemp(dir=os.path.dirname(path) or ".")
+    with os.fdopen(descriptor, "w") as output:
+        config.write(output)
+    os.replace(temporary, path)
+
+
+def read_registry_bootstrap():
+    """
+    Read the server and the download tag pushed by a GPO or by Intune.
+
+    Returns:
+        tuple: (server, download_tag), or None without a complete key.
+    """
+    if not sys.platform.startswith("win"):
+        return None
+    import winreg
+
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            BOOTSTRAP_REGISTRY_KEY,
+            0,
+            winreg.KEY_READ | winreg.KEY_WOW64_64KEY,
+        ) as key:
+            server = winreg.QueryValueEx(key, "server")[0]
+            download_tag = winreg.QueryValueEx(key, "tag")[0]
+    except OSError:
+        return None
+    if not isinstance(server, str) or not isinstance(download_tag, str):
+        return None
+    server, download_tag = server.strip(), download_tag.strip()
+    if not server or not download_tag:
+        return None
+    return server, download_tag
+
+
+def discover_bootstrap():
+    """
+    Look for the server and the download tag when the installer had none.
+
+    Returns:
+        tuple: (server, download_tag), or None if no source gives them.
+    """
+    for source, read in (("registry", read_registry_bootstrap),):
+        found = read()
+        if found is None:
+            continue
+        server, download_tag = found
+        if not NAME_REGEX.fullmatch(server) or not NAME_REGEX.fullmatch(download_tag):
+            logger.error(f"Invalid server or download tag in the {source}")
+            continue
+        logger.info(f"Server {server} and download tag {download_tag} found in the {source}")
+        return found
+    return None
+
+
 def download_parameters(server, download_tag, tls_context=None):
     """
     Download the files published for an organisation.
@@ -456,6 +521,8 @@ def refresh_parameters(configuration_directory):
     """
     Update the parameters at the start of the agent, when it has a bootstrap.
 
+    The base agent always has a bootstrap.ini. When the installer received
+    no server, the file is empty and the server is looked for elsewhere.
     A failure is logged and never raised: the agent keeps the configuration
     it already has.
 
@@ -465,9 +532,19 @@ def refresh_parameters(configuration_directory):
     Returns:
         bool: True if new parameters were written.
     """
-    bootstrap = read_bootstrap(os.path.join(configuration_directory, BOOTSTRAP_NAME))
-    if bootstrap is None:
+    bootstrap_path = os.path.join(configuration_directory, BOOTSTRAP_NAME)
+    if not os.path.isfile(bootstrap_path):
         return False
+    bootstrap = read_bootstrap(bootstrap_path)
+    if bootstrap is None:
+        bootstrap = discover_bootstrap()
+        if bootstrap is None:
+            logger.info("No Medulla server given to this agent yet")
+            return False
+        try:
+            write_bootstrap(bootstrap_path, *bootstrap)
+        except OSError as error:
+            logger.error(f"Cannot write {bootstrap_path}: {error}")
     server, download_tag = bootstrap
     try:
         with open(os.path.join(configuration_directory, ROOT_CERTIFICATE_NAME), "rb") as root:

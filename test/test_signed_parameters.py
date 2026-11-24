@@ -20,9 +20,11 @@ from cryptography.x509.oid import NameOID
 from pulse_xmpp_agent.lib.signed_parameters import (
     ParametersRefused,
     ParametersUnavailable,
+    discover_bootstrap,
     download_parameters,
     extract_parameters,
     read_bootstrap,
+    read_registry_bootstrap,
     refresh_parameters,
     update_parameters,
     verify_parameters,
@@ -404,6 +406,35 @@ class TestUpdateParameters(ChainTestCase):
         with self.assertLogs(level="ERROR"):
             self.assertFalse(refresh_parameters(self.etc))
 
+    def empty_bootstrap(self):
+        # What the base installer writes without /server and /tag
+        self.bootstrap()
+        with open(os.path.join(self.etc, "bootstrap.ini"), "w") as output:
+            output.write("[bootstrap]\nserver=\ntag=\n")
+
+    def test_refresh_finds_the_server_in_the_registry(self):
+        self.empty_bootstrap()
+        with fake_registry({"server": SERVER, "tag": ORGANISATION}), mock.patch("subprocess.run"):
+            self.assertTrue(refresh_parameters(self.etc))
+        self.assertEqual(
+            read_bootstrap(os.path.join(self.etc, "bootstrap.ini")), (SERVER, ORGANISATION)
+        )
+
+    def test_refresh_keeps_the_server_found_first(self):
+        self.empty_bootstrap()
+        with fake_registry({"server": SERVER, "tag": ORGANISATION}), mock.patch("subprocess.run"):
+            refresh_parameters(self.etc)
+        with fake_registry({"server": "other.example.test", "tag": "other"}):
+            refresh_parameters(self.etc)
+        self.assertTrue(all(SERVER in request.full_url for request in self.requests))
+
+    def test_refresh_waits_when_no_source_gives_a_server(self):
+        self.empty_bootstrap()
+        with fake_registry({}):
+            self.assertFalse(refresh_parameters(self.etc))
+        self.assertEqual(self.requests, [])
+        self.assertIsNone(read_bootstrap(os.path.join(self.etc, "bootstrap.ini")))
+
     def test_windows_settings_are_applied_with_new_parameters(self):
         self.bootstrap()
         archive = tar_of(
@@ -493,6 +524,70 @@ class TestReadBootstrap(unittest.TestCase):
         with open(self.path, "w") as output:
             output.write("[bootstrap]\nserver=medulla.example.test\n")
         self.assertIsNone(read_bootstrap(self.path))
+
+
+class FakeWinreg:
+    HKEY_LOCAL_MACHINE = "HKLM"
+    KEY_READ = 1
+    KEY_WOW64_64KEY = 2
+
+    def __init__(self, values):
+        self.values = values
+        self.opened = []
+
+    def OpenKey(self, root, path, reserved, access):
+        if self.values is None:
+            raise FileNotFoundError(path)
+        self.opened.append((root, path, access))
+        return mock.MagicMock()
+
+    def QueryValueEx(self, key, name):
+        if name not in self.values:
+            raise FileNotFoundError(name)
+        return self.values[name], 1
+
+
+def fake_registry(values):
+    """Windows registry holding values under the bootstrap key (None: no key)."""
+    winreg = FakeWinreg(values)
+    patcher = mock.patch.dict("sys.modules", {"winreg": winreg})
+    platform = mock.patch("sys.platform", "win32")
+
+    class Both:
+        def __enter__(self):
+            patcher.start()
+            platform.start()
+            return winreg
+
+        def __exit__(self, *arguments):
+            platform.stop()
+            patcher.stop()
+
+    return Both()
+
+
+class TestDiscoverBootstrap(unittest.TestCase):
+    def test_registry_values_are_read_in_the_64_bit_view(self):
+        with fake_registry({"server": f" {SERVER} ", "tag": ORGANISATION}) as winreg:
+            self.assertEqual(read_registry_bootstrap(), (SERVER, ORGANISATION))
+        self.assertEqual(winreg.opened, [("HKLM", r"SOFTWARE\Medulla\Bootstrap", 3)])
+
+    def test_missing_registry_key_gives_nothing(self):
+        with fake_registry(None):
+            self.assertIsNone(read_registry_bootstrap())
+
+    def test_incomplete_registry_key_gives_nothing(self):
+        with fake_registry({"server": SERVER}):
+            self.assertIsNone(read_registry_bootstrap())
+
+    def test_registry_is_only_read_on_windows(self):
+        with mock.patch("sys.platform", "linux"):
+            self.assertIsNone(read_registry_bootstrap())
+
+    def test_invalid_registry_values_are_refused(self):
+        with fake_registry({"server": "evil.test/../x", "tag": ORGANISATION}):
+            with self.assertLogs(level="ERROR"):
+                self.assertIsNone(discover_bootstrap())
 
 
 class TestExtractParameters(unittest.TestCase):

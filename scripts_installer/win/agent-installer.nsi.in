@@ -471,11 +471,17 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Keep the server and the download tag given on the command line
+!If "${BASE_AGENT}" == '1'
+  ; Without them the file stays empty: the agent looks for them at start
+  WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "server" "$BOOTSTRAP_SERVER"
+  WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "tag" "$BOOTSTRAP_TAG"
+!Else
   ${If} $BOOTSTRAP_SERVER != ""
   ${AndIf} $BOOTSTRAP_TAG != ""
     WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "server" "$BOOTSTRAP_SERVER"
     WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "tag" "$BOOTSTRAP_TAG"
   ${EndIf}
+!EndIf
 
   ; Install of CA Certificates. The base agent receives them with its parameters
   ClearErrors
@@ -715,9 +721,15 @@ Function .onInit
   ${GetOptions} $0 "/tag=" $BOOTSTRAP_TAG
   ClearErrors
 !If "${BASE_AGENT}" == '1'
-  ; The base agent holds no client parameters: it cannot work without them
-  ${If} $BOOTSTRAP_SERVER == ""
-  ${OrIf} $BOOTSTRAP_TAG == ""
+  ; Both or none: without them the agent finds them in the registry
+  StrCpy $1 0
+  ${If} $BOOTSTRAP_SERVER != ""
+    IntOp $1 $1 + 1
+  ${EndIf}
+  ${If} $BOOTSTRAP_TAG != ""
+    IntOp $1 $1 + 1
+  ${EndIf}
+  ${If} $1 == 1
     ${IfNot} ${Silent}
       MessageBox MB_OK|MB_ICONSTOP "Usage: /server=<address> /tag=<download tag>"
     ${EndIf}

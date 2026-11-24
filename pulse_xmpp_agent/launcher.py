@@ -1110,9 +1110,11 @@ def conffilename(agenttype):
 
 def refresh_signed_parameters():
     """
-    Download the signed parameters of an agent installed with /server and /tag.
+    Download the signed parameters of an agent that has a bootstrap.ini.
 
-    The module is only loaded on these agents, and a failure never stops the
+    The base agent always has one, filled from /server and /tag or, without
+    them, from another source such as the registry. The module is only loaded
+    on these agents, and a failure never stops the
     launcher: the agent keeps its current configuration. The base agent has no
     configuration before its first parameters, so it keeps trying.
     """
