@@ -22,6 +22,8 @@ import json
 import logging
 import os
 import re
+import select
+import socket
 import subprocess
 import sys
 import tarfile
@@ -40,6 +42,10 @@ logger = logging.getLogger()
 MANIFEST_NAME = "manifest.json"
 BOOTSTRAP_NAME = "bootstrap.ini"
 BOOTSTRAP_REGISTRY_KEY = r"SOFTWARE\Medulla\Bootstrap"
+# Records the clients add to the DNS of the domain of their machines
+BOOTSTRAP_DNS_SERVICE = "_medulla._tcp"
+BOOTSTRAP_DNS_TAG = "_medulla"
+DNS_TIMEOUT = 5
 ROOT_CERTIFICATE_NAME = "parameters-root.crt"
 STATE_NAME = "parameters-state.json"
 AGENT_CONFIGURATION_FILES = ("agentconf.ini", "agentconf.ini.tpl")
@@ -353,14 +359,99 @@ def read_registry_bootstrap():
     return server, download_tag
 
 
+def _machine_domain():
+    fqdn = socket.getfqdn()
+    if "." not in fqdn:
+        return None
+    domain = fqdn.split(".", 1)[1].strip(".")
+    return domain if NAME_REGEX.fullmatch(domain) else None
+
+
+def _dns_query(name, record_type):
+    """
+    Answers of a DNS query, with pycares (installed with slixmpp).
+
+    Args:
+        name (str): Name to look for.
+        record_type (str): "SRV" or "TXT".
+
+    Returns:
+        list: The answers, empty when there is none.
+    """
+    import pycares
+
+    channel = pycares.Channel(timeout=DNS_TIMEOUT, tries=2)
+    answers = []
+
+    def done(result, error):
+        if error is None and result:
+            answers.extend(result)
+
+    channel.query(name, getattr(pycares, "QUERY_TYPE_" + record_type), done)
+    while True:
+        read_fds, write_fds = channel.getsock()
+        if not read_fds and not write_fds:
+            break
+        readable, writable, _ = select.select(
+            read_fds, write_fds, [], channel.timeout() or DNS_TIMEOUT
+        )
+        if not readable and not writable:
+            channel.process_fd(pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
+        for fd in readable:
+            channel.process_fd(fd, pycares.ARES_SOCKET_BAD)
+        for fd in writable:
+            channel.process_fd(pycares.ARES_SOCKET_BAD, fd)
+    return answers
+
+
+def read_dns_bootstrap():
+    """
+    Read the server and the download tag in the DNS of the machine domain.
+
+    The client adds two records to its DNS, for example for client.example:
+        _medulla._tcp.client.example. SRV 0 0 443 medulla.client.example.
+        _medulla.client.example.      TXT "tag=<download tag>"
+
+    Returns:
+        tuple: (server, download_tag), or None without both records.
+    """
+    domain = _machine_domain()
+    if domain is None:
+        return None
+    try:
+        services = _dns_query(f"{BOOTSTRAP_DNS_SERVICE}.{domain}", "SRV")
+        texts = _dns_query(f"{BOOTSTRAP_DNS_TAG}.{domain}", "TXT") if services else []
+    except (ImportError, OSError) as error:
+        logger.error(f"Cannot query the DNS of {domain}: {error}")
+        return None
+    if not services:
+        return None
+    service = min(services, key=lambda record: (record.priority, -record.weight))
+    host = service.host.rstrip(".")
+    server = host if service.port == 443 else f"{host}:{service.port}"
+    for record in texts:
+        text = record.text
+        if isinstance(text, bytes):
+            text = text.decode(errors="replace")
+        key, _, value = text.strip().partition("=")
+        if key.strip() == "tag" and value.strip():
+            return server, value.strip()
+    return None
+
+
 def discover_bootstrap():
     """
     Look for the server and the download tag when the installer had none.
 
+    What the administrator gives explicitly comes before the DNS.
+
     Returns:
         tuple: (server, download_tag), or None if no source gives them.
     """
-    for source, read in (("registry", read_registry_bootstrap),):
+    for source, read in (
+        ("registry", read_registry_bootstrap),
+        ("DNS", read_dns_bootstrap),
+    ):
         found = read()
         if found is None:
             continue

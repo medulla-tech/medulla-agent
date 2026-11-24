@@ -24,6 +24,7 @@ from pulse_xmpp_agent.lib.signed_parameters import (
     download_parameters,
     extract_parameters,
     read_bootstrap,
+    read_dns_bootstrap,
     read_registry_bootstrap,
     refresh_parameters,
     update_parameters,
@@ -430,7 +431,9 @@ class TestUpdateParameters(ChainTestCase):
 
     def test_refresh_waits_when_no_source_gives_a_server(self):
         self.empty_bootstrap()
-        with fake_registry({}):
+        with fake_registry({}), mock.patch(
+            "pulse_xmpp_agent.lib.signed_parameters.read_dns_bootstrap", return_value=None
+        ):
             self.assertFalse(refresh_parameters(self.etc))
         self.assertEqual(self.requests, [])
         self.assertIsNone(read_bootstrap(os.path.join(self.etc, "bootstrap.ini")))
@@ -588,6 +591,96 @@ class TestDiscoverBootstrap(unittest.TestCase):
         with fake_registry({"server": "evil.test/../x", "tag": ORGANISATION}):
             with self.assertLogs(level="ERROR"):
                 self.assertIsNone(discover_bootstrap())
+
+
+def srv(host, port=443, priority=0, weight=0):
+    return mock.Mock(host=host, port=port, priority=priority, weight=weight)
+
+
+def txt(text):
+    return mock.Mock(text=text)
+
+
+class TestDnsBootstrap(unittest.TestCase):
+    def setUp(self):
+        self.records = {}
+        self.queries = []
+        for target, value in (
+            ("socket.getfqdn", "pc42.client.example"),
+            ("pulse_xmpp_agent.lib.signed_parameters._dns_query", self.query),
+        ):
+            patcher = (
+                mock.patch(target, return_value=value)
+                if isinstance(value, str)
+                else mock.patch(target, side_effect=value)
+            )
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def query(self, name, record_type):
+        self.queries.append((name, record_type))
+        return self.records.get((name, record_type), [])
+
+    def publish(self, services, texts):
+        self.records[("_medulla._tcp.client.example", "SRV")] = services
+        self.records[("_medulla.client.example", "TXT")] = texts
+
+    def test_server_and_tag_are_read_in_the_machine_domain(self):
+        self.publish([srv("medulla.client.example.")], [txt("tag=7f3c")])
+        self.assertEqual(read_dns_bootstrap(), ("medulla.client.example", "7f3c"))
+        self.assertEqual(
+            self.queries,
+            [("_medulla._tcp.client.example", "SRV"), ("_medulla.client.example", "TXT")],
+        )
+
+    def test_other_port_than_https_is_kept(self):
+        self.publish([srv("medulla.client.example", port=8443)], [txt("tag=7f3c")])
+        self.assertEqual(read_dns_bootstrap(), ("medulla.client.example:8443", "7f3c"))
+
+    def test_preferred_service_is_used(self):
+        self.publish(
+            [srv("backup.client.example", priority=10), srv("main.client.example", priority=0)],
+            [txt("tag=7f3c")],
+        )
+        self.assertEqual(read_dns_bootstrap()[0], "main.client.example")
+
+    def test_tag_is_found_among_other_texts(self):
+        self.publish([srv("medulla.client.example")], [txt("v=spf1 -all"), txt(b" tag = 7f3c ")])
+        self.assertEqual(read_dns_bootstrap()[1], "7f3c")
+
+    def test_no_tag_gives_nothing(self):
+        self.publish([srv("medulla.client.example")], [txt("v=spf1 -all")])
+        self.assertIsNone(read_dns_bootstrap())
+
+    def test_no_service_gives_nothing_without_asking_for_the_tag(self):
+        self.assertIsNone(read_dns_bootstrap())
+        self.assertEqual(self.queries, [("_medulla._tcp.client.example", "SRV")])
+
+    def test_machine_without_domain_asks_nothing(self):
+        with mock.patch("socket.getfqdn", return_value="pc42"):
+            self.assertIsNone(read_dns_bootstrap())
+        self.assertEqual(self.queries, [])
+
+    def test_missing_dns_library_gives_nothing(self):
+        with mock.patch(
+            "pulse_xmpp_agent.lib.signed_parameters._dns_query", side_effect=ImportError("pycares")
+        ), self.assertLogs(level="ERROR"):
+            self.assertIsNone(read_dns_bootstrap())
+
+    def test_registry_comes_before_the_dns(self):
+        self.publish([srv("dns.client.example")], [txt("tag=from-dns")])
+        with fake_registry({"server": SERVER, "tag": ORGANISATION}):
+            self.assertEqual(discover_bootstrap(), (SERVER, ORGANISATION))
+
+    def test_dns_is_used_without_registry(self):
+        self.publish([srv("dns.client.example")], [txt("tag=from-dns")])
+        with fake_registry(None):
+            self.assertEqual(discover_bootstrap(), ("dns.client.example", "from-dns"))
+
+    def test_invalid_dns_values_are_refused(self):
+        self.publish([srv("evil.example/../x")], [txt("tag=7f3c")])
+        with mock.patch("sys.platform", "linux"), self.assertLogs(level="ERROR"):
+            self.assertIsNone(discover_bootstrap())
 
 
 class TestExtractParameters(unittest.TestCase):
