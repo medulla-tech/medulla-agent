@@ -472,9 +472,11 @@ Section "!${PRODUCT_NAME}" sec_app
 
   ; Keep the server and the download tag given on the command line
 !If "${BASE_AGENT}" == '1'
-  ; Without them the file stays empty: the agent looks for them at start
+  ; Without them the file stays empty: the agent looks for them at start,
+  ; first in the name of this installer given by the download page
   WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "server" "$BOOTSTRAP_SERVER"
   WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "tag" "$BOOTSTRAP_TAG"
+  WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "installer" "$EXEFILE"
 !Else
   ${If} $BOOTSTRAP_SERVER != ""
   ${AndIf} $BOOTSTRAP_TAG != ""

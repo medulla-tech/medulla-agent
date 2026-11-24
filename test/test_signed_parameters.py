@@ -25,6 +25,7 @@ from pulse_xmpp_agent.lib.signed_parameters import (
     extract_parameters,
     read_bootstrap,
     read_dns_bootstrap,
+    read_installer_bootstrap,
     read_registry_bootstrap,
     refresh_parameters,
     update_parameters,
@@ -407,11 +408,21 @@ class TestUpdateParameters(ChainTestCase):
         with self.assertLogs(level="ERROR"):
             self.assertFalse(refresh_parameters(self.etc))
 
-    def empty_bootstrap(self):
+    def empty_bootstrap(self, installer="Medulla-Agent-windows-BASE-latest.exe"):
         # What the base installer writes without /server and /tag
         self.bootstrap()
         with open(os.path.join(self.etc, "bootstrap.ini"), "w") as output:
-            output.write("[bootstrap]\nserver=\ntag=\n")
+            output.write(f"[bootstrap]\nserver=\ntag=\ninstaller={installer}\n")
+
+    def test_refresh_finds_the_server_in_the_installer_name(self):
+        self.empty_bootstrap(f"Medulla-Agent-windows-BASE_{SERVER}_{ORGANISATION}.exe")
+        with fake_registry({"server": "other.example.test", "tag": "other"}), mock.patch(
+            "subprocess.run"
+        ):
+            self.assertTrue(refresh_parameters(self.etc))
+        self.assertEqual(
+            read_bootstrap(os.path.join(self.etc, "bootstrap.ini")), (SERVER, ORGANISATION)
+        )
 
     def test_refresh_finds_the_server_in_the_registry(self):
         self.empty_bootstrap()
@@ -590,7 +601,7 @@ class TestDiscoverBootstrap(unittest.TestCase):
     def test_invalid_registry_values_are_refused(self):
         with fake_registry({"server": "evil.test/../x", "tag": ORGANISATION}):
             with self.assertLogs(level="ERROR"):
-                self.assertIsNone(discover_bootstrap())
+                self.assertIsNone(discover_bootstrap("missing.ini"))
 
 
 def srv(host, port=443, priority=0, weight=0):
@@ -599,6 +610,46 @@ def srv(host, port=443, priority=0, weight=0):
 
 def txt(text):
     return mock.Mock(text=text)
+
+
+class TestInstallerBootstrap(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.path = os.path.join(directory.name, "bootstrap.ini")
+
+    def read(self, installer):
+        with open(self.path, "w") as output:
+            output.write(f"[bootstrap]\nserver=\ntag=\ninstaller={installer}\n")
+        return read_installer_bootstrap(self.path)
+
+    def test_server_and_tag_are_read_in_the_name(self):
+        self.assertEqual(
+            self.read("Medulla-Agent-windows-BASE_medulla.example.test_3f2a-9c71.exe"),
+            ("medulla.example.test", "3f2a-9c71"),
+        )
+
+    def test_numbers_added_by_browsers_are_ignored(self):
+        for suffix in (" (1)", "(2)"):
+            self.assertEqual(
+                self.read(f"Medulla-Agent-windows-BASE_medulla.example.test_3f2a{suffix}.exe"),
+                ("medulla.example.test", "3f2a"),
+            )
+
+    def test_generic_or_renamed_installer_gives_nothing(self):
+        for name in (
+            "Medulla-Agent-windows-BASE-latest.exe",
+            "setup.exe",
+            "Medulla-Agent-windows-BASE_medulla.example.test.exe",
+            "Medulla-Agent-windows-BASE_evil/../x_3f2a.exe",
+        ):
+            self.assertIsNone(self.read(name), name)
+
+    def test_missing_name_gives_nothing(self):
+        with open(self.path, "w") as output:
+            output.write("[bootstrap]\nserver=\ntag=\n")
+        self.assertIsNone(read_installer_bootstrap(self.path))
+        self.assertIsNone(read_installer_bootstrap(self.path + ".missing"))
 
 
 class TestDnsBootstrap(unittest.TestCase):
@@ -670,17 +721,17 @@ class TestDnsBootstrap(unittest.TestCase):
     def test_registry_comes_before_the_dns(self):
         self.publish([srv("dns.client.example")], [txt("tag=from-dns")])
         with fake_registry({"server": SERVER, "tag": ORGANISATION}):
-            self.assertEqual(discover_bootstrap(), (SERVER, ORGANISATION))
+            self.assertEqual(discover_bootstrap("missing.ini"), (SERVER, ORGANISATION))
 
     def test_dns_is_used_without_registry(self):
         self.publish([srv("dns.client.example")], [txt("tag=from-dns")])
         with fake_registry(None):
-            self.assertEqual(discover_bootstrap(), ("dns.client.example", "from-dns"))
+            self.assertEqual(discover_bootstrap("missing.ini"), ("dns.client.example", "from-dns"))
 
     def test_invalid_dns_values_are_refused(self):
         self.publish([srv("evil.example/../x")], [txt("tag=7f3c")])
         with mock.patch("sys.platform", "linux"), self.assertLogs(level="ERROR"):
-            self.assertIsNone(discover_bootstrap())
+            self.assertIsNone(discover_bootstrap("missing.ini"))
 
 
 class TestExtractParameters(unittest.TestCase):

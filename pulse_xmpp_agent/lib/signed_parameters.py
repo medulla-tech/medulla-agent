@@ -46,6 +46,11 @@ BOOTSTRAP_REGISTRY_KEY = r"SOFTWARE\Medulla\Bootstrap"
 BOOTSTRAP_DNS_SERVICE = "_medulla._tcp"
 BOOTSTRAP_DNS_TAG = "_medulla"
 DNS_TIMEOUT = 5
+INSTALLER_NAME_REGEX = re.compile(
+    r"Medulla-Agent-windows-BASE_(?P<server>[A-Za-z0-9.-]+)_(?P<tag>[A-Za-z0-9.-]+?)"
+    r"(?: ?\([0-9]+\))?\.exe",
+    re.IGNORECASE,
+)
 ROOT_CERTIFICATE_NAME = "parameters-root.crt"
 STATE_NAME = "parameters-state.json"
 AGENT_CONFIGURATION_FILES = ("agentconf.ini", "agentconf.ini.tpl")
@@ -439,16 +444,45 @@ def read_dns_bootstrap():
     return None
 
 
-def discover_bootstrap():
+def read_installer_bootstrap(path):
+    """
+    Read the server and the download tag in the name of the installer.
+
+    The download page of Medulla names the base agent of an organisation
+    Medulla-Agent-windows-BASE_<server>_<download tag>.exe, and the installer
+    keeps its own name in bootstrap.ini. The signature does not cover the name.
+
+    Args:
+        path (str): The bootstrap.ini file written by the installer.
+
+    Returns:
+        tuple: (server, download_tag), or None if the name holds neither.
+    """
+    config = configparser.ConfigParser()
+    if not config.read(path):
+        return None
+    name = config.get("bootstrap", "installer", fallback="").strip()
+    # A browser adds " (1)" to a second download of the same file
+    found = INSTALLER_NAME_REGEX.fullmatch(name)
+    if found is None:
+        return None
+    return found.group("server"), found.group("tag")
+
+
+def discover_bootstrap(bootstrap_path):
     """
     Look for the server and the download tag when the installer had none.
 
     What the administrator gives explicitly comes before the DNS.
 
+    Args:
+        bootstrap_path (str): The bootstrap.ini file written by the installer.
+
     Returns:
         tuple: (server, download_tag), or None if no source gives them.
     """
     for source, read in (
+        ("installer name", lambda: read_installer_bootstrap(bootstrap_path)),
         ("registry", read_registry_bootstrap),
         ("DNS", read_dns_bootstrap),
     ):
@@ -628,7 +662,7 @@ def refresh_parameters(configuration_directory):
         return False
     bootstrap = read_bootstrap(bootstrap_path)
     if bootstrap is None:
-        bootstrap = discover_bootstrap()
+        bootstrap = discover_bootstrap(bootstrap_path)
         if bootstrap is None:
             logger.info("No Medulla server given to this agent yet")
             return False
