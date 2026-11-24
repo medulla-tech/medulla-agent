@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import json
 import os
+import pty
 import shutil
 import stat
 import subprocess
@@ -51,6 +52,32 @@ class TestParametersCa(unittest.TestCase):
         if result.returncode:
             raise AssertionError(result.stderr)
         return result
+
+    @staticmethod
+    def run_tool_with_passphrase(passphrase, *arguments):
+        # OpenSSL reads a passphrase from the terminal, so the tool gets one
+        pid, terminal = pty.fork()
+        if pid == 0:
+            os.execvp("bash", ["bash", TOOL] + list(arguments))
+        output = b""
+        answered = 0
+        while True:
+            try:
+                chunk = os.read(terminal, 1024)
+            except OSError:
+                break
+            if not chunk:
+                break
+            output += chunk
+            prompts = output.count(b"pass phrase")
+            if prompts > answered:
+                answered = prompts
+                os.write(terminal, passphrase.encode() + b"\n")
+        os.close(terminal)
+        _, status = os.waitpid(pid, 0)
+        if os.waitstatus_to_exitcode(status):
+            raise AssertionError(output.decode(errors="replace"))
+        return answered
 
     def tool_fails(self, message, *arguments):
         result = subprocess.run(["bash", TOOL] + list(arguments), capture_output=True, text=True)
@@ -220,6 +247,34 @@ class TestParametersCa(unittest.TestCase):
             "Invalid request", "sign", "--ca-dir=" + self.intermediate, "--csr=" + request,
             "--out=" + self.path("garbage.crt"),
         )
+
+    def test_production_root_asks_for_a_passphrase_and_signing_does_not(self):
+        root = self.path("production-root")
+        intermediate = self.path("production-intermediate")
+        self.assertGreater(self.run_tool_with_passphrase("secret", "init", "--dir=" + root), 0)
+        with open(os.path.join(root, "root.key"), "rb") as content:
+            self.assertIn(b"ENCRYPTED", content.read())
+        self.assertGreater(
+            self.run_tool_with_passphrase(
+                "secret", "intermediate", "--dir=" + root, "--ca-dir=" + intermediate
+            ),
+            0,
+        )
+        with open(os.path.join(intermediate, "ca.key"), "rb") as content:
+            self.assertNotIn(b"ENCRYPTED", content.read())
+        # Ansible has no terminal: signing a server must not ask anything
+        key_dir = self.path("production-server")
+        self.run_tool("request", "--server=" + SERVER, "--key-dir=" + key_dir)
+        self.run_tool(
+            "sign", "--ca-dir=" + intermediate, "--csr=" + os.path.join(key_dir, "server.csr"),
+            "--out=" + os.path.join(key_dir, "server.crt"),
+        )
+        self.run_tool_with_passphrase(
+            "secret", "revoke", "--dir=" + root,
+            "--certificate=" + os.path.join(key_dir, "server.crt"),
+        )
+        with open(os.path.join(root, "revocations.json")) as content:
+            self.assertEqual(json.load(content)["version"], 2)
 
     def test_certificate_of_another_root_cannot_be_revoked(self):
         other_root = self.path("other-root")

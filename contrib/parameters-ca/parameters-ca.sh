@@ -23,8 +23,9 @@
 #
 # Manages the chain of trust of the client parameters:
 #   root -> intermediate -> server certificates
-# "init", "intermediate" and "revoke" need the root key, which stays offline.
-# "sign" only needs the intermediate key. "request" runs on the Medulla server.
+# "init", "intermediate" and "revoke" need the root key, which stays offline
+# and asks for its passphrase. "sign" only needs the intermediate key, which
+# has none so that it can run unattended. "request" runs on the Medulla server.
 # None of the keys of the root or the intermediate belong on a client server.
 
 set -eu
@@ -44,7 +45,8 @@ display_usage() {
     echo "  $0 sign --ca-dir=<intermediate dir> --csr=<file> --out=<file> [--days=<days>]"
     echo "  $0 revoke --dir=<root dir> --certificate=<file>"
     echo
-    echo "  --test: creates a key without passphrase, for tests only"
+    echo "  --test: creates a root key without passphrase, for tests only"
+    echo "  The intermediate key never has a passphrase: it signs servers unattended"
 }
 
 fail() {
@@ -85,12 +87,12 @@ command_intermediate() {
     [ ! -e "${CA_DIR}/ca.key" ] || fail "An intermediate already exists in ${CA_DIR}"
     mkdir -p "${CA_DIR}"
     local subject="/O=Siveo/CN=Medulla Parameters Intermediate"
-    local encryption=()
     if [ "${TEST_ROOT}" == "1" ]; then
         subject="/O=Siveo/CN=Medulla Parameters Intermediate TEST"
-        encryption=(-nodes)
     fi
-    openssl req -newkey rsa:4096 "${encryption[@]}" -sha256 -subj "${subject}" \
+    # No passphrase: Ansible signs the servers with this key, unattended.
+    # If it leaks, the root revokes it and signs a new one.
+    openssl req -newkey rsa:4096 -nodes -sha256 -subj "${subject}" \
         -keyout "${CA_DIR}/ca.key" -out "${CA_DIR}/ca.csr"
     local extensions="${CA_DIR}/.ca.ext"
     printf 'basicConstraints=critical,CA:TRUE,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign\n' > "${extensions}"
