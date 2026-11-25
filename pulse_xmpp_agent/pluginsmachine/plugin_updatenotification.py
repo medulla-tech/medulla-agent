@@ -21,7 +21,7 @@ NOTIFICATIONVERSION = "5.6.6"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.9", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "updatenotification", "TYPE": "machine"}  # fmt: skip
 
 
 @utils.set_logging_level
@@ -48,7 +48,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 def check_if_binary_ok():
     if sys.platform.startswith("win"):
         regedit = False
-        binary = False
         reinstall = False
         logo = False
 
@@ -58,18 +57,14 @@ def check_if_binary_ok():
         if result_reg["code"] == 0:
             regedit = True
 
-        # We check if the binary is available
+        # We check if the logo is available
         pulsedir_path = os.path.join(medullaPath(), "bin")
-        filename = "pulse2_update_notification.py"
         image = "medulla_logo.png"
-
-        if os.path.isfile(os.path.join(pulsedir_path, filename)):
-            binary = True
 
         if os.path.isfile(os.path.join(pulsedir_path, image)):
             logo = True
 
-        reinstall = not (regedit and binary and logo)
+        reinstall = not (regedit and logo)
 
         if reinstall:
             cmd = (
@@ -142,7 +137,7 @@ def updatenotification(xmppobject):
     if sys.platform.startswith("win"):
         pulsedir_path = os.path.join(medullaPath(), "bin")
 
-        filenames = ["pulse2_update_notification.py", "medulla_logo.png"]
+        filenames = ["medulla_logo.png"]
         for filename in filenames:
             dl_url = "%s/downloads/win/%s" % (xmppobject.config.update_server, filename)
             logger.debug("Downloading %s" % dl_url)
