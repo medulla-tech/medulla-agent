@@ -32,7 +32,7 @@ import time
 # import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.57", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.59", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
 
 params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.
@@ -786,11 +786,25 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 if not _owner and _cl_mac:
                     _owner = XmppMasterDatabase().getMachinefrommacadress(_cl_mac)
                 if _owner and _owner.get("jid") and str(jid.JID(str(_owner["jid"])).bare) != str(msg["from"].bare):
-                    logger.warning(
-                        "registeryagent refused: MAC/serial owned by %s != sender %s"
-                        % (_owner.get("jid"), str(msg["from"].bare))
-                    )
-                    return
+                    # Meme nom de machine : c'est la meme machine dont le suffixe de JID a
+                    # change (INFOSTMP/JIDSUFFIXE regenere) -> accepte, addPresenceMachine
+                    # met a jour le JID de la fiche existante. Sinon : autre machine, refus.
+                    _owner_host = str(_owner.get("hostname") or "").split(".")[0].lower()
+                    _sender_host = str(
+                        data["information"]["info"].get("hostname") or ""
+                    ).split(".")[0].lower()
+                    if _owner_host and _owner_host == _sender_host:
+                        logger.warning(
+                            "registeryagent: %s re-registered as %s (same hostname, "
+                            "new JID suffix): existing record updated"
+                            % (_owner.get("jid"), str(msg["from"]))
+                        )
+                    else:
+                        logger.warning(
+                            "registeryagent refused: MAC/serial owned by %s != sender %s"
+                            % (_owner.get("jid"), str(msg["from"].bare))
+                        )
+                        return
                 idmachine, msgret = XmppMasterDatabase().addPresenceMachine(
                     data["from"],
                     data["platform"],
