@@ -17,7 +17,7 @@ import traceback
 from lib.plugins.reflex import reflex_backend, is_reflex_substitute, \
     active_machines, send_configuration
 
-plugin = {"VERSION": "1.2", "NAME": "scheduling_reflex_config", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "scheduling_reflex_config", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/30 * * * *", "nb": -1}
 
@@ -26,6 +26,11 @@ logger = logging.getLogger()
 # Machines served per round. A change applying to the whole estate is spread
 # over several rounds rather than emitted in one burst.
 MAX_PER_ROUND = 200
+
+
+def schedule_enabled(objectxmpp):
+    """Whether this substitute runs the task."""
+    return is_reflex_substitute(objectxmpp)
 
 
 def schedule_main(objectxmpp):

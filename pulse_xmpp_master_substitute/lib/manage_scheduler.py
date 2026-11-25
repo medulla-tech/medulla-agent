@@ -83,6 +83,11 @@ class manage_scheduler:
             name = x[11:-3]
             try:
                 datascheduler = self.litschedule(name)
+                if not self.schedule_enabled(name):
+                    logging.getLogger().info(
+                        "plugin scheduled %s not loaded on this substitute" % name
+                    )
+                    continue
                 datascheduler["nameplugin"] = name
                 datascheduler["schedule"] = self.replacecrontabdescriptor(
                     datascheduler["schedule"]
@@ -197,3 +202,15 @@ class manage_scheduler:
     def litschedule(self, name):
         mod = __import__("scheduling_%s" % name)
         return mod.SCHEDULE
+
+    def schedule_enabled(self, name):
+        mod = __import__("scheduling_%s" % name)
+        if not hasattr(mod, "schedule_enabled"):
+            return True
+        try:
+            return mod.schedule_enabled(self.objectxmpp)
+        except Exception as e:
+            logging.getLogger().error(
+                "schedule_enabled of plugin scheduled %s : %s" % (name, str(e))
+            )
+            return True

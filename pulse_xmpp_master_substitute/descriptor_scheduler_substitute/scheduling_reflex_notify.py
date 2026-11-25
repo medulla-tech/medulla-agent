@@ -19,11 +19,16 @@ import traceback
 from lib.plugins.reflex import reflex_backend, is_reflex_substitute, \
     process_config_changes
 
-plugin = {"VERSION": "1.0", "NAME": "scheduling_reflex_notify", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "scheduling_reflex_notify", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "* * * * * */15", "nb": -1}
 
 logger = logging.getLogger()
+
+
+def schedule_enabled(objectxmpp):
+    """Whether this substitute runs the task."""
+    return is_reflex_substitute(objectxmpp)
 
 
 def schedule_main(objectxmpp):
