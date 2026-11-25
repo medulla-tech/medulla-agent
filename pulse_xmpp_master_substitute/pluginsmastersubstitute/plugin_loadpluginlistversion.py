@@ -14,7 +14,7 @@ from lib.utils import convert
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.1", "NAME": "loadpluginlistversion", "TYPE": "substitute", "LOAD": "START"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "loadpluginlistversion", "TYPE": "substitute", "LOAD": "START"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):
@@ -79,9 +79,6 @@ def read_conf_load_plugin_list_version(objectxmpp):
     objectxmpp.loadPluginList = types.MethodType(loadPluginList, objectxmpp)
     objectxmpp.remoteinstallPlugin = types.MethodType(remoteinstallPlugin, objectxmpp)
     objectxmpp.deployPlugin = types.MethodType(deployPlugin, objectxmpp)
-    objectxmpp.plugin_loadpluginlistversion = types.MethodType(
-        plugin_loadpluginlistversion, objectxmpp
-    )
 
 
 def loadPluginList(self):
@@ -92,8 +89,8 @@ def loadPluginList(self):
     logger.debug(
         "We search the plugin informations, to compare it with the one installed on the machines"
     )
-    self.plugindata = {}
-    self.plugintype = {}
+    plugindata = {}
+    plugintype = {}
     for element in [
         x
         for x in os.listdir(self.dirpluginlist)
@@ -110,17 +107,22 @@ def loadPluginList(self):
                 if "VERSION" in ligne and "NAME" in ligne:
                     l = ligne.split("=")
                     plugin = eval(l[1])
-                    self.plugindata[plugin["NAME"]] = plugin["VERSION"]
+                    plugindata[plugin["NAME"]] = plugin["VERSION"]
                     try:
-                        self.plugintype[plugin["NAME"]] = plugin["TYPE"]
+                        plugintype[plugin["NAME"]] = plugin["TYPE"]
                     except Exception:
-                        self.plugintype[plugin["NAME"]] = "machine"
+                        plugintype[plugin["NAME"]] = "machine"
                     break
         else:
             logger.error(
                 "As long as the ERROR SYNTAX is not fixed, the plugin [%s] is ignored."
                 % os.path.join(self.dirpluginlist, element)
             )
+    self.plugintype = plugintype
+    self.plugindata = plugindata
+    self.plugin_loadpluginlistversion = types.MethodType(
+        plugin_loadpluginlistversion, self
+    )
 
 
 def remoteinstallPlugin(self):

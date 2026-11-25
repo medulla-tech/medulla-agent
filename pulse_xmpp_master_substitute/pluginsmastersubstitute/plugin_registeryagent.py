@@ -7,6 +7,7 @@
 plugin register machine dans presence table xmpp.
 """
 import base64
+import threading
 import traceback
 import os
 import sys
@@ -32,7 +33,7 @@ import time
 # import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.57", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.59", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
 
 params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.
@@ -305,7 +306,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         if machine["enabled"] == False:
                             # on passe la machine a 1
                             XmppMasterDatabase().SetPresenceMachine(
-                                msg["from"].user, presence=1
+                                str(msg["from"]), presence=1
                             )
                         machine["enabled"] = 1
                     except Exception:
@@ -380,6 +381,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         )
                                     getattr(xmppobject, function_plugin)(msg, data)
                                 else:
+                                    call_plugin_when_loaded(
+                                        xmppobject, function_plugin, msg, data
+                                    )
                                     if showinfobool:
                                         logger.warning(
                                             "The %s plugin is not called"
@@ -786,11 +790,25 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 if not _owner and _cl_mac:
                     _owner = XmppMasterDatabase().getMachinefrommacadress(_cl_mac)
                 if _owner and _owner.get("jid") and str(jid.JID(str(_owner["jid"])).bare) != str(msg["from"].bare):
-                    logger.warning(
-                        "registeryagent refused: MAC/serial owned by %s != sender %s"
-                        % (_owner.get("jid"), str(msg["from"].bare))
-                    )
-                    return
+                    # Meme nom de machine : c'est la meme machine dont le suffixe de JID a
+                    # change (INFOSTMP/JIDSUFFIXE regenere) -> accepte, addPresenceMachine
+                    # met a jour le JID de la fiche existante. Sinon : autre machine, refus.
+                    _owner_host = str(_owner.get("hostname") or "").split(".")[0].lower()
+                    _sender_host = str(
+                        data["information"]["info"].get("hostname") or ""
+                    ).split(".")[0].lower()
+                    if _owner_host and _owner_host == _sender_host:
+                        logger.warning(
+                            "registeryagent: %s re-registered as %s (same hostname, "
+                            "new JID suffix): existing record updated"
+                            % (_owner.get("jid"), str(msg["from"]))
+                        )
+                    else:
+                        logger.warning(
+                            "registeryagent refused: MAC/serial owned by %s != sender %s"
+                            % (_owner.get("jid"), str(msg["from"].bare))
+                        )
+                        return
                 idmachine, msgret = XmppMasterDatabase().addPresenceMachine(
                     data["from"],
                     data["platform"],
@@ -1084,6 +1102,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.info("Calling plugin %s" % function_plugin)
                             getattr(xmppobject, function_plugin)(msg, data)
                         else:
+                            call_plugin_when_loaded(
+                                xmppobject, function_plugin, msg, data
+                            )
                             if showinfobool:
                                 logger.warning(
                                     "The %s plugin is not called" % function_plugin
@@ -1771,6 +1792,45 @@ def adduserdatageolocalisation(xmppobject, data, msg, sessionid, showinfobool):
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
         return -1, {}
+
+
+def call_plugin_when_loaded(xmppobject, function_plugin, msg, data, attempt=1):
+    """A start plugin may still be loading when the first machines register."""
+    name = function_plugin[len("plugin_"):]
+    if name not in getattr(xmppobject.config, "pluginliststart", []):
+        return
+    if not hasattr(xmppobject, "plugins_awaited"):
+        xmppobject.plugins_awaited = set()
+    key = (str(msg["from"]), function_plugin)
+    if attempt == 1:
+        if key in xmppobject.plugins_awaited:
+            return
+        xmppobject.plugins_awaited.add(key)
+
+    def retry():
+        try:
+            if hasattr(xmppobject, function_plugin):
+                xmppobject.plugins_awaited.discard(key)
+                logger.info(
+                    "plugin %s loaded: late call for %s" % (name, msg["from"])
+                )
+                getattr(xmppobject, function_plugin)(msg, data)
+            elif attempt < 6:
+                call_plugin_when_loaded(
+                    xmppobject, function_plugin, msg, data, attempt + 1
+                )
+            else:
+                xmppobject.plugins_awaited.discard(key)
+                logger.warning(
+                    "plugin %s still not loaded: not called for %s"
+                    % (name, msg["from"])
+                )
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+
+    timer = threading.Timer(5, retry)
+    timer.daemon = True
+    timer.start()
 
 
 def read_conf_remote_registeryagent(xmppobject):

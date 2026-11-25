@@ -55,6 +55,15 @@ try:
 except Exception:
     THRESHOLDLESS_OPERATORS = ("changed",)
 
+# A machine is the agent name, the user part of its jid. No fallback: these
+# are defined once, on the server side.
+try:
+    from pulse2.database.reflex import jiduser_of, jiduser_like, \
+        XM_JIDUSER_SQL, XM_AGENTS_SQL, XM_AGENT_LOOKUP_SQL
+except Exception:
+    jiduser_of = jiduser_like = None
+    XM_JIDUSER_SQL = XM_AGENTS_SQL = XM_AGENT_LOOKUP_SQL = None
+
 
 # Cheapest target to resolve first: a machine row, then the entity the report
 # carries, then dyngroup.
@@ -148,6 +157,13 @@ def _to_float(value, default=None):
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _jiduser(machine):
+    """Agent name of a machine or alert row, or of a bare value, "" if none."""
+    if isinstance(machine, dict):
+        machine = machine.get("jiduser")
+    return jiduser_of(machine) if machine else ""
 
 
 def entity_identifier(value):
@@ -1026,6 +1042,12 @@ class ReflexBackend(object):
                 "The reflex substitute stays idle." % error
             )
             return False
+        if jiduser_of is None:
+            logger.error(
+                "reflex: the server side module installed here does not "
+                "identify a machine by its agent name. The reflex substitute "
+                "stays idle.")
+            return False
 
         try:
             self.config = ReflexConfig("reflex")
@@ -1096,7 +1118,15 @@ class ReflexBackend(object):
         return min(max(_to_int(seconds, 0), 0), self.max_lookback())
 
     def aes_key(self):
-        return str(getattr(self.config, "keyAES32", "") or "")
+        """The key, read back from the file: the console writes it after start."""
+        conffile = getattr(self.config, "conffile", None) or REFLEX_INI
+        parser = configparser.ConfigParser(interpolation=None)
+        try:
+            parser.read([conffile, "%s.local" % conffile])
+            key = parser.get("main", "keyAES32", fallback="")
+        except configparser.Error:
+            key = ""
+        return str(key or getattr(self.config, "keyAES32", "") or "")
 
     def console_alerts_url(self):
         """Address of the alert page of the console, "" when there is none.
@@ -1117,14 +1147,14 @@ class ReflexBackend(object):
     # =====================================================================
     # Configuration distribution
     # =====================================================================
-    def machine_config(self, machines_id, group_ids=None, entity_ids=None):
+    def machine_config(self, jiduser, group_ids=None, entity_ids=None):
         """Probe configuration of a machine, with its version.
 
         The version is the fingerprint of what is sent, compared to
         sent_version.
         """
         probes = self.database.get_probe_config_for_machine(
-            machines_id, group_ids=group_ids, entity_ids=entity_ids)
+            jiduser, group_ids=group_ids, entity_ids=entity_ids)
         payload = []
         for probe in probes or []:
             collectors = {}
@@ -1156,12 +1186,12 @@ class ReflexBackend(object):
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha1(canonical.encode("utf-8")).hexdigest()[:32]
 
-    def agent_config_state(self, machines_id):
+    def agent_config_state(self, jiduser):
         return self.select_one(
-            "SELECT machines_id, hostname, sent_version, sent_at, "
+            "SELECT jiduser, hostname, sent_version, sent_at, "
             "       acked_version, acked_at, probe_count, last_error "
-            "  FROM probe_agent_config WHERE machines_id = :machines_id",
-            {"machines_id": _to_int(machines_id, 0)})
+            "  FROM probe_agent_config WHERE jiduser = :jiduser",
+            {"jiduser": _jiduser(jiduser)})
 
     # =====================================================================
     # Measures
@@ -1186,9 +1216,9 @@ class ReflexBackend(object):
         if isinstance(machine, dict):
             machine = dict(machine)
         else:
-            machine = {"id": machine}
-        machines_id = _to_int(machine.get("id"), 0)
-        key = (probe_id, machines_id)
+            machine = {"jiduser": machine}
+        jiduser = _jiduser(machine)
+        key = (probe_id, jiduser)
         if key not in self._probe_intervals:
             uuid = str(machine.get("uuid_inventorymachine") or "").strip() \
                 or None
@@ -1201,10 +1231,10 @@ class ReflexBackend(object):
                 asked = _to_int(placement.get("interval_seconds"), 0)
                 if asked <= 0:
                     break
-                if machines_id <= 0 \
-                        or self.placement_reaches(placement, machines_id,
+                if not jiduser \
+                        or self.placement_reaches(placement, jiduser,
                                                   uuid, entity_id) \
-                        or self.placement_undecided(placement, machines_id,
+                        or self.placement_undecided(placement, jiduser,
                                                     uuid, entity_id):
                     interval = asked
                     break
@@ -1300,12 +1330,12 @@ class ReflexBackend(object):
         could not be read keeps the measure.
         """
         machine = machine or {}
-        machines_id = _to_int(machine.get("id"), 0)
+        jiduser = _jiduser(machine)
         wanted = sorted(set(_to_int(value, 0) for value in probe_ids or []
                             if _to_int(value, 0) > 0))
         if not wanted:
             return set()
-        if machines_id <= 0:
+        if not jiduser:
             # No machine to judge the placements against.
             return set(wanted)
 
@@ -1319,14 +1349,14 @@ class ReflexBackend(object):
                 _to_int(row.get("probe_id"), 0)
                 for row in self.select(
                     "SELECT probe_id FROM probe_exclusions "
-                    " WHERE machines_id = :machines_id "
+                    " WHERE jiduser = :jiduser "
                     "   AND probe_id IN (" + fragment + ")",
-                    dict(probe_params, machines_id=machines_id)))
+                    dict(probe_params, jiduser=jiduser)))
         except Exception as error:
             logger.warning(
                 "reflex: the placements of %s could not be read (%s), its "
                 "report is written as it arrived"
-                % (machine.get("hostname") or machines_id, error))
+                % (machine.get("hostname") or jiduser, error))
             return set(wanted)
 
         uuid = str(machine.get("uuid_inventorymachine") or "").strip() or None
@@ -1339,9 +1369,9 @@ class ReflexBackend(object):
             probe_id = _to_int(placement.get("probe_id"), 0)
             if probe_id in placed or probe_id in lifted:
                 continue
-            if self.placement_reaches(placement, machines_id, uuid,
+            if self.placement_reaches(placement, jiduser, uuid,
                                       entity_id) \
-                    or self.placement_undecided(placement, machines_id, uuid,
+                    or self.placement_undecided(placement, jiduser, uuid,
                                                 entity_id):
                 placed.add(probe_id)
         return placed
@@ -1405,7 +1435,7 @@ class ReflexBackend(object):
             status = str(measure.get("status") or "ok").lower()
             detail = storable_detail(measure.get("detail"))
             prepared.append({
-                "machines_id": _to_int(machine.get("id"), 0),
+                "jiduser": _jiduser(machine),
                 "uuid_inventorymachine": machine.get("uuid_inventorymachine"),
                 "hostname": machine.get("hostname") or "",
                 "probe_id": probe_id,
@@ -1428,7 +1458,7 @@ class ReflexBackend(object):
                 "reflex: %d measure(s) from %s discarded, the probe is not "
                 "placed on it: %s"
                 % (sum(discarded.values()),
-                   machine.get("hostname") or machine.get("id"),
+                   machine.get("hostname") or _jiduser(machine),
                    ", ".join("%s x%d" % (key, count)
                              for key, count in sorted(discarded.items()))))
 
@@ -1536,7 +1566,7 @@ class ReflexBackend(object):
             return value_num < threshold or value_num > threshold2
         return None
 
-    def _window_measures(self, machines_id, probe_id, seconds, instance=None):
+    def _window_measures(self, jiduser, probe_id, seconds, instance=None):
         """Measures of a probe on a machine over a window, newest first.
 
         The window is cut on received_at, written by the server, because :since
@@ -1546,14 +1576,14 @@ class ReflexBackend(object):
         other's streak.
         """
         seconds = self.bounded_window(seconds)
-        params = {"machines_id": _to_int(machines_id, 0),
+        params = {"jiduser": _jiduser(jiduser),
                   "probe_id": _to_int(probe_id, 0),
                   "since": datetime.now() - timedelta(seconds=seconds + 1)}
         restriction = _instance_clause(params, instance, "value_text")
         return self.select(
             "SELECT value_num, value_text, status, received_at "
             "  FROM probe_measures "
-            " WHERE machines_id = :machines_id AND probe_id = :probe_id "
+            " WHERE jiduser = :jiduser AND probe_id = :probe_id "
             "   AND received_at >= :since " + restriction +
             " ORDER BY received_at DESC", params)
 
@@ -1627,8 +1657,8 @@ class ReflexBackend(object):
         if detail is None:
             detail = {}
         if not isinstance(machine, dict):
-            machine = {"id": machine}
-        machines_id = machine.get("id")
+            machine = {"jiduser": machine}
+        jiduser = _jiduser(machine)
         duration = _to_int(condition.get("duration_seconds"), 0)
         interval = self.probe_interval(probe_id, machine)
         detail.update({"window": 0, "streak": 0, "covered": 0.0,
@@ -1644,11 +1674,11 @@ class ReflexBackend(object):
 
         ceiling = self.max_lookback()
         span = self.judgement_span(condition, probe_id, machine)
-        measures = self._window_measures(machines_id, probe_id, span, instance)
+        measures = self._window_measures(jiduser, probe_id, span, instance)
         covered, streak, exhausted, gap = self._streak_coverage(
             condition, measures, interval)
         if covered < required and exhausted and span < ceiling:
-            measures = self._window_measures(machines_id, probe_id, ceiling,
+            measures = self._window_measures(jiduser, probe_id, ceiling,
                                              instance)
             covered, streak, exhausted, gap = self._streak_coverage(
                 condition, measures, interval)
@@ -1806,13 +1836,13 @@ class ReflexBackend(object):
             return
         probe_id = _to_int(condition.get("probe_id"), 0)
         condition_id = _to_int(condition.get("id"), 0)
-        machines_id = _to_int(machine.get("id"), 0)
+        jiduser = _jiduser(machine)
         rows = self.select(
             "SELECT id, value_text_at_trigger FROM alerts "
             " WHERE probe_id = :probe_id AND condition_id = :condition_id "
-            "   AND machines_id = :machines_id AND status IN ('open','ack')",
+            "   AND jiduser = :jiduser AND status IN ('open','ack')",
             {"probe_id": probe_id, "condition_id": condition_id,
-             "machines_id": machines_id})
+             "jiduser": jiduser})
         for row in rows:
             instance = measure_instance(row.get("value_text_at_trigger"),
                                         condition.get("value_type"))
@@ -1829,12 +1859,12 @@ class ReflexBackend(object):
         Read on the series of the instance when the probe names one, or the
         measure before the last one would be another volume.
         """
-        params = {"machines_id": _to_int(machine.get("id"), 0),
+        params = {"jiduser": _jiduser(machine),
                   "probe_id": _to_int(probe_id, 0)}
         restriction = _instance_clause(params, instance, "value_text")
         rows = self.select(
             "SELECT value_num, value_text FROM probe_measures "
-            " WHERE machines_id = :machines_id AND probe_id = :probe_id "
+            " WHERE jiduser = :jiduser AND probe_id = :probe_id "
             + restriction +
             " ORDER BY id DESC LIMIT 1 OFFSET 1", params)
         if not rows:
@@ -1849,7 +1879,7 @@ class ReflexBackend(object):
     # =====================================================================
     # Alert lifecycle
     # =====================================================================
-    def open_alert_of(self, probe_id, condition_id, machines_id,
+    def open_alert_of(self, probe_id, condition_id, jiduser,
                       instance=None):
         """The alert this condition already stands on, None when there is none.
 
@@ -1859,32 +1889,32 @@ class ReflexBackend(object):
         """
         params = {"probe_id": _to_int(probe_id, 0),
                   "condition_id": _to_int(condition_id, 0),
-                  "machines_id": _to_int(machines_id, 0)}
+                  "jiduser": _jiduser(jiduser)}
         restriction = _instance_clause(params, instance,
                                        "value_text_at_trigger")
         return self.select_one(
             "SELECT id, severity, status, occurrence_count, opened_at, "
             "       message, hostname "
             "  FROM alerts "
-            " WHERE probe_id = :probe_id AND machines_id = :machines_id "
+            " WHERE probe_id = :probe_id AND jiduser = :jiduser "
             "   AND condition_id = :condition_id AND status IN ('open','ack') "
             + restriction +
             " ORDER BY id DESC LIMIT 1", params)
 
-    def standing_alerts_on(self, probe_id, machines_id, instance=None):
+    def standing_alerts_on(self, probe_id, jiduser, instance=None):
         """Every alert standing on one machine, probe and instance.
 
         The watched object, whatever condition raised the alert: this is what
         keeps one alert per object, the most serious.
         """
         params = {"probe_id": _to_int(probe_id, 0),
-                  "machines_id": _to_int(machines_id, 0)}
+                  "jiduser": _jiduser(jiduser)}
         restriction = _instance_clause(params, instance,
                                        "value_text_at_trigger")
         return self.select(
             "SELECT id, condition_id, severity, status "
             "  FROM alerts "
-            " WHERE probe_id = :probe_id AND machines_id = :machines_id "
+            " WHERE probe_id = :probe_id AND jiduser = :jiduser "
             "   AND status IN ('open','ack') " + restriction, params)
 
     @staticmethod
@@ -1948,12 +1978,12 @@ class ReflexBackend(object):
         per machine, probe and instance, the most serious; equal severities
         leave each other alone.
         """
-        machines_id = _to_int(machine.get("id"), 0)
+        jiduser = _jiduser(machine)
         probe_id = _to_int(condition.get("probe_id"), 0)
         condition_id = _to_int(condition.get("id"), 0)
         operator = str(condition.get("operator") or "").strip().lower()
         instance = measure_instance(value_text, condition.get("value_type"))
-        existing = self.open_alert_of(probe_id, condition_id, machines_id,
+        existing = self.open_alert_of(probe_id, condition_id, jiduser,
                                       instance)
 
         if not holds:
@@ -1969,7 +1999,7 @@ class ReflexBackend(object):
 
         severity = str(condition.get("severity") or "medium").lower()
         rank = severity_rank(existing["severity"] if existing else severity)
-        others = [row for row in self.standing_alerts_on(probe_id, machines_id,
+        others = [row for row in self.standing_alerts_on(probe_id, jiduser,
                                                          instance)
                   if _to_int(row.get("condition_id"), 0) != condition_id]
         graver = [row for row in others
@@ -1999,7 +2029,7 @@ class ReflexBackend(object):
         params = {
             "probe_id": probe_id,
             "condition_id": condition_id,
-            "machines_id": machines_id,
+            "jiduser": jiduser,
             "uuid_inventorymachine": machine.get("uuid_inventorymachine"),
             "hostname": (machine.get("hostname") or "")[:255],
             "severity": severity,
@@ -2021,7 +2051,7 @@ class ReflexBackend(object):
         }
         try:
             result = self.execute(
-                "INSERT INTO alerts (probe_id, condition_id, machines_id, "
+                "INSERT INTO alerts (probe_id, condition_id, jiduser, "
                 "  uuid_inventorymachine, hostname, severity, status, "
                 "  value_at_trigger, value_text_at_trigger, "
                 "  detail_at_trigger, message, "
@@ -2029,7 +2059,7 @@ class ReflexBackend(object):
                 "  threshold_value2_at_trigger, threshold_text_at_trigger, "
                 "  duration_seconds_at_trigger, "
                 "  opened_at, last_seen_at, occurrence_count) "
-                "VALUES (:probe_id, :condition_id, :machines_id, "
+                "VALUES (:probe_id, :condition_id, :jiduser, "
                 "  :uuid_inventorymachine, :hostname, :severity, 'open', "
                 "  :value_at_trigger, :value_text_at_trigger, "
                 "  :detail_at_trigger, :message, "
@@ -2060,7 +2090,7 @@ class ReflexBackend(object):
             "id": alert_id,
             "probe_id": probe_id,
             "condition_id": condition_id,
-            "machines_id": machines_id,
+            "jiduser": jiduser,
             "uuid_inventorymachine": machine.get("uuid_inventorymachine"),
             "entity_id": machine.get("entity_id"),
             "hostname": machine.get("hostname"),
@@ -2122,7 +2152,7 @@ class ReflexBackend(object):
         deleted condition, alerts having no foreign key on condition_id.
         """
         return self.select(
-            "SELECT a.id, a.probe_id, a.condition_id, a.machines_id, "
+            "SELECT a.id, a.probe_id, a.condition_id, a.jiduser, "
             "       a.hostname, a.severity, a.opened_at, "
             "       a.operator_at_trigger, a.threshold_value_at_trigger, "
             "       a.threshold_value2_at_trigger, "
@@ -2144,7 +2174,8 @@ class ReflexBackend(object):
             "  FROM alerts a "
             "  LEFT JOIN probe_conditions c ON c.id = a.condition_id "
             "  LEFT JOIN probes p ON p.id = a.probe_id "
-            "  LEFT JOIN xmppmaster.machines xm ON xm.id = a.machines_id "
+            "  LEFT JOIN (" + XM_AGENTS_SQL + ") xa ON xa.jiduser = a.jiduser "
+            "  LEFT JOIN xmppmaster.machines xm ON xm.id = xa.id "
             "  LEFT JOIN xmppmaster.glpi_entity xe "
             "         ON xe.id = xm.glpi_entity_id "
             "  LEFT JOIN probe_condition_overrides pco "
@@ -2168,9 +2199,9 @@ class ReflexBackend(object):
             "                 AND a.duration_seconds_at_trigger <=> "
             "                     COALESCE(pco.duration_seconds, "
             "                              c.default_duration_seconds)))) "
-            " ORDER BY a.probe_id ASC, a.machines_id ASC, a.id ASC")
+            " ORDER BY a.probe_id ASC, a.jiduser ASC, a.id ASC")
 
-    def recent_measures(self, probe_id, machines_ids, seconds):
+    def recent_measures(self, probe_id, jidusers, seconds):
         """Measures of one probe over a window, for several machines at once.
 
         Same window rule as _window_measures, read for a list of machines: the
@@ -2180,24 +2211,22 @@ class ReflexBackend(object):
         """
         probe_id = _to_int(probe_id, 0)
         seconds = self.bounded_window(seconds)
-        wanted = sorted(set(_to_int(identifier, 0)
-                            for identifier in machines_ids or []))
-        wanted = [identifier for identifier in wanted if identifier > 0]
+        wanted = sorted(set(_jiduser(value) for value in jidusers or [])
+                        - {""})
         grouped = {}
         since = datetime.now() - timedelta(seconds=seconds + 1)
         for batch in _in_batches(wanted):
             fragment, params = _placeholders("mid", batch)
             params.update({"probe_id": probe_id, "since": since})
             rows = self.select(
-                "SELECT machines_id, value_num, value_text, status, "
+                "SELECT jiduser, value_num, value_text, status, "
                 "       received_at "
                 "  FROM probe_measures "
                 " WHERE probe_id = :probe_id AND received_at >= :since "
-                "   AND machines_id IN (" + fragment + ") "
-                " ORDER BY machines_id ASC, received_at DESC", params)
+                "   AND jiduser IN (" + fragment + ") "
+                " ORDER BY jiduser ASC, received_at DESC", params)
             for row in rows:
-                grouped.setdefault(
-                    _to_int(row.get("machines_id"), 0), []).append(row)
+                grouped.setdefault(_jiduser(row), []).append(row)
         return grouped
 
     def condition_still_stands(self, condition, measures, seconds):
@@ -2248,16 +2277,16 @@ class ReflexBackend(object):
         self._probe_placements = {}
         self._max_lookback = None
 
-    def machine_target(self, machines_id):
+    def machine_target(self, jiduser):
         """uuid and GLPI entity of a machine, read once per cycle at most.
 
         An empty answer means the machine could not be read, which is not the
         same as a machine attached to nothing.
         """
-        machines_id = _to_int(machines_id, 0)
-        if machines_id <= 0:
+        jiduser = _jiduser(jiduser)
+        if not jiduser:
             return {}
-        if machines_id not in self._target_machines:
+        if jiduser not in self._target_machines:
             row = {}
             try:
                 rows = _rows(_xmpp_engine().execute(text(
@@ -2265,14 +2294,15 @@ class ReflexBackend(object):
                     "  FROM xmppmaster.machines m "
                     "  LEFT JOIN xmppmaster.glpi_entity e "
                     "         ON e.id = m.glpi_entity_id "
-                    " WHERE m.id = :machines_id"),
-                    {"machines_id": machines_id}))
+                    " WHERE " + XM_AGENT_LOOKUP_SQL.format(xm="m") +
+                    " ORDER BY m.id DESC LIMIT 1"),
+                    {"jid_pattern": jiduser_like(jiduser)}))
                 row = rows[0] if rows else {}
             except Exception as error:
                 logger.warning("reflex: machine %s unreadable: %s"
-                               % (machines_id, error))
-            self._target_machines[machines_id] = row
-        return self._target_machines[machines_id]
+                               % (jiduser, error))
+            self._target_machines[jiduser] = row
+        return self._target_machines[jiduser]
 
     def machine_entity(self, machine):
         """The GLPI entity of a machine, None when there is none to be read.
@@ -2283,23 +2313,23 @@ class ReflexBackend(object):
         machine = machine or {}
         entity_id = machine.get("entity_id")
         if entity_id is None:
-            entity_id = self.machine_target(machine.get("id")).get("entity_id")
+            entity_id = self.machine_target(_jiduser(machine)).get("entity_id")
         return entity_identifier(entity_id)
 
-    def machine_groups(self, machines_id, uuid_inventorymachine):
+    def machine_groups(self, jiduser, uuid_inventorymachine):
         """Groups of a machine, read once per cycle at most.
 
         None when dyngroup could not be read, so a rule is never dropped on an
         answer nobody obtained. The failure is cached like a result.
         """
-        machines_id = _to_int(machines_id, 0)
-        if machines_id not in self._target_groups:
+        jiduser = _jiduser(jiduser)
+        if jiduser not in self._target_groups:
             try:
                 groups = machine_group_ids(uuid_inventorymachine)
             except ReflexSourceUnavailable:
                 groups = None
-            self._target_groups[machines_id] = groups
-        return self._target_groups[machines_id]
+            self._target_groups[jiduser] = groups
+        return self._target_groups[jiduser]
 
     # -------------------------------------------------------------------
     # Which placement governs a machine
@@ -2326,26 +2356,26 @@ class ReflexBackend(object):
             self._probe_placements[probe_id] = rows
         return self._probe_placements[probe_id]
 
-    def placement_reaches(self, placement, machines_id, uuid=None,
+    def placement_reaches(self, placement, jiduser, uuid=None,
                           entity_id=None):
         """Whether one placement covers one machine.
 
         The three targets of probe_assignments, read the way
         pulse2.database.reflex.machine_target_clauses reads them the other way
-        round: target_id is a varchar, so a machine target is its machines_id
-        written as text. A membership nobody could resolve answers False.
+        round: a machine target is its jiduser. A membership nobody could
+        resolve answers False.
         """
         target_type = str(placement.get("target_type") or "").strip().lower()
         target_id = str(placement.get("target_id") or "").strip()
         if target_type == "machine":
-            return _to_int(target_id, 0) == _to_int(machines_id, 0)
+            return bool(target_id) and _jiduser(target_id) == _jiduser(jiduser)
         if target_type == "group":
             if not uuid:
-                target = self.machine_target(machines_id)
+                target = self.machine_target(jiduser)
                 uuid = str(target.get("uuid_inventorymachine") or "").strip()
             if not uuid:
                 return False
-            groups = self.machine_groups(machines_id, uuid)
+            groups = self.machine_groups(jiduser, uuid)
             if groups is None:
                 return False
             return _to_int(target_id, 0) in groups
@@ -2357,7 +2387,7 @@ class ReflexBackend(object):
             if target_entity is None:
                 return False
             if entity_id is None:
-                target = self.machine_target(machines_id)
+                target = self.machine_target(jiduser)
                 entity_id = target.get("entity_id")
             machine_entity = entity_identifier(entity_id)
             if machine_entity is None:
@@ -2365,7 +2395,7 @@ class ReflexBackend(object):
             return target_entity == machine_entity
         return False
 
-    def placement_undecided(self, placement, machines_id, uuid=None,
+    def placement_undecided(self, placement, jiduser, uuid=None,
                             entity_id=None):
         """Whether a placement could not be judged against a machine.
 
@@ -2378,22 +2408,22 @@ class ReflexBackend(object):
         target_type = str(placement.get("target_type") or "").strip().lower()
         if target_type == "group":
             if not uuid:
-                uuid = str(self.machine_target(machines_id)
+                uuid = str(self.machine_target(jiduser)
                            .get("uuid_inventorymachine") or "").strip()
             if not uuid:
                 # A machine with no inventory identity is in no dyngroup,
                 # which is an answer; a machine nobody could read is not.
-                return not self.machine_target(machines_id)
-            return self.machine_groups(machines_id, uuid) is None
+                return not self.machine_target(jiduser)
+            return self.machine_groups(jiduser, uuid) is None
         if target_type == "entity":
             if entity_identifier(entity_id) is not None:
                 return False
             # None is "attached to no entity" when the machine could be read,
             # and "nobody knows" when it could not.
-            return not self.machine_target(machines_id)
+            return not self.machine_target(jiduser)
         return False
 
-    def governing_placement(self, probe_id, machines_id, uuid=None,
+    def governing_placement(self, probe_id, jiduser, uuid=None,
                             entity_id=None):
         """The placement that rules a probe on a machine, None when there is
         none.
@@ -2402,8 +2432,8 @@ class ReflexBackend(object):
         then the most specific target, then the oldest. Memberships are
         resolved only as far as needed.
         """
-        machines_id = _to_int(machines_id, 0)
-        if machines_id <= 0:
+        jiduser = _jiduser(jiduser)
+        if not jiduser:
             return None
         best = None
         best_rank = None
@@ -2416,7 +2446,7 @@ class ReflexBackend(object):
             if best_rank is not None and rank >= best_rank:
                 # Already beaten: a membership read is a statement.
                 continue
-            if not self.placement_reaches(placement, machines_id, uuid,
+            if not self.placement_reaches(placement, jiduser, uuid,
                                           entity_id):
                 continue
             best, best_rank = placement, rank
@@ -2432,13 +2462,13 @@ class ReflexBackend(object):
         machine = machine or {}
         try:
             uuid = str(machine.get("uuid_inventorymachine") or "").strip()
-            placement = self.governing_placement(probe_id, machine.get("id"),
+            placement = self.governing_placement(probe_id, _jiduser(machine),
                                                  uuid or None,
                                                  machine.get("entity_id"))
         except Exception as error:
             logger.debug("reflex: placement of probe %s on machine %s not "
                          "resolved (%s)"
-                         % (probe_id, machine.get("id"), error))
+                         % (probe_id, _jiduser(machine), error))
             return None
         return placement.get("language") if placement else None
 
@@ -2450,7 +2480,7 @@ class ReflexBackend(object):
         """
         alert = alert or {}
         return self.placement_language(alert.get("probe_id"), {
-            "id": alert.get("machines_id"),
+            "jiduser": alert.get("jiduser"),
             "uuid_inventorymachine": alert.get("uuid_inventorymachine"),
             "entity_id": alert.get("entity_id"),
         })
@@ -2465,8 +2495,8 @@ class ReflexBackend(object):
         if not kind:
             return True
 
-        machines_id = _to_int(alert.get("machines_id"), 0)
-        if machines_id <= 0:
+        jiduser = _jiduser(alert)
+        if not jiduser:
             logger.debug("reflex: alert without a machine, restriction "
                          "'%s:%s' left aside" % (kind, identifier))
             return True
@@ -2474,20 +2504,20 @@ class ReflexBackend(object):
         if kind == "group":
             uuid = str(alert.get("uuid_inventorymachine") or "").strip()
             if not uuid:
-                target = self.machine_target(machines_id)
+                target = self.machine_target(jiduser)
                 if not target:
                     return True
                 uuid = str(target.get("uuid_inventorymachine") or "").strip()
             if not uuid:
                 return True
-            groups = self.machine_groups(machines_id, uuid)
+            groups = self.machine_groups(jiduser, uuid)
             if groups is None:
                 return True
             return identifier in groups
 
         entity_id = alert.get("entity_id")
         if entity_id is None:
-            target = self.machine_target(machines_id)
+            target = self.machine_target(jiduser)
             if not target:
                 return True
             entity_id = target.get("entity_id")
@@ -2507,7 +2537,7 @@ class ReflexBackend(object):
         permission.
         """
         alert = alert or {}
-        return self.machine_entity({"id": alert.get("machines_id"),
+        return self.machine_entity({"jiduser": alert.get("jiduser"),
                                     "entity_id": alert.get("entity_id")})
 
     def channel_reaches(self, rule, alert):
@@ -2579,9 +2609,9 @@ class ReflexBackend(object):
         if cooldown_minutes <= 0:
             return False
         alert = alert or {}
-        machines_id = _to_int(alert.get("machines_id"), 0)
+        jiduser = _jiduser(alert)
         probe_id = _to_int(alert.get("probe_id"), 0)
-        if machines_id <= 0 or probe_id <= 0:
+        if not jiduser or probe_id <= 0:
             # Nothing to anchor the window on: silence is not guessed.
             return False
 
@@ -2590,7 +2620,7 @@ class ReflexBackend(object):
             instance = measure_instance(alert.get("value_text_at_trigger"),
                                         alert.get("value_type"))
         params = {"channel_id": _to_int(channel_id, 0),
-                  "machines_id": machines_id, "probe_id": probe_id,
+                  "jiduser": jiduser, "probe_id": probe_id,
                   "since": datetime.now() - timedelta(minutes=cooldown_minutes)}
         restriction = _instance_clause(params, instance,
                                        "a.value_text_at_trigger")
@@ -2606,7 +2636,7 @@ class ReflexBackend(object):
             "  JOIN alerts a ON a.id = h.alert_id "
             " WHERE h.channel_id = :channel_id AND h.status = 'sent' "
             "   AND h.created_at >= :since "
-            "   AND a.machines_id = :machines_id "
+            "   AND a.jiduser = :jiduser "
             "   AND a.probe_id = :probe_id " + restriction +
             " LIMIT 1", params)
         return row is not None
@@ -2977,7 +3007,7 @@ class ReflexBackend(object):
         rows = self.select(
             "SELECT h.id, h.alert_id, h.channel_id, h.rule_id, h.recipients, "
             "       h.attempt_count, h.is_escalation, a.hostname, a.severity, "
-            "       a.machines_id, a.uuid_inventorymachine, "
+            "       a.jiduser, a.uuid_inventorymachine, "
             "       a.message, a.probe_id, a.opened_at, a.status AS alert_status,"
             "       a.value_at_trigger, a.value_text_at_trigger, "
             "       a.detail_at_trigger, "
@@ -3020,7 +3050,7 @@ class ReflexBackend(object):
     def escalation_candidates(self, limit=50):
         """Critical alerts still open past the escalation delay of a rule."""
         rows = self.select(
-            "SELECT a.id, a.probe_id, a.machines_id, a.hostname, a.severity, "
+            "SELECT a.id, a.probe_id, a.jiduser, a.hostname, a.severity, "
             "       a.message, a.opened_at, a.uuid_inventorymachine, "
             "       a.value_at_trigger, a.value_text_at_trigger, "
             "       a.detail_at_trigger, "
@@ -3079,31 +3109,51 @@ def _xmpp_engine():
 
 
 def machine_from_jid(jid):
-    """Machine behind a JID, as xmppmaster knows it.
+    """Machine behind a JID, read by the exact name of its agent.
 
     An empty answer means the JID belongs to no known machine; an xmppmaster
     that cannot be read raises.
     """
+    jiduser = jiduser_of(jid)
+    if not jiduser:
+        return {}
     try:
-        return _xmpp_database().getMachinefromjid(str(jid)) or {}
+        rows = _rows(_xmpp_engine().execute(text(
+            "SELECT m.id, m.jid, m.hostname, m.platform, "
+            "       m.uuid_inventorymachine, e.glpi_id AS entity_id "
+            "  FROM xmppmaster.machines m "
+            "  LEFT JOIN xmppmaster.glpi_entity e ON e.id = m.glpi_entity_id "
+            " WHERE " + XM_AGENT_LOOKUP_SQL.format(xm="m") +
+            " ORDER BY m.id DESC LIMIT 1"),
+            {"jid_pattern": jiduser_like(jiduser)}))
     except Exception as error:
         logger.error("reflex: JID %s could not be resolved: %s" % (jid, error))
         raise ReflexSourceUnavailable("machine behind %s: %s" % (jid, error))
+    return rows[0] if rows else {}
 
 
-_ACTIVE_MACHINE_SQL = (
-    "SELECT m.id, m.jid, m.hostname, m.platform, "
-    "       m.uuid_inventorymachine, e.glpi_id AS entity_id "
-    "  FROM xmppmaster.machines m "
-    "  LEFT JOIN xmppmaster.glpi_entity e ON e.id = m.glpi_entity_id "
-    " WHERE m.agenttype = 'machine' AND m.enabled = 1 "
-    "   AND m.jid IS NOT NULL AND m.jid != ''")
+def _active_machine_sql(last_row_only=False):
+    """Statement listing the active machines, each with its jiduser.
+
+    last_row_only keeps, for an agent name carried by several rows, the row
+    XM_AGENTS_SQL elects, aliased xa.
+    """
+    return (
+        "SELECT m.id, m.jid, m.hostname, m.platform, "
+        "       m.uuid_inventorymachine, e.glpi_id AS entity_id, "
+        "       " + XM_JIDUSER_SQL.format(xm="m") + " AS jiduser "
+        "  FROM xmppmaster.machines m "
+        + ("  JOIN (" + XM_AGENTS_SQL + ") xa ON xa.id = m.id "
+           if last_row_only else "") +
+        "  LEFT JOIN xmppmaster.glpi_entity e ON e.id = m.glpi_entity_id "
+        " WHERE m.agenttype = 'machine' AND m.enabled = 1 "
+        "   AND m.jid IS NOT NULL AND m.jid != ''")
 
 
 def active_machines():
     """Machines an agent is expected to run on, [] when they cannot be read."""
     try:
-        return _rows(_xmpp_engine().execute(text(_ACTIVE_MACHINE_SQL), {}))
+        return _rows(_xmpp_engine().execute(text(_active_machine_sql()), {}))
     except Exception as error:
         logger.error("reflex: the machine list could not be read: %s" % error)
         return []
@@ -3133,7 +3183,7 @@ def machine_group_ids(uuid_inventorymachine):
 
 
 def machines_in_groups(group_ids):
-    """Machines belonging to dyngroup groups, as xmppmaster numbers them.
+    """Machines belonging to dyngroup groups, as their jiduser.
 
     The mirror image of machine_group_ids, so a sweep over a whole park does
     not resolve the groups of every machine one by one. DISTINCT because
@@ -3147,23 +3197,23 @@ def machines_in_groups(group_ids):
     fragment, params = _placeholders("grp", ids)
     try:
         rows = _rows(_xmpp_engine().execute(text(
-            "SELECT DISTINCT m.id "
+            "SELECT DISTINCT " + XM_JIDUSER_SQL.format(xm="m") + " AS jiduser "
             "  FROM dyngroup.Results r "
             "  JOIN dyngroup.Machines dm ON dm.id = r.FK_machines "
             "  JOIN xmppmaster.machines m "
             "         ON m.uuid_inventorymachine = dm.uuid "
-            " WHERE r.FK_groups IN (" + fragment + ")"), params))
+            " WHERE r.FK_groups IN (" + fragment + ") "
+            "   AND m.agenttype = 'machine'"), params))
     except Exception as error:
         logger.warning("reflex: members of groups %s unreadable: %s"
                        % (ids, error))
         raise ReflexSourceUnavailable(
             "dyngroup members of %s: %s" % (ids, error))
-    return set(_to_int(row.get("id"), 0) for row in rows
-               if _to_int(row.get("id"), 0) > 0)
+    return set(_jiduser(row) for row in rows) - {""}
 
 
 def machines_in_entities(entity_ids):
-    """Machines attached to GLPI entities, as xmppmaster numbers them.
+    """Machines attached to GLPI entities, as their jiduser.
 
     entity_id is glpi_entity.glpi_id, not the local key of the table. 0 is
     kept: it is the root entity, where every machine of a park declaring one
@@ -3183,17 +3233,17 @@ def machines_in_entities(entity_ids):
     fragment, params = _placeholders("ent", ids)
     try:
         rows = _rows(_xmpp_engine().execute(text(
-            "SELECT m.id "
+            "SELECT DISTINCT " + XM_JIDUSER_SQL.format(xm="m") + " AS jiduser "
             "  FROM xmppmaster.machines m "
             "  JOIN xmppmaster.glpi_entity e ON e.id = m.glpi_entity_id "
-            " WHERE e.glpi_id IN (" + fragment + ")"), params))
+            " WHERE e.glpi_id IN (" + fragment + ") "
+            "   AND m.agenttype = 'machine'"), params))
     except Exception as error:
         logger.warning("reflex: machines of entities %s unreadable: %s"
                        % (ids, error))
         raise ReflexSourceUnavailable(
             "GLPI entities %s: %s" % (ids, error))
-    return set(_to_int(row.get("id"), 0) for row in rows
-               if _to_int(row.get("id"), 0) > 0)
+    return set(_jiduser(row) for row in rows) - {""}
 
 
 def build_configuration(backend, machine):
@@ -3209,7 +3259,7 @@ def build_configuration(backend, machine):
     if entity_id is not None:
         entity_ids.append(entity_id)
     return backend.machine_config(
-        machine.get("id"),
+        _jiduser(machine),
         group_ids=machine_group_ids(machine.get("uuid_inventorymachine")),
         entity_ids=entity_ids)
 
@@ -3222,9 +3272,9 @@ def send_configuration(xmppobject, backend, machine, sessionid=None,
     answered, even for an unchanged configuration, or an agent that lost its
     file would stay mute.
     """
-    machines_id = _to_int(machine.get("id"), 0)
+    jiduser = _jiduser(machine)
     jid = str(machine.get("jid") or "")
-    if machines_id <= 0 or not jid:
+    if not jiduser or not jid:
         return ""
 
     try:
@@ -3237,7 +3287,7 @@ def send_configuration(xmppobject, backend, machine, sessionid=None,
         logger.warning("reflex: configuration of %s postponed, %s"
                        % (machine.get("hostname") or jid, error))
         return ""
-    state = backend.agent_config_state(machines_id) or {}
+    state = backend.agent_config_state(jiduser) or {}
     if not force and state.get("sent_version") == version:
         if state.get("acked_version") == version:
             return ""
@@ -3250,7 +3300,7 @@ def send_configuration(xmppobject, backend, machine, sessionid=None,
 
     payload = {
         "action": "reflex",
-        "sessionid": sessionid or "reflexconfig%d" % machines_id,
+        "sessionid": sessionid or "reflexconfig%s" % jiduser,
         "base64": False,
         "ret": 0,
         "data": {
@@ -3268,7 +3318,7 @@ def send_configuration(xmppobject, backend, machine, sessionid=None,
         return ""
 
     backend.database.set_agent_config_sent(
-        machines_id, machine.get("hostname") or "", version,
+        jiduser, machine.get("hostname") or "", version,
         probe_count=len(probes))
     logger.debug("reflex: configuration %s sent to %s (%d probe(s))"
                  % (version, jid, len(probes)))
@@ -3313,51 +3363,51 @@ def pending_config_changes(backend):
 def probe_reach(backend, probe_id):
     """Targets reached by the placements of a probe, exclusions included.
 
-    Returns (machine_ids, group_ids, entity_ids). Raises when the placements
+    Returns (jidusers, group_ids, entity_ids). Raises when the placements
     cannot be read: a probe whose reach is unknown is not a probe reaching
     nobody.
     """
     probe_id = _to_int(probe_id, 0)
-    machine_ids, group_ids, entity_ids = set(), set(), set()
+    jidusers, group_ids, entity_ids = set(), set(), set()
     if probe_id <= 0:
-        return machine_ids, group_ids, entity_ids
+        return jidusers, group_ids, entity_ids
     for placement in backend.select(
             "SELECT target_type, target_id FROM probe_assignments "
             " WHERE probe_id = :probe_id", {"probe_id": probe_id}):
         target_type = str(placement.get("target_type") or "").strip().lower()
         target_id = str(placement.get("target_id") or "").strip()
-        if target_type == "machine" and _to_int(target_id, 0) > 0:
-            machine_ids.add(_to_int(target_id, 0))
+        if target_type == "machine" and _jiduser(target_id):
+            jidusers.add(_jiduser(target_id))
         elif target_type == "group" and _to_int(target_id, 0) > 0:
             group_ids.add(_to_int(target_id, 0))
         elif target_type == "entity" \
                 and entity_identifier(target_id) is not None:
             entity_ids.add(entity_identifier(target_id))
     for exclusion in backend.select(
-            "SELECT machines_id FROM probe_exclusions "
+            "SELECT jiduser FROM probe_exclusions "
             " WHERE probe_id = :probe_id", {"probe_id": probe_id}):
-        if _to_int(exclusion.get("machines_id"), 0) > 0:
-            machine_ids.add(_to_int(exclusion.get("machines_id"), 0))
-    return machine_ids, group_ids, entity_ids
+        if _jiduser(exclusion):
+            jidusers.add(_jiduser(exclusion))
+    return jidusers, group_ids, entity_ids
 
 
-def active_machines_among(machine_ids=None):
-    """Active machines, all of them when machine_ids is None.
+def active_machines_among(jidusers=None):
+    """Active machines, all of them when jidusers is None.
 
     Unlike active_machines(), raises ReflexSourceUnavailable: an empty answer
     here would empty the queue.
     """
     try:
-        if machine_ids is None:
+        if jidusers is None:
             return _rows(_xmpp_engine().execute(text(
-                _ACTIVE_MACHINE_SQL + " ORDER BY m.id")))
-        ids = sorted(set(_to_int(value, 0) for value in machine_ids))
-        ids = [value for value in ids if value > 0]
+                _active_machine_sql() + " ORDER BY m.id")))
+        names = sorted(set(_jiduser(value) for value in jidusers) - {""})
         machines = []
-        for batch in _in_batches(ids):
+        for batch in _in_batches(names):
             fragment, params = _placeholders("mid", batch)
             machines.extend(_rows(_xmpp_engine().execute(text(
-                _ACTIVE_MACHINE_SQL + " AND m.id IN (" + fragment + ")"
+                _active_machine_sql(last_row_only=True)
+                + " AND xa.jiduser IN (" + fragment + ")"
                 " ORDER BY m.id"), params)))
         return machines
     except ReflexSourceUnavailable:
@@ -3373,7 +3423,7 @@ def changed_machines(backend, changes):
     by id, and the change rows that could not be translated and must stay
     queued.
     """
-    machine_ids = set()
+    jidusers = set()
     groups, entities = {}, {}
     unresolved = []
     everything = []
@@ -3383,8 +3433,8 @@ def changed_machines(backend, changes):
         if scope == "all":
             everything.append(change)
         elif scope == "machine":
-            if _to_int(scope_id, 0) > 0:
-                machine_ids.add(_to_int(scope_id, 0))
+            if _jiduser(scope_id):
+                jidusers.add(_jiduser(scope_id))
         elif scope == "group":
             if _to_int(scope_id, 0) > 0:
                 groups.setdefault(_to_int(scope_id, 0), []).append(change)
@@ -3400,7 +3450,7 @@ def changed_machines(backend, changes):
                                "change kept" % (scope_id, error))
                 unresolved.append(change)
                 continue
-            machine_ids.update(reach[0])
+            jidusers.update(reach[0])
             for group_id in reach[1]:
                 groups.setdefault(group_id, []).append(change)
             for entity_id in reach[2]:
@@ -3422,7 +3472,7 @@ def changed_machines(backend, changes):
         if not targets:
             continue
         try:
-            machine_ids.update(resolve(sorted(targets)))
+            jidusers.update(resolve(sorted(targets)))
         except Exception as error:
             logger.warning("reflex: members of %s unreadable (%s), changes "
                            "kept" % (sorted(targets), error))
@@ -3430,10 +3480,10 @@ def changed_machines(backend, changes):
                 unresolved.extend(kept)
 
     try:
-        machines = active_machines_among(machine_ids) if machine_ids else []
+        machines = active_machines_among(jidusers) if jidusers else []
     except ReflexSourceUnavailable as error:
         logger.warning("reflex: machines %s unreadable (%s), changes kept"
-                       % (sorted(machine_ids), error))
+                       % (sorted(jidusers), error))
         return [], _distinct_changes(changes)
     return machines, _distinct_changes(unresolved)
 
@@ -3442,8 +3492,9 @@ def _distinct_changes(changes):
     seen = set()
     kept = []
     for change in changes:
+        scope_id = change.get("scope_id")
         key = (str(change.get("scope_type") or "").strip().lower(),
-               change.get("scope_id"))
+               None if scope_id is None else str(scope_id).strip())
         if key in seen:
             continue
         seen.add(key)
@@ -3457,8 +3508,8 @@ def settle_config_changes(backend, max_id, remaining_ids, unresolved):
     One transaction: the rows read disappear only if what they still owe is
     written back as machine rows or as the unresolved scopes themselves.
     """
-    rows = [{"scope_type": "machine", "scope_id": _to_int(machines_id, 0)}
-            for machines_id in remaining_ids if _to_int(machines_id, 0) > 0]
+    rows = [{"scope_type": "machine", "scope_id": _jiduser(jiduser)}
+            for jiduser in remaining_ids if _jiduser(jiduser)]
     rows.extend({"scope_type": change["scope_type"],
                  "scope_id": change["scope_id"]} for change in unresolved)
     with backend.engine.begin() as connection:
@@ -3508,11 +3559,11 @@ def process_config_changes(xmppobject, backend,
         except Exception as error:
             result["failed"] += 1
             logger.error("reflex: configuration of %s failed: %s"
-                         % (machine.get("hostname") or machine.get("id"),
+                         % (machine.get("hostname") or _jiduser(machine),
                             error))
 
     result["requeued"] = settle_config_changes(
-        backend, max_id, [machine.get("id") for machine in rest], unresolved)
+        backend, max_id, [_jiduser(machine) for machine in rest], unresolved)
     return result
 
 

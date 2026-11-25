@@ -170,16 +170,15 @@ def agentinfoversion(xmppobject):
     """
     pythonModulesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
-    if sys.platform.startswith("linux"):
+    if sys.platform.startswith("win"):
+        cmd = f'"C:\\Program Files\\python3\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
+    else:
+        # Linux and macOS
         cmd = (
             f"{shlex.quote(sys.executable)} "
             f"{shlex.quote(os.path.join(pythonModulesPath, '..', 'replicator.py'))} "
             "-i -v"
         )
-    elif sys.platform.startswith("win"):
-        cmd = f'"C:\\Program Files\\python3\\python.exe" "{os.path.join(xmppobject.pathagent, "replicator.py")}" -i -v'
-    elif sys.platform.startswith("darwin"):
-        pass
     logger.debug(f"cmd : {cmd}")
     result = simplecommand(cmd)
     resultobj = {}
