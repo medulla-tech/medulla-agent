@@ -87,8 +87,7 @@ REPORT_COMMAND = '@@@PLUGIN_CALL_updates_windows@@@ {"after_deployment": true}'
 LINUX_REPORT_COMMAND = '@@@PLUGIN_CALL_updates_linux@@@ {"after_deployment": true}'
 
 # Linux: one package per package manager family; the packages to upgrade come
-# with the deployment ({"packages": [...]} in the command parameters). The agent
-# cannot ask under Linux yet: an open session keeps the restart pending.
+# with the deployment ({"packages": [...]} in the command parameters).
 LINUX_FAMILIES = ("apt", "dnf", "zypper")
 LINUX_RESTART_NEEDED = {
     "apt": "[ -e /var/run/reboot-required ]",
@@ -961,6 +960,14 @@ QUESTION_MESSAGE = (
     " Un redémarrage est nécessaire pour appliquer la modification."
     " Redémarrer maintenant ?"
 )
+LINUX_QUESTION_TITLE = "System updates"
+LINUX_QUESTION_MESSAGE = (
+    "Medulla has installed system updates. A restart is required"
+    " to apply them. Restart now?\n\n"
+    "Medulla a installé des mises à jour du système."
+    " Un redémarrage est nécessaire pour les appliquer."
+    " Redémarrer maintenant ?"
+)
 RESTART_FIRST_MESSAGE = (
     "Windows updates are waiting for a restart. Medulla installs the next ones"
     " after it. Restart now?\n\n"
@@ -1814,15 +1821,15 @@ def sessions_step(label="CHECK_SESSIONS", restart="REBOOT", ask="ASK_REBOOT", no
     }
 
 
-def question_step(label, message, restart, refused):
-    # No gotonouser: action_question would follow gototimeout,
-    # without a user the next step (the restart) is taken
-    return {
+def question_step(label, message, restart, refused, title=QUESTION_TITLE, nouser=None):
+    """nouser: where the agent goes when it finds no graphical session to ask in;
+    None under Windows, the next step (the restart) is then taken."""
+    step = {
         "action": "action_question",
         "step": 0,
         "codereturn": "",
         "actionlabel": label,
-        "titlemessage": b64(QUESTION_TITLE),
+        "titlemessage": b64(title),
         "sizeheader": "15",
         "message": b64(message),
         "sizemessage": "10",
@@ -1833,6 +1840,9 @@ def question_step(label, message, restart, refused):
         "gototimeout": refused,
         "timeout": QUESTION_TIMEOUT,
     }
+    if nouser:
+        step["gotonouser"] = nouser
+    return step
 
 
 def restart_step(label="REBOOT"):
@@ -2065,8 +2075,9 @@ def linux_sessions_step(family):
         "script": b64(LINUX_SESSIONS_SCRIPT % {"restart_needed": needed}),
         "timeout": SESSIONS_TIMEOUT,
         "10@lastlines": "10@lastlines",
-        "gotoreturncode@=10": "REBOOT",
-        "gotoreturncode@!=10": "REPORT_SUCCESS",
+        "gotoreturncode@=%d" % NO_SESSION_CODE: "REBOOT",
+        "gotoreturncode@=11": "ASK_REBOOT",
+        "gotoreturncode@OUT%d,11" % NO_SESSION_CODE: "REPORT_SUCCESS",
     }
 
 
@@ -2074,7 +2085,13 @@ def linux_sequence(family):
     sequence = [
         {"action": "action_section_update", "step": 0, "actionlabel": "SECTION_UPDATE"},
         linux_install_step(family),
-    ] + ([] if family in LINUX_UPGRADE_SCRIPTS else [linux_sessions_step(family), restart_step()]) + [
+    ] + ([] if family in LINUX_UPGRADE_SCRIPTS else [
+        linux_sessions_step(family),
+        # A session the agent cannot show a window in keeps the restart pending
+        question_step("ASK_REBOOT", LINUX_QUESTION_MESSAGE, "REBOOT", "REPORT_SUCCESS",
+                      LINUX_QUESTION_TITLE, "REPORT_SUCCESS"),
+        restart_step(),
+    ]) + [
         report_step("REPORT_SUCCESS", "END_SUCCESS", LINUX_REPORT_COMMAND),
         {
             "action": "actionsuccescompletedend",
