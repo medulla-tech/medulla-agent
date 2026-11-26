@@ -99,6 +99,10 @@ SetCompressor lzma
 
 ; UI pages
 !insertmacro MUI_PAGE_WELCOME
+!If "${BASE_AGENT}" == '1'
+; Shows the server and the download tag found, and lets the user enter them
+Page custom BootstrapPage BootstrapPageLeave
+!EndIf
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -123,6 +127,22 @@ SetCompressor lzma
 Var FIREWALL
 Var BOOTSTRAP_SERVER
 Var BOOTSTRAP_TAG
+!If "${BASE_AGENT}" == '1'
+!include "nsDialogs.nsh"
+Var BOOTSTRAP_SOURCE
+Var BOOTSTRAP_EMPTIED
+Var BOOTSTRAP_SERVER_FIELD
+Var BOOTSTRAP_TAG_FIELD
+Var CHECK_NAME
+Var CHECK_RESULT
+Var CHECK_LAST
+Var CHECK_I
+Var CHECK_J
+Var CHECK_CHAR
+Var CHECK_ALLOWED
+Var CHECK_ALLOWED_LAST
+Var CHECK_FOUND
+!EndIf
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -476,7 +496,10 @@ Section "!${PRODUCT_NAME}" sec_app
   ; first in the name of this installer given by the download page
   WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "server" "$BOOTSTRAP_SERVER"
   WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "tag" "$BOOTSTRAP_TAG"
-  WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "installer" "$EXEFILE"
+  ; Unless the user emptied them on purpose in the page
+  ${If} $BOOTSTRAP_EMPTIED != 1
+    WriteINIStr "$INSTDIR\etc\bootstrap.ini" "bootstrap" "installer" "$EXEFILE"
+  ${EndIf}
 !Else
   ${If} $BOOTSTRAP_SERVER != ""
   ${AndIf} $BOOTSTRAP_TAG != ""
@@ -714,6 +737,184 @@ SectionEnd
 
 ; Functions
 
+!If "${BASE_AGENT}" == '1'
+; Server or download tag the agent accepts: a letter or a digit, then
+; letters, digits, ".", "-" or ":". Reads $CHECK_NAME, sets $CHECK_RESULT.
+Function CheckName
+  StrCpy $CHECK_RESULT 0
+  StrLen $CHECK_LAST $CHECK_NAME
+  ${If} $CHECK_LAST == 0
+    Return
+  ${EndIf}
+  IntOp $CHECK_LAST $CHECK_LAST - 1
+  ${For} $CHECK_I 0 $CHECK_LAST
+    StrCpy $CHECK_CHAR $CHECK_NAME 1 $CHECK_I
+    StrCpy $CHECK_ALLOWED "abcdefghijklmnopqrstuvwxyz0123456789"
+    ${If} $CHECK_I > 0
+      StrCpy $CHECK_ALLOWED "$CHECK_ALLOWED.-:"
+    ${EndIf}
+    StrLen $CHECK_ALLOWED_LAST $CHECK_ALLOWED
+    IntOp $CHECK_ALLOWED_LAST $CHECK_ALLOWED_LAST - 1
+    StrCpy $CHECK_FOUND 0
+    ${For} $CHECK_J 0 $CHECK_ALLOWED_LAST
+      StrCpy $R9 $CHECK_ALLOWED 1 $CHECK_J
+      ; LogicLib compares strings without case
+      ${If} $R9 == $CHECK_CHAR
+        StrCpy $CHECK_FOUND 1
+        ${ExitFor}
+      ${EndIf}
+    ${Next}
+    ${If} $CHECK_FOUND == 0
+      Return
+    ${EndIf}
+  ${Next}
+  StrCpy $CHECK_RESULT 1
+FunctionEnd
+
+; Keeps $R1 as server and $R2 as tag when both are valid
+Function UseBootstrapFound
+  StrCpy $CHECK_NAME $R1
+  Call CheckName
+  ${If} $CHECK_RESULT == 1
+    StrCpy $CHECK_NAME $R2
+    Call CheckName
+  ${EndIf}
+  ${If} $CHECK_RESULT == 1
+    StrCpy $BOOTSTRAP_SERVER $R1
+    StrCpy $BOOTSTRAP_TAG $R2
+  ${EndIf}
+FunctionEnd
+
+; Medulla-Agent-windows-BASE_<server>_<tag>.exe, named by the download page
+Function ReadInstallerName
+  StrCpy $R0 $EXEFILE
+  StrCpy $R1 $R0 27
+  ${If} $R1 != "Medulla-Agent-windows-BASE_"
+    Return
+  ${EndIf}
+  StrCpy $R0 $R0 "" 27
+  StrCpy $R1 $R0 "" -4
+  ${If} $R1 != ".exe"
+    Return
+  ${EndIf}
+  StrCpy $R0 $R0 -4
+  ; A browser adds " (1)" to a second download of the same file
+  StrCpy $R1 $R0 "" -1
+  ${If} $R1 == ")"
+    StrLen $R2 $R0
+    ${Do}
+      IntOp $R2 $R2 - 1
+      ${If} $R2 < 0
+        Return
+      ${EndIf}
+      StrCpy $R1 $R0 1 $R2
+    ${LoopUntil} $R1 == "("
+    StrCpy $R0 $R0 $R2
+    StrCpy $R1 $R0 "" -1
+    ${If} $R1 == " "
+      StrCpy $R0 $R0 -1
+    ${EndIf}
+  ${EndIf}
+  ; The server ends at the first "_": neither the server nor the tag holds one
+  StrLen $R2 $R0
+  StrCpy $R3 0
+  ${Do}
+    ${If} $R3 >= $R2
+      Return
+    ${EndIf}
+    StrCpy $R1 $R0 1 $R3
+    ${If} $R1 == "_"
+      ${ExitDo}
+    ${EndIf}
+    IntOp $R3 $R3 + 1
+  ${Loop}
+  StrCpy $R1 $R0 $R3
+  IntOp $R3 $R3 + 1
+  StrCpy $R2 $R0 "" $R3
+  Call UseBootstrapFound
+  ${If} $BOOTSTRAP_SERVER != ""
+    StrCpy $BOOTSTRAP_SOURCE "the name of this installer"
+  ${EndIf}
+FunctionEnd
+
+; Pushed by a GPO or by Intune
+Function ReadRegistryBootstrap
+  SetRegView 64
+  ClearErrors
+  ReadRegStr $R1 HKLM "SOFTWARE\Medulla\Bootstrap" "server"
+  ReadRegStr $R2 HKLM "SOFTWARE\Medulla\Bootstrap" "tag"
+  ${If} ${Errors}
+    ClearErrors
+    Return
+  ${EndIf}
+  Call UseBootstrapFound
+  ${If} $BOOTSTRAP_SERVER != ""
+    StrCpy $BOOTSTRAP_SOURCE "the registry"
+  ${EndIf}
+FunctionEnd
+
+Function BootstrapPage
+  !insertmacro MUI_HEADER_TEXT "Medulla server" "Server and organisation of this agent"
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    Abort
+  ${EndIf}
+  ${If} $BOOTSTRAP_SOURCE != ""
+    StrCpy $1 "Found in $BOOTSTRAP_SOURCE. Check them before going on."
+  ${Else}
+    StrCpy $1 "Nothing found. Enter the address of the Medulla server and the download tag of the organisation, \
+shown on the download page of Medulla."
+  ${EndIf}
+  ${NSD_CreateLabel} 0 0 100% 28u $1
+  Pop $0
+  ${NSD_CreateLabel} 0 36u 25% 12u "Server:"
+  Pop $0
+  ${NSD_CreateText} 25% 34u 75% 12u $BOOTSTRAP_SERVER
+  Pop $BOOTSTRAP_SERVER_FIELD
+  ${NSD_CreateLabel} 0 56u 25% 12u "Download tag:"
+  Pop $0
+  ${NSD_CreateText} 25% 54u 75% 12u $BOOTSTRAP_TAG
+  Pop $BOOTSTRAP_TAG_FIELD
+  ${NSD_CreateLabel} 0 80u 100% 28u "Leave both empty if a GPO, Intune or the DNS of your domain gives them: \
+the agent looks for them when it starts."
+  Pop $0
+  nsDialogs::Show
+FunctionEnd
+
+Function BootstrapPageLeave
+  ${NSD_GetText} $BOOTSTRAP_SERVER_FIELD $R1
+  ${NSD_GetText} $BOOTSTRAP_TAG_FIELD $R2
+  ${If} $R1 == ""
+  ${AndIf} $R2 == ""
+    StrCpy $BOOTSTRAP_SERVER ""
+    StrCpy $BOOTSTRAP_TAG ""
+    StrCpy $BOOTSTRAP_EMPTIED 1
+    Return
+  ${EndIf}
+  StrCpy $BOOTSTRAP_EMPTIED 0
+  ${If} $R1 == ""
+  ${OrIf} $R2 == ""
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Enter both the server and the download tag, or leave both empty."
+    Abort
+  ${EndIf}
+  StrCpy $CHECK_NAME $R1
+  Call CheckName
+  ${If} $CHECK_RESULT == 0
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Invalid server: use letters, digits, $\".$\", $\"-$\" and $\":$\" only."
+    Abort
+  ${EndIf}
+  StrCpy $CHECK_NAME $R2
+  Call CheckName
+  ${If} $CHECK_RESULT == 0
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Invalid download tag: use letters, digits, $\".$\", $\"-$\" and $\":$\" only."
+    Abort
+  ${EndIf}
+  StrCpy $BOOTSTRAP_SERVER $R1
+  StrCpy $BOOTSTRAP_TAG $R2
+FunctionEnd
+!EndIf
+
 Function .onInit
   ; Server and download tag of the organisation: /server=<address> /tag=<dl_tag>
   ${GetParameters} $0
@@ -737,6 +938,16 @@ Function .onInit
     ${EndIf}
     SetErrorLevel 87 ;ERROR_INVALID_PARAMETER
     Quit
+  ${EndIf}
+  ; Without them, the same sources as the agent, so that the page shows them
+  ${If} $BOOTSTRAP_SERVER != ""
+    StrCpy $BOOTSTRAP_SOURCE "the command line"
+  ${Else}
+    StrCpy $BOOTSTRAP_SOURCE ""
+    Call ReadInstallerName
+    ${If} $BOOTSTRAP_SERVER == ""
+      Call ReadRegistryBootstrap
+    ${EndIf}
   ${EndIf}
 !EndIf
 
