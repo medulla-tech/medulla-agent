@@ -13,7 +13,7 @@ import traceback
 
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "resultupdateagent", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "resultupdateagent", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
@@ -118,7 +118,7 @@ def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
 
     msg_script_file_to_remote_agent["data"] = {}
     msg_script_file_to_remote_agent["data"]["subaction"] = "install_%s" % type
-    msg_script_file_to_remote_agent["data"]["content"] = content
+    msg_script_file_to_remote_agent["data"]["content"] = content.decode("utf-8")
     msg_script_file_to_remote_agent["data"]["namescript"] = filename
     # only seul content of data is base 64
     msg_script_file_to_remote_agent["base64"] = False
