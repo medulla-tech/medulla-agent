@@ -307,6 +307,7 @@ class MUCBot(ClientXMPP):
         # self.reconnect_time_wait = 3
         # create mutex
         self.mutex = threading.Lock()
+        self.mutex_reinstall_agent = threading.Lock()
         self.mutexslotquickactioncount = threading.Lock()
         self.eventkilltcp = eventkilltcp
         # TODO_REMOVABLE: eventkillpipe is used only to signal the deprecated
@@ -3371,7 +3372,9 @@ class MUCBot(ClientXMPP):
         if os.path.isfile(namefilebool):
             os.remove(namefilebool)
 
-        connectionagentArgs = ["py", nameprogconnection, "-t", "machine"]
+        # The "py" launcher only exists on Windows.
+        python_cmd = sys.executable if sys.platform == "darwin" else "py"
+        connectionagentArgs = [python_cmd, nameprogconnection, "-t", "machine"]
         subprocess.call(connectionagentArgs)
 
         for i in range(15):
@@ -3412,7 +3415,7 @@ class MUCBot(ClientXMPP):
                 self.force_full_registration()
                 # il y a 1 changement dans le reseau
                 # on verify si on connecte
-                if self.state.ensure("connected"):
+                if self.is_connected():
                     logging.log(
                         DEBUGPULSE, "AGENT MACHINE ALWAY CONNECTED ON CHANG RESEAU"
                     )
@@ -3502,6 +3505,17 @@ class MUCBot(ClientXMPP):
         return disk + "\\\\".join(result)
 
     def reinstall_agent(self):
+        # Several files received at the same time each ask for the update:
+        # only one installation must run.
+        if not self.mutex_reinstall_agent.acquire(blocking=False):
+            logger.info("[REPLICATOR] Mise a jour deja en cours - demande ignoree")
+            return
+        try:
+            self._reinstall_agent()
+        finally:
+            self.mutex_reinstall_agent.release()
+
+    def _reinstall_agent(self):
         BOOL_DISABLE_IMG = os.path.join(self.pathagent, "BOOL_DISABLE_IMG")
         if os.path.exists(BOOL_DISABLE_IMG):
             logger.info(

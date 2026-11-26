@@ -641,7 +641,9 @@ def createfingerprintnetwork():
     command_mapping = {
         "win32": "ipconfig",
         "linux": "LANG=C ip addr | egrep '.*(inet|HWaddr).*' | grep -v inet6",
-        "darwin": "LANG=C ifconfig | egrep '.*(inet|ether).*' | grep -v inet6",
+        # macOS: IPv4 addresses only. The "ether" lines include addresses that
+        # macOS rotates by itself (awdl0, llw0...), which gave false network changes.
+        "darwin": "LANG=C ifconfig | grep 'inet '",
     }
 
     platform = sys.platform

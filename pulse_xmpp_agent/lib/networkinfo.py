@@ -438,7 +438,52 @@ class networkagentinfo:
                 BaseException
             ):  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
                 pass
+        self._macos_add_ipv4_without_dhcp_packet()
         return self.messagejson
+
+    def _macos_add_ipv4_without_dhcp_packet(self):
+        """
+        Add the IPv4 addresses that "ipconfig getpacket" did not report
+        (static address, no DHCP packet, or packet not matching the current
+        address). Without this, the address used for the XMPP connection can
+        be missing from listipinfo and the agent cannot be configured.
+        """
+        known_ips = {x.get("ipaddress") for x in self.messagejson["listipinfo"]}
+        try:
+            default_gateway = netifaces.gateways().get("default", {}).get(
+                netifaces.AF_INET, ("", "")
+            )
+        except Exception:
+            default_gateway = ("", "")
+        for i in netifaces.interfaces():
+            try:
+                addresses = netifaces.ifaddresses(i)
+                macaddress = addresses.get(netifaces.AF_LINK, [{}])[0].get("addr", "")
+                for inet in addresses.get(netifaces.AF_INET, []):
+                    ipaddress = inet.get("addr", "")
+                    if (
+                        not ipaddress
+                        or ipaddress.startswith("127.")
+                        or ipaddress in known_ips
+                    ):
+                        continue
+                    self.messagejson["listipinfo"].append(
+                        {
+                            "dhcpserver": "",
+                            "dhcp": "False",
+                            "macaddress": macaddress,
+                            "macnotshortened": macaddress,
+                            "ipaddress": ipaddress,
+                            "mask": inet.get("netmask", ""),
+                            "broadcast": inet.get("broadcast", ""),
+                            "gateway": (
+                                default_gateway[0] if default_gateway[1] == i else ""
+                            ),
+                        }
+                    )
+                    known_ips.add(ipaddress)
+            except Exception:
+                pass
 
     def getLocalIipAddress(self):
         dhcpserver = self.IpDhcp()

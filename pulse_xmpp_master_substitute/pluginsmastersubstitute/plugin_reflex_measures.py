@@ -17,18 +17,18 @@ import traceback
 
 from lib.plugins.reflex import reflex_backend, machine_from_jid, \
     send_configuration, build_configuration, ReflexSourceUnavailable, \
-    _to_int
+    jiduser_of
 
-plugin = {"VERSION": "1.1", "NAME": "reflex_measures", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "reflex_measures", "TYPE": "substitute"}  # fmt: skip
 
 logger = logging.getLogger()
 
 
-def _acknowledge_version(backend, machines_id, version, error=None):
+def _acknowledge_version(backend, jiduser, version, error=None):
     """Record what the agent declares to apply."""
     if not version:
         return
-    backend.database.set_agent_config_acked(machines_id, version,
+    backend.database.set_agent_config_acked(jiduser, version,
                                             last_error=error)
 
 
@@ -45,7 +45,7 @@ def process_measures(xmppobject, backend, machine, data, sessionid):
 
     # Read before the count is judged: a report whose measures were all
     # discarded still says which configuration the agent holds.
-    _acknowledge_version(backend, machine.get("id"),
+    _acknowledge_version(backend, machine.get("jiduser"),
                          data.get("config_version"))
 
     if not written:
@@ -92,11 +92,10 @@ def process_configrequest(xmppobject, backend, machine, data, sessionid):
         except ReflexSourceUnavailable:
             built = None
     if built is not None and built[0] == announced:
-        state = backend.agent_config_state(
-            _to_int(machine.get("id"), 0)) or {}
+        state = backend.agent_config_state(machine.get("jiduser")) or {}
         if state.get("sent_version") == announced:
             if state.get("acked_version") != announced:
-                _acknowledge_version(backend, machine.get("id"),
+                _acknowledge_version(backend, machine.get("jiduser"),
                                      announced)
             logger.debug("reflex: %s already holds configuration %s"
                          % (machine.get("hostname"), announced))
@@ -111,7 +110,7 @@ def process_configrequest(xmppobject, backend, machine, data, sessionid):
 def process_configack(xmppobject, backend, machine, data, sessionid):
     """The agent declares the configuration it applies, errors included."""
     error = data.get("error")
-    _acknowledge_version(backend, machine.get("id"),
+    _acknowledge_version(backend, machine.get("jiduser"),
                          data.get("config_version"), error=error)
     if error:
         logger.warning("reflex: %s applied its configuration with: %s"
@@ -145,11 +144,15 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
             logger.warning("reflex: subaction '%s' unknown, ignored" % subaction)
             return
 
+        # The key is the agent name of the sender.
+        jiduser = jiduser_of(message["from"])
         machine = machine_from_jid(message["from"])
-        if not machine or not machine.get("id"):
+        if not jiduser or not machine \
+                or jiduser_of(machine.get("jid")) != jiduser:
             logger.warning("reflex: unknown machine behind %s"
                            % message["from"])
             return
+        machine = dict(machine, jiduser=jiduser)
 
         handler(xmppobject, backend, machine, data, sessionid)
     except Exception as error:
