@@ -553,18 +553,6 @@ class manage_kiosk_message:
                     datasend["action"] = "notifysyncthing"
                     datasend["sessionid"] = getRandomName(6, "syncthing")
                     datasend["data"] = result["data"]
-                elif result["action"] in ["terminalInformations", "terminalAlert"]:
-                    substitute_recv = self.objectxmpp.sub_monitoring
-                    datasend["action"] = "vectormonitoringagent"
-                    datasend["sessionid"] = getRandomName(
-                        6, "monitoringterminalInformations"
-                    )
-                    datasend["data"] = result["data"]
-                    datasend["data"]["subaction"] = result["action"]
-                    if "date" in result:
-                        result["data"]["date"] = result["date"]
-                    if "serial" in result:
-                        result["data"]["serial"] = result["serial"]
                 else:
                     # bad action
                     logging.getLogger().warning(
