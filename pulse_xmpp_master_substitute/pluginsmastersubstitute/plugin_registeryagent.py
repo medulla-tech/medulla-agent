@@ -16,12 +16,11 @@ import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
+from lib.plugins.kiosk import send_packages
 from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
 from lib.utils import getRandomName, call_plugin, name_random
 import re
-from distutils.version import LooseVersion
 import configparser
 import netaddr
 import datetime
@@ -33,7 +32,7 @@ import time
 # import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.59", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.60", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
 
 params = {"duration": 300}
 # The parameter named duration is the time after which a configuration request is considered as expired.
@@ -1000,19 +999,17 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 xmppobject.listmodulemmc
                             except AttributeError:
                                 xmppobject.listmodulemmc = []
-                            if "kiosk" in xmppobject.listmodulemmc and kiosk_presence:
+                            if (
+                                "kiosk" in xmppobject.listmodulemmc
+                                and kiosk_presence == "True"
+                            ):
                                 # send a data message to kiosk when an inventory is registered
-                                handlerkioskpresence(
+                                send_packages(
                                     xmppobject,
-                                    data["from"],
-                                    idmachine,
-                                    data["platform"],
-                                    data["information"]["info"]["hostname"],
-                                    uuid,
-                                    data["agenttype"],
-                                    classutil=data["classutil"],
-                                    fromplugin=True,
-                                    showinfobool=showinfobool,
+                                    XmppMasterDatabase().getMachinefromjid(
+                                        data["from"]
+                                    ),
+                                    "initialisation_kiosk",
                                 )
 
                             XmppMasterDatabase().setlogxmpp(
@@ -1327,51 +1324,6 @@ def callinventory(xmppobject, to):
         logger.error("\n%s" % (traceback.format_exc()))
 
 
-def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
-    if sessionid is None or sessionid == "" or not isinstance(sessionid, str):
-        sessionid = action.strip().replace(" ", "")
-    return {
-        "action": action,
-        "data": data,
-        "ret": 0,
-        "base64": False,
-        "sessionid": getRandomName(4, sessionid),
-    }
-
-
-def handlerkioskpresence(
-    xmppobject,
-    jid,
-    id,
-    os,
-    hostname,
-    uuid_inventorymachine,
-    agenttype,
-    classutil,
-    fromplugin=False,
-    showinfobool=True,
-):
-    """
-    This function launch the kiosk actions when a prensence machine is active
-    """
-    if showinfobool:
-        logger.info("kiosk handled")
-    # print jid, id, os, hostname, uuid_inventorymachine, agenttype, classutil
-    # get the profiles from the table machine.
-    machine = XmppMasterDatabase().getMachinefromjid(jid)
-    structuredatakiosk = get_packages_for_machine(machine, showinfobool=showinfobool)
-    datas = {"subaction": "initialisation_kiosk", "data": structuredatakiosk}
-    message_to_machine = data_struct_message(
-        "kiosk",
-        data=datas,
-        ret=0,
-        base64=False,
-        sessionid=getRandomName(6, "initialisation_kiosk"),
-    )
-    xmppobject.send_message(mto=jid, mbody=json.dumps(message_to_machine), mtype="chat")
-    return datas
-
-
 def test_consolidation_inventory(
     xmppobject, sessionid, data, showinfobool, msg, idmachine
 ):
@@ -1544,174 +1496,6 @@ def test_consolidation_inventory(
                         % (t, msg["from"])
                     )
     return btestfindcomputer, machineglpiid
-
-
-def get_packages_for_machine(machine, showinfobool=True):
-    """
-    Get a list of the packages for the concerned machine.
-    Param:
-        machine : dict of the machine datas.
-        Data structure:
-        { "ad_ou_machine":"somethine", "ad_ou_user": "something", "hostname":"machine-name", "uuid_inventorymachine":"UUID1"}
-    Returns:
-        list of the packages"""
-
-    # We have to check the packages OS from profiles list, and verify if they are compatible with the current machine
-
-
-    # Get the machine OS
-    platform = "win"
-    mach_platform = ""
-    if "platform" in machine:
-        # Because re is picky, we have to use an independant str
-        mach_platform = machine["platform"]
-        if re.match("Microsoft", mach_platform) is not None:
-            platform = "win"
-        elif re.match("Darwin", mach_platform) is not None or re.match("MacOS", mach_platform) is not None:
-            platform = "mac"
-        else:
-            platform = "linux"
-
-    #
-    # Setting up the sources datas info
-    #
-    entity = XmppMasterDatabase().getmachineentityfromjid(machine["jid"])
-    machine_entity =  ""
-    if hasattr(entity, "complete_name"):
-        entity.complete_name.replace(" > ", ">>") if entity is not None else None
-    else:
-        entity.completename.replace(" > ", ">>") if entity is not None else None
-    OUmachine = (
-        machine["ad_ou_machine"].replace("\n", "").replace("\r", "").replace("@@", ">>")
-    )
-    OUuser = (
-        machine["ad_ou_user"].replace("\n", "").replace("\r", "").replace("@@", ">>")
-    )
-    group = XmppMasterDatabase().get_ad_group_for_lastuser(machine["lastuser"])
-    if OUmachine == "":
-        OUmachine = None
-    if OUuser == "":
-        OUuser == None
-
-    ldap = None
-
-    _sources = {
-        "ou_machine": OUmachine,
-        "ou_user": OUuser,
-        "ldap": ldap,
-        "group": group,
-        "entity": machine_entity,
-    }
-    # remove empty values and delete the temp _sources variable
-    sources = {key: _sources[key] for key in _sources if _sources[key] != None}
-
-    # we find all profiles with the specified sources
-    profiles = KioskDatabase().get_profiles_by_sources(sources)
-
-    # search packages and acknowledgements for the applied profiles
-    list_profile_packages = KioskDatabase().get_packages_for_profile_list(profiles)
-    if list_profile_packages is None or list_profile_packages == []:
-        return []
-    # Define the path for the packages list. Needed to find some info from xmppdeploy.json
-    pkg_dir = os.path.join("/", "var","lib", "pulse2", "packages")
-
-
-    # pkg_statuses is the cleaned up list of packages associated to the profiles list.
-    #   We will determine some info from packages and machine:
-    #       such OS compatibility between package and machine,
-    #       if the uninstall section is pecified,
-    #       if the launcher command is specified ...
-    #       the rights allowed, acknowledged, rejected ....
-
-    pkg_statuses = {}
-    for pkg in list_profile_packages:
-        # get a shortcut to package uuid
-        uuid = pkg["package_uuid"]
-
-        ### Check if the packages found are OS compatible
-        depl = {}
-        pkg_path = os.path.join(pkg_dir, uuid, "xmppdeploy.json")
-        try:
-            with open(pkg_path, "r") as fb:
-                try:
-                    depl = json.load(fb)
-                except:
-                    depl = {}
-                finally:
-                    fb.close()
-        except:
-            # Can't read xmppdeploy.json : probably corrupted package : skip
-            continue
-
-        # Check if the machine OS is compatible with the package
-        if platform not in pkg["os"]:
-            continue
-
-        # Check if the uninstall section is present
-        uninstall_section_present = False
-        update_section_present = False
-        for action_name in depl["metaparameter"][platform]["label"]:
-            if action_name == action_name.startswith("upd_"):
-                uninstall_section_present = True
-            if action_name == "label_section_uninstall" or action_name.startswith("Uninst_"):
-                uninstall_section_present = True
-
-        # Check if the launcher is specified
-        launcher = ""
-        if depl["info"]["launcher"] != "":
-            launcher = depl["info"]["launcher"]
-
-        # Check if the package is installed on the machine
-        found = Glpi().find_software_info_for_machine(machine["uuid_inventorymachine"],  pkg)
-        installed = True if found != [] else False
-        # create a new entry for this package if not existing in pkg_statuses
-        if uuid not in pkg_statuses:
-            # By default set to restricted
-            pkg_statuses[uuid] = {
-                "icon": "kiosk.png",
-                "right": "restricted",
-                "launcher" : launcher,
-                "uninstall" : uninstall_section_present,
-                "update": update_section_present,
-                "installed" : installed,
-                "uuid" : uuid,
-                "version_software": pkg["version_software"],
-                "vendor": pkg["vendor"],
-                "version": pkg["version_package"],
-                "software": pkg["software"],
-                "description": pkg["description"],
-                "name":pkg["name_package"],
-                "action": []
-            }
-
-        # We will find some info from profile rights
-        if pkg["package_status"] == "allowed":
-            pkg_statuses[uuid]["right"] = "allowed"
-
-        elif pkg["package_status"] == "restricted" and pkg["status"] == "allowed":
-            pkg_statuses[uuid]["right"] = "allowed"
-
-        # We fully know the package rights and states: we can put actions on it
-        pkg_statuses[uuid]["action"] = []
-
-        if installed == False:
-            if pkg_statuses[uuid]["right"] == "allowed":
-                pkg_statuses[uuid]["action"].append("Install")
-            else:
-                pkg_statuses[uuid]["action"].append("Ask")
-        else:
-            if pkg_statuses[uuid]["launcher"] != "":
-                pkg_statuses[uuid]["action"].append("Launch")
-            if pkg_statuses[uuid]["uninstall"] is True:
-                pkg_statuses[uuid]["action"].append("Delete")
-            if pkg_statuses[uuid]["update"] is True:
-                if LooseVersion(found[0][2]) < LooseVersion(pkg["version"]):
-                    pkg_statuses[uuid]["action"].append("Update")
-
-    structuredatakiosk = []
-    for uuid in pkg_statuses:
-        structuredatakiosk.append(pkg_statuses[uuid])
-    return structuredatakiosk
 
 
 def adduserdatageolocalisation(xmppobject, data, msg, sessionid, showinfobool):
