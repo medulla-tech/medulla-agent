@@ -65,6 +65,7 @@ class grafcet:
         self.userstatus = None
         self.userid = None
         self.userconectdate = None
+        self.usersessionenv = None
         self.data = self.datasend["data"]
         self.sessionid = self.datasend["sessionid"]
         self.__clean_protected()
@@ -213,6 +214,9 @@ class grafcet:
         # call function pour avoir connected user
         # implementer en 1er version uniquement pour windows
 
+        if sys.platform.startswith(self.USER_SESSION_PLATFORMS):
+            self.__initialise_user_session__()
+            return
         if not sys.platform.startswith("win"):
             return
         try:
@@ -238,6 +242,101 @@ class grafcet:
             self.userstatus = None
             self.userid = None
             self.userconectdate = None
+
+    USER_WINDOW_ACTIONS = (
+        "action_notification",
+        "action_question",
+        "action_loop_question",
+    )
+
+    USER_SESSION_PLATFORMS = ("linux", "darwin")
+
+    def __initialise_user_session__(self):
+        """
+        Search the user of the active graphical session, only for a
+        deployment holding a step which shows a window to the user.
+        """
+        self.userconecter = None
+        self.userid = None
+        self.usersessionenv = None
+        try:
+            if not any(
+                stepseq.get("action") in self.USER_WINDOW_ACTIONS
+                for stepseq in self.sequence
+            ):
+                return
+            kiosk = __import__("scheduling_launch_kiosk")
+            session_type = None
+            if sys.platform.startswith("linux"):
+                session = kiosk.get_linux_graphical_session()
+                env = kiosk.get_user_graphical_env(session["uid"]) if session else {}
+                if session and "DISPLAY" in env:
+                    self.userconecter = session["user"]
+                    self.userid = session["uid"]
+                    self.usersessionenv = env
+                    session_type = session["type"]
+            elif sys.platform.startswith("darwin"):
+                user = kiosk.get_macos_console_user()
+                uid = kiosk._uid_of(user) if user else None
+                if uid:
+                    self.userconecter = user
+                    self.userid = uid
+                    session_type = "aqua"
+            if self.userconecter is not None:
+                msg_user = f'[{self.data["name"]}]-[{self.data["stepcurrent"]}]: Currently connected user {self.userconecter} graphical session [{session_type}]'
+            else:
+                msg_user = f'[{self.data["name"]}]-[{self.data["stepcurrent"]}]: No user connected to a graphical session'
+            self.__affiche_message(msg_user, module="Deployment | Execution")
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.userconecter = None
+            self.userid = None
+            self.usersessionenv = None
+
+    def __notification_script__(self):
+        """
+        Notification window delivered with the agent, on every system.
+        """
+        return os.path.join(
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+            "script",
+            "medulla_notification.py",
+        )
+
+    def __user_session_launcher__(self):
+        """
+        Start of the command running a program in the graphical session of
+        the connected user, one form per system.
+        """
+        if sys.platform.startswith("linux"):
+            env = dict(self.usersessionenv, QT_QPA_PLATFORM="xcb")
+            return ["runuser", "-u", self.userconecter, "--", "env"] + [
+                "%s=%s" % (k, v) for k, v in env.items()
+            ]
+        if sys.platform.startswith("darwin"):
+            return ["launchctl", "asuser", str(self.userid), "sudo", "-u", self.userconecter]
+        raise NotImplementedError("user session launcher on %s" % sys.platform)
+
+    def __user_session_notification_command__(self, options):
+        """
+        Command showing the notification window in the graphical session of
+        the connected user, empty when it cannot be shown.
+        """
+        if self.userconecter is None:
+            return ""
+        script = self.__notification_script__()
+        if not os.path.isfile(script):
+            self.__affiche_message(
+                """[%s]-[%s]: notification script missing %s"""
+                % (self.data["name"], self.workingstep["step"], script),
+                module="Deployment | Execution | Notification",
+            )
+            return ""
+        return shlex.join(
+            self.__user_session_launcher__()
+            + [sys.executable, script]
+            + [str(option) for option in options]
+        )
 
     def find_step_type(self):
         for stepseq in self.sequence:
@@ -3382,13 +3481,22 @@ class grafcet:
                 """[%s]-[%s]:user notification message %s"""
                 % (self.data["name"], self.workingstep["step"], message)
             )
-            if sys.platform.startswith("linux"):
-                logging.debug("machine linux")
-                msg = []
-                msg.append(
-                    """[%s]-[%s]: linux notification not implemented yet"""
-                    % (self.data["name"], self.workingstep["step"])
+            if sys.platform.startswith(self.USER_SESSION_PLATFORMS):
+                command = self.__user_session_notification_command__(
+                    [
+                        "-M",
+                        self.workingstep["message"],
+                        "-B%s" % self.workingstep["titlemessage"],
+                        "-t",
+                        self.workingstep["timeout"],
+                        "-Y",
+                        self.workingstep["textbuttonyes"],
+                        "-S%s" % int(self.workingstep["sizeheader"]),
+                        "-s%s" % int(self.workingstep["sizemessage"]),
+                        "-c",
+                    ]
                 )
+                logging.debug("command in user session %s" % command)
             elif sys.platform.startswith("win"):
                 # self.objectxmpp.userconnected=None
                 # self.objectxmpp.statusconnected=None
@@ -3396,10 +3504,11 @@ class grafcet:
                 # command = """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i 1 """\
                 command = (
                     """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i %s """
-                    """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py"""
-                    """ -M "%s"  -B"%s" -t %s -Y "%s" -S%s -s%s -c"""
+                    """C:\\progra~1\\Python3\\pythonw "%s" """
+                    """-M "%s"  -B"%s" -t %s -Y "%s" -S%s -s%s -c"""
                     % (
                         self.userid,
+                        self.__notification_script__(),
                         self.workingstep["message"],
                         self.workingstep["titlemessage"],
                         self.workingstep["timeout"],
@@ -3409,12 +3518,10 @@ class grafcet:
                     )
                 )
                 logging.debug("command on windows %s" % command)
-            elif sys.platform.startswith("darwin"):
-                logging.debug("command on darwin")
-                msg = []
+            else:
                 msg.append(
-                    """[%s]-[%s]: linux notification not implemented yet"""
-                    % (self.data["name"], self.workingstep["step"])
+                    """[%s]-[%s]: notification not implemented on %s"""
+                    % (self.data["name"], self.workingstep["step"], sys.platform)
                 )
 
             if self.userconecter is None:
@@ -3442,6 +3549,12 @@ class grafcet:
                     msg.append(
                         """[%s]-[%s]:The user notification message has been acknowledged."""
                         % (self.data["name"], self.workingstep["step"])
+                    )
+                else:
+                    msg.append(
+                        """[%s]-[%s]:<span class="log_err">The notification window ended with the unexpected """
+                        """code %s, the notification is considered as not acknowledged.</span>"""
+                        % (self.data["name"], self.workingstep["step"], re["code"])
                     )
             else:
                 msg.append(
@@ -3481,7 +3594,7 @@ class grafcet:
         if "titlemessage" in self.workingstep:
             titlemessage = base64.b64decode(self.workingstep["titlemessage"])
         if "message" in self.workingstep:
-            message = base64.b64decode(self.workingstep["message"])
+            message = base64.b64decode(self.workingstep["message"]).decode("utf-8")
         if "sizeheader" in self.workingstep:
             self.workingstep["sizeheader"] = int(self.workingstep["sizeheader"])
         if "sizemessage" in self.workingstep:
@@ -3498,25 +3611,30 @@ class grafcet:
                     """[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]"""
                     % (self.data["name"], self.workingstep["step"], message)
                 )
-            if sys.platform.startswith("linux"):
-                logging.debug("machine linux")
-                msg = []
-                msg.append(
-                    """[%s]-[%s]: linux notification not implemented yet"""
-                    % (self.data["name"], self.workingstep["step"])
+            if sys.platform.startswith(self.USER_SESSION_PLATFORMS):
+                command = self.__user_session_notification_command__(
+                    [
+                        "-M",
+                        self.workingstep["message"],
+                        "-B%s" % self.workingstep["titlemessage"],
+                        "-t%s" % self.workingstep["timeout"],
+                        "-Y",
+                        self.workingstep["textbuttonyes"],
+                        "-N",
+                        self.workingstep["textbuttonno"],
+                        "-S%s" % int(self.workingstep["sizeheader"]),
+                        "-s%s" % int(self.workingstep["sizemessage"]),
+                        "-c",
+                    ]
                 )
+                logging.debug("command in user session %s" % command)
             elif sys.platform.startswith("win"):
-                if isinstance(message, bytes):
-                    message = message.decode("utf-8")
-
-                if isinstance(titlemessage, bytes):
-                    titlemessage = titlemessage.decode("utf-8")
-
                 command = (
                     """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i %s """
-                    """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c"""
+                    """C:\\progra~1\\Python3\\pythonw "%s" -M "%s" -B"%s" -t%s -Y "%s" -N "%s" -S%s -s%s -c"""
                     % (
                         self.userid,
+                        self.__notification_script__(),
                         self.workingstep["message"],
                         self.workingstep["titlemessage"],
                         self.workingstep["timeout"],
@@ -3527,12 +3645,10 @@ class grafcet:
                     )
                 )
                 logging.debug("command on windows %s" % command)
-            elif sys.platform.startswith("darwin"):
-                logging.debug("command on darwin")
-                msg = []
+            else:
                 msg.append(
-                    """[%s]-[%s]: linux notification not implemented yet"""
-                    % (self.data["name"], self.workingstep["step"])
+                    """[%s]-[%s]: question not implemented on %s"""
+                    % (self.data["name"], self.workingstep["step"], sys.platform)
                 )
 
             self.steplog()
@@ -3545,7 +3661,7 @@ class grafcet:
                     msg, module="Deployment | Execution | Notification"
                 )
                 if "gotonouser" in self.workingstep:
-                    self.__search_Next_step_int__(self.workingstep["gototimeout"])
+                    self.__search_Next_step_int__(self.workingstep["gotonouser"])
                     self.__execstep__()
                 else:
                     self.__Etape_Next_in__()
@@ -3555,7 +3671,13 @@ class grafcet:
                 self.steplog()
                 result = [x.strip("\n") for x in re["result"] if x != ""]
                 logging.getLogger().debug("result action notification: %s" % re)
-                if re["code"] == 2:
+                if re["code"] not in (0, 1, 2):
+                    msg.append(
+                        """[%s]-[%s]:<span class="log_err">The question window ended with the unexpected """
+                        """code %s, the question is considered as not answered.</span>"""
+                        % (self.data["name"], self.workingstep["step"], re["code"])
+                    )
+                if re["code"] not in (0, 1):
                     # timeout
                     msg.append(
                         """[%s]-[%s]:<span class="log_warn">The user question message """
@@ -3714,19 +3836,31 @@ class grafcet:
                     """[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]"""
                     % (self.data["name"], self.workingstep["step"], message)
                 )
-            if sys.platform.startswith("linux"):
-                logging.debug("machine linux")
-                msg = []
-                msg.append(
-                    """[%s]-[%s]: linux notification not implemented yet"""
-                    % (self.data["name"], self.workingstep["step"])
+            if sys.platform.startswith(self.USER_SESSION_PLATFORMS):
+                command = self.__user_session_notification_command__(
+                    [
+                        "-M",
+                        self.workingstep["message"],
+                        "-B%s" % self.workingstep["titlemessage"],
+                        "-t",
+                        self.workingstep["timeout"],
+                        "-Y",
+                        self.workingstep["textbuttonyes"],
+                        "-N",
+                        self.workingstep["textbuttonno"],
+                        "-S%s" % self.workingstep["sizeheader"],
+                        "-s%s" % self.workingstep["sizemessage"],
+                        "-c",
+                    ]
                 )
+                logging.debug("command in user session %s" % command)
             elif sys.platform.startswith("win"):
                 command = (
                     """C:\\progra~1\\Medulla\\bin\\paexec.exe -accepteula -s -i %s """
-                    """C:\\progra~1\\Python3\\pythonw C:\\progra~1\\Medulla\\bin\\pulse2_update_notification.py -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c"""
+                    """C:\\progra~1\\Python3\\pythonw "%s" -M "%s" -B"%s" -t %s -Y "%s" -N "%s" -S%s -s%s -c"""
                     % (
                         self.userid,
+                        self.__notification_script__(),
                         self.workingstep["message"],
                         self.workingstep["titlemessage"],
                         self.workingstep["timeout"],
@@ -3738,12 +3872,10 @@ class grafcet:
                 )
 
                 logging.debug("command on windows %s" % command)
-            elif sys.platform.startswith("darwin"):
-                logging.debug("command on darwin")
-                msg = []
+            else:
                 msg.append(
-                    """[%s]-[%s]: linux notification not implemented yet"""
-                    % (self.data["name"], self.workingstep["step"])
+                    """[%s]-[%s]: question not implemented on %s"""
+                    % (self.data["name"], self.workingstep["step"], sys.platform)
                 )
             self.steplog()
             if self.userconecter is None:
@@ -3766,7 +3898,13 @@ class grafcet:
                 self.steplog()
                 result = [x.strip("\n") for x in re["result"] if x != ""]
                 logging.getLogger().debug("result action notification: %s" % re)
-                if re["code"] == 2:
+                if re["code"] not in (0, 1, 2):
+                    msg.append(
+                        """[%s]-[%s]:<span class="log_err">The question window ended with the unexpected """
+                        """code %s, the question is considered as not answered.</span>"""
+                        % (self.data["name"], self.workingstep["step"], re["code"])
+                    )
+                if re["code"] not in (0, 1):
                     ## timeout pas de reponse utilisateur
                     msg.append(
                         """[%s]-[%s]:<span class="log_warn">The user question message """
