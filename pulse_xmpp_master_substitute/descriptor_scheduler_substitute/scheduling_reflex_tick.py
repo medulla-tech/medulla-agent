@@ -22,7 +22,7 @@ from lib.plugins.reflex import reflex_backend, is_reflex_substitute, _to_int, \
     SKIP_RETRY_RULE_UNAVAILABLE, SKIP_RETRY_TARGET_NOT_MATCHED, \
     SKIP_RETRY_CHANNEL_ENTITY_MISMATCH, _jiduser
 
-plugin = {"VERSION": "1.3", "NAME": "scheduling_reflex_tick", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "scheduling_reflex_tick", "TYPE": "substitute", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 
@@ -222,6 +222,11 @@ def _escalate(backend):
         if result.get("success"):
             sent += 1
     return sent
+
+
+def schedule_enabled(objectxmpp):
+    """Whether this substitute runs the task."""
+    return is_reflex_substitute(objectxmpp)
 
 
 def schedule_main(objectxmpp):
