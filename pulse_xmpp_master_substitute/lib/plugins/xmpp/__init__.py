@@ -4070,6 +4070,23 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
+    def updatemachine_kiosk_presence(self, session, idmachine, presence):
+        """
+        update Machine table in base xmppmaster
+        kiosk_presence: "True" or "False"
+        """
+        try:
+            session.query(Machines).filter(Machines.id == idmachine).update(
+                {Machines.kiosk_presence: presence}
+            )
+            session.commit()
+            session.flush()
+            return 1
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return -1
+
+    @DatabaseHelper._sessionm
     def updatedeploystate(self, session, sessionid, state):
         """
         Met à jour l'état de déploiement pour une session donnée.

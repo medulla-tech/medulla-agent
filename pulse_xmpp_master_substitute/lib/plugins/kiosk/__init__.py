@@ -5,41 +5,86 @@
 """
 kiosk database handler
 """
-# SqlAlchemy
-from sqlalchemy import create_engine, func, and_, or_, literal
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import DBAPIError
+import json
+import logging
+import os
+import re
+import traceback
 
-# PULSE2 modules
-# from mmc.database.database_helper import DatabaseHelper
-# from mmc.plugins.pkgs import get_xmpp_package, xmpp_packages_list, package_exists
-from lib.plugins.kiosk.schema import (
-    Profiles,
-    Packages,
-    Profile_has_package,
-    Profile_has_ou,
-    Acknowledgements,
+from sqlalchemy import bindparam, create_engine, text
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+from lib.configuration import confParameter
+from lib.managepackage import managepackage
+from lib.plugins.glpi import Glpi
+from lib.utils import getRandomName
+
+logger = logging.getLogger()
+
+# Entity me is entity pe or below it (rows of xmppmaster.local_glpi_entities)
+ENTITY_AT_OR_BELOW_SQL = """(
+           me.completename = pe.completename
+           OR LEFT(me.completename, CHAR_LENGTH(pe.completename) + 3)
+              = CONCAT(pe.completename, ' > '))"""
+
+# GLPI entity (me) of a machine (m.uuid_inventorymachine), read from GLPI;
+# a machine GLPI does not know, or deleted there, has none
+MACHINE_ENTITY_JOIN_SQL = """
+      JOIN xmppmaster.local_glpi_machines lgm
+        ON m.uuid_inventorymachine REGEXP '^UUID[0-9]+$'
+       AND lgm.id = CAST(SUBSTRING(m.uuid_inventorymachine, 5) AS UNSIGNED)
+       AND lgm.is_deleted = 0
+       AND lgm.is_template = 0
+      JOIN xmppmaster.local_glpi_entities me ON me.id = lgm.entities_id"""
+
+# Active profiles of the entity of a machine and of the entities above it
+PROFILES_SQL = (
+    """
+    SELECT p.id, p.source, o.ou
+      FROM (SELECT :uuid AS uuid_inventorymachine) m"""
+    + MACHINE_ENTITY_JOIN_SQL
+    + """
+      JOIN profiles p ON p.active = 1
+      JOIN xmppmaster.local_glpi_entities pe ON pe.id = p.entity_id
+      LEFT JOIN profile_has_ous o ON o.profile_id = p.id
+     WHERE """
+    + ENTITY_AT_OR_BELOW_SQL
 )
 
-# Imported last
-import logging
-import time
-from lib.configuration import confParameter
-import functools
-from datetime import datetime
-import json
-import re
-import base64
+PACKAGES_SQL = """
+    SELECT DISTINCT
+           pk.uuid,
+           pk.label AS name,
+           pk.description,
+           pk.version,
+           pk.Qvendor AS vendor,
+           pk.Qsoftware AS software,
+           pk.Qversion AS version_software,
+           pk.os
+      FROM package_has_profil php
+      JOIN pkgs.packages pk ON pk.uuid = php.package_uuid
+     WHERE php.profil_id IN :profile_ids
+"""
 
-try:
-    from sqlalchemy.orm.util import _entity_descriptor
-except ImportError:
-    from sqlalchemy.orm.base import _entity_descriptor
+# Online machines with a kiosk
+MACHINES_SQL = """
+    SELECT DISTINCT m.jid
+      FROM xmppmaster.machines m%s
+     WHERE m.kiosk_presence = 'True'
+       AND m.enabled = 1
+       AND m.agenttype = 'machine'
+"""
 
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.ext.automap import automap_base
-
-Session = sessionmaker()
+# Machines of the given entities and of the entities below them
+ENTITIES_JOIN_SQL = (
+    MACHINE_ENTITY_JOIN_SQL
+    + """
+      JOIN xmppmaster.local_glpi_entities pe
+        ON pe.id IN :entity_ids
+       AND """
+    + ENTITY_AT_OR_BELOW_SQL
+)
 
 
 class Singleton(object):
@@ -49,39 +94,7 @@ class Singleton(object):
         return type._the_instance
 
 
-class DatabaseHelper(Singleton):
-    # Session decorator to create and close session automatically
-    @classmethod
-    def _sessionkiosk(self, func):
-        @functools.wraps(func)
-        def __session(self, *args, **kw):
-            created = False
-            if not self.sessionkiosk:
-                self.sessionkiosk = sessionmaker(bind=self.engine_kiosk_base)
-                created = True
-            result = func(self, self.session, *args, **kw)
-            if created:
-                self.sessionkiosk.close()
-                self.sessionkiosk = None
-            return result
-
-        return __session
-
-    # Session decorator to create and close session automatically
-    @classmethod
-    def _sessionm(self, func):
-        @functools.wraps(func)
-        def __sessionm(self, *args, **kw):
-            session_factory = sessionmaker(bind=self.engine_kiosk_base)
-            sessionmultithread = scoped_session(session_factory)
-            result = func(self, sessionmultithread, *args, **kw)
-            sessionmultithread.remove()
-            return result
-
-        return __sessionm
-
-
-class KioskDatabase(DatabaseHelper):
+class KioskDatabase(Singleton):
     """
     Singleton Class to query the kioskmaster database.
 
@@ -147,710 +160,267 @@ class KioskDatabase(DatabaseHelper):
             self.is_activated = True
             self.logger.debug("kiosk finish activation")
             return True
-        except Exception as e:
+        except Exception:
             self.logger.error("We failed to connect to the Kiosk database.")
             self.logger.error("Please verify your configuration")
             self.is_activated = False
             return False
 
-    def initMappers(self):
-        """
-        Initialize all SQLalchemy mappers needed for the kioskmaster database
-        """
-        # No mapping is needed, all is done on schema file
-        return
-
-    def getDbConnection(self):
-        NB_DB_CONN_TRY = 2
-        ret = None
-        for i in range(NB_DB_CONN_TRY):
-            try:
-                ret = self.db.connect()
-            except DBAPIError as e:
-                logging.getLogger().error(e)
-            except Exception as e:
-                logging.getLogger().error(e)
-            if ret:
-                break
-        if not ret:
-            raise Exception("Database kiosk connection error")
-        return ret
-
-    # =====================================================================
-    # kiosk FUNCTIONS
-    # =====================================================================
-
-    @DatabaseHelper._sessionm
-    def get_kiosk_version(self, session):
-        """
-        return version kiosk table
-        """
-        return session.execute("SELECT * FROM kiosk.version limit 1;")
-
-    @DatabaseHelper._sessionm
-    def get_profiles_list(self, session):
-        """
-        Return a list of all the existing profiles.
-        The list contains all the elements of the profile.
-
-        Returns:
-            A list of all the founded entities.
-        """
-        ret = session.query(Profiles).all()
-        lines = []
-        for row in ret:
-            lines.append(row.toDict())
-
-        return lines
-
-    @DatabaseHelper._sessionm
-    def get_profile_list_for_OUList(self, session, OU):
-        if len(OU) == 0:
-            # return le profils par default
-            return
-        listou = "('" + "','".join(OU) + "')"
-        sql = (
-            """
-            SELECT
-                distinct
-                kiosk.package.name as 'name_package',
-                kiosk.profiles.name as 'name_profile',
-                kiosk.package.description,
-                kiosk.package.version_package,
-                kiosk.package.software,
-                kiosk.package.version_software,
-                kiosk.package.package_uuid,
-                kiosk.package.os,
-                kiosk.package_has_profil.package_status
-            FROM
-                kiosk.package
-                  inner join
-                kiosk.package_has_profil on kiosk.package.id = kiosk.package_has_profil.package_uuid
-                  inner join
-                kiosk.profiles on profiles.id = kiosk.package_has_profil.profil_id
-
-            WHERE
-                kiosk.profiles.id in
-                        (SELECT DISTINCT
-                                profile_id
-                            FROM
-                                kiosk.profile_has_ous
-                            WHERE
-                                ou IN %s)
-                    AND kiosk.profiles.active = 1;
-                    """
-            % listou
-        )
+    def _fetch(self, statement, params=None):
+        """Column names and rows of a query, run on a session of its own."""
+        session = scoped_session(sessionmaker(bind=self.engine_kiosk_base))
         try:
-            result = session.execute(sql)
-            session.commit()
-            session.flush()
-            l = [x for x in result]
-            return l
-        except Exception as e:
-            logging.getLogger().error("get_profile_list_for_OUList")
-            logging.getLogger().error(str(e))
-            return ""
+            result = session.execute(statement, params or {})
+            return list(result.keys()), result.fetchall()
+        finally:
+            session.remove()
 
-    @DatabaseHelper._sessionm
-    def get_profiles_name_list(self, session):
+    def get_profiles_of_machine(self, uuid_inventorymachine):
         """
-        Return a list of all the existing profiles.
-        The list is a shortcut of the method get_profiles_list.
+        Active profiles of the GLPI entity of a machine and of the entities
+        above it.
 
         Returns:
-            A list of the names for all the founded entities.
+            list of (profile id, source, value); one row per value of the
+            profile, value None when it has none.
         """
-        ret = session.query(Profiles.name).all()
-        lines = []
-        for row in ret:
-            lines.append(row[0])
-        return lines
+        _, rows = self._fetch(text(PROFILES_SQL), {"uuid": uuid_inventorymachine})
+        return [(row[0], row[1], row[2]) for row in rows]
 
-    @DatabaseHelper._sessionm
-    def create_profile(self, session, name, ous, active, packages):
-        """
-        Create a new profile for kiosk with the elements send.
-
-        name:
-            String which contains the name of the new profile
-        ous:
-            List of the selected OUs for this profile
-        active:
-            Int indicates if the profile is active (active = 1) or inactive (active = 0)
-        packages:
-            Dict which contains the packages associated with the profile and has the following form.
-            {
-                'allowed': [
-                    {
-                        'uuid': 'the-package-uuid',
-                        'name': 'the-package-name'
-                    },
-                    {
-                        'uuid': 'the-package-uuid',
-                        'name': 'the-package-name'
-                    }
-                ],
-                'restricted': [
-                    {
-                        'uuid': 'the-package-uuid',
-                        'name': 'the-package-name'
-                    },
-                    {
-                        'uuid': 'the-package-uuid',
-                        'name': 'the-package-name'
-                    }
-                ]
-            }
-
-        return:
-            The value returned is the id of the new profile
-        """
-
-        # refresh the packages in the database
-        self.refresh_package_list()
-
-        # Creation of the new profile
-        now = time.strftime("%Y-%m-%d %H:%M:%S")
-
-        sql = """INSERT INTO `kiosk`.`profiles` VALUES('%s','%s', '%s', '%s');""" % (
-            "0",
-            name,
-            active,
-            now,
+    def get_packages_of_profiles(self, profile_ids):
+        """Packages of the given profiles, each one once."""
+        if not profile_ids:
+            return []
+        statement = text(PACKAGES_SQL).bindparams(
+            bindparam("profile_ids", expanding=True)
         )
+        keys, rows = self._fetch(statement, {"profile_ids": list(profile_ids)})
+        return [dict(zip(keys, row)) for row in rows]
 
-        session.execute(sql)
-        session.commit()
-        session.flush()
-
-        # Search the id of this new profile
-        result = session.query(Profiles.id).filter(Profiles.name == name)
-        result = result.first()
-        id = 0
-        for row in result:
-            id = str(row)
-
-        # Remove all packages associations concerning this profile
-        session.query(Profile_has_package).filter(
-            Profile_has_package.profil_id == id
-        ).delete()
-
-        # The profile is now created, but the packages are not linked to it nor added into database.
-        # If the package list is not empty, then firstly we get the status and
-        # the uuid for each packages
-        if len(packages) > 0:
-            for status in list(packages.keys()):
-                for uuid in packages[status]:
-                    # get the package id and link it with the profile
-                    result = session.query(Packages.id).filter(
-                        Packages.package_uuid == uuid
-                    )
-                    result = result.first()
-                    id_package = 0
-                    for row in result:
-                        id_package = str(row)
-
-                    profile = Profile_has_package()
-                    profile.profil_id = id
-                    profile.package_id = id_package
-                    profile.package_status = status
-
-                    session.add(profile)
-                    session.commit()
-                    session.flush()
-            # Finally we associate the OUs with the profile.
-            if isinstance(ous, str) and ous == "":
-                profile_ou = Profile_has_ou()
-                profile_ou.profile_id = id
-                profile_ou.ou = ous
-
-                session.add(profile_ou)
-                session.commit()
-                session.flush()
-
-            else:
-                for ou in ous:
-                    profile_ou = Profile_has_ou()
-                    profile_ou.profile_id = id
-                    profile_ou.ou = ou
-
-                    session.add(profile_ou)
-                    session.commit()
-                    session.flush()
-        return id
-
-    # Get the real list of packages
-    # package_list = xmpp_packages_list()
-
-    # For each package in this list, add if not exists or update existing packages rows
-    # for ref_pkg in package_list:
-    # result = session.query(Packages.id).filter(Packages.package_uuid == ref_pkg['uuid']).all()
-
-    # Create a Package object to interact with the database
-    # package = get_xmpp_package(ref_pkg['uuid'])
-    # os = json.loads(package).keys()[1]
-
-    # Prepare a package object for the transaction with the database
-    # pkg = Packages()
-    # pkg.name = ref_pkg['software']
-    # pkg.version_package = ref_pkg['version']
-    # pkg.software = ref_pkg['software']
-    # pkg.description = ref_pkg['description']
-    # pkg.version_software = 0
-    # pkg.package_uuid = ref_pkg['uuid']
-    # pkg.os = os
-    # If the package is not registered into database, it is added. Else it is updated
-    # if len(result) == 0:
-    # session.add(pkg)
-    # session.commit()
-    # session.flush()
-    # else:
-    # sql = """UPDATE `package` set name='%s', version_package='%s', software='%s',\
-    # description='%s', package_uuid='%s', os='%s' WHERE package_uuid='%s';""" % (
-    # ref_pkg['software'], ref_pkg['version'], ref_pkg['software'],
-    # ref_pkg['description'], ref_pkg['uuid'], os, ref_pkg['uuid'])
-
-    # Now we need to verify if all the registered packages are still existing into the server
-    # sql = """SELECT id, package_uuid FROM package;"""
-    # result = session.execute(sql)
-    # session.commit()
-    # session.flush()
-    # packages_in_db = [element for element in result]
-
-    # for package in packages_in_db:
-    # if package_exists(package[1]):
-    # pass
-    # else:
-    # session.query(Packages).filter(Packages.id == package[0]).delete()
-    # session.commit()
-    # session.flush()
-
-    @DatabaseHelper._sessionm
-    def delete_profile(self, session, id):
+    def get_kiosk_machines(self, entity_ids=None):
         """
-        Delete the named profile from the table profiles.
-        This method delete the profiles which have the specified name.
+        Jids of the online machines with a kiosk.
 
         Args:
-            id: the id of the profile
-
-        Returns:
-            Boolean: True if success, else False
+            entity_ids: GLPI entities; only their machines and those of the
+                entities below them are returned. Empty: every machine.
         """
-        try:
-            session.query(Profile_has_package).filter(
-                Profile_has_package.profil_id == id
-            ).delete()
-            session.query(Profile_has_ou).filter(
-                Profile_has_ou.profile_id == id
-            ).delete()
-
-            session.query(Profiles).filter(Profiles.id == id).delete()
-            session.commit()
-            session.flush()
-            return True
-
-        except Exception as e:
-            return False
-
-    @DatabaseHelper._sessionm
-    def get_profile_by_id(self, session, id):
-        """
-        Return the profile datas and it's associated packages. This function create a view of the profile.
-        id:
-            Int it is the id of the wanted package
-        return:
-             Dict which contains the datas of the profile. The dict has this structure :
-             {
-                'active': '1',
-                'creation_date': '2018-04-10 14:13:19',
-                'id': '16',
-                'ous': ['root/son/grand_son1', 'root/son/grand_son2']
-                'packages': [
-                    {
-                        'status': 'restricted',
-                        'uuid': 'df98c684-25ff-11e8-a488-0800271cd5f6',
-                        'name': 'Notepad++'
-                    },
-                    {
-                        'status': 'restricted',
-                        'uuid': 'd2d143fa-3792-11e8-8364-0800278d719b',
-                        'name': 'myPackage'
-                    },
-                    {
-                        'status': 'allowed',
-                        'uuid': '82c5996e-25ff-11e8-a488-0800271cd5f6',
-                        'name': 'vlc'
-                    },
-                    {
-                        'status': 'allowed',
-                        'uuid': 'a6e11f44-25ff-11e8-a488-0800271cd5f6',
-                        'name': 'Firefox'
-                    }
-                ],
-                'name': 'qq'
-             }
-        """
-        self.refresh_package_list()
-
-        # get the profile row
-
-        profile = session.query(Profiles).filter(Profiles.id == id).first()
-
-        sql = """select \
-        package.name as package_name,
-        package.package_uuid,
-        package_status
-        from package \
-        left join package_has_profil on package.id = package_has_profil.package_uuid \
-        left join profiles on profiles.id = package_has_profil.profil_id\
-        WHERE profiles.id = '%s';""" % (
-            id
-        )
-
-        sql_ou = """SELECT ou FROM profile_has_ous WHERE profile_id = %s""" % (id)
-
-        response = session.execute(sql)
-        result = [
-            {
-                "uuid": element.package_uuid,
-                "name": element.package_name,
-                "status": element.package_status,
-            }
-            for element in response
-        ]
-
-        response_ou = session.execute(sql_ou)
-        dict = {}
-
-        for column in profile.__table__.columns:
-            dict[column.name] = str(getattr(profile, column.name))
-        dict["packages"] = result
-        # generate a list for the OUs and it's added to the returned result
-        dict["ous"] = [element.ou for element in response_ou]
-        return dict
-
-    @DatabaseHelper._sessionm
-    def update_profile(self, session, id, name, ous, active, packages):
-        """
-        Update the specified profile
-        id:
-            Int is the id of the profile which will be updated
-        name:
-            String which contains the name of updated profile
-        ous:
-            List of the selected ous
-        active:
-            Int indicates if the profile is active (active = 1) or inactive (active = 0)
-        packages:
-            Dict which contains the packages associated with the profile and has the following form.
-            {
-                'allowed': [
-                    {
-                        'uuid': 'the-package-uuid',
-                        'name': 'the-package-name'
-                    },
-                    {
-                        'uuid': 'the-package-uuid',
-                        'name': 'the-package-name'
-                    }
-                ],
-                'restricted': [
-                    {
-                        'uuid': 'the-package-uuid',
-                        'name': 'the-package-name'
-                    },
-                    {
-                        'uuid': 'the-package-uuid',
-                        'name': 'the-package-name'
-                    }
-                ]
-            }
-        """
-
-        # Update the profile
-        now = time.strftime("%Y-%m-%d %H:%M:%S")
-
-        sql = """UPDATE profiles SET name='%s',active='%s' WHERE id='%s';""" % (
-            name,
-            active,
-            id,
-        )
-
-        session.execute(sql)
-        session.commit()
-        session.flush()
-
-        # Remove all packages associations concerning this profile
-        session.query(Profile_has_package).filter(
-            Profile_has_package.profil_id == id
-        ).delete()
-        session.query(Profile_has_ou).filter(Profile_has_ou.profile_id == id).delete()
-
-        session.commit()
-        session.flush()
-
-        # Finally we associate the OUs with the profile.
-        if isinstance(ous, str) and ous == "":
-            profile_ou = Profile_has_ou()
-            profile_ou.profile_id = id
-            profile_ou.ou = ous
-
-            session.add(profile_ou)
-            session.commit()
-            session.flush()
-
+        if not entity_ids:
+            _, rows = self._fetch(text(MACHINES_SQL % ""))
         else:
-            for ou in ous:
-                profile_ou = Profile_has_ou()
-                profile_ou.profile_id = id
-                profile_ou.ou = ou
-
-                session.add(profile_ou)
-                session.commit()
-                session.flush()
-
-        # The profile is now created, but the packages are not linked to it nor added into database.
-        # If the package list is not empty, then firstly we get the status and
-        # the uuid for each packages
-        if len(packages) > 0:
-            for status in list(packages.keys()):
-                for uuid in packages[status]:
-                    # get the package id and link it with the profile
-                    result = session.query(Packages.id).filter(
-                        Packages.package_uuid == uuid
-                    )
-                    result = result.first()
-                    id_package = 0
-                    for row in result:
-                        id_package = str(row)
-
-                    profile = Profile_has_package()
-                    profile.profil_id = id
-                    profile.package_id = id_package
-                    profile.package_status = status
-
-                    session.add(profile)
-                    session.commit()
-                    session.flush()
-
-    @DatabaseHelper._sessionm
-    def get_profiles_by_sources(self, session, sources):
-        """Find all kiosk profiles matching the specified sources. The sources is a dict with the following form:
-        "ou_machine": "value_ou,
-        "ou_user": "value_ou",
-        "ldap": "value_ldap",
-        "group": "value_group",
-        "entity": "value_entity",
-        }
-        The sources is designed to exclude all empty values. This way we can reduce the number of criterions.
-
-        Args:
-            self (KioskDatabase): The instance of the KioskDatabase class.
-            session (sqlalchemy.orm.Session): The SQLAlchemy session to use for the database query.
-            sources (dict): A dictionary containing the sources to filter the profiles.
-
-        Returns:
-            list: A list of profiles matching the specified sources."""
-        query = session.query(Profiles)\
-            .join(Profile_has_ou, Profile_has_ou.profile_id == Profiles.id)\
-            .filter(Profiles.active == 1)
-
-        filters = []
-        for source in sources:
-            if source == "entity":
-                value = sources[source]
-                ou_condition = or_(
-                    Profile_has_ou.ou == value,
-                    func.left(literal(value), func.char_length(Profile_has_ou.ou) + 2)
-                    == func.concat(Profile_has_ou.ou, ">>"),
-                )
-            else:
-                ou_condition = Profile_has_ou.ou.like("%s%%" % sources[source])
-            filters.append(and_(
-                Profiles.source == source,
-                ou_condition,
-            ))
-
-        query = query.filter(or_(*filters))
-        query = query.group_by(Profiles.id)
-        query = query.all()
-
-        profiles = []
-        if query is not None:
-            for row in query:
-                profiles.append(
-                    {
-                        "id": row.id,
-                        "name": row.name,
-                        "owner": row.owner,
-                        "source": row.source,
-                        "active": row.active if row.active is not None else False,
-                    }
-                )
-
-        return profiles
-
-    @DatabaseHelper._sessionm
-    def get_packages_for_profile_list(self, session, profiles):
-        """
-        Get the packages list for all the given profiles. The packages list contains acknowledgements
-
-        Args:
-            self (KioskDatabase): Instance of KioskDatabase object.
-            session (sqlalchemy.orm.session): The sql session to execute queries.
-            profiles (list): the list of profiles contained as dict. The dict follows the db structure.
-
-        Returns:
-            list: List of packages with acknowledgements. This list is not cleaned up. So it is possible to have the same package twice, from profile A and B."""
-
-        # Determine once the ids list (the old version had to generate 3 lists for the same result)
-        c = 0
-        profiles_ids_str = ""
-        for p in profiles:
-            # Ignore empty values
-            if p["id"] is not None and p["id"] != "":
-                profiles_ids_str += "%s,"%(p["id"])
-            c += 1
-        # Cleanup the last ',' at the end of the str
-        profiles_ids_str = profiles_ids_str.strip(',')
-
-        # The counter is 0: no profile found : no need to execute the request.
-        if c == 0:
-            # return le profils par default
-            return []
-
-        # profiles_ids_str = ",".join(["%s" % profile["id"] for profile in profiles])
-        sql = (
-            """
-            SELECT
-                distinct
-                pkgs.packages.label as 'name_package',
-                kiosk.profiles.name as 'name_profile',
-                pkgs.packages.description,
-                pkgs.packages.version version_package,
-                pkgs.packages.Qvendor as vendor,
-                pkgs.packages.Qsoftware as software,
-                pkgs.packages.Qversion version_software,
-                pkgs.packages.uuid as package_uuid,
-                pkgs.packages.os,
-                kiosk.package_has_profil.package_status,
-                kiosk.package_has_profil.id as id_package_has_profil,
-                ack.*
-            FROM
-                pkgs.packages
-                  inner join
-                kiosk.package_has_profil on pkgs.packages.uuid = kiosk.package_has_profil.package_uuid
-                  inner join
-                kiosk.profiles on profiles.id = kiosk.package_has_profil.profil_id
-                  left join
-                kiosk.acknowledgements ack on ack.id_package_has_profil = kiosk.package_has_profil.id
-            WHERE
-                kiosk.package_has_profil.profil_id in (%s)
-                    """
-            % profiles_ids_str
-        )
-
-        try:
-            result = session.execute(sql)
-            session.commit()
-            session.flush()
-
-            if result is None:
-                return []
-
-            l = []
-            for element in result:
-                tmp = {
-                    "name_package": element[0],
-                    "name_profile": element[1],
-                    "description": element[2],
-                    "version_package": element[3],
-                    "vendor": element[4],
-                    "software": element[5],
-                    "version_software": element[6],
-                    "package_uuid": element[7],
-                    "os": element[8],
-                    "package_status": element[9],
-                    "id_package_has_profil": element[10],
-                    "ack_id": element[11] if element[11] is not None else "",
-                    "askuser": element[13] if element[13] is not None else "",
-                    "askdate": element[14].strftime("%Y-%m-%d %H:%M:%S") if element[14] is not None else "",
-                    "acknowledgedbyuser": element[15] if element[15] is not None else "",
-                    "startdate": element[16].strftime("%Y-%m-%d %H:%M:%S") if element[16] is not None else "",
-                    "enddate": element[17].strftime("%Y-%m-%d %H:%M:%S") if element[17] is not None else "",
-                    "status": element[18] if element[18] is not None else "",
-                }
-                l.append(tmp)
-            # l = [x for x in result]
-            return l
-        except Exception as e:
-            logging.getLogger().error("get_profile_list_for_profiles_list")
-            logging.getLogger().error(str(e))
-            return []
-
-    @DatabaseHelper._sessionm
-    def get_acknowledges_for_package_profile(
-        self, session, id_package_profil, uuid_package, user
-    ):
-        today = datetime.now()
-        try:
-            query = (
-                session.query(Acknowledgements)
-                .add_column(Profile_has_package.package_uuid)
-                .filter(
-                    and_(
-                        Acknowledgements.id_package_has_profil == id_package_profil,
-                        Acknowledgements.askuser == user,
-                    ),
-                    Acknowledgements.startdate <= today.strftime("%Y-%m-%d %H:%M:%S"),
-                    or_(
-                        Acknowledgements.enddate > today.strftime("%Y-%m-%d %H:%M:%S"),
-                        Acknowledgements.enddate == None,
-                        Acknowledgements.enddate == "",
-                    ),
-                )
-                .join(
-                    Profile_has_package,
-                    Profile_has_package.id == Acknowledgements.id_package_has_profil,
-                )
+            statement = text(MACHINES_SQL % ENTITIES_JOIN_SQL).bindparams(
+                bindparam("entity_ids", expanding=True)
             )
-            query = query.all()
-        except Exception as e:
-            self.logger.error(e)
-        result = []
+            _, rows = self._fetch(statement, {"entity_ids": list(entity_ids)})
+        return [row[0] for row in rows]
 
-        if query is not None:
-            for element, package_uuid in query:
-                self.logger.error(23)
-                askdate = ""
-                startdate = ""
-                enddate = ""
-                if element.askdate is not None:
-                    askdate = element.askdate.strftime("%Y-%m-%d %H:%M:%S")
-                if element.startdate is not None:
-                    startdate = element.startdate.strftime("%Y-%m-%d %H:%M:%S")
-                if element.enddate is not None:
-                    enddate = element.enddate.strftime("%Y-%m-%d %H:%M:%S")
 
-                result.append(
-                    {
-                        "askuser": (
-                            element.askuser if element.askuser is not None else ""
-                        ),
-                        "askdate": askdate,
-                        "acknowledgedbyuser": (
-                            element.acknowledgedbyuser
-                            if element.acknowledgedbyuser is not None
-                            else ""
-                        ),
-                        "startdate": startdate,
-                        "enddate": enddate,
-                        "status": element.status if element.status is not None else "",
-                        "id": element.id if element.id is not None else "",
-                        "id_package_has_profil": element.id_package_has_profil,
-                        "package_uuid": package_uuid,
-                    }
-                )
-        return result
+def _platform(name):
+    """Platform key of the packages for the operating system of a machine."""
+    name = name or ""
+    if not name or re.match("Microsoft", name, re.I):
+        return "win"
+    if re.match("Darwin", name, re.I) or re.match("mac", name, re.I):
+        return "mac"
+    return "linux"
+
+
+def _ou_path(value):
+    """OU reported by a machine (A@@B@@C) in the form stored in the profiles (A/B/C)."""
+    return (value or "").replace("\n", "").replace("\r", "").replace("@@", "/")
+
+
+def _ou_applies(machine_ou, profile_ou):
+    """True when the OU of the machine is the OU of the profile or below it."""
+    if not machine_ou or not profile_ou:
+        return False
+    return machine_ou == profile_ou or machine_ou.startswith(profile_ou + "/")
+
+
+def _applying_profiles(profiles, values):
+    """
+    Ids of the profiles applying to a machine.
+
+    Args:
+        profiles: rows of get_profiles_of_machine
+        values: {source: values of the machine}; a source without value
+            matches no profile
+    """
+    profile_ids = set()
+    for profile_id, source, value in profiles:
+        if source == "entity":
+            profile_ids.add(profile_id)
+        elif source in ("ou_user", "ou_machine"):
+            if any(_ou_applies(ou, value) for ou in values.get(source, ())):
+                profile_ids.add(profile_id)
+    return profile_ids
+
+
+def _machine_values(machine):
+    """Values of the machine for the sources restricting a profile."""
+    return {
+        "ou_user": [_ou_path(machine.get("ad_ou_user"))],
+        "ou_machine": [_ou_path(machine.get("ad_ou_machine"))],
+    }
+
+
+def _descriptor(package_uuid):
+    """xmppdeploy.json of a package: None when unreadable, {} when invalid."""
+    path = os.path.join(managepackage.packagedir(), package_uuid, "xmppdeploy.json")
+    try:
+        with open(path, "r") as descriptor:
+            return json.load(descriptor)
+    except OSError:
+        return None
+    except ValueError:
+        return {}
+
+
+def _has_section(descriptor, platform, label, prefix):
+    labels = descriptor.get("metaparameter", {}).get(platform, {}).get("label", [])
+    return any(name == label or name.startswith(prefix) for name in labels)
+
+
+def _uninstall_has_content(descriptor, platform):
+    """True when the uninstall section holds a real command or script."""
+    in_section = False
+    for step in descriptor.get(platform, {}).get("sequence", []):
+        step_action = step.get("action", "")
+        if step_action == "action_section_uninstall":
+            in_section = True
+        elif step_action in ("actionsuccescompletedend", "actionerrorcompletedend"):
+            in_section = False
+        elif in_section and (
+            str(step.get("command", "")).strip() or str(step.get("script", "")).strip()
+        ):
+            return True
+    return False
+
+
+def _version_key(version):
+    return [
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in re.split(r"[.\-_+ ]", str(version or ""))
+    ]
+
+
+def get_packages_for_machine(machine):
+    """
+    Packages the kiosk of a machine offers, in the form its agent expects.
+
+    A profile applies to the machines of its entity and of the entities below
+    it, restricted by its source: none for "entity", the OU of the machine or
+    of its user at or below one OU of the profile for "ou_machine" and
+    "ou_user". The other sources ("group", "ldap") match no machine.
+
+    Args:
+        machine: dict of XmppMasterDatabase().getMachinefromjid()
+
+    Returns:
+        list of dicts, one per package
+    """
+    uuid_inventorymachine = machine.get("uuid_inventorymachine")
+    if not uuid_inventorymachine:
+        return []
+
+    database = KioskDatabase()
+    profiles = database.get_profiles_of_machine(uuid_inventorymachine)
+    profile_ids = _applying_profiles(profiles, _machine_values(machine))
+
+    platform = _platform(machine.get("platform"))
+    packages = []
+    for pkg in database.get_packages_of_profiles(profile_ids):
+        if platform not in (pkg["os"] or ""):
+            continue
+        descriptor = _descriptor(pkg["uuid"])
+        if descriptor is None:
+            continue
+
+        launcher = descriptor.get("info", {}).get("launcher", "")
+        uninstall = _has_section(
+            descriptor, platform, "label_section_uninstall", "Uninst_"
+        ) and _uninstall_has_content(descriptor, platform)
+        update = _has_section(descriptor, platform, "label_section_update", "upd_")
+
+        found = Glpi().find_software_info_for_machine(
+            machine.get("uuid_inventorymachine"),
+            {
+                "software": pkg["software"] or "",
+                "version_software": pkg["version_software"] or "",
+                "vendor": pkg["vendor"] or "",
+            },
+        )
+        installed = bool(found)
+
+        if not installed:
+            actions = ["Install"]
+        else:
+            actions = []
+            if launcher != "":
+                actions.append("Launch")
+            if uninstall:
+                actions.append("Delete")
+            if update and _version_key(found[0]["version"]) < _version_key(
+                pkg["version_software"]
+            ):
+                actions.append("Update")
+            if not uninstall:
+                actions.append("Installed")
+
+        packages.append(
+            {
+                "icon": "kiosk.png",
+                "right": "allowed",
+                "launcher": launcher,
+                "uninstall": uninstall,
+                "update": update,
+                "installed": installed,
+                "uuid": pkg["uuid"],
+                "version_software": pkg["version_software"],
+                "vendor": pkg["vendor"],
+                "version": pkg["version"],
+                "software": pkg["software"],
+                "description": pkg["description"],
+                "name": pkg["name"],
+                "action": actions,
+            }
+        )
+    return packages
+
+
+def send_packages(xmppobject, machine, subaction, sessionid=None):
+    """
+    Send to the kiosk of a machine the packages it offers.
+
+    Nothing is sent when the packages cannot be computed: an empty list would
+    empty the kiosk.
+
+    Args:
+        machine: dict of XmppMasterDatabase().getMachinefromjid()
+        subaction: "initialisation_kiosk" or "profiles_updated"
+
+    Returns:
+        True when the message is sent
+    """
+    if not machine or not machine.get("jid"):
+        return False
+    try:
+        packages = get_packages_for_machine(machine)
+    except Exception:
+        logger.error(
+            "kiosk: packages of %s not computed\n%s"
+            % (machine["jid"], traceback.format_exc())
+        )
+        return False
+    message = {
+        "action": "kiosk",
+        "sessionid": sessionid or getRandomName(6, subaction),
+        "data": {"subaction": subaction, "data": packages},
+    }
+    if subaction == "initialisation_kiosk":
+        message["ret"] = 0
+        message["base64"] = False
+    xmppobject.send_message(
+        mto=machine["jid"], mbody=json.dumps(message), mtype="chat"
+    )
+    return True
