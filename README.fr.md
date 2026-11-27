@@ -4,9 +4,11 @@
 
 # Medulla RMM
 
-Medulla est la solution RMM open source qui vous redonne la maîtrise complète de vos postes de travail. Grâce au protocole XMPP en temps réel, pilotez vos postes avec réactivité, sécurité et sans dépendance à un éditeur propriétaire.
+Medulla est la solution RMM open source qui vous redonne la maîtrise complète de vos postes de travail. Elle automatise les tâches répétitives, déploie applications et systèmes d'exploitation, et gère vos postes où qu'ils se trouvent.
 
-## Fonctionnalités principales :
+Grâce au protocole XMPP en temps réel, Medulla vous permet de piloter vos postes avec réactivité, sécurité et sans dépendance à un éditeur propriétaire.
+
+## Fonctionnalités principales
 
 * Masterisation et multicast
   * Générateur de configuration système
@@ -18,7 +20,8 @@ Medulla est la solution RMM open source qui vous redonne la maîtrise complète 
 * Inventaire
 * Prise en main à distance
 * Sauvegarde et restauration
-* Gestion des mises à jour
+* Gestion des mises à jour Windows et Linux
+* Supervision par sondes (Reflex)
 * Kiosque applicatif
 
 ## Installation
@@ -27,13 +30,19 @@ Vous souhaitez tester Medulla ?
 Nous proposons une version installable de Medulla pour évaluer la solution directement dans votre environnement.
 
 Pour obtenir le fichier d’installation et recevoir les instructions de déploiement, faites votre demande ici :
-https://medulla-tech.io/?ff_landing=18
+https://medulla-tech.io/testez-medulla/
 
 Notre équipe est à votre disposition pour toute question ou demande de démonstration.
 
-## Supported clients
+## Clients pris en charge
 
-Gérez vos postes Windows (à partir de la version 10 jusqu'aux dernières CBB et LTSB) et Linux
+- Windows 10 et versions ultérieures (y compris les versions LTSC)
+- Debian 12 (Bookworm)
+- Ubuntu
+- Zorin OS
+- macOS 26.2 ou version ultérieure
+
+**Prise en charge à venir :** Debian 13.
 
 ## Documentation
 
